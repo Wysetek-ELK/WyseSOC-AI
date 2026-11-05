@@ -137,3 +137,4 @@ class RuleParser:
 
         data["rule_id"] = data["event_type"]
         return data
+

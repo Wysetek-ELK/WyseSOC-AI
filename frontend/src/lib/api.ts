@@ -83,6 +83,140 @@ export interface IncidentDetail {
   updated_at: string;
 }
 
+export interface InvestigationQuestion {
+  id: string;
+  investigation_id: string;
+  question: string;
+  answer: string;
+  asked_by_user_id?: string;
+  answered_by_user_id?: string;
+  created_at: string;
+  answered_at?: string;
+}
+
+export interface InvestigationEvidence {
+  id: string;
+  investigation_id: string;
+  evidence_type: string;
+  reference_key: string;
+  evidence_content: string;
+  analyst_rationale: string;
+  created_at: string;
+}
+
+export interface InvestigationListItem {
+  id: string;
+  incident_id: string;
+  incident_vendor_id?: string;
+  title?: string;
+  rule_id?: string;
+  rule_name?: string;
+  severity?: string;
+  event_type?: string;
+  status: string;
+  assigned_to_user_id?: string;
+  assigned_to_username?: string;
+  analyst_verdict?: string;
+  is_disputed: boolean;
+  is_independently_verified: boolean;
+  question_count: number;
+  evidence_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvestigationDetail {
+  id: string;
+  incident_id: string;
+  assigned_to_user_id?: string;
+  assigned_to_username?: string;
+  status: string;
+  analyst_verdict?: string;
+  verdict_reason: string;
+  analyst_notes: string;
+  is_disputed: boolean;
+  is_independently_verified: boolean;
+  insufficient_evidence_reason?: string;
+  created_at: string;
+  updated_at: string;
+  incident_vendor_id?: string;
+  title?: string;
+  rule_id?: string;
+  rule_name?: string;
+  severity?: string;
+  event_type?: string;
+  source_ip?: string;
+  reporting_device?: string;
+  questions: InvestigationQuestion[];
+  evidence_items: InvestigationEvidence[];
+}
+
+export interface PromptVersion {
+  id: string;
+  prompt_id: string;
+  version_number: number;
+  status: "DRAFT" | "APPROVED" | "ARCHIVED";
+  is_template_draft: boolean;
+  common_prompt: string;
+  rule_specific_prompt: string;
+  detection_conditions: string;
+  required_evidence: string;
+  tp_indicators: string;
+  fp_indicators: string;
+  missing_info_criteria: string;
+  escalation_conditions: string;
+  analyst_questions: string[];
+  change_summary: string;
+  created_by_user_id?: string;
+  approved_by_user_id?: string;
+  approved_at?: string;
+  created_at: string;
+}
+
+export interface RulePrompt {
+  id: string;
+  rule_id: string;
+  rule_name?: string;
+  rule_event_type?: string;
+  title: string;
+  active_version_id?: string;
+  active_version?: PromptVersion | null;
+  versions: PromptVersion[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LearningRecord {
+  id: string;
+  rule_id: string;
+  rule_name?: string;
+  incident_id: string;
+  incident_vendor_id?: string;
+  incident_title?: string;
+  verified_verdict: string;
+  analyst_explanation: string;
+  tp_indicators: string[];
+  fp_indicators: string[];
+  missing_evidence: string[];
+  evidence_references: string[];
+  answered_questions: Array<{ question: string; answer: string }>;
+  verification_status: string;
+  feedback_timestamp: string;
+  created_at: string;
+}
+
+export interface SimilarCaseMatch {
+  learning_record_id: string;
+  incident_id: string;
+  incident_vendor_id?: string;
+  title?: string;
+  verified_verdict: string;
+  analyst_explanation: string;
+  match_score: number;
+  matched_features: string[];
+  feedback_timestamp: string;
+}
+
 export interface RuleItem {
   id: string;
   rule_id: string;
@@ -298,4 +432,223 @@ export const api = {
     if (!res.ok) throw new Error("Failed to fetch audit logs");
     return res.json();
   },
+
+  // =================== PHASE 2: INVESTIGATIONS ===================
+  async getInvestigationsQueue(params: {
+    page?: number;
+    page_size?: number;
+    status?: string;
+    assigned_to?: string;
+    verdict?: string;
+    is_disputed?: boolean;
+    rule_id?: string;
+    search?: string;
+  } = {}) {
+    const q = new URLSearchParams();
+    if (params.page) q.set("page", params.page.toString());
+    if (params.page_size) q.set("page_size", params.page_size.toString());
+    if (params.status) q.set("status", params.status);
+    if (params.assigned_to) q.set("assigned_to", params.assigned_to);
+    if (params.verdict) q.set("verdict", params.verdict);
+    if (params.is_disputed !== undefined) q.set("is_disputed", String(params.is_disputed));
+    if (params.rule_id) q.set("rule_id", params.rule_id);
+    if (params.search) q.set("search", params.search);
+
+    const res = await fetchWithAuth(`${API_BASE}/investigations/queue?${q.toString()}`);
+    if (!res.ok) throw new Error("Failed to fetch investigations queue");
+    return res.json();
+  },
+
+  async getInvestigation(id: string): Promise<InvestigationDetail> {
+    const res = await fetchWithAuth(`${API_BASE}/investigations/${id}`);
+    if (!res.ok) throw new Error("Failed to fetch investigation details");
+    return res.json();
+  },
+
+  async getInvestigationByIncident(incidentId: string): Promise<InvestigationDetail> {
+    const res = await fetchWithAuth(`${API_BASE}/investigations/by-incident/${incidentId}`);
+    if (!res.ok) throw new Error("Failed to fetch investigation for incident");
+    return res.json();
+  },
+
+  async assignInvestigation(id: string, userId: string | null) {
+    const res = await fetchWithAuth(`${API_BASE}/investigations/${id}/assign`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    if (!res.ok) throw new Error("Failed to assign analyst");
+    return res.json();
+  },
+
+  async updateInvestigationStatus(id: string, status: string) {
+    const res = await fetchWithAuth(`${API_BASE}/investigations/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error("Failed to update status");
+    return res.json();
+  },
+
+  async addInvestigationQuestion(id: string, question: string) {
+    const res = await fetchWithAuth(`${API_BASE}/investigations/${id}/questions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+    if (!res.ok) throw new Error("Failed to add question");
+    return res.json();
+  },
+
+  async answerInvestigationQuestion(questionId: string, answer: string) {
+    const res = await fetchWithAuth(`${API_BASE}/investigations/questions/${questionId}/answer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answer }),
+    });
+    if (!res.ok) throw new Error("Failed to answer question");
+    return res.json();
+  },
+
+  async attachInvestigationEvidence(id: string, data: {
+    evidence_type: string;
+    reference_key: string;
+    evidence_content: string;
+    analyst_rationale: string;
+  }) {
+    const res = await fetchWithAuth(`${API_BASE}/investigations/${id}/evidence`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to attach evidence");
+    return res.json();
+  },
+
+  async submitInvestigationVerdict(id: string, data: {
+    analyst_verdict: string;
+    verdict_reason: string;
+    analyst_notes: string;
+    insufficient_evidence_reason?: string | null;
+    is_disputed: boolean;
+    is_independently_verified: boolean;
+    status?: string;
+  }) {
+    const res = await fetchWithAuth(`${API_BASE}/investigations/${id}/verdict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to submit verdict");
+    return res.json();
+  },
+
+  // =================== PHASE 2: PROMPT STUDIO ===================
+  async getRulePrompt(ruleId: string): Promise<RulePrompt> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}`);
+    if (!res.ok) throw new Error("Failed to fetch rule prompt");
+    return res.json();
+  },
+
+  async generateTemplateDraft(ruleId: string): Promise<PromptVersion> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/generate-draft`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to generate template draft");
+    return res.json();
+  },
+
+  async createManualDraft(ruleId: string, data: {
+    common_prompt: string;
+    rule_specific_prompt: string;
+    detection_conditions: string;
+    required_evidence: string;
+    tp_indicators: string;
+    fp_indicators: string;
+    missing_info_criteria: string;
+    escalation_conditions: string;
+    analyst_questions: string[];
+    change_summary: string;
+  }): Promise<PromptVersion> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/draft`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to create draft version");
+    return res.json();
+  },
+
+  async approvePromptVersion(ruleId: string, versionId: string, changeSummary?: string): Promise<PromptVersion> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/approve/${versionId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ change_summary: changeSummary || "Approved by SOC Lead" }),
+    });
+    if (!res.ok) throw new Error("Failed to approve prompt version");
+    return res.json();
+  },
+
+  async rollbackPromptVersion(ruleId: string, versionId: string): Promise<PromptVersion> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/rollback/${versionId}`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to rollback prompt version");
+    return res.json();
+  },
+
+  // =================== PHASE 2: LEARNING HISTORY ===================
+  async getLearningRecords(params: {
+    page?: number;
+    page_size?: number;
+    rule_id?: string;
+    verification_status?: string;
+    verdict?: string;
+    search?: string;
+  } = {}) {
+    const q = new URLSearchParams();
+    if (params.page) q.set("page", params.page.toString());
+    if (params.page_size) q.set("page_size", params.page_size.toString());
+    if (params.rule_id) q.set("rule_id", params.rule_id);
+    if (params.verification_status) q.set("verification_status", params.verification_status);
+    if (params.verdict) q.set("verdict", params.verdict);
+    if (params.search) q.set("search", params.search);
+
+    const res = await fetchWithAuth(`${API_BASE}/learning/records?${q.toString()}`);
+    if (!res.ok) throw new Error("Failed to fetch learning records");
+    return res.json();
+  },
+
+  async getLearningRecord(id: string): Promise<LearningRecord> {
+    const res = await fetchWithAuth(`${API_BASE}/learning/records/${id}`);
+    if (!res.ok) throw new Error("Failed to fetch learning record");
+    return res.json();
+  },
+
+  async findSimilarCases(data: {
+    incident_id?: string;
+    rule_id?: string;
+    event_type?: string;
+    source_ip?: string;
+    command_substring?: string;
+    top_k?: number;
+  }): Promise<SimilarCaseMatch[]> {
+    const res = await fetchWithAuth(`${API_BASE}/learning/similar-cases`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to search similar cases");
+    return res.json();
+  },
+
+  async seedHistoricalLearning() {
+    const res = await fetchWithAuth(`${API_BASE}/learning/seed-historical`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to seed historical learning cases");
+    return res.json();
+  },
 };
+

@@ -4,113 +4,84 @@
 
 | Phase | Title | Status | Approval Gate |
 |---|---|---|---|
-| **Phase 1** | **Application Foundation** | **COMPLETED & VERIFIED** | **Ready for Review** |
-| **Phase 2** | **SOC Investigation & Learning Management** | **LOCKED / PENDING APPROVAL** | Requires Phase 1 Sign-Off |
+| **Phase 1** | **Application Foundation** | **COMPLETED & APPROVED** | User Sign-Off Confirmed |
+| **Phase 2** | **SOC Investigation & Learning Management** | **COMPLETED & VERIFIED** | **Ready for Review** |
 | **Phase 3** | **Dry-Run Engine & Evaluation Framework** | **LOCKED / PENDING APPROVAL** | Requires Phase 2 Sign-Off |
 
 ---
 
-## Phase 1 Deliverables Checklist
+## Phase 2 Deliverables Checklist
 
-### 1. Application UI & Design System
-- [x] Modern enterprise SOC web interface with default Dark Mode & optional Light Mode
-- [x] Collapsible sidebar navigation with 10 required items:
-  1. Dashboard (Operational)
-  2. Incidents (Operational)
-  3. Analyst Attention (Clearly marked "Coming in Phase 2")
-  4. SIEM Rules (Operational)
-  5. Rule Prompt Studio (Clearly marked "Coming in Phase 2")
-  6. Learning History (Clearly marked "Coming in Phase 2")
-  7. Dry-Run Testing (Clearly marked "Coming in Phase 3")
-  8. Evaluation Reports (Clearly marked "Coming in Phase 3")
-  9. Settings (Operational)
-  10. Administration (Operational)
-- [x] Global Search input in top navigation bar
-- [x] Reusable component library (Cards, Tables, Badges, Tabs, Alerts, Modals)
-- [x] Loading, empty, and error states for all pages
+### 1. Analyst Attention Queue & Investigation Console
+- [x] Full triage queue with status transitions:
+  - `PENDING_REVIEW`
+  - `ASSIGNED`
+  - `IN_PROGRESS`
+  - `AWAITING_INFORMATION`
+  - `REVIEWED`
+  - `CLOSED_DRY_RUN`
+- [x] Analyst assignment & claim mechanism
+- [x] Investigation Q&A thread management per incident (ask questions, record analyst answers)
+- [x] Supporting evidence artifact attachment (Telemetry logs, process trees, file hashes, network connections)
+- [x] Verified analyst verdict recording (`TRUE_POSITIVE`, `FALSE_POSITIVE`, `REQUIRES_ATTENTION`)
+- [x] Dedicated mandatory `insufficient_evidence_reason` for unverified or missing telemetry
+- [x] Dual-verdict architecture: strict isolation of `historical_ground_truth` table (0% contamination)
+- [x] Dispute flagging (`is_disputed`) & independent verification sign-off (`is_independently_verified`)
 
-### 2. Authentication & Authorization (RBAC)
-- [x] Secure login and logout with session expiration
-- [x] Modern password hashing (Bcrypt / Argon2id)
-- [x] Secure session handling with HttpOnly cookies & JWT fallback
-- [x] Role-Based Access Control:
-  - `Administrator`: Full administrative provisioning, audit logs, and imports
-  - `SOC Analyst`: Incident investigation, rule inspection, import uploads
-  - `Read-Only Viewer`: Telemetry inspection without upload or administrative rights
-- [x] Secure initial administrator CLI setup (`python -m app.cli create-admin`)
-- [x] Comprehensive security audit logging (`audit_logs` table)
+### 2. Rule Prompt Studio & Version Management
+- [x] SIEM Rule selector linking prompts to specific detection definitions
+- [x] Deterministic template prompt synthesizer:
+  - Auto-synthesized from ingested SIEM rule text (detection pattern, triggered attributes, remediation)
+  - Explicitly labeled `is_template_draft = True` / `"TEMPLATE-GENERATED DRAFT: Synthesized from SIEM rule specifications (Not AI generated)"`
+  - Zero LLM invocation in Phase 2
+- [x] Structured prompt schema components:
+  1. Common SOC Baseline Protocol
+  2. Rule-Specific Directive & Pattern Details
+  3. Detection Conditions & Pattern Logic
+  4. Mandatory Evidence Gathering Checklist
+  5. True Positive (Malicious) Indicators
+  6. False Positive (Benign) Indicators
+  7. Insufficient Evidence / Missing Info Criteria
+  8. Escalation & Containment Thresholds
+  9. Standard Investigative Q&A Checklist
+- [x] Manual draft version creation & editing
+- [x] Lead/Admin approval gating (`DRAFT` -> `APPROVED`, previous approved archived)
+- [x] Audit-safe rollback mechanism (reverts content while incrementing version number)
 
-### 3. Real-Telemetry Dashboard
-- [x] Calculated database metrics:
-  - Total imported incidents (20 live records from fixtures)
-  - Total SIEM rules (2 parsed rules)
-  - Historical True Positives (10 live records)
-  - Historical False Positives (10 live records)
-  - Unresolved or unlabeled incidents count
-- [x] Incidents by Severity breakdown distribution
-- [x] Incidents by Ingestion Source breakdown
-- [x] Historical Ground Truth breakdown
-- [x] Recent Incident Activity feed table
-- [x] Recent Import Jobs history
-- [x] Informative empty state when database is unpopulated
-- [x] STRICT COMPLIANCE: Zero fake AI accuracy or fabricated AI metrics
+### 3. Rule-Specific Learning History & Knowledge Base
+- [x] Immutable verified-case knowledge catalog (`learning_records` table)
+- [x] Seeded from historical ground truth and human analyst independent verifications
+- [x] Rule-specific grouping and quality status indicators (`VERIFIED`, `DISPUTED`, `UNDER_REVIEW`)
+- [x] Deterministic Similar Case Retrieval Engine:
+  - Multi-feature heuristic overlap: Rule match, event type match, source IP match, process/command keyword token overlap
+  - Normalizes match scores (0.0 – 1.0) with explicit matched feature explanations
+  - Zero fabricated AI vector embeddings claimed
 
-### 4. Resilient Incident Ingestion Engine
-- [x] File upload supporting `.json` files and nested `.zip` archives
-- [x] Zip Slip path traversal security defense (`ZipGuard`)
-- [x] Decompression bomb defense (ratio limits, uncompressed size caps, file count caps)
-- [x] Unmodified original JSON storage in `raw_payload` (JSONB)
-- [x] Normalized searchable fields (`incident_id`, `event_type`, `severity`, `source_ip`, etc.)
-- [x] Generic nested raw event attribute retention (`incident_events.attributes`)
-- [x] Duplicate detection by SIEM incident ID
-- [x] Import summary reporting and error tracking (`import_jobs`)
-- [x] **CRITICAL**: Dedicated `historical_ground_truth` table isolating resolution and closure notes
-- [x] **CRITICAL**: Model-facing allowlist function `build_model_facing_payload()` with zero leakage
+### 4. Database Persistence & Migrations
+- [x] Alembic migration `002_phase2_investigation_and_learning.py`
+- [x] Relational tables:
+  - `investigations`
+  - `investigation_questions`
+  - `investigation_evidence`
+  - `rule_prompts`
+  - `prompt_versions`
+  - `learning_records`
+- [x] Indexes on search fields and foreign keys with cascade constraints
 
-### 5. Incident Explorer & Detail View
-- [x] Incident listing with severity badges, source, timestamps, status, and event counts
-- [x] Multi-facet filtering (Severity, Status, Rule ID, Historical Verdict)
-- [x] Server-side pagination and real-time search
-- [x] Multi-tab Incident Detail page:
-  - Tab 1: Incident Overview & Telemetry
-  - Tab 2: Raw Events Explorer (expandable attributes grid)
-  - Tab 3: SIEM Rule Information
-  - Tab 4: Historical Ground Truth
-  - Tab 5: Raw Ingestion JSON viewer with one-click copy
-  - Tab 6: Model-Facing Payload Allowlist verification viewer
-  - Tab 7: Incident Lifecycle Milestones Timeline
-- [x] **Blind Review Mode**: Dynamic toggle that masks ground truth labels for neutral test reviews
-
-### 6. SIEM Rule Management
-- [x] Rule parser for text-based rule specifications (`RuleParser`)
-- [x] Rule listing with linked incident counts
-- [x] Rule detail view showing pattern logic, triggered attributes, and remediation
-- [x] Automatic incident-to-rule mapping via `eventType`
-- [x] Raw rule specification viewer
-
-### 7. PostgreSQL Database & Migrations
-- [x] Normalized relational schema with foreign key constraints
-- [x] Async SQLAlchemy 2.x ORM engine with SQLite local fallback
-- [x] Complete Alembic database migrations (`alembic/versions/001_initial_schema.py`)
-- [x] Strategic indexing on `incident_id`, `rule_id`, `event_type`, `severity`, and timestamps
-
-### 8. Native Deployment Architecture (Ubuntu Server LTS)
-- [x] Systemd service configuration: `ai-verdict-backend.service`
-- [x] Systemd service configuration: `ai-verdict-frontend.service`
-- [x] Nginx reverse proxy configuration with TLS 1.3, security headers, and 50MB upload limits
-- [x] Automated native installation script: `deployment/scripts/install_ubuntu.sh`
-- [x] Automated database backup script with 14-day rotation: `deployment/scripts/backup_db.sh`
-- [x] Service start and stop scripts: `start_services.sh`, `stop_services.sh`
-
-### 9. Automated Testing & Verification
-- [x] 18 automated tests passing 100% via `pytest`
-- [x] Verification with real fixtures (`fixtures/Incident json.zip`: 20 incidents, 2 rules)
-- [x] Zero-leakage verification test passed
-- [x] Next.js production build compiled and verified with zero errors
+### 5. Automated Verification & Testing
+- [x] Pytest suite: 23/23 tests passing (100% green)
+  - `test_investigations.py`: Queue listing, assignment, Q&A, evidence, dual-verdict, ground truth isolation check
+  - `test_prompt_studio.py`: Template draft synthesis, manual draft, RBAC approval gate, rollback
+  - `test_learning.py`: Historical seeding, filtered queries, deterministic similarity matching
+- [x] Next.js 16 production build: 15/15 routes compiled with 0 TypeScript/ESLint errors
 
 ---
 
-## Approval Gate for Phase 2
-
-Per master prompt instructions:
-**DO NOT ADVANCE TO PHASE 2 UNTIL PHASE 1 IS EXPLICITLY APPROVED BY THE USER.**
+## Phase 1 Deliverables (Approved Baseline)
+- [x] Enterprise SOC UI with Dark Mode, Collapsible Sidebar, Global Search, Metric Cards
+- [x] RBAC Authentication (Administrator, SOC Analyst, Read-Only Viewer) with HttpOnly cookies & JWT fallback
+- [x] Real-telemetry ingestion engine (ZIP & JSON files, path traversal guard, decompression bomb limits)
+- [x] Ingested 20 historical incident JSONs & 2 SIEM rule text files from real fixtures
+- [x] Incident Explorer with Raw JSON viewer, normalized evidence, and blind-review mode
+- [x] SIEM Rule Management with parsed pattern logic and remediation guidance
+- [x] Ground-truth isolation layer with strict model-facing allowlist

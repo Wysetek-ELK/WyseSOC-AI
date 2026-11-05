@@ -59,3 +59,4 @@ class DashboardMetricsResponse(BaseModel):
     recent_activity: List[RecentActivityItem]
     recent_imports: List[RecentImportJobItem]
     is_empty: bool = False
+

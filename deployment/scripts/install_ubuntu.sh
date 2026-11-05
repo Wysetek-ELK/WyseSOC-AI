@@ -128,3 +128,4 @@ echo " Frontend Status: $(systemctl is-active ai-verdict-frontend)"
 echo " Database User: $DB_USER"
 echo " Initial Admin: admin / AdminPassword123!"
 echo "=========================================================="
+

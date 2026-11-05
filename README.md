@@ -123,3 +123,4 @@ For manual deployment steps, systemd unit files, and Nginx reverse proxy configu
 - [DEPLOYMENT.md](DEPLOYMENT.md) — Ubuntu Server LTS native deployment guide, systemd, Nginx, and backups.
 - [TEST_PLAN.md](TEST_PLAN.md) — Phase 1 verification report and test specifications.
 - [PHASE_PROGRESS.md](PHASE_PROGRESS.md) — Detailed tracking across Phase 1, Phase 2, and Phase 3 deliverables.
+

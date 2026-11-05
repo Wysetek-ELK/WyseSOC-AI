@@ -151,3 +151,4 @@ def downgrade() -> None:
     op.drop_table("import_jobs")
     op.drop_table("rules")
     op.drop_table("users")
+

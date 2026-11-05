@@ -14,3 +14,4 @@ sudo systemctl restart nginx
 echo "Services status:"
 sudo systemctl status ai-verdict-backend --no-pager -n 3
 sudo systemctl status ai-verdict-frontend --no-pager -n 3
+

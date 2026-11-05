@@ -24,3 +24,4 @@ echo "Purging backups older than 14 days..."
 find "$BACKUP_DIR" -type f -name "${DB_NAME}_backup_*.sql.gz" -mtime +14 -delete
 
 echo "Backup rotation complete."
+

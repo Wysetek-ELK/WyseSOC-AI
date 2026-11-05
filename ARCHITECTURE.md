@@ -123,3 +123,4 @@ class ModelProvider(ABC):
 
 The future pipeline will be:
 `SIEM Incident -> Normalization -> Allowlist Filter -> ModelProvider -> Structured Verdict -> Policy Validation -> Analyst Review -> Feedback Store -> Evaluation`.
+

@@ -25,3 +25,4 @@ class ImportJob(Base):
 
     # Relationships
     incidents: Mapped[List["Incident"]] = relationship("Incident", back_populates="import_job")
+

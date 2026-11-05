@@ -1,17 +1,29 @@
-# AI Verdict — Phase 1 Test Plan & Verification Report
+# AI Verdict — Master Test Plan & Verification Report
 
 ## 1. Test Suite Summary
 
-- **Total Test Cases**: 18
-- **Passed**: 18
+- **Total Test Cases**: 23
+- **Passed**: 23
 - **Failed**: 0
 - **Execution Engine**: `pytest 9.0.1` with `pytest-asyncio`
 - **Execution Date**: 2026-11-05
-- **Status**: **100% Passed (All Criteria Satisfied)**
+- **Status**: **100% Passed (Phase 1 & Phase 2 Verified)**
 
 ---
 
 ## 2. Test Execution Matrix
+
+### Phase 2 Test Cases (SOC Investigation & Learning Management)
+
+| Test ID | Test Function | Category | Description | Result |
+|---|---|---|---|---|
+| **INV-01** | `test_investigation_queue_and_assignment` | Investigation | Verifies investigation queue listing, analyst assignment, Q&A thread creation & answering, and evidence artifact attachment | **PASSED** |
+| **INV-02** | `test_analyst_verdict_and_ground_truth_isolation` | Security / Data Integrity | **CRITICAL**: Verifies analyst verdict submission (`TRUE_POSITIVE`), ensures `historical_ground_truth` table is 100% unmodified, and checks learning record creation | **PASSED** |
+| **INV-03** | `test_requires_attention_with_insufficient_evidence` | Investigation | Validates `REQUIRES_ATTENTION` verdict with mandatory `insufficient_evidence_reason` and dispute flagging | **PASSED** |
+| **LRN-01** | `test_learning_knowledge_base_and_similar_cases` | Knowledge Base | Seeds historical verified cases, filters records by verdict, and tests deterministic multi-feature similarity matching (0.0–1.0 score) | **PASSED** |
+| **PROMPT-01** | `test_prompt_template_generation_and_versioning` | Prompt Studio | Synthesizes template prompt draft from SIEM rule specifications (`is_template_draft=True`), creates manual draft v2, enforces Admin approval gate, and executes audit rollback | **PASSED** |
+
+### Phase 1 Baseline Test Cases (Application Foundation)
 
 | Test ID | Test Function | Category | Description | Result |
 |---|---|---|---|---|
@@ -36,25 +48,9 @@
 
 ---
 
-## 3. Real Fixture Ingestion Verification
+## 3. Real Fixture Ingestion & Ground Truth Isolation Verification
 
-The ingestion engine was executed against the provided `Incident json.zip` archive containing historical SIEM incidents:
-
-- **CrowdStrike Suspicious Activity** (`PH_RULE_CS_SUSPICIOUS_ACTIVITY`):
-  - Ingested: 10 incidents
-  - Ground truth: 5 True Positives, 5 False Positives
-  - Events: 173 raw events with process command lines, tactics, and hostnames
-- **Prisma SASE Suspicious File Threat Detection** (`Prisma_SASE_Suspicious_File_Threat_Detection_`):
-  - Ingested: 10 incidents
-  - Ground truth: 5 True Positives, 5 False Positives
-  - Events: 24 raw events with destination IPs, firewall zones, and application categories
-- **Rules Detected & Registered**: 2 detection rules
-- **Total Ingestion Result**: 20 incidents imported, 0 duplicates, 0 errors.
-
----
-
-## 4. Blind Review Mode Verification
-
-Blind Review Mode was tested both on the backend API (`/api/incidents/{id}?blind_review=true`) and frontend UI:
-- **Normal Mode**: Returns historical resolution (`True Positive` / `False Positive`), cleared reason, and machine learning comments.
-- **Blind Review Mode**: `ground_truth` object is completely `null` in the API response and masked with a prominent amber banner on the UI, enabling unbiased analyst reviews.
+The test harness and live platform verify:
+1. **Historical Ground Truth Isolation**: Submitting an analyst verdict via the investigation console never overwrites `historical_ground_truth` records.
+2. **Deterministic Prompt Generation**: Prompts are auto-synthesized from SIEM detection rules with zero LLM dependence and explicitly labeled as template drafts.
+3. **Deterministic Similarity Matching**: Similarity queries match explicit command keywords, IPs, and rules without fabricating AI vector embeddings.

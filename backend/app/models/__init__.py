@@ -4,6 +4,9 @@ from app.models.rule import Rule
 from app.models.import_job import ImportJob
 from app.models.incident import Incident, IncidentEvent, HistoricalGroundTruth
 from app.models.audit import AuditLog
+from app.models.investigation import Investigation, InvestigationQuestion, InvestigationEvidence
+from app.models.prompt import RulePrompt, PromptVersion
+from app.models.learning import LearningRecord
 
 __all__ = [
     "Base",
@@ -14,4 +17,10 @@ __all__ = [
     "IncidentEvent",
     "HistoricalGroundTruth",
     "AuditLog",
+    "Investigation",
+    "InvestigationQuestion",
+    "InvestigationEvidence",
+    "RulePrompt",
+    "PromptVersion",
+    "LearningRecord",
 ]

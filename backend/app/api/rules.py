@@ -153,3 +153,4 @@ async def get_rule_detail(
         created_at=rule.created_at,
         updated_at=rule.updated_at,
     )
+

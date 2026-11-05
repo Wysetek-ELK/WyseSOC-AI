@@ -45,3 +45,4 @@ def test_corrupted_zip_handled():
     with pytest.raises(ZipSecurityException) as exc_info:
         ZipGuard.validate_and_extract_entries(buf)
     assert "Invalid or corrupted ZIP" in str(exc_info.value)
+

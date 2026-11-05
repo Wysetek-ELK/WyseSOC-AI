@@ -65,3 +65,4 @@ def test_ground_truth_isolation_zero_leakage():
     assert len(payload["events"]) == 1
     assert payload["events"][0]["attributes"]["Command"] == "powershell.exe -NoProfile"
     assert payload["events"][0]["attributes"]["Host Name"] == "WORKSTATION-01"
+

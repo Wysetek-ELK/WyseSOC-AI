@@ -6,10 +6,18 @@
 erDiagram
     users ||--o{ audit_logs : generates
     users ||--o{ import_jobs : creates
+    users ||--o{ investigations : assigned_to
     import_jobs ||--o{ incidents : imports
     rules ||--o{ incidents : matches
+    rules ||--o{ rule_prompts : configures
+    rules ||--o{ learning_records : groups
+    rule_prompts ||--o{ prompt_versions : versions
     incidents ||--o{ incident_events : contains
     incidents ||--|| historical_ground_truth : isolates
+    incidents ||--o{ investigations : triaged_by
+    incidents ||--o{ learning_records : verified_as
+    investigations ||--o{ investigation_questions : records
+    investigations ||--o{ investigation_evidence : attaches
 
     users {
         varchar(36) id PK
@@ -42,25 +50,92 @@ erDiagram
         timestamp updated_at
     }
 
-    import_jobs {
+    rule_prompts {
         varchar(36) id PK
-        varchar(256) filename
-        varchar(32) file_type
-        integer file_size
-        integer total_files
-        integer imported_count
-        integer duplicate_count
-        integer error_count
-        varchar(32) status
-        jsonb error_details
-        varchar(64) created_by
+        varchar(36) rule_id FK
+        varchar(256) title
+        varchar(36) active_version_id
         timestamp created_at
-        timestamp completed_at
+        timestamp updated_at
+    }
+
+    prompt_versions {
+        varchar(36) id PK
+        varchar(36) prompt_id FK
+        integer version_number
+        varchar(32) status
+        boolean is_template_draft
+        text common_prompt
+        text rule_specific_prompt
+        text detection_conditions
+        text required_evidence
+        text tp_indicators
+        text fp_indicators
+        text missing_info_criteria
+        text escalation_conditions
+        jsonb analyst_questions
+        varchar(512) change_summary
+        varchar(36) created_by_user_id FK
+        varchar(36) approved_by_user_id FK
+        timestamp approved_at
+        timestamp created_at
+    }
+
+    learning_records {
+        varchar(36) id PK
+        varchar(36) rule_id FK
+        varchar(36) incident_id FK
+        varchar(32) verified_verdict
+        text analyst_explanation
+        jsonb tp_indicators
+        jsonb fp_indicators
+        jsonb missing_evidence
+        jsonb evidence_references
+        jsonb answered_questions
+        varchar(32) verification_status
+        timestamp feedback_timestamp
+        timestamp created_at
+    }
+
+    investigations {
+        varchar(36) id PK
+        varchar(36) incident_id FK
+        varchar(36) assigned_to_user_id FK
+        varchar(32) status
+        varchar(32) analyst_verdict
+        text verdict_reason
+        text analyst_notes
+        boolean is_disputed
+        boolean is_independently_verified
+        text insufficient_evidence_reason
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    investigation_questions {
+        varchar(36) id PK
+        varchar(36) investigation_id FK
+        text question
+        text answer
+        varchar(36) asked_by_user_id FK
+        varchar(36) answered_by_user_id FK
+        timestamp created_at
+        timestamp answered_at
+    }
+
+    investigation_evidence {
+        varchar(36) id PK
+        varchar(36) investigation_id FK
+        varchar(64) evidence_type
+        varchar(256) reference_key
+        text evidence_content
+        text analyst_rationale
+        timestamp created_at
     }
 
     incidents {
         varchar(36) id PK
-        varchar(64) incident_id UK
+        varchar(128) incident_id UK
         varchar(36) rule_id FK
         varchar(36) import_job_id FK
         varchar(128) event_type
@@ -68,45 +143,26 @@ erDiagram
         text description
         text detail
         varchar(32) severity
-        varchar(32) event_severity
         integer status_code
-        varchar(64) status_name
-        varchar(128) category
-        varchar(128) subcategory
+        varchar(64) category
         varchar(64) source_ip
         varchar(128) reporting_device
-        varchar(64) reporting_ip
-        varchar(128) customer
-        varchar(64) ticket_id
         bigint first_seen_epoch
         bigint last_seen_epoch
         bigint created_at_epoch
-        bigint updated_at_epoch
         jsonb raw_payload
         timestamp created_at
         timestamp updated_at
     }
 
-    incident_events {
-        varchar(36) id PK
-        varchar(36) incident_id FK
-        varchar(128) event_id
-        bigint event_receive_time
-        varchar(128) event_type
-        text raw_log
-        jsonb attributes
-        timestamp created_at
-    }
-
     historical_ground_truth {
         varchar(36) id PK
-        varchar(36) incident_id FK UK
+        varchar(36) incident_id FK
         varchar(64) resolution
         text cleared_reason
         text comments
         varchar(128) cleared_user
         bigint cleared_time_epoch
-        bigint resolved_at_epoch
         boolean is_ml_generated
         timestamp created_at
         timestamp updated_at
@@ -129,72 +185,43 @@ erDiagram
 
 ## 2. Table Specifications
 
-### `users`
-Stores provisioned accounts and role assignments.
-- `id`: UUID (Primary Key)
-- `username`: Unique username (Indexed)
-- `email`: Unique email (Indexed)
-- `hashed_password`: Bcrypt / Argon2id salted hash
-- `role`: Role (`Administrator`, `SOC Analyst`, `Read-Only Viewer`)
-- `is_active`: Account active flag
+### A. Phase 2 Tables
 
-### `rules`
-Stores SIEM correlation rules parsed from vendor text or JSON definitions.
-- `id`: UUID (Primary Key)
-- `rule_id`: Unique Rule Identifier / Event Type (Indexed)
-- `event_type`: Event type used for incident correlation (Indexed)
-- `name`: Display name of detection rule
-- `pattern_logic`: Detection conditions, regex filters, grouping expressions
-- `remediation`: Triage and remediation instructions
-- `raw_rule_text`: Unmodified rule definition text
-- `parsed_metadata`: Vendor-specific triggered attributes and grouping tags (JSONB)
+#### `investigations`
+Manages the active SOC analyst triage workflow, question tracking, and verified verdicts.
+- **`incident_id`**: Foreign key to `incidents.id` (`UNIQUE`, `ON DELETE CASCADE`).
+- **`status`**: State machine (`PENDING_REVIEW`, `ASSIGNED`, `IN_PROGRESS`, `AWAITING_INFORMATION`, `REVIEWED`, `CLOSED_DRY_RUN`).
+- **`analyst_verdict`**: Verified verdict (`TRUE_POSITIVE`, `FALSE_POSITIVE`, `REQUIRES_ATTENTION`).
+- **`insufficient_evidence_reason`**: Mandatory reasoning when evidence is incomplete.
+- **`is_disputed`**: Flag indicating conflict with historical ground truth.
+- **`is_independently_verified`**: Quality flag enabling promotion to verified learning knowledge base.
 
-### `incidents`
-Stores normalized searchable SIEM incident headers and unmodified raw payloads.
-- `id`: UUID (Primary Key)
-- `incident_id`: SIEM Incident ID (Unique, Indexed)
-- `rule_id`: Foreign key to `rules.id` (Indexed)
-- `import_job_id`: Foreign key to `import_jobs.id`
-- `event_type`: Event type string (Indexed)
-- `severity`: Standardized severity: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFORMATIONAL` (Indexed)
-- `status_code`: Status integer (1 = Open, 2 = Closed)
-- `source_ip`: Attacking or source host IP (Indexed)
-- `first_seen_epoch`: Epoch millisecond timestamp
-- `created_at_epoch`: Epoch millisecond timestamp (Indexed)
-- `raw_payload`: Complete original incident JSON preserved unmodified (JSONB)
+#### `investigation_questions`
+Threaded Q&A checklist items for hypothesis testing.
+- **`investigation_id`**: Foreign key to `investigations.id`.
+- **`question`**, **`answer`**, **`asked_by_user_id`**, **`answered_by_user_id`**.
 
-### `incident_events`
-Stores individual security events contained within an incident's telemetry.
-- `id`: UUID (Primary Key)
-- `incident_id`: Foreign key to `incidents.id` (Indexed, CASCADE delete)
-- `event_id`: SIEM Event ID
-- `raw_log`: Raw text event log line
-- `attributes`: Flexible dictionary of vendor-specific attributes (JSONB)
+#### `investigation_evidence`
+Discrete technical artifacts attached to support the verdict.
+- **`evidence_type`**: `TELEMETRY`, `LOG`, `PROCESS_TREE`, `FILE_HASH`, `NETWORK`, `REGISTRY`.
+- **`reference_key`**: Specific artifact identifier (e.g., hash, IP, command).
+- **`analyst_rationale`**: Technical justification.
 
-### `historical_ground_truth` (ISOLATED SECURITY TABLE)
-Maintains historical verdict and closure-related data in a dedicated table, strictly isolated from incident investigation inputs.
-- `id`: UUID (Primary Key)
-- `incident_id`: Foreign key to `incidents.id` (Unique, Indexed, CASCADE delete)
-- `resolution`: Historical verdict (e.g. `True Positive`, `False Positive`)
-- `cleared_reason`: Closure reason provided by SIEM or analyst
-- `comments`: Historical notes (e.g. `Resolution set by Machine Learning`)
-- `cleared_user`: Analyst username who cleared the ticket
-- `cleared_time_epoch`: Closure timestamp
-- `is_ml_generated`: Flag indicating if resolution was set by an upstream ML model
+#### `rule_prompts` & `prompt_versions`
+Versioned prompt engineering store linking detection rules to structured LLM directives.
+- **`is_template_draft`**: Boolean explicitly distinguishing template drafts synthesized from SIEM rules from AI outputs.
+- **`status`**: `DRAFT`, `APPROVED`, `ARCHIVED`.
+- **`active_version_id`**: Pointer to the approved production baseline prompt.
 
-### `audit_logs`
-Immutable record of security and administrative actions.
-- `id`: UUID (Primary Key)
-- `username`: Operator username
-- `action`: Action code (`LOGIN_SUCCESS`, `VIEW_INCIDENT`, `IMPORT_ZIP`, etc.)
-- `resource_type`: Affected entity type (`INCIDENT`, `RULE`, `USER`, etc.)
-- `details`: Structured action metadata (JSONB)
-- `created_at`: Event timestamp (Indexed)
+#### `learning_records`
+Verified ground truth case repository used for future model evaluation and dry-run benchmarks.
+- **`verified_verdict`**, **`analyst_explanation`**, **`tp_indicators`**, **`fp_indicators`**, **`missing_evidence`**, **`evidence_references`**.
 
 ---
 
-## 3. Future Extension Points (Phase 2 & Phase 3)
+### B. Phase 1 Core Tables (Isolated Ground Truth Layer)
 
-The schema includes explicit extension hooks for future phases without premature implementation:
-- **Phase 2 Extensions**: `analyst_investigations`, `investigation_questions`, `rule_prompts`, `rule_prompt_versions`.
-- **Phase 3 Extensions**: `evaluation_runs`, `model_predictions`, `rule_maturity_status`.
+#### `historical_ground_truth`
+**CRITICAL ISOLATION**: Stored in a completely dedicated table. Submitting an analyst verdict in `investigations` never updates or contaminates this table.
+- **`resolution`**: Historical SIEM label ("True Positive", "False Positive").
+- **`cleared_reason`**, **`comments`**, **`cleared_user`**, **`cleared_time_epoch`**, **`is_ml_generated`**.

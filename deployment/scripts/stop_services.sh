@@ -10,3 +10,4 @@ sudo systemctl stop ai-verdict-frontend
 sudo systemctl stop ai-verdict-backend
 
 echo "AI Verdict services stopped successfully."
+

@@ -17,3 +17,4 @@ async def get_dashboard_metrics(
 ):
     service = DashboardService(db)
     return await service.get_metrics()
+

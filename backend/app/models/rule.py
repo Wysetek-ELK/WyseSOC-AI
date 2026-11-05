@@ -28,3 +28,4 @@ class Rule(Base):
 
     # Relationships
     incidents: Mapped[List["Incident"]] = relationship("Incident", back_populates="rule")
+

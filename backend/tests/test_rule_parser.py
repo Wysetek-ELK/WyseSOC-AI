@@ -76,3 +76,4 @@ def test_parse_prisma_rule():
     assert len(parsed["parsed_metadata"]["triggered_attributes"]) == 8
     assert "Source User" in parsed["parsed_metadata"]["triggered_attributes"]
     assert "Verify file hash" in parsed["remediation"]
+

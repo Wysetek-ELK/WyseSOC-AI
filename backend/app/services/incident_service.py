@@ -186,3 +186,4 @@ class IncidentService:
             created_at=inc.created_at,
             updated_at=inc.updated_at,
         )
+

@@ -37,6 +37,34 @@ from app.schemas.audit import (
     AuditLogResponse,
     AuditLogListResponse,
 )
+from app.schemas.investigation import (
+    QuestionCreate,
+    QuestionAnswer,
+    InvestigationQuestionResponse,
+    EvidenceAttach,
+    InvestigationEvidenceResponse,
+    InvestigationAssignRequest,
+    InvestigationStatusUpdate,
+    AnalystVerdictSubmit,
+    InvestigationListItem,
+    InvestigationDetailResponse,
+    InvestigationQueueResponse,
+)
+from app.schemas.prompt import (
+    PromptVersionResponse,
+    RulePromptResponse,
+    PromptVersionCreate,
+    PromptDraftGenerateRequest,
+    PromptApprovalRequest,
+    PromptRollbackRequest,
+)
+from app.schemas.learning import (
+    LearningRecordCreate,
+    LearningRecordResponse,
+    SimilarCaseQuery,
+    SimilarCaseMatch,
+    LearningListResponse,
+)
 
 __all__ = [
     "Token",
@@ -66,4 +94,26 @@ __all__ = [
     "RecentImportJobItem",
     "AuditLogResponse",
     "AuditLogListResponse",
+    "QuestionCreate",
+    "QuestionAnswer",
+    "InvestigationQuestionResponse",
+    "EvidenceAttach",
+    "InvestigationEvidenceResponse",
+    "InvestigationAssignRequest",
+    "InvestigationStatusUpdate",
+    "AnalystVerdictSubmit",
+    "InvestigationListItem",
+    "InvestigationDetailResponse",
+    "InvestigationQueueResponse",
+    "PromptVersionResponse",
+    "RulePromptResponse",
+    "PromptVersionCreate",
+    "PromptDraftGenerateRequest",
+    "PromptApprovalRequest",
+    "PromptRollbackRequest",
+    "LearningRecordCreate",
+    "LearningRecordResponse",
+    "SimilarCaseQuery",
+    "SimilarCaseMatch",
+    "LearningListResponse",
 ]

@@ -96,3 +96,4 @@ class HistoricalGroundTruth(Base):
 
     # Relationships
     incident: Mapped["Incident"] = relationship("Incident", back_populates="ground_truth")
+

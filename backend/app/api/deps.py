@@ -78,3 +78,9 @@ def require_role(allowed_roles: List[str]):
 get_admin_user = require_role(["Administrator"])
 get_analyst_user = require_role(["Administrator", "SOC Analyst"])
 get_any_authenticated_user = require_role(["Administrator", "SOC Analyst", "Read-Only Viewer"])
+
+# Common aliases
+get_current_active_user = get_current_user
+require_analyst = get_analyst_user
+require_admin = get_admin_user
+

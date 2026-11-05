@@ -112,3 +112,4 @@ async def get_incident_model_payload(
     )
 
     return ModelFacingIncidentPayload(**payload_dict)
+

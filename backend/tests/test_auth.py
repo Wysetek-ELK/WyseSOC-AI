@@ -70,3 +70,4 @@ async def test_rbac_admin_route_allowed_for_admin(client: AsyncClient, admin_tok
     resp = await client.get("/api/users", headers=headers)
     assert resp.status_code == 200
     assert isinstance(resp.json(), list)
+

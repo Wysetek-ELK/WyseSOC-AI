@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.database import async_engine, Base, AsyncSessionLocal
-from app.api import auth, incidents, rules, imports, dashboard, users, audit
+from app.api import auth, incidents, rules, imports, dashboard, users, audit, investigations, prompts, learning
 from app.models.user import User
 from app.utils.security import get_password_hash
 from sqlalchemy import select
@@ -65,6 +65,9 @@ app.include_router(imports.router, prefix=settings.API_V1_STR)
 app.include_router(dashboard.router, prefix=settings.API_V1_STR)
 app.include_router(users.router, prefix=settings.API_V1_STR)
 app.include_router(audit.router, prefix=settings.API_V1_STR)
+app.include_router(investigations.router, prefix=settings.API_V1_STR)
+app.include_router(prompts.router, prefix=settings.API_V1_STR)
+app.include_router(learning.router, prefix=settings.API_V1_STR)
 
 
 @app.get("/api/health")
@@ -73,5 +76,6 @@ async def health_check():
         "status": "healthy",
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "phase": "Phase 1 - Application Foundation",
+        "phase": "Phase 2 - SOC Investigation & Learning Management",
     }
+

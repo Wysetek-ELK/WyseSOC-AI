@@ -55,25 +55,16 @@ const NAV_ITEMS: NavItem[] = [
     title: "Analyst Attention",
     href: "/analyst-attention",
     icon: UserCheck,
-    badge: "Phase 2",
-    badgeColor: "bg-amber-950 text-amber-400 border border-amber-800/60",
-    phase: 2,
   },
   {
     title: "Rule Prompt Studio",
     href: "/prompt-studio",
     icon: Cpu,
-    badge: "Phase 2",
-    badgeColor: "bg-amber-950 text-amber-400 border border-amber-800/60",
-    phase: 2,
   },
   {
     title: "Learning History",
     href: "/learning-history",
     icon: Brain,
-    badge: "Phase 2",
-    badgeColor: "bg-amber-950 text-amber-400 border border-amber-800/60",
-    phase: 2,
   },
   {
     title: "Dry-Run Testing",
@@ -201,3 +192,4 @@ export function Sidebar() {
     </aside>
   );
 }
+

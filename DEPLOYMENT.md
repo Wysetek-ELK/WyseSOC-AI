@@ -162,3 +162,4 @@ sudo bash /opt/ai-verdict/deployment/scripts/backup_db.sh
 # Decompress and restore into PostgreSQL
 gunzip -c /var/backups/ai-verdict/ai_verdict_backup_YYYYMMDD_HHMMSS.sql.gz | sudo -u postgres psql ai_verdict
 ```
+

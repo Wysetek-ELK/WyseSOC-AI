@@ -91,3 +91,4 @@ class ZipGuard:
                 raise ZipSecurityException(f"Error decompressing '{info.filename}': {str(e)}")
 
         return extracted_entries
+

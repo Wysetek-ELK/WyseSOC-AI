@@ -92,3 +92,4 @@ async def test_api_full_workflow(client: AsyncClient, admin_token: str, db_sessi
     assert audit_resp.status_code == 200
     audit_data = audit_resp.json()
     assert audit_data["total"] > 0
+

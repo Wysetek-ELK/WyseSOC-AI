@@ -385,3 +385,4 @@ class IngestionService:
 
         await self.db.commit()
         return "imported", f"Successfully imported incident {incident_id}"
+
