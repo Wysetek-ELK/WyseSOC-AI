@@ -1,0 +1,20 @@
+[Unit]
+Description=AI Verdict Next.js Frontend Service
+After=network.target ai-verdict-backend.service
+Wants=ai-verdict-backend.service
+
+[Service]
+Type=simple
+User=aiverdict
+Group=aiverdict
+WorkingDirectory=/opt/ai-verdict/frontend
+EnvironmentFile=/opt/ai-verdict/frontend/.env.production
+ExecStart=/usr/bin/node /opt/ai-verdict/frontend/node_modules/next/dist/bin/next start -p 3000
+Restart=always
+RestartSec=5s
+LimitNOFILE=65535
+StandardOutput=append:/var/log/ai-verdict/frontend.log
+StandardError=append:/var/log/ai-verdict/frontend-error.log
+
+[Install]
+WantedBy=multi-user.target
