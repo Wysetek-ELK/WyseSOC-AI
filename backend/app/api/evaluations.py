@@ -36,6 +36,10 @@ async def get_job_metrics(
         return metrics
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/prompt-comparison/{rule_id}", response_model=List[PromptComparisonItem])
@@ -50,6 +54,10 @@ async def compare_prompts_for_rule(
         return comparisons
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/rule-maturity", response_model=List[RuleMaturityResponse])
@@ -117,6 +125,10 @@ async def approve_rule_for_automation(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/job/{job_id}/export/csv")
@@ -135,6 +147,10 @@ async def export_job_csv(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/job/{job_id}/export/json")
@@ -191,3 +207,7 @@ async def export_job_json(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

@@ -3,13 +3,13 @@ import csv
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, or_
 from sqlalchemy.orm import selectinload
 
 from app.models.dry_run import DryRunJob, DryRunResult
 from app.models.incident import Incident, HistoricalGroundTruth
 from app.models.rule import Rule
-from app.models.prompt import PromptVersion
+from app.models.prompt import RulePrompt, PromptVersion
 from app.schemas.evaluation import (
     EvaluationMetricsResponse,
     ConfusionMatrixData,
@@ -173,19 +173,52 @@ class EvaluationService:
         )
 
     async def compare_prompt_versions(self, rule_id: str) -> List[PromptComparisonItem]:
+        # Resolve target rule by id (UUID), rule_id, or event_type
+        rule_query = select(Rule).where(
+            or_(
+                Rule.id == rule_id,
+                Rule.rule_id == rule_id,
+                Rule.event_type == rule_id,
+            )
+        )
+        rule_res = await self.db.execute(rule_query)
+        rule_obj = rule_res.scalars().first()
+
+        target_rule_id = rule_obj.id if rule_obj else rule_id
+
         # Get all prompt versions for this rule
-        pv_query = select(PromptVersion).join(PromptVersion.prompt).where(RulePrompt.rule_id == rule_id)
+        pv_query = (
+            select(PromptVersion)
+            .join(PromptVersion.prompt)
+            .where(
+                or_(
+                    RulePrompt.rule_id == target_rule_id,
+                    RulePrompt.id == target_rule_id,
+                )
+            )
+            .order_by(PromptVersion.version_number.asc())
+        )
         pv_res = await self.db.execute(pv_query)
         versions = pv_res.scalars().all()
 
         comparisons = []
         for v in versions:
             # Query results tested with this prompt version number
-            res_query = select(DryRunResult).where(
-                DryRunResult.prompt_version_number == v.version_number
-            ).options(selectinload(DryRunResult.incident).selectinload(Incident.ground_truth))
+            res_query = (
+                select(DryRunResult)
+                .where(DryRunResult.prompt_version_number == v.version_number)
+                .options(selectinload(DryRunResult.incident).selectinload(Incident.ground_truth))
+            )
             res_rows = await self.db.execute(res_query)
-            results = res_rows.scalars().all()
+            all_results = res_rows.scalars().all()
+
+            if rule_obj:
+                results = [
+                    r for r in all_results
+                    if r.incident and (r.incident.rule_id == rule_obj.id or r.incident.event_type == rule_obj.event_type)
+                ]
+            else:
+                results = all_results
 
             evaluated = len(results)
             if evaluated == 0:
@@ -214,12 +247,14 @@ class EvaluationService:
             total_latency = 0
 
             for r in results:
-                total_latency += r.latency_ms
-                gt = r.incident.ground_truth.resolution.lower() if (r.incident and r.incident.ground_truth) else ""
+                total_latency += (r.latency_ms or 0)
+                gt = ""
+                if r.incident and r.incident.ground_truth and r.incident.ground_truth.resolution:
+                    gt = r.incident.ground_truth.resolution.lower()
                 gt_tp = ("true positive" in gt)
                 gt_fp = ("false positive" in gt)
 
-                pred = r.predicted_verdict.upper()
+                pred = (r.predicted_verdict or "").upper()
                 if pred == "TRUE_POSITIVE":
                     resolved += 1
                     pred_tp += 1
@@ -244,7 +279,7 @@ class EvaluationService:
                     tp_precision=_safe_divide(tp_agree, pred_tp),
                     fp_precision=_safe_divide(fp_agree, pred_fp),
                     coverage=_safe_divide(resolved, evaluated),
-                    average_latency_ms=round(total_latency / evaluated, 1),
+                    average_latency_ms=round(total_latency / evaluated, 1) if evaluated > 0 else 0.0,
                 )
             )
 
