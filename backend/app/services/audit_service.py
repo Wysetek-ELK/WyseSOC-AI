@@ -29,3 +29,4 @@ class AuditService:
         self.db.add(audit_entry)
         await self.db.commit()
         return audit_entry
+

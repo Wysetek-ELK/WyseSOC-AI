@@ -650,5 +650,229 @@ export const api = {
     if (!res.ok) throw new Error("Failed to seed historical learning cases");
     return res.json();
   },
+
+  // =================== PHASE 3: DRY-RUN ENGINE ===================
+  async createDryRunConfig(data: {
+    name: string;
+    description?: string;
+    rule_id?: string;
+    prompt_version_id?: string;
+    provider_type?: string;
+    split_strategy?: string;
+    dataset_filters?: Record<string, any>;
+  }): Promise<DryRunConfig> {
+    const res = await fetchWithAuth(`${API_BASE}/dry-run/configs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to create dry run config");
+    }
+    return res.json();
+  },
+
+  async getDryRunConfigs(): Promise<DryRunConfig[]> {
+    const res = await fetchWithAuth(`${API_BASE}/dry-run/configs`);
+    if (!res.ok) throw new Error("Failed to fetch dry run configs");
+    return res.json();
+  },
+
+  async getDryRunConfig(id: string): Promise<DryRunConfig> {
+    const res = await fetchWithAuth(`${API_BASE}/dry-run/configs/${id}`);
+    if (!res.ok) throw new Error("Failed to fetch dry run config");
+    return res.json();
+  },
+
+  async triggerDryRunJob(configId: string, customSampleLimit?: number): Promise<DryRunJob> {
+    const res = await fetchWithAuth(`${API_BASE}/dry-run/trigger`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config_id: configId, custom_sample_limit: customSampleLimit }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to trigger dry run job");
+    }
+    return res.json();
+  },
+
+  async getDryRunJobs(limit: number = 50): Promise<DryRunJob[]> {
+    const res = await fetchWithAuth(`${API_BASE}/dry-run/jobs?limit=${limit}`);
+    if (!res.ok) throw new Error("Failed to fetch dry run jobs");
+    return res.json();
+  },
+
+  async getDryRunJob(id: string): Promise<DryRunJob> {
+    const res = await fetchWithAuth(`${API_BASE}/dry-run/jobs/${id}`);
+    if (!res.ok) throw new Error("Failed to fetch dry run job");
+    return res.json();
+  },
+
+  async getDryRunJobResults(jobId: string, limit: number = 100, offset: number = 0): Promise<DryRunResult[]> {
+    const res = await fetchWithAuth(`${API_BASE}/dry-run/jobs/${jobId}/results?limit=${limit}&offset=${offset}`);
+    if (!res.ok) throw new Error("Failed to fetch dry run results");
+    return res.json();
+  },
+
+  // =================== PHASE 3: EVALUATION FRAMEWORK ===================
+  async getJobMetrics(jobId: string): Promise<EvaluationMetrics> {
+    const res = await fetchWithAuth(`${API_BASE}/evaluations/job/${jobId}/metrics`);
+    if (!res.ok) throw new Error("Failed to fetch job evaluation metrics");
+    return res.json();
+  },
+
+  async getPromptComparisons(ruleId: string): Promise<PromptComparisonItem[]> {
+    const res = await fetchWithAuth(`${API_BASE}/evaluations/prompt-comparison/${ruleId}`);
+    if (!res.ok) throw new Error("Failed to fetch prompt comparisons");
+    return res.json();
+  },
+
+  async getRuleMaturityStatus(): Promise<RuleMaturity[]> {
+    const res = await fetchWithAuth(`${API_BASE}/evaluations/rule-maturity`);
+    if (!res.ok) throw new Error("Failed to fetch rule maturity evaluations");
+    return res.json();
+  },
+
+  async approveRuleForAutomation(ruleId: string, approvalNotes: string): Promise<RuleMaturity> {
+    const res = await fetchWithAuth(`${API_BASE}/evaluations/rule-maturity/${ruleId}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ approval_notes: approvalNotes }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to approve rule for automation");
+    }
+    return res.json();
+  },
 };
+
+export interface DryRunConfig {
+  id: string;
+  name: string;
+  description: string;
+  rule_id?: string;
+  rule_name?: string;
+  prompt_version_id?: string;
+  provider_type: string;
+  split_strategy: string;
+  dataset_filters: Record<string, any>;
+  created_by_user_id?: string;
+  created_at: string;
+}
+
+export interface DryRunJob {
+  id: string;
+  config_id: string;
+  config_name?: string;
+  status: string;
+  total_items: number;
+  processed_items: number;
+  error_count: number;
+  is_simulated: boolean;
+  error_message?: string;
+  started_at: string;
+  completed_at?: string;
+}
+
+export interface DryRunResult {
+  id: string;
+  job_id: string;
+  incident_id: string;
+  incident_vendor_id?: string;
+  incident_title?: string;
+  rule_id?: string;
+  rule_name?: string;
+  predicted_verdict: string;
+  confidence: number;
+  reasoning: string;
+  supporting_evidence: string[];
+  missing_evidence: string[];
+  analyst_questions: string[];
+  latency_ms: number;
+  model_identifier: string;
+  prompt_version_number: number;
+  validation_status: string;
+  is_simulated: boolean;
+  ground_truth_verdict?: string;
+  is_agreement?: boolean;
+  created_at: string;
+}
+
+export interface ConfusionMatrixData {
+  true_positive_as_tp: number;
+  true_positive_as_fp: number;
+  true_positive_as_abstain: number;
+  false_positive_as_fp: number;
+  false_positive_as_tp: number;
+  false_positive_as_abstain: number;
+}
+
+export interface EvaluationMetrics {
+  job_id: string;
+  job_status: string;
+  is_simulated: boolean;
+  total_evaluated: number;
+  resolved_predictions: number;
+  abstention_count: number;
+  error_count: number;
+  verdict_accuracy: number;
+  tp_precision: number;
+  tp_recall: number;
+  fp_precision: number;
+  fp_recall: number;
+  f1_score: number;
+  abstention_coverage: number;
+  confusion_matrix: ConfusionMatrixData;
+  rule_breakdown: Array<{
+    rule_id: string;
+    rule_name: string;
+    total: number;
+    tp_agree: number;
+    fp_agree: number;
+    tp_as_fp: number;
+    fp_as_tp: number;
+    abstains: number;
+    accuracy: number;
+    precision: number;
+    coverage: number;
+  }>;
+  average_latency_ms: number;
+  generated_at: string;
+}
+
+export interface PromptComparisonItem {
+  prompt_version_number: number;
+  prompt_version_id: string;
+  is_template_draft: boolean;
+  status: string;
+  evaluated_cases: number;
+  verdict_accuracy: number;
+  tp_precision: number;
+  fp_precision: number;
+  coverage: number;
+  average_latency_ms: number;
+}
+
+export interface RuleMaturity {
+  id: string;
+  rule_id: string;
+  rule_name?: string;
+  event_type?: string;
+  maturity_status: "NOT_TESTED" | "LEARNING" | "UNDER_EVALUATION" | "CANDIDATE_FOR_AUTOMATION" | "APPROVED_FOR_AUTOMATION";
+  precision_score: number;
+  recall_score: number;
+  f1_score: number;
+  coverage_score: number;
+  sample_size: number;
+  unresolved_evidence_gaps: string[];
+  recommendation_explanation: string;
+  is_admin_approved: boolean;
+  approved_by_username?: string;
+  approved_at?: string;
+  approval_notes: string;
+  latest_test_date?: string;
+}
 

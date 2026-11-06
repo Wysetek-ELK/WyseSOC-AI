@@ -92,3 +92,4 @@ async def seed_historical_learning_records(
     )
 
     return {"status": "success", "seeded_count": count}
+

@@ -351,3 +351,4 @@ class InvestigationService:
         await self.db.commit()
         await self.db.refresh(inv)
         return inv
+

@@ -118,3 +118,4 @@ def downgrade() -> None:
     op.drop_table("investigation_evidence")
     op.drop_table("investigation_questions")
     op.drop_table("investigations")
+

@@ -70,17 +70,11 @@ const NAV_ITEMS: NavItem[] = [
     title: "Dry-Run Testing",
     href: "/dry-run",
     icon: FlaskConical,
-    badge: "Phase 3",
-    badgeColor: "bg-purple-950 text-purple-400 border border-purple-800/60",
-    phase: 3,
   },
   {
     title: "Evaluation Reports",
     href: "/evaluation-reports",
     icon: BarChart3,
-    badge: "Phase 3",
-    badgeColor: "bg-purple-950 text-purple-400 border border-purple-800/60",
-    phase: 3,
   },
   {
     title: "Settings",

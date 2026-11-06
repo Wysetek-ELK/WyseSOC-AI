@@ -154,3 +154,4 @@ async def rollback_prompt_version(
     )
 
     return PromptVersionResponse.from_orm(ver)
+

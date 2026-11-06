@@ -54,3 +54,4 @@ class PromptVersion(Base):
 
     # Relationship
     prompt: Mapped["RulePrompt"] = relationship("RulePrompt", back_populates="versions")
+

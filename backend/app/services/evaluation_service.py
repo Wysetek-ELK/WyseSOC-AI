@@ -1,0 +1,310 @@
+import io
+import csv
+from datetime import datetime
+from typing import Optional, List, Dict, Any, Tuple
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
+from sqlalchemy.orm import selectinload
+
+from app.models.dry_run import DryRunJob, DryRunResult
+from app.models.incident import Incident, HistoricalGroundTruth
+from app.models.rule import Rule
+from app.models.prompt import PromptVersion
+from app.schemas.evaluation import (
+    EvaluationMetricsResponse,
+    ConfusionMatrixData,
+    RulePerformanceSummary,
+    PromptComparisonItem,
+)
+
+
+def _safe_divide(numerator: float, denominator: float) -> float:
+    if denominator == 0:
+        return 0.0
+    return round((numerator / denominator) * 100.0, 2)
+
+
+class EvaluationService:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def calculate_job_metrics(self, job_id: str) -> EvaluationMetricsResponse:
+        query = select(DryRunJob).where(DryRunJob.id == job_id).options(
+            selectinload(DryRunJob.results).selectinload(DryRunResult.incident).selectinload(Incident.ground_truth),
+            selectinload(DryRunJob.results).selectinload(DryRunResult.incident).selectinload(Incident.rule),
+        )
+        res = await self.db.execute(query)
+        job = res.scalars().first()
+        if not job:
+            raise ValueError(f"Dry run job {job_id} not found")
+
+        matrix = ConfusionMatrixData()
+        rule_stats: Dict[str, Dict[str, Any]] = {}
+        total_latency = 0
+        total_items = len(job.results)
+
+        resolved_count = 0
+        abstention_count = 0
+        error_count = 0
+
+        for r in job.results:
+            total_latency += (r.latency_ms or 0)
+            if r.validation_status != "VALID":
+                error_count += 1
+
+            inc = r.incident
+            gt_obj = inc.ground_truth if inc else None
+            gt_label = None
+
+            if gt_obj and gt_obj.resolution:
+                gt_raw = gt_obj.resolution.lower()
+                if "true positive" in gt_raw or "malicious" in gt_raw:
+                    gt_label = "TRUE_POSITIVE"
+                elif "false positive" in gt_raw or "benign" in gt_raw:
+                    gt_label = "FALSE_POSITIVE"
+
+            pred = r.predicted_verdict.upper().strip()
+            rule_id = inc.rule_id if (inc and inc.rule_id) else (inc.event_type if inc else "UNKNOWN")
+            rule_name = inc.rule.name if (inc and inc.rule) else (inc.event_type if inc else "Unknown Rule")
+
+            if rule_id not in rule_stats:
+                rule_stats[rule_id] = {
+                    "rule_id": rule_id,
+                    "rule_name": rule_name,
+                    "total": 0,
+                    "tp_agree": 0,
+                    "fp_agree": 0,
+                    "tp_as_fp": 0,
+                    "fp_as_tp": 0,
+                    "abstains": 0,
+                }
+
+            r_stat = rule_stats[rule_id]
+            r_stat["total"] += 1
+
+            if pred == "REQUIRES_ATTENTION":
+                abstention_count += 1
+                r_stat["abstains"] += 1
+                if gt_label == "TRUE_POSITIVE":
+                    matrix.true_positive_as_abstain += 1
+                elif gt_label == "FALSE_POSITIVE":
+                    matrix.false_positive_as_abstain += 1
+            elif pred == "TRUE_POSITIVE":
+                resolved_count += 1
+                if gt_label == "TRUE_POSITIVE":
+                    matrix.true_positive_as_tp += 1
+                    r_stat["tp_agree"] += 1
+                elif gt_label == "FALSE_POSITIVE":
+                    matrix.false_positive_as_tp += 1
+                    r_stat["fp_as_tp"] += 1
+            elif pred == "FALSE_POSITIVE":
+                resolved_count += 1
+                if gt_label == "FALSE_POSITIVE":
+                    matrix.false_positive_as_fp += 1
+                    r_stat["fp_agree"] += 1
+                elif gt_label == "TRUE_POSITIVE":
+                    matrix.true_positive_as_fp += 1
+                    r_stat["tp_as_fp"] += 1
+
+        # Calculate mathematical metrics
+        # Verdict accuracy on resolved TP/FP predictions
+        total_agree = matrix.true_positive_as_tp + matrix.false_positive_as_fp
+        verdict_accuracy = _safe_divide(total_agree, resolved_count)
+
+        # TP Precision & Recall
+        pred_tp_total = matrix.true_positive_as_tp + matrix.false_positive_as_tp
+        actual_tp_total = matrix.true_positive_as_tp + matrix.true_positive_as_fp
+        tp_precision = _safe_divide(matrix.true_positive_as_tp, pred_tp_total)
+        tp_recall = _safe_divide(matrix.true_positive_as_tp, actual_tp_total)
+
+        # FP Precision & Recall
+        pred_fp_total = matrix.false_positive_as_fp + matrix.true_positive_as_fp
+        actual_fp_total = matrix.false_positive_as_fp + matrix.false_positive_as_tp
+        fp_precision = _safe_divide(matrix.false_positive_as_fp, pred_fp_total)
+        fp_recall = _safe_divide(matrix.false_positive_as_fp, actual_fp_total)
+
+        # F1 Score
+        if tp_precision + tp_recall > 0:
+            f1_score = round(2 * (tp_precision * tp_recall) / (tp_precision + tp_recall), 2)
+        else:
+            f1_score = 0.0
+
+        # Coverage (percentage of alerts resolved without abstaining)
+        coverage = _safe_divide(resolved_count, total_items)
+        avg_latency = round(total_latency / total_items, 1) if total_items > 0 else 0.0
+
+        # Per-rule breakdown
+        breakdown = []
+        for r_id, s in rule_stats.items():
+            r_resolved = s["tp_agree"] + s["fp_agree"] + s["tp_as_fp"] + s["fp_as_tp"]
+            r_agree = s["tp_agree"] + s["fp_agree"]
+            r_acc = _safe_divide(r_agree, r_resolved)
+            r_cov = _safe_divide(r_resolved, s["total"])
+            breakdown.append({
+                "rule_id": s["rule_id"],
+                "rule_name": s["rule_name"],
+                "total_incidents": s["total"],
+                "resolved_count": r_resolved,
+                "accuracy": r_acc,
+                "coverage": r_cov,
+                "tp_agreements": s["tp_agree"],
+                "fp_agreements": s["fp_agree"],
+            })
+
+        return EvaluationMetricsResponse(
+            job_id=job.id,
+            job_status=job.status,
+            is_simulated=job.is_simulated,
+            total_evaluated=total_items,
+            resolved_predictions=resolved_count,
+            abstention_count=abstention_count,
+            error_count=error_count,
+            verdict_accuracy=verdict_accuracy,
+            tp_precision=tp_precision,
+            tp_recall=tp_recall,
+            fp_precision=fp_precision,
+            fp_recall=fp_recall,
+            f1_score=f1_score,
+            abstention_coverage=coverage,
+            confusion_matrix=matrix,
+            rule_breakdown=breakdown,
+            average_latency_ms=avg_latency,
+            generated_at=datetime.utcnow(),
+        )
+
+    async def compare_prompt_versions(self, rule_id: str) -> List[PromptComparisonItem]:
+        # Get all prompt versions for this rule
+        pv_query = select(PromptVersion).join(PromptVersion.prompt).where(RulePrompt.rule_id == rule_id)
+        pv_res = await self.db.execute(pv_query)
+        versions = pv_res.scalars().all()
+
+        comparisons = []
+        for v in versions:
+            # Query results tested with this prompt version number
+            res_query = select(DryRunResult).where(
+                DryRunResult.prompt_version_number == v.version_number
+            ).options(selectinload(DryRunResult.incident).selectinload(Incident.ground_truth))
+            res_rows = await self.db.execute(res_query)
+            results = res_rows.scalars().all()
+
+            evaluated = len(results)
+            if evaluated == 0:
+                comparisons.append(
+                    PromptComparisonItem(
+                        prompt_version_number=v.version_number,
+                        prompt_version_id=v.id,
+                        is_template_draft=v.is_template_draft,
+                        status=v.status,
+                        evaluated_cases=0,
+                        verdict_accuracy=0.0,
+                        tp_precision=0.0,
+                        fp_precision=0.0,
+                        coverage=0.0,
+                        average_latency_ms=0.0,
+                    )
+                )
+                continue
+
+            resolved = 0
+            agree = 0
+            tp_agree = 0
+            pred_tp = 0
+            fp_agree = 0
+            pred_fp = 0
+            total_latency = 0
+
+            for r in results:
+                total_latency += r.latency_ms
+                gt = r.incident.ground_truth.resolution.lower() if (r.incident and r.incident.ground_truth) else ""
+                gt_tp = ("true positive" in gt)
+                gt_fp = ("false positive" in gt)
+
+                pred = r.predicted_verdict.upper()
+                if pred == "TRUE_POSITIVE":
+                    resolved += 1
+                    pred_tp += 1
+                    if gt_tp:
+                        tp_agree += 1
+                        agree += 1
+                elif pred == "FALSE_POSITIVE":
+                    resolved += 1
+                    pred_fp += 1
+                    if gt_fp:
+                        fp_agree += 1
+                        agree += 1
+
+            comparisons.append(
+                PromptComparisonItem(
+                    prompt_version_number=v.version_number,
+                    prompt_version_id=v.id,
+                    is_template_draft=v.is_template_draft,
+                    status=v.status,
+                    evaluated_cases=evaluated,
+                    verdict_accuracy=_safe_divide(agree, resolved),
+                    tp_precision=_safe_divide(tp_agree, pred_tp),
+                    fp_precision=_safe_divide(fp_agree, pred_fp),
+                    coverage=_safe_divide(resolved, evaluated),
+                    average_latency_ms=round(total_latency / evaluated, 1),
+                )
+            )
+
+        return comparisons
+
+    async def export_job_results_csv(self, job_id: str) -> str:
+        query = select(DryRunJob).where(DryRunJob.id == job_id).options(
+            selectinload(DryRunJob.results).selectinload(DryRunResult.incident).selectinload(Incident.ground_truth),
+            selectinload(DryRunJob.results).selectinload(DryRunResult.incident).selectinload(Incident.rule),
+        )
+        res = await self.db.execute(query)
+        job = res.scalars().first()
+        if not job:
+            raise ValueError("Job not found")
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Incident ID",
+            "SIEM Rule",
+            "Event Type",
+            "Severity",
+            "Ground Truth Verdict",
+            "Predicted Verdict",
+            "Agreement",
+            "Confidence (%)",
+            "Latency (ms)",
+            "Model ID",
+            "Validation Status",
+            "Is Simulated",
+            "Reasoning",
+        ])
+
+        for r in job.results:
+            inc = r.incident
+            gt = inc.ground_truth.resolution if (inc and inc.ground_truth) else "Unlabeled"
+            rule_name = inc.rule.name if (inc and inc.rule) else (inc.event_type if inc else "")
+
+            # Check agreement
+            is_agree = False
+            pred = r.predicted_verdict.upper()
+            if "true positive" in gt.lower() and pred == "TRUE_POSITIVE":
+                is_agree = True
+            elif "false positive" in gt.lower() and pred == "FALSE_POSITIVE":
+                is_agree = True
+
+            writer.writerow([
+                inc.incident_id if inc else r.incident_id,
+                rule_name,
+                inc.event_type if inc else "",
+                inc.severity if inc else "",
+                gt,
+                r.predicted_verdict,
+                "AGREE" if is_agree else ("ABSTAIN" if pred == "REQUIRES_ATTENTION" else "DISAGREE"),
+                r.confidence,
+                r.latency_ms,
+                r.model_identifier,
+                r.validation_status,
+                r.is_simulated,
+                r.reasoning.replace("\n", " "),
+            ])
+
+        return output.getvalue()

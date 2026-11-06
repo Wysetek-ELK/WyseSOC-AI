@@ -65,6 +65,21 @@ from app.schemas.learning import (
     SimilarCaseMatch,
     LearningListResponse,
 )
+from app.schemas.dry_run import (
+    DryRunConfigCreate,
+    DryRunConfigResponse,
+    DryRunJobResponse,
+    DryRunResultResponse,
+    DryRunTriggerRequest,
+)
+from app.schemas.evaluation import (
+    ConfusionMatrixData,
+    EvaluationMetricsResponse,
+    RulePerformanceSummary,
+    PromptComparisonItem,
+    RuleMaturityResponse,
+    MaturityApprovalRequest,
+)
 
 __all__ = [
     "Token",
@@ -116,4 +131,15 @@ __all__ = [
     "SimilarCaseQuery",
     "SimilarCaseMatch",
     "LearningListResponse",
+    "DryRunConfigCreate",
+    "DryRunConfigResponse",
+    "DryRunJobResponse",
+    "DryRunResultResponse",
+    "DryRunTriggerRequest",
+    "ConfusionMatrixData",
+    "EvaluationMetricsResponse",
+    "RulePerformanceSummary",
+    "PromptComparisonItem",
+    "RuleMaturityResponse",
+    "MaturityApprovalRequest",
 ]

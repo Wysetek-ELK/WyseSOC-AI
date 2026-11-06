@@ -72,3 +72,4 @@ class InvestigationEvidence(Base):
 
     # Relationship
     investigation: Mapped["Investigation"] = relationship("Investigation", back_populates="evidence_items")
+

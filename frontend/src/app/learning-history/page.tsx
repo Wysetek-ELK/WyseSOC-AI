@@ -75,7 +75,7 @@ export default function LearningHistoryPage() {
   }, [page, ruleFilter, verdictFilter, statusFilter]);
 
   useEffect(() => {
-    api.getRules({ page_size: 50 }).then((res) => setRules(res.items)).catch(() => {});
+    api.getRules({ page_size: 50 }).then((res) => setRules(res.items)).catch(() => { });
   }, []);
 
   const handleSeedHistorical = async () => {
@@ -163,11 +163,10 @@ export default function LearningHistoryPage() {
       </div>
 
       {feedback && (
-        <div className={`p-3 rounded-md text-xs border ${
-          feedback.type === "success"
+        <div className={`p-3 rounded-md text-xs border ${feedback.type === "success"
             ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
             : "bg-rose-950/60 border-rose-800 text-rose-300"
-        }`}>
+          }`}>
           {feedback.text}
         </div>
       )}

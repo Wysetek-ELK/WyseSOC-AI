@@ -82,7 +82,7 @@ export default function AnalystAttentionPage() {
   }, [page, statusFilter, verdictFilter, disputedFilter]);
 
   useEffect(() => {
-    api.getUsers().then(setUsers).catch(() => {});
+    api.getUsers().then(setUsers).catch(() => { });
   }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -363,11 +363,10 @@ export default function AnalystAttentionPage() {
                 setDisputedFilter(disputedFilter === true ? undefined : true);
                 setPage(1);
               }}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
-                disputedFilter === true
+              className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${disputedFilter === true
                   ? "bg-rose-950 text-rose-300 border-rose-800"
                   : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:bg-zinc-800"
-              }`}
+                }`}
             >
               {disputedFilter === true ? "Showing Disputed Only" : "Disputed Only"}
             </button>
@@ -426,13 +425,12 @@ export default function AnalystAttentionPage() {
                       <div className="text-[10px] text-zinc-500 font-mono">{item.event_type}</div>
                     </td>
                     <td className="py-3 px-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        item.severity === "CRITICAL"
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.severity === "CRITICAL"
                           ? "bg-rose-950/70 text-rose-400 border border-rose-800/60"
                           : item.severity === "HIGH"
-                          ? "bg-orange-950/70 text-orange-400 border border-orange-800/60"
-                          : "bg-amber-950/70 text-amber-400 border border-amber-800/60"
-                      }`}>
+                            ? "bg-orange-950/70 text-orange-400 border border-orange-800/60"
+                            : "bg-amber-950/70 text-amber-400 border border-amber-800/60"
+                        }`}>
                         {item.severity || "MEDIUM"}
                       </span>
                     </td>
@@ -514,11 +512,10 @@ export default function AnalystAttentionPage() {
             </div>
 
             {feedbackMsg && (
-              <div className={`p-3 rounded-md text-xs border ${
-                feedbackMsg.type === "success"
+              <div className={`p-3 rounded-md text-xs border ${feedbackMsg.type === "success"
                   ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
                   : "bg-rose-950/60 border-rose-800 text-rose-300"
-              }`}>
+                }`}>
                 {feedbackMsg.text}
               </div>
             )}
@@ -802,33 +799,30 @@ export default function AnalystAttentionPage() {
                   <button
                     type="button"
                     onClick={() => setVerdictChoice("TRUE_POSITIVE")}
-                    className={`py-2 px-3 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1.5 ${
-                      verdictChoice === "TRUE_POSITIVE"
+                    className={`py-2 px-3 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1.5 ${verdictChoice === "TRUE_POSITIVE"
                         ? "bg-rose-950 text-rose-300 border-rose-700 shadow-sm"
                         : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800"
-                    }`}
+                      }`}
                   >
                     <ShieldAlert className="w-3.5 h-3.5" /> True Positive
                   </button>
                   <button
                     type="button"
                     onClick={() => setVerdictChoice("FALSE_POSITIVE")}
-                    className={`py-2 px-3 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1.5 ${
-                      verdictChoice === "FALSE_POSITIVE"
+                    className={`py-2 px-3 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1.5 ${verdictChoice === "FALSE_POSITIVE"
                         ? "bg-emerald-950 text-emerald-300 border-emerald-700 shadow-sm"
                         : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800"
-                    }`}
+                      }`}
                   >
                     <ShieldCheck className="w-3.5 h-3.5" /> False Positive
                   </button>
                   <button
                     type="button"
                     onClick={() => setVerdictChoice("REQUIRES_ATTENTION")}
-                    className={`py-2 px-3 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1.5 ${
-                      verdictChoice === "REQUIRES_ATTENTION"
+                    className={`py-2 px-3 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1.5 ${verdictChoice === "REQUIRES_ATTENTION"
                         ? "bg-amber-950 text-amber-300 border-amber-700 shadow-sm"
                         : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800"
-                    }`}
+                      }`}
                   >
                     <AlertTriangle className="w-3.5 h-3.5" /> Requires Attention
                   </button>

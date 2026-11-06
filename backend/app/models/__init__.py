@@ -7,6 +7,8 @@ from app.models.audit import AuditLog
 from app.models.investigation import Investigation, InvestigationQuestion, InvestigationEvidence
 from app.models.prompt import RulePrompt, PromptVersion
 from app.models.learning import LearningRecord
+from app.models.dry_run import DryRunConfig, DryRunJob, DryRunResult
+from app.models.maturity import RuleMaturityEvaluation
 
 __all__ = [
     "Base",
@@ -23,4 +25,8 @@ __all__ = [
     "RulePrompt",
     "PromptVersion",
     "LearningRecord",
+    "DryRunConfig",
+    "DryRunJob",
+    "DryRunResult",
+    "RuleMaturityEvaluation",
 ]

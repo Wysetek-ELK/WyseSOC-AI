@@ -10,6 +10,8 @@ from app.schemas.incident import (
     IncidentDetailResponse,
     IncidentEventResponse,
     HistoricalGroundTruthResponse,
+    ModelFacingIncidentPayload,
+    ModelFacingEvent,
 )
 
 
@@ -186,4 +188,43 @@ class IncidentService:
             created_at=inc.created_at,
             updated_at=inc.updated_at,
         )
+
+    def get_model_facing_payload(self, inc: Incident) -> Dict[str, Any]:
+        """
+        Constructs strictly sanitized, ground-truth-isolated model-facing payload.
+        Adheres to explicit allowlist. Excludes all resolution, comments, clearedReason, etc.
+        """
+        events_list = []
+        if inc.events:
+            for ev in inc.events:
+                events_list.append(
+                    ModelFacingEvent(
+                        event_id=ev.event_id or ev.id,
+                        event_type=ev.event_type or "",
+                        event_receive_time=ev.event_receive_time,
+                        attributes=ev.attributes or {},
+                    )
+                )
+
+        payload = ModelFacingIncidentPayload(
+            incident_id=inc.incident_id,
+            event_type=inc.event_type,
+            title=inc.title or "",
+            description=inc.description or "",
+            detail=inc.detail or "",
+            severity=inc.severity or "MEDIUM",
+            category=inc.category or "",
+            subcategory=inc.subcategory or "",
+            source_ip=inc.source_ip or "",
+            reporting_device=inc.reporting_device or "",
+            reporting_ip=inc.reporting_ip or "",
+            first_seen_epoch=inc.first_seen_epoch,
+            last_seen_epoch=inc.last_seen_epoch,
+            created_at_epoch=inc.created_at_epoch,
+            events=events_list,
+            rule_id=inc.rule_id,
+            rule_name=inc.rule.name if inc.rule else None,
+            rule_pattern=inc.rule.pattern_logic if inc.rule else None,
+        )
+        return payload.model_dump()
 

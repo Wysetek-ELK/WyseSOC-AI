@@ -2,16 +2,31 @@
 
 ## 1. Test Suite Summary
 
-- **Total Test Cases**: 23
-- **Passed**: 23
+- **Total Test Cases**: 33
+- **Passed**: 33
 - **Failed**: 0
 - **Execution Engine**: `pytest 9.0.1` with `pytest-asyncio`
 - **Execution Date**: 2026-11-05
-- **Status**: **100% Passed (Phase 1 & Phase 2 Verified)**
+- **Status**: **100% Passed (Phases 1, 2, and 3 Fully Verified)**
 
 ---
 
 ## 2. Test Execution Matrix
+
+### Phase 3 Test Cases (Dry-Run Engine & Evaluation Framework)
+
+| Test ID | Test Function | Category | Description | Result |
+|---|---|---|---|---|
+| **MOD-01** | `test_disabled_model_provider` | Model Abstraction | Verifies `DisabledModelProvider` reports status `DISABLED` and raises `ProviderDisabledError` preventing accidental inference calls | **PASSED** |
+| **MOD-02** | `test_simulated_model_provider` | Simulation | Verifies `SimulatedModelProvider` outputs valid `StructuredModelVerdict`, always tags `is_simulated = True`, and returns model identifier `simulated-heuristic-v1` | **PASSED** |
+| **MOD-03** | `test_simulated_model_provider_abstains_on_empty_evidence` | Robustness | Verifies heuristic simulator safely abstains with `REQUIRES_ATTENTION` and populates missing evidence when telemetry is insufficient | **PASSED** |
+| **MOD-04** | `test_factory_provider_resolution` | Architecture | Verifies `get_model_provider` factory resolves `DISABLED`, `SIMULATED`, `OPENAI_COMPATIBLE`, and defaults unknown providers to disabled | **PASSED** |
+| **DRY-01** | `test_dataset_splitting_strategies` | Data Integrity | Tests dataset partitions (`ALL`, `CHRONOLOGICAL_70_30`, `GROUP_AWARE_HOST`) to verify holdout partitions and prevent co-occurring alert leakage | **PASSED** |
+| **DRY-02** | `test_dry_run_job_execution_api` | Replay Engine | Executes full dry-run batch replay via API: tests config creation, replay execution, progress tracking, result persistence, and `is_simulated = True` tagging | **PASSED** |
+| **EVAL-01** | `test_safe_divide_edge_cases` | Math Safety | Verifies division-by-zero resilience across edge cases ($0/0=0.0$, $10/0=0.0$) preventing server crash | **PASSED** |
+| **EVAL-02** | `test_evaluation_metrics_calculation` | Evaluation Framework | Validates mathematical precision of Verdict Accuracy (66.67%), TP Precision (100%), FP Precision (50%), Coverage (75%), 2x3 Confusion Matrix, and tests CSV/JSON exports | **PASSED** |
+| **MAT-01** | `test_rule_maturity_lifecycle_and_candidate_detection` | Rule Readiness | Verifies rule lifecycle transition from `NOT_TESTED` to `CANDIDATE_FOR_AUTOMATION` when thresholds ($\ge 95\%$ Prec, $\ge 90\%$ Rec, $\ge 80\%$ Cov, $N \ge 5$) are met | **PASSED** |
+| **MAT-02** | `test_admin_approval_gate_and_rbac` | Security / RBAC | Enforces mandatory human approval gate: blocks SOC Analysts (HTTP 403) and allows only Administrators to sign off on automation | **PASSED** |
 
 ### Phase 2 Test Cases (SOC Investigation & Learning Management)
 
@@ -48,9 +63,9 @@
 
 ---
 
-## 3. Real Fixture Ingestion & Ground Truth Isolation Verification
+## 3. Strict Pre-Release Compliance Verification
 
-The test harness and live platform verify:
-1. **Historical Ground Truth Isolation**: Submitting an analyst verdict via the investigation console never overwrites `historical_ground_truth` records.
-2. **Deterministic Prompt Generation**: Prompts are auto-synthesized from SIEM detection rules with zero LLM dependence and explicitly labeled as template drafts.
-3. **Deterministic Similarity Matching**: Similarity queries match explicit command keywords, IPs, and rules without fabricating AI vector embeddings.
+1. **Zero LLM Invocation in Phases 1-3**: All inferences executed via deterministic heuristics with explicit `is_simulated = True` flags.
+2. **Ground Truth Isolation**: 100% verified across model payloads (`ModelFacingIncidentPayload`) and analyst verdict updates.
+3. **No Docker / No Kubernetes**: Pure native Python and Node.js operation.
+4. **Automated Verification**: 33/33 pytest unit and integration tests passing; Next.js 16 build passing with 15/15 static and dynamic routes.

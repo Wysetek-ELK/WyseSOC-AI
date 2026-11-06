@@ -34,3 +34,4 @@ class LearningRecord(Base):
     # Relationships
     rule: Mapped["Rule"] = relationship("Rule")
     incident: Mapped["Incident"] = relationship("Incident")
+

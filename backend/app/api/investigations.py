@@ -286,3 +286,4 @@ async def submit_investigation_verdict(
         "is_disputed": inv.is_disputed,
         "is_independently_verified": inv.is_independently_verified,
     }
+
