@@ -29,3 +29,4 @@ def get_model_provider(
         return DisabledModelProvider()
     else:
         return DisabledModelProvider(f"Unknown provider type '{provider_type}'. Defaulting to disabled.")
+

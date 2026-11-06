@@ -92,3 +92,4 @@ class RuleMaturityResponse(BaseModel):
 
 class MaturityApprovalRequest(BaseModel):
     approval_notes: str = Field(..., min_length=3, max_length=1000)
+

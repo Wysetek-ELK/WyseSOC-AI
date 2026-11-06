@@ -37,3 +37,4 @@ class DisabledModelProvider(BaseModelProvider):
         prompt_version_number: int = 1,
     ) -> StructuredModelVerdict:
         raise ProviderDisabledError(self.message)
+

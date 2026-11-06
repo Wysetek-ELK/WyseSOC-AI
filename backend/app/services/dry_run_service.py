@@ -236,3 +236,4 @@ class DryRunService:
         ).order_by(desc(DryRunJob.started_at)).limit(limit)
         res = await self.db.execute(query)
         return res.scalars().all()
+

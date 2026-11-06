@@ -46,3 +46,4 @@ class RuleMaturityEvaluation(Base):
 
     # Relationship
     rule: Mapped["Rule"] = relationship("Rule")
+

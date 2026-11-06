@@ -107,3 +107,4 @@ class SimulatedModelProvider(BaseModelProvider):
             validation_status="VALID",
             is_simulated=True,  # ALWAYS TRUE FOR SIMULATED PROVIDER
         )
+

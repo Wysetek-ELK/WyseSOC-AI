@@ -93,3 +93,4 @@ def downgrade() -> None:
     op.drop_table("dry_run_results")
     op.drop_table("dry_run_jobs")
     op.drop_table("dry_run_configs")
+

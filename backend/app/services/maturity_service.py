@@ -200,3 +200,4 @@ class RuleMaturityService:
         await self.db.commit()
         await self.db.refresh(eval_record)
         return eval_record
+
