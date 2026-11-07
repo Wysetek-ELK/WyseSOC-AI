@@ -138,6 +138,86 @@ def extract_incident_timestamps(raw_data: Dict[str, Any]) -> Tuple[Optional[int]
     return first_seen, last_seen, created_at_epoch, updated_at_epoch
 
 
+def extract_event_data(
+    revt: Dict[str, Any],
+    incident_id: str,
+    idx: int,
+    fallback_event_type: str = ""
+) -> Tuple[str, Optional[int], str, str, Dict[str, Any]]:
+    """
+    Extracts (evt_id, evt_receive_time, evt_type, raw_log, attributes)
+    from a raw event object across FortiSIEM live REST APIs (e.g. rawMessage, attributes dict)
+    and offline fixture archives (e.g. attribute dict, Raw Event Log).
+    """
+    attrs = {}
+    if isinstance(revt.get("attributes"), dict):
+        attrs = dict(revt["attributes"])
+    elif isinstance(revt.get("attribute"), dict):
+        attrs = dict(revt["attribute"])
+    elif isinstance(revt.get("eventAttributes"), dict):
+        attrs = dict(revt["eventAttributes"])
+
+    # If no nested attributes container exists, use the event object itself
+    if not attrs:
+        ignored_keys = {"rawMessage", "rawEventLog", "rawLog", "dataStr", "attributes", "attribute", "eventAttributes"}
+        attrs = {k: v for k, v in revt.items() if k not in ignored_keys and v is not None}
+
+    # Extract raw event log
+    raw_log = ""
+    for raw_candidate in (
+        attrs.get("Raw Event Log"),
+        attrs.get("rawMessage"),
+        attrs.get("rawEventLog"),
+        revt.get("rawMessage"),
+        revt.get("rawEventLog"),
+        revt.get("rawLog"),
+        revt.get("rawEvent"),
+        revt.get("rawMsg"),
+        revt.get("eventLog"),
+        revt.get("message"),
+        revt.get("dataStr"),
+    ):
+        if raw_candidate:
+            raw_log = str(raw_candidate).strip()
+            break
+
+    # Ensure Raw Event Log is present in attributes for consistent inspector display
+    if raw_log and "Raw Event Log" not in attrs:
+        attrs["Raw Event Log"] = raw_log
+
+    # Extract event ID
+    evt_id = str(
+        revt.get("eventId")
+        or revt.get("id")
+        or revt.get("nid")
+        or attrs.get("Event ID")
+        or attrs.get("EventId")
+        or f"{incident_id}_evt_{idx}"
+    )
+
+    # Extract receive timestamp
+    evt_receive_time = (
+        parse_any_timestamp(attrs.get("Event Receive Time"))
+        or parse_any_timestamp(attrs.get("Device Time"))
+        or parse_any_timestamp(attrs.get("deviceTime"))
+        or parse_any_timestamp(revt.get("receiveTime"))
+        or parse_any_timestamp(revt.get("eventReceiveTime"))
+        or parse_any_timestamp(revt.get("deviceTime"))
+        or parse_any_timestamp(revt.get("phRecvTime"))
+    )
+
+    # Extract event type
+    evt_type = str(
+        attrs.get("Event Type")
+        or attrs.get("eventType")
+        or revt.get("eventType")
+        or revt.get("eventName")
+        or fallback_event_type
+    )
+
+    return evt_id, evt_receive_time, evt_type, raw_log, attrs
+
+
 class IngestionService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -455,35 +535,21 @@ class IngestionService:
         await self.db.flush()
 
         # Ingest raw events
-        raw_events = raw_data.get("rawEvents", [])
+        raw_events = raw_data.get("rawEvents") or raw_data.get("triggeringEvents") or []
         if isinstance(raw_events, list):
             for idx, revt in enumerate(raw_events):
                 if not isinstance(revt, dict):
                     continue
-                attrs = revt.get("attribute", {})
-                if not isinstance(attrs, dict):
-                    attrs = {}
-
-                raw_log = ""
-                if "Raw Event Log" in attrs:
-                    raw_log = str(attrs.get("Raw Event Log", ""))
-
-                evt_id = str(revt.get("eventId") or f"{incident_id}_evt_{idx}")
-                evt_receive_time = (
-                    parse_any_timestamp(attrs.get("Event Receive Time"))
-                    or parse_any_timestamp(attrs.get("Device Time"))
-                    or parse_any_timestamp(revt.get("eventReceiveTime"))
-                    or parse_any_timestamp(revt.get("deviceTime"))
-                    or parse_any_timestamp(revt.get("receiveTime"))
+                evt_id, evt_recv, evt_t, raw_log, attrs = extract_event_data(
+                    revt, incident_id, idx, fallback_event_type=event_type
                 )
-
                 evt_obj = IncidentEvent(
                     incident_id=incident.id,
                     event_id=evt_id,
-                    event_receive_time=evt_receive_time,
-                    event_type=str(attrs.get("Event Type") or event_type),
+                    event_receive_time=evt_recv,
+                    event_type=evt_t,
                     raw_log=raw_log,
-                    attributes=attrs,  # Retains vendor-specific nested attributes
+                    attributes=attrs,
                 )
                 self.db.add(evt_obj)
 

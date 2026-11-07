@@ -89,6 +89,48 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             print(f"[Startup Migration Warning] Timestamp backfill skipped: {exc}")
 
+        # Self-healing migration: Backfill IncidentEvents with missing attributes or raw_log
+        try:
+            from app.models.incident import Incident, IncidentEvent
+            from app.services.ingestion_service import extract_event_data
+            from sqlalchemy import delete
+            empty_evts_q = await session.execute(
+                select(IncidentEvent.incident_id).where(
+                    (IncidentEvent.raw_log == "") | (IncidentEvent.attributes == {})
+                ).distinct()
+            )
+            empty_incident_ids = empty_evts_q.scalars().all()
+            if empty_incident_ids:
+                for db_id in empty_incident_ids:
+                    inc_res = await session.execute(select(Incident).where(Incident.id == db_id))
+                    inc = inc_res.scalar_one_or_none()
+                    if not inc or not inc.raw_payload:
+                        continue
+                    raw_evts = inc.raw_payload.get("rawEvents") or inc.raw_payload.get("triggeringEvents") or []
+                    if not raw_evts:
+                        continue
+                    await session.execute(delete(IncidentEvent).where(IncidentEvent.incident_id == db_id))
+                    for idx, revt in enumerate(raw_evts):
+                        if not isinstance(revt, dict):
+                            continue
+                        evt_id, evt_recv, evt_t, raw_log, attrs = extract_event_data(
+                            revt, inc.incident_id, idx, fallback_event_type=inc.event_type
+                        )
+                        session.add(
+                            IncidentEvent(
+                                incident_id=inc.id,
+                                event_id=evt_id,
+                                event_receive_time=evt_recv or inc.first_seen_epoch,
+                                event_type=evt_t,
+                                raw_log=raw_log,
+                                attributes=attrs,
+                            )
+                        )
+                await session.commit()
+                print(f"[Startup Migration] Backfilled raw security events for {len(empty_incident_ids)} incidents.")
+        except Exception as exc:
+            print(f"[Startup Migration Warning] Raw events backfill skipped: {exc}")
+
     # Startup background continuous FortiSIEM poller if enabled
     if getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False):
         fortisiem_scheduler.start(

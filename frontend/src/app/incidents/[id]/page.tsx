@@ -547,52 +547,76 @@ export default function IncidentDetailPage({
             </span>
           </div>
 
-          <div className="space-y-2.5">
-            {incident.events.map((evt, idx) => (
-              <div key={evt.id} className="rounded-lg border border-slate-800 bg-slate-950 p-3 space-y-2 font-mono text-xs">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded bg-cyan-950/70 border border-cyan-800 px-1.5 py-0.2 text-[9px] text-cyan-300 font-bold">
-                      EVENT #{idx + 1}
-                    </span>
-                    <span className="text-slate-400 text-[10px]">ID: {evt.event_id}</span>
-                    <span className="text-slate-400 text-[10px]">· {evt.event_type}</span>
-                  </div>
-                  <span className="text-[10px] text-slate-500">
-                    Received: {formatEpoch(evt.event_receive_time)}
-                  </span>
-                </div>
+          {incident.events.length === 0 ? (
+            <div className="p-8 rounded-lg border border-slate-800 bg-slate-950 text-center text-xs text-slate-400 font-mono">
+              No raw security events recorded for this incident.
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {incident.events.map((evt, idx) => {
+                const rawLog = evt.raw_log || evt.attributes?.["Raw Event Log"] || evt.attributes?.["rawMessage"] || evt.attributes?.["rawEventLog"];
+                // Filter out raw log from the key-value attributes grid to avoid duplication
+                const filteredAttrs = Object.entries(evt.attributes || {}).filter(
+                  ([k]) => k !== "Raw Event Log" && k !== "rawMessage" && k !== "rawEventLog"
+                );
 
-                {evt.raw_log && (
-                  <div>
-                    <span className="text-[9px] text-slate-500 uppercase">Raw Event Log:</span>
-                    <pre className="mt-0.5 p-2 rounded bg-slate-900 border border-slate-800 text-[10px] text-slate-300 overflow-x-auto whitespace-pre-wrap max-h-40">
-                      {evt.raw_log}
-                    </pre>
-                  </div>
-                )}
-
-                {/* Generic Vendor Attributes Grid */}
-                <div>
-                  <span className="text-[9px] text-slate-500 uppercase block mb-1">
-                    Parsed Vendor Attributes ({Object.keys(evt.attributes || {}).length}):
-                  </span>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-1.5">
-                    {Object.entries(evt.attributes || {}).map(([attrKey, attrVal]) => (
-                      <div key={attrKey} className="p-1.5 rounded bg-slate-900/60 border border-slate-800/80 overflow-hidden">
-                        <span className="text-[9px] text-slate-400 block truncate" title={attrKey}>
-                          {attrKey}
+                return (
+                  <div key={evt.id || idx} className="rounded-lg border border-slate-800 bg-slate-950 p-3 space-y-2 font-mono text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded bg-cyan-950/70 border border-cyan-800 px-1.5 py-0.2 text-[9px] text-cyan-300 font-bold">
+                          EVENT #{idx + 1}
                         </span>
-                        <span className="text-slate-200 text-xs font-medium break-all" title={String(attrVal)}>
-                          {typeof attrVal === "object" ? JSON.stringify(attrVal) : String(attrVal)}
-                        </span>
+                        <span className="text-slate-400 text-[10px]">ID: {evt.event_id}</span>
+                        <span className="text-slate-400 text-[10px]">· {evt.event_type}</span>
                       </div>
-                    ))}
+                      <span className="text-[10px] text-slate-500">
+                        Received: {formatEpoch(evt.event_receive_time, incident.created_at)}
+                      </span>
+                    </div>
+
+                    {rawLog && (
+                      <div>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[9px] text-slate-500 uppercase">Raw Event Log:</span>
+                          <button
+                            onClick={() => copyToClipboard(String(rawLog))}
+                            className="text-[9px] text-cyan-400 hover:text-cyan-300"
+                          >
+                            Copy Log
+                          </button>
+                        </div>
+                        <pre className="p-2 rounded bg-slate-900 border border-slate-800 text-[10px] text-slate-300 overflow-x-auto whitespace-pre-wrap max-h-48 leading-relaxed selection:bg-cyan-900 selection:text-white">
+                          {String(rawLog)}
+                        </pre>
+                      </div>
+                    )}
+
+                    {/* Generic Vendor Attributes Grid */}
+                    {filteredAttrs.length > 0 && (
+                      <div>
+                        <span className="text-[9px] text-slate-500 uppercase block mb-1">
+                          Parsed Vendor Attributes ({filteredAttrs.length}):
+                        </span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-1.5">
+                          {filteredAttrs.map(([attrKey, attrVal]) => (
+                            <div key={attrKey} className="p-1.5 rounded bg-slate-900/60 border border-slate-800/80 overflow-hidden">
+                              <span className="text-[9px] text-slate-400 block truncate" title={attrKey}>
+                                {attrKey}
+                              </span>
+                              <span className="text-slate-200 text-xs font-medium break-all" title={String(attrVal)}>
+                                {typeof attrVal === "object" ? JSON.stringify(attrVal) : String(attrVal)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

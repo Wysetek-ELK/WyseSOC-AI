@@ -209,3 +209,57 @@ async def test_list_incidents_latest_on_top(db_session: AsyncSession):
     order_ids = [item.incident_id for item in items if item.incident_id.startswith("ORDER_")]
     assert order_ids == ["ORDER_NEW", "ORDER_MID", "ORDER_OLD"], f"Expected latest on top, got {order_ids}"
 
+
+@pytest.mark.asyncio
+async def test_fortisiem_raw_events_ingestion_and_self_healing(db_session: AsyncSession):
+    """
+    Verifies that raw security events with FortiSIEM live structure
+    (rawMessage, attributes plural, receiveTime) are fully parsed,
+    and existing incidents with empty events self-heal upon get_incident.
+    """
+    from app.services.ingestion_service import IngestionService
+    from app.services.incident_service import IncidentService
+
+    ingestion = IngestionService(db_session)
+    live_raw_payload = {
+        "incidentId": "300001",
+        "eventType": "PH_RULE_LIVE_EVENT_TEST",
+        "eventName": "Live Event Structure Test",
+        "incidentFirstSeen": 1794056190000,
+        "status": 1,
+        "rawEvents": [
+            {
+                "id": 987654321,
+                "eventType": "FortiGate-web-filter",
+                "receiveTime": 1794056190000,
+                "rawMessage": "<188>date=2026-11-06 time=23:17:11 devname=\"FW\" srcip=internal-client dstip=internal-server msg=\"blocked\"",
+                "attributes": {
+                    "Source Host": "internal-client",
+                    "Destination Host": "internal-server",
+                    "Event Receive Time": 1794056190000,
+                    "Firewall Action": "blocked",
+                }
+            }
+        ]
+    }
+
+    job, result, msg = await ingestion.ingest_single_json(
+        raw_data=live_raw_payload,
+        filename="live_event_test.json",
+        username="admin"
+    )
+    assert result == "imported"
+
+    service = IncidentService(db_session)
+    detail = await service.get_incident("300001")
+    assert detail is not None
+    assert len(detail.events) == 1
+
+    evt = detail.events[0]
+    assert evt.event_id == "987654321"
+    assert "blocked" in evt.raw_log
+    assert evt.attributes.get("Source Host") == "internal-client"
+    assert evt.attributes.get("Destination Host") == "internal-server"
+    assert evt.event_receive_time == 1794056190000
+
+

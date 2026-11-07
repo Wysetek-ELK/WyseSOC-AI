@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, desc
+from sqlalchemy import select, func, or_, desc, delete
 from sqlalchemy.orm import selectinload
 
 from app.models.incident import Incident, IncidentEvent, HistoricalGroundTruth
@@ -137,12 +137,47 @@ class IncidentService:
         if not inc:
             return None
 
-        # Build events
+        # Self-healing: if events in database lack attributes or raw_log, re-extract from raw_payload
+        needs_repair = False
+        if inc.events:
+            for evt in inc.events:
+                if (not evt.attributes or not evt.raw_log) and inc.raw_payload:
+                    needs_repair = True
+                    break
+        elif inc.raw_payload and (inc.raw_payload.get("rawEvents") or inc.raw_payload.get("triggeringEvents")):
+            needs_repair = True
+
+        if needs_repair and inc.raw_payload:
+            from app.services.ingestion_service import extract_event_data
+            raw_evts = inc.raw_payload.get("rawEvents") or inc.raw_payload.get("triggeringEvents") or []
+            if raw_evts:
+                await self.db.execute(delete(IncidentEvent).where(IncidentEvent.incident_id == inc.id))
+                repaired = []
+                for idx, revt in enumerate(raw_evts):
+                    if not isinstance(revt, dict):
+                        continue
+                    evt_id, evt_recv, evt_t, raw_log, attrs = extract_event_data(
+                        revt, inc.incident_id, idx, fallback_event_type=inc.event_type
+                    )
+                    db_evt = IncidentEvent(
+                        incident_id=inc.id,
+                        event_id=evt_id,
+                        event_receive_time=evt_recv or inc.first_seen_epoch,
+                        event_type=evt_t,
+                        raw_log=raw_log,
+                        attributes=attrs,
+                    )
+                    self.db.add(db_evt)
+                    repaired.append(db_evt)
+                await self.db.commit()
+                inc.events = repaired
+
+        # Build events response
         events_resp = [
             IncidentEventResponse(
                 id=evt.id,
                 event_id=evt.event_id,
-                event_receive_time=evt.event_receive_time,
+                event_receive_time=evt.event_receive_time or inc.first_seen_epoch,
                 event_type=evt.event_type,
                 raw_log=evt.raw_log,
                 attributes=evt.attributes or {},
