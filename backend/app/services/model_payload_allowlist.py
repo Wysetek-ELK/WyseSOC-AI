@@ -21,14 +21,19 @@ FORBIDDEN_GROUND_TRUTH_KEYS = frozenset({
 })
 
 
-def sanitize_event_attributes(attributes: Dict[str, Any]) -> Dict[str, Any]:
-    """Filters nested event attributes, dropping any forbidden resolution/closure fields."""
+def sanitize_event_attributes(attributes: Dict[str, Any], max_str_len: int = 500) -> Dict[str, Any]:
+    """Filters nested event attributes, dropping any forbidden resolution/closure fields and truncating giant payloads."""
     sanitized: Dict[str, Any] = {}
     for key, val in attributes.items():
         norm_key = key.lower().strip()
         if norm_key in FORBIDDEN_GROUND_TRUTH_KEYS:
             continue
-        sanitized[key] = val
+        if isinstance(val, str) and len(val) > max_str_len:
+            sanitized[key] = val[:max_str_len] + "... [truncated]"
+        elif isinstance(val, dict):
+            sanitized[key] = sanitize_event_attributes(val, max_str_len=max_str_len)
+        else:
+            sanitized[key] = val
     return sanitized
 
 
@@ -51,7 +56,8 @@ def build_model_facing_payload(
     """
     sanitized_events: List[Dict[str, Any]] = []
     if events:
-        for evt in events:
+        # Cap to 10 most relevant telemetry events to prevent exceeding LLM context budget
+        for evt in events[:10]:
             evt_id = _get_field(evt, "event_id", "eventId", "")
             evt_type = _get_field(evt, "event_type", "eventType", "")
             evt_time = _get_field(evt, "event_receive_time", "eventReceiveTime", None)

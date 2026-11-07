@@ -104,10 +104,18 @@ class OpenAICompatibleProvider(BaseModelProvider):
             "}"
         )
 
+        # Smart budget guardrail: limit serialized incident payload size to prevent context overflow
+        clean_incident = dict(incident_payload)
+        if "events" in clean_incident and isinstance(clean_incident["events"], list):
+            clean_incident["events"] = clean_incident["events"][:8]
+
         user_content = json.dumps({
-            "incident": incident_payload,
+            "incident": clean_incident,
             "rule": rule_spec,
-        }, indent=2)
+        }, separators=(",", ":"))
+
+        if len(user_content) > 9000:
+            user_content = user_content[:9000] + " ... [telemetry truncated to fit context budget]}"
 
         payload = {
             "model": self.model_name,
@@ -115,7 +123,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_content},
             ],
-            "max_tokens": self.max_tokens,
+            "max_tokens": min(self.max_tokens, 768),
             "temperature": self.temperature,
             "response_format": {"type": "json_object"},
         }
