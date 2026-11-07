@@ -16,6 +16,7 @@ import {
   ArrowRight,
   ShieldAlert,
   Zap,
+  Settings,
 } from "lucide-react";
 import { api, FortiSIEMStatusResponse, FortiSIEMPullResponse } from "@/lib/api";
 
@@ -168,6 +169,14 @@ export default function ImportsPage() {
                 Fixture Fallback Mode (Ready)
               </span>
             )}
+
+            <Link
+              href="/settings#fortisiem"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <Settings className="h-3 w-3 text-cyan-400" />
+              <span>Configure SIEM</span>
+            </Link>
           </div>
         </div>
 

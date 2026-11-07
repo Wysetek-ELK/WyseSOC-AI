@@ -201,3 +201,176 @@ class FortiSIEMService:
             "source": source_type,
             "message": f"Incident '{clean_id}' successfully pulled from FortiSIEM and ingested into AI Verdict.",
         }
+
+    @classmethod
+    def get_config(cls) -> Dict[str, Any]:
+        """Returns the current FortiSIEM connector configuration (password masked)."""
+        is_configured = bool(settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip())
+        return {
+            "is_configured": is_configured,
+            "host": settings.FORTISIEM_HOST,
+            "username": settings.FORTISIEM_USERNAME,
+            "is_password_set": bool(settings.FORTISIEM_PASSWORD and settings.FORTISIEM_PASSWORD.strip()),
+            "verify_ssl": settings.FORTISIEM_VERIFY_SSL,
+            "timeout": settings.FORTISIEM_TIMEOUT,
+            "mock_fallback": settings.FORTISIEM_MOCK_FALLBACK,
+        }
+
+    @classmethod
+    def update_config(
+        cls,
+        host: str,
+        username: str,
+        password: Optional[str] = None,
+        verify_ssl: bool = False,
+        timeout: float = 25.0,
+        mock_fallback: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Updates FortiSIEM settings dynamically in memory and persists to .env file.
+        """
+        clean_host = host.strip().rstrip("/")
+        if clean_host and not (clean_host.startswith("http://") or clean_host.startswith("https://")):
+            clean_host = f"https://{clean_host}"
+
+        clean_user = username.strip()
+
+        # 1. Update in-memory settings
+        settings.FORTISIEM_HOST = clean_host
+        settings.FORTISIEM_USERNAME = clean_user
+        if password is not None and password.strip():
+            settings.FORTISIEM_PASSWORD = password.strip()
+        settings.FORTISIEM_VERIFY_SSL = verify_ssl
+        settings.FORTISIEM_TIMEOUT = float(timeout)
+        settings.FORTISIEM_MOCK_FALLBACK = mock_fallback
+
+        # 2. Persist to backend .env file
+        env_path = os.path.join(BASE_DIR, ".env")
+        env_lines = []
+
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    match = re.match(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=", line)
+                    if match:
+                        key = match.group(1)
+                        if key in (
+                            "FORTISIEM_HOST",
+                            "FORTISIEM_USERNAME",
+                            "FORTISIEM_PASSWORD",
+                            "FORTISIEM_VERIFY_SSL",
+                            "FORTISIEM_TIMEOUT",
+                            "FORTISIEM_MOCK_FALLBACK",
+                        ):
+                            continue  # Rewrite updated values below
+                    env_lines.append(line)
+
+        # Append or rewrite FortiSIEM variables
+        env_updates = [
+            f'\n# FortiSIEM Live Supervisor Connection\n',
+            f'FORTISIEM_HOST="{settings.FORTISIEM_HOST}"\n',
+            f'FORTISIEM_USERNAME="{settings.FORTISIEM_USERNAME}"\n',
+            f'FORTISIEM_PASSWORD="{settings.FORTISIEM_PASSWORD}"\n',
+            f'FORTISIEM_VERIFY_SSL={"true" if settings.FORTISIEM_VERIFY_SSL else "false"}\n',
+            f'FORTISIEM_TIMEOUT={settings.FORTISIEM_TIMEOUT}\n',
+            f'FORTISIEM_MOCK_FALLBACK={"true" if settings.FORTISIEM_MOCK_FALLBACK else "false"}\n',
+        ]
+        env_lines.extend(env_updates)
+
+        try:
+            with open(env_path, "w", encoding="utf-8") as f:
+                f.writelines(env_lines)
+            if hasattr(os, "chmod"):
+                try:
+                    os.chmod(env_path, 0o600)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        return cls.get_config()
+
+    @classmethod
+    async def test_siem_connection(
+        cls,
+        host: str,
+        username: str,
+        password: Optional[str] = None,
+        verify_ssl: bool = False,
+        timeout: float = 10.0,
+    ) -> Dict[str, Any]:
+        """
+        Tests connection and authentication against the specified FortiSIEM Supervisor.
+        """
+        import time
+        clean_host = host.strip().rstrip("/")
+        if not clean_host:
+            raise HTTPException(status_code=400, detail="FortiSIEM Host URL/IP is required.")
+
+        if not (clean_host.startswith("http://") or clean_host.startswith("https://")):
+            clean_host = f"https://{clean_host}"
+
+        clean_user = username.strip()
+        auth_pass = password.strip() if (password is not None and password.strip()) else settings.FORTISIEM_PASSWORD
+
+        if not clean_user:
+            raise HTTPException(status_code=400, detail="FortiSIEM Username is required.")
+
+        start_t = time.time()
+        auth = (clean_user, auth_pass) if auth_pass else None
+        endpoint = f"{clean_host}/phoenix/rest/incident/incidentDetail"
+
+        try:
+            async with httpx.AsyncClient(verify=verify_ssl, timeout=timeout) as client:
+                res = await client.get(endpoint, params={"incidentId": "0"}, auth=auth, headers={"Accept": "application/json"})
+                latency = int((time.time() - start_t) * 1000)
+
+                # Status 200 or 404 indicates server reached and auth passed
+                if res.status_code in (200, 404):
+                    return {
+                        "success": True,
+                        "status_code": res.status_code,
+                        "latency_ms": latency,
+                        "message": f"Successfully connected to FortiSIEM Supervisor at {clean_host} (Latency: {latency}ms).",
+                        "details": {"endpoint": endpoint, "status_code": res.status_code},
+                    }
+                elif res.status_code in (401, 403):
+                    return {
+                        "success": False,
+                        "status_code": res.status_code,
+                        "latency_ms": latency,
+                        "message": "Authentication failed: FortiSIEM rejected the provided username or password.",
+                        "details": {"status_code": res.status_code},
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "status_code": res.status_code,
+                        "latency_ms": latency,
+                        "message": f"Supervisor returned HTTP {res.status_code}: {res.text[:150]}",
+                        "details": {"status_code": res.status_code},
+                    }
+        except httpx.ConnectTimeout:
+            return {
+                "success": False,
+                "status_code": None,
+                "latency_ms": int((time.time() - start_t) * 1000),
+                "message": f"Connection timed out after {timeout} seconds connecting to {clean_host}.",
+                "details": {"error": "Timeout"},
+            }
+        except httpx.ConnectError as ce:
+            return {
+                "success": False,
+                "status_code": None,
+                "latency_ms": int((time.time() - start_t) * 1000),
+                "message": f"Could not establish network connection to {clean_host}. Verify IP, port 443, and firewall rules.",
+                "details": {"error": str(ce)},
+            }
+        except Exception as exc:
+            return {
+                "success": False,
+                "status_code": None,
+                "latency_ms": int((time.time() - start_t) * 1000),
+                "message": f"Connection error: {str(exc)}",
+                "details": {"error": str(exc)},
+            }

@@ -172,3 +172,76 @@ async def test_fortisiem_pull_live_mocked(client: AsyncClient, admin_token: str,
         assert data["event_count"] == 1
         assert route.called
 
+
+@pytest.mark.asyncio
+async def test_fortisiem_config_and_rbac(client: AsyncClient, admin_token: str, analyst_token: str):
+    """Test getting and updating FortiSIEM configuration from the UI with RBAC enforcement."""
+    # 1. Non-admin forbidden
+    res = await client.get("/api/fortisiem/config", headers={"Authorization": f"Bearer {analyst_token}"})
+    assert res.status_code == 403
+
+    # 2. Admin can get config
+    res = await client.get("/api/fortisiem/config", headers={"Authorization": f"Bearer {admin_token}"})
+    assert res.status_code == 200
+    cfg = res.json()
+    assert "host" in cfg
+    assert "username" in cfg
+    assert "is_password_set" in cfg
+    assert "verify_ssl" in cfg
+
+    # 3. Admin can update config
+    update_payload = {
+        "host": "https://siem-supervisor.internal",
+        "username": "svc_soc_ai",
+        "password": "SecretSuperPassword123!",
+        "verify_ssl": False,
+        "timeout": 30.0,
+        "mock_fallback": True,
+    }
+    update_res = await client.post(
+        "/api/fortisiem/config",
+        json=update_payload,
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert update_res.status_code == 200
+    updated_cfg = update_res.json()
+    assert updated_cfg["host"] == "https://siem-supervisor.internal"
+    assert updated_cfg["username"] == "svc_soc_ai"
+    assert updated_cfg["is_password_set"] is True
+    assert updated_cfg["timeout"] == 30.0
+    # Guarantee password is never leaked in response
+    assert "password" not in updated_cfg
+
+
+@pytest.mark.asyncio
+async def test_fortisiem_test_connection(client: AsyncClient, admin_token: str, analyst_token: str):
+    """Test testing FortiSIEM connectivity from the UI."""
+    import respx
+    import httpx
+
+    # Non-admin forbidden
+    res_deny = await client.post(
+        "/api/fortisiem/test-connection",
+        json={"host": "https://fortisiem.probe.net", "username": "admin", "password": "abc"},
+        headers={"Authorization": f"Bearer {analyst_token}"}
+    )
+    assert res_deny.status_code == 403
+
+    # Admin tests successful connection
+    with respx.mock(assert_all_called=True) as respx_mock:
+        route = respx_mock.get(
+            "https://fortisiem.probe.net/phoenix/rest/incident/incidentDetail"
+        ).mock(return_value=httpx.Response(404, text="Incident 0 not found"))
+
+        res_ok = await client.post(
+            "/api/fortisiem/test-connection",
+            json={"host": "https://fortisiem.probe.net", "username": "admin", "password": "abc"},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert res_ok.status_code == 200
+        ok_data = res_ok.json()
+        assert ok_data["success"] is True
+        assert ok_data["latency_ms"] is not None
+        assert route.called
+
+

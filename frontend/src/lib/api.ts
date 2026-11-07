@@ -127,6 +127,41 @@ export interface FortiSIEMStatusResponse {
   sample_incident_ids: string[];
 }
 
+export interface FortiSIEMConfigResponse {
+  is_configured: boolean;
+  host: string;
+  username: string;
+  is_password_set: boolean;
+  verify_ssl: boolean;
+  timeout: number;
+  mock_fallback: boolean;
+}
+
+export interface FortiSIEMConfigUpdate {
+  host: string;
+  username: string;
+  password?: string;
+  verify_ssl: boolean;
+  timeout: number;
+  mock_fallback: boolean;
+}
+
+export interface FortiSIEMTestConnectionRequest {
+  host: string;
+  username: string;
+  password?: string;
+  verify_ssl: boolean;
+  timeout: number;
+}
+
+export interface FortiSIEMTestConnectionResponse {
+  success: boolean;
+  status_code?: number;
+  latency_ms?: number;
+  message: string;
+  details?: Record<string, any>;
+}
+
 export interface InvestigationListItem {
   id: string;
   incident_id: string;
@@ -425,10 +460,42 @@ export const api = {
     return res.json();
   },
 
-  // FortiSIEM Live Pull
+  // FortiSIEM Live Pull & Configuration
   async getFortiSiemStatus(): Promise<FortiSIEMStatusResponse> {
     const res = await fetchWithAuth(`${API_BASE}/fortisiem/status`);
     if (!res.ok) throw new Error("Failed to fetch FortiSIEM status");
+    return res.json();
+  },
+
+  async getFortiSiemConfig(): Promise<FortiSIEMConfigResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/config`);
+    if (!res.ok) throw new Error("Failed to fetch FortiSIEM configuration");
+    return res.json();
+  },
+
+  async updateFortiSiemConfig(data: FortiSIEMConfigUpdate): Promise<FortiSIEMConfigResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to update FortiSIEM configuration" }));
+      throw new Error(err.detail || "Update error");
+    }
+    return res.json();
+  },
+
+  async testFortiSiemConnection(data: FortiSIEMTestConnectionRequest): Promise<FortiSIEMTestConnectionResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/test-connection`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Connection test request failed" }));
+      throw new Error(err.detail || "Connection test error");
+    }
     return res.json();
   },
 
