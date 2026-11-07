@@ -132,7 +132,7 @@ async def test_fortisiem_pull_live_mocked(client: AsyncClient, admin_token: str,
     import respx
     import httpx
 
-    monkeypatch.setattr(settings, "FORTISIEM_HOST", "https://fortisiem.example.corp")
+    monkeypatch.setattr(settings, "FORTISIEM_HOST", "https://192.0.2.10")
     monkeypatch.setattr(settings, "FORTISIEM_USERNAME", "api_user")
     monkeypatch.setattr(settings, "FORTISIEM_PASSWORD", "api_pass")
     monkeypatch.setattr(settings, "FORTISIEM_MOCK_FALLBACK", False)
@@ -156,7 +156,7 @@ async def test_fortisiem_pull_live_mocked(client: AsyncClient, admin_token: str,
 
     with respx.mock(assert_all_called=True) as respx_mock:
         route = respx_mock.get(
-            "https://fortisiem.example.corp/phoenix/rest/incident/incidentDetail"
+            "https://192.0.2.10/phoenix/rest/incident/incidentDetail"
         ).mock(return_value=httpx.Response(200, json=mock_incident))
 
         res = await client.post(
@@ -171,6 +171,37 @@ async def test_fortisiem_pull_live_mocked(client: AsyncClient, admin_token: str,
         assert data["source"] == "LIVE"
         assert data["event_count"] == 1
         assert route.called
+
+
+@pytest.mark.asyncio
+async def test_fortisiem_pull_live_404_falls_back_to_fixtures(client: AsyncClient, admin_token: str, monkeypatch):
+    """
+    Test when live FortiSIEM returns 404 (or endpoint not found), the platform gracefully
+    falls back to the offline fixture archive when mock_fallback is enabled.
+    """
+    import respx
+    import httpx
+
+    monkeypatch.setattr(settings, "FORTISIEM_HOST", "https://192.0.2.10")
+    monkeypatch.setattr(settings, "FORTISIEM_USERNAME", "super/test")
+    monkeypatch.setattr(settings, "FORTISIEM_PASSWORD", "testpass")
+    monkeypatch.setattr(settings, "FORTISIEM_MOCK_FALLBACK", True)
+
+    with respx.mock(assert_all_called=False) as respx_mock:
+        # All live endpoints return 404
+        respx_mock.route().mock(return_value=httpx.Response(404, text="Not Found"))
+
+        res = await client.post(
+            "/api/fortisiem/fetch",
+            json={"incident_id": "132438483", "force_refresh": True},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert data["incident_id"] == "132438483"
+        assert data["source"] == "FIXTURE_FALLBACK"
+        assert "fixture archive" in data["message"].lower()
 
 
 @pytest.mark.asyncio

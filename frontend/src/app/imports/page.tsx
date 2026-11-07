@@ -262,12 +262,20 @@ export default function ImportsPage() {
 
         {/* Pull Error Message */}
         {siemError && (
-          <div className="rounded-lg border border-rose-800 bg-rose-950/40 p-4 text-xs text-rose-300 flex items-start gap-2.5">
-            <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
-            <div>
-              <span className="font-semibold block">FortiSIEM Query Failed</span>
-              <span>{siemError}</span>
+          <div className="rounded-lg border border-rose-800 bg-rose-950/40 p-4 text-xs text-rose-300 flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-semibold block text-rose-200">Incident Query Failed</span>
+                <span className="text-slate-300 leading-relaxed block">{siemError}</span>
+              </div>
             </div>
+            <Link
+              href="/settings#fortisiem"
+              className="shrink-0 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[11px] font-medium transition-colors"
+            >
+              Verify SIEM Settings
+            </Link>
           </div>
         )}
 
@@ -279,9 +287,22 @@ export default function ImportsPage() {
                 <CheckCircle2 className="h-4 w-4" />
                 Incident Retrieved Successfully
               </div>
-              <span className="text-[11px] text-slate-400">
-                Source: <span className="text-cyan-300 font-bold">{siemResult.source}</span>
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400">Source:</span>
+                {siemResult.source === "LIVE" ? (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                    Live FortiSIEM API
+                  </span>
+                ) : siemResult.source === "FIXTURE_FALLBACK" ? (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800">
+                    Fixture Fallback Archive
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-800">
+                    Database Cache
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="p-3.5 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-200 space-y-2">
