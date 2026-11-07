@@ -398,6 +398,18 @@ export const api = {
     return res.json();
   },
 
+  async getLlmStatus(): Promise<{
+    status: string;
+    is_healthy: boolean;
+    model: string;
+    latency_ms: number;
+    message?: string;
+  }> {
+    const res = await fetchWithAuth(`${API_BASE}/dashboard/llm-status`);
+    if (!res.ok) throw new Error("Failed to load LLM status");
+    return res.json();
+  },
+
   // Incidents
   async getIncidents(params: {
     page?: number;

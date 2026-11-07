@@ -61,5 +61,11 @@ class Settings(BaseSettings):
     FORTISIEM_TIMEOUT: float = float(os.getenv("FORTISIEM_TIMEOUT", "25.0"))
     FORTISIEM_MOCK_FALLBACK: bool = os.getenv("FORTISIEM_MOCK_FALLBACK", "true").lower() == "true"
 
+    # Local LLM Server 2 Integration (vLLM / OpenAI-Compatible)
+    LOCAL_LLM_BASE_URL: str = os.getenv("LOCAL_LLM_BASE_URL", "http://127.0.0.1:8000/v1")
+    LOCAL_LLM_MODEL_NAME: str = os.getenv("LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ")
+    LOCAL_LLM_API_KEY: str = os.getenv("LOCAL_LLM_API_KEY", "EMPTY")
+    LOCAL_LLM_TIMEOUT: float = float(os.getenv("LOCAL_LLM_TIMEOUT", "30.0"))
+
 
 settings = Settings()

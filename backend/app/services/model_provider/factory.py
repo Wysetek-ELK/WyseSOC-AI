@@ -1,4 +1,5 @@
 from typing import Optional
+from app.config import settings
 from app.services.model_provider.base import BaseModelProvider
 from app.services.model_provider.disabled import DisabledModelProvider
 from app.services.model_provider.simulated import SimulatedModelProvider
@@ -21,9 +22,10 @@ def get_model_provider(
         return SimulatedModelProvider(model_name=model_name or "simulated-heuristic-v1")
     elif ptype == "OPENAI_COMPATIBLE":
         return OpenAICompatibleProvider(
-            base_url=base_url or "http://127.0.0.1:8001/v1",
-            api_key=api_key,
-            model_name=model_name or "qwen3-8b-instruct",
+            base_url=base_url or settings.LOCAL_LLM_BASE_URL,
+            api_key=api_key or settings.LOCAL_LLM_API_KEY,
+            model_name=model_name or settings.LOCAL_LLM_MODEL_NAME,
+            timeout_seconds=settings.LOCAL_LLM_TIMEOUT,
         )
     elif ptype == "DISABLED":
         return DisabledModelProvider()

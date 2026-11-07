@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { api } from "@/lib/api";
 import {
   ShieldAlert,
   LayoutDashboard,
@@ -91,6 +92,21 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [llmStatus, setLlmStatus] = useState<{ is_healthy: boolean; model?: string } | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.getLlmStatus()
+      .then((res) => {
+        if (isMounted) setLlmStatus(res);
+      })
+      .catch(() => {
+        if (isMounted) setLlmStatus({ is_healthy: false });
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <aside
@@ -171,10 +187,18 @@ export function Sidebar() {
               </span>
             </div>
             <div className="text-[9px] text-slate-400 leading-tight">
-              Arch: <span className="text-slate-300">Server 1</span>
+              Arch: <span className="text-slate-300">{llmStatus?.is_healthy ? "S1 + S2 (GPU)" : "Server 1"}</span>
             </div>
-            <div className="text-[9px] text-slate-400 leading-tight">
-              LLM: <span className="text-amber-400">P1 (Native)</span>
+            <div className="text-[9px] text-slate-400 leading-tight flex items-center justify-between">
+              <span>LLM:</span>
+              {llmStatus?.is_healthy ? (
+                <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Qwen 2.5 7B (Active)
+                </span>
+              ) : (
+                <span className="text-amber-400">P1 (Native)</span>
+              )}
             </div>
           </div>
         ) : (

@@ -36,6 +36,7 @@ export default function DryRunPage() {
   const [launching, setLaunching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [llmStatus, setLlmStatus] = useState<{ is_healthy: boolean; model?: string; latency_ms?: number } | null>(null);
 
   // Form State
   const [name, setName] = useState("Dry-Run Simulation Replay");
@@ -59,14 +60,19 @@ export default function DryRunPage() {
     setLoading(true);
     setError(null);
     try {
-      const [fetchedRules, fetchedJobs, fetchedConfigs] = await Promise.all([
+      const [fetchedRules, fetchedJobs, fetchedConfigs, fetchedLlmStatus] = await Promise.all([
         api.getRules().then((res) => res.items).catch(() => []),
         api.getDryRunJobs(30).catch(() => []),
         api.getDryRunConfigs().catch(() => []),
+        api.getLlmStatus().catch(() => null),
       ]);
       setRules(fetchedRules);
       setJobs(fetchedJobs);
       setConfigs(fetchedConfigs);
+      setLlmStatus(fetchedLlmStatus);
+      if (fetchedLlmStatus?.is_healthy) {
+        setProviderType("OPENAI_COMPATIBLE");
+      }
     } catch (err: any) {
       setError(err.message || "Failed to load dry-run data");
     } finally {
@@ -143,8 +149,15 @@ export default function DryRunPage() {
 
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/40 border border-border text-xs text-muted-foreground">
-            <Server className="w-3 h-3 text-amber-400" />
-            <span>Server 2 LLM: <strong className="text-foreground">Disconnected (Phase 3 Guard)</strong></span>
+            <Server className={`w-3 h-3 ${llmStatus?.is_healthy ? "text-emerald-400" : "text-amber-400"}`} />
+            <span>
+              Server 2 LLM:{" "}
+              {llmStatus?.is_healthy ? (
+                <strong className="text-emerald-400">Connected ({llmStatus.model || "Qwen 2.5 7B"})</strong>
+              ) : (
+                <strong className="text-foreground">Disconnected (Phase 3 Guard)</strong>
+              )}
+            </span>
           </div>
           <button
             onClick={loadData}
@@ -241,10 +254,10 @@ export default function DryRunPage() {
                   onChange={(e) => setProviderType(e.target.value)}
                   className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary font-mono text-[11px]"
                 >
-                  <option value="SIMULATED">SIMULATED (Deterministic Heuristics - Active)</option>
-                  <option value="OPENAI_COMPATIBLE" disabled>
-                    OPENAI_COMPATIBLE (Server 2 Private Endpoint - Disconnected)
+                  <option value="OPENAI_COMPATIBLE">
+                    OPENAI_COMPATIBLE (Server 2 GPU Node — {llmStatus?.is_healthy ? "Live Connected" : "vLLM Node"})
                   </option>
+                  <option value="SIMULATED">SIMULATED (Deterministic Heuristics - Fallback)</option>
                   <option value="DISABLED">DISABLED (Safe Provider Default)</option>
                 </select>
               </div>
