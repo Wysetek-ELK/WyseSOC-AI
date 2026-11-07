@@ -73,9 +73,14 @@ class PromptStudioService:
 
             # Auto-generate initial template draft
             await self.generate_template_draft(rule_id=rule.id, user_id=None)
-            
-            # Expire session so selectinload reloads fresh versions
-            self.db.expire_all()
+            if prompt in self.db:
+                self.db.expire(prompt)
+            prompt = await self.get_rule_prompt(rule_id)
+        elif not prompt.versions or len(prompt.versions) == 0:
+            # Self-healing: if rule_prompt exists in database but has no versions, auto-generate initial template draft
+            await self.generate_template_draft(rule_id=rule_id, user_id=None)
+            if prompt in self.db:
+                self.db.expire(prompt)
             prompt = await self.get_rule_prompt(rule_id)
 
         return prompt

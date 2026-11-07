@@ -286,20 +286,21 @@ class AIVerdictService:
         stmt = stmt.order_by(desc(Incident.created_at_epoch), desc(Incident.created_at)).limit(max_batch)
         res = await self.db.execute(stmt)
         incidents = res.scalars().all()
+        target_ids = [str(inc.incident_id or inc.id) for inc in incidents]
 
         results = []
         successful = 0
         failed = 0
 
-        for inc in incidents:
+        for iid in target_ids:
             try:
-                v = await self.evaluate_incident(inc, username=username)
+                v = await self.evaluate_incident(iid, username=username)
                 results.append(v)
                 successful += 1
             except Exception as e:
                 failed += 1
                 results.append({
-                    "incident_id": inc.incident_id,
+                    "incident_id": iid,
                     "error": str(e),
                     "verdict": "ERROR",
                 })

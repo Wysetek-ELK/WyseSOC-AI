@@ -901,7 +901,10 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ change_summary: changeSummary || "Approved by SOC Lead" }),
     });
-    if (!res.ok) throw new Error("Failed to approve prompt version");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to approve prompt version" }));
+      throw new Error(err.detail || "Failed to approve prompt version");
+    }
     return res.json();
   },
 
@@ -909,7 +912,10 @@ export const api = {
     const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/rollback/${versionId}`, {
       method: "POST",
     });
-    if (!res.ok) throw new Error("Failed to rollback prompt version");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to rollback prompt version" }));
+      throw new Error(err.detail || "Failed to rollback prompt version");
+    }
     return res.json();
   },
 
