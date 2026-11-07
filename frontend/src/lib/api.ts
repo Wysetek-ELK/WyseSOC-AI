@@ -12,6 +12,21 @@ export interface User {
   created_at: string;
 }
 
+export interface IncidentAiVerdictResponse {
+  incident_id: string;
+  verdict: "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ATTENTION";
+  confidence: number;
+  reason: string;
+  supporting_evidence: string[];
+  missing_evidence: string[];
+  analyst_questions: string[];
+  latency_ms: number;
+  model_identifier: string;
+  is_simulated: boolean;
+  rule_name?: string;
+  severity?: string;
+}
+
 export interface IncidentListItem {
   id: string;
   incident_id: string;
@@ -445,6 +460,17 @@ export const api = {
   async getIncidentModelPayload(id: string) {
     const res = await fetchWithAuth(`${API_BASE}/incidents/${id}/model-payload`);
     if (!res.ok) throw new Error("Failed to fetch model payload");
+    return res.json();
+  },
+
+  async getIncidentAiVerdict(id: string): Promise<IncidentAiVerdictResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/incidents/${id}/ai-verdict`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "AI verdict failed" }));
+      throw new Error(err.detail || "Failed to generate AI verdict");
+    }
     return res.json();
   },
 

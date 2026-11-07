@@ -17,8 +17,14 @@ import {
   Layers,
   ArrowUpDown,
   DownloadCloud,
+  Sparkles,
+  Loader2,
+  Bot,
+  CheckCircle2,
+  AlertCircle,
+  X,
 } from "lucide-react";
-import { api, IncidentListItem } from "@/lib/api";
+import { api, IncidentListItem, IncidentAiVerdictResponse } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 
 function IncidentsContent() {
@@ -38,6 +44,24 @@ function IncidentsContent() {
   const [severity, setSeverity] = useState("");
   const [status, setStatus] = useState("");
   const [resolution, setResolution] = useState("");
+
+  // AI Verdict Modal & Loading State
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [aiVerdict, setAiVerdict] = useState<IncidentAiVerdictResponse | null>(null);
+  const [verdictError, setVerdictError] = useState<string | null>(null);
+
+  const handleRequestAiVerdict = async (incidentId: string) => {
+    setAnalyzingId(incidentId);
+    setVerdictError(null);
+    try {
+      const verdict = await api.getIncidentAiVerdict(incidentId);
+      setAiVerdict(verdict);
+    } catch (err: any) {
+      setVerdictError(err.message || "Failed to generate AI verdict from Local LLM.");
+    } finally {
+      setAnalyzingId(null);
+    }
+  };
 
   const loadIncidents = async () => {
     setIsLoading(true);
@@ -323,13 +347,33 @@ function IncidentsContent() {
                       </span>
                     </td>
                     <td className="py-1.5 px-2.5 text-right font-sans">
-                      <Link
-                        href={`/incidents/${inc.incident_id}`}
-                        className="inline-flex items-center gap-1 rounded bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-cyan-400 hover:bg-slate-800 hover:text-cyan-300 border border-slate-800"
-                      >
-                        Inspect
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleRequestAiVerdict(inc.incident_id)}
+                          disabled={analyzingId === inc.incident_id}
+                          className="inline-flex items-center gap-1 rounded bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 px-2 py-0.5 text-[11px] font-medium transition-all shadow-sm disabled:opacity-50"
+                          title="Send to Server 2 Local LLM for instant AI security verdict"
+                        >
+                          {analyzingId === inc.incident_id ? (
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin text-emerald-400" />
+                              <span>Analyzing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3 w-3 text-emerald-400" />
+                              <span>AI Verdict</span>
+                            </>
+                          )}
+                        </button>
+                        <Link
+                          href={`/incidents/${inc.incident_id}`}
+                          className="inline-flex items-center gap-1 rounded bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-cyan-400 hover:bg-slate-800 hover:text-cyan-300 border border-slate-800"
+                        >
+                          Inspect
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -366,6 +410,168 @@ function IncidentsContent() {
           </div>
         </div>
       </div>
+
+      {/* AI Verdict Modal */}
+      {(aiVerdict || verdictError) && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-xl rounded-xl border border-slate-800 bg-slate-950 p-5 shadow-2xl space-y-4 font-sans text-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Server 2 AI Verdict
+                  </span>
+                  {aiVerdict && (
+                    <span className="text-xs font-mono text-slate-400">
+                      Incident #{aiVerdict.incident_id}
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-sm font-semibold text-slate-100">
+                  {aiVerdict?.rule_name || "Incident Security Analysis"}
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setAiVerdict(null);
+                  setVerdictError(null);
+                }}
+                className="rounded p-1 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Error state */}
+            {verdictError ? (
+              <div className="rounded-lg border border-rose-800/80 bg-rose-950/40 p-4 text-xs text-rose-300 space-y-2">
+                <div className="font-semibold flex items-center gap-1.5 text-rose-200">
+                  <AlertCircle className="h-4 w-4 text-rose-400" />
+                  Failed to Receive AI Verdict
+                </div>
+                <p className="text-[11px] text-rose-300/90">{verdictError}</p>
+              </div>
+            ) : aiVerdict && (
+              <div className="space-y-3.5">
+                {/* Verdict Banner */}
+                <div
+                  className={`rounded-lg border p-3 flex items-center justify-between ${
+                    aiVerdict.verdict === "TRUE_POSITIVE"
+                      ? "bg-rose-950/50 border-rose-800 text-rose-200"
+                      : aiVerdict.verdict === "FALSE_POSITIVE"
+                      ? "bg-emerald-950/50 border-emerald-800 text-emerald-200"
+                      : "bg-amber-950/50 border-amber-800 text-amber-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {aiVerdict.verdict === "TRUE_POSITIVE" ? (
+                      <AlertTriangle className="h-5 w-5 text-rose-400" />
+                    ) : aiVerdict.verdict === "FALSE_POSITIVE" ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-amber-400" />
+                    )}
+                    <div>
+                      <div className="text-[10px] uppercase font-mono tracking-wider opacity-80">
+                        Model Determination
+                      </div>
+                      <div className="text-sm font-bold tracking-tight">
+                        {aiVerdict.verdict.replace(/_/g, " ")}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-[10px] uppercase font-mono tracking-wider opacity-80">
+                      Confidence
+                    </div>
+                    <div className="text-base font-extrabold font-mono">
+                      {Math.round(aiVerdict.confidence)}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Reasoning */}
+                <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 space-y-1">
+                  <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                    <Bot className="h-3 w-3 text-cyan-400" />
+                    Analytical Justification
+                  </div>
+                  <p className="text-xs text-slate-200 leading-relaxed font-sans">
+                    {aiVerdict.reason}
+                  </p>
+                </div>
+
+                {/* Evidence points if any */}
+                {aiVerdict.supporting_evidence && aiVerdict.supporting_evidence.length > 0 && (
+                  <div className="rounded-lg border border-slate-800/80 bg-slate-900/40 p-3 space-y-1.5">
+                    <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                      Supporting Evidence Attributes
+                    </div>
+                    <ul className="text-xs space-y-1 text-slate-300 list-disc list-inside">
+                      {aiVerdict.supporting_evidence.map((ev, idx) => (
+                        <li key={idx} className="text-[11px] font-mono leading-tight">
+                          {ev}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Missing Evidence / Questions if any */}
+                {aiVerdict.missing_evidence && aiVerdict.missing_evidence.length > 0 && (
+                  <div className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-3 space-y-1.5">
+                    <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider">
+                      Missing Evidence / Context Needed
+                    </div>
+                    <ul className="text-xs space-y-1 text-amber-300 list-disc list-inside">
+                      {aiVerdict.missing_evidence.map((me, idx) => (
+                        <li key={idx} className="text-[11px] leading-tight">
+                          {me}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Model Metadata Footer */}
+                <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/80">
+                  <div>
+                    Engine: <span className="text-slate-300">{aiVerdict.model_identifier}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span>Latency: <strong className="text-slate-200">{aiVerdict.latency_ms} ms</strong></span>
+                    <span className="text-emerald-400 font-semibold">• GPU Live</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              {aiVerdict && (
+                <Link
+                  href={`/incidents/${aiVerdict.incident_id}`}
+                  className="rounded-md border border-slate-700 bg-slate-800 px-3 py-1 text-xs font-medium text-slate-200 hover:bg-slate-700 transition-colors"
+                >
+                  View Full Incident Detail
+                </Link>
+              )}
+              <button
+                onClick={() => {
+                  setAiVerdict(null);
+                  setVerdictError(null);
+                }}
+                className="rounded-md bg-cyan-600 px-3 py-1 text-xs font-semibold text-white hover:bg-cyan-500 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

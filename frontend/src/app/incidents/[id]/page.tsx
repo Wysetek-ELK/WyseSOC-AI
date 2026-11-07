@@ -18,8 +18,13 @@ import {
   Tag,
   Cpu,
   FileCheck2,
+  Sparkles,
+  Loader2,
+  Bot,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
-import { api, IncidentDetail } from "@/lib/api";
+import { api, IncidentDetail, IncidentAiVerdictResponse } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 
 export default function IncidentDetailPage({
@@ -39,6 +44,23 @@ export default function IncidentDetailPage({
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiVerdict, setAiVerdict] = useState<IncidentAiVerdictResponse | null>(null);
+  const [verdictError, setVerdictError] = useState<string | null>(null);
+
+  const handleRequestAiVerdict = async () => {
+    setAnalyzing(true);
+    setVerdictError(null);
+    try {
+      const verdict = await api.getIncidentAiVerdict(incidentId);
+      setAiVerdict(verdict);
+    } catch (err: any) {
+      setVerdictError(err.message || "Failed to generate AI verdict from Local LLM.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -128,8 +150,27 @@ export default function IncidentDetailPage({
           </div>
         </div>
 
-        {/* Blind Review Mode Toggle */}
+        {/* Header Action Buttons */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleRequestAiVerdict}
+            disabled={analyzing}
+            className="flex items-center gap-1.5 rounded-md border border-emerald-700/80 bg-emerald-950/80 hover:bg-emerald-900 px-2.5 py-1 text-xs font-semibold text-emerald-300 shadow-sm transition-all disabled:opacity-50"
+            title="Send to Server 2 Local LLM for instant AI security verdict"
+          >
+            {analyzing ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-400" />
+                <span>Analyzing Incident...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Get AI Verdict</span>
+              </>
+            )}
+          </button>
+
           <button
             onClick={() => setBlindReviewMode(!blindReviewMode)}
             className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold transition-all ${
@@ -159,6 +200,107 @@ export default function IncidentDetailPage({
           <div className="text-[11px] leading-tight">
             <strong className="font-semibold text-amber-200">Blind Review Active:</strong> Historical ground truth tab and resolution verdicts are masked from view for this incident.
           </div>
+        </div>
+      )}
+
+      {/* AI Verdict Result Box */}
+      {verdictError && (
+        <div className="rounded-lg border border-rose-800/80 bg-rose-950/40 p-3 text-xs text-rose-300 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-rose-400" />
+            <span>{verdictError}</span>
+          </div>
+          <button onClick={() => setVerdictError(null)} className="text-xs hover:underline">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {aiVerdict && (
+        <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-3 shadow-lg">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded">
+                <Sparkles className="h-3.5 w-3.5" />
+                Server 2 Local LLM Verdict
+              </span>
+              <span className="text-xs font-mono text-slate-400">
+                Engine: {aiVerdict.model_identifier}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+              <span>Latency: <strong className="text-slate-200">{aiVerdict.latency_ms} ms</strong></span>
+              <span className="text-emerald-400 font-semibold">• GPU Live</span>
+              <button
+                onClick={() => setAiVerdict(null)}
+                className="text-slate-400 hover:text-slate-200 text-xs px-1"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`rounded-lg border p-3 flex items-center justify-between ${
+              aiVerdict.verdict === "TRUE_POSITIVE"
+                ? "bg-rose-950/50 border-rose-800 text-rose-200"
+                : aiVerdict.verdict === "FALSE_POSITIVE"
+                ? "bg-emerald-950/50 border-emerald-800 text-emerald-200"
+                : "bg-amber-950/50 border-amber-800 text-amber-200"
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              {aiVerdict.verdict === "TRUE_POSITIVE" ? (
+                <AlertTriangle className="h-5 w-5 text-rose-400" />
+              ) : aiVerdict.verdict === "FALSE_POSITIVE" ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-amber-400" />
+              )}
+              <div>
+                <div className="text-[10px] uppercase font-mono tracking-wider opacity-80">
+                  Model Determination
+                </div>
+                <div className="text-sm font-bold tracking-tight">
+                  {aiVerdict.verdict.replace(/_/g, " ")}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <div className="text-[10px] uppercase font-mono tracking-wider opacity-80">
+                Confidence
+              </div>
+              <div className="text-base font-extrabold font-mono">
+                {Math.round(aiVerdict.confidence)}%
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 space-y-1">
+            <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+              <Bot className="h-3 w-3 text-cyan-400" />
+              Analytical Justification
+            </div>
+            <p className="text-xs text-slate-200 leading-relaxed font-sans">
+              {aiVerdict.reason}
+            </p>
+          </div>
+
+          {aiVerdict.supporting_evidence && aiVerdict.supporting_evidence.length > 0 && (
+            <div className="rounded-lg border border-slate-800/80 bg-slate-900/40 p-3 space-y-1.5">
+              <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                Supporting Evidence Attributes
+              </div>
+              <ul className="text-xs space-y-1 text-slate-300 list-disc list-inside">
+                {aiVerdict.supporting_evidence.map((ev, idx) => (
+                  <li key={idx} className="text-[11px] font-mono leading-tight">
+                    {ev}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
