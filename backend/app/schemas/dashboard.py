@@ -33,6 +33,7 @@ class RecentActivityItem(BaseModel):
     event_type: str
     created_at_epoch: Optional[int] = None
     historical_verdict: Optional[str] = None
+    ai_verdict: Optional[Dict[str, Any]] = None
     created_at: datetime
 
 
@@ -53,6 +54,11 @@ class DashboardMetricsResponse(BaseModel):
     historical_true_positives: int
     historical_false_positives: int
     unresolved_incidents: int
+    ai_evaluated_count: int = 0
+    ai_true_positives: int = 0
+    ai_false_positives: int = 0
+    ai_requires_attention: int = 0
+    ai_pending_evaluation: int = 0
     severity_breakdown: List[SeverityCount]
     source_breakdown: List[SourceCount]
     ground_truth_breakdown: List[GroundTruthCount]

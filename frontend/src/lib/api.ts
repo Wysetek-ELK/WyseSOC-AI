@@ -426,6 +426,11 @@ export interface DashboardMetrics {
   historical_true_positives: number;
   historical_false_positives: number;
   unresolved_incidents: number;
+  ai_evaluated_count?: number;
+  ai_true_positives?: number;
+  ai_false_positives?: number;
+  ai_requires_attention?: number;
+  ai_pending_evaluation?: number;
   severity_breakdown: Array<{ severity: string; count: number; percentage: number }>;
   source_breakdown: Array<{ source: string; count: number; percentage: number }>;
   ground_truth_breakdown: Array<{ verdict: string; count: number; percentage: number }>;
@@ -436,6 +441,7 @@ export interface DashboardMetrics {
     event_type: string;
     created_at_epoch?: number;
     historical_verdict?: string;
+    ai_verdict?: IncidentAiVerdictResponse | null;
     created_at: string;
   }>;
   recent_imports: Array<{

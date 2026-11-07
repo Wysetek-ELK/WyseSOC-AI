@@ -16,6 +16,9 @@ import {
   Layers,
   Activity,
   FileCheck2,
+  Sparkles,
+  Shield,
+  Bot,
 } from "lucide-react";
 import { api, DashboardMetrics } from "@/lib/api";
 import { ServerInfrastructureMonitor } from "@/components/system/ServerInfrastructureMonitor";
@@ -24,23 +27,31 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (showSpinner: boolean = true) => {
+    if (showSpinner) setIsLoading(true);
     setError(null);
     try {
       const data = await api.getDashboardMetrics();
       setMetrics(data);
+      setLastRefreshed(new Date());
     } catch (err: any) {
       setError(err.message || "Failed to load dashboard metrics");
     } finally {
-      setIsLoading(false);
+      if (showSpinner) setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(true);
+    if (!autoRefresh) return;
+    const interval = setInterval(() => {
+      loadData(false);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
 
   const getSeverityBadge = (sev: string) => {
     switch (sev?.toUpperCase()) {
@@ -68,6 +79,48 @@ export default function DashboardPage() {
     return "bg-amber-950/80 text-amber-300 border-amber-800";
   };
 
+  const getAiVerdictBadge = (aiVerdict?: any) => {
+    if (!aiVerdict) {
+      return (
+        <span className="rounded bg-slate-900 border border-slate-800 px-1.5 py-0.2 text-[9px] text-slate-500 font-mono">
+          Pending
+        </span>
+      );
+    }
+    const v = typeof aiVerdict === "object" ? aiVerdict.verdict : aiVerdict;
+    if (v === "TRUE_POSITIVE") {
+      return (
+        <span className="rounded bg-rose-950/90 border border-rose-700 px-1.5 py-0.2 text-[9px] font-bold text-rose-300 font-mono shadow-sm">
+          AI: TP
+        </span>
+      );
+    }
+    if (v === "FALSE_POSITIVE") {
+      return (
+        <span className="rounded bg-emerald-950/90 border border-emerald-700 px-1.5 py-0.2 text-[9px] font-bold text-emerald-300 font-mono shadow-sm">
+          AI: FP
+        </span>
+      );
+    }
+    if (v === "REQUIRES_ATTENTION") {
+      return (
+        <span className="rounded bg-amber-950/90 border border-amber-700 px-1.5 py-0.2 text-[9px] font-bold text-amber-300 font-mono shadow-sm">
+          AI: RA
+        </span>
+      );
+    }
+    return null;
+  };
+
+  const formatEpoch = (epoch?: number) => {
+    if (!epoch) return "N/A";
+    const ms = epoch < 1e11 ? epoch * 1000 : epoch;
+    return new Date(ms).toLocaleString([], {
+      dateStyle: "short",
+      timeStyle: "medium",
+    });
+  };
+
   return (
     <div className="space-y-3.5">
       {/* Top Banner / Actions */}
@@ -83,8 +136,22 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Live Auto-Refresh Toggle */}
           <button
-            onClick={loadData}
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+              autoRefresh
+                ? "border-emerald-800 bg-emerald-950/60 text-emerald-300"
+                : "border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200"
+            }`}
+            title="Toggle automatic 15-second live dashboard polling"
+          >
+            <span className={`inline-block h-2 w-2 rounded-full ${autoRefresh ? "bg-emerald-400 animate-pulse" : "bg-slate-500"}`} />
+            <span>{autoRefresh ? "Live Sync: ON (15s)" : "Live Sync: OFF"}</span>
+          </button>
+
+          <button
+            onClick={() => loadData(true)}
             disabled={isLoading}
             className="flex items-center gap-1.5 rounded-md border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
           >
@@ -104,7 +171,7 @@ export default function DashboardPage() {
       {error && (
         <div className="rounded-lg border border-rose-800/80 bg-rose-950/40 p-2.5 text-xs text-rose-300 flex items-center justify-between">
           <span>{error}</span>
-          <button onClick={loadData} className="underline hover:text-rose-200">
+          <button onClick={() => loadData(true)} className="underline hover:text-rose-200">
             Retry
           </button>
         </div>
@@ -133,66 +200,89 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          {/* Top 5 Metric Cards */}
+          {/* Top 5 AI & SOC Metric Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
             {/* Total Incidents */}
             <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:p-3 shadow-sm">
               <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
-                <span>Total Imported</span>
+                <span>Total Ingested</span>
                 <AlertTriangle className="h-3.5 w-3.5 text-cyan-400" />
               </div>
               <div className="mt-1 text-xl font-bold font-mono text-slate-100">
                 {isLoading ? "..." : metrics?.total_incidents.toLocaleString()}
               </div>
-              <div className="mt-0.5 text-[10px] text-slate-500 font-mono">Verified DB Records</div>
+              <div className="mt-0.5 text-[10px] text-slate-500 font-mono">
+                {metrics?.total_rules || 0} SIEM Rules Active
+              </div>
             </div>
 
-            {/* Total Rules */}
-            <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:p-3 shadow-sm">
-              <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
-                <span>SIEM Rules</span>
-                <FileCode2 className="h-3.5 w-3.5 text-blue-400" />
+            {/* AI Triaged Progress */}
+            <div className="rounded-lg border border-cyan-900/60 bg-gradient-to-br from-cyan-950/40 to-slate-950 p-2.5 sm:p-3 shadow-sm">
+              <div className="flex items-center justify-between text-cyan-300 text-[11px] font-medium">
+                <span>AI Triaged</span>
+                <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
               </div>
-              <div className="mt-1 text-xl font-bold font-mono text-slate-100">
-                {isLoading ? "..." : metrics?.total_rules.toLocaleString()}
+              <div className="mt-1 text-xl font-bold font-mono text-cyan-300">
+                {isLoading ? "..." : (metrics?.ai_evaluated_count ?? 0).toLocaleString()}
               </div>
-              <div className="mt-0.5 text-[10px] text-slate-500 font-mono">Parsed & Active</div>
+              <div className="mt-0.5 text-[10px] text-cyan-400/80 font-mono">
+                {metrics?.total_incidents
+                  ? Math.round(((metrics.ai_evaluated_count || 0) / metrics.total_incidents) * 100)
+                  : 0}% Evaluated by LLM
+              </div>
             </div>
 
-            {/* Historical True Positives */}
+            {/* AI False Positives (Noise Auto-Dismissed) */}
             <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:p-3 shadow-sm">
               <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
-                <span>True Positives</span>
-                <CheckCircle2 className="h-3.5 w-3.5 text-rose-400" />
-              </div>
-              <div className="mt-1 text-xl font-bold font-mono text-rose-400">
-                {isLoading ? "..." : metrics?.historical_true_positives.toLocaleString()}
-              </div>
-              <div className="mt-0.5 text-[10px] text-slate-500 font-mono">Historical Ground Truth</div>
-            </div>
-
-            {/* Historical False Positives */}
-            <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:p-3 shadow-sm">
-              <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
-                <span>False Positives</span>
-                <XCircle className="h-3.5 w-3.5 text-emerald-400" />
+                <span>AI False Positives</span>
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
               </div>
               <div className="mt-1 text-xl font-bold font-mono text-emerald-400">
-                {isLoading ? "..." : metrics?.historical_false_positives.toLocaleString()}
+                {isLoading ? "..." : (metrics?.ai_false_positives ?? 0).toLocaleString()}
               </div>
-              <div className="mt-0.5 text-[10px] text-slate-500 font-mono">Historical Ground Truth</div>
+              <div className="mt-0.5 text-[10px] text-slate-500 font-mono">Noise Auto-Dismissed</div>
             </div>
 
-            {/* Unresolved / Unlabeled */}
+            {/* AI True Positives (Confirmed Threats) */}
+            <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:p-3 shadow-sm">
+              <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
+                <span>AI True Positives</span>
+                <ShieldAlert className="h-3.5 w-3.5 text-rose-400" />
+              </div>
+              <div className="mt-1 text-xl font-bold font-mono text-rose-400">
+                {isLoading ? "..." : (metrics?.ai_true_positives ?? 0).toLocaleString()}
+              </div>
+              <div className="mt-0.5 text-[10px] text-slate-500 font-mono">Confirmed Threats</div>
+            </div>
+
+            {/* Requires Attention */}
             <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:p-3 shadow-sm col-span-2 sm:col-span-1">
               <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
-                <span>Unlabeled</span>
+                <span>Requires Attention</span>
                 <HelpCircle className="h-3.5 w-3.5 text-amber-400" />
               </div>
               <div className="mt-1 text-xl font-bold font-mono text-amber-400">
-                {isLoading ? "..." : metrics?.unresolved_incidents.toLocaleString()}
+                {isLoading ? "..." : (metrics?.ai_requires_attention ?? 0).toLocaleString()}
               </div>
-              <div className="mt-0.5 text-[10px] text-slate-500 font-mono">Pending Investigation</div>
+              <div className="mt-0.5 text-[10px] text-slate-500 font-mono">Escalated to SOC Lead</div>
+            </div>
+          </div>
+
+          {/* Historical Baseline Control & Live Telemetry Strip */}
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800/80 bg-slate-900/40 px-3 py-1.5 text-xs font-mono text-slate-400">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Shield className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+              <span className="font-sans font-semibold text-slate-200">Historical Validation Baseline:</span>
+              <span className="text-rose-400 font-semibold">{metrics?.historical_true_positives || 0} True Positives</span>
+              <span className="text-slate-600">·</span>
+              <span className="text-emerald-400 font-semibold">{metrics?.historical_false_positives || 0} False Positives</span>
+              <span className="text-slate-600">·</span>
+              <span className="text-slate-300 font-semibold">{metrics?.unresolved_incidents || 0} Live Unlabeled</span>
+            </div>
+            <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
+              <span>Synced {lastRefreshed.toLocaleTimeString()}</span>
             </div>
           </div>
 
@@ -329,16 +419,23 @@ export default function DashboardPage() {
                       <th className="pb-1.5 px-2 font-medium">Incident ID</th>
                       <th className="pb-1.5 px-2 font-medium">Event Type</th>
                       <th className="pb-1.5 px-2 font-medium">Severity</th>
+                      <th className="pb-1.5 px-2 font-medium">AI Verdict</th>
                       <th className="pb-1.5 px-2 font-medium">Historical Ground Truth</th>
+                      <th className="pb-1.5 px-2 font-medium">Occurred</th>
                       <th className="pb-1.5 px-2 font-medium text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 font-mono">
                     {metrics?.recent_activity.map((inc) => (
                       <tr key={inc.incident_id} className="hover:bg-slate-900/40 transition-colors">
-                        <td className="py-1.5 px-2 font-semibold text-slate-200">{inc.incident_id}</td>
-                        <td className="py-1.5 px-2 text-slate-400 truncate max-w-[200px]" title={inc.event_type}>
-                          {inc.event_type}
+                        <td className="py-1.5 px-2 font-semibold text-slate-200">
+                          <Link href={`/incidents/${inc.incident_id}`} className="text-cyan-400 hover:underline">
+                            {inc.incident_id}
+                          </Link>
+                        </td>
+                        <td className="py-1.5 px-2 text-slate-400 truncate max-w-[180px]" title={inc.title || inc.event_type}>
+                          <div className="text-slate-200 truncate">{inc.title || inc.event_type}</div>
+                          <div className="text-[10px] text-slate-500 truncate">{inc.event_type}</div>
                         </td>
                         <td className="py-1.5 px-2">
                           <span
@@ -350,6 +447,9 @@ export default function DashboardPage() {
                           </span>
                         </td>
                         <td className="py-1.5 px-2">
+                          {getAiVerdictBadge(inc.ai_verdict)}
+                        </td>
+                        <td className="py-1.5 px-2">
                           <span
                             className={`px-1.5 py-0.2 rounded border text-[9px] ${getVerdictBadge(
                               inc.historical_verdict
@@ -357,6 +457,9 @@ export default function DashboardPage() {
                           >
                             {inc.historical_verdict || "Unlabeled"}
                           </span>
+                        </td>
+                        <td className="py-1.5 px-2 text-slate-400 text-[10px]">
+                          {formatEpoch(inc.created_at_epoch)}
                         </td>
                         <td className="py-1.5 px-2 text-right font-sans">
                           <Link
