@@ -1,10 +1,14 @@
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.api.deps import get_current_active_user, require_analyst, require_admin
 from app.models.user import User
+from app.models.rule import Rule
+from app.models.prompt import RulePrompt
 from app.services.prompt_studio_service import PromptStudioService
 from app.services.audit_service import AuditService
 from app.schemas.prompt import (
@@ -13,9 +17,52 @@ from app.schemas.prompt import (
     PromptVersionCreate,
     PromptApprovalRequest,
     PromptRollbackRequest,
+    RulePromptSummaryItem,
 )
 
 router = APIRouter(prefix="/prompts", tags=["Prompt Studio"])
+
+
+@router.get("/summary", response_model=List[RulePromptSummaryItem])
+async def get_rule_prompts_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Returns a unified summary of all SIEM detection rules alongside their
+    current prompt engineering version status (active baseline, version counts, approval status).
+    """
+    rules_res = await db.execute(select(Rule).order_by(Rule.name.asc()))
+    rules = rules_res.scalars().all()
+
+    prompts_res = await db.execute(select(RulePrompt).options(selectinload(RulePrompt.versions)))
+    prompts_by_rule_id = {rp.rule_id: rp for rp in prompts_res.scalars().all()}
+
+    items = []
+    for r in rules:
+        rp = prompts_by_rule_id.get(r.id)
+        versions = rp.versions if (rp and rp.versions) else []
+        active_v = next((v for v in versions if v.id == rp.active_version_id), None) if rp else None
+        has_approved = any(v.status == "APPROVED" for v in versions)
+
+        items.append(
+            RulePromptSummaryItem(
+                rule_id=r.id,
+                rule_name=r.name,
+                event_type=r.event_type,
+                severity=r.severity or "MEDIUM",
+                status=r.status or "ACTIVE",
+                data_source=r.data_source,
+                prompt_id=rp.id if rp else None,
+                active_version_number=active_v.version_number if active_v else (versions[0].version_number if versions else None),
+                active_version_status=active_v.status if active_v else (versions[0].status if versions else None),
+                total_versions=len(versions),
+                has_approved_prompt=has_approved,
+                last_updated=rp.updated_at if rp else r.updated_at,
+            )
+        )
+
+    return items
 
 
 @router.get("/rule/{rule_id}", response_model=RulePromptResponse)

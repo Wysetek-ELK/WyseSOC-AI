@@ -354,6 +354,21 @@ export interface RulePrompt {
   updated_at: string;
 }
 
+export interface RulePromptSummaryItem {
+  rule_id: string;
+  rule_name: string;
+  event_type: string;
+  severity: string;
+  status: string;
+  data_source?: string;
+  prompt_id?: string;
+  active_version_number?: number;
+  active_version_status?: string;
+  total_versions: number;
+  has_approved_prompt: boolean;
+  last_updated?: string;
+}
+
 export interface LearningRecord {
   id: string;
   rule_id: string;
@@ -860,6 +875,12 @@ export const api = {
   },
 
   // =================== PHASE 2: PROMPT STUDIO ===================
+  async getRulePromptsSummary(): Promise<RulePromptSummaryItem[]> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/summary`);
+    if (!res.ok) throw new Error("Failed to fetch rule prompts summary");
+    return res.json();
+  },
+
   async getRulePrompt(ruleId: string): Promise<RulePrompt> {
     const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}`);
     if (!res.ok) throw new Error("Failed to fetch rule prompt");

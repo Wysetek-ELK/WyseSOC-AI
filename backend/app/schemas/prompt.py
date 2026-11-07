@@ -68,3 +68,21 @@ class PromptApprovalRequest(BaseModel):
 
 class PromptRollbackRequest(BaseModel):
     target_version_id: str
+
+
+class RulePromptSummaryItem(BaseModel):
+    rule_id: str
+    rule_name: str
+    event_type: str
+    severity: str
+    status: str
+    data_source: Optional[str] = None
+    prompt_id: Optional[str] = None
+    active_version_number: Optional[int] = None
+    active_version_status: Optional[str] = None
+    total_versions: int = 0
+    has_approved_prompt: bool = False
+    last_updated: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
