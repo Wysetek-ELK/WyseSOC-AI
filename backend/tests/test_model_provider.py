@@ -100,3 +100,36 @@ def test_factory_provider_resolution():
     # Defaults to disabled on unknown provider
     default_p = get_model_provider("UNKNOWN_PROVIDER")
     assert isinstance(default_p, DisabledModelProvider)
+
+
+def test_robust_parse_model_verdict_json():
+    from app.services.model_provider.openai_compatible import robust_parse_model_verdict_json
+
+    # 1. Clean JSON
+    clean_json = '{"verdict": "TRUE_POSITIVE", "confidence": 95, "reason": "Attack confirmed"}'
+    res, err = robust_parse_model_verdict_json(clean_json)
+    assert err is None
+    assert res["verdict"] == "TRUE_POSITIVE"
+    assert res["confidence"] == 95
+
+    # 2. Markdown fenced JSON
+    fenced_json = '```json\n{"verdict": "FALSE_POSITIVE", "confidence": 80.5, "reason": "Expected cron job"}\n```'
+    res, err = robust_parse_model_verdict_json(fenced_json)
+    assert err is None
+    assert res["verdict"] == "FALSE_POSITIVE"
+    assert res["confidence"] == 80.5
+
+    # 3. Truncated mid-string (the exact issue seen in production)
+    truncated = '{\n  "verdict": "TRUE_POSITIVE",\n  "confidence": 88,\n  "reason": "Suspicious execution of cmd.exe and powershell\n  "supporting_evidence": [\n    "Parent process is explorer.exe'
+    res, err = robust_parse_model_verdict_json(truncated)
+    assert res is not None
+    assert res["verdict"] == "TRUE_POSITIVE"
+    assert res["confidence"] == 88.0
+    assert "Suspicious execution" in res["reason"]
+
+    # 4. Raw unescaped newlines in reason string
+    raw_newlines = '{\n  "verdict": "REQUIRES_ATTENTION",\n  "confidence": 50,\n  "reason": "Line 1\nLine 2"\n}'
+    res, err = robust_parse_model_verdict_json(raw_newlines)
+    assert err is None
+    assert res["verdict"] == "REQUIRES_ATTENTION"
+    assert "Line 1" in res["reason"]

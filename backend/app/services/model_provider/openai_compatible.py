@@ -1,9 +1,171 @@
 import time
 import json
-from typing import List, Dict, Any, Optional
+import re
+from typing import List, Dict, Any, Optional, Tuple
 import httpx
 
 from app.services.model_provider.base import BaseModelProvider, ProviderHealthResponse, StructuredModelVerdict
+
+
+def robust_parse_model_verdict_json(raw_text: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """
+    Robustly parses and self-heals model JSON output from local LLMs.
+    Handles:
+    - Markdown code fences (```json ... ```)
+    - Preamble / postamble conversation text
+    - Unescaped raw newlines/tabs inside JSON strings
+    - Truncated strings / unterminated quotes
+    - Missing closing brackets and braces
+    - Fallback regex field extraction
+    """
+    if not raw_text or not raw_text.strip():
+        return None, "Empty response from model"
+
+    text = raw_text.strip()
+
+    # 1. Strip markdown fences if present
+    if "```" in text:
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
+        if match:
+            text = match.group(1).strip()
+        else:
+            text = re.sub(r"^```[a-zA-Z]*\n?", "", text).strip()
+            text = re.sub(r"\n?```$", "", text).strip()
+
+    # 2. Locate outermost JSON object
+    start_idx = text.find("{")
+    if start_idx == -1:
+        return _regex_fallback_extract(text)
+
+    end_idx = text.rfind("}")
+    candidate = text[start_idx : end_idx + 1] if end_idx > start_idx else text[start_idx:]
+
+    # 3. Direct parse attempt with strict=False (allows unescaped control chars like \n, \t)
+    try:
+        return json.loads(candidate, strict=False), None
+    except json.JSONDecodeError as err:
+        decode_err = str(err)
+
+    # 4. Clean unescaped newlines/tabs inside string values
+    def escape_raw_newlines(s: str) -> str:
+        in_string = False
+        escaped = False
+        res = []
+        for ch in s:
+            if ch == '"' and not escaped:
+                in_string = not in_string
+                res.append(ch)
+            elif ch == '\\' and not escaped:
+                escaped = True
+                res.append(ch)
+            else:
+                if in_string:
+                    if ch == '\n':
+                        res.append('\\n')
+                    elif ch == '\r':
+                        res.append('\\r')
+                    elif ch == '\t':
+                        res.append('\\t')
+                    else:
+                        res.append(ch)
+                else:
+                    res.append(ch)
+                escaped = False
+        return "".join(res)
+
+    sanitized = escape_raw_newlines(candidate)
+    try:
+        return json.loads(sanitized, strict=False), None
+    except json.JSONDecodeError:
+        pass
+
+    # 5. Self-healing for truncated JSON (unterminated strings, unclosed brackets/braces)
+    repaired = _repair_truncated_json(sanitized)
+    if repaired:
+        try:
+            return json.loads(repaired, strict=False), None
+        except json.JSONDecodeError:
+            pass
+
+    # 6. Fallback regex extraction of fields
+    fallback_dict, fallback_err = _regex_fallback_extract(text)
+    if fallback_dict:
+        return fallback_dict, None
+
+    return None, f"Failed to parse JSON: {decode_err}"
+
+
+def _repair_truncated_json(text: str) -> Optional[str]:
+    """Attempts to complete truncated strings, arrays, and dictionaries."""
+    in_string = False
+    escaped = False
+    open_brackets = 0
+    open_braces = 0
+
+    clean_chars = []
+    for ch in text:
+        if ch == '"' and not escaped:
+            in_string = not in_string
+            clean_chars.append(ch)
+        elif ch == '\\' and not escaped:
+            escaped = True
+            clean_chars.append(ch)
+        else:
+            if not in_string:
+                if ch == '[':
+                    open_brackets += 1
+                elif ch == ']':
+                    open_brackets = max(0, open_brackets - 1)
+                elif ch == '{':
+                    open_braces += 1
+                elif ch == '}':
+                    open_braces = max(0, open_braces - 1)
+            clean_chars.append(ch)
+            escaped = False
+
+    repaired = "".join(clean_chars)
+
+    if in_string:
+        repaired += '"'
+
+    repaired = re.sub(r',\s*$', '', repaired)
+    repaired = re.sub(r':\s*$', ': ""', repaired)
+
+    if open_brackets > 0:
+        repaired += ']' * open_brackets
+    if open_braces > 0:
+        repaired += '}' * open_braces
+
+    return repaired
+
+
+def _regex_fallback_extract(text: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Heuristic extraction of key fields when JSON cannot be parsed syntactically."""
+    verdict_match = re.search(r'"verdict"\s*:\s*"?(TRUE_POSITIVE|FALSE_POSITIVE|REQUIRES_ATTENTION)"?', text, re.IGNORECASE)
+    if not verdict_match:
+        return None, "No verdict found in model output"
+
+    verdict = verdict_match.group(1).upper()
+
+    conf_match = re.search(r'"confidence"\s*:\s*([0-9]+(?:\.[0-9]+)?)', text)
+    confidence = float(conf_match.group(1)) if conf_match else 75.0
+
+    reason_match = re.search(r'"reason"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)', text)
+    reason = reason_match.group(1) if reason_match else "Extracted from model response"
+
+    supporting = re.findall(r'"supporting_evidence"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+    evidence_list = []
+    if supporting:
+        evidence_list = [item.strip(' ",\'\n\r\t') for item in re.findall(r'"([^"]+)"', supporting[0])]
+
+    return {
+        "verdict": verdict,
+        "confidence": confidence,
+        "reason": reason,
+        "supporting_evidence": evidence_list,
+        "missing_evidence": [],
+        "analyst_questions": [],
+    }, None
 
 
 class OpenAICompatibleProvider(BaseModelProvider):
@@ -104,18 +266,11 @@ class OpenAICompatibleProvider(BaseModelProvider):
             "}"
         )
 
-        # Smart budget guardrail: limit serialized incident payload size to prevent context overflow
-        clean_incident = dict(incident_payload)
-        if "events" in clean_incident and isinstance(clean_incident["events"], list):
-            clean_incident["events"] = clean_incident["events"][:8]
-
+        # Construct clean formatted JSON prompt for the local LLM
         user_content = json.dumps({
-            "incident": clean_incident,
+            "incident": incident_payload,
             "rule": rule_spec,
-        }, separators=(",", ":"))
-
-        if len(user_content) > 9000:
-            user_content = user_content[:9000] + " ... [telemetry truncated to fit context budget]}"
+        }, indent=2)
 
         payload = {
             "model": self.model_name,
@@ -123,7 +278,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_content},
             ],
-            "max_tokens": min(self.max_tokens, 768),
+            "max_tokens": min(self.max_tokens, 1024),
             "temperature": self.temperature,
             "response_format": {"type": "json_object"},
         }
@@ -159,7 +314,24 @@ class OpenAICompatibleProvider(BaseModelProvider):
 
                 data = res.json()
                 raw_reply = data["choices"][0]["message"]["content"]
-                parsed = json.loads(raw_reply)
+                parsed, parse_err = robust_parse_model_verdict_json(raw_reply)
+
+                if not parsed:
+                    return StructuredModelVerdict(
+                        incident_id=incident_id,
+                        rule_id=rule_id,
+                        verdict="REQUIRES_ATTENTION",
+                        confidence=0.0,
+                        reason=f"Model output format error: {parse_err}. Partial reply: {raw_reply[:200]}",
+                        supporting_evidence=[],
+                        missing_evidence=["Valid schema output"],
+                        analyst_questions=["Review raw LLM output format"],
+                        latency_ms=latency_ms,
+                        model_identifier=self.model_name,
+                        prompt_version_number=prompt_version_number,
+                        validation_status="INVALID_SCHEMA",
+                        is_simulated=False,
+                    )
 
                 # Defensive schema validation
                 is_valid, status, err_msg = self.validate_verdict_schema(parsed)
@@ -186,9 +358,9 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     verdict=parsed["verdict"].upper().strip(),
                     confidence=float(parsed.get("confidence", 90.0)),
                     reason=str(parsed.get("reason", "")),
-                    supporting_evidence=parsed.get("supporting_evidence", []),
-                    missing_evidence=parsed.get("missing_evidence", []),
-                    analyst_questions=parsed.get("analyst_questions", []),
+                    supporting_evidence=parsed.get("supporting_evidence", []) if isinstance(parsed.get("supporting_evidence"), list) else [],
+                    missing_evidence=parsed.get("missing_evidence", []) if isinstance(parsed.get("missing_evidence"), list) else [],
+                    analyst_questions=parsed.get("analyst_questions", []) if isinstance(parsed.get("analyst_questions"), list) else [],
                     latency_ms=latency_ms,
                     model_identifier=self.model_name,
                     prompt_version_number=prompt_version_number,

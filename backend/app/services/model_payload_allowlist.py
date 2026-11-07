@@ -21,19 +21,30 @@ FORBIDDEN_GROUND_TRUTH_KEYS = frozenset({
 })
 
 
-def sanitize_event_attributes(attributes: Dict[str, Any], max_str_len: int = 500) -> Dict[str, Any]:
-    """Filters nested event attributes, dropping any forbidden resolution/closure fields and truncating giant payloads."""
+def sanitize_event_attributes(attributes: Dict[str, Any], max_str_len: int = 250, max_keys: int = 15) -> Dict[str, Any]:
+    """Filters nested event attributes, dropping forbidden resolution/closure fields, limiting key count, and truncating giant strings."""
     sanitized: Dict[str, Any] = {}
+    count = 0
     for key, val in attributes.items():
+        if count >= max_keys:
+            break
         norm_key = key.lower().strip()
         if norm_key in FORBIDDEN_GROUND_TRUTH_KEYS:
             continue
-        if isinstance(val, str) and len(val) > max_str_len:
-            sanitized[key] = val[:max_str_len] + "... [truncated]"
+        if val is None or val == "":
+            continue
+        if isinstance(val, str):
+            if len(val) > max_str_len:
+                sanitized[key] = val[:max_str_len] + "... [truncated]"
+            else:
+                sanitized[key] = val
+            count += 1
         elif isinstance(val, dict):
-            sanitized[key] = sanitize_event_attributes(val, max_str_len=max_str_len)
+            sanitized[key] = sanitize_event_attributes(val, max_str_len=max_str_len, max_keys=max_keys)
+            count += 1
         else:
             sanitized[key] = val
+            count += 1
     return sanitized
 
 
@@ -53,11 +64,12 @@ def build_model_facing_payload(
     """
     Constructs an explicit, strictly allowlisted incident investigation payload.
     Guarantees 100% absence of historical ground-truth resolution or closure fields.
+    Budgets payload size to fit comfortably within LLM context windows.
     """
     sanitized_events: List[Dict[str, Any]] = []
     if events:
-        # Cap to 10 most relevant telemetry events to prevent exceeding LLM context budget
-        for evt in events[:10]:
+        # Cap to 4 most relevant telemetry events to preserve LLM token budget
+        for evt in events[:4]:
             evt_id = _get_field(evt, "event_id", "eventId", "")
             evt_type = _get_field(evt, "event_type", "eventType", "")
             evt_time = _get_field(evt, "event_receive_time", "eventReceiveTime", None)
@@ -65,7 +77,7 @@ def build_model_facing_payload(
             if not isinstance(raw_attrs, dict):
                 raw_attrs = {}
 
-            sanitized_attrs = sanitize_event_attributes(raw_attrs)
+            sanitized_attrs = sanitize_event_attributes(raw_attrs, max_str_len=250, max_keys=15)
             sanitized_events.append({
                 "event_id": str(evt_id),
                 "event_type": str(evt_type),
@@ -73,13 +85,19 @@ def build_model_facing_payload(
                 "attributes": sanitized_attrs,
             })
 
-    # Strict allowlist of top-level incident fields
+    def _trunc(val: Any, max_len: int = 400) -> str:
+        s = str(val or "")
+        return s[:max_len] + ("... [truncated]" if len(s) > max_len else "")
+
+    rule_pattern = getattr(rule, "pattern_logic", None) if rule else None
+
+    # Strict allowlist of top-level incident fields with bounded text length
     payload: Dict[str, Any] = {
         "incident_id": str(_get_field(incident, "incident_id", "incidentId", "")),
         "event_type": str(_get_field(incident, "event_type", "eventType", "")),
-        "title": str(_get_field(incident, "title", "title", "")),
-        "description": str(_get_field(incident, "description", "description", "")),
-        "detail": str(_get_field(incident, "detail", "detail", "")),
+        "title": _trunc(_get_field(incident, "title", "title", ""), 250),
+        "description": _trunc(_get_field(incident, "description", "description", ""), 400),
+        "detail": _trunc(_get_field(incident, "detail", "detail", ""), 400),
         "severity": str(_get_field(incident, "severity", "severity", "MEDIUM")),
         "category": str(_get_field(incident, "category", "category", "")),
         "subcategory": str(_get_field(incident, "subcategory", "subcategory", "")),
@@ -92,7 +110,7 @@ def build_model_facing_payload(
         "events": sanitized_events,
         "rule_id": getattr(rule, "rule_id", None) if rule else None,
         "rule_name": getattr(rule, "name", None) if rule else None,
-        "rule_pattern": getattr(rule, "pattern_logic", None) if rule else None,
+        "rule_pattern": _trunc(rule_pattern, 400) if rule_pattern else None,
     }
 
     # Strict audit verification before returning: assert zero leakage
