@@ -18,6 +18,7 @@ import {
   FileCheck2,
 } from "lucide-react";
 import { api, DashboardMetrics } from "@/lib/api";
+import { ServerInfrastructureMonitor } from "@/components/system/ServerInfrastructureMonitor";
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -194,6 +195,9 @@ export default function DashboardPage() {
               <div className="mt-0.5 text-[10px] text-slate-500 font-mono">Pending Investigation</div>
             </div>
           </div>
+
+          {/* Dual-Server Infrastructure Utilization & Historical Telemetry */}
+          <ServerInfrastructureMonitor />
 
           {/* Breakdown Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-2.5 sm:gap-3">

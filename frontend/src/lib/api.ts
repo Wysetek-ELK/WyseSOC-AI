@@ -930,6 +930,19 @@ export const api = {
     }
     return res.json();
   },
+
+  // =================== DUAL-SERVER INFRASTRUCTURE MONITORING ===================
+  async getServersLive(): Promise<ServersLiveResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/system/servers/live`);
+    if (!res.ok) throw new Error("Failed to fetch live server metrics");
+    return res.json();
+  },
+
+  async getServersHistory(window: string = "24h"): Promise<ServersHistoryResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/system/servers/history?window=${window}`);
+    if (!res.ok) throw new Error("Failed to fetch server historical telemetry");
+    return res.json();
+  },
 };
 
 export interface DryRunConfig {
@@ -1058,4 +1071,71 @@ export interface RuleMaturity {
   approval_notes: string;
   latest_test_date?: string;
 }
+
+export interface ServerMetricItem {
+  server_id: string;
+  server_name: string;
+  timestamp: string;
+  status: "ONLINE" | "OFFLINE" | "DEGRADED";
+  cpu_percent: number;
+  memory_percent: number;
+  memory_used_gb: number;
+  memory_total_gb: number;
+  disk_percent?: number | null;
+  disk_used_gb?: number | null;
+  disk_total_gb?: number | null;
+  gpu_percent?: number | null;
+  gpu_memory_percent?: number | null;
+  gpu_memory_used_gb?: number | null;
+  gpu_memory_total_gb?: number | null;
+  gpu_temp_c?: number | null;
+  latency_ms?: number | null;
+  active_requests?: number;
+  details?: Record<string, any>;
+}
+
+export interface ServersLiveResponse {
+  timestamp: string;
+  server_1: ServerMetricItem;
+  server_2: ServerMetricItem;
+  system_health: "OPTIMAL" | "ATTENTION_REQUIRED";
+}
+
+export interface ServerHistoryDataPoint {
+  timestamp: string;
+  time_label: string;
+  cpu_percent: number;
+  memory_percent: number;
+  memory_used_gb: number;
+  memory_total_gb: number;
+  disk_percent?: number | null;
+  status: string;
+  gpu_percent?: number | null;
+  gpu_memory_percent?: number | null;
+  gpu_memory_used_gb?: number | null;
+  gpu_temp_c?: number | null;
+  latency_ms?: number | null;
+  active_requests: number;
+}
+
+export interface ServersHistoryResponse {
+  window: "1h" | "6h" | "24h" | "7d";
+  cutoff: string;
+  server_1_series: ServerHistoryDataPoint[];
+  server_2_series: ServerHistoryDataPoint[];
+  stats: {
+    server_1: {
+      cpu: { avg: number; max: number; min: number };
+      memory: { avg: number; max: number; min: number };
+      samples_count: number;
+    };
+    server_2: {
+      gpu: { avg: number; max: number; min: number };
+      gpu_vram: { avg: number; max: number; min: number };
+      latency: { avg: number; max: number; min: number };
+      samples_count: number;
+    };
+  };
+}
+
 

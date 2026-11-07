@@ -20,6 +20,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Server,
+  Activity,
 } from "lucide-react";
 
 interface NavItem {
@@ -76,6 +78,11 @@ const NAV_ITEMS: NavItem[] = [
     title: "Evaluation Reports",
     href: "/evaluation-reports",
     icon: BarChart3,
+  },
+  {
+    title: "Infrastructure",
+    href: "/infrastructure",
+    icon: Server,
   },
   {
     title: "Settings",
@@ -178,7 +185,11 @@ export function Sidebar() {
       {/* Footer System Status */}
       <div className="p-2 border-t border-slate-800 text-[10px] font-mono">
         {!collapsed ? (
-          <div className="rounded-md bg-slate-900/70 p-2 border border-slate-800 space-y-0.5">
+          <Link
+            href="/infrastructure"
+            className="block rounded-md bg-slate-900/70 hover:bg-slate-900 p-2 border border-slate-800 hover:border-slate-700 space-y-0.5 transition-colors cursor-pointer"
+            title="Inspect Dual-Server Infrastructure & Historical Utilization"
+          >
             <div className="flex items-center justify-between mb-0.5">
               <span className="text-slate-400 text-[9px]">ENV</span>
               <span className="flex items-center gap-1 text-emerald-400 text-[9px]">
@@ -200,11 +211,11 @@ export function Sidebar() {
                 <span className="text-amber-400">P1 (Native)</span>
               )}
             </div>
-          </div>
+          </Link>
         ) : (
-          <div className="flex justify-center py-1">
+          <Link href="/infrastructure" className="flex justify-center py-1" title="System Active - View Infrastructure">
             <span className="h-2 w-2 rounded-full bg-emerald-400" title="System Active"></span>
-          </div>
+          </Link>
         )}
       </div>
     </aside>

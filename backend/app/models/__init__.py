@@ -9,6 +9,7 @@ from app.models.prompt import RulePrompt, PromptVersion
 from app.models.learning import LearningRecord
 from app.models.dry_run import DryRunConfig, DryRunJob, DryRunResult
 from app.models.maturity import RuleMaturityEvaluation
+from app.models.system_metric import SystemServerSample
 
 __all__ = [
     "Base",
@@ -29,4 +30,5 @@ __all__ = [
     "DryRunJob",
     "DryRunResult",
     "RuleMaturityEvaluation",
+    "SystemServerSample",
 ]
