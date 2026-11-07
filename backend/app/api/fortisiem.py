@@ -31,6 +31,7 @@ async def get_fortisiem_status(
     is_configured = bool(settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip())
     mode = "LIVE" if is_configured else "FIXTURE_FALLBACK"
     sample_ids = service.get_available_fixture_ids()
+    live_ids = await FortiSIEMService.get_recent_live_incident_ids(limit=8) if is_configured else []
 
     return FortiSIEMStatusResponse(
         is_configured=is_configured,
@@ -39,6 +40,7 @@ async def get_fortisiem_status(
         verify_ssl=settings.FORTISIEM_VERIFY_SSL,
         mode=mode,
         sample_incident_ids=sample_ids,
+        live_incident_ids=live_ids,
     )
 
 

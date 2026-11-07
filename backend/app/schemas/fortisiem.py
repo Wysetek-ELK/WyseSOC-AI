@@ -28,6 +28,7 @@ class FortiSIEMStatusResponse(BaseModel):
     verify_ssl: bool
     mode: str  # "LIVE" or "FIXTURE_FALLBACK"
     sample_incident_ids: List[str] = Field(default_factory=list)
+    live_incident_ids: List[str] = Field(default_factory=list)
 
 
 class FortiSIEMConfigResponse(BaseModel):

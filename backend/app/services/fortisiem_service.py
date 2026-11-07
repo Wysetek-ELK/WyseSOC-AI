@@ -2,6 +2,7 @@ import os
 import json
 import zipfile
 import re
+import time
 from typing import Dict, Any, Tuple, List, Optional
 import httpx
 from fastapi import HTTPException
@@ -41,6 +42,41 @@ class FortiSIEMService:
         except Exception:
             pass
         return sorted(list(set(ids)))
+
+    @classmethod
+    async def get_recent_live_incident_ids(cls, limit: int = 8) -> List[str]:
+        """Queries the live supervisor for the most recent incident IDs for quick selection."""
+        if not (settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip()):
+            return []
+
+        base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
+        auth = None
+        if settings.FORTISIEM_USERNAME and settings.FORTISIEM_PASSWORD:
+            auth = (settings.FORTISIEM_USERNAME, settings.FORTISIEM_PASSWORD)
+
+        now_ms = int(time.time() * 1000)
+        past_ms = now_ms - (30 * 86400 * 1000)  # last 30 days
+        try:
+            async with httpx.AsyncClient(verify=settings.FORTISIEM_VERIFY_SSL, timeout=5.0) as client:
+                res = await client.get(
+                    f"{base_url}/phoenix/rest/pub/incident",
+                    params={"timeFrom": past_ms, "timeTo": now_ms, "size": limit},
+                    auth=auth,
+                    headers={"Accept": "application/json"}
+                )
+                if res.status_code == 200:
+                    d = res.json()
+                    items = d.get("data", []) if isinstance(d, dict) else (d if isinstance(d, list) else [])
+                    ids = []
+                    for item in items:
+                        if isinstance(item, dict):
+                            iid = str(item.get("incidentId") or item.get("id") or "").strip()
+                            if iid and iid not in ids:
+                                ids.append(iid)
+                    return ids[:limit]
+        except Exception:
+            pass
+        return []
 
     def _parse_siem_response(self, res: httpx.Response, target_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Parses a response from FortiSIEM, supporting both JSON and XML formats."""
@@ -288,11 +324,16 @@ class FortiSIEMService:
 
         # Not found in live SIEM and not found in fixture fallback
         available = self.get_available_fixture_ids()
-        hint = f" Available sample fixture IDs: {', '.join(available[:8])}..." if available else ""
-        host_desc = settings.FORTISIEM_HOST if settings.FORTISIEM_HOST else "Unconfigured"
-        msg = (
-            f"Incident '{clean_id}' was not found on FortiSIEM ({host_desc}) or in the offline sample fixtures.{hint}"
-        )
+        fixture_hint = f" Available fixture samples: {', '.join(available[:6])}." if available else ""
+        if settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip():
+            msg = (
+                f"Incident '{clean_id}' was not found on FortiSIEM Supervisor ({settings.FORTISIEM_HOST}). "
+                f"Please verify the ID or select one of the live active incidents displayed on the ingestion portal.{fixture_hint}"
+            )
+        else:
+            msg = (
+                f"Incident '{clean_id}' was not found in offline sample fixtures.{fixture_hint}"
+            )
         raise HTTPException(status_code=404, detail=msg)
 
     async def pull_and_ingest(

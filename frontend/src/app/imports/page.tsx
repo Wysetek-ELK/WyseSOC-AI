@@ -188,7 +188,11 @@ export default function ImportsPage() {
                 type="text"
                 value={siemIncidentId}
                 onChange={(e) => setSiemIncidentId(e.target.value)}
-                placeholder="Enter Incident ID (e.g., 132438483 or 132499009)..."
+                placeholder={
+                  siemStatus?.live_incident_ids && siemStatus.live_incident_ids.length > 0
+                    ? `Enter FortiSIEM Incident ID (e.g., ${siemStatus.live_incident_ids.slice(0, 2).join(" or ")})...`
+                    : "Enter FortiSIEM Incident ID (e.g., 171005 or 157803)..."
+                }
                 className="w-full rounded-lg border border-slate-700 bg-slate-900/90 py-2.5 pl-3.5 pr-10 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
               />
               {siemIncidentId && (
@@ -221,10 +225,37 @@ export default function ImportsPage() {
             </button>
           </div>
 
-          {/* Quick Select Sample IDs */}
-          {siemStatus && siemStatus.sample_incident_ids.length > 0 && (
+          {/* Live Incident Quick-Picks (Supervisor API) */}
+          {siemStatus?.live_incident_ids && siemStatus.live_incident_ids.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] text-slate-400 font-mono mr-1">Quick Select Samples:</span>
+              <span className="text-[11px] text-emerald-400 font-medium font-mono flex items-center gap-1 mr-1">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live Incidents on FortiSIEM:
+              </span>
+              {siemStatus.live_incident_ids.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => {
+                    setSiemIncidentId(id);
+                    handlePullFortiSiem(undefined, id);
+                  }}
+                  disabled={isPullingSiem}
+                  className="px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-emerald-950/80 border border-emerald-700/80 text-emerald-300 hover:bg-emerald-900 hover:border-emerald-400 hover:text-white transition-all shadow-sm"
+                  title={`Pull live FortiSIEM incident #${id}`}
+                >
+                  #{id}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Quick Select Sample IDs (Offline Fixtures) */}
+          {siemStatus && siemStatus.sample_incident_ids.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <span className="text-[11px] text-slate-400 font-mono mr-1">
+                {siemStatus.live_incident_ids && siemStatus.live_incident_ids.length > 0 ? "Offline Fixture Samples:" : "Quick Select Samples:"}
+              </span>
               {siemStatus.sample_incident_ids.slice(0, 6).map((id) => (
                 <button
                   key={id}
@@ -234,7 +265,7 @@ export default function ImportsPage() {
                     handlePullFortiSiem(undefined, id);
                   }}
                   disabled={isPullingSiem}
-                  className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-900 border border-slate-800 text-cyan-300 hover:bg-cyan-950/60 hover:border-cyan-700 transition-colors"
+                  className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-900 border border-slate-800 text-sky-300 hover:bg-sky-950/60 hover:border-sky-700 transition-colors"
                 >
                   #{id}
                 </button>

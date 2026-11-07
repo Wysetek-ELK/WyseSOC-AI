@@ -125,6 +125,7 @@ export interface FortiSIEMStatusResponse {
   verify_ssl: boolean;
   mode: string;
   sample_incident_ids: string[];
+  live_incident_ids?: string[];
 }
 
 export interface FortiSIEMConfigResponse {
