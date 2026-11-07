@@ -92,15 +92,15 @@ export default function RulesPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {/* Page Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-100 flex items-center gap-2.5">
-            <FileCode2 className="h-5 w-5 text-cyan-400" />
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 flex items-center gap-2">
+            <FileCode2 className="h-4 w-4 text-cyan-400" />
             SIEM Detection Rule Registry
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[11px] text-slate-400 mt-0.5">
             Registered detection rules, correlation patterns, and historical incident linkages
           </p>
         </div>
@@ -110,10 +110,10 @@ export default function RulesPage() {
             type="button"
             onClick={handleSyncFortiSiemRules}
             disabled={isSyncingRules}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white disabled:opacity-50 transition-colors shadow-sm shadow-cyan-900/30"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white disabled:opacity-50 transition-colors shadow-sm shadow-cyan-900/30"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isSyncingRules ? "animate-spin" : ""}`} />
-            <span>{isSyncingRules ? "Syncing Rules from FortiSIEM..." : "Sync Rules from FortiSIEM"}</span>
+            <RefreshCw className={`h-3 w-3 ${isSyncingRules ? "animate-spin" : ""}`} />
+            <span>{isSyncingRules ? "Syncing..." : "Sync FortiSIEM Rules"}</span>
           </button>
         </div>
       </div>
@@ -121,7 +121,7 @@ export default function RulesPage() {
       {/* Sync Feedback Banner */}
       {syncFeedback && (
         <div
-          className={`rounded-lg border p-3.5 text-xs flex items-center justify-between gap-3 ${
+          className={`rounded-lg border p-2.5 text-xs flex items-center justify-between gap-3 ${
             syncFeedback.type === "success"
               ? "border-emerald-800 bg-emerald-950/40 text-emerald-300"
               : "border-rose-800 bg-rose-950/40 text-rose-300"
@@ -129,9 +129,9 @@ export default function RulesPage() {
         >
           <div className="flex items-center gap-2">
             {syncFeedback.type === "success" ? (
-              <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
+              <CheckCircle className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
             ) : (
-              <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+              <AlertCircle className="h-3.5 w-3.5 text-rose-400 shrink-0" />
             )}
             <span>{syncFeedback.text}</span>
           </div>
@@ -140,38 +140,38 @@ export default function RulesPage() {
             onClick={() => setSyncFeedback(null)}
             className="text-slate-400 hover:text-white"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3 w-3" />
           </button>
         </div>
       )}
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col lg:flex-row gap-3 rounded-xl border border-slate-800 bg-slate-950 p-4">
+      <div className="flex flex-col md:flex-row gap-2 rounded-lg border border-slate-800 bg-slate-950 p-2 sm:p-2.5">
         <form onSubmit={handleSearchSubmit} className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search rules by name, event type, data source, or pattern keywords..."
-            className="w-full rounded-lg border border-slate-800 bg-slate-900 py-1.5 pl-9 pr-20 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-800 bg-slate-900 py-1 pl-8 pr-16 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
           />
           <button
             type="submit"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded bg-cyan-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-cyan-500"
+            className="absolute right-1 top-1/2 -translate-y-1/2 rounded bg-cyan-600 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-cyan-500"
           >
             Search
           </button>
         </form>
 
-        <div className="flex gap-2.5">
+        <div className="flex gap-2 items-center">
           <select
             value={severity}
             onChange={(e) => {
               setSeverity(e.target.value);
               setPage(1);
             }}
-            className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs text-slate-300 focus:border-cyan-500 focus:outline-none"
+            className="rounded-md border border-slate-800 bg-slate-900 px-2 py-1 text-xs text-slate-300 focus:border-cyan-500 focus:outline-none"
           >
             <option value="">All Severities</option>
             <option value="CRITICAL">Critical</option>
@@ -186,7 +186,7 @@ export default function RulesPage() {
               setStatus(e.target.value);
               setPage(1);
             }}
-            className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs text-slate-300 focus:border-cyan-500 focus:outline-none"
+            className="rounded-md border border-slate-800 bg-slate-900 px-2 py-1 text-xs text-slate-300 focus:border-cyan-500 focus:outline-none"
           >
             <option value="">All Statuses</option>
             <option value="ACTIVE">Active</option>
@@ -196,55 +196,55 @@ export default function RulesPage() {
       </div>
 
       {/* Rules Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-950 overflow-hidden shadow-sm">
+      <div className="rounded-lg border border-slate-800 bg-slate-950 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-900/60 text-[11px] font-mono text-slate-400">
-                <th className="py-3 px-4 font-medium">Rule Name / Event Type</th>
-                <th className="py-3 px-4 font-medium">Severity</th>
-                <th className="py-3 px-4 font-medium">Status</th>
-                <th className="py-3 px-4 font-medium">Data Source</th>
-                <th className="py-3 px-4 font-medium">Linked Incidents</th>
-                <th className="py-3 px-4 font-medium text-right">Action</th>
+              <tr className="border-b border-slate-800 bg-slate-900/60 text-[10px] font-mono text-slate-400">
+                <th className="py-2 px-2.5 font-medium">Rule Name / Event Type</th>
+                <th className="py-2 px-2.5 font-medium">Severity</th>
+                <th className="py-2 px-2.5 font-medium">Status</th>
+                <th className="py-2 px-2.5 font-medium">Data Source</th>
+                <th className="py-2 px-2.5 font-medium">Linked Incidents</th>
+                <th className="py-2 px-2.5 font-medium text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 font-sans">
+                  <td colSpan={6} className="py-8 text-center text-slate-400 font-sans text-xs">
                     Loading detection rules from database...
                   </td>
                 </tr>
               ) : rules.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500 font-sans">
+                  <td colSpan={6} className="py-8 text-center text-slate-500 font-sans text-xs">
                     No rules found in registry. Ingest a SIEM ZIP archive to automatically register rules.
                   </td>
                 </tr>
               ) : (
                 rules.map((rule) => (
                   <tr key={rule.id} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-slate-200">
+                    <td className="py-1.5 px-2.5 font-semibold text-slate-200">
                       <Link href={`/rules/${rule.id}`} className="text-cyan-400 hover:underline">
                         {rule.name}
                       </Link>
-                      <div className="text-[10px] text-slate-400 font-normal mt-0.5">
+                      <div className="text-[10px] text-slate-400 font-normal">
                         Event Type: <span className="text-slate-300">{rule.event_type}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-1.5 px-2.5">
                       <span
-                        className={`px-2 py-0.5 rounded border text-[10px] font-bold ${getSeverityBadge(
+                        className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${getSeverityBadge(
                           rule.severity
                         )}`}
                       >
                         {rule.severity}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-1.5 px-2.5">
                       <span
-                        className={`px-2 py-0.5 rounded border text-[10px] font-bold ${
+                        className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${
                           rule.status === "ACTIVE"
                             ? "bg-emerald-950 text-emerald-300 border-emerald-800"
                             : "bg-slate-900 text-slate-400 border-slate-800"
@@ -253,21 +253,21 @@ export default function RulesPage() {
                         {rule.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-slate-300 truncate max-w-[220px]" title={rule.data_source}>
+                    <td className="py-1.5 px-2.5 text-slate-300 truncate max-w-[200px]" title={rule.data_source}>
                       {rule.data_source || "SIEM Telemetry"}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-1.5 px-2.5">
                       <Link
                         href={`/incidents?rule_id=${encodeURIComponent(rule.event_type)}`}
-                        className="rounded bg-slate-900 px-2.5 py-1 text-[11px] text-cyan-300 border border-slate-800 hover:bg-slate-800 hover:border-cyan-800 transition-colors"
+                        className="rounded bg-slate-900 px-2 py-0.5 text-[10px] text-cyan-300 border border-slate-800 hover:bg-slate-800 hover:border-cyan-800 transition-colors"
                       >
                         {rule.incident_count} Incidents →
                       </Link>
                     </td>
-                    <td className="py-3 px-4 text-right font-sans">
+                    <td className="py-1.5 px-2.5 text-right font-sans">
                       <Link
                         href={`/rules/${rule.id}`}
-                        className="inline-flex items-center gap-1 rounded bg-slate-900 px-2.5 py-1 text-xs font-medium text-cyan-400 hover:bg-slate-800 hover:text-cyan-300 border border-slate-800"
+                        className="inline-flex items-center gap-1 rounded bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-cyan-400 hover:bg-slate-800 hover:text-cyan-300 border border-slate-800"
                       >
                         Details
                         <ExternalLink className="h-3 w-3" />

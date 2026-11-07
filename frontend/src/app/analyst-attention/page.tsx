@@ -247,83 +247,83 @@ export default function AnalystAttentionPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-800 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-2.5">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Analyst Attention Queue</h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-950/80 text-sky-400 border border-sky-800/60">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100">Analyst Attention Queue</h1>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-sky-950/80 text-sky-400 border border-sky-800/60 font-mono">
               Phase 2 Active
             </span>
           </div>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-[11px] text-slate-400 mt-0.5">
             Enterprise investigation console, Q&amp;A threads, evidence attribution, and verified verdict recording.
           </p>
         </div>
         <button
           onClick={fetchQueue}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-200 border border-zinc-700 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors"
         >
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh Queue
+          <RefreshCw className="w-3 h-3" /> Refresh Queue
         </button>
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="p-3.5 rounded-lg border border-zinc-800 bg-zinc-900/60">
-          <div className="text-xs font-medium text-zinc-400">Total Incidents</div>
-          <div className="text-2xl font-bold text-zinc-100 mt-1">{total}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+        <div className="p-2 sm:p-2.5 rounded-lg border border-slate-800 bg-slate-950 shadow-sm">
+          <div className="text-[10px] font-medium text-slate-400">Total Incidents</div>
+          <div className="text-xl font-bold text-slate-100 font-mono mt-0.5">{total}</div>
         </div>
-        <div className="p-3.5 rounded-lg border border-amber-900/30 bg-amber-950/10">
-          <div className="text-xs font-medium text-amber-400">Pending Review</div>
-          <div className="text-2xl font-bold text-amber-300 mt-1">
+        <div className="p-2 sm:p-2.5 rounded-lg border border-amber-900/30 bg-amber-950/20 shadow-sm">
+          <div className="text-[10px] font-medium text-amber-400">Pending Review</div>
+          <div className="text-xl font-bold text-amber-300 font-mono mt-0.5">
             {items.filter((i) => i.status === "PENDING_REVIEW").length}
           </div>
         </div>
-        <div className="p-3.5 rounded-lg border border-indigo-900/30 bg-indigo-950/10">
-          <div className="text-xs font-medium text-indigo-400">In Progress / Assigned</div>
-          <div className="text-2xl font-bold text-indigo-300 mt-1">
+        <div className="p-2 sm:p-2.5 rounded-lg border border-indigo-900/30 bg-indigo-950/20 shadow-sm">
+          <div className="text-[10px] font-medium text-indigo-400">In Progress / Assigned</div>
+          <div className="text-xl font-bold text-indigo-300 font-mono mt-0.5">
             {items.filter((i) => i.status === "ASSIGNED" || i.status === "IN_PROGRESS" || i.status === "AWAITING_INFORMATION").length}
           </div>
         </div>
-        <div className="p-3.5 rounded-lg border border-emerald-900/30 bg-emerald-950/10">
-          <div className="text-xs font-medium text-emerald-400">Analyst Reviewed</div>
-          <div className="text-2xl font-bold text-emerald-300 mt-1">
+        <div className="p-2 sm:p-2.5 rounded-lg border border-emerald-900/30 bg-emerald-950/20 shadow-sm">
+          <div className="text-[10px] font-medium text-emerald-400">Analyst Reviewed</div>
+          <div className="text-xl font-bold text-emerald-300 font-mono mt-0.5">
             {items.filter((i) => i.status === "REVIEWED").length}
           </div>
         </div>
-        <div className="p-3.5 rounded-lg border border-rose-900/30 bg-rose-950/10">
-          <div className="text-xs font-medium text-rose-400">Disputed Cases</div>
-          <div className="text-2xl font-bold text-rose-300 mt-1">
+        <div className="p-2 sm:p-2.5 rounded-lg border border-rose-900/30 bg-rose-950/20 shadow-sm col-span-2 sm:col-span-1">
+          <div className="text-[10px] font-medium text-rose-400">Disputed Cases</div>
+          <div className="text-xl font-bold text-rose-300 font-mono mt-0.5">
             {items.filter((i) => i.is_disputed).length}
           </div>
         </div>
       </div>
 
       {/* Filters & Search */}
-      <div className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/40 space-y-3">
-        <div className="flex flex-col md:flex-row gap-3">
-          <form onSubmit={handleSearchSubmit} className="flex-1 flex gap-2">
+      <div className="p-2 sm:p-2.5 rounded-lg border border-slate-800 bg-slate-950 space-y-2">
+        <div className="flex flex-col md:flex-row gap-2">
+          <form onSubmit={handleSearchSubmit} className="flex-1 flex gap-1.5">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-zinc-500" />
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-500" />
               <input
                 type="text"
                 placeholder="Search incident ID, title, IP, command line..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-md border border-zinc-800 bg-zinc-950 text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
+                className="w-full pl-8 pr-3 py-1 text-xs rounded-md border border-slate-800 bg-slate-900 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
               />
             </div>
             <button
               type="submit"
-              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium rounded-md border border-zinc-700 transition-colors"
+              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-md border border-slate-700 transition-colors"
             >
               Filter
             </button>
           </form>
 
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-1.5 items-center">
             {/* Status Filter */}
             <select
               value={statusFilter}
@@ -331,7 +331,7 @@ export default function AnalystAttentionPage() {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="px-2.5 py-1.5 text-xs rounded-md border border-zinc-800 bg-zinc-950 text-zinc-300 focus:outline-none focus:border-zinc-700"
+              className="px-2 py-1 text-xs rounded-md border border-slate-800 bg-slate-900 text-slate-300 focus:outline-none focus:border-cyan-500"
             >
               <option value="">All Review Statuses</option>
               <option value="PENDING_REVIEW">Pending Review</option>
@@ -349,7 +349,7 @@ export default function AnalystAttentionPage() {
                 setVerdictFilter(e.target.value);
                 setPage(1);
               }}
-              className="px-2.5 py-1.5 text-xs rounded-md border border-zinc-800 bg-zinc-950 text-zinc-300 focus:outline-none focus:border-zinc-700"
+              className="px-2 py-1 text-xs rounded-md border border-slate-800 bg-slate-900 text-slate-300 focus:outline-none focus:border-cyan-500"
             >
               <option value="">All Analyst Verdicts</option>
               <option value="TRUE_POSITIVE">True Positive</option>
@@ -363,10 +363,11 @@ export default function AnalystAttentionPage() {
                 setDisputedFilter(disputedFilter === true ? undefined : true);
                 setPage(1);
               }}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${disputedFilter === true
+              className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ${
+                disputedFilter === true
                   ? "bg-rose-950 text-rose-300 border-rose-800"
-                  : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:bg-zinc-800"
-                }`}
+                  : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800"
+              }`}
             >
               {disputedFilter === true ? "Showing Disputed Only" : "Disputed Only"}
             </button>
@@ -375,57 +376,57 @@ export default function AnalystAttentionPage() {
       </div>
 
       {/* Main Table */}
-      <div className="border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/30">
+      <div className="border border-slate-800 rounded-lg overflow-hidden bg-slate-950 shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-zinc-300">
-            <thead className="bg-zinc-900/80 text-zinc-400 uppercase tracking-wider text-[11px] border-b border-zinc-800">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-900/60 text-slate-400 uppercase tracking-wider text-[10px] font-mono border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4 font-semibold">Incident ID / Title</th>
-                <th className="py-3 px-3 font-semibold">Rule / Event Type</th>
-                <th className="py-3 px-3 font-semibold">Severity</th>
-                <th className="py-3 px-3 font-semibold">Status</th>
-                <th className="py-3 px-3 font-semibold">Assigned Analyst</th>
-                <th className="py-3 px-3 font-semibold">Analyst Verdict</th>
-                <th className="py-3 px-3 font-semibold text-center">Telemetry</th>
-                <th className="py-3 px-4 text-right font-semibold">Action</th>
+                <th className="py-2 px-2.5 font-semibold">Incident ID / Title</th>
+                <th className="py-2 px-2.5 font-semibold">Rule / Event Type</th>
+                <th className="py-2 px-2.5 font-semibold">Severity</th>
+                <th className="py-2 px-2.5 font-semibold">Status</th>
+                <th className="py-2 px-2.5 font-semibold">Assigned Analyst</th>
+                <th className="py-2 px-2.5 font-semibold">Analyst Verdict</th>
+                <th className="py-2 px-2.5 font-semibold text-center">Telemetry</th>
+                <th className="py-2 px-2.5 text-right font-semibold">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-850">
+            <tbody className="divide-y divide-slate-800/60">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-zinc-500">
-                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-zinc-600" />
+                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                    <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1.5 text-slate-600" />
                     Loading investigation queue...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-zinc-500">
+                  <td colSpan={8} className="py-8 text-center text-slate-500">
                     No incidents matching selected filters in queue.
                   </td>
                 </tr>
               ) : (
                 items.map((item) => (
-                  <tr key={item.id} className="hover:bg-zinc-800/40 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-zinc-100 flex items-center gap-1.5">
+                  <tr key={item.id} className="hover:bg-slate-900/40 transition-colors">
+                    <td className="py-1.5 px-2.5">
+                      <div className="font-semibold text-slate-100 flex items-center gap-1.5 font-mono">
                         {item.incident_vendor_id || item.incident_id}
                         {item.is_disputed && (
-                          <span className="px-1.5 py-0.2 rounded text-[10px] bg-rose-950 text-rose-400 border border-rose-800">
+                          <span className="px-1 py-0.2 rounded text-[9px] bg-rose-950 text-rose-400 border border-rose-800">
                             Disputed
                           </span>
                         )}
                       </div>
-                      <div className="text-zinc-400 text-[11px] line-clamp-1 max-w-sm mt-0.5">
+                      <div className="text-slate-400 text-[10px] line-clamp-1 max-w-sm">
                         {item.title}
                       </div>
                     </td>
-                    <td className="py-3 px-3 text-zinc-300">
-                      <div className="font-medium text-zinc-200 line-clamp-1">{item.rule_name || item.event_type}</div>
-                      <div className="text-[10px] text-zinc-500 font-mono">{item.event_type}</div>
+                    <td className="py-1.5 px-2.5 text-slate-300">
+                      <div className="font-medium text-slate-200 line-clamp-1 max-w-[180px]">{item.rule_name || item.event_type}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">{item.event_type}</div>
                     </td>
-                    <td className="py-3 px-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.severity === "CRITICAL"
+                    <td className="py-1.5 px-2.5">
+                      <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${item.severity === "CRITICAL"
                           ? "bg-rose-950/70 text-rose-400 border border-rose-800/60"
                           : item.severity === "HIGH"
                             ? "bg-orange-950/70 text-orange-400 border border-orange-800/60"
@@ -434,38 +435,38 @@ export default function AnalystAttentionPage() {
                         {item.severity || "MEDIUM"}
                       </span>
                     </td>
-                    <td className="py-3 px-3">
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-medium border ${getStatusBadge(item.status)}`}>
+                    <td className="py-1.5 px-2.5">
+                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-medium border ${getStatusBadge(item.status)}`}>
                         {item.status.replace("_", " ")}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-zinc-300">
+                    <td className="py-1.5 px-2.5 text-slate-300">
                       {item.assigned_to_username ? (
-                        <span className="inline-flex items-center gap-1 text-zinc-200 font-medium">
-                          <UserCheck className="w-3.5 h-3.5 text-sky-400" />
+                        <span className="inline-flex items-center gap-1 text-slate-200 font-medium text-xs">
+                          <UserCheck className="w-3 h-3 text-sky-400" />
                           {item.assigned_to_username}
                         </span>
                       ) : (
-                        <span className="text-zinc-500 text-xs italic">Unassigned</span>
+                        <span className="text-slate-500 text-xs italic">Unassigned</span>
                       )}
                     </td>
-                    <td className="py-3 px-3">
+                    <td className="py-1.5 px-2.5">
                       {getVerdictBadge(item.analyst_verdict)}
                     </td>
-                    <td className="py-3 px-3 text-center">
-                      <div className="inline-flex gap-2 text-zinc-400 text-xs">
+                    <td className="py-1.5 px-2.5 text-center">
+                      <div className="inline-flex gap-2 text-slate-400 text-[11px]">
                         <span title="Questions & Answers" className="flex items-center gap-0.5">
-                          <HelpCircle className="w-3.5 h-3.5 text-zinc-500" /> {item.question_count}
+                          <HelpCircle className="w-3 h-3 text-slate-500" /> {item.question_count}
                         </span>
                         <span title="Evidence Artifacts" className="flex items-center gap-0.5">
-                          <Paperclip className="w-3.5 h-3.5 text-zinc-500" /> {item.evidence_count}
+                          <Paperclip className="w-3 h-3 text-slate-500" /> {item.evidence_count}
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-1.5 px-2.5 text-right">
                       <button
                         onClick={() => openInvestigation(item.id)}
-                        className="px-3 py-1 bg-sky-950/60 hover:bg-sky-900/60 text-sky-300 border border-sky-800/60 rounded text-xs font-medium transition-colors"
+                        className="px-2.5 py-0.5 bg-sky-950/60 hover:bg-sky-900/60 text-sky-300 border border-sky-800/60 rounded text-xs font-medium transition-colors"
                       >
                         Investigate
                       </button>
@@ -481,38 +482,38 @@ export default function AnalystAttentionPage() {
       {/* Investigation Detail Workspace Drawer / Modal */}
       {selectedInvestigation && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex justify-end">
-          <div className="w-full max-w-3xl bg-zinc-950 border-l border-zinc-800 h-full overflow-y-auto flex flex-col p-6 space-y-6 shadow-2xl animate-in slide-in-from-right duration-200">
+          <div className="w-full max-w-2xl sm:max-w-3xl bg-slate-950 border-l border-slate-800 h-full overflow-y-auto flex flex-col p-3.5 sm:p-4 space-y-3 shadow-2xl animate-in slide-in-from-right duration-200">
             {/* Drawer Header */}
-            <div className="flex items-start justify-between border-b border-zinc-800 pb-4">
+            <div className="flex items-start justify-between border-b border-slate-800 pb-2.5">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-900 border border-slate-800 text-slate-400">
                     {selectedInvestigation.incident_vendor_id}
                   </span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusBadge(selectedInvestigation.status)}`}>
+                  <span className={`px-1.5 py-0.2 rounded text-[10px] font-medium border ${getStatusBadge(selectedInvestigation.status)}`}>
                     {selectedInvestigation.status.replace("_", " ")}
                   </span>
                   {selectedInvestigation.is_disputed && (
-                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-rose-950 text-rose-400 border border-rose-800">
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-950 text-rose-400 border border-rose-800">
                       Disputed
                     </span>
                   )}
                 </div>
-                <h2 className="text-lg font-bold text-zinc-100 mt-1.5">{selectedInvestigation.title}</h2>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Rule: <span className="text-zinc-300 font-medium">{selectedInvestigation.rule_name}</span> &bull; Event: <span className="font-mono">{selectedInvestigation.event_type}</span>
+                <h2 className="text-sm sm:text-base font-bold text-slate-100 mt-1">{selectedInvestigation.title}</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Rule: <span className="text-slate-300 font-medium">{selectedInvestigation.rule_name}</span> &bull; Event: <span className="font-mono">{selectedInvestigation.event_type}</span>
                 </p>
               </div>
               <button
                 onClick={() => setSelectedInvestigation(null)}
-                className="p-1 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                className="p-1 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-900"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {feedbackMsg && (
-              <div className={`p-3 rounded-md text-xs border ${feedbackMsg.type === "success"
+              <div className={`p-2 rounded-md text-xs border ${feedbackMsg.type === "success"
                   ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
                   : "bg-rose-950/60 border-rose-800 text-rose-300"
                 }`}>
@@ -521,16 +522,16 @@ export default function AnalystAttentionPage() {
             )}
 
             {/* Quick Actions Bar: Assignment & Status */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-lg border border-zinc-800 bg-zinc-900/40">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2.5 rounded-lg border border-slate-800 bg-slate-900/40">
               <div>
-                <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
                   Analyst Assignment
                 </label>
                 <div className="flex gap-2">
                   <select
                     value={selectedInvestigation.assigned_to_user_id || ""}
                     onChange={(e) => handleAssign(e.target.value || null)}
-                    className="flex-1 px-2.5 py-1.5 text-xs rounded border border-zinc-800 bg-zinc-950 text-zinc-200 focus:outline-none"
+                    className="flex-1 px-2 py-1 text-xs rounded border border-slate-800 bg-slate-950 text-slate-200 focus:outline-none"
                   >
                     <option value="">Unassigned</option>
                     {users.map((u) => (
@@ -543,13 +544,13 @@ export default function AnalystAttentionPage() {
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
                   Workflow Status
                 </label>
                 <select
                   value={selectedInvestigation.status}
                   onChange={(e) => handleStatusChange(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs rounded border border-zinc-800 bg-zinc-950 text-zinc-200 focus:outline-none"
+                  className="w-full px-2 py-1 text-xs rounded border border-slate-800 bg-slate-950 text-slate-200 focus:outline-none"
                 >
                   <option value="PENDING_REVIEW">Pending Review</option>
                   <option value="ASSIGNED">Assigned</option>
@@ -562,82 +563,82 @@ export default function AnalystAttentionPage() {
             </div>
 
             {/* Incident Telemetry Summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 rounded-lg border border-zinc-800/80 bg-zinc-900/20 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-2 rounded-lg border border-slate-800 bg-slate-900/20 text-xs">
               <div>
-                <span className="text-zinc-500 block text-[10px] uppercase">Source IP</span>
-                <span className="font-mono text-zinc-200">{selectedInvestigation.source_ip || "N/A"}</span>
+                <span className="text-slate-500 block text-[9px] uppercase">Source IP</span>
+                <span className="font-mono text-slate-200 text-[11px]">{selectedInvestigation.source_ip || "N/A"}</span>
               </div>
               <div>
-                <span className="text-zinc-500 block text-[10px] uppercase">Reporting Device</span>
-                <span className="font-medium text-zinc-200">{selectedInvestigation.reporting_device || "N/A"}</span>
+                <span className="text-slate-500 block text-[9px] uppercase">Reporting Device</span>
+                <span className="font-medium text-slate-200 text-[11px] truncate block">{selectedInvestigation.reporting_device || "N/A"}</span>
               </div>
               <div>
-                <span className="text-zinc-500 block text-[10px] uppercase">Severity</span>
-                <span className="font-medium text-zinc-200">{selectedInvestigation.severity || "MEDIUM"}</span>
+                <span className="text-slate-500 block text-[9px] uppercase">Severity</span>
+                <span className="font-medium text-slate-200 text-[11px]">{selectedInvestigation.severity || "MEDIUM"}</span>
               </div>
               <div>
-                <span className="text-zinc-500 block text-[10px] uppercase">Full Dossier</span>
+                <span className="text-slate-500 block text-[9px] uppercase">Full Dossier</span>
                 <Link
                   href={`/incidents/${selectedInvestigation.incident_id}`}
-                  className="text-sky-400 hover:underline flex items-center gap-1 font-medium"
+                  className="text-sky-400 hover:underline flex items-center gap-1 font-medium text-[11px]"
                 >
-                  <Eye className="w-3.5 h-3.5" /> View Incident
+                  <Eye className="w-3 h-3" /> View Incident
                 </Link>
               </div>
             </div>
 
             {/* Section 1: Investigation Q&A */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-zinc-200 flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4 text-sky-400" />
+                <h3 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5 text-sky-400" />
                   Investigation Questions &amp; Answers
                 </h3>
-                <span className="text-xs text-zinc-500 font-mono">
+                <span className="text-[10px] text-slate-500 font-mono">
                   {selectedInvestigation.questions.length} items
                 </span>
               </div>
 
               {selectedInvestigation.questions.length === 0 ? (
-                <div className="p-4 border border-dashed border-zinc-800 rounded-lg text-center text-xs text-zinc-500">
+                <div className="p-3 border border-dashed border-slate-800 rounded-lg text-center text-xs text-slate-500">
                   No investigation questions recorded yet. Add investigative hypotheses below.
                 </div>
               ) : (
-                <div className="space-y-2.5">
+                <div className="space-y-1.5">
                   {selectedInvestigation.questions.map((q) => (
-                    <div key={q.id} className="p-3 rounded-lg border border-zinc-800/90 bg-zinc-900/40 text-xs space-y-2">
-                      <div className="font-semibold text-zinc-200 flex items-start gap-2">
+                    <div key={q.id} className="p-2.5 rounded-lg border border-slate-800 bg-slate-900/40 text-xs space-y-1.5">
+                      <div className="font-semibold text-slate-200 flex items-start gap-1.5">
                         <span className="text-sky-400 font-bold">Q:</span>
                         <span>{q.question}</span>
                       </div>
                       {q.answer ? (
-                        <div className="pl-4 border-l-2 border-emerald-600 text-zinc-300">
-                          <span className="text-emerald-400 font-semibold block text-[11px]">Analyst Response:</span>
-                          <span className="text-zinc-200 whitespace-pre-wrap">{q.answer}</span>
+                        <div className="pl-3 border-l-2 border-emerald-600 text-slate-300">
+                          <span className="text-emerald-400 font-semibold block text-[10px]">Analyst Response:</span>
+                          <span className="text-slate-200 whitespace-pre-wrap text-xs">{q.answer}</span>
                         </div>
                       ) : (
-                        <div className="pl-4">
+                        <div className="pl-3">
                           {activeAnswerId === q.id ? (
-                            <div className="space-y-2 mt-2">
+                            <div className="space-y-1.5 mt-1.5">
                               <textarea
                                 value={answerText}
                                 onChange={(e) => setAnswerText(e.target.value)}
                                 placeholder="Enter investigative answer..."
                                 rows={2}
-                                className="w-full p-2 text-xs rounded border border-zinc-700 bg-zinc-950 text-zinc-200 focus:outline-none"
+                                className="w-full p-2 text-xs rounded border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
                               />
-                              <div className="flex gap-2 justify-end">
+                              <div className="flex gap-1.5 justify-end">
                                 <button
                                   type="button"
                                   onClick={() => setActiveAnswerId(null)}
-                                  className="px-2.5 py-1 text-xs text-zinc-400 hover:text-zinc-200"
+                                  className="px-2 py-0.5 text-xs text-slate-400 hover:text-slate-200"
                                 >
                                   Cancel
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleAnswerQuestion(q.id)}
-                                  className="px-3 py-1 bg-emerald-700 hover:bg-emerald-600 text-zinc-100 rounded text-xs font-medium"
+                                  className="px-2.5 py-0.5 bg-emerald-700 hover:bg-emerald-600 text-slate-100 rounded text-xs font-medium"
                                 >
                                   Save Answer
                                 </button>
@@ -663,17 +664,17 @@ export default function AnalystAttentionPage() {
               )}
 
               {/* Add Question Input */}
-              <form onSubmit={handleAddQuestion} className="flex gap-2">
+              <form onSubmit={handleAddQuestion} className="flex gap-1.5">
                 <input
                   type="text"
                   placeholder="Record an investigation question (e.g. Is parent process signed?)..."
                   value={newQuestion}
                   onChange={(e) => setNewQuestion(e.target.value)}
-                  className="flex-1 px-3 py-1.5 text-xs rounded border border-zinc-800 bg-zinc-950 text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
+                  className="flex-1 px-2.5 py-1 text-xs rounded border border-slate-800 bg-slate-950 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                 />
                 <button
                   type="submit"
-                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-xs font-medium border border-zinc-700 transition-colors"
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-medium border border-slate-700 transition-colors"
                 >
                   Add Question
                 </button>
@@ -681,33 +682,33 @@ export default function AnalystAttentionPage() {
             </div>
 
             {/* Section 2: Supporting Evidence Artifacts */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-zinc-200 flex items-center gap-2">
-                  <Paperclip className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <Paperclip className="w-3.5 h-3.5 text-emerald-400" />
                   Supporting Evidence Artifacts
                 </h3>
-                <span className="text-xs text-zinc-500 font-mono">
+                <span className="text-[10px] text-slate-500 font-mono">
                   {selectedInvestigation.evidence_items.length} artifacts
                 </span>
               </div>
 
               {selectedInvestigation.evidence_items.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {selectedInvestigation.evidence_items.map((ev) => (
-                    <div key={ev.id} className="p-3 rounded-lg border border-zinc-800 bg-zinc-900/30 text-xs space-y-1">
+                    <div key={ev.id} className="p-2.5 rounded-lg border border-slate-800 bg-slate-900/30 text-xs space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-800 text-zinc-300 font-mono">
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-800 text-slate-300 font-mono">
                           {ev.evidence_type}
                         </span>
-                        <span className="text-[10px] text-zinc-500 font-mono">{ev.reference_key}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">{ev.reference_key}</span>
                       </div>
-                      <div className="font-mono text-zinc-300 bg-zinc-950 p-2 rounded border border-zinc-850 mt-1 whitespace-pre-wrap">
+                      <div className="font-mono text-slate-300 bg-slate-950 p-2 rounded border border-slate-800 text-[11px] whitespace-pre-wrap max-h-32 overflow-y-auto">
                         {ev.evidence_content}
                       </div>
                       {ev.analyst_rationale && (
-                        <div className="text-zinc-400 text-[11px] pt-1">
-                          <span className="text-zinc-500 font-semibold">Rationale: </span>
+                        <div className="text-slate-400 text-[10px] pt-0.5">
+                          <span className="text-slate-500 font-semibold">Rationale: </span>
                           {ev.analyst_rationale}
                         </div>
                       )}
@@ -717,15 +718,15 @@ export default function AnalystAttentionPage() {
               )}
 
               {/* Attach Evidence Form */}
-              <form onSubmit={handleAttachEvidence} className="p-3 rounded-lg border border-zinc-800 bg-zinc-900/30 space-y-2 text-xs">
-                <div className="font-semibold text-zinc-300">Attach New Evidence Artifact</div>
+              <form onSubmit={handleAttachEvidence} className="p-2.5 rounded-lg border border-slate-800 bg-slate-900/30 space-y-1.5 text-xs">
+                <div className="font-semibold text-slate-300 text-xs">Attach New Evidence Artifact</div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] uppercase text-zinc-500">Type</label>
+                    <label className="text-[9px] uppercase text-slate-500">Type</label>
                     <select
                       value={evidenceType}
                       onChange={(e) => setEvidenceType(e.target.value)}
-                      className="w-full px-2 py-1 text-xs rounded border border-zinc-800 bg-zinc-950 text-zinc-300"
+                      className="w-full px-2 py-1 text-xs rounded border border-slate-800 bg-slate-950 text-slate-300"
                     >
                       <option value="TELEMETRY">Telemetry Log</option>
                       <option value="PROCESS_TREE">Process Tree</option>
@@ -735,39 +736,39 @@ export default function AnalystAttentionPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase text-zinc-500">Reference Key / Artifact</label>
+                    <label className="text-[9px] uppercase text-slate-500">Reference Key / Artifact</label>
                     <input
                       type="text"
                       placeholder="e.g. powershell.exe -enc"
                       value={evidenceKey}
                       onChange={(e) => setEvidenceKey(e.target.value)}
-                      className="w-full px-2 py-1 text-xs rounded border border-zinc-800 bg-zinc-950 text-zinc-300"
+                      className="w-full px-2 py-1 text-xs rounded border border-slate-800 bg-slate-950 text-slate-300"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase text-zinc-500">Artifact Content</label>
+                  <label className="text-[9px] uppercase text-slate-500">Artifact Content</label>
                   <textarea
                     rows={2}
                     placeholder="Raw artifact details or decoded command payload..."
                     value={evidenceContent}
                     onChange={(e) => setEvidenceContent(e.target.value)}
-                    className="w-full px-2 py-1 text-xs rounded border border-zinc-800 bg-zinc-950 text-zinc-300 font-mono"
+                    className="w-full px-2 py-1 text-xs rounded border border-slate-800 bg-slate-950 text-slate-300 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase text-zinc-500">Analyst Rationale</label>
+                  <label className="text-[9px] uppercase text-slate-500">Analyst Rationale</label>
                   <input
                     type="text"
                     placeholder="Why this artifact proves malicious or benign activity..."
                     value={evidenceRationale}
                     onChange={(e) => setEvidenceRationale(e.target.value)}
-                    className="w-full px-2 py-1 text-xs rounded border border-zinc-800 bg-zinc-950 text-zinc-300"
+                    className="w-full px-2 py-1 text-xs rounded border border-slate-800 bg-slate-950 text-slate-300"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-xs font-medium border border-zinc-700"
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-medium border border-slate-700"
                 >
                   Save Evidence
                 </button>
@@ -775,56 +776,56 @@ export default function AnalystAttentionPage() {
             </div>
 
             {/* Section 3: Final Analyst Verdict Console */}
-            <form onSubmit={handleSubmitVerdict} className="p-4 rounded-lg border border-sky-900/50 bg-sky-950/10 space-y-4">
-              <div className="flex items-center justify-between border-b border-sky-900/40 pb-2">
-                <h3 className="text-sm font-bold text-sky-300 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-sky-400" />
+            <form onSubmit={handleSubmitVerdict} className="p-3 rounded-lg border border-sky-900/50 bg-sky-950/10 space-y-2.5">
+              <div className="flex items-center justify-between border-b border-sky-900/40 pb-1.5">
+                <h3 className="text-xs font-bold text-sky-300 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
                   Record Verified Analyst Verdict
                 </h3>
-                <span className="text-[10px] text-zinc-400 font-mono">Dual-Verdict Architecture</span>
+                <span className="text-[9px] text-slate-400 font-mono">Dual-Verdict Architecture</span>
               </div>
 
               {/* Notice regarding ground truth safety */}
-              <div className="flex items-start gap-2 p-2.5 rounded bg-zinc-900/90 border border-zinc-800 text-[11px] text-zinc-400">
-                <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-1.5 p-2 rounded bg-slate-900/90 border border-slate-800 text-[10px] text-slate-400">
+                <Info className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Ground Truth Isolation Guarantee:</strong> Your verified verdict is stored in the analyst investigation repository. The imported SIEM historical ground truth remains permanently isolated in its dedicated table to ensure zero training contamination.
+                  <strong>Ground Truth Isolation:</strong> Verdict is stored in the analyst investigation repository while SIEM historical ground truth remains isolated.
                 </span>
               </div>
 
               {/* Verdict Selection */}
               <div>
-                <label className="text-xs font-semibold text-zinc-300 block mb-2">Verdict Outcome</label>
-                <div className="grid grid-cols-3 gap-2">
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">Verdict Outcome</label>
+                <div className="grid grid-cols-3 gap-1.5">
                   <button
                     type="button"
                     onClick={() => setVerdictChoice("TRUE_POSITIVE")}
-                    className={`py-2 px-3 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1.5 ${verdictChoice === "TRUE_POSITIVE"
+                    className={`py-1.5 px-2 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1 ${verdictChoice === "TRUE_POSITIVE"
                         ? "bg-rose-950 text-rose-300 border-rose-700 shadow-sm"
-                        : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800"
+                        : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800"
                       }`}
                   >
-                    <ShieldAlert className="w-3.5 h-3.5" /> True Positive
+                    <ShieldAlert className="w-3 h-3" /> True Positive
                   </button>
                   <button
                     type="button"
                     onClick={() => setVerdictChoice("FALSE_POSITIVE")}
-                    className={`py-2 px-3 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1.5 ${verdictChoice === "FALSE_POSITIVE"
+                    className={`py-1.5 px-2 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1 ${verdictChoice === "FALSE_POSITIVE"
                         ? "bg-emerald-950 text-emerald-300 border-emerald-700 shadow-sm"
-                        : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800"
+                        : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800"
                       }`}
                   >
-                    <ShieldCheck className="w-3.5 h-3.5" /> False Positive
+                    <ShieldCheck className="w-3 h-3" /> False Positive
                   </button>
                   <button
                     type="button"
                     onClick={() => setVerdictChoice("REQUIRES_ATTENTION")}
-                    className={`py-2 px-3 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1.5 ${verdictChoice === "REQUIRES_ATTENTION"
+                    className={`py-1.5 px-2 text-xs font-bold rounded border transition-colors flex items-center justify-center gap-1 ${verdictChoice === "REQUIRES_ATTENTION"
                         ? "bg-amber-950 text-amber-300 border-amber-700 shadow-sm"
-                        : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800"
+                        : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800"
                       }`}
                   >
-                    <AlertTriangle className="w-3.5 h-3.5" /> Requires Attention
+                    <AlertTriangle className="w-3 h-3" /> Attention
                   </button>
                 </div>
               </div>
@@ -832,86 +833,86 @@ export default function AnalystAttentionPage() {
               {/* Insufficient Evidence Reason (Conditional or Highlighted) */}
               {verdictChoice === "REQUIRES_ATTENTION" && (
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-amber-300 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" />
+                  <label className="text-[11px] font-semibold text-amber-300 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
                     Explicit Insufficient Evidence Reason (Mandatory)
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="Specify why evidence is insufficient (e.g., Parent command line truncated in raw event)..."
+                    placeholder="Specify why evidence is insufficient (e.g., Parent command line truncated)..."
                     value={insufficientReason}
                     onChange={(e) => setInsufficientReason(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs rounded border border-amber-800/80 bg-zinc-950 text-amber-200 placeholder-zinc-500 focus:outline-none"
+                    className="w-full px-2.5 py-1 text-xs rounded border border-amber-800/80 bg-slate-950 text-amber-200 placeholder-slate-500 focus:outline-none"
                   />
                 </div>
               )}
 
               {/* Rationale & Notes */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-zinc-300">Investigation Verdict Rationale</label>
+                <label className="text-[11px] font-semibold text-slate-300">Investigation Verdict Rationale</label>
                 <textarea
                   rows={2}
                   required
                   placeholder="Explain the definitive rationale for this verdict..."
                   value={verdictReason}
                   onChange={(e) => setVerdictReason(e.target.value)}
-                  className="w-full p-2.5 text-xs rounded border border-zinc-800 bg-zinc-950 text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
+                  className="w-full p-2 text-xs rounded border border-slate-800 bg-slate-950 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-700"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-zinc-300">Analyst Handover Notes (Optional)</label>
+                <label className="text-[11px] font-semibold text-slate-300">Analyst Handover Notes (Optional)</label>
                 <textarea
                   rows={2}
                   placeholder="Remediation steps taken, host isolation notes, or follow-ups..."
                   value={analystNotes}
                   onChange={(e) => setAnalystNotes(e.target.value)}
-                  className="w-full p-2.5 text-xs rounded border border-zinc-800 bg-zinc-950 text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
+                  className="w-full p-2 text-xs rounded border border-slate-800 bg-slate-950 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-700"
                 />
               </div>
 
               {/* Quality Flags */}
-              <div className="space-y-2 pt-2 border-t border-zinc-800/80">
-                <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+              <div className="space-y-1.5 pt-1.5 border-t border-slate-800/80">
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={isDisputed}
                     onChange={(e) => setIsDisputed(e.target.checked)}
-                    className="rounded border-zinc-700 bg-zinc-950 text-rose-500 focus:ring-0"
+                    className="rounded border-slate-700 bg-slate-950 text-rose-500 focus:ring-0"
                   />
                   <span>
                     <strong>Mark as Disputed:</strong> Historical resolution disagrees with technical telemetry.
                   </span>
                 </label>
 
-                <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={isVerified}
                     onChange={(e) => setIsVerified(e.target.checked)}
-                    className="rounded border-zinc-700 bg-zinc-950 text-emerald-500 focus:ring-0"
+                    className="rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-0"
                   />
                   <span>
-                    <strong>Independently Verified:</strong> This case has been rigorously verified and qualifies for promotion into the verified AI learning knowledge base.
+                    <strong>Independently Verified:</strong> Qualifies for promotion into the verified AI learning knowledge base.
                   </span>
                 </label>
               </div>
 
               {/* Submit Button */}
-              <div className="pt-2">
+              <div className="pt-1">
                 <button
                   type="submit"
                   disabled={submittingVerdict}
-                  className="w-full py-2.5 bg-sky-700 hover:bg-sky-600 disabled:opacity-50 text-white rounded text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-1.5 bg-sky-700 hover:bg-sky-600 disabled:opacity-50 text-white rounded text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
                 >
                   {submittingVerdict ? (
                     <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Recording Verdict...
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Recording Verdict...
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-4 h-4" /> Finalize &amp; Save Verified Verdict
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Finalize &amp; Save Verified Verdict
                     </>
                   )}
                 </button>

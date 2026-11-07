@@ -131,40 +131,40 @@ export default function ImportsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-3.5 max-w-5xl mx-auto">
       {/* Page Header */}
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-100 flex items-center gap-2.5">
-          <DownloadCloud className="h-5 w-5 text-cyan-400" />
-          FortiSIEM Incident Ingestion & Sync Portal
+        <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 flex items-center gap-2">
+          <DownloadCloud className="h-4 w-4 text-cyan-400" />
+          FortiSIEM Incident Ingestion &amp; Sync Portal
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-[11px] text-slate-400 mt-0.5">
           Pull live security incidents on-demand by FortiSIEM Incident ID, or upload batch telemetry archives with zero ground-truth leakage
         </p>
       </div>
 
       {/* 1. FortiSIEM On-Demand Pull Card */}
-      <div className="rounded-xl border border-cyan-900/60 bg-gradient-to-br from-slate-950 via-slate-900/90 to-cyan-950/20 p-6 shadow-lg shadow-cyan-950/10 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+      <div className="rounded-lg border border-cyan-900/60 bg-gradient-to-br from-slate-950 via-slate-900/90 to-cyan-950/20 p-3 sm:p-3.5 shadow-md shadow-cyan-950/10 space-y-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
           <div>
-            <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              <Server className="h-4 w-4 text-cyan-400" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+              <Server className="h-3.5 w-3.5 text-cyan-400" />
               Pull Incident by FortiSIEM Incident ID
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-[11px] text-slate-400 mt-0.5">
               Enter any FortiSIEM Incident ID to query the Supervisor API, ingest triggering logs, and isolate ground-truth
             </p>
           </div>
 
           {/* Mode & Connection Status Badge */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {siemStatus?.is_configured ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Live FortiSIEM Connected ({siemStatus.host})
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-sky-950 text-sky-300 border border-sky-800 font-mono">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-950 text-sky-300 border border-sky-800 font-mono">
                 <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
                 Fixture Fallback Mode (Ready)
               </span>
@@ -172,7 +172,7 @@ export default function ImportsPage() {
 
             <Link
               href="/rules"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <FileCode2 className="h-3 w-3 text-cyan-400" />
               <span>SIEM Rules</span>
@@ -180,7 +180,7 @@ export default function ImportsPage() {
 
             <Link
               href="/settings#fortisiem"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <Settings className="h-3 w-3 text-cyan-400" />
               <span>Configure SIEM</span>
@@ -189,8 +189,8 @@ export default function ImportsPage() {
         </div>
 
         {/* Pull Form */}
-        <form onSubmit={handlePullFortiSiem} className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
+        <form onSubmit={handlePullFortiSiem} className="space-y-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1 relative">
               <input
                 type="text"
@@ -201,13 +201,13 @@ export default function ImportsPage() {
                     ? `Enter FortiSIEM Incident ID (e.g., ${siemStatus.live_incident_ids.slice(0, 2).join(" or ")})...`
                     : "Enter FortiSIEM Incident ID (e.g., 171005 or 157803)..."
                 }
-                className="w-full rounded-lg border border-slate-700 bg-slate-900/90 py-2.5 pl-3.5 pr-10 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 pl-3 pr-8 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
               />
               {siemIncidentId && (
                 <button
                   type="button"
                   onClick={() => setSiemIncidentId("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs font-mono"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs font-mono"
                 >
                   Clear
                 </button>
@@ -217,16 +217,16 @@ export default function ImportsPage() {
             <button
               type="submit"
               disabled={!siemIncidentId.trim() || isPullingSiem}
-              className="rounded-lg bg-cyan-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-sm shadow-cyan-900/40"
+              className="rounded-md bg-cyan-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 shadow-sm shadow-cyan-900/40"
             >
               {isPullingSiem ? (
                 <>
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  <RefreshCw className="h-3 w-3 animate-spin" />
                   Querying FortiSIEM...
                 </>
               ) : (
                 <>
-                  <Zap className="h-3.5 w-3.5 text-cyan-200" />
+                  <Zap className="h-3 w-3 text-cyan-200" />
                   Pull Incident
                 </>
               )}
@@ -235,9 +235,9 @@ export default function ImportsPage() {
 
           {/* Live Incident Quick-Picks (Supervisor API) */}
           {siemStatus?.live_incident_ids && siemStatus.live_incident_ids.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] text-emerald-400 font-medium font-mono flex items-center gap-1 mr-1">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="flex flex-wrap items-center gap-1 pt-0.5">
+              <span className="text-[10px] text-emerald-400 font-medium font-mono flex items-center gap-1 mr-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Live Incidents on FortiSIEM:
               </span>
               {siemStatus.live_incident_ids.map((id) => (
@@ -249,7 +249,7 @@ export default function ImportsPage() {
                     handlePullFortiSiem(undefined, id);
                   }}
                   disabled={isPullingSiem}
-                  className="px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-emerald-950/80 border border-emerald-700/80 text-emerald-300 hover:bg-emerald-900 hover:border-emerald-400 hover:text-white transition-all shadow-sm"
+                  className="px-2 py-0.2 rounded text-[10px] font-mono font-semibold bg-emerald-950/80 border border-emerald-700/80 text-emerald-300 hover:bg-emerald-900 hover:border-emerald-400 hover:text-white transition-all shadow-sm"
                   title={`Pull live FortiSIEM incident #${id}`}
                 >
                   #{id}
@@ -362,21 +362,21 @@ export default function ImportsPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3 pt-1">
+            <div className="flex items-center gap-2 pt-0.5">
               {siemResult.db_id && (
                 <Link
                   href={`/incidents/${siemResult.db_id}`}
-                  className="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-xs font-bold text-white hover:bg-cyan-500 transition-colors shadow-sm"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-cyan-600 px-3 py-1 text-xs font-bold text-white hover:bg-cyan-500 transition-colors shadow-sm"
                 >
-                  View Incident & Run AI Investigation
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  View Incident &amp; Investigate
+                  <ArrowRight className="h-3 w-3" />
                 </Link>
               )}
               <Link
                 href="/analyst-attention"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
               >
-                Go to Analyst Queue
+                Analyst Queue
               </Link>
             </div>
           </div>
@@ -384,22 +384,22 @@ export default function ImportsPage() {
       </div>
 
       {/* 2. File Upload Card */}
-      <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-200 mb-1">Batch Archive or JSON Telemetry Upload</h2>
-        <p className="text-xs text-slate-400 mb-4">
+      <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 sm:p-3.5 shadow-sm space-y-2">
+        <h2 className="text-xs sm:text-sm font-bold text-slate-200">Batch Archive or JSON Telemetry Upload</h2>
+        <p className="text-[11px] text-slate-400">
           Supports <code className="text-cyan-400 font-mono">.zip</code> archives containing nested JSON files and <code className="text-cyan-400 font-mono">Rule_info.txt</code> specifications, or standalone <code className="text-cyan-400 font-mono">.json</code> incident files.
         </p>
 
-        <form onSubmit={handleUpload} className="space-y-4">
+        <form onSubmit={handleUpload} className="space-y-2.5">
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl p-8 cursor-pointer hover:border-cyan-500/60 bg-slate-900/40 transition-colors"
+            className="flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-lg p-5 cursor-pointer hover:border-cyan-500/60 bg-slate-900/40 transition-colors"
           >
-            <UploadCloud className="h-10 w-10 text-cyan-400 mb-3" />
+            <UploadCloud className="h-7 w-7 text-cyan-400 mb-1.5" />
             <span className="text-xs font-semibold text-slate-200">
               {selectedFile ? selectedFile.name : "Click to select a file or drag and drop here"}
             </span>
-            <span className="text-[11px] text-slate-500 font-mono mt-1">
+            <span className="text-[10px] text-slate-500 font-mono mt-0.5">
               {selectedFile
                 ? `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB · Ready to upload`
                 : "ZIP or JSON up to 50 MB"}
@@ -414,18 +414,18 @@ export default function ImportsPage() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-slate-500 font-mono">
-              Safeguards: Zip slip path traversal defense · Decompression bomb limits active
+            <span className="text-[10px] text-slate-500 font-mono">
+              Safeguards: Zip slip defense · Decompression limits active
             </span>
             <button
               type="submit"
               disabled={!selectedFile || isUploading}
-              className="rounded-lg bg-cyan-600 px-5 py-2 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors flex items-center gap-2"
+              className="rounded-md bg-cyan-600 px-3.5 py-1 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors flex items-center gap-1.5"
             >
               {isUploading ? (
                 <>
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  Processing Ingestion...
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  Processing...
                 </>
               ) : (
                 "Start Ingestion"
@@ -436,8 +436,8 @@ export default function ImportsPage() {
 
         {/* Error Alert */}
         {error && (
-          <div className="mt-4 rounded-lg border border-rose-800 bg-rose-950/40 p-4 text-xs text-rose-300 flex items-start gap-2.5">
-            <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
+          <div className="rounded-md border border-rose-800 bg-rose-950/40 p-2.5 text-xs text-rose-300 flex items-start gap-2">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-rose-400 mt-0.5" />
             <div>
               <span className="font-semibold block">Ingestion Failed</span>
               <span>{error}</span>
@@ -447,34 +447,34 @@ export default function ImportsPage() {
 
         {/* Ingestion Summary Report */}
         {summary && (
-          <div className="mt-5 rounded-xl border border-emerald-800/80 bg-emerald-950/20 p-5 space-y-3 font-mono text-xs">
-            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-              <CheckCircle2 className="h-4 w-4" />
+          <div className="rounded-lg border border-emerald-800/80 bg-emerald-950/20 p-3 space-y-2 font-mono text-xs">
+            <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
+              <CheckCircle2 className="h-3.5 w-3.5" />
               Ingestion Completed Successfully
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-200 pt-2">
-              <div className="p-3 rounded bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-slate-400 block">Total Entries:</span>
-                <span className="text-base font-bold">{summary.total_found}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-200">
+              <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                <span className="text-[9px] text-slate-400 block">Total Entries:</span>
+                <span className="text-sm font-bold">{summary.total_found}</span>
               </div>
-              <div className="p-3 rounded bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-emerald-400 block">Imported Incidents:</span>
-                <span className="text-base font-bold text-emerald-400">{summary.imported}</span>
+              <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                <span className="text-[9px] text-emerald-400 block">Imported Incidents:</span>
+                <span className="text-sm font-bold text-emerald-400">{summary.imported}</span>
               </div>
-              <div className="p-3 rounded bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-blue-400 block">Rules Detected:</span>
-                <span className="text-base font-bold text-blue-400">{summary.rules_detected}</span>
+              <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                <span className="text-[9px] text-blue-400 block">Rules Detected:</span>
+                <span className="text-sm font-bold text-blue-400">{summary.rules_detected}</span>
               </div>
-              <div className="p-3 rounded bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-amber-400 block">Duplicates Handled:</span>
-                <span className="text-base font-bold text-amber-400">{summary.duplicates}</span>
+              <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                <span className="text-[9px] text-amber-400 block">Duplicates Handled:</span>
+                <span className="text-sm font-bold text-amber-400">{summary.duplicates}</span>
               </div>
             </div>
 
             {summary.error_messages && summary.error_messages.length > 0 && (
-              <div className="pt-2">
-                <span className="text-rose-400 block font-semibold mb-1">Warnings / Errors:</span>
-                <ul className="list-disc list-inside text-rose-300 space-y-0.5 text-[11px]">
+              <div className="pt-1">
+                <span className="text-rose-400 block font-semibold mb-0.5 text-[10px]">Warnings / Errors:</span>
+                <ul className="list-disc list-inside text-rose-300 space-y-0.5 text-[10px]">
                   {summary.error_messages.map((m: string, idx: number) => (
                     <li key={idx}>{m}</li>
                   ))}
@@ -486,12 +486,12 @@ export default function ImportsPage() {
       </div>
 
       {/* 3. Historical Ingestion Jobs Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 space-y-4">
+      <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 sm:p-3.5 space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-200">Recent Ingestion Jobs</h2>
+          <h2 className="text-xs sm:text-sm font-bold text-slate-200">Recent Ingestion Jobs</h2>
           <button
             onClick={loadJobs}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200"
+            className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200"
           >
             <RefreshCw className={`h-3 w-3 ${loadingJobs ? "animate-spin" : ""}`} />
             Refresh
@@ -501,31 +501,31 @@ export default function ImportsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
             <thead>
-              <tr className="border-b border-slate-800 text-[11px] text-slate-400">
-                <th className="pb-2 font-medium">Filename</th>
-                <th className="pb-2 font-medium">Format</th>
-                <th className="pb-2 font-medium">Status</th>
-                <th className="pb-2 font-medium">Imported</th>
-                <th className="pb-2 font-medium">Duplicates</th>
-                <th className="pb-2 font-medium">Errors</th>
-                <th className="pb-2 font-medium text-right">Timestamp</th>
+              <tr className="border-b border-slate-800 text-[10px] text-slate-400">
+                <th className="pb-1.5 px-2 font-medium">Filename</th>
+                <th className="pb-1.5 px-2 font-medium">Format</th>
+                <th className="pb-1.5 px-2 font-medium">Status</th>
+                <th className="pb-1.5 px-2 font-medium">Imported</th>
+                <th className="pb-1.5 px-2 font-medium">Duplicates</th>
+                <th className="pb-1.5 px-2 font-medium">Errors</th>
+                <th className="pb-1.5 px-2 font-medium text-right">Timestamp</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 font-sans">
+                  <td colSpan={7} className="py-6 text-center text-slate-500 font-sans text-xs">
                     No import jobs recorded yet.
                   </td>
                 </tr>
               ) : (
                 jobs.map((job) => (
                   <tr key={job.id} className="hover:bg-slate-900/40">
-                    <td className="py-2.5 font-semibold text-slate-200">{job.filename}</td>
-                    <td className="py-2.5 text-slate-400">{job.file_type}</td>
-                    <td className="py-2.5">
+                    <td className="py-1.5 px-2 font-semibold text-slate-200">{job.filename}</td>
+                    <td className="py-1.5 px-2 text-slate-400">{job.file_type}</td>
+                    <td className="py-1.5 px-2">
                       <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
                           job.status === "COMPLETED"
                             ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
                             : "bg-amber-950 text-amber-300 border border-amber-800"
@@ -534,10 +534,10 @@ export default function ImportsPage() {
                         {job.status}
                       </span>
                     </td>
-                    <td className="py-2.5 text-emerald-400 font-bold">{job.imported_count}</td>
-                    <td className="py-2.5 text-amber-400">{job.duplicate_count}</td>
-                    <td className="py-2.5 text-rose-400">{job.error_count}</td>
-                    <td className="py-2.5 text-right text-slate-500 text-[11px]">
+                    <td className="py-1.5 px-2 text-emerald-400 font-bold">{job.imported_count}</td>
+                    <td className="py-1.5 px-2 text-amber-400">{job.duplicate_count}</td>
+                    <td className="py-1.5 px-2 text-rose-400">{job.error_count}</td>
+                    <td className="py-1.5 px-2 text-right text-slate-500 text-[10px]">
                       {formatEpoch(job.created_at)}
                     </td>
                   </tr>
