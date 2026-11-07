@@ -30,6 +30,12 @@ async def lifespan(app: FastAPI):
     # Startup: create database tables if they do not exist
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Safe migration: ensure ai_verdict column exists on incidents table
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE incidents ADD COLUMN ai_verdict JSON"))
+        except Exception:
+            pass
 
     # Seed initial administrator if no users exist
     async with AsyncSessionLocal() as session:

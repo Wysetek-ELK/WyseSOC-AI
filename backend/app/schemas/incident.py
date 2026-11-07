@@ -45,6 +45,7 @@ class IncidentListItemResponse(BaseModel):
     first_seen_epoch: Optional[int] = None
     last_seen_epoch: Optional[int] = None
     historical_resolution: Optional[str] = None  # Included in list unless blind review mode
+    ai_verdict: Optional[Dict[str, Any]] = None  # Stored AI evaluation verdict
     event_count: int = 0
     created_at: datetime
 
@@ -80,6 +81,7 @@ class IncidentDetailResponse(BaseModel):
     raw_payload: Dict[str, Any]
     events: List[IncidentEventResponse] = []
     ground_truth: Optional[HistoricalGroundTruthResponse] = None
+    ai_verdict: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
 

@@ -25,6 +25,11 @@ export interface IncidentAiVerdictResponse {
   is_simulated: boolean;
   rule_name?: string;
   severity?: string;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  evaluated_at?: string;
+  evaluated_by_user?: string;
 }
 
 export interface IncidentListItem {
@@ -44,6 +49,7 @@ export interface IncidentListItem {
   first_seen_epoch?: number;
   last_seen_epoch?: number;
   historical_resolution?: string;
+  ai_verdict?: IncidentAiVerdictResponse | null;
   event_count: number;
   created_at: string;
 }
@@ -94,6 +100,7 @@ export interface IncidentDetail {
     is_ml_generated: boolean;
     created_at: string;
   } | null;
+  ai_verdict?: IncidentAiVerdictResponse | null;
   created_at: string;
   updated_at: string;
 }

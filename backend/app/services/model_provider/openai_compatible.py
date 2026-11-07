@@ -314,6 +314,11 @@ class OpenAICompatibleProvider(BaseModelProvider):
 
                 data = res.json()
                 raw_reply = data["choices"][0]["message"]["content"]
+                usage = data.get("usage", {})
+                prompt_tokens = int(usage.get("prompt_tokens", 0))
+                completion_tokens = int(usage.get("completion_tokens", 0))
+                total_tokens = int(usage.get("total_tokens", prompt_tokens + completion_tokens))
+
                 parsed, parse_err = robust_parse_model_verdict_json(raw_reply)
 
                 if not parsed:
@@ -331,6 +336,9 @@ class OpenAICompatibleProvider(BaseModelProvider):
                         prompt_version_number=prompt_version_number,
                         validation_status="INVALID_SCHEMA",
                         is_simulated=False,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        total_tokens=total_tokens,
                     )
 
                 # Defensive schema validation
@@ -350,6 +358,9 @@ class OpenAICompatibleProvider(BaseModelProvider):
                         prompt_version_number=prompt_version_number,
                         validation_status=status,
                         is_simulated=False,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        total_tokens=total_tokens,
                     )
 
                 return StructuredModelVerdict(
@@ -366,6 +377,9 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     prompt_version_number=prompt_version_number,
                     validation_status="VALID",
                     is_simulated=False,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=total_tokens,
                 )
 
         except Exception as e:

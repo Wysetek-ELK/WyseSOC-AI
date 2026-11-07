@@ -40,6 +40,9 @@ class Incident(Base):
     # Original unmodified raw JSON payload
     raw_payload: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
+    # Persisted AI Evaluation Verdict and telemetry for instant re-use
+    ai_verdict: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

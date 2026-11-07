@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, desc
@@ -245,6 +246,31 @@ async def request_incident_ai_verdict(
         prompt_version_number=prompt_ver_num,
     )
 
+    verdict_data = {
+        "incident_id": incident.incident_id,
+        "verdict": verdict.verdict,
+        "confidence": verdict.confidence,
+        "reason": verdict.reason,
+        "supporting_evidence": verdict.supporting_evidence,
+        "missing_evidence": verdict.missing_evidence,
+        "analyst_questions": verdict.analyst_questions,
+        "latency_ms": verdict.latency_ms,
+        "model_identifier": verdict.model_identifier,
+        "prompt_tokens": getattr(verdict, "prompt_tokens", 0) or 0,
+        "completion_tokens": getattr(verdict, "completion_tokens", 0) or 0,
+        "total_tokens": getattr(verdict, "total_tokens", 0) or 0,
+        "is_simulated": verdict.is_simulated,
+        "rule_name": rule.name if rule else incident.title,
+        "severity": incident.severity,
+        "evaluated_at": datetime.utcnow().isoformat(),
+        "evaluated_by_user": current_user.username,
+    }
+
+    # Store AI verdict on incident for future use
+    incident.ai_verdict = verdict_data
+    db.add(incident)
+    await db.commit()
+
     # 5. Audit log the AI verdict request
     audit = AuditLog(
         user_id=current_user.id,
@@ -257,6 +283,7 @@ async def request_incident_ai_verdict(
             "confidence": verdict.confidence,
             "latency_ms": verdict.latency_ms,
             "model": verdict.model_identifier,
+            "total_tokens": verdict_data["total_tokens"],
             "is_simulated": verdict.is_simulated,
         },
         ip_address=request.client.host if request and request.client else None,
@@ -264,18 +291,5 @@ async def request_incident_ai_verdict(
     db.add(audit)
     await db.commit()
 
-    return {
-        "incident_id": incident.incident_id,
-        "verdict": verdict.verdict,
-        "confidence": verdict.confidence,
-        "reason": verdict.reason,
-        "supporting_evidence": verdict.supporting_evidence,
-        "missing_evidence": verdict.missing_evidence,
-        "analyst_questions": verdict.analyst_questions,
-        "latency_ms": verdict.latency_ms,
-        "model_identifier": verdict.model_identifier,
-        "is_simulated": verdict.is_simulated,
-        "rule_name": rule.name if rule else incident.title,
-        "severity": incident.severity,
-    }
+    return verdict_data
 

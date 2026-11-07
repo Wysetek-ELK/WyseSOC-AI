@@ -103,6 +103,7 @@ class IncidentService:
                     first_seen_epoch=inc.first_seen_epoch,
                     last_seen_epoch=inc.last_seen_epoch,
                     historical_resolution=hist_res,
+                    ai_verdict=inc.ai_verdict,
                     event_count=len(inc.events),
                     created_at=inc.created_at,
                 )
@@ -185,6 +186,7 @@ class IncidentService:
             raw_payload=inc.raw_payload or {},
             events=events_resp,
             ground_truth=gt_resp,
+            ai_verdict=inc.ai_verdict,
             created_at=inc.created_at,
             updated_at=inc.updated_at,
         )

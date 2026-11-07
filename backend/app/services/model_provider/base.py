@@ -26,6 +26,9 @@ class StructuredModelVerdict(BaseModel):
     prompt_version_number: int = Field(1, ge=1)
     validation_status: str = Field("VALID", description="VALID, INVALID_SCHEMA, UNEXPECTED_VERDICT")
     is_simulated: bool = Field(False, description="CRITICAL: True if output is from test simulator, False if real LLM")
+    prompt_tokens: int = Field(0, ge=0, description="Tokens used for input prompt")
+    completion_tokens: int = Field(0, ge=0, description="Tokens generated in output")
+    total_tokens: int = Field(0, ge=0, description="Total tokens consumed by inference")
 
 
 class BaseModelProvider(ABC):

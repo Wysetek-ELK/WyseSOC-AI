@@ -23,6 +23,8 @@ import {
   Bot,
   CheckCircle2,
   AlertCircle,
+  Database,
+  RefreshCw,
 } from "lucide-react";
 import { api, IncidentDetail, IncidentAiVerdictResponse } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
@@ -69,6 +71,9 @@ export default function IncidentDetailPage({
       try {
         const data = await api.getIncidentDetail(incidentId, blindReviewMode);
         setIncident(data);
+        if (data.ai_verdict) {
+          setAiVerdict(data.ai_verdict);
+        }
 
         // Also fetch model payload to demonstrate allowlist compliance
         try {
@@ -165,8 +170,17 @@ export default function IncidentDetailPage({
               </>
             ) : (
               <>
-                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Get AI Verdict</span>
+                {aiVerdict ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>Re-evaluate AI Verdict</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>Get AI Verdict</span>
+                  </>
+                )}
               </>
             )}
           </button>
@@ -218,8 +232,8 @@ export default function IncidentDetailPage({
 
       {aiVerdict && (
         <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-3 shadow-lg">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2.5 gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded">
                 <Sparkles className="h-3.5 w-3.5" />
                 Server 2 Local LLM Verdict
@@ -227,13 +241,31 @@ export default function IncidentDetailPage({
               <span className="text-xs font-mono text-slate-400">
                 Engine: {aiVerdict.model_identifier}
               </span>
+              {aiVerdict.evaluated_at && (
+                <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/60 px-1.5 py-0.5 rounded flex items-center gap-1" title={`Evaluated at ${aiVerdict.evaluated_at}`}>
+                  <Database className="h-2.5 w-2.5" />
+                  Stored Verdict
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-              <span>Latency: <strong className="text-slate-200">{aiVerdict.latency_ms} ms</strong></span>
+            <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-400">
+              <span className="flex items-center gap-1 text-slate-300" title="Inference Execution Time">
+                <Clock className="h-3 w-3 text-cyan-400" />
+                Time: <strong className="text-slate-100">{aiVerdict.latency_ms} ms</strong>
+                <span className="text-[10px] text-slate-500">({(aiVerdict.latency_ms / 1000).toFixed(2)}s)</span>
+              </span>
+
+              <span className="flex items-center gap-1 text-slate-300" title="Tokens Consumed">
+                <Cpu className="h-3 w-3 text-purple-400" />
+                Tokens: <strong className="text-purple-300">{aiVerdict.total_tokens || 0}</strong>
+                <span className="text-[10px] text-slate-500">({aiVerdict.prompt_tokens || 0} in / {aiVerdict.completion_tokens || 0} out)</span>
+              </span>
+
               <span className="text-emerald-400 font-semibold">• GPU Live</span>
               <button
                 onClick={() => setAiVerdict(null)}
                 className="text-slate-400 hover:text-slate-200 text-xs px-1"
+                title="Hide banner"
               >
                 ✕
               </button>
