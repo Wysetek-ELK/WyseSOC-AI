@@ -16,6 +16,7 @@ import {
   Clock,
   Layers,
   ArrowUpDown,
+  DownloadCloud,
 } from "lucide-react";
 import { api, IncidentListItem } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
@@ -118,8 +119,16 @@ function IncidentsContent() {
           </p>
         </div>
 
-        {/* Blind Review Banner Toggle */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-3">
+          <Link
+            href="/imports"
+            className="flex items-center gap-1.5 rounded-lg border border-cyan-800 bg-cyan-950/60 px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/80 transition-colors shadow-sm"
+          >
+            <DownloadCloud className="h-3.5 w-3.5 text-cyan-400" />
+            <span>Pull from FortiSIEM</span>
+          </Link>
+
           <button
             onClick={() => setBlindReviewMode(!blindReviewMode)}
             className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all ${

@@ -52,5 +52,13 @@ class Settings(BaseSettings):
     ZIP_MAX_FILE_COUNT: int = 2000
     ZIP_MAX_RATIO: float = 50.0  # Max compression ratio to prevent zip bombs
 
+    # FortiSIEM Integration Settings
+    FORTISIEM_HOST: str = os.getenv("FORTISIEM_HOST", "")
+    FORTISIEM_USERNAME: str = os.getenv("FORTISIEM_USERNAME", "")
+    FORTISIEM_PASSWORD: str = os.getenv("FORTISIEM_PASSWORD", "")
+    FORTISIEM_VERIFY_SSL: bool = os.getenv("FORTISIEM_VERIFY_SSL", "false").lower() == "true"
+    FORTISIEM_TIMEOUT: float = float(os.getenv("FORTISIEM_TIMEOUT", "25.0"))
+    FORTISIEM_MOCK_FALLBACK: bool = os.getenv("FORTISIEM_MOCK_FALLBACK", "true").lower() == "true"
+
 
 settings = Settings()

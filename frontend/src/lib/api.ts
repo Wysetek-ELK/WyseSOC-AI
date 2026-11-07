@@ -104,6 +104,29 @@ export interface InvestigationEvidence {
   created_at: string;
 }
 
+export interface FortiSIEMPullResponse {
+  success: boolean;
+  incident_id: string;
+  db_id?: string;
+  title: string;
+  event_type: string;
+  severity: string;
+  status_name: string;
+  event_count: number;
+  source: string;
+  message: string;
+  error?: string;
+}
+
+export interface FortiSIEMStatusResponse {
+  is_configured: boolean;
+  host: string;
+  username: string;
+  verify_ssl: boolean;
+  mode: string;
+  sample_incident_ids: string[];
+}
+
 export interface InvestigationListItem {
   id: string;
   incident_id: string;
@@ -399,6 +422,26 @@ export const api = {
   async getImportJobs() {
     const res = await fetchWithAuth(`${API_BASE}/imports/jobs`);
     if (!res.ok) throw new Error("Failed to fetch import jobs");
+    return res.json();
+  },
+
+  // FortiSIEM Live Pull
+  async getFortiSiemStatus(): Promise<FortiSIEMStatusResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/status`);
+    if (!res.ok) throw new Error("Failed to fetch FortiSIEM status");
+    return res.json();
+  },
+
+  async pullFortiSiemIncident(incidentId: string, forceRefresh = false): Promise<FortiSIEMPullResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/fetch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ incident_id: incidentId, force_refresh: forceRefresh }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to pull incident from FortiSIEM" }));
+      throw new Error(err.detail || "FortiSIEM pull error");
+    }
     return res.json();
   },
 

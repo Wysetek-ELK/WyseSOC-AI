@@ -18,6 +18,7 @@ from app.api import (
     learning,
     dry_run,
     evaluations,
+    fortisiem,
 )
 from app.models.user import User
 from app.utils.security import get_password_hash
@@ -83,6 +84,7 @@ app.include_router(prompts.router, prefix=settings.API_V1_STR)
 app.include_router(learning.router, prefix=settings.API_V1_STR)
 app.include_router(dry_run.router, prefix=settings.API_V1_STR)
 app.include_router(evaluations.router, prefix=settings.API_V1_STR)
+app.include_router(fortisiem.router, prefix=settings.API_V1_STR)
 
 
 @app.get("/api/health")
