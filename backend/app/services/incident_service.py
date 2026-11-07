@@ -70,8 +70,16 @@ class IncidentService:
         total_res = await self.db.execute(count_query)
         total = total_res.scalar_one()
 
-        # Sort and paginate
-        query = query.order_by(desc(Incident.created_at_epoch), desc(Incident.created_at))
+        # Sort and paginate: Latest incident occurrence on top (nulls last)
+        occurrence_order = func.coalesce(
+            Incident.first_seen_epoch,
+            Incident.created_at_epoch,
+            Incident.last_seen_epoch,
+        )
+        query = query.order_by(
+            desc(occurrence_order).nulls_last(),
+            desc(Incident.created_at)
+        )
         query = query.offset((page - 1) * page_size).limit(page_size)
 
         result = await self.db.execute(query)

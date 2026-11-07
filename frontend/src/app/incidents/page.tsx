@@ -139,6 +139,28 @@ function IncidentsContent() {
     });
   };
 
+  const formatIncidentOccurredTime = (inc: IncidentListItem) => {
+    const epoch = inc.first_seen_epoch || inc.created_at_epoch || inc.last_seen_epoch;
+    if (epoch) {
+      const ms = epoch < 1e11 ? epoch * 1000 : epoch;
+      return new Date(ms).toLocaleString([], {
+        dateStyle: "short",
+        timeStyle: "medium",
+      });
+    }
+    if (inc.created_at) {
+      try {
+        return new Date(inc.created_at).toLocaleString([], {
+          dateStyle: "short",
+          timeStyle: "medium",
+        });
+      } catch {
+        return "N/A";
+      }
+    }
+    return "N/A";
+  };
+
   return (
     <div className="space-y-3">
       {/* Page Header */}
@@ -288,7 +310,7 @@ function IncidentsContent() {
                 <th className="py-2 px-2.5 font-medium">Rule / Event Type</th>
                 <th className="py-2 px-2.5 font-medium">Severity</th>
                 <th className="py-2 px-2.5 font-medium">Source / IP</th>
-                <th className="py-2 px-2.5 font-medium">Created Time</th>
+                <th className="py-2 px-2.5 font-medium">Occurred Time</th>
                 <th className="py-2 px-2.5 font-medium">Events</th>
                 <th className="py-2 px-2.5 font-medium">Historical Verdict</th>
                 <th className="py-2 px-2.5 font-medium text-right">Action</th>
@@ -339,8 +361,15 @@ function IncidentsContent() {
                       <div>{inc.source_ip || "Internal"}</div>
                       <div className="text-[10px] text-slate-500">{inc.reporting_device}</div>
                     </td>
-                    <td className="py-1.5 px-2.5 text-slate-400 text-[10px]">
-                      {formatEpoch(inc.created_at_epoch)}
+                    <td className="py-1.5 px-2.5 text-slate-300 text-[10px]">
+                      <div className="font-medium text-slate-200">
+                        {formatIncidentOccurredTime(inc)}
+                      </div>
+                      {inc.last_seen_epoch && inc.first_seen_epoch && inc.last_seen_epoch !== inc.first_seen_epoch && (
+                        <div className="text-[9px] text-slate-500">
+                          Last: {formatEpoch(inc.last_seen_epoch)}
+                        </div>
+                      )}
                     </td>
                     <td className="py-1.5 px-2.5 text-slate-300">
                       <span className="rounded bg-slate-900 px-1.5 py-0.2 text-[9px] border border-slate-800">

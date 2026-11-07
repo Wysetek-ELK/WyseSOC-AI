@@ -97,8 +97,20 @@ export default function IncidentDetailPage({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const formatEpoch = (epoch?: number) => {
-    if (!epoch) return "N/A";
+  const formatEpoch = (epoch?: number, fallbackIso?: string) => {
+    if (!epoch) {
+      if (fallbackIso) {
+        try {
+          return new Date(fallbackIso).toLocaleString([], {
+            dateStyle: "short",
+            timeStyle: "medium",
+          });
+        } catch {
+          return "N/A";
+        }
+      }
+      return "N/A";
+    }
     const ms = epoch < 1e11 ? epoch * 1000 : epoch;
     return new Date(ms).toLocaleString([], {
       dateStyle: "short",
@@ -503,7 +515,7 @@ export default function IncidentDetailPage({
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-800">
                   <span className="text-slate-400">Created At:</span>
-                  <span className="text-slate-200">{formatEpoch(incident.created_at_epoch)}</span>
+                  <span className="text-slate-200">{formatEpoch(incident.created_at_epoch, incident.created_at)}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-slate-400">Customer:</span>
@@ -744,7 +756,7 @@ export default function IncidentDetailPage({
                 ●
               </span>
               <div className="font-semibold text-slate-200">SIEM Incident Alert Created</div>
-              <div className="text-slate-500 text-[10px]">{formatEpoch(incident.created_at_epoch)}</div>
+              <div className="text-slate-500 text-[10px]">{formatEpoch(incident.created_at_epoch, incident.created_at)}</div>
             </div>
 
             {/* Last Seen */}

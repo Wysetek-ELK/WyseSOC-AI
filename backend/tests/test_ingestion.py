@@ -97,3 +97,115 @@ async def test_duplicate_handling(db_session: AsyncSession):
     # Incident count in DB should remain exactly 20
     inc_count_res = await db_session.execute(select(func.count(Incident.id)))
     assert inc_count_res.scalar_one() == 20
+
+
+@pytest.mark.asyncio
+async def test_extract_incident_timestamps_fortisiem_formats(db_session: AsyncSession):
+    """
+    Verifies that FortiSIEM timestamps across diverse formats (pub API fields,
+    fixture formats, ISO strings, string epochs, and triggering events)
+    are accurately parsed into milliseconds and populate occurrence time.
+    """
+    from app.services.ingestion_service import extract_incident_timestamps, IngestionService
+    from app.services.incident_service import IncidentService
+
+    # 1. FortiSIEM pub API format
+    pub_data = {
+        "incidentId": "200001",
+        "eventType": "PH_RULE_TEST_PUB",
+        "eventName": "Pub API Alert",
+        "incidentFirstSeen": "1794056190000",
+        "incidentLastSeen": 1794056290000,
+        "incidentDetail": "test",
+    }
+    fs, ls, ca, ua = extract_incident_timestamps(pub_data)
+    assert fs == 1794056190000
+    assert ls == 1794056290000
+    assert ca == 1794056190000  # Mutual fallback to first seen
+
+    # 2. ISO date string format
+    iso_data = {
+        "incidentId": "200002",
+        "eventType": "PH_RULE_TEST_ISO",
+        "incidentTime": "2026-11-07T12:00:00Z",
+    }
+    fs2, ls2, ca2, _ = extract_incident_timestamps(iso_data)
+    assert fs2 is not None
+    assert fs2 > 1700000000000
+    assert ca2 == fs2
+
+    # 3. Triggering events fallback
+    evt_data = {
+        "incidentId": "200003",
+        "eventType": "PH_RULE_TEST_EVT",
+        "rawEvents": [
+            {
+                "eventId": "evt-1",
+                "attribute": {"Event Receive Time": 1794056195000}
+            }
+        ]
+    }
+    fs3, ls3, ca3, _ = extract_incident_timestamps(evt_data)
+    assert fs3 == 1794056195000
+    assert ca3 == 1794056195000
+
+
+@pytest.mark.asyncio
+async def test_list_incidents_latest_on_top(db_session: AsyncSession):
+    """
+    Verifies that IncidentService.list_incidents orders incidents strictly
+    with the latest incident occurrence time on top.
+    """
+    from app.services.ingestion_service import IngestionService
+    from app.services.incident_service import IncidentService
+
+    ingestion = IngestionService(db_session)
+
+    # Ingest 3 incidents with distinct occurrence times
+    t_old = 1700000000000
+    t_mid = 1750000000000
+    t_new = 1800000000000
+
+    await ingestion.ingest_single_json(
+        raw_data={
+            "incidentId": "ORDER_MID",
+            "eventType": "PH_RULE_ORDER_TEST",
+            "eventName": "Order Test Alert",
+            "incidentFirstSeen": t_mid,
+            "status": 1,
+        },
+        filename="order_mid.json",
+        username="test"
+    )
+
+    await ingestion.ingest_single_json(
+        raw_data={
+            "incidentId": "ORDER_OLD",
+            "eventType": "PH_RULE_ORDER_TEST",
+            "eventName": "Order Test Alert",
+            "incidentFirstSeen": t_old,
+            "status": 1,
+        },
+        filename="order_old.json",
+        username="test"
+    )
+
+    await ingestion.ingest_single_json(
+        raw_data={
+            "incidentId": "ORDER_NEW",
+            "eventType": "PH_RULE_ORDER_TEST",
+            "eventName": "Order Test Alert",
+            "incidentFirstSeen": t_new,
+            "status": 1,
+        },
+        filename="order_new.json",
+        username="test"
+    )
+
+    service = IncidentService(db_session)
+    items, total = await service.list_incidents(page=1, page_size=10, search="ORDER_")
+
+    assert total >= 3
+    order_ids = [item.incident_id for item in items if item.incident_id.startswith("ORDER_")]
+    assert order_ids == ["ORDER_NEW", "ORDER_MID", "ORDER_OLD"], f"Expected latest on top, got {order_ids}"
+

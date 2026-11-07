@@ -14,6 +14,130 @@ from app.services.rule_parser import RuleParser
 from app.utils.zip_guard import ZipGuard, ZipSecurityException
 
 
+def parse_any_timestamp(val: Any) -> Optional[int]:
+    """
+    Parses timestamp from integer, float, string epoch (seconds or ms),
+    or common date/ISO strings into epoch milliseconds.
+    """
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        if val <= 0:
+            return None
+        # Heuristic: < 1e11 is in seconds (e.g. 1731000000), convert to ms
+        if val < 1e11:
+            return int(val * 1000)
+        return int(val)
+    if isinstance(val, str):
+        val_str = val.strip()
+        if not val_str:
+            return None
+        try:
+            num = float(val_str)
+            if num <= 0:
+                return None
+            if num < 1e11:
+                return int(num * 1000)
+            return int(num)
+        except ValueError:
+            pass
+        # Common ISO and formatted date strings
+        for fmt in (
+            "%Y-%m-%dT%H:%M:%S.%fZ",
+            "%Y-%m-%dT%H:%M:%SZ",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y/%m/%d %H:%M:%S",
+            "%m/%d/%Y %H:%M:%S",
+            "%d/%m/%Y %H:%M:%S",
+            "%b %d, %Y %I:%M:%S %p",
+            "%b %d, %Y %H:%M:%S",
+        ):
+            try:
+                dt = datetime.strptime(val_str, fmt)
+                return int(dt.timestamp() * 1000)
+            except ValueError:
+                continue
+        try:
+            dt = datetime.fromisoformat(val_str.replace("Z", "+00:00"))
+            return int(dt.timestamp() * 1000)
+        except Exception:
+            pass
+    return None
+
+
+def extract_incident_timestamps(raw_data: Dict[str, Any]) -> Tuple[Optional[int], Optional[int], Optional[int], Optional[int]]:
+    """
+    Extracts (first_seen, last_seen, created_at, updated_at) in epoch milliseconds
+    from any FortiSIEM JSON, XML-dict, or SIEM incident representation.
+    """
+    first_seen_candidates = [
+        "incidentFirstSeen", "firstSeen", "incidentFirstSeenTime", "incidentStartTime",
+        "startTime", "first_seen", "incidentOccurTime", "incidentTime", "phIncidentTime",
+        "incidentDate", "eventTime", "time"
+    ]
+    last_seen_candidates = [
+        "incidentLastSeen", "lastSeen", "incidentLastSeenTime", "incidentEndTime",
+        "endTime", "last_seen", "incidentClearedTime"
+    ]
+    created_at_candidates = [
+        "incidentCreatedTime", "createdAt", "creationTime", "createdTime", "incidentTime",
+        "incidentRptTime", "incidentDate", "incidentOccurTime", "firstSeen",
+        "incidentFirstSeen", "created_at"
+    ]
+    updated_at_candidates = [
+        "incidentUpdatedTime", "updatedAt", "lastModifiedTime", "updateTime", "modifiedTime", "updated_at"
+    ]
+
+    def _find(keys: List[str]) -> Optional[int]:
+        for k in keys:
+            if k in raw_data and raw_data[k] is not None:
+                parsed = parse_any_timestamp(raw_data[k])
+                if parsed is not None:
+                    return parsed
+        return None
+
+    first_seen = _find(first_seen_candidates)
+    last_seen = _find(last_seen_candidates)
+    created_at_epoch = _find(created_at_candidates)
+    updated_at_epoch = _find(updated_at_candidates)
+
+    # Check rawEvents / triggeringEvents if first_seen or created_at_epoch are still missing
+    if not first_seen or not created_at_epoch:
+        raw_evts = raw_data.get("rawEvents") or raw_data.get("triggeringEvents") or []
+        if isinstance(raw_evts, list) and len(raw_evts) > 0:
+            for revt in raw_evts:
+                if not isinstance(revt, dict):
+                    continue
+                attrs = revt.get("attribute", {}) if isinstance(revt.get("attribute"), dict) else {}
+                evt_ts = (
+                    parse_any_timestamp(attrs.get("Event Receive Time"))
+                    or parse_any_timestamp(attrs.get("Device Time"))
+                    or parse_any_timestamp(revt.get("eventReceiveTime"))
+                    or parse_any_timestamp(revt.get("deviceTime"))
+                    or parse_any_timestamp(revt.get("receiveTime"))
+                )
+                if evt_ts:
+                    if not first_seen:
+                        first_seen = evt_ts
+                    if not created_at_epoch:
+                        created_at_epoch = evt_ts
+                    if not last_seen:
+                        last_seen = evt_ts
+                    break
+
+    # Mutual fallbacks so occurrence time is preserved
+    if not first_seen and created_at_epoch:
+        first_seen = created_at_epoch
+    elif not created_at_epoch and first_seen:
+        created_at_epoch = first_seen
+
+    if not last_seen and first_seen:
+        last_seen = first_seen
+
+    return first_seen, last_seen, created_at_epoch, updated_at_epoch
+
+
 class IngestionService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -299,19 +423,8 @@ class IngestionService:
 
         status_name = "Closed" if status_code == 2 else "Open"
 
-        # Timestamps
-        def parse_epoch(val: Any) -> Optional[int]:
-            if val is None:
-                return None
-            try:
-                return int(val)
-            except Exception:
-                return None
-
-        first_seen = parse_epoch(raw_data.get("firstSeen"))
-        last_seen = parse_epoch(raw_data.get("lastSeen"))
-        created_at_epoch = parse_epoch(raw_data.get("createdAt"))
-        updated_at_epoch = parse_epoch(raw_data.get("updatedAt"))
+        # Timestamps: robust extraction across FortiSIEM APIs, formats, and event telemetry
+        first_seen, last_seen, created_at_epoch, updated_at_epoch = extract_incident_timestamps(raw_data)
 
         incident = Incident(
             incident_id=incident_id,
@@ -356,7 +469,13 @@ class IngestionService:
                     raw_log = str(attrs.get("Raw Event Log", ""))
 
                 evt_id = str(revt.get("eventId") or f"{incident_id}_evt_{idx}")
-                evt_receive_time = parse_epoch(attrs.get("Event Receive Time") or revt.get("eventReceiveTime"))
+                evt_receive_time = (
+                    parse_any_timestamp(attrs.get("Event Receive Time"))
+                    or parse_any_timestamp(attrs.get("Device Time"))
+                    or parse_any_timestamp(revt.get("eventReceiveTime"))
+                    or parse_any_timestamp(revt.get("deviceTime"))
+                    or parse_any_timestamp(revt.get("receiveTime"))
+                )
 
                 evt_obj = IncidentEvent(
                     incident_id=incident.id,
@@ -373,8 +492,8 @@ class IngestionService:
         cleared_reason = str(raw_data.get("clearedReason") or "").strip()
         comments = str(raw_data.get("comments") or "").strip()
         cleared_user = str(raw_data.get("clearedUser") or raw_data.get("cmsClearUser") or "").strip()
-        cleared_time = parse_epoch(raw_data.get("clearedTime"))
-        resolved_at = parse_epoch(raw_data.get("resolvedAt"))
+        cleared_time = parse_any_timestamp(raw_data.get("clearedTime") or raw_data.get("incidentClearedTime"))
+        resolved_at = parse_any_timestamp(raw_data.get("resolvedAt") or raw_data.get("incidentResolvedTime"))
 
         is_ml_generated = (
             "Machine Learning" in comments or

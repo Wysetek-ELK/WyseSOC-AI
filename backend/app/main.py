@@ -58,6 +58,37 @@ async def lifespan(app: FastAPI):
             await session.commit()
             print("Default Administrator created (username: admin, default credentials)")
 
+        # Self-healing migration: Backfill missing incident timestamps for existing records
+        try:
+            from app.models.incident import Incident
+            from app.services.ingestion_service import extract_incident_timestamps
+            from sqlalchemy import or_
+            inc_stmt = select(Incident).where(
+                or_(Incident.first_seen_epoch.is_(None), Incident.created_at_epoch.is_(None))
+            )
+            inc_res = await session.execute(inc_stmt)
+            unfilled_incidents = inc_res.scalars().all()
+            if unfilled_incidents:
+                for inc in unfilled_incidents:
+                    raw = inc.raw_payload or {}
+                    fs, ls, ca, ua = extract_incident_timestamps(raw)
+                    if not fs and not ca and inc.created_at:
+                        fallback_ms = int(inc.created_at.timestamp() * 1000)
+                        fs = fallback_ms
+                        ca = fallback_ms
+                    if fs and not inc.first_seen_epoch:
+                        inc.first_seen_epoch = fs
+                    if ca and not inc.created_at_epoch:
+                        inc.created_at_epoch = ca
+                    if ls and not inc.last_seen_epoch:
+                        inc.last_seen_epoch = ls
+                    if ua and not inc.updated_at_epoch:
+                        inc.updated_at_epoch = ua
+                await session.commit()
+                print(f"[Startup Migration] Backfilled occurrence timestamps for {len(unfilled_incidents)} incidents.")
+        except Exception as exc:
+            print(f"[Startup Migration Warning] Timestamp backfill skipped: {exc}")
+
     # Startup background continuous FortiSIEM poller if enabled
     if getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False):
         fortisiem_scheduler.start(
