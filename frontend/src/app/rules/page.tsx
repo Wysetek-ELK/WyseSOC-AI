@@ -11,6 +11,9 @@ import {
   Layers,
   CheckCircle,
   AlertCircle,
+  RefreshCw,
+  Sparkles,
+  X,
 } from "lucide-react";
 import { api, RuleItem } from "@/lib/api";
 
@@ -23,6 +26,8 @@ export default function RulesPage() {
   const [severity, setSeverity] = useState("");
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncingRules, setIsSyncingRules] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const loadRules = async () => {
     setIsLoading(true);
@@ -53,6 +58,26 @@ export default function RulesPage() {
     loadRules();
   };
 
+  const handleSyncFortiSiemRules = async () => {
+    setIsSyncingRules(true);
+    setSyncFeedback(null);
+    try {
+      const res = await api.syncFortiSiemRules();
+      setSyncFeedback({
+        type: "success",
+        text: res.message,
+      });
+      loadRules();
+    } catch (err: any) {
+      setSyncFeedback({
+        type: "error",
+        text: err.message || "Failed to synchronize rules from FortiSIEM",
+      });
+    } finally {
+      setIsSyncingRules(false);
+    }
+  };
+
   const getSeverityBadge = (sev: string) => {
     switch (sev?.toUpperCase()) {
       case "CRITICAL":
@@ -79,7 +104,46 @@ export default function RulesPage() {
             Registered detection rules, correlation patterns, and historical incident linkages
           </p>
         </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSyncFortiSiemRules}
+            disabled={isSyncingRules}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white disabled:opacity-50 transition-colors shadow-sm shadow-cyan-900/30"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isSyncingRules ? "animate-spin" : ""}`} />
+            <span>{isSyncingRules ? "Syncing Rules from FortiSIEM..." : "Sync Rules from FortiSIEM"}</span>
+          </button>
+        </div>
       </div>
+
+      {/* Sync Feedback Banner */}
+      {syncFeedback && (
+        <div
+          className={`rounded-lg border p-3.5 text-xs flex items-center justify-between gap-3 ${
+            syncFeedback.type === "success"
+              ? "border-emerald-800 bg-emerald-950/40 text-emerald-300"
+              : "border-rose-800 bg-rose-950/40 text-rose-300"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {syncFeedback.type === "success" ? (
+              <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
+            ) : (
+              <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+            )}
+            <span>{syncFeedback.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSyncFeedback(null)}
+            className="text-slate-400 hover:text-white"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col lg:flex-row gap-3 rounded-xl border border-slate-800 bg-slate-950 p-4">

@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from typing import Dict, Any, List, Tuple, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from app.models.incident import Incident, IncidentEvent, HistoricalGroundTruth
 from app.models.rule import Rule
@@ -259,14 +259,25 @@ class IngestionService:
         if dup_res.scalar_one_or_none():
             return "duplicate", f"Incident '{incident_id}' already exists in database"
 
-        # Find matching rule
-        rule = rule_map.get(event_type)
+        # Find matching rule in local cache/database
+        rule = rule_map.get(event_type) or rule_map.get(str(raw_data.get("eventName") or "").strip())
         if not rule:
-            # Query DB as fallback
-            rq = await self.db.execute(select(Rule).where(Rule.event_type == event_type))
+            # Query local DB as fallback
+            rule_name_candidate = str(raw_data.get("eventName") or raw_data.get("title") or "").strip()
+            filters = [Rule.event_type == event_type, Rule.rule_id == event_type]
+            if rule_name_candidate:
+                filters.append(Rule.name == rule_name_candidate)
+            rq = await self.db.execute(select(Rule).where(or_(*filters)))
             rule = rq.scalar_one_or_none()
             if rule:
                 rule_map[event_type] = rule
+                rule_map[rule.rule_id] = rule
+            else:
+                # CACHE MISS: Dynamically extract, register, and persist rule locally from incident telemetry
+                rule = await self._auto_create_rule_from_incident(raw_data, event_type)
+                if rule:
+                    rule_map[event_type] = rule
+                    rule_map[rule.rule_id] = rule
 
         # Extract normalized fields
         severity = str(raw_data.get("severity") or "MEDIUM").upper()
@@ -385,4 +396,94 @@ class IngestionService:
 
         await self.db.commit()
         return "imported", f"Successfully imported incident {incident_id}"
+
+    async def _auto_create_rule_from_incident(
+        self,
+        raw_data: Dict[str, Any],
+        event_type: str,
+    ) -> Optional[Rule]:
+        """
+        Cache-miss handler: Automatically creates and registers a local Rule record
+        from incident metadata when a rule does not exist in the local database.
+        Also synthesizes an initial PromptVersion via PromptStudioService.
+        """
+        clean_event_type = (event_type or "").strip()
+        if not clean_event_type:
+            return None
+
+        # Double check if rule was created concurrently
+        check_q = await self.db.execute(select(Rule).where(
+            or_(
+                Rule.event_type == clean_event_type,
+                Rule.rule_id == clean_event_type
+            )
+        ))
+        existing = check_q.scalar_one_or_none()
+        if existing:
+            return existing
+
+        rule_name = str(raw_data.get("eventName") or raw_data.get("title") or clean_event_type).strip()
+        raw_sev = str(raw_data.get("eventSeverityCat") or raw_data.get("eventSeverity") or raw_data.get("severity") or "MEDIUM").upper()
+        if "CRIT" in raw_sev:
+            severity = "CRITICAL"
+        elif "HIGH" in raw_sev:
+            severity = "HIGH"
+        elif "LOW" in raw_sev or "INFO" in raw_sev:
+            severity = "LOW"
+        else:
+            severity = "MEDIUM"
+
+        category = str(raw_data.get("phIncidentCategory") or raw_data.get("category") or "Security")
+        sub_cat = str(raw_data.get("phSubIncidentCategory") or raw_data.get("incidentTagName") or "Policy Violation")
+        data_src = str(raw_data.get("incidentRptDevName") or raw_data.get("dataSource") or "FortiSIEM")
+        pattern = str(raw_data.get("incidentDetail") or "")
+        if not pattern and raw_data.get("incidentDetailJson"):
+            try:
+                pattern = json.dumps(raw_data.get("incidentDetailJson"))
+            except Exception:
+                pattern = str(raw_data.get("incidentDetailJson"))
+
+        metadata = {
+            "source": "AUTO_SYNCED_FROM_INCIDENT",
+            "category": category,
+            "subCategory": sub_cat,
+            "attackTechnique": raw_data.get("attackTechnique"),
+            "attackTactic": raw_data.get("attackTactic"),
+            "customer": raw_data.get("customer"),
+            "auto_registered_at": datetime.utcnow().isoformat(),
+        }
+
+        new_rule = Rule(
+            rule_id=clean_event_type,
+            name=rule_name,
+            event_type=clean_event_type,
+            description=f"Detection rule '{rule_name}' ({category} / {sub_cat}) registered automatically from SIEM incident telemetry.",
+            severity=severity,
+            status="ACTIVE",
+            data_source=data_src,
+            detection_tech=sub_cat or "SIEM Rule Engine",
+            evaluation_mode="ONLINE",
+            pattern_logic=pattern,
+            raw_rule_text=f"Rule: {rule_name}\nEventType: {clean_event_type}\nCategory: {category}\nSubCategory: {sub_cat}\nPattern: {pattern}",
+            parsed_metadata=metadata,
+        )
+        self.db.add(new_rule)
+        await self.db.flush()
+
+        # Generate template draft prompt for Rule Prompt Studio
+        try:
+            from app.services.prompt_studio_service import PromptStudioService
+            prompt_svc = PromptStudioService(self.db)
+            draft = await prompt_svc.generate_template_draft(rule_id=new_rule.id)
+            # Ensure rule prompt points to active version
+            from app.models.prompt import RulePrompt
+            rp_res = await self.db.execute(select(RulePrompt).where(RulePrompt.rule_id == new_rule.id))
+            rp = rp_res.scalars().first()
+            if rp and not rp.active_version_id and draft:
+                rp.active_version_id = draft.id
+                await self.db.flush()
+        except Exception:
+            pass
+
+        return new_rule
 

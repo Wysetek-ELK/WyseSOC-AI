@@ -276,3 +276,66 @@ async def test_fortisiem_test_connection(client: AsyncClient, admin_token: str, 
         assert route.called
 
 
+@pytest.mark.asyncio
+async def test_fortisiem_sync_rules(client: AsyncClient, admin_token: str, db_session: AsyncSession):
+    """Test bulk synchronization of detection rules from FortiSIEM/fixtures into local database."""
+    from app.models.rule import Rule
+
+    res = await client.post(
+        "/api/fortisiem/sync-rules",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["success"] is True
+    assert data["total_local_rules"] >= 2
+    assert "Successfully synchronized" in data["message"]
+
+    # Verify rules are present in database
+    r_res = await db_session.execute(select(Rule))
+    rules = r_res.scalars().all()
+    assert len(rules) >= 2
+
+
+@pytest.mark.asyncio
+async def test_fortisiem_cache_miss_auto_registers_rule(client: AsyncClient, admin_token: str, db_session: AsyncSession):
+    """Test that ingesting an incident with an unseen rule dynamically creates and links the Rule locally."""
+    from app.models.rule import Rule
+    from app.services.ingestion_service import IngestionService
+
+    ingestion = IngestionService(db_session)
+    unseen_event_type = "PH_RULE_TEST_CACHE_MISS_DYNAMIC_DISCOVERY"
+    payload = {
+        "incidentId": "99999901",
+        "title": "Dynamic Cache Miss Security Alert",
+        "eventName": "Dynamic Cache Miss Security Alert",
+        "eventType": unseen_event_type,
+        "eventSeverity": "HIGH",
+        "eventSeverityCat": "HIGH",
+        "phIncidentCategory": "Security",
+        "phSubIncidentCategory": "Policy Violation",
+        "incidentDetail": "{\"testPolicy\": true}",
+    }
+
+    job, result, msg = await ingestion.ingest_single_json(
+        raw_data=payload,
+        filename="test_cache_miss.json",
+        username="admin"
+    )
+    assert result == "imported"
+
+    # Verify rule was dynamically created in local DB
+    rule_q = await db_session.execute(select(Rule).where(Rule.event_type == unseen_event_type))
+    created_rule = rule_q.scalar_one_or_none()
+    assert created_rule is not None
+    assert created_rule.rule_id == unseen_event_type
+    assert created_rule.severity == "HIGH"
+    assert created_rule.name == "Dynamic Cache Miss Security Alert"
+
+    # Verify incident is properly linked to the new rule
+    inc_q = await db_session.execute(select(Incident).where(Incident.incident_id == "99999901"))
+    inc = inc_q.scalar_one_or_none()
+    assert inc is not None
+    assert inc.rule_id == created_rule.id
+
+

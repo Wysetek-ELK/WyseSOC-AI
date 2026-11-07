@@ -13,6 +13,7 @@ from app.schemas.fortisiem import (
     FortiSIEMConfigUpdate,
     FortiSIEMTestConnectionRequest,
     FortiSIEMTestConnectionResponse,
+    FortiSIEMRuleSyncResponse,
 )
 from app.services.fortisiem_service import FortiSIEMService
 
@@ -119,3 +120,17 @@ async def fetch_incident(
             status_code=500,
             detail=f"Unexpected error while pulling incident from FortiSIEM: {str(exc)}"
         )
+
+
+@router.post("/sync-rules", response_model=FortiSIEMRuleSyncResponse)
+async def sync_fortisiem_rules(
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Synchronizes all detection rules from FortiSIEM Supervisor into the local database.
+    Stores rules locally with prompt drafts so investigations can evaluate them instantly.
+    """
+    service = FortiSIEMService(db)
+    result = await service.sync_all_rules_from_siem()
+    return FortiSIEMRuleSyncResponse(**result)

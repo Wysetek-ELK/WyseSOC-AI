@@ -64,3 +64,13 @@ class FortiSIEMTestConnectionResponse(BaseModel):
     latency_ms: Optional[int] = None
     message: str
     details: Dict[str, Any] = Field(default_factory=dict)
+
+
+class FortiSIEMRuleSyncResponse(BaseModel):
+    success: bool
+    synced_rules_count: int
+    new_rules_count: int
+    updated_rules_count: int
+    total_local_rules: int
+    synced_rules: List[Dict[str, Any]] = Field(default_factory=list)
+    message: str

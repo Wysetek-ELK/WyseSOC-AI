@@ -171,6 +171,14 @@ export default function ImportsPage() {
             )}
 
             <Link
+              href="/rules"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <FileCode2 className="h-3 w-3 text-cyan-400" />
+              <span>SIEM Rules</span>
+            </Link>
+
+            <Link
               href="/settings#fortisiem"
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
             >

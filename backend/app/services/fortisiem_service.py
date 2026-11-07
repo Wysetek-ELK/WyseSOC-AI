@@ -3,6 +3,7 @@ import json
 import zipfile
 import re
 import time
+from datetime import datetime
 from typing import Dict, Any, Tuple, List, Optional
 import httpx
 from fastapi import HTTPException
@@ -13,6 +14,8 @@ from sqlalchemy.orm import selectinload
 from app.config import settings, BASE_DIR
 from app.models.incident import Incident, IncidentEvent, HistoricalGroundTruth
 from app.models.investigation import Investigation
+from app.models.rule import Rule
+from app.models.prompt import RulePrompt
 from app.services.ingestion_service import IngestionService
 from app.services.investigation_service import InvestigationService
 
@@ -77,6 +80,201 @@ class FortiSIEMService:
         except Exception:
             pass
         return []
+
+    async def sync_all_rules_from_siem(self) -> Dict[str, Any]:
+        """
+        Discovers and synchronizes all active detection rules from FortiSIEM Supervisor
+        and registers them into the local Rule and RulePrompt repositories.
+        """
+        # 1. Fetch current local rules into memory
+        rules_res = await self.db.execute(select(Rule))
+        local_rules = rules_res.scalars().all()
+        rules_by_type = {r.event_type: r for r in local_rules}
+        rules_by_id = {r.rule_id: r for r in local_rules}
+
+        discovered_incidents: List[Dict[str, Any]] = []
+
+        # 2. Query FortiSIEM live if host is configured
+        if settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip():
+            base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
+            auth = None
+            if settings.FORTISIEM_USERNAME and settings.FORTISIEM_PASSWORD:
+                auth = (settings.FORTISIEM_USERNAME, settings.FORTISIEM_PASSWORD)
+
+            now_ms = int(time.time() * 1000)
+            past_ms = now_ms - (180 * 86400 * 1000)  # last 180 days
+
+            try:
+                async with httpx.AsyncClient(verify=settings.FORTISIEM_VERIFY_SSL, timeout=settings.FORTISIEM_TIMEOUT) as client:
+                    # Query batch 1: past 180 days
+                    res1 = await client.get(
+                        f"{base_url}/phoenix/rest/pub/incident",
+                        params={"timeFrom": past_ms, "timeTo": now_ms, "size": 500},
+                        auth=auth,
+                        headers={"Accept": "application/json"}
+                    )
+                    if res1.status_code == 200:
+                        d1 = res1.json()
+                        discovered_incidents.extend(d1.get("data", []) if isinstance(d1, dict) else [])
+
+                    # If needed, query batch 2: all time / epoch 0
+                    if len(discovered_incidents) < 50:
+                        res2 = await client.get(
+                            f"{base_url}/phoenix/rest/pub/incident",
+                            params={"timeFrom": 0, "timeTo": now_ms, "size": 500},
+                            auth=auth,
+                            headers={"Accept": "application/json"}
+                        )
+                        if res2.status_code == 200:
+                            d2 = res2.json()
+                            for item in (d2.get("data", []) if isinstance(d2, dict) else []):
+                                if isinstance(item, dict) and item not in discovered_incidents:
+                                    discovered_incidents.append(item)
+            except Exception:
+                pass
+
+        # 3. Offline / Fixture discovery fallback if live returned empty
+        if not discovered_incidents and os.path.exists(self.fixtures_zip_path):
+            try:
+                with zipfile.ZipFile(self.fixtures_zip_path, "r") as z:
+                    for name in z.namelist():
+                        if name.lower().endswith(".json"):
+                            try:
+                                raw_bytes = z.read(name)
+                                d = json.loads(raw_bytes.decode("utf-8"))
+                                if isinstance(d, dict) and ("eventType" in d or "eventName" in d):
+                                    discovered_incidents.append(d)
+                            except Exception:
+                                pass
+            except Exception:
+                pass
+
+        # 4. Extract and register unique rules
+        new_count = 0
+        updated_count = 0
+        synced_rules_summary = []
+
+        unique_rules_map: Dict[str, Dict[str, Any]] = {}
+        for inc in discovered_incidents:
+            if not isinstance(inc, dict):
+                continue
+            event_type = str(inc.get("eventType") or "").strip()
+            event_name = str(inc.get("eventName") or inc.get("incidentTitle") or "").strip()
+            if not event_type and not event_name:
+                continue
+            key = event_type or event_name
+            if key not in unique_rules_map:
+                unique_rules_map[key] = inc
+
+        for key, inc in unique_rules_map.items():
+            event_type = str(inc.get("eventType") or key).strip()
+            event_name = str(inc.get("eventName") or inc.get("incidentTitle") or event_type).strip()
+
+            raw_sev = str(inc.get("eventSeverityCat") or inc.get("eventSeverity") or "MEDIUM").upper()
+            if "CRIT" in raw_sev:
+                severity = "CRITICAL"
+            elif "HIGH" in raw_sev:
+                severity = "HIGH"
+            elif "LOW" in raw_sev or "INFO" in raw_sev:
+                severity = "LOW"
+            else:
+                severity = "MEDIUM"
+
+            category = str(inc.get("phIncidentCategory") or "Security")
+            sub_cat = str(inc.get("phSubIncidentCategory") or inc.get("incidentTagName") or "Policy Violation")
+            data_src = str(inc.get("incidentRptDevName") or "FortiSIEM")
+            pattern = str(inc.get("incidentDetail") or "")
+            if not pattern and inc.get("incidentDetailJson"):
+                try:
+                    pattern = json.dumps(inc.get("incidentDetailJson"))
+                except Exception:
+                    pattern = str(inc.get("incidentDetailJson"))
+
+            metadata = {
+                "source": "FORTISIEM_LIVE_SYNC",
+                "category": category,
+                "subCategory": sub_cat,
+                "attackTechnique": inc.get("attackTechnique"),
+                "attackTactic": inc.get("attackTactic"),
+                "customer": inc.get("customer"),
+                "synced_at": datetime.utcnow().isoformat(),
+            }
+
+            existing = rules_by_type.get(event_type) or rules_by_id.get(event_type)
+            if not existing:
+                # Create new Rule
+                new_rule = Rule(
+                    rule_id=event_type,
+                    name=event_name,
+                    event_type=event_type,
+                    description=f"Detection rule '{event_name}' ({category} / {sub_cat}) synchronized from FortiSIEM.",
+                    severity=severity,
+                    status="ACTIVE",
+                    data_source=data_src,
+                    detection_tech=sub_cat or "SIEM Rule Engine",
+                    evaluation_mode="ONLINE",
+                    pattern_logic=pattern,
+                    raw_rule_text=f"Rule: {event_name}\nEventType: {event_type}\nCategory: {category}\nSubCategory: {sub_cat}\nPattern: {pattern}",
+                    parsed_metadata=metadata,
+                )
+                self.db.add(new_rule)
+                await self.db.flush()
+
+                # Generate template draft prompt
+                try:
+                    from app.services.prompt_studio_service import PromptStudioService
+                    ps_svc = PromptStudioService(self.db)
+                    draft = await ps_svc.generate_template_draft(rule_id=new_rule.id)
+                    rp_q = await self.db.execute(select(RulePrompt).where(RulePrompt.rule_id == new_rule.id))
+                    rp = rp_q.scalars().first()
+                    if rp and not rp.active_version_id and draft:
+                        rp.active_version_id = draft.id
+                        await self.db.flush()
+                except Exception:
+                    pass
+
+                rules_by_type[event_type] = new_rule
+                rules_by_id[event_type] = new_rule
+                new_count += 1
+                synced_rules_summary.append({
+                    "rule_id": new_rule.rule_id,
+                    "name": new_rule.name,
+                    "severity": new_rule.severity,
+                    "event_type": new_rule.event_type,
+                    "is_new": True,
+                })
+            else:
+                # Update metadata if needed
+                existing.severity = severity
+                existing.status = "ACTIVE"
+                if pattern and not existing.pattern_logic:
+                    existing.pattern_logic = pattern
+                existing.parsed_metadata = metadata
+                existing.updated_at = datetime.utcnow()
+                updated_count += 1
+                synced_rules_summary.append({
+                    "rule_id": existing.rule_id,
+                    "name": existing.name,
+                    "severity": existing.severity,
+                    "event_type": existing.event_type,
+                    "is_new": False,
+                })
+
+        await self.db.commit()
+
+        # Total rules count
+        total_q = await self.db.execute(select(Rule))
+        total_rules = len(total_q.scalars().all())
+
+        return {
+            "success": True,
+            "synced_rules_count": len(unique_rules_map),
+            "new_rules_count": new_count,
+            "updated_rules_count": updated_count,
+            "total_local_rules": total_rules,
+            "synced_rules": synced_rules_summary[:30],
+            "message": f"Successfully synchronized {len(unique_rules_map)} detection rules from FortiSIEM ({new_count} newly cached, {updated_count} refreshed). Total local rules: {total_rules}."
+        }
 
     def _parse_siem_response(self, res: httpx.Response, target_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Parses a response from FortiSIEM, supporting both JSON and XML formats."""

@@ -163,6 +163,22 @@ export interface FortiSIEMTestConnectionResponse {
   details?: Record<string, any>;
 }
 
+export interface FortiSIEMRuleSyncResponse {
+  success: boolean;
+  synced_rules_count: number;
+  new_rules_count: number;
+  updated_rules_count: number;
+  total_local_rules: number;
+  synced_rules: Array<{
+    rule_id: string;
+    name: string;
+    severity: string;
+    event_type: string;
+    is_new?: boolean;
+  }>;
+  message: string;
+}
+
 export interface InvestigationListItem {
   id: string;
   incident_id: string;
@@ -509,6 +525,17 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to pull incident from FortiSIEM" }));
       throw new Error(err.detail || "FortiSIEM pull error");
+    }
+    return res.json();
+  },
+
+  async syncFortiSiemRules(): Promise<FortiSIEMRuleSyncResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/sync-rules`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to sync rules from FortiSIEM" }));
+      throw new Error(err.detail || "FortiSIEM rule synchronization error");
     }
     return res.json();
   },
