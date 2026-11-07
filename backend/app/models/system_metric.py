@@ -37,3 +37,4 @@ class SystemServerSample(Base):
 
     # Extended metadata (loadavg, uptime, model identifier, etc.)
     details: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+

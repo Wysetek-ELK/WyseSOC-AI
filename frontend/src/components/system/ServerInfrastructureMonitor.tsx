@@ -46,15 +46,18 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
     if (isManual) setIsRefreshing(true);
     setError(null);
     try {
-      const [live, hist] = await Promise.all([
-        api.getServersLive(),
-        api.getServersHistory(windowRange),
-      ]);
+      const live = await api.getServersLive();
       setLiveData(live);
+    } catch (err: any) {
+      console.warn("Failed to load live server telemetry:", err);
+    }
+
+    try {
+      const hist = await api.getServersHistory(windowRange);
       setHistoryData(hist);
     } catch (err: any) {
-      console.error("Infrastructure telemetry error:", err);
-      setError(err.message || "Failed to load server telemetry");
+      console.warn("Failed to load historical telemetry:", err);
+      setError(err.message || "Failed to load server historical telemetry");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -686,3 +689,4 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
     </div>
   );
 }
+

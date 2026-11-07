@@ -31,3 +31,4 @@ async def get_historical_server_metrics(
         window = "24h"
     service = SystemMonitorService(db)
     return await service.get_historical_metrics(window=window)
+

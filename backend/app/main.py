@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.database import async_engine, Base, AsyncSessionLocal
+import app.models
 from app.api import (
     auth,
     incidents,
