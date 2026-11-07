@@ -135,3 +135,20 @@ class FortiSIEMRuleSyncResponse(BaseModel):
     total_local_rules: int
     synced_rules: List[Dict[str, Any]] = Field(default_factory=list)
     message: str
+
+
+class FortiSIEMRulePullRequest(BaseModel):
+    rule_id: str = Field(..., description="Rule ID, Event Type, or Rule Name to pull from FortiSIEM")
+    force_refresh: bool = Field(False, description="Whether to update if already exists locally")
+
+
+class FortiSIEMRulePullResponse(BaseModel):
+    success: bool
+    rule_id: str
+    name: str = ""
+    event_type: str = ""
+    severity: str = "MEDIUM"
+    source: str = "FORTISIEM_LIVE_RULE_API"
+    pattern_logic: str = ""
+    message: str = ""
+

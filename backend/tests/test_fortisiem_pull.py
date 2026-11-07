@@ -339,3 +339,102 @@ async def test_fortisiem_cache_miss_auto_registers_rule(client: AsyncClient, adm
     assert inc.rule_id == created_rule.id
 
 
+@pytest.mark.asyncio
+async def test_fortisiem_pull_rule_endpoint(client: AsyncClient, admin_token: str, monkeypatch):
+    """Test pulling a dedicated rule from FortiSIEM live endpoint."""
+    import respx
+    from app.models.rule import Rule
+
+    monkeypatch.setattr(settings, "FORTISIEM_HOST", "https://192.0.2.10")
+    monkeypatch.setattr(settings, "FORTISIEM_USERNAME", "api_user")
+    monkeypatch.setattr(settings, "FORTISIEM_PASSWORD", "api_pass")
+
+    mock_rule = {
+        "ruleId": "PH_RULE_LIVE_PULL_CUSTOM_TEST",
+        "name": "Live Pulled FortiSIEM Detection Rule",
+        "description": "Detection rule pulled directly from FortiSIEM Supervisor rule API.",
+        "severity": "CRITICAL",
+        "category": "Security",
+        "subCategory": "Malware Outbreak",
+        "dataSource": "FortiGate",
+        "pattern": "srcIp != dstIp AND dstPort == 445",
+        "attackTechnique": "T1021.002",
+        "attackTactic": "Lateral Movement",
+    }
+
+    with respx.mock(assert_all_called=False) as respx_mock:
+        respx_mock.get("https://192.0.2.10/phoenix/rest/pub/rule/PH_RULE_LIVE_PULL_CUSTOM_TEST").respond(
+            status_code=200,
+            json=mock_rule,
+        )
+
+        res = await client.post(
+            "/api/fortisiem/pull-rule",
+            json={"rule_id": "PH_RULE_LIVE_PULL_CUSTOM_TEST", "force_refresh": True},
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert data["rule_id"] == "PH_RULE_LIVE_PULL_CUSTOM_TEST"
+        assert data["severity"] == "CRITICAL"
+        assert "Live Pulled FortiSIEM Detection Rule" in data["name"]
+
+
+@pytest.mark.asyncio
+async def test_fortisiem_live_rule_enrichment_on_incident_cache_miss(client: AsyncClient, admin_token: str, db_session: AsyncSession, monkeypatch):
+    """Verify that when an incident is ingested with an unseen rule, the rule is pulled live from FortiSIEM."""
+    import respx
+    from app.models.rule import Rule
+    from app.services.ingestion_service import IngestionService
+
+    monkeypatch.setattr(settings, "FORTISIEM_HOST", "https://192.0.2.10")
+    monkeypatch.setattr(settings, "FORTISIEM_USERNAME", "api_user")
+    monkeypatch.setattr(settings, "FORTISIEM_PASSWORD", "api_pass")
+
+    unseen_event_type = "PH_RULE_LIVE_DISCOVERED_PRIV_ESC"
+    mock_siem_rule = {
+        "ruleId": unseen_event_type,
+        "name": "Live Priv Escalation Rule",
+        "description": "Rich description pulled directly from FortiSIEM rule API.",
+        "severity": "HIGH",
+        "category": "Privilege Escalation",
+        "subCategory": "Credential Access",
+        "dataSource": "Windows Security Event",
+        "pattern": "eventId == 4672",
+        "attackTechnique": "T1078",
+        "attackTactic": "Privilege Escalation",
+    }
+
+    with respx.mock(assert_all_called=False) as respx_mock:
+        respx_mock.get("https://192.0.2.10/phoenix/rest/pub/rule").respond(
+            status_code=200,
+            json=mock_siem_rule,
+        )
+
+        ingestion = IngestionService(db_session)
+        payload = {
+            "incidentId": "99999902",
+            "title": "Privilege Escalation Incident",
+            "eventName": "Live Priv Escalation Rule",
+            "eventType": unseen_event_type,
+            "eventSeverity": "HIGH",
+        }
+
+        job, result, msg = await ingestion.ingest_single_json(
+            raw_data=payload,
+            filename="test_live_rule_cache_miss.json",
+            username="admin",
+        )
+        assert result == "imported"
+
+        # Verify rule was enriched from FortiSIEM rule API
+        rule_q = await db_session.execute(select(Rule).where(Rule.event_type == unseen_event_type))
+        created_rule = rule_q.scalar_one_or_none()
+        assert created_rule is not None
+        assert created_rule.rule_id == unseen_event_type
+        assert created_rule.parsed_metadata.get("source") == "FORTISIEM_LIVE_RULE_API"
+        assert created_rule.parsed_metadata.get("attackTechnique") == "T1078"
+
+
+

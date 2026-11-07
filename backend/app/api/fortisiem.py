@@ -21,6 +21,8 @@ from app.schemas.fortisiem import (
     FortiSIEMTestConnectionRequest,
     FortiSIEMTestConnectionResponse,
     FortiSIEMRuleSyncResponse,
+    FortiSIEMRulePullRequest,
+    FortiSIEMRulePullResponse,
 )
 from app.services.fortisiem_service import FortiSIEMService
 from app.services.fortisiem_scheduler import fortisiem_scheduler
@@ -244,3 +246,22 @@ async def sync_fortisiem_rules(
     service = FortiSIEMService(db)
     result = await service.sync_all_rules_from_siem()
     return FortiSIEMRuleSyncResponse(**result)
+
+
+@router.post("/pull-rule", response_model=FortiSIEMRulePullResponse)
+async def pull_fortisiem_rule(
+    req: FortiSIEMRulePullRequest,
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Pulls a specific detection rule from FortiSIEM Supervisor REST APIs,
+    parses its full detection pattern, registers it into the local database,
+    and synthesizes an approved RulePrompt template.
+    """
+    service = FortiSIEMService(db)
+    result = await service.pull_rule_and_register(
+        rule_identifier=req.rule_id,
+        force_refresh=req.force_refresh,
+    )
+    return FortiSIEMRulePullResponse(**result)

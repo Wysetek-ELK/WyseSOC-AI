@@ -607,49 +607,84 @@ class IngestionService:
         if existing:
             return existing
 
-        rule_name = str(raw_data.get("eventName") or raw_data.get("title") or clean_event_type).strip()
-        raw_sev = str(raw_data.get("eventSeverityCat") or raw_data.get("eventSeverity") or raw_data.get("severity") or "MEDIUM").upper()
-        if "CRIT" in raw_sev:
-            severity = "CRITICAL"
-        elif "HIGH" in raw_sev:
-            severity = "HIGH"
-        elif "LOW" in raw_sev or "INFO" in raw_sev:
-            severity = "LOW"
+        rule_name_candidate = str(raw_data.get("eventName") or raw_data.get("title") or clean_event_type).strip()
+        incident_id = str(raw_data.get("incidentId") or raw_data.get("id") or "").strip()
+
+        # 1. Attempt to pull official rule configuration from live FortiSIEM Supervisor API
+        live_rule: Optional[Dict[str, Any]] = None
+        try:
+            from app.services.fortisiem_service import FortiSIEMService
+            fortisiem_svc = FortiSIEMService(self.db)
+            live_rule = await fortisiem_svc.fetch_rule_from_siem(
+                rule_identifier=clean_event_type,
+                rule_name=rule_name_candidate,
+                incident_id=incident_id if incident_id else None,
+            )
+        except Exception:
+            pass
+
+        # 2. Extract normalized rule parameters (from live SIEM rule API or fallback to incident telemetry)
+        if live_rule:
+            rule_id = live_rule.get("rule_id") or clean_event_type
+            rule_name = live_rule.get("name") or rule_name_candidate
+            severity = live_rule.get("severity") or "MEDIUM"
+            category = live_rule.get("category") or "Security"
+            sub_cat = live_rule.get("sub_category") or "Policy Violation"
+            data_src = live_rule.get("data_source") or "FortiSIEM"
+            pattern = live_rule.get("pattern_logic") or ""
+            desc = live_rule.get("description") or f"Detection rule '{rule_name}' ({category} / {sub_cat}) pulled live from FortiSIEM."
+            raw_text = live_rule.get("raw_rule_text") or f"Rule: {rule_name}\nEventType: {clean_event_type}\nPattern: {pattern}"
+            metadata = live_rule.get("metadata") or {
+                "source": "FORTISIEM_LIVE_RULE_API",
+                "synced_at": datetime.utcnow().isoformat(),
+            }
         else:
-            severity = "MEDIUM"
+            rule_id = clean_event_type
+            rule_name = rule_name_candidate
+            raw_sev = str(raw_data.get("eventSeverityCat") or raw_data.get("eventSeverity") or raw_data.get("severity") or "MEDIUM").upper()
+            if "CRIT" in raw_sev:
+                severity = "CRITICAL"
+            elif "HIGH" in raw_sev:
+                severity = "HIGH"
+            elif "LOW" in raw_sev or "INFO" in raw_sev:
+                severity = "LOW"
+            else:
+                severity = "MEDIUM"
 
-        category = str(raw_data.get("phIncidentCategory") or raw_data.get("category") or "Security")
-        sub_cat = str(raw_data.get("phSubIncidentCategory") or raw_data.get("incidentTagName") or "Policy Violation")
-        data_src = str(raw_data.get("incidentRptDevName") or raw_data.get("dataSource") or "FortiSIEM")
-        pattern = str(raw_data.get("incidentDetail") or "")
-        if not pattern and raw_data.get("incidentDetailJson"):
-            try:
-                pattern = json.dumps(raw_data.get("incidentDetailJson"))
-            except Exception:
-                pattern = str(raw_data.get("incidentDetailJson"))
+            category = str(raw_data.get("phIncidentCategory") or raw_data.get("category") or "Security")
+            sub_cat = str(raw_data.get("phSubIncidentCategory") or raw_data.get("incidentTagName") or "Policy Violation")
+            data_src = str(raw_data.get("incidentRptDevName") or raw_data.get("dataSource") or "FortiSIEM")
+            pattern = str(raw_data.get("incidentDetail") or "")
+            if not pattern and raw_data.get("incidentDetailJson"):
+                try:
+                    pattern = json.dumps(raw_data.get("incidentDetailJson"))
+                except Exception:
+                    pattern = str(raw_data.get("incidentDetailJson"))
 
-        metadata = {
-            "source": "AUTO_SYNCED_FROM_INCIDENT",
-            "category": category,
-            "subCategory": sub_cat,
-            "attackTechnique": raw_data.get("attackTechnique"),
-            "attackTactic": raw_data.get("attackTactic"),
-            "customer": raw_data.get("customer"),
-            "auto_registered_at": datetime.utcnow().isoformat(),
-        }
+            desc = f"Detection rule '{rule_name}' ({category} / {sub_cat}) registered automatically from SIEM incident telemetry."
+            raw_text = f"Rule: {rule_name}\nEventType: {clean_event_type}\nCategory: {category}\nSubCategory: {sub_cat}\nPattern: {pattern}"
+            metadata = {
+                "source": "AUTO_SYNCED_FROM_INCIDENT",
+                "category": category,
+                "subCategory": sub_cat,
+                "attackTechnique": raw_data.get("attackTechnique"),
+                "attackTactic": raw_data.get("attackTactic"),
+                "customer": raw_data.get("customer"),
+                "auto_registered_at": datetime.utcnow().isoformat(),
+            }
 
         new_rule = Rule(
-            rule_id=clean_event_type,
+            rule_id=rule_id,
             name=rule_name,
             event_type=clean_event_type,
-            description=f"Detection rule '{rule_name}' ({category} / {sub_cat}) registered automatically from SIEM incident telemetry.",
+            description=desc,
             severity=severity,
             status="ACTIVE",
             data_source=data_src,
             detection_tech=sub_cat or "SIEM Rule Engine",
             evaluation_mode="ONLINE",
             pattern_logic=pattern,
-            raw_rule_text=f"Rule: {rule_name}\nEventType: {clean_event_type}\nCategory: {category}\nSubCategory: {sub_cat}\nPattern: {pattern}",
+            raw_rule_text=raw_text,
             parsed_metadata=metadata,
         )
         self.db.add(new_rule)

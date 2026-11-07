@@ -9,7 +9,7 @@ from typing import Dict, Any, Tuple, List, Optional
 import httpx
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, or_
 from sqlalchemy.orm import selectinload
 
 from app.config import settings, BASE_DIR
@@ -276,6 +276,298 @@ class FortiSIEMService:
             "total_local_rules": total_rules,
             "synced_rules": synced_rules_summary[:30],
             "message": f"Successfully synchronized {len(unique_rules_map)} detection rules from FortiSIEM ({new_count} newly cached, {updated_count} refreshed). Total local rules: {total_rules}."
+        }
+
+    def _parse_json_rule(
+        self,
+        data: Any,
+        fallback_id: str,
+        fallback_name: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Parses a JSON response from FortiSIEM rule endpoints into normalized Rule attributes."""
+        if not data:
+            return None
+        rule_dict = None
+        if isinstance(data, dict):
+            if "rule" in data and isinstance(data["rule"], dict):
+                rule_dict = data["rule"]
+            elif "data" in data and isinstance(data["data"], list) and len(data["data"]) > 0:
+                rule_dict = data["data"][0] if isinstance(data["data"][0], dict) else None
+            elif "data" in data and isinstance(data["data"], dict):
+                rule_dict = data["data"]
+            elif "ruleDetail" in data and isinstance(data["ruleDetail"], dict):
+                rule_dict = data["ruleDetail"]
+            elif "name" in data or "ruleName" in data or "eventType" in data:
+                rule_dict = data
+
+        if not rule_dict:
+            return None
+
+        name = str(rule_dict.get("name") or rule_dict.get("ruleName") or fallback_name or fallback_id).strip()
+        rule_id = str(rule_dict.get("ruleId") or rule_dict.get("id") or rule_dict.get("eventType") or fallback_id).strip()
+        desc = str(rule_dict.get("description") or rule_dict.get("ruleDescription") or "").strip()
+
+        raw_sev = str(rule_dict.get("severity") or rule_dict.get("eventSeverityCat") or rule_dict.get("eventSeverity") or "MEDIUM").upper()
+        if "CRIT" in raw_sev:
+            severity = "CRITICAL"
+        elif "HIGH" in raw_sev:
+            severity = "HIGH"
+        elif "LOW" in raw_sev or "INFO" in raw_sev:
+            severity = "LOW"
+        else:
+            severity = "MEDIUM"
+
+        category = str(rule_dict.get("category") or rule_dict.get("phIncidentCategory") or "Security")
+        sub_cat = str(rule_dict.get("subCategory") or rule_dict.get("phSubIncidentCategory") or rule_dict.get("incidentTagName") or "Policy Violation")
+        data_src = str(rule_dict.get("dataSource") or rule_dict.get("incidentRptDevName") or "FortiSIEM")
+
+        pattern = str(rule_dict.get("pattern") or rule_dict.get("patternLogic") or rule_dict.get("expression") or rule_dict.get("incidentDetail") or "")
+        if not pattern and rule_dict.get("incidentDetailJson"):
+            try:
+                pattern = json.dumps(rule_dict.get("incidentDetailJson"))
+            except Exception:
+                pattern = str(rule_dict.get("incidentDetailJson"))
+
+        return {
+            "rule_id": rule_id,
+            "name": name,
+            "description": desc or f"Detection rule '{name}' ({category} / {sub_cat}) pulled live from FortiSIEM.",
+            "severity": severity,
+            "category": category,
+            "sub_category": sub_cat,
+            "data_source": data_src,
+            "pattern_logic": pattern,
+            "raw_rule_text": f"Rule: {name}\nEventType: {rule_id}\nCategory: {category}\nSubCategory: {sub_cat}\nPattern: {pattern}",
+            "metadata": {
+                "source": "FORTISIEM_LIVE_RULE_API",
+                "attackTechnique": rule_dict.get("attackTechnique") or rule_dict.get("mitreTechnique"),
+                "attackTactic": rule_dict.get("attackTactic") or rule_dict.get("mitreTactic"),
+                "customer": rule_dict.get("customer"),
+                "synced_at": datetime.utcnow().isoformat(),
+            },
+        }
+
+    def _parse_xml_rule(
+        self,
+        xml_text: str,
+        fallback_id: str,
+        fallback_name: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Parses an XML response from FortiSIEM rule endpoints into normalized Rule attributes."""
+        if not xml_text or not xml_text.strip():
+            return None
+        try:
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(xml_text.strip())
+            name = (root.findtext("name") or root.findtext("ruleName") or fallback_name or fallback_id).strip()
+            rule_id = (root.findtext("ruleId") or root.findtext("id") or root.findtext("eventType") or fallback_id).strip()
+            desc = (root.findtext("description") or root.findtext("ruleDescription") or "").strip()
+            raw_sev = (root.findtext("severity") or root.findtext("eventSeverityCat") or "MEDIUM").upper()
+            if "CRIT" in raw_sev:
+                severity = "CRITICAL"
+            elif "HIGH" in raw_sev:
+                severity = "HIGH"
+            elif "LOW" in raw_sev or "INFO" in raw_sev:
+                severity = "LOW"
+            else:
+                severity = "MEDIUM"
+
+            category = root.findtext("category") or root.findtext("phIncidentCategory") or "Security"
+            sub_cat = root.findtext("subCategory") or root.findtext("phSubIncidentCategory") or "Policy Violation"
+            data_src = root.findtext("dataSource") or "FortiSIEM"
+            pattern = root.findtext("pattern") or root.findtext("expression") or root.findtext("condition") or ""
+
+            return {
+                "rule_id": rule_id,
+                "name": name,
+                "description": desc or f"Detection rule '{name}' ({category} / {sub_cat}) pulled live from FortiSIEM.",
+                "severity": severity,
+                "category": category,
+                "sub_category": sub_cat,
+                "data_source": data_src,
+                "pattern_logic": pattern,
+                "raw_rule_text": f"Rule: {name}\nEventType: {rule_id}\nCategory: {category}\nSubCategory: {sub_cat}\nPattern: {pattern}",
+                "metadata": {
+                    "source": "FORTISIEM_LIVE_RULE_API",
+                    "attackTechnique": root.findtext("attackTechnique") or root.findtext("mitreTechnique"),
+                    "attackTactic": root.findtext("attackTactic") or root.findtext("mitreTactic"),
+                    "customer": root.findtext("customer"),
+                    "synced_at": datetime.utcnow().isoformat(),
+                },
+            }
+        except Exception:
+            return None
+
+    async def fetch_rule_from_siem(
+        self,
+        rule_identifier: str,
+        rule_name: Optional[str] = None,
+        incident_id: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Queries FortiSIEM Supervisor REST APIs to retrieve live rule configuration,
+        condition criteria, pattern logic, and MITRE ATT&CK taxonomy.
+        """
+        if not (settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip()):
+            return None
+
+        base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
+        auth = None
+        if settings.FORTISIEM_USERNAME and settings.FORTISIEM_PASSWORD:
+            auth = (settings.FORTISIEM_USERNAME, settings.FORTISIEM_PASSWORD)
+
+        clean_id = (rule_identifier or "").strip()
+        clean_name = (rule_name or "").strip()
+
+        probe_endpoints = []
+        if clean_id:
+            probe_endpoints.append((f"{base_url}/phoenix/rest/pub/rule/{clean_id}", None))
+            probe_endpoints.append((f"{base_url}/phoenix/rest/pub/rule", {"ruleId": clean_id}))
+            probe_endpoints.append((f"{base_url}/phoenix/rest/pub/rule", {"name": clean_id}))
+            probe_endpoints.append((f"{base_url}/phoenix/rest/config/rule/{clean_id}", None))
+            probe_endpoints.append((f"{base_url}/phoenix/rest/config/rule", {"name": clean_id}))
+        if clean_name and clean_name != clean_id:
+            probe_endpoints.append((f"{base_url}/phoenix/rest/pub/rule", {"name": clean_name}))
+            probe_endpoints.append((f"{base_url}/phoenix/rest/config/rule", {"name": clean_name}))
+        if incident_id:
+            probe_endpoints.append((f"{base_url}/phoenix/rest/incident/ruleDetail", {"incidentId": str(incident_id).strip()}))
+
+        async with httpx.AsyncClient(
+            verify=settings.FORTISIEM_VERIFY_SSL,
+            timeout=3.5,
+        ) as client:
+            for url, params in probe_endpoints:
+                try:
+                    res = await client.get(
+                        url,
+                        params=params,
+                        auth=auth,
+                        headers={"Accept": "application/json, application/xml, text/xml"},
+                    )
+                    if res.status_code == 200:
+                        content_type = res.headers.get("content-type", "").lower()
+                        if "xml" in content_type or res.text.strip().startswith("<"):
+                            parsed = self._parse_xml_rule(res.text, clean_id, clean_name)
+                            if parsed:
+                                return parsed
+                        else:
+                            parsed_json = res.json()
+                            parsed = self._parse_json_rule(parsed_json, clean_id, clean_name)
+                            if parsed:
+                                return parsed
+                except Exception:
+                    continue
+
+        return None
+
+    async def pull_rule_and_register(
+        self,
+        rule_identifier: str,
+        rule_name: Optional[str] = None,
+        force_refresh: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Pulls a specific detection rule from FortiSIEM Supervisor, parses its configuration,
+        registers it in the local Rule table, and synthesizes an approved RulePrompt draft.
+        """
+        clean_id = (rule_identifier or "").strip()
+        clean_name = (rule_name or "").strip()
+
+        # Check existing rule
+        q = await self.db.execute(select(Rule).where(
+            or_(
+                Rule.rule_id == clean_id,
+                Rule.event_type == clean_id,
+                Rule.name == clean_name if clean_name else False
+            )
+        ))
+        existing_rule = q.scalar_one_or_none()
+
+        if existing_rule and not force_refresh:
+            return {
+                "success": True,
+                "rule_id": existing_rule.rule_id,
+                "name": existing_rule.name,
+                "event_type": existing_rule.event_type,
+                "severity": existing_rule.severity,
+                "source": "DATABASE_CACHE",
+                "pattern_logic": existing_rule.pattern_logic or "",
+                "message": f"Rule '{existing_rule.name}' ({existing_rule.rule_id}) is already registered locally.",
+            }
+
+        # Attempt live pull from FortiSIEM Supervisor
+        parsed_rule = await self.fetch_rule_from_siem(clean_id, clean_name)
+
+        if not parsed_rule:
+            if existing_rule:
+                return {
+                    "success": True,
+                    "rule_id": existing_rule.rule_id,
+                    "name": existing_rule.name,
+                    "event_type": existing_rule.event_type,
+                    "severity": existing_rule.severity,
+                    "source": "DATABASE_CACHE",
+                    "pattern_logic": existing_rule.pattern_logic or "",
+                    "message": f"Rule '{existing_rule.name}' not found on live FortiSIEM; retaining local cached definition.",
+                }
+            raise HTTPException(
+                status_code=404,
+                detail=f"Rule '{clean_id or clean_name}' was not found on FortiSIEM Supervisor ({settings.FORTISIEM_HOST}).",
+            )
+
+        if existing_rule and force_refresh:
+            existing_rule.name = parsed_rule["name"]
+            existing_rule.description = parsed_rule["description"]
+            existing_rule.severity = parsed_rule["severity"]
+            existing_rule.pattern_logic = parsed_rule["pattern_logic"]
+            existing_rule.raw_rule_text = parsed_rule["raw_rule_text"]
+            existing_rule.parsed_metadata = parsed_rule["metadata"]
+            existing_rule.updated_at = datetime.utcnow()
+            await self.db.commit()
+            target_rule = existing_rule
+        else:
+            new_rule = Rule(
+                rule_id=parsed_rule["rule_id"],
+                name=parsed_rule["name"],
+                event_type=parsed_rule["rule_id"],
+                description=parsed_rule["description"],
+                severity=parsed_rule["severity"],
+                status="ACTIVE",
+                data_source=parsed_rule["data_source"],
+                detection_tech=parsed_rule["sub_category"] or "SIEM Rule Engine",
+                evaluation_mode="ONLINE",
+                pattern_logic=parsed_rule["pattern_logic"],
+                raw_rule_text=parsed_rule["raw_rule_text"],
+                parsed_metadata=parsed_rule["metadata"],
+            )
+            self.db.add(new_rule)
+            await self.db.flush()
+
+            # Synthesize template draft prompt in Rule Prompt Studio
+            try:
+                from app.services.prompt_studio_service import PromptStudioService
+                prompt_svc = PromptStudioService(self.db)
+                draft = await prompt_svc.generate_template_draft(rule_id=new_rule.id)
+                rp_res = await self.db.execute(select(RulePrompt).where(RulePrompt.rule_id == new_rule.id))
+                rp = rp_res.scalars().first()
+                if rp and not rp.active_version_id and draft:
+                    rp.active_version_id = draft.id
+                    await self.db.flush()
+            except Exception:
+                pass
+
+            await self.db.commit()
+            target_rule = new_rule
+
+        return {
+            "success": True,
+            "rule_id": target_rule.rule_id,
+            "name": target_rule.name,
+            "event_type": target_rule.event_type,
+            "severity": target_rule.severity,
+            "source": "FORTISIEM_LIVE_RULE_API",
+            "pattern_logic": target_rule.pattern_logic or "",
+            "message": f"Successfully pulled rule '{target_rule.name}' ({target_rule.rule_id}) from FortiSIEM.",
         }
 
     def _parse_siem_response(self, res: httpx.Response, target_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
