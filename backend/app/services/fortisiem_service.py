@@ -3,6 +3,7 @@ import json
 import zipfile
 import re
 import time
+import asyncio
 from datetime import datetime
 from typing import Dict, Any, Tuple, List, Optional
 import httpx
@@ -341,6 +342,7 @@ class FortiSIEMService:
         incident_id: str,
         auth: Optional[Tuple[str, str]],
         incident_data: Dict[str, Any],
+        timeout: float = 3.5,
     ) -> None:
         """Fetches and populates rawEvents if the main incident object lacks triggering events."""
         if incident_data.get("rawEvents") and isinstance(incident_data["rawEvents"], list) and len(incident_data["rawEvents"]) > 0:
@@ -352,7 +354,7 @@ class FortiSIEMService:
         ]
         for url, params in probe_urls:
             try:
-                res = await client.get(url, params=params, auth=auth, headers={"Accept": "application/json"})
+                res = await client.get(url, params=params, auth=auth, headers={"Accept": "application/json"}, timeout=timeout)
                 if res.status_code == 200:
                     evts = res.json()
                     if isinstance(evts, list):
@@ -693,11 +695,8 @@ class FortiSIEMService:
                                 if isinstance(it, dict):
                                     discovered_incidents.append(it)
 
-                    # Enrich triggering events for discovered incidents if missing
-                    for inc in discovered_incidents[:max_count]:
-                        iid = str(inc.get("incidentId") or inc.get("id") or "").strip()
-                        if iid:
-                            await self._enrich_triggering_events(client, base_url, iid, auth, inc)
+                    # Live query complete. Triggering event enrichment is deferred
+                    # specifically to newly discovered alerts below to prevent 504 timeouts.
 
             except Exception:
                 pass
@@ -732,7 +731,7 @@ class FortiSIEMService:
                 "message": "No incidents found in the specified window.",
             }
 
-        # 3. Ingestion and Deduplication loop
+        # 3. High-Performance Deduplication and Ingestion loop
         ingestion = IngestionService(self.db)
         investigation_svc = InvestigationService(self.db)
 
@@ -742,14 +741,55 @@ class FortiSIEMService:
         incidents_to_evaluate: List[str] = []
         sample_results: List[Dict[str, Any]] = []
 
-        for raw_inc in discovered_incidents[:max_count]:
+        candidate_incidents = discovered_incidents[:max_count]
+        candidate_ids = [str(x.get("incidentId") or x.get("id") or "").strip() for x in candidate_incidents]
+        candidate_ids = [cid for cid in candidate_ids if cid]
+
+        # Instant DB existence lookup in a single query
+        existing_map: Dict[str, Incident] = {}
+        if candidate_ids:
+            existing_stmt = select(Incident).where(Incident.incident_id.in_(candidate_ids)).options(selectinload(Incident.events))
+            existing_res = await self.db.execute(existing_stmt)
+            for ex in existing_res.scalars().all():
+                existing_map[ex.incident_id] = ex
+
+        # Filter candidate incidents that actually require ingestion & live event enrichment
+        needs_ingestion = [
+            inc for inc in candidate_incidents
+            if str(inc.get("incidentId") or inc.get("id") or "").strip() not in existing_map or force_refresh
+        ]
+
+        # Concurrently enrich triggering events ONLY for new incidents with strict timeout & bounded workers
+        if needs_ingestion and settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip():
+            sem = asyncio.Semaphore(5)
+            base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
+            auth = None
+            if settings.FORTISIEM_USERNAME and settings.FORTISIEM_PASSWORD:
+                auth = (settings.FORTISIEM_USERNAME, settings.FORTISIEM_PASSWORD)
+
+            try:
+                async with httpx.AsyncClient(
+                    verify=settings.FORTISIEM_VERIFY_SSL,
+                    timeout=settings.FORTISIEM_TIMEOUT,
+                ) as enrich_client:
+                    async def _safe_enrich(inc_item: Dict[str, Any]):
+                        iid = str(inc_item.get("incidentId") or inc_item.get("id") or "").strip()
+                        if iid and not (inc_item.get("rawEvents") and isinstance(inc_item["rawEvents"], list) and len(inc_item["rawEvents"]) > 0):
+                            async with sem:
+                                try:
+                                    await self._enrich_triggering_events(enrich_client, base_url, iid, auth, inc_item, timeout=3.5)
+                                except Exception:
+                                    pass
+                    await asyncio.gather(*[_safe_enrich(inc_item) for inc_item in needs_ingestion], return_exceptions=True)
+            except Exception:
+                pass
+
+        for raw_inc in candidate_incidents:
             clean_id = str(raw_inc.get("incidentId") or raw_inc.get("id") or "").strip()
             if not clean_id:
                 continue
 
-            existing_stmt = select(Incident).where(Incident.incident_id == clean_id).options(selectinload(Incident.events))
-            existing_res = await self.db.execute(existing_stmt)
-            existing_inc = existing_res.scalar_one_or_none()
+            existing_inc = existing_map.get(clean_id)
 
             if existing_inc and not force_refresh:
                 already_cached += 1
@@ -811,14 +851,24 @@ class FortiSIEMService:
         ai_verdicts_generated = 0
         if auto_triage_llm and incidents_to_evaluate:
             ai_service = AIVerdictService(self.db)
-            for iid in incidents_to_evaluate:
+            # Evaluate up to 2 synchronously to provide immediate verified verdict in response
+            sync_batch = incidents_to_evaluate[:2]
+            for iid in sync_batch:
                 try:
                     await ai_service.evaluate_incident(iid, username=username)
                     ai_verdicts_generated += 1
                 except Exception as eval_exc:
                     print(f"[FortiSIEM Auto-Triage Error] Failed evaluating incident {iid}: {eval_exc}")
 
+            # Dispatch remaining to background worker so HTTP response returns immediately without 504 timeout
+            remaining = incidents_to_evaluate[2:]
+            if remaining:
+                asyncio.create_task(self._evaluate_incidents_background(remaining, username))
+
         checkpoint = highest_timestamp if highest_timestamp > 0 else int(time.time() * 1000)
+
+        bg_queued_count = max(0, len(incidents_to_evaluate) - ai_verdicts_generated)
+        bg_msg = f" (+{bg_queued_count} queued in background)" if bg_queued_count > 0 else ""
 
         return {
             "success": True,
@@ -831,9 +881,26 @@ class FortiSIEMService:
             "sample_incidents": sample_results,
             "message": (
                 f"Batch pull completed: {newly_ingested} newly ingested, {already_cached} already cached. "
-                f"{ai_verdicts_generated} AI verdicts generated via LLM ({source_mode})."
+                f"{ai_verdicts_generated} AI verdicts generated{bg_msg} via LLM ({source_mode})."
             ),
         }
+
+    @classmethod
+    async def _evaluate_incidents_background(cls, incident_ids: List[str], username: str) -> None:
+        """Evaluates pending incidents asynchronously in the background so HTTP callers never time out."""
+        if not incident_ids:
+            return
+        try:
+            from app.database import AsyncSessionLocal
+            async with AsyncSessionLocal() as session:
+                ai_service = AIVerdictService(session)
+                for iid in incident_ids:
+                    try:
+                        await ai_service.evaluate_incident(iid, username=username)
+                    except Exception as exc:
+                        print(f"[Background AI Evaluation] Incident {iid}: {exc}")
+        except Exception as bg_exc:
+            print(f"[Background AI Worker Error]: {bg_exc}")
 
     async def pull_incremental_incidents(
         self,
