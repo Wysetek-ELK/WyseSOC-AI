@@ -361,12 +361,12 @@ function IncidentsContent() {
                       <div>{inc.source_ip || "Internal"}</div>
                       <div className="text-[10px] text-slate-500">{inc.reporting_device}</div>
                     </td>
-                    <td className="py-1.5 px-2.5 text-slate-300 text-[10px]">
-                      <div className="font-medium text-slate-200">
+                    <td className="py-1.5 px-2.5 text-slate-300 text-[10px]" suppressHydrationWarning>
+                      <div className="font-medium text-slate-200" suppressHydrationWarning>
                         {formatIncidentOccurredTime(inc)}
                       </div>
                       {inc.last_seen_epoch && inc.first_seen_epoch && inc.last_seen_epoch !== inc.first_seen_epoch && (
-                        <div className="text-[9px] text-slate-500">
+                        <div className="text-[9px] text-slate-500" suppressHydrationWarning>
                           Last: {formatEpoch(inc.last_seen_epoch)}
                         </div>
                       )}

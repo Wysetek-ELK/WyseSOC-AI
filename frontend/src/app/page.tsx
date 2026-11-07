@@ -28,7 +28,8 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [mounted, setMounted] = useState<boolean>(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   const loadData = async (showSpinner: boolean = true) => {
     if (showSpinner) setIsLoading(true);
@@ -45,6 +46,8 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    setMounted(true);
+    setLastRefreshed(new Date());
     loadData(true);
     if (!autoRefresh) return;
     const interval = setInterval(() => {
@@ -114,11 +117,16 @@ export default function DashboardPage() {
 
   const formatEpoch = (epoch?: number) => {
     if (!epoch) return "N/A";
+    if (!mounted) return "--";
     const ms = epoch < 1e11 ? epoch * 1000 : epoch;
-    return new Date(ms).toLocaleString([], {
-      dateStyle: "short",
-      timeStyle: "medium",
-    });
+    try {
+      return new Date(ms).toLocaleString([], {
+        dateStyle: "short",
+        timeStyle: "medium",
+      });
+    } catch {
+      return String(epoch);
+    }
   };
 
   return (
@@ -280,9 +288,11 @@ export default function DashboardPage() {
               <span className="text-slate-600">·</span>
               <span className="text-slate-300 font-semibold">{metrics?.unresolved_incidents || 0} Live Unlabeled</span>
             </div>
-            <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+            <div className="text-[11px] text-slate-500 flex items-center gap-1.5" suppressHydrationWarning>
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
-              <span>Synced {lastRefreshed.toLocaleTimeString()}</span>
+              <span suppressHydrationWarning>
+                {mounted && lastRefreshed ? `Synced ${lastRefreshed.toLocaleTimeString()}` : "Live Sync Active"}
+              </span>
             </div>
           </div>
 
@@ -458,7 +468,7 @@ export default function DashboardPage() {
                             {inc.historical_verdict || "Unlabeled"}
                           </span>
                         </td>
-                        <td className="py-1.5 px-2 text-slate-400 text-[10px]">
+                        <td className="py-1.5 px-2 text-slate-400 text-[10px]" suppressHydrationWarning>
                           {formatEpoch(inc.created_at_epoch)}
                         </td>
                         <td className="py-1.5 px-2 text-right font-sans">
