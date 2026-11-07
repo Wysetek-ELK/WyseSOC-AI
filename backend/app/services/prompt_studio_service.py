@@ -13,19 +13,35 @@ from app.schemas.prompt import (
     PromptVersionCreate,
 )
 
-COMMON_SOC_BASELINE = """# ENTERPRISE SOC INVESTIGATION PROTOCOL
-You are an advanced Security Operations Center (SOC) Incident Analysis Assistant.
-Your objective is to perform comprehensive, evidence-based triage on normalized telemetry alerts.
+COMMON_SOC_BASELINE = """# ENTERPRISE SOC LEVEL-2 INVESTIGATION & TRIAGE PROTOCOL
+You are an expert Level-2 Security Operations Center (SOC) Senior Incident Investigator.
+Your mission is to perform strict, evidence-grounded triage on incoming SIEM incident telemetry and determine the ground-truth status.
 
-GUIDELINES:
-1. Ground your reasoning strictly on observed telemetry attributes and events.
-2. Formulate explicit investigative hypotheses (Benign System Activity vs. Malicious Activity).
-3. Identify all critical artifacts: execution paths, parent-child process lineage, network connections, and user context.
-4. Categorize verdicts into:
-   - TRUE_POSITIVE: Clear malicious activity or unauthorized adversary behavior matching known threat techniques.
-   - FALSE_POSITIVE: Legitimate administrative actions, scheduled tasks, benign software updates, or expected business operations.
-   - REQUIRES_ATTENTION: Inconclusive findings requiring immediate human endpoint isolation, live forensic triage, or missing telemetry.
-5. Never invent or hallucinate IOCs, logs, or user credentials.
+## VERDICT CLASSIFICATION FRAMEWORK:
+
+### 1. FALSE_POSITIVE (Benign Operational Noise / Expected Business Activity):
+Vote FALSE_POSITIVE (confidence 80-98%) when observed indicators match known benign patterns:
+- Web Policy Violations with Same Source & Destination (SAME_SRC_SAME_DEST / PH_RULE_WEB_POL_VIOLATION_*):
+  * Source and Destination IPs/entities are identical, or point to internal RFC-1918 subnets (10.x, 172.16-31.x, 192.168.x) or localhost/loopback (127.0.0.1).
+  * Proxy loopback reflection, internal health probes (/healthz, /ready, keep-alive), or local WAF inspection artifacts.
+  * No external malicious domain or data exfiltration payload is present.
+- Administrative Management: Known administrative maintenance running under authorized accounts, standard patch management (SCCM, Tanium, InTune), monitoring agents (Datadog, Zabbix), or signed vendor software updates.
+- Benign IT/Developer Activity: Internal SSH/RDP between known administrative subnets without anomalous lateral movement or credential dumping.
+
+### 2. TRUE_POSITIVE (Active Threat / Adversary Attack Tradecraft):
+Vote TRUE_POSITIVE (confidence 85-99%) when observed indicators confirm malicious techniques:
+- Suspicious Execution & LOLBins (CrowdStrike / EDR alerts):
+  * PowerShell execution with base64 encoded payloads (-enc, -encodedcommand), download cradles (IWR, Invoke-WebRequest, DownloadString, bitsadmin, certutil -urlcache).
+  * Living-off-the-Land Binaries (LOLBins) used anomalously (vssadmin delete shadows, mshta, rundll32, regsvr32 executing unverified remote scripts).
+  * Reconnaissance commands in rapid sequence (whoami, net user, net group, nltest, systeminfo, ipconfig /all).
+- Credential Access & Defense Evasion: Mimikatz, LSASS memory dumping, tampering with Windows Defender / EDR services, deleting security event logs.
+- Command and Control (C2) & Exfiltration: High-frequency beaconing to untrusted external domains/IPs, DNS tunneling, or unauthorized external data transfer.
+
+### 3. REQUIRES_ATTENTION (Ambiguous / Incomplete Evidence):
+Reserve REQUIRES_ATTENTION strictly for cases where:
+- Critical telemetry is completely absent, corrupted, or truncated so that no meaningful assessment can be made.
+- High-severity alerts with conflicting indicators requiring immediate physical host containment or memory capture by human incident response team.
+DO NOT use REQUIRES_ATTENTION for routine internal web policy, loopback, or health-check alerts — classify them as FALSE_POSITIVE with clear rationale.
 """
 
 
@@ -104,16 +120,6 @@ class PromptStudioService:
         triggered_attrs = (rule.parsed_metadata or {}).get("triggered_event_attributes", [])
         remediation = rule.remediation or "Follow standard incident response runbook."
 
-        rule_specific = f"""### SPECIFIC INVESTIGATION DIRECTIVE FOR {rule.name.upper()}
-Vendor / Event Type: {rule.event_type}
-Default Severity: {rule.severity}
-Data Source: {rule.data_source}
-
-OBJECTIVE:
-Investigate alerts triggered under rule condition: {rule.name}.
-Analyze process command lines, execution directories, and triggering attributes to determine whether execution is unauthorized adversary activity or benign IT management.
-"""
-
         detection_conds = f"""Detection Pattern: {detection_pattern}
 Triggered Attributes: {', '.join(triggered_attrs) if triggered_attrs else 'Generic event attributes'}"""
 
@@ -123,7 +129,9 @@ Triggered Attributes: {', '.join(triggered_attrs) if triggered_attrs else 'Gener
 4. Network connections, remote destination IP/port and domain reputation
 5. File hash (SHA256/MD5) reputation and digital signature validity"""
 
-        if "CrowdStrike" in rule.name or "Activity" in rule.name:
+        norm_name = f"{rule.name} {rule.event_type}".lower()
+
+        if "crowdstrike" in norm_name or "suspicious" in norm_name or "process" in norm_name or "activity" in norm_name:
             tp_ind = """- Process execution from unusual temp directories (e.g. C:\\Users\\*\\AppData\\Local\\Temp, /tmp)
 - Encoded PowerShell commands (-enc, -encodedcommand) or obfuscated arguments
 - Suspicious child processes spawned from Office apps, web servers, or script interpreters (wscript, cscript)
@@ -143,6 +151,24 @@ Triggered Attributes: {', '.join(triggered_attrs) if triggered_attrs else 'Gener
                 "Has this executable been observed running on other endpoints in the fleet?",
                 "Does the network connection reach a known malicious C2 infrastructure?",
             ]
+        elif "web" in norm_name or "policy" in norm_name or "dest" in norm_name or "traffic" in norm_name:
+            tp_ind = """- Repeated outbound connections to known malicious domains or external C2 IP addresses
+- Data exfiltration payloads encoded in HTTP headers, cookies, or URL query parameters
+- Unauthorized port tunneling (e.g. SSH over port 80/443, DNS tunneling)
+- Malicious user-agent strings associated with automated attack tools (sqlmap, nikto, cobaltstrike)"""
+            fp_ind = """- Internal loopback traffic where source IP and destination IP are identical (local proxy reflection, WAF loopback, localhost testing)
+- Web policy alerts triggered by routine internal health-check endpoints (/healthz, /ready, /ping, keep-alive)
+- Local corporate proxy re-routing or gateway inspection artifacts
+- Internal RFC-1918 traffic (10.x, 172.16-31.x, 192.168.x) accessing approved internal intranet portals without anomalous payloads"""
+            missing_info = """- Specific destination URL or HTTP request headers
+- Packet payload data to determine if external communication was attempted"""
+            escalation = """- High-volume data transfer to unclassified external IP
+- Multiple hosts exhibiting identical beaconing behavior"""
+            questions = [
+                "Are the source and destination IPs both internal/loopback or proxy interfaces?",
+                "Is this traffic generated by an automated health check or monitoring service?",
+                "Does the request contain any encoded external web destinations?",
+            ]
         else:
             tp_ind = """- Executable or script downloaded from untrusted internet domain
 - High entropy executable matching known malware signatures or unsigned binary
@@ -161,6 +187,31 @@ Triggered Attributes: {', '.join(triggered_attrs) if triggered_attrs else 'Gener
                 "Does the file hash match any known threat intelligence indicator?",
             ]
 
+        rule_specific = f"""### SPECIFIC INVESTIGATION DIRECTIVE FOR {rule.name.upper()}
+Vendor / Event Type: {rule.event_type}
+Default Severity: {rule.severity}
+Data Source: {rule.data_source or "SIEM Ingestion"}
+
+OBJECTIVE:
+Investigate alerts triggered under rule condition: {rule.name}.
+Analyze process execution, network connections, source/destination entities, and triggering attributes to classify definitively as TRUE_POSITIVE, FALSE_POSITIVE, or REQUIRES_ATTENTION.
+
+DETECTION CONDITIONS:
+{detection_conds}
+
+### TRUE POSITIVE INDICATORS (MALICIOUS ATTACK):
+{tp_ind}
+
+### FALSE POSITIVE INDICATORS (BENIGN OPERATIONAL NOISE):
+{fp_ind}
+
+### REQUIRED EVIDENCE:
+{req_evidence}
+
+### WHEN TO ABSTAIN (REQUIRES ATTENTION):
+{missing_info}
+"""
+
         new_version = PromptVersion(
             prompt_id=rule_prompt.id,
             version_number=next_ver,
@@ -175,13 +226,14 @@ Triggered Attributes: {', '.join(triggered_attrs) if triggered_attrs else 'Gener
             missing_info_criteria=missing_info.strip(),
             escalation_conditions=escalation.strip(),
             analyst_questions=questions,
-            change_summary="TEMPLATE-GENERATED DRAFT: Synthesized from SIEM rule specifications (Not AI generated)",
+            change_summary="TEMPLATE-GENERATED DRAFT: Synthesized from SIEM rule specifications with specialized decision criteria",
             created_by_user_id=user_id,
         )
 
         self.db.add(new_version)
         await self.db.commit()
         await self.db.refresh(new_version)
+
         return new_version
 
     async def create_draft_version(

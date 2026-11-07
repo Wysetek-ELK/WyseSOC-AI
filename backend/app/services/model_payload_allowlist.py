@@ -91,6 +91,27 @@ def build_model_facing_payload(
 
     rule_pattern = getattr(rule, "pattern_logic", None) if rule else None
 
+    # Safely extract and backfill network and device entities if top-level fields are generic or empty
+    src_ip = str(_get_field(incident, "source_ip", "sourceIp", "")).strip()
+    rep_dev = str(_get_field(incident, "reporting_device", "reportingDevice", "")).strip()
+    rep_ip = str(_get_field(incident, "reporting_ip", "reportingIp", "")).strip()
+
+    if (not src_ip or src_ip.lower() in ("internal", "host", "internal / host", "n/a", "none")) and sanitized_events:
+        for ev in sanitized_events:
+            attrs = ev.get("attributes", {})
+            candidate = attrs.get("srcIp") or attrs.get("src_ip") or attrs.get("sourceIp") or attrs.get("sourceIP")
+            if candidate:
+                src_ip = str(candidate).strip()
+                break
+
+    if not rep_dev and sanitized_events:
+        for ev in sanitized_events:
+            attrs = ev.get("attributes", {})
+            candidate = attrs.get("devName") or attrs.get("reportingDevice") or attrs.get("hostName") or attrs.get("deviceName")
+            if candidate:
+                rep_dev = str(candidate).strip()
+                break
+
     # Strict allowlist of top-level incident fields with bounded text length
     payload: Dict[str, Any] = {
         "incident_id": str(_get_field(incident, "incident_id", "incidentId", "")),
@@ -101,9 +122,9 @@ def build_model_facing_payload(
         "severity": str(_get_field(incident, "severity", "severity", "MEDIUM")),
         "category": str(_get_field(incident, "category", "category", "")),
         "subcategory": str(_get_field(incident, "subcategory", "subcategory", "")),
-        "source_ip": str(_get_field(incident, "source_ip", "sourceIp", "")),
-        "reporting_device": str(_get_field(incident, "reporting_device", "reportingDevice", "")),
-        "reporting_ip": str(_get_field(incident, "reporting_ip", "reportingIp", "")),
+        "source_ip": src_ip,
+        "reporting_device": rep_dev,
+        "reporting_ip": rep_ip,
         "first_seen_epoch": _get_field(incident, "first_seen_epoch", "firstSeen", None),
         "last_seen_epoch": _get_field(incident, "last_seen_epoch", "lastSeen", None),
         "created_at_epoch": _get_field(incident, "created_at_epoch", "createdAt", None),
