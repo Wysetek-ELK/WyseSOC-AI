@@ -99,7 +99,11 @@ export default function IncidentDetailPage({
 
   const formatEpoch = (epoch?: number) => {
     if (!epoch) return "N/A";
-    return new Date(epoch).toLocaleString();
+    const ms = epoch < 1e11 ? epoch * 1000 : epoch;
+    return new Date(ms).toLocaleString([], {
+      dateStyle: "short",
+      timeStyle: "medium",
+    });
   };
 
   if (isLoading) {

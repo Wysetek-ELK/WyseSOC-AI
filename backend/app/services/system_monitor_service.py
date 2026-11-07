@@ -91,7 +91,7 @@ class SystemMonitorService:
         return {
             "server_id": "server-1",
             "server_name": "Server 1 (Platform & SIEM Core)",
-            "timestamp": now,
+            "timestamp": now.isoformat() + "Z",
             "status": "ONLINE",
             "cpu_percent": cpu_percent,
             "memory_percent": mem_percent,
@@ -181,7 +181,7 @@ class SystemMonitorService:
         return {
             "server_id": "server-2",
             "server_name": "Server 2 (vLLM AI & GPU Inference)",
-            "timestamp": now,
+            "timestamp": now.isoformat() + "Z",
             "status": status,
             "cpu_percent": 18.2 if status == "ONLINE" else 0.0,
             "memory_percent": 28.5 if status == "ONLINE" else 0.0,
@@ -245,7 +245,7 @@ class SystemMonitorService:
             await self._maybe_record_snapshot([s1, s2])
 
         return {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.utcnow().isoformat() + "Z",
             "server_1": s1,
             "server_2": s2,
             "system_health": "OPTIMAL" if (s1["status"] == "ONLINE" and s2["status"] == "ONLINE") else "ATTENTION_REQUIRED",
@@ -322,7 +322,7 @@ class SystemMonitorService:
             s1_mem = round(random.uniform(23.0, 26.0), 1)
             points.append({
                 "server_id": "server-1",
-                "timestamp": t.isoformat(),
+                "timestamp": t.isoformat() + "Z",
                 "time_label": time_label,
                 "cpu_percent": s1_cpu,
                 "memory_percent": s1_mem,
@@ -342,7 +342,7 @@ class SystemMonitorService:
             s2_vram = round(random.uniform(24.0, 28.0), 1)
             points.append({
                 "server_id": "server-2",
-                "timestamp": t.isoformat(),
+                "timestamp": t.isoformat() + "Z",
                 "time_label": time_label,
                 "cpu_percent": round(random.uniform(8.0, 18.0), 1),
                 "memory_percent": round(random.uniform(26.0, 29.0), 1),
@@ -465,8 +465,11 @@ class SystemMonitorService:
 
         if samples:
             for sample in samples:
+                iso_ts = sample.timestamp.isoformat()
+                if not iso_ts.endswith("Z") and "+" not in iso_ts:
+                    iso_ts += "Z"
                 item = {
-                    "timestamp": sample.timestamp.isoformat(),
+                    "timestamp": iso_ts,
                     "time_label": sample.timestamp.strftime("%H:%M" if window in ("1h", "6h", "24h") else "%m/%d %H:%M"),
                     "cpu_percent": sample.cpu_percent,
                     "memory_percent": sample.memory_percent,

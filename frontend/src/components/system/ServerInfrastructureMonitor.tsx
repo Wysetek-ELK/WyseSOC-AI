@@ -85,6 +85,37 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
   const s1 = liveData?.server_1;
   const s2 = liveData?.server_2;
 
+  const formatLocalTime = (isoString?: string) => {
+    if (!isoString) return "";
+    try {
+      const normalized =
+        isoString.endsWith("Z") || isoString.includes("+")
+          ? isoString
+          : `${isoString}Z`;
+      const d = new Date(normalized);
+      if (isNaN(d.getTime())) return isoString;
+
+      if (windowRange === "7d") {
+        return (
+          d.toLocaleDateString([], { month: "short", day: "numeric" }) +
+          " " +
+          d.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })
+        );
+      }
+      return d.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+    } catch {
+      return isoString;
+    }
+  };
+
   // Build SVG Path helper for chart
   const renderAreaChart = () => {
     if (!historyData) return null;
@@ -281,7 +312,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
                 fill="#64748b"
                 fontFamily="monospace"
               >
-                {pt.time_label}
+                {formatLocalTime(pt.timestamp)}
               </text>
             );
           })}
@@ -299,7 +330,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
             }}
           >
             <div className="text-[10px] text-slate-400 border-b border-slate-800 pb-1">
-              Time: {s1Points[hoveredPointIdx].raw.time_label}
+              Time: {formatLocalTime(s1Points[hoveredPointIdx].raw.timestamp)}
             </div>
             <div className="flex items-center gap-2 text-cyan-300">
               <span className="h-2 w-2 rounded-full bg-cyan-400"></span>
