@@ -42,10 +42,19 @@ class FortiSIEMService:
             pass
         return sorted(list(set(ids)))
 
-    def _parse_siem_response(self, res: httpx.Response) -> Optional[Dict[str, Any]]:
+    def _parse_siem_response(self, res: httpx.Response, target_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Parses a response from FortiSIEM, supporting both JSON and XML formats."""
+        clean_id = str(target_id).strip() if target_id else ""
         try:
-            return res.json()
+            val = res.json()
+            if isinstance(val, dict):
+                iid = str(val.get("incidentId") or val.get("id") or "").strip()
+                if clean_id and iid and iid != clean_id:
+                    return None
+                if "incidentId" in val or "id" in val or "eventName" in val or "title" in val:
+                    return val
+            elif isinstance(val, list) and len(val) > 0:
+                return self._extract_incident_from_pub_response(val, clean_id)
         except Exception:
             pass
         text = res.text.strip()
@@ -57,7 +66,10 @@ class FortiSIEMService:
                 for child in root:
                     tag = child.tag.split("}")[-1] if "}" in child.tag else child.tag
                     res_dict[tag] = child.text.strip() if child.text else ""
-                return res_dict if res_dict else None
+                iid = str(res_dict.get("incidentId") or res_dict.get("id") or "").strip()
+                if clean_id and iid and iid != clean_id:
+                    return None
+                return res_dict if res_dict and ("incidentId" in res_dict or "id" in res_dict) else None
             except Exception:
                 pass
         return None
@@ -65,14 +77,15 @@ class FortiSIEMService:
     def _extract_incident_from_pub_response(self, data: Any, target_id: str) -> Optional[Dict[str, Any]]:
         """Extracts target incident object from FortiSIEM /pub/incident payload."""
         clean_id = str(target_id).strip()
+        if not clean_id:
+            return None
+
         if isinstance(data, list):
             for item in data:
                 if isinstance(item, dict):
                     iid = str(item.get("incidentId") or item.get("id") or "").strip()
                     if iid == clean_id:
                         return item
-            if len(data) == 1 and isinstance(data[0], dict):
-                return data[0]
         elif isinstance(data, dict):
             for key in ("data", "incidents", "incidentList", "results", "items"):
                 if key in data and isinstance(data[key], list):
@@ -81,10 +94,8 @@ class FortiSIEMService:
                             iid = str(item.get("incidentId") or item.get("id") or "").strip()
                             if iid == clean_id:
                                 return item
-                    if len(data[key]) == 1 and isinstance(data[key][0], dict):
-                        return data[key][0]
             iid = str(data.get("incidentId") or data.get("id") or "").strip()
-            if iid == clean_id or not iid:
+            if iid == clean_id:
                 return data
         return None
 
@@ -142,7 +153,7 @@ class FortiSIEMService:
                 headers={"Accept": "application/json, application/xml;q=0.9, */*;q=0.8"},
             )
             if res.status_code == 200:
-                parsed = self._parse_siem_response(res)
+                parsed = self._parse_siem_response(res, clean_id)
                 if parsed:
                     await self._enrich_triggering_events(client, base_url, clean_id, auth, parsed)
                     return parsed
@@ -212,7 +223,7 @@ class FortiSIEMService:
                 headers={"Accept": "application/json"},
             )
             if res.status_code == 200:
-                parsed = self._parse_siem_response(res)
+                parsed = self._parse_siem_response(res, clean_id)
                 if parsed:
                     await self._enrich_triggering_events(client, base_url, clean_id, auth, parsed)
                     return parsed
