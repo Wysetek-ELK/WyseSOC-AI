@@ -21,6 +21,61 @@ class FortiSIEMPullResponse(BaseModel):
     error: Optional[str] = None
 
 
+class FortiSIEMBatchPullRequest(BaseModel):
+    time_from: Optional[int] = Field(None, description="Start timestamp in epoch milliseconds (defaults to past 90 days or epoch 0)")
+    time_to: Optional[int] = Field(None, description="End timestamp in epoch milliseconds (defaults to now)")
+    max_count: int = Field(200, ge=1, le=1000, description="Maximum number of incidents to pull in this batch")
+    auto_triage_llm: bool = Field(True, description="Whether to automatically run AI Verdict analysis on ingested incidents")
+    force_refresh: bool = Field(False, description="Whether to re-import and re-evaluate cached incidents")
+
+
+class FortiSIEMBatchPullResponse(BaseModel):
+    success: bool
+    total_discovered: int = 0
+    newly_ingested: int = 0
+    already_cached: int = 0
+    ai_verdicts_generated: int = 0
+    checkpoint_epoch: Optional[int] = None
+    source: str = "LIVE"  # "LIVE" or "FIXTURE_FALLBACK"
+    message: str = ""
+    sample_incidents: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class FortiSIEMSchedulerStatusResponse(BaseModel):
+    is_running: bool
+    interval_seconds: int = 180
+    auto_ai_verdict: bool = True
+    initial_pull_completed: bool = False
+    checkpoint_epoch: Optional[int] = None
+    last_sync_time: Optional[str] = None
+    next_sync_time: Optional[str] = None
+    last_status: str = "IDLE"  # "IDLE", "RUNNING", "SUCCESS", "ERROR"
+    last_error: Optional[str] = None
+    total_pulled_count: int = 0
+    total_ai_verdicts_count: int = 0
+    recent_sync_logs: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class FortiSIEMSchedulerControlRequest(BaseModel):
+    interval_seconds: Optional[int] = Field(180, ge=30, le=3600, description="Polling interval in seconds (default: 180 / 3 mins)")
+    auto_ai_verdict: Optional[bool] = Field(True, description="Whether to auto-generate AI verdicts on newly pulled incidents")
+
+
+class FortiSIEMBatchVerdictRequest(BaseModel):
+    incident_ids: Optional[List[str]] = Field(None, description="Specific incident IDs to evaluate. If empty, evaluates all pending incidents.")
+    max_batch: int = Field(50, ge=1, le=200, description="Maximum incidents to evaluate in one execution")
+
+
+class FortiSIEMBatchVerdictResponse(BaseModel):
+    success: bool
+    total_requested: int
+    processed: int
+    successful: int
+    failed: int
+    results: List[Dict[str, Any]] = Field(default_factory=list)
+    message: str
+
+
 class FortiSIEMStatusResponse(BaseModel):
     is_configured: bool
     host: str
@@ -39,6 +94,9 @@ class FortiSIEMConfigResponse(BaseModel):
     verify_ssl: bool
     timeout: float
     mock_fallback: bool
+    auto_poll_enabled: bool = False
+    poll_interval_seconds: int = 180
+    auto_ai_verdict: bool = True
 
 
 class FortiSIEMConfigUpdate(BaseModel):
@@ -48,6 +106,9 @@ class FortiSIEMConfigUpdate(BaseModel):
     verify_ssl: bool = Field(False, description="Whether to verify SSL certificates")
     timeout: float = Field(25.0, ge=5.0, le=120.0, description="HTTP request timeout in seconds")
     mock_fallback: bool = Field(True, description="Whether to fall back to local sample fixtures when offline")
+    auto_poll_enabled: Optional[bool] = Field(None, description="Whether to auto-poll FortiSIEM continuously on startup")
+    poll_interval_seconds: Optional[int] = Field(None, ge=30, le=3600, description="Continuous polling interval in seconds (default: 180)")
+    auto_ai_verdict: Optional[bool] = Field(None, description="Whether to auto-run AI verdict on pulled incidents")
 
 
 class FortiSIEMTestConnectionRequest(BaseModel):

@@ -1,24 +1,33 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   UploadCloud,
-  FileCheck2,
-  AlertCircle,
+  FileArchive,
   CheckCircle2,
+  AlertCircle,
   Clock,
-  Layers,
+  ShieldCheck,
   FileCode2,
-  RefreshCw,
   Server,
-  DownloadCloud,
-  ArrowRight,
-  ShieldAlert,
   Zap,
+  ArrowRight,
+  RefreshCw,
   Settings,
+  Sparkles,
+  Bot,
+  Play,
+  Pause,
+  DownloadCloud,
 } from "lucide-react";
-import { api, FortiSIEMStatusResponse, FortiSIEMPullResponse } from "@/lib/api";
+import {
+  api,
+  FortiSIEMStatusResponse,
+  FortiSIEMPullResponse,
+  FortiSIEMBatchPullResponse,
+  FortiSIEMSchedulerStatusResponse,
+} from "@/lib/api";
 
 export default function ImportsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,13 +38,25 @@ export default function ImportsPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
 
-  // FortiSIEM Pull States
+  // FortiSIEM Single Pull States
   const [siemIncidentId, setSiemIncidentId] = useState("");
   const [forceRefresh, setForceRefresh] = useState(false);
   const [isPullingSiem, setIsPullingSiem] = useState(false);
   const [siemStatus, setSiemStatus] = useState<FortiSIEMStatusResponse | null>(null);
   const [siemResult, setSiemResult] = useState<FortiSIEMPullResponse | null>(null);
   const [siemError, setSiemError] = useState<string | null>(null);
+
+  // Batch Pull (No ID required) & Continuous Poller States
+  const [isPullingBatch, setIsPullingBatch] = useState(false);
+  const [batchPullResult, setBatchPullResult] = useState<FortiSIEMBatchPullResponse | null>(null);
+  const [batchPullError, setBatchPullError] = useState<string | null>(null);
+  const [autoTriageWithLLM, setAutoTriageWithLLM] = useState(true);
+  const [batchMaxCount, setBatchMaxCount] = useState(50);
+
+  // Continuous Scheduler States
+  const [schedulerStatus, setSchedulerStatus] = useState<FortiSIEMSchedulerStatusResponse | null>(null);
+  const [isOperatingScheduler, setIsOperatingScheduler] = useState(false);
+  const [schedulerMsg, setSchedulerMsg] = useState<string | null>(null);
 
   const loadJobs = async () => {
     setLoadingJobs(true);
@@ -58,9 +79,23 @@ export default function ImportsPage() {
     }
   };
 
+  const loadSchedulerStatus = async () => {
+    try {
+      const status = await api.getFortiSiemSchedulerStatus();
+      setSchedulerStatus(status);
+    } catch (err) {
+      console.error("Failed to load scheduler status", err);
+    }
+  };
+
   useEffect(() => {
     loadJobs();
     loadSiemStatus();
+    loadSchedulerStatus();
+
+    // Poll scheduler status every 10s to keep countdown/status fresh
+    const interval = setInterval(loadSchedulerStatus, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,6 +148,65 @@ export default function ImportsPage() {
     }
   };
 
+  const handlePullAllIncidents = async () => {
+    setIsPullingBatch(true);
+    setBatchPullError(null);
+    setBatchPullResult(null);
+
+    try {
+      const res = await api.pullAllFortiSiemIncidents({
+        max_count: batchMaxCount,
+        auto_triage_llm: autoTriageWithLLM,
+        force_refresh: forceRefresh,
+      });
+      setBatchPullResult(res);
+      loadJobs();
+      loadSchedulerStatus();
+    } catch (err: any) {
+      setBatchPullError(err.message || "Failed to pull all incidents from FortiSIEM");
+    } finally {
+      setIsPullingBatch(false);
+    }
+  };
+
+  const handleToggleScheduler = async () => {
+    setIsOperatingScheduler(true);
+    setSchedulerMsg(null);
+    try {
+      if (schedulerStatus?.is_running) {
+        const res = await api.stopFortiSiemScheduler();
+        setSchedulerStatus(res);
+        setSchedulerMsg("Continuous poller paused.");
+      } else {
+        const res = await api.startFortiSiemScheduler({
+          interval_seconds: 180,
+          auto_ai_verdict: autoTriageWithLLM,
+        });
+        setSchedulerStatus(res);
+        setSchedulerMsg("Continuous poller started! Polling FortiSIEM every 3 minutes.");
+      }
+    } catch (err: any) {
+      setSchedulerMsg(err.message || "Scheduler operation failed");
+    } finally {
+      setIsOperatingScheduler(false);
+    }
+  };
+
+  const handleTriggerSchedulerNow = async () => {
+    setIsOperatingScheduler(true);
+    setSchedulerMsg(null);
+    try {
+      await api.triggerFortiSiemScheduler();
+      await loadSchedulerStatus();
+      await loadJobs();
+      setSchedulerMsg("Triggered immediate sync cycle successfully!");
+    } catch (err: any) {
+      setSchedulerMsg(err.message || "Immediate trigger failed");
+    } finally {
+      setIsOperatingScheduler(false);
+    }
+  };
+
   const formatEpoch = (isoStr: string) => {
     return new Date(isoStr).toLocaleString();
   };
@@ -136,23 +230,189 @@ export default function ImportsPage() {
       <div>
         <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 flex items-center gap-2">
           <DownloadCloud className="h-4 w-4 text-cyan-400" />
-          FortiSIEM Incident Ingestion &amp; Sync Portal
+          FortiSIEM Continuous Ingestion &amp; AI Verdict Engine
         </h1>
         <p className="text-[11px] text-slate-400 mt-0.5">
-          Pull live security incidents on-demand by FortiSIEM Incident ID, or upload batch telemetry archives with zero ground-truth leakage
+          Pull all incidents automatically, maintain continuous 3-minute synchronization, and auto-evaluate security alerts with LLM verdicts
         </p>
       </div>
 
-      {/* 1. FortiSIEM On-Demand Pull Card */}
+      {/* 1. Continuous 3-Minute Sync & Batch Ingestion Banner */}
+      <div className="rounded-lg border border-cyan-800/60 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/30 p-3 sm:p-4 shadow-md space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800">
+          <div>
+            <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+              <Bot className="h-4 w-4 text-cyan-400" />
+              Automated Ingestion &amp; 3-Minute Continuous Sync
+            </h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              First pull all historical alerts without Incident IDs, then continuously poll every 3 minutes with automatic LLM verdict generation
+            </p>
+          </div>
+
+          {/* Poller Status Pill */}
+          <div className="flex items-center gap-2">
+            {schedulerStatus?.is_running ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 font-mono shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                Active Poller (Every 3 Mins)
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-700 font-mono">
+                <span className="h-2 w-2 rounded-full bg-slate-500" />
+                Continuous Poller Idle
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Poller Control Bar & Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs font-mono">
+          <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
+            <span className="text-[10px] text-slate-400 block font-sans">Polling Interval</span>
+            <span className="font-bold text-cyan-300 text-sm">{schedulerStatus?.interval_seconds || 180}s (3m)</span>
+          </div>
+          <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
+            <span className="text-[10px] text-slate-400 block font-sans">Total Pulled</span>
+            <span className="font-bold text-emerald-400 text-sm">{schedulerStatus?.total_pulled_count || 0} alerts</span>
+          </div>
+          <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
+            <span className="text-[10px] text-slate-400 block font-sans">AI Verdicts Generated</span>
+            <span className="font-bold text-sky-400 text-sm">{schedulerStatus?.total_ai_verdicts_count || 0}</span>
+          </div>
+          <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
+            <span className="text-[10px] text-slate-400 block font-sans">Last Cycle Status</span>
+            <span className="font-bold text-slate-200 text-sm">{schedulerStatus?.last_status || "IDLE"}</span>
+          </div>
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* 1. Pull All Button */}
+            <button
+              type="button"
+              onClick={handlePullAllIncidents}
+              disabled={isPullingBatch || isPullingSiem}
+              className="inline-flex items-center gap-1.5 rounded-md bg-cyan-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors shadow-sm"
+            >
+              {isPullingBatch ? (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  Pulling All Incidents...
+                </>
+              ) : (
+                <>
+                  <DownloadCloud className="h-3.5 w-3.5" />
+                  Pull All Incidents Now
+                </>
+              )}
+            </button>
+
+            {/* 2. Start/Pause 3-min Poller Button */}
+            <button
+              type="button"
+              onClick={handleToggleScheduler}
+              disabled={isOperatingScheduler}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-bold text-white transition-colors shadow-sm ${
+                schedulerStatus?.is_running
+                  ? "bg-amber-600 hover:bg-amber-500"
+                  : "bg-emerald-600 hover:bg-emerald-500"
+              }`}
+            >
+              {isOperatingScheduler ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : schedulerStatus?.is_running ? (
+                <Pause className="h-3.5 w-3.5" />
+              ) : (
+                <Play className="h-3.5 w-3.5" />
+              )}
+              {schedulerStatus?.is_running ? "Pause Continuous Sync" : "Start Continuous 3-Min Sync"}
+            </button>
+
+            {/* 3. Sync Now Button */}
+            <button
+              type="button"
+              onClick={handleTriggerSchedulerNow}
+              disabled={isOperatingScheduler}
+              className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <Zap className="h-3.5 w-3.5 text-cyan-400" />
+              Sync Cycle Now
+            </button>
+          </div>
+
+          {/* Options: Auto AI Verdict checkbox */}
+          <div className="flex items-center gap-3 text-xs text-slate-300">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={autoTriageWithLLM}
+                onChange={(e) => setAutoTriageWithLLM(e.target.checked)}
+                className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0"
+              />
+              <span className="flex items-center gap-1 text-[11px] text-cyan-300 font-medium">
+                <Sparkles className="h-3 w-3 text-cyan-400" />
+                Auto AI Verdict (LLM)
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Scheduler Notification */}
+        {schedulerMsg && (
+          <div className="p-2.5 rounded bg-cyan-950/60 border border-cyan-800 text-xs text-cyan-200 font-mono">
+            {schedulerMsg}
+          </div>
+        )}
+
+        {/* Batch Pull Error */}
+        {batchPullError && (
+          <div className="p-3 rounded bg-rose-950/50 border border-rose-800 text-xs text-rose-300 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
+            <span>{batchPullError}</span>
+          </div>
+        )}
+
+        {/* Batch Pull Success Banner */}
+        {batchPullResult && (
+          <div className="p-3.5 rounded-lg bg-slate-900/90 border border-emerald-800/80 space-y-2 text-xs font-mono">
+            <div className="flex items-center justify-between text-emerald-400 font-bold">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4" />
+                Batch Pull Complete ({batchPullResult.source})
+              </span>
+              <span className="text-[10px] text-slate-400 font-sans">
+                Watermark Checkpoint: {batchPullResult.checkpoint_epoch}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2 text-[11px]">
+              <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                +{batchPullResult.newly_ingested} Newly Ingested
+              </span>
+              <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                {batchPullResult.already_cached} Already In Database
+              </span>
+              <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-cyan-300" />
+                {batchPullResult.ai_verdicts_generated} AI Verdicts Generated
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 font-sans">{batchPullResult.message}</p>
+          </div>
+        )}
+      </div>
+
+      {/* 2. FortiSIEM On-Demand Single ID Pull Card */}
       <div className="rounded-lg border border-cyan-900/60 bg-gradient-to-br from-slate-950 via-slate-900/90 to-cyan-950/20 p-3 sm:p-3.5 shadow-md shadow-cyan-950/10 space-y-2.5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
           <div>
             <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
               <Server className="h-3.5 w-3.5 text-cyan-400" />
-              Pull Incident by FortiSIEM Incident ID
+              Pull Individual Incident by ID
             </h2>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Enter any FortiSIEM Incident ID to query the Supervisor API, ingest triggering logs, and isolate ground-truth
+              Target a specific FortiSIEM Incident ID for single-incident deep inspection
             </p>
           </div>
 
@@ -161,7 +421,7 @@ export default function ImportsPage() {
             {siemStatus?.is_configured ? (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live FortiSIEM Connected ({siemStatus.host})
+                Live FortiSIEM ({siemStatus.host})
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-950 text-sky-300 border border-sky-800 font-mono">
@@ -233,37 +493,10 @@ export default function ImportsPage() {
             </button>
           </div>
 
-          {/* Live Incident Quick-Picks (Supervisor API) */}
-          {siemStatus?.live_incident_ids && siemStatus.live_incident_ids.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1 pt-0.5">
-              <span className="text-[10px] text-emerald-400 font-medium font-mono flex items-center gap-1 mr-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live Incidents on FortiSIEM:
-              </span>
-              {siemStatus.live_incident_ids.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setSiemIncidentId(id);
-                    handlePullFortiSiem(undefined, id);
-                  }}
-                  disabled={isPullingSiem}
-                  className="px-2 py-0.2 rounded text-[10px] font-mono font-semibold bg-emerald-950/80 border border-emerald-700/80 text-emerald-300 hover:bg-emerald-900 hover:border-emerald-400 hover:text-white transition-all shadow-sm"
-                  title={`Pull live FortiSIEM incident #${id}`}
-                >
-                  #{id}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* Quick Select Sample IDs (Offline Fixtures) */}
           {siemStatus && siemStatus.sample_incident_ids.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              <span className="text-[11px] text-slate-400 font-mono mr-1">
-                {siemStatus.live_incident_ids && siemStatus.live_incident_ids.length > 0 ? "Offline Fixture Samples:" : "Quick Select Samples:"}
-              </span>
+              <span className="text-[11px] text-slate-400 font-mono mr-1">Sample Fixture IDs:</span>
               {siemStatus.sample_incident_ids.slice(0, 6).map((id) => (
                 <button
                   key={id}
@@ -278,11 +511,6 @@ export default function ImportsPage() {
                   #{id}
                 </button>
               ))}
-              {siemStatus.sample_incident_ids.length > 6 && (
-                <span className="text-[10px] text-slate-500 font-mono">
-                  +{siemStatus.sample_incident_ids.length - 6} more
-                </span>
-              )}
             </div>
           )}
 
@@ -301,7 +529,7 @@ export default function ImportsPage() {
 
         {/* Pull Error Message */}
         {siemError && (
-          <div className="rounded-lg border border-rose-800 bg-rose-950/40 p-4 text-xs text-rose-300 flex items-start justify-between gap-3">
+          <div className="rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-xs text-rose-300 flex items-start justify-between gap-3">
             <div className="flex items-start gap-2.5">
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
               <div className="space-y-1">
@@ -309,42 +537,23 @@ export default function ImportsPage() {
                 <span className="text-slate-300 leading-relaxed block">{siemError}</span>
               </div>
             </div>
-            <Link
-              href="/settings#fortisiem"
-              className="shrink-0 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[11px] font-medium transition-colors"
-            >
-              Verify SIEM Settings
-            </Link>
           </div>
         )}
 
         {/* Pull Success Result Banner */}
         {siemResult && (
-          <div className="rounded-xl border border-emerald-800/80 bg-emerald-950/20 p-5 space-y-3 font-mono text-xs">
+          <div className="rounded-xl border border-emerald-800/80 bg-emerald-950/20 p-4 space-y-2.5 font-mono text-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
                 <CheckCircle2 className="h-4 w-4" />
                 Incident Retrieved Successfully
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-400">Source:</span>
-                {siemResult.source === "LIVE" ? (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                    Live FortiSIEM API
-                  </span>
-                ) : siemResult.source === "FIXTURE_FALLBACK" ? (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800">
-                    Fixture Fallback Archive
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-800">
-                    Database Cache
-                  </span>
-                )}
-              </div>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                {siemResult.source}
+              </span>
             </div>
 
-            <div className="p-3.5 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-200 space-y-2">
+            <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-200 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-bold text-slate-100 text-sm">{siemResult.title}</span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getSeverityBadge(siemResult.severity)}`}>
@@ -353,13 +562,8 @@ export default function ImportsPage() {
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
                   ID: #{siemResult.incident_id}
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">
-                  {siemResult.event_count} Raw Events Ingested
-                </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-sans">
-                {siemResult.message} Ground truth isolation applied: resolution and closure data segregated into protected storage.
-              </p>
+              <p className="text-[11px] text-slate-400 font-sans">{siemResult.message}</p>
             </div>
 
             <div className="flex items-center gap-2 pt-0.5">
@@ -372,126 +576,88 @@ export default function ImportsPage() {
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               )}
-              <Link
-                href="/analyst-attention"
-                className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-              >
-                Analyst Queue
-              </Link>
             </div>
           </div>
         )}
       </div>
 
-      {/* 2. File Upload Card */}
-      <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 sm:p-3.5 shadow-sm space-y-2">
-        <h2 className="text-xs sm:text-sm font-bold text-slate-200">Batch Archive or JSON Telemetry Upload</h2>
-        <p className="text-[11px] text-slate-400">
-          Supports <code className="text-cyan-400 font-mono">.zip</code> archives containing nested JSON files and <code className="text-cyan-400 font-mono">Rule_info.txt</code> specifications, or standalone <code className="text-cyan-400 font-mono">.json</code> incident files.
-        </p>
+      {/* 3. Manual ZIP Archive Ingestion Card */}
+      <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:p-3.5 space-y-2.5">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div>
+            <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+              <FileArchive className="h-3.5 w-3.5 text-cyan-400" />
+              Upload Telemetry Archive (ZipGuard Protected)
+            </h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Bulk upload FortiSIEM JSON export archives with automated ground-truth isolation
+            </p>
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            ZipGuard Safe
+          </div>
+        </div>
 
         <form onSubmit={handleUpload} className="space-y-2.5">
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-lg p-5 cursor-pointer hover:border-cyan-500/60 bg-slate-900/40 transition-colors"
-          >
-            <UploadCloud className="h-7 w-7 text-cyan-400 mb-1.5" />
-            <span className="text-xs font-semibold text-slate-200">
-              {selectedFile ? selectedFile.name : "Click to select a file or drag and drop here"}
-            </span>
-            <span className="text-[10px] text-slate-500 font-mono mt-0.5">
-              {selectedFile
-                ? `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB · Ready to upload`
-                : "ZIP or JSON up to 50 MB"}
-            </span>
+          <div className="flex flex-col sm:flex-row items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
               accept=".zip,.json"
               onChange={handleFileChange}
-              className="hidden"
+              className="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-slate-700 file:text-xs file:font-semibold file:bg-slate-900 file:text-cyan-400 hover:file:bg-slate-800 file:cursor-pointer cursor-pointer border border-slate-800 rounded-md p-1 bg-slate-950/60"
             />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-500 font-mono">
-              Safeguards: Zip slip defense · Decompression limits active
-            </span>
             <button
               type="submit"
               disabled={!selectedFile || isUploading}
-              className="rounded-md bg-cyan-600 px-3.5 py-1 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+              className="w-full sm:w-auto rounded-md bg-slate-800 border border-slate-700 px-4 py-1.5 text-xs font-bold text-slate-100 hover:bg-slate-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 shrink-0"
             >
               {isUploading ? (
                 <>
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  Processing...
+                  <RefreshCw className="h-3 w-3 animate-spin text-cyan-400" />
+                  Ingesting...
                 </>
               ) : (
-                "Start Ingestion"
+                <>
+                  <UploadCloud className="h-3 w-3 text-cyan-400" />
+                  Upload Archive
+                </>
               )}
             </button>
           </div>
         </form>
 
-        {/* Error Alert */}
         {error && (
-          <div className="rounded-md border border-rose-800 bg-rose-950/40 p-2.5 text-xs text-rose-300 flex items-start gap-2">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-rose-400 mt-0.5" />
-            <div>
-              <span className="font-semibold block">Ingestion Failed</span>
-              <span>{error}</span>
-            </div>
+          <div className="rounded border border-rose-800 bg-rose-950/40 p-2.5 text-xs text-rose-300 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Ingestion Summary Report */}
         {summary && (
-          <div className="rounded-lg border border-emerald-800/80 bg-emerald-950/20 p-3 space-y-2 font-mono text-xs">
-            <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Ingestion Completed Successfully
+          <div className="rounded border border-emerald-800 bg-emerald-950/30 p-2.5 text-xs text-emerald-300 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+              <span>
+                Processed {summary.total_files} files ({summary.imported_incidents} imported, {summary.duplicate_incidents} duplicates)
+              </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-200">
-              <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                <span className="text-[9px] text-slate-400 block">Total Entries:</span>
-                <span className="text-sm font-bold">{summary.total_found}</span>
-              </div>
-              <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                <span className="text-[9px] text-emerald-400 block">Imported Incidents:</span>
-                <span className="text-sm font-bold text-emerald-400">{summary.imported}</span>
-              </div>
-              <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                <span className="text-[9px] text-blue-400 block">Rules Detected:</span>
-                <span className="text-sm font-bold text-blue-400">{summary.rules_detected}</span>
-              </div>
-              <div className="p-2 rounded bg-slate-900 border border-slate-800">
-                <span className="text-[9px] text-amber-400 block">Duplicates Handled:</span>
-                <span className="text-sm font-bold text-amber-400">{summary.duplicates}</span>
-              </div>
-            </div>
-
-            {summary.error_messages && summary.error_messages.length > 0 && (
-              <div className="pt-1">
-                <span className="text-rose-400 block font-semibold mb-0.5 text-[10px]">Warnings / Errors:</span>
-                <ul className="list-disc list-inside text-rose-300 space-y-0.5 text-[10px]">
-                  {summary.error_messages.map((m: string, idx: number) => (
-                    <li key={idx}>{m}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         )}
       </div>
 
-      {/* 3. Historical Ingestion Jobs Table */}
-      <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 sm:p-3.5 space-y-2">
+      {/* 4. Import Jobs History */}
+      <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:p-3.5 space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs sm:text-sm font-bold text-slate-200">Recent Ingestion Jobs</h2>
+          <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-cyan-400" />
+            Ingestion History &amp; Audit Logs
+          </h2>
           <button
             onClick={loadJobs}
-            className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200"
+            disabled={loadingJobs}
+            className="text-[10px] text-slate-400 hover:text-slate-200 flex items-center gap-1 font-mono"
           >
             <RefreshCw className={`h-3 w-3 ${loadingJobs ? "animate-spin" : ""}`} />
             Refresh

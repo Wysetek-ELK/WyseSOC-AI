@@ -140,6 +140,77 @@ export interface FortiSIEMPullResponse {
   error?: string;
 }
 
+export interface FortiSIEMBatchPullRequest {
+  time_from?: number;
+  time_to?: number;
+  max_count?: number;
+  auto_triage_llm?: boolean;
+  force_refresh?: boolean;
+}
+
+export interface FortiSIEMBatchPullResponse {
+  success: boolean;
+  total_discovered: number;
+  newly_ingested: number;
+  already_cached: number;
+  ai_verdicts_generated: number;
+  checkpoint_epoch?: number;
+  source: string;
+  message: string;
+  sample_incidents: Array<{
+    incident_id: string;
+    title: string;
+    severity: string;
+    event_type: string;
+    status: string;
+    has_ai_verdict: boolean;
+  }>;
+}
+
+export interface FortiSIEMSchedulerStatusResponse {
+  is_running: boolean;
+  interval_seconds: number;
+  auto_ai_verdict: boolean;
+  initial_pull_completed: boolean;
+  checkpoint_epoch?: number;
+  last_sync_time?: string;
+  next_sync_time?: string;
+  last_status: string;
+  last_error?: string;
+  total_pulled_count: number;
+  total_ai_verdicts_count: number;
+  recent_sync_logs: Array<{
+    timestamp: string;
+    status: string;
+    mode?: string;
+    newly_ingested?: number;
+    already_cached?: number;
+    ai_verdicts_generated?: number;
+    message?: string;
+    error?: string;
+  }>;
+}
+
+export interface FortiSIEMSchedulerControlRequest {
+  interval_seconds?: number;
+  auto_ai_verdict?: boolean;
+}
+
+export interface FortiSIEMBatchVerdictRequest {
+  incident_ids?: string[];
+  max_batch?: number;
+}
+
+export interface FortiSIEMBatchVerdictResponse {
+  success: boolean;
+  total_requested: number;
+  processed: number;
+  successful: number;
+  failed: number;
+  results: Array<Record<string, any>>;
+  message: string;
+}
+
 export interface FortiSIEMStatusResponse {
   is_configured: boolean;
   host: string;
@@ -581,6 +652,67 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to sync rules from FortiSIEM" }));
       throw new Error(err.detail || "FortiSIEM rule synchronization error");
+    }
+    return res.json();
+  },
+
+  async pullAllFortiSiemIncidents(req?: FortiSIEMBatchPullRequest): Promise<FortiSIEMBatchPullResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/pull-all`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req || {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to batch pull incidents" }));
+      throw new Error(err.detail || "Batch pull error");
+    }
+    return res.json();
+  },
+
+  async getFortiSiemSchedulerStatus(): Promise<FortiSIEMSchedulerStatusResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/scheduler/status`);
+    if (!res.ok) throw new Error("Failed to fetch scheduler status");
+    return res.json();
+  },
+
+  async startFortiSiemScheduler(req?: FortiSIEMSchedulerControlRequest): Promise<FortiSIEMSchedulerStatusResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/scheduler/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req || {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to start continuous scheduler" }));
+      throw new Error(err.detail || "Scheduler start error");
+    }
+    return res.json();
+  },
+
+  async stopFortiSiemScheduler(): Promise<FortiSIEMSchedulerStatusResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/scheduler/stop`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to stop continuous scheduler");
+    return res.json();
+  },
+
+  async triggerFortiSiemScheduler(): Promise<any> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/scheduler/trigger`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to trigger immediate sync");
+    return res.json();
+  },
+
+  async batchEvaluateAIVerdicts(req?: FortiSIEMBatchVerdictRequest): Promise<FortiSIEMBatchVerdictResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/batch-ai-verdict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req || {}),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Batch AI verdict failed" }));
+      throw new Error(err.detail || "Batch verdict error");
     }
     return res.json();
   },

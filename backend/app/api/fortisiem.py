@@ -1,3 +1,4 @@
+from typing import Dict, Any, Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +9,12 @@ from app.config import settings
 from app.schemas.fortisiem import (
     FortiSIEMPullRequest,
     FortiSIEMPullResponse,
+    FortiSIEMBatchPullRequest,
+    FortiSIEMBatchPullResponse,
+    FortiSIEMSchedulerStatusResponse,
+    FortiSIEMSchedulerControlRequest,
+    FortiSIEMBatchVerdictRequest,
+    FortiSIEMBatchVerdictResponse,
     FortiSIEMStatusResponse,
     FortiSIEMConfigResponse,
     FortiSIEMConfigUpdate,
@@ -16,6 +23,8 @@ from app.schemas.fortisiem import (
     FortiSIEMRuleSyncResponse,
 )
 from app.services.fortisiem_service import FortiSIEMService
+from app.services.fortisiem_scheduler import fortisiem_scheduler
+from app.services.ai_verdict_service import AIVerdictService
 
 router = APIRouter(prefix="/fortisiem", tags=["FortiSIEM Live Connector"])
 
@@ -72,6 +81,9 @@ async def update_fortisiem_config(
         verify_ssl=config.verify_ssl,
         timeout=config.timeout,
         mock_fallback=config.mock_fallback,
+        auto_poll_enabled=config.auto_poll_enabled,
+        poll_interval_seconds=config.poll_interval_seconds,
+        auto_ai_verdict=config.auto_ai_verdict,
     )
     return updated
 
@@ -120,6 +132,104 @@ async def fetch_incident(
             status_code=500,
             detail=f"Unexpected error while pulling incident from FortiSIEM: {str(exc)}"
         )
+
+
+@router.post("/pull-all", response_model=FortiSIEMBatchPullResponse)
+async def pull_all_incidents(
+    req: FortiSIEMBatchPullRequest = FortiSIEMBatchPullRequest(),
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Pulls all incidents from FortiSIEM in batch without requiring any Incident IDs.
+    Queries the live FortiSIEM REST API by time range, or falls back to offline fixture archive.
+    Automatically generates AI Verdicts for newly ingested alerts using the LLM provider.
+    """
+    service = FortiSIEMService(db)
+    try:
+        result = await service.pull_all_incidents(
+            time_from=req.time_from,
+            time_to=req.time_to,
+            max_count=req.max_count,
+            auto_triage_llm=req.auto_triage_llm,
+            force_refresh=req.force_refresh,
+            username=current_user.username,
+        )
+        return FortiSIEMBatchPullResponse(**result)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error during batch incident pull: {str(exc)}"
+        )
+
+
+@router.get("/scheduler/status", response_model=FortiSIEMSchedulerStatusResponse)
+async def get_scheduler_status(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Returns real-time status, checkpoint watermark, and metrics for continuous 3-minute poller.
+    """
+    return FortiSIEMSchedulerStatusResponse(**fortisiem_scheduler.get_status())
+
+
+@router.post("/scheduler/start", response_model=FortiSIEMSchedulerStatusResponse)
+async def start_scheduler(
+    req: FortiSIEMSchedulerControlRequest = FortiSIEMSchedulerControlRequest(),
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+):
+    """
+    Starts continuous FortiSIEM incident polling (default: every 180 seconds / 3 minutes).
+    Automatically runs AI verdict evaluations on all newly ingested alerts.
+    """
+    status = fortisiem_scheduler.start(
+        interval_seconds=req.interval_seconds or 180,
+        auto_ai_verdict=req.auto_ai_verdict if req.auto_ai_verdict is not None else True,
+    )
+    return FortiSIEMSchedulerStatusResponse(**status)
+
+
+@router.post("/scheduler/stop", response_model=FortiSIEMSchedulerStatusResponse)
+async def stop_scheduler(
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+):
+    """
+    Halts the continuous background poller.
+    """
+    status = fortisiem_scheduler.stop()
+    return FortiSIEMSchedulerStatusResponse(**status)
+
+
+@router.post("/scheduler/trigger", response_model=Dict[str, Any])
+async def trigger_scheduler_now(
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+):
+    """
+    Triggers an immediate sync cycle without waiting for the 3-minute timer.
+    """
+    result = await fortisiem_scheduler.trigger_immediate_sync()
+    return result
+
+
+@router.post("/batch-ai-verdict", response_model=FortiSIEMBatchVerdictResponse)
+async def evaluate_batch_ai_verdicts(
+    req: FortiSIEMBatchVerdictRequest = FortiSIEMBatchVerdictRequest(),
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Evaluates pending or selected incidents in batch with the LLM AI Verdict engine.
+    """
+    service = AIVerdictService(db)
+    result = await service.evaluate_batch(
+        incident_ids=req.incident_ids,
+        only_pending=True if not req.incident_ids else False,
+        max_batch=req.max_batch,
+        username=current_user.username,
+    )
+    return FortiSIEMBatchVerdictResponse(**result)
 
 
 @router.post("/sync-rules", response_model=FortiSIEMRuleSyncResponse)

@@ -24,6 +24,7 @@ from app.api import (
 )
 from app.models.user import User
 from app.utils.security import get_password_hash
+from app.services.fortisiem_scheduler import fortisiem_scheduler
 from sqlalchemy import select
 
 
@@ -57,9 +58,17 @@ async def lifespan(app: FastAPI):
             await session.commit()
             print("Default Administrator created (username: admin, default credentials)")
 
+    # Startup background continuous FortiSIEM poller if enabled
+    if getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False):
+        fortisiem_scheduler.start(
+            interval_seconds=getattr(settings, "FORTISIEM_POLL_INTERVAL_SECONDS", 180),
+            auto_ai_verdict=getattr(settings, "FORTISIEM_AUTO_AI_VERDICT", True),
+        )
+
     yield
 
     # Shutdown
+    fortisiem_scheduler.stop()
     await async_engine.dispose()
 
 

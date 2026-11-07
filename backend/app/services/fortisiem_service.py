@@ -18,6 +18,7 @@ from app.models.rule import Rule
 from app.models.prompt import RulePrompt
 from app.services.ingestion_service import IngestionService
 from app.services.investigation_service import InvestigationService
+from app.services.ai_verdict_service import AIVerdictService
 
 
 class FortiSIEMService:
@@ -619,6 +620,248 @@ class FortiSIEMService:
             ),
         }
 
+    async def pull_all_incidents(
+        self,
+        time_from: Optional[int] = None,
+        time_to: Optional[int] = None,
+        max_count: int = 200,
+        auto_triage_llm: bool = True,
+        force_refresh: bool = False,
+        username: str = "system",
+    ) -> Dict[str, Any]:
+        """
+        Discovers and pulls incidents in batch from FortiSIEM without requiring individual Incident IDs.
+        Queries the live FortiSIEM REST API by time range, or falls back to offline fixture archive.
+        Ingests incidents into PostgreSQL, registers investigations, tracks high-water mark,
+        and optionally auto-triggers AI Verdict evaluations via LLM.
+        """
+        discovered_incidents: List[Dict[str, Any]] = []
+        source_mode = "LIVE"
+
+        # 1. Query Live FortiSIEM if configured
+        if settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip():
+            base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
+            auth = None
+            if settings.FORTISIEM_USERNAME and settings.FORTISIEM_PASSWORD:
+                auth = (settings.FORTISIEM_USERNAME, settings.FORTISIEM_PASSWORD)
+
+            now_ms = time_to or int(time.time() * 1000)
+            # Default window: past 90 days if not specified
+            start_ms = time_from if time_from is not None else (now_ms - (90 * 86400 * 1000))
+
+            try:
+                async with httpx.AsyncClient(
+                    verify=settings.FORTISIEM_VERIFY_SSL,
+                    timeout=settings.FORTISIEM_TIMEOUT,
+                ) as client:
+                    # Query /phoenix/rest/pub/incident with pagination
+                    page_size = min(max_count, 100)
+                    start = 0
+                    while len(discovered_incidents) < max_count:
+                        res = await client.get(
+                            f"{base_url}/phoenix/rest/pub/incident",
+                            params={"timeFrom": start_ms, "timeTo": now_ms, "start": start, "size": page_size},
+                            auth=auth,
+                            headers={"Accept": "application/json"},
+                        )
+                        if res.status_code == 200:
+                            data = res.json()
+                            items = data.get("data", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+                            if not items:
+                                break
+                            for item in items:
+                                if isinstance(item, dict):
+                                    discovered_incidents.append(item)
+                            if len(items) < page_size:
+                                break
+                            start += len(items)
+                        else:
+                            break
+
+                    # Fallback query with epoch 0 if window returned empty and start_ms > 0
+                    if not discovered_incidents and start_ms > 0:
+                        res2 = await client.get(
+                            f"{base_url}/phoenix/rest/pub/incident",
+                            params={"timeFrom": 0, "timeTo": now_ms, "start": 0, "size": min(max_count, 100)},
+                            auth=auth,
+                            headers={"Accept": "application/json"},
+                        )
+                        if res2.status_code == 200:
+                            d2 = res2.json()
+                            items2 = d2.get("data", []) if isinstance(d2, dict) else (d2 if isinstance(d2, list) else [])
+                            for it in items2:
+                                if isinstance(it, dict):
+                                    discovered_incidents.append(it)
+
+                    # Enrich triggering events for discovered incidents if missing
+                    for inc in discovered_incidents[:max_count]:
+                        iid = str(inc.get("incidentId") or inc.get("id") or "").strip()
+                        if iid:
+                            await self._enrich_triggering_events(client, base_url, iid, auth, inc)
+
+            except Exception:
+                pass
+
+        # 2. Fixture fallback if live returned empty and mock fallback enabled
+        if not discovered_incidents and settings.FORTISIEM_MOCK_FALLBACK and os.path.exists(self.fixtures_zip_path):
+            source_mode = "FIXTURE_FALLBACK"
+            try:
+                with zipfile.ZipFile(self.fixtures_zip_path, "r") as z:
+                    for name in z.namelist():
+                        if name.lower().endswith(".json"):
+                            try:
+                                raw_bytes = z.read(name)
+                                parsed_json = json.loads(raw_bytes.decode("utf-8"))
+                                if isinstance(parsed_json, dict) and ("incidentId" in parsed_json or "id" in parsed_json or "eventType" in parsed_json):
+                                    discovered_incidents.append(parsed_json)
+                            except Exception:
+                                pass
+            except Exception:
+                pass
+
+        if not discovered_incidents:
+            return {
+                "success": True,
+                "total_discovered": 0,
+                "newly_ingested": 0,
+                "already_cached": 0,
+                "ai_verdicts_generated": 0,
+                "checkpoint_epoch": int(time.time() * 1000),
+                "source": source_mode,
+                "sample_incidents": [],
+                "message": "No incidents found in the specified window.",
+            }
+
+        # 3. Ingestion and Deduplication loop
+        ingestion = IngestionService(self.db)
+        investigation_svc = InvestigationService(self.db)
+
+        newly_ingested = 0
+        already_cached = 0
+        highest_timestamp = 0
+        incidents_to_evaluate: List[str] = []
+        sample_results: List[Dict[str, Any]] = []
+
+        for raw_inc in discovered_incidents[:max_count]:
+            clean_id = str(raw_inc.get("incidentId") or raw_inc.get("id") or "").strip()
+            if not clean_id:
+                continue
+
+            existing_stmt = select(Incident).where(Incident.incident_id == clean_id).options(selectinload(Incident.events))
+            existing_res = await self.db.execute(existing_stmt)
+            existing_inc = existing_res.scalar_one_or_none()
+
+            if existing_inc and not force_refresh:
+                already_cached += 1
+                ts = existing_inc.last_seen_epoch or existing_inc.created_at_epoch or 0
+                highest_timestamp = max(highest_timestamp, ts)
+                if existing_inc.ai_verdict is None and auto_triage_llm:
+                    incidents_to_evaluate.append(clean_id)
+                if len(sample_results) < 10:
+                    sample_results.append({
+                        "incident_id": existing_inc.incident_id,
+                        "title": existing_inc.title,
+                        "severity": existing_inc.severity,
+                        "event_type": existing_inc.event_type,
+                        "status": "CACHED",
+                        "has_ai_verdict": existing_inc.ai_verdict is not None,
+                    })
+                continue
+
+            # If force_refresh and existing, remove old records
+            if existing_inc and force_refresh:
+                await self.db.execute(delete(HistoricalGroundTruth).where(HistoricalGroundTruth.incident_id == existing_inc.id))
+                await self.db.execute(delete(Investigation).where(Investigation.incident_id == existing_inc.id))
+                await self.db.execute(delete(IncidentEvent).where(IncidentEvent.incident_id == existing_inc.id))
+                await self.db.execute(delete(Incident).where(Incident.id == existing_inc.id))
+                await self.db.commit()
+
+            # Ingest single JSON
+            job, result, msg = await ingestion.ingest_single_json(
+                raw_data=raw_inc,
+                filename=f"fortisiem_{clean_id}.json",
+                username=username,
+            )
+
+            if result != "error":
+                new_q = await self.db.execute(
+                    select(Incident).where(Incident.incident_id == clean_id).options(selectinload(Incident.events))
+                )
+                saved = new_q.scalar_one_or_none()
+                if saved:
+                    newly_ingested += 1
+                    ts = saved.last_seen_epoch or saved.created_at_epoch or 0
+                    highest_timestamp = max(highest_timestamp, ts)
+                    if auto_triage_llm:
+                        incidents_to_evaluate.append(clean_id)
+                    if len(sample_results) < 10:
+                        sample_results.append({
+                            "incident_id": saved.incident_id,
+                            "title": saved.title,
+                            "severity": saved.severity,
+                            "event_type": saved.event_type,
+                            "status": "INGESTED",
+                            "has_ai_verdict": False,
+                        })
+
+        # Ensure all incidents have an investigation row
+        await investigation_svc.ensure_all_incidents_have_investigations()
+
+        # 4. Auto-Triage via LLM Verdict Engine
+        ai_verdicts_generated = 0
+        if auto_triage_llm and incidents_to_evaluate:
+            ai_service = AIVerdictService(self.db)
+            for iid in incidents_to_evaluate:
+                try:
+                    await ai_service.evaluate_incident(iid, username=username)
+                    ai_verdicts_generated += 1
+                except Exception as eval_exc:
+                    print(f"[FortiSIEM Auto-Triage Error] Failed evaluating incident {iid}: {eval_exc}")
+
+        checkpoint = highest_timestamp if highest_timestamp > 0 else int(time.time() * 1000)
+
+        return {
+            "success": True,
+            "total_discovered": len(discovered_incidents[:max_count]),
+            "newly_ingested": newly_ingested,
+            "already_cached": already_cached,
+            "ai_verdicts_generated": ai_verdicts_generated,
+            "checkpoint_epoch": checkpoint,
+            "source": source_mode,
+            "sample_incidents": sample_results,
+            "message": (
+                f"Batch pull completed: {newly_ingested} newly ingested, {already_cached} already cached. "
+                f"{ai_verdicts_generated} AI verdicts generated via LLM ({source_mode})."
+            ),
+        }
+
+    async def pull_incremental_incidents(
+        self,
+        since_epoch: Optional[int] = None,
+        lookback_minutes: int = 5,
+        auto_triage_llm: bool = True,
+        username: str = "scheduler",
+    ) -> Dict[str, Any]:
+        """
+        Polls for newly generated or updated FortiSIEM incidents since the last watermark timestamp.
+        Includes a 2-minute safety overlap buffer to prevent dropped alerts during ingestion lag.
+        """
+        now_ms = int(time.time() * 1000)
+        buffer_ms = 2 * 60 * 1000  # 2 minutes safety buffer
+        if since_epoch and since_epoch > 0:
+            start_ms = max(0, since_epoch - buffer_ms)
+        else:
+            start_ms = max(0, now_ms - (lookback_minutes * 60 * 1000))
+
+        return await self.pull_all_incidents(
+            time_from=start_ms,
+            time_to=now_ms,
+            max_count=200,
+            auto_triage_llm=auto_triage_llm,
+            force_refresh=False,
+            username=username,
+        )
+
     @classmethod
     def get_config(cls) -> Dict[str, Any]:
         """Returns the current FortiSIEM connector configuration (password masked)."""
@@ -631,6 +874,9 @@ class FortiSIEMService:
             "verify_ssl": settings.FORTISIEM_VERIFY_SSL,
             "timeout": settings.FORTISIEM_TIMEOUT,
             "mock_fallback": settings.FORTISIEM_MOCK_FALLBACK,
+            "auto_poll_enabled": getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False),
+            "poll_interval_seconds": getattr(settings, "FORTISIEM_POLL_INTERVAL_SECONDS", 180),
+            "auto_ai_verdict": getattr(settings, "FORTISIEM_AUTO_AI_VERDICT", True),
         }
 
     @classmethod
@@ -642,6 +888,9 @@ class FortiSIEMService:
         verify_ssl: bool = False,
         timeout: float = 25.0,
         mock_fallback: bool = True,
+        auto_poll_enabled: Optional[bool] = None,
+        poll_interval_seconds: Optional[int] = None,
+        auto_ai_verdict: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """
         Updates FortiSIEM settings dynamically in memory and persists to .env file.
@@ -660,6 +909,12 @@ class FortiSIEMService:
         settings.FORTISIEM_VERIFY_SSL = verify_ssl
         settings.FORTISIEM_TIMEOUT = float(timeout)
         settings.FORTISIEM_MOCK_FALLBACK = mock_fallback
+        if auto_poll_enabled is not None:
+            settings.FORTISIEM_AUTO_POLL_ENABLED = bool(auto_poll_enabled)
+        if poll_interval_seconds is not None:
+            settings.FORTISIEM_POLL_INTERVAL_SECONDS = int(poll_interval_seconds)
+        if auto_ai_verdict is not None:
+            settings.FORTISIEM_AUTO_AI_VERDICT = bool(auto_ai_verdict)
 
         # 2. Persist to backend .env file
         env_path = os.path.join(BASE_DIR, ".env")
@@ -678,6 +933,9 @@ class FortiSIEMService:
                             "FORTISIEM_VERIFY_SSL",
                             "FORTISIEM_TIMEOUT",
                             "FORTISIEM_MOCK_FALLBACK",
+                            "FORTISIEM_AUTO_POLL_ENABLED",
+                            "FORTISIEM_POLL_INTERVAL_SECONDS",
+                            "FORTISIEM_AUTO_AI_VERDICT",
                         ):
                             continue  # Rewrite updated values below
                     env_lines.append(line)
@@ -691,6 +949,9 @@ class FortiSIEMService:
             f'FORTISIEM_VERIFY_SSL={"true" if settings.FORTISIEM_VERIFY_SSL else "false"}\n',
             f'FORTISIEM_TIMEOUT={settings.FORTISIEM_TIMEOUT}\n',
             f'FORTISIEM_MOCK_FALLBACK={"true" if settings.FORTISIEM_MOCK_FALLBACK else "false"}\n',
+            f'FORTISIEM_AUTO_POLL_ENABLED={"true" if settings.FORTISIEM_AUTO_POLL_ENABLED else "false"}\n',
+            f'FORTISIEM_POLL_INTERVAL_SECONDS={settings.FORTISIEM_POLL_INTERVAL_SECONDS}\n',
+            f'FORTISIEM_AUTO_AI_VERDICT={"true" if settings.FORTISIEM_AUTO_AI_VERDICT else "false"}\n',
         ]
         env_lines.extend(env_updates)
 
