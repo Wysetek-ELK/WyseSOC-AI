@@ -42,3 +42,16 @@ class RuleListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class RuleStatsResponse(BaseModel):
+    total_rules: int = 0
+    active_rules: int = 0
+    inactive_rules: int = 0
+    critical_rules: int = 0
+    high_rules: int = 0
+    medium_rules: int = 0
+    low_rules: int = 0
+    rules_with_incidents: int = 0
+    total_linked_incidents: int = 0
+    rules_with_prompt_templates: int = 0

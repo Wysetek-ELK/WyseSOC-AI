@@ -87,6 +87,15 @@ async def test_api_full_workflow(client: AsyncClient, admin_token: str, db_sessi
     for r in rules_data["items"]:
         assert r["incident_count"] == 10
 
+    # 7b. Check Rules Stats Metrics
+    stats_resp = await client.get("/api/rules/stats", headers=headers)
+    assert stats_resp.status_code == 200
+    stats_data = stats_resp.json()
+    assert stats_data["total_rules"] == 2
+    assert stats_data["active_rules"] + stats_data["inactive_rules"] == 2
+    assert stats_data["rules_with_incidents"] == 2
+    assert stats_data["total_linked_incidents"] == 20
+
     # 8. Check Audit Logs
     audit_resp = await client.get("/api/audit", headers=headers)
     assert audit_resp.status_code == 200

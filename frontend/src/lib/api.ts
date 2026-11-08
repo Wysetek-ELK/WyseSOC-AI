@@ -433,6 +433,19 @@ export interface RuleItem {
   updated_at: string;
 }
 
+export interface RuleStatsResponse {
+  total_rules: number;
+  active_rules: number;
+  inactive_rules: number;
+  critical_rules: number;
+  high_rules: number;
+  medium_rules: number;
+  low_rules: number;
+  rules_with_incidents: number;
+  total_linked_incidents: number;
+  rules_with_prompt_templates: number;
+}
+
 export interface DashboardMetrics {
   total_incidents: number;
   total_rules: number;
@@ -597,6 +610,12 @@ export const api = {
 
     const res = await fetchWithAuth(`${API_BASE}/rules?${q.toString()}`);
     if (!res.ok) throw new Error("Failed to fetch rules");
+    return res.json();
+  },
+
+  async getRuleStats(): Promise<RuleStatsResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/rules/stats`);
+    if (!res.ok) throw new Error("Failed to fetch rule statistics");
     return res.json();
   },
 

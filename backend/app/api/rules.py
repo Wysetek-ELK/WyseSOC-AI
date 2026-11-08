@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.rule import Rule
 from app.models.incident import Incident
-from app.schemas.rule import RuleResponse, RuleDetailResponse, RuleListResponse
+from app.schemas.rule import RuleResponse, RuleDetailResponse, RuleListResponse, RuleStatsResponse
 from app.services.rule_parser import RuleParser
 from app.api.deps import get_current_user
 
@@ -111,6 +111,68 @@ async def list_rules(
         page=page,
         page_size=page_size,
         total_pages=total_pages,
+    )
+
+
+@router.get("/stats", response_model=RuleStatsResponse)
+async def get_rule_stats(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Returns aggregated detection rule registry metrics:
+    total rules ingested, active/inactive distribution, severity counts,
+    linked incident coverage, and Prompt Studio governance.
+    """
+    from app.models.prompt import RulePrompt
+
+    # 1. Total, Active, Inactive
+    tot_q = await db.execute(select(func.count(Rule.id)))
+    total_rules = tot_q.scalar_one() or 0
+
+    act_q = await db.execute(select(func.count(Rule.id)).where(Rule.status == "ACTIVE"))
+    active_rules = act_q.scalar_one() or 0
+    inactive_rules = max(0, total_rules - active_rules)
+
+    # 2. Severities
+    crit_q = await db.execute(select(func.count(Rule.id)).where(Rule.severity == "CRITICAL"))
+    critical_rules = crit_q.scalar_one() or 0
+
+    high_q = await db.execute(select(func.count(Rule.id)).where(Rule.severity == "HIGH"))
+    high_rules = high_q.scalar_one() or 0
+
+    med_q = await db.execute(select(func.count(Rule.id)).where(Rule.severity == "MEDIUM"))
+    medium_rules = med_q.scalar_one() or 0
+
+    low_q = await db.execute(select(func.count(Rule.id)).where(Rule.severity == "LOW"))
+    low_rules = low_q.scalar_one() or 0
+
+    # 3. Incident linkages
+    inc_cov_q = await db.execute(
+        select(
+            func.count(func.distinct(Incident.rule_id)).label("covered_rules"),
+            func.count(Incident.id).label("total_incidents"),
+        ).where(Incident.rule_id.is_not(None))
+    )
+    inc_row = inc_cov_q.one()
+    rules_with_incidents = inc_row.covered_rules or 0
+    total_linked_incidents = inc_row.total_incidents or 0
+
+    # 4. Prompt Studio Governance
+    prompt_q = await db.execute(select(func.count(func.distinct(RulePrompt.rule_id))))
+    rules_with_prompts = prompt_q.scalar_one() or 0
+
+    return RuleStatsResponse(
+        total_rules=total_rules,
+        active_rules=active_rules,
+        inactive_rules=inactive_rules,
+        critical_rules=critical_rules,
+        high_rules=high_rules,
+        medium_rules=medium_rules,
+        low_rules=low_rules,
+        rules_with_incidents=rules_with_incidents,
+        total_linked_incidents=total_linked_incidents,
+        rules_with_prompt_templates=rules_with_prompts,
     )
 
 

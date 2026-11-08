@@ -7,6 +7,8 @@ import {
   Search,
   ExternalLink,
   Shield,
+  ShieldCheck,
+  AlertTriangle,
   Activity,
   Layers,
   CheckCircle,
@@ -15,7 +17,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { api, RuleItem } from "@/lib/api";
+import { api, RuleItem, RuleStatsResponse } from "@/lib/api";
 
 export default function RulesPage() {
   const [rules, setRules] = useState<RuleItem[]>([]);
@@ -26,8 +28,22 @@ export default function RulesPage() {
   const [severity, setSeverity] = useState("");
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [ruleStats, setRuleStats] = useState<RuleStatsResponse | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isSyncingRules, setIsSyncingRules] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const loadRuleStats = async () => {
+    setIsLoadingStats(true);
+    try {
+      const stats = await api.getRuleStats();
+      setRuleStats(stats);
+    } catch (err) {
+      console.error("Failed to load rule stats", err);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
 
   const loadRules = async () => {
     setIsLoading(true);
@@ -49,6 +65,10 @@ export default function RulesPage() {
   };
 
   useEffect(() => {
+    loadRuleStats();
+  }, []);
+
+  useEffect(() => {
     loadRules();
   }, [page, pageSize, severity, status]);
 
@@ -68,6 +88,7 @@ export default function RulesPage() {
         text: res.message,
       });
       loadRules();
+      loadRuleStats();
     } catch (err: any) {
       setSyncFeedback({
         type: "error",
@@ -144,6 +165,80 @@ export default function RulesPage() {
           </button>
         </div>
       )}
+
+      {/* 5 Rule Registry & Governance Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        {/* Total Ingested Rules */}
+        <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:p-3 shadow-sm">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
+            <span>Total Rules Ingested</span>
+            <FileCode2 className="h-3.5 w-3.5 text-cyan-400" />
+          </div>
+          <div className="mt-1 text-xl font-bold font-mono text-slate-100">
+            {isLoadingStats ? "..." : (ruleStats?.total_rules ?? total).toLocaleString()}
+          </div>
+          <div className="mt-0.5 text-[10px] text-cyan-400/80 font-mono flex items-center gap-1">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-400" />
+            <span>Parsed in Registry</span>
+          </div>
+        </div>
+
+        {/* Active Rules */}
+        <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:p-3 shadow-sm">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
+            <span>Active Detections</span>
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+          </div>
+          <div className="mt-1 text-xl font-bold font-mono text-emerald-400">
+            {isLoadingStats ? "..." : (ruleStats?.active_rules ?? 0).toLocaleString()}
+          </div>
+          <div className="mt-0.5 text-[10px] text-slate-500 font-mono">
+            {ruleStats?.inactive_rules ? `${ruleStats.inactive_rules} Inactive` : "100% Active Coverage"}
+          </div>
+        </div>
+
+        {/* Alert Correlation Coverage */}
+        <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:p-3 shadow-sm">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
+            <span>Rules with Incidents</span>
+            <Activity className="h-3.5 w-3.5 text-amber-400" />
+          </div>
+          <div className="mt-1 text-xl font-bold font-mono text-amber-300">
+            {isLoadingStats ? "..." : `${ruleStats?.rules_with_incidents ?? 0} / ${ruleStats?.total_rules ?? total}`}
+          </div>
+          <div className="mt-0.5 text-[10px] text-slate-500 font-mono">
+            {(ruleStats?.total_linked_incidents ?? 0).toLocaleString()} Linked Alerts
+          </div>
+        </div>
+
+        {/* Critical & High Severity Rules */}
+        <div className="rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:p-3 shadow-sm">
+          <div className="flex items-center justify-between text-slate-400 text-[11px] font-medium">
+            <span>Critical / High Rules</span>
+            <AlertTriangle className="h-3.5 w-3.5 text-rose-400" />
+          </div>
+          <div className="mt-1 text-xl font-bold font-mono text-rose-400">
+            {isLoadingStats ? "..." : `${(ruleStats?.critical_rules ?? 0) + (ruleStats?.high_rules ?? 0)}`}
+          </div>
+          <div className="mt-0.5 text-[10px] text-slate-500 font-mono">
+            {ruleStats?.medium_rules ?? 0} Med · {ruleStats?.low_rules ?? 0} Low
+          </div>
+        </div>
+
+        {/* Prompt Studio Governance */}
+        <div className="rounded-lg border border-indigo-900/50 bg-gradient-to-br from-indigo-950/30 to-slate-950 p-2.5 sm:p-3 shadow-sm">
+          <div className="flex items-center justify-between text-indigo-300 text-[11px] font-medium">
+            <span>Prompt Studio Ready</span>
+            <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+          </div>
+          <div className="mt-1 text-xl font-bold font-mono text-indigo-300">
+            {isLoadingStats ? "..." : (ruleStats?.rules_with_prompt_templates ?? 0).toLocaleString()}
+          </div>
+          <div className="mt-0.5 text-[10px] text-indigo-400/80 font-mono">
+            AI Triage Templates
+          </div>
+        </div>
+      </div>
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col md:flex-row gap-2 rounded-lg border border-slate-800 bg-slate-950 p-2 sm:p-2.5">
