@@ -98,6 +98,16 @@ export default function AgentConfigurationPage() {
       setLlmAllowMockFallback(cfg.allow_mock_fallback);
       setLlmBaseUrl(cfg.base_url || "");
       setLlmIsOnline(cfg.is_online);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("llm-status-change", {
+            detail: {
+              is_healthy: Boolean(cfg.is_online),
+              model: cfg.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ",
+            },
+          })
+        );
+      }
       if (cfg.server1_outbound_ip) {
         setServer1OutboundIp(cfg.server1_outbound_ip);
       }
@@ -135,6 +145,16 @@ export default function AgentConfigurationPage() {
       setLlmTestResult(res);
       if (res.success) {
         setLlmIsOnline(true);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("llm-status-change", {
+              detail: {
+                is_healthy: true,
+                model: (res.models && res.models[0]) || llmModelName,
+              },
+            })
+          );
+        }
       }
     } catch (err: any) {
       setLlmTestResult({
@@ -177,6 +197,16 @@ export default function AgentConfigurationPage() {
       setLlmAllowMockFallback(updated.allow_mock_fallback);
       setLlmSaveSuccess(`LLM Server configuration saved! Target base URL updated to ${updated.base_url}`);
       setLlmTestResult(null);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("llm-status-change", {
+            detail: {
+              is_healthy: Boolean(updated.is_online),
+              model: updated.model_name,
+            },
+          })
+        );
+      }
     } catch (err: any) {
       setLlmSaveError(err.message || "Failed to save LLM configuration.");
     } finally {

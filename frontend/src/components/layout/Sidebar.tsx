@@ -125,15 +125,44 @@ export function Sidebar() {
 
   useEffect(() => {
     let isMounted = true;
-    api.getLlmStatus()
-      .then((res) => {
-        if (isMounted) setLlmStatus(res);
-      })
-      .catch(() => {
-        if (isMounted) setLlmStatus({ is_healthy: false });
-      });
+
+    const fetchStatus = () => {
+      api.getLlmStatus()
+        .then((res) => {
+          if (isMounted) setLlmStatus(res);
+        })
+        .catch(() => {
+          if (isMounted) setLlmStatus({ is_healthy: false });
+        });
+    };
+
+    // Initial fetch on mount
+    fetchStatus();
+
+    // Auto-refresh every 15 seconds to reflect real-time inference engine health
+    const interval = setInterval(fetchStatus, 15000);
+
+    // Instant sync listener for changes made in Agent Configuration
+    const handleStatusEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && typeof customEvent.detail.is_healthy === "boolean") {
+        if (isMounted) {
+          setLlmStatus({
+            is_healthy: customEvent.detail.is_healthy,
+            model: customEvent.detail.model,
+          });
+        }
+      } else {
+        fetchStatus();
+      }
+    };
+
+    window.addEventListener("llm-status-change", handleStatusEvent);
+
     return () => {
       isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener("llm-status-change", handleStatusEvent);
     };
   }, []);
 
