@@ -223,7 +223,7 @@ class LLMConfigService:
         )
         base_url = parsed["base_url"]
         models_url = f"{base_url}/models"
-        timeout_sec = min(max(req.timeout or 5.0, 1.0), 30.0)
+        timeout_sec = min(max(req.timeout or 10.0, 1.0), 30.0)
 
         t0 = time.perf_counter()
         try:

@@ -193,44 +193,57 @@ class OpenAICompatibleProvider(BaseModelProvider):
 
     async def get_health(self) -> ProviderHealthResponse:
         start_time = time.time()
-        try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                res = await client.get(
-                    f"{self.base_url}/models",
-                    headers={"Authorization": f"Bearer {self.api_key}"}
-                )
-                latency = int((time.time() - start_time) * 1000)
-                if res.status_code == 200:
-                    return ProviderHealthResponse(
-                        status="HEALTHY",
-                        provider_name="OpenAICompatibleProvider",
-                        is_simulated=False,
-                        latency_ms=latency,
-                        message=f"Connected to local inference endpoint at {self.base_url}",
-                        details={"endpoint": self.base_url, "model": self.model_name},
+        # Derive root host:port without /v1 for fast vLLM /health endpoint
+        clean_base = self.base_url.rstrip("/")
+        root_url = re.sub(r"/v1$", "", clean_base)
+        health_endpoints = [
+            f"{root_url}/health",
+            f"{clean_base}/models",
+        ]
+        
+        last_error = None
+        for endpoint in health_endpoints:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    res = await client.get(
+                        endpoint,
+                        headers={"Authorization": f"Bearer {self.api_key}"}
                     )
-                else:
-                    return ProviderHealthResponse(
-                        status="DEGRADED",
-                        provider_name="OpenAICompatibleProvider",
-                        is_simulated=False,
-                        latency_ms=latency,
-                        message=f"Endpoint returned HTTP {res.status_code}",
-                        details={"status_code": res.status_code},
-                    )
-        except Exception as e:
-            return ProviderHealthResponse(
-                status="OFFLINE",
-                provider_name="OpenAICompatibleProvider",
-                is_simulated=False,
-                latency_ms=None,
-                message=f"Could not connect to inference server at {self.base_url}: {str(e)}",
-                details={"error": str(e)},
-            )
+                    latency = int((time.time() - start_time) * 1000)
+                    if res.status_code == 200:
+                        return ProviderHealthResponse(
+                            status="HEALTHY",
+                            provider_name="OpenAICompatibleProvider",
+                            is_simulated=False,
+                            latency_ms=latency,
+                            message=f"Connected to local inference endpoint at {self.base_url}",
+                            details={"endpoint": self.base_url, "model": self.model_name},
+                        )
+                    elif res.status_code != 404:
+                        return ProviderHealthResponse(
+                            status="DEGRADED",
+                            provider_name="OpenAICompatibleProvider",
+                            is_simulated=False,
+                            latency_ms=latency,
+                            message=f"Endpoint returned HTTP {res.status_code}",
+                            details={"status_code": res.status_code},
+                        )
+            except Exception as e:
+                last_error = e
+                continue
+
+        return ProviderHealthResponse(
+            status="OFFLINE",
+            provider_name="OpenAICompatibleProvider",
+            is_simulated=False,
+            latency_ms=None,
+            message=f"Could not connect to inference server at {self.base_url}: {str(last_error)}",
+            details={"error": str(last_error)},
+        )
 
     async def list_models(self) -> List[str]:
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 res = await client.get(
                     f"{self.base_url}/models",
                     headers={"Authorization": f"Bearer {self.api_key}"}
@@ -280,7 +293,6 @@ class OpenAICompatibleProvider(BaseModelProvider):
             ],
             "max_tokens": min(self.max_tokens, 1024),
             "temperature": self.temperature,
-            "response_format": {"type": "json_object"},
         }
 
         try:
