@@ -174,38 +174,45 @@ async def _execute_incident_triage_core(
             raise
 
 
-@celery_app.task(bind=True, max_retries=3)
-def triage_incident_task(self, incident_id: str, trigger_source: str = "LIVE", is_simulated: bool = False):
-    """Celery worker task wrapper executing async triage."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(
-            _execute_incident_triage_core(
-                incident_id=incident_id,
-                trigger_source=trigger_source,
-                is_simulated=is_simulated,
-                retry_count=self.request.retries,
-                max_retries=3
+if celery_app is not None:
+    @celery_app.task(bind=True, max_retries=3)
+    def triage_incident_task(self, incident_id: str, trigger_source: str = "LIVE", is_simulated: bool = False):
+        """Celery worker task wrapper executing async triage."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(
+                _execute_incident_triage_core(
+                    incident_id=incident_id,
+                    trigger_source=trigger_source,
+                    is_simulated=is_simulated,
+                    retry_count=self.request.retries,
+                    max_retries=3
+                )
             )
-        )
-    finally:
-        loop.close()
+        finally:
+            loop.close()
 
 
-@celery_app.task(bind=True)
-def run_dry_run_job_task(self, job_id: str):
-    """Celery worker task for executing asynchronous simulation lab jobs."""
-    from app.services.dry_run_service import dry_run_service
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        async def _run():
-            async with AsyncSessionLocal() as session:
-                return await dry_run_service.execute_dry_run_job(db=session, job_id=job_id)
-        return loop.run_until_complete(_run())
-    finally:
-        loop.close()
+    @celery_app.task(bind=True)
+    def run_dry_run_job_task(self, job_id: str):
+        """Celery worker task for executing asynchronous simulation lab jobs."""
+        from app.services.dry_run_service import dry_run_service
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            async def _run():
+                async with AsyncSessionLocal() as session:
+                    return await dry_run_service.execute_dry_run_job(db=session, job_id=job_id)
+            return loop.run_until_complete(_run())
+        finally:
+            loop.close()
+else:
+    def triage_incident_task(*args, **kwargs):
+        raise RuntimeError("Celery is not available.")
+
+    def run_dry_run_job_task(*args, **kwargs):
+        raise RuntimeError("Celery is not available.")
 
 
 async def dispatch_incident_triage(
@@ -220,7 +227,7 @@ async def dispatch_incident_triage(
     - If Celery is disabled or Redis is unavailable (dev/test): executes directly in-process
       with identical state machine and error handling.
     """
-    use_celery = settings.USE_ASYNC_CELERY and is_redis_available()
+    use_celery = settings.USE_ASYNC_CELERY and is_redis_available() and (celery_app is not None)
 
     if use_celery:
         logger.info(f"Dispatching incident '{incident_id}' to Celery 'live_triage' queue.")
