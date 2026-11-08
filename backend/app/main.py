@@ -148,7 +148,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="AI Verdict: SOC Incident Analysis & SIEM Intelligence Platform",
+    description="AI Verdict: Agentic SOC Intelligence Platform — Evidence-Driven Security Intelligence",
     lifespan=lifespan,
 )
 
@@ -184,6 +184,6 @@ async def health_check():
         "status": "healthy",
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "phase": "Phase 3 - Dry-Run Engine & Evaluation Framework",
+        "platform": "Agentic SOC Intelligence Platform",
     }
 

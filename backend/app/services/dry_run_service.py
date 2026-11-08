@@ -15,7 +15,12 @@ from app.schemas.incident import ModelFacingIncidentPayload
 from app.schemas.dry_run import DryRunConfigCreate
 
 
-class DryRunService:
+class ValidationEngine:
+    """
+    Validation Engine (formerly DryRunService).
+    Executes controlled dry-run simulation, offline replay, batch validation,
+    and benchmarking experiments for the Agentic SOC Intelligence Platform.
+    """
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -236,4 +241,9 @@ class DryRunService:
         ).order_by(desc(DryRunJob.started_at)).limit(limit)
         res = await self.db.execute(query)
         return res.scalars().all()
+
+
+# Backward compatibility alias
+DryRunService = ValidationEngine
+
 

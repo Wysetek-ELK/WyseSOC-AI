@@ -9,8 +9,9 @@ class ZipSecurityException(Exception):
     pass
 
 
-class ZipGuard:
+class PayloadSanitizationGuard:
     """
+    Payload Sanitization Guard (formerly ZipGuard).
     Hardened ZIP archive inspection and validation to defend against:
     - Path traversal attacks (Zip Slip, e.g. ../../../etc/passwd)
     - Decompression bombs / zip bombs (unreasonable compression ratio or excessive uncompressed size)
@@ -91,4 +92,10 @@ class ZipGuard:
                 raise ZipSecurityException(f"Error decompressing '{info.filename}': {str(e)}")
 
         return extracted_entries
+
+
+# Backward compatibility aliases
+PayloadSanitizationException = ZipSecurityException
+ZipGuard = PayloadSanitizationGuard
+
 

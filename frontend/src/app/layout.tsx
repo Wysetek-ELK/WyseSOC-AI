@@ -4,8 +4,8 @@ import { AppProvider } from "@/context/AppContext";
 import { Shell } from "@/components/layout/Shell";
 
 export const metadata: Metadata = {
-  title: "AI Verdict — SOC Incident Analysis Platform",
-  description: "Enterprise SIEM incident analysis, historical learning, and AI verdict evaluation platform.",
+  title: "AI Verdict — Agentic SOC Intelligence Platform",
+  description: "Evidence-Driven Security Intelligence · Enterprise AI Verdict Triage, Policy Governance, and Verification.",
 };
 
 export default function RootLayout({

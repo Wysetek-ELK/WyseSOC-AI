@@ -2,10 +2,11 @@ import re
 from typing import Dict, Any, Optional
 
 
-class RuleParser:
+class DetectionContextEngine:
     """
+    Detection Context Engine (formerly RuleParser).
     Parses vendor text-based SIEM rule definitions (e.g., CrowdStrike, Prisma SASE)
-    into structured metadata while preserving full raw text.
+    into structured detection context and pattern logic while preserving full raw text.
     """
 
     @classmethod
@@ -137,4 +138,9 @@ class RuleParser:
 
         data["rule_id"] = data["event_type"]
         return data
+
+
+# Backward compatibility alias
+RuleParser = DetectionContextEngine
+
 

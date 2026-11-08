@@ -14,7 +14,12 @@ from app.schemas.learning import (
 )
 
 
-class LearningService:
+class AgentMemoryEngine:
+    """
+    Agent Memory Engine.
+    Manages analyst feedback, precedent matching, few-shot historical retrieval,
+    and continuous learning memory records for the Agentic SOC Intelligence Platform.
+    """
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -334,3 +339,8 @@ class LearningService:
             await self.db.commit()
 
         return added_count
+
+
+# Backward compatibility alias
+LearningService = AgentMemoryEngine
+

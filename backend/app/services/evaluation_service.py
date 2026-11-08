@@ -24,7 +24,12 @@ def _safe_divide(numerator: float, denominator: float) -> float:
     return round((numerator / denominator) * 100.0, 2)
 
 
-class EvaluationService:
+class VerdictEvaluationEngine:
+    """
+    Verdict Evaluation Engine (formerly EvaluationService).
+    Computes evaluation metrics, confusion matrices, accuracy, precision,
+    recall, F1-scores, and trust reporting for the Agentic SOC Intelligence Platform.
+    """
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -343,4 +348,9 @@ class EvaluationService:
             ])
 
         return output.getvalue()
+
+
+# Backward compatibility alias
+EvaluationService = VerdictEvaluationEngine
+
 

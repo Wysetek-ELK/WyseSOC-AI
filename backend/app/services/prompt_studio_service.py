@@ -45,7 +45,12 @@ DO NOT use REQUIRES_ATTENTION for routine internal web policy, loopback, or heal
 """
 
 
-class PromptStudioService:
+class AgentPolicyEngine:
+    """
+    Agent Policy Engine.
+    Manages rule-level triage policies, prompts, versioning, criteria,
+    and SOC baseline frameworks for the Agentic SOC Intelligence Platform.
+    """
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -366,3 +371,8 @@ DETECTION CONDITIONS:
         await self.db.commit()
         await self.db.refresh(rolled_version)
         return rolled_version
+
+
+# Backward compatibility alias
+PromptStudioService = AgentPolicyEngine
+

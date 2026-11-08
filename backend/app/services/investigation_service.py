@@ -18,7 +18,12 @@ from app.schemas.investigation import (
 )
 
 
-class InvestigationService:
+class ReviewOrchestrator:
+    """
+    Review Orchestrator (formerly InvestigationService).
+    Manages the Human Review Queue, escalation workflows, analyst verdicts,
+    and human-in-the-loop feedback orchestration for the Agentic SOC Intelligence Platform.
+    """
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -351,4 +356,9 @@ class InvestigationService:
         await self.db.commit()
         await self.db.refresh(inv)
         return inv
+
+
+# Backward compatibility alias
+InvestigationService = ReviewOrchestrator
+
 

@@ -23,7 +23,7 @@ export function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    router.push(`/incidents?search=${encodeURIComponent(searchQuery.trim())}`);
+    router.push(`/ai-triage-workbench?search=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   const getRoleBadge = (role: string) => {
@@ -46,7 +46,7 @@ export function Header() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Global Search: Incident ID, Rule, IP, Device, File..."
+          placeholder="Global Triage Search: Incident ID, Rule, Source IP, Device, File..."
           className="w-full rounded-md border border-slate-800 bg-slate-900/80 py-1 pl-8 pr-3 text-xs text-slate-200 placeholder-slate-500 transition-colors focus:border-cyan-500/80 focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-cyan-500"
         />
       </form>
@@ -61,7 +61,7 @@ export function Header() {
               ? "border-amber-500/60 bg-amber-950/60 text-amber-300 shadow-sm shadow-amber-900/30"
               : "border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200"
           }`}
-          title="Blind Review Mode: Suppresses historical ground truth verdicts so analysts can investigate neutrally"
+          title="Blind Review Safeguard: Suppresses historical ground truth verdicts so analysts can investigate neutrally"
         >
           {blindReviewMode ? (
             <>
@@ -112,4 +112,3 @@ export function Header() {
     </header>
   );
 }
-

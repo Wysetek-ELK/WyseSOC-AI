@@ -8,9 +8,10 @@ from app.config import settings
 from app.services.fortisiem_service import FortiSIEMService
 
 
-class FortiSIEMSyncScheduler:
+class SentinelIngestWorker:
     """
-    Continuous FortiSIEM Background Sync Poller.
+    Sentinel Ingest Worker.
+    Continuous background sync poller and telemetry ingestion worker.
     Executes an initial comprehensive pull of incidents,
     followed by automated incremental polling every N seconds (default: 180s / 3 mins).
     Idempotently ingests incoming telemetry and automatically triggers AI Verdicts via LLM.
@@ -219,5 +220,9 @@ class FortiSIEMSyncScheduler:
             return {"success": False, "error": str(exc), "status": "ERROR"}
 
 
-# Global singleton instance
-fortisiem_scheduler = FortiSIEMSyncScheduler()
+# Global singleton instance and aliases
+SentinelIngestWorkerAlias = SentinelIngestWorker
+FortiSIEMSyncScheduler = SentinelIngestWorker
+sentinel_ingest_worker = SentinelIngestWorker()
+fortisiem_scheduler = sentinel_ingest_worker
+

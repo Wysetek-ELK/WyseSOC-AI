@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     try {
       await login(username, password);
-      router.push("/");
+      router.push("/agent-mission-control");
     } catch (err: any) {
       setError(err.message || "Authentication failed. Check your credentials.");
     } finally {
@@ -38,7 +38,10 @@ export default function LoginPage() {
           </div>
           <h1 className="text-lg font-bold tracking-tight text-slate-100">AI VERDICT</h1>
           <p className="text-[11px] text-cyan-400 font-mono mt-0.5 tracking-wider uppercase">
-            SOC Incident Analysis Platform · Phase 1
+            Agentic SOC Intelligence Platform
+          </p>
+          <p className="text-[10px] text-slate-400 font-medium mt-1">
+            Evidence-Driven Security Intelligence
           </p>
         </div>
 
@@ -58,11 +61,11 @@ export default function LoginPage() {
               <User className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
-                required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full rounded-md border border-slate-800 bg-slate-950 py-1.5 pl-8 pr-2.5 text-xs text-slate-100 placeholder-slate-600 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                placeholder="Enter username"
+                placeholder="admin"
+                required
+                className="w-full rounded-md border border-slate-800 bg-slate-950/80 py-1.5 pl-8 pr-3 text-xs text-slate-200 placeholder-slate-600 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
               />
             </div>
           </div>
@@ -75,11 +78,11 @@ export default function LoginPage() {
               <Lock className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
               <input
                 type="password"
-                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-md border border-slate-800 bg-slate-950 py-1.5 pl-8 pr-2.5 text-xs text-slate-100 placeholder-slate-600 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                placeholder="Enter password"
+                placeholder="••••••••••••"
+                required
+                className="w-full rounded-md border border-slate-800 bg-slate-950/80 py-1.5 pl-8 pr-3 text-xs text-slate-200 placeholder-slate-600 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
               />
             </div>
           </div>
@@ -87,21 +90,19 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-md bg-cyan-600 py-2 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors shadow-md shadow-cyan-900/20 flex items-center justify-center gap-1.5 mt-2"
+            className="w-full mt-2 flex items-center justify-center gap-2 rounded-md bg-cyan-600 py-1.5 text-xs font-semibold text-white shadow-md shadow-cyan-950/50 hover:bg-cyan-500 disabled:opacity-50 transition-colors"
           >
-            {isSubmitting ? "Authenticating..." : "Sign In to SOC Console"}
+            <span>{isSubmitting ? "Authenticating..." : "Sign In to Platform"}</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </form>
 
-        {/* Demo Credentials Box */}
-        <div className="mt-5 rounded-md border border-slate-800 bg-slate-950/60 p-2.5 text-[10px] text-slate-400 font-mono">
-          <div className="font-semibold text-slate-300 mb-0.5">Initial Administrator Credentials:</div>
-          <div>User: <span className="text-cyan-400">admin</span></div>
-          <div>Pass: <span className="text-cyan-400">AdminPassword123!</span></div>
+        <div className="mt-5 border-t border-slate-800/80 pt-3 text-center">
+          <p className="text-[10px] text-slate-500 font-mono">
+            Default credentials: <span className="text-slate-400">admin</span> / <span className="text-slate-400">AdminPassword123!</span>
+          </p>
         </div>
       </div>
     </div>
   );
 }
-

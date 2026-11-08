@@ -19,7 +19,12 @@ from app.models.system_metric import SystemServerSample
 logger = logging.getLogger(__name__)
 
 
-class SystemMonitorService:
+class InferenceHealthMonitor:
+    """
+    Inference Health Monitor (formerly SystemMonitorService).
+    Monitors dual-server hardware health, CPU/Memory metrics, GPU utilization,
+    VRAM occupancy, and inference latency for the Agentic SOC Intelligence Platform.
+    """
     def __init__(self, db: Optional[AsyncSession] = None):
         self.db = db
 
@@ -532,4 +537,9 @@ class SystemMonitorService:
                 },
             },
         }
+
+
+# Backward compatibility alias
+SystemMonitorService = InferenceHealthMonitor
+
 

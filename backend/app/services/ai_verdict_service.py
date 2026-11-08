@@ -22,9 +22,9 @@ class LocalLLMUnavailableError(Exception):
     pass
 
 
-class AIVerdictService:
+class VerdictTriageAgent:
     """
-    Unified AI Verdict Engine.
+    Agentic SOC Verdict Triage Agent.
     Executes zero-bias incident evaluations with strict ground-truth isolation,
     dynamic prompt synthesis (Level-2 SOC criteria + few-shot RAG),
     and resilient model provider fallback.
@@ -365,15 +365,15 @@ class AIVerdictService:
             "message": f"Evaluated {successful} incidents with AI Verdict ({failed} failures).",
         }
 
-    async def process_pending_incidents(
+    async def reconcile_pending_triage(
         self,
         max_batch: int = 100,
         username: str = "llm_backlog_worker",
         pause_between_s: float = 0.15,
     ) -> Dict[str, Any]:
         """
-        Discovers all pending incidents without an AI verdict, and once Local LLM is
-        online, processes them one by one sequentially.
+        Reconciles pending triage incidents lacking an AI verdict. Once Local LLM is
+        online, processes them one by one sequentially with the Verdict Triage Agent.
         If Local LLM is offline or goes offline mid-batch, halts immediately.
         """
         is_online = await self.is_local_llm_available(force_refresh=True)
@@ -438,3 +438,11 @@ class AIVerdictService:
             "pending_remaining": remaining,
             "message": f"Processed {processed_count} pending incidents one by one ({remaining} remaining).",
         }
+
+    # Backward compatibility alias
+    process_pending_incidents = reconcile_pending_triage
+
+
+# Backward compatibility alias
+AIVerdictService = VerdictTriageAgent
+

@@ -1210,21 +1210,24 @@ class FortiSIEMService:
         except Exception as bg_exc:
             print(f"[Background AI Worker Error]: {bg_exc}")
 
-    async def process_pending_incidents(
+    async def reconcile_pending_triage(
         self,
         max_count: int = 100,
         username: str = "scheduler",
     ) -> Dict[str, Any]:
         """
-        Discovers all incidents in the database without an AI verdict,
-        and once Local LLM is online, evaluates them sequentially one by one.
+        Reconciles pending triage for all incidents in the database without an AI verdict,
+        evaluating them sequentially one by one with the Verdict Triage Agent.
         """
         ai_service = AIVerdictService(self.db)
-        return await ai_service.process_pending_incidents(
+        return await ai_service.reconcile_pending_triage(
             max_batch=max_count,
             username=username,
             pause_between_s=0.15,
         )
+
+    # Backward compatibility alias
+    process_pending_incidents = reconcile_pending_triage
 
     async def pull_incremental_incidents(
         self,

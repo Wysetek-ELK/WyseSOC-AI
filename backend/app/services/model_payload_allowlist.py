@@ -140,3 +140,14 @@ def build_model_facing_payload(
             raise ValueError(f"CRITICAL SECURITY VIOLATION: Forbidden key '{forbidden_key}' in model payload!")
 
     return payload
+
+
+class EvidenceIntegrityGuardrail:
+    """
+    Evidence Integrity Guardrail.
+    Enforces strict zero-leakage evidence filtering, sanitization of event attributes,
+    and exclusion of ground truth / resolution / analyst notes before model ingestion.
+    """
+    sanitize_event_attributes = staticmethod(sanitize_event_attributes)
+    build_model_facing_payload = staticmethod(build_model_facing_payload)
+

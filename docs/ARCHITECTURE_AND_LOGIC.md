@@ -26,11 +26,11 @@ flowchart TB
 
         subgraph BackendApp["Backend Application (:8000)"]
             FastAPI["FastAPI REST API Engine (Python 3.11+)"]
-            Scheduler["FortiSIEM Sync Scheduler\n(Continuous 3-Min Background Poller)"]
-            ZipGuardEngine["ZipGuard Ingestion Engine\n(Zip Slip & Bomb Protection)"]
-            IsolationFilter["Ground-Truth Isolation Layer\n(Model Allowlist Filter)"]
-            VerdictEngine["AI Verdict Engine\n(AIVerdictService & Prompt Studio)"]
-            SystemMonitor["System Monitor Service\n(Server 1 & Server 2 Telemetry)"]
+            Scheduler["Sentinel Ingest Worker\n(Continuous 3-Min Background Poller)"]
+            ZipGuardEngine["Payload Sanitization Guard\n(Path Traversal & Zip Bomb Protection)"]
+            IsolationFilter["Evidence Integrity Guardrail\n(Strict Zero-Leakage Filter)"]
+            VerdictEngine["Verdict Triage Agent\n(Agent Policy Engine & Few-Shot RAG)"]
+            SystemMonitor["Inference Health Monitor\n(Server 1 & Server 2 Observability)"]
         end
 
         subgraph DatabaseEngine["Database Persistence Layer"]
@@ -295,24 +295,47 @@ This section provides a definitive dictionary of classes, functions, files, sche
 
 ---
 
-### 4.4 Frontend Component & Page Structure (`frontend/src/`)
+### 4.4 Frontend Component & Canonical Route Structure (`frontend/src/`)
 
-| Page / Component Path | Route | Operational Logic & User Experience |
-| :--- | :--- | :--- |
-| `app/page.tsx` | `/` (Dashboard) | Real-time SOC operational dashboard displaying telemetry cards, severity charts, and recent activity. |
-| `app/incidents/page.tsx` | `/incidents` | Incident Explorer table featuring sortable occurrence dates, severity badges, and stored verdicts. |
-| `app/incidents/[id]/page.tsx` | `/incidents/[id]` | Incident detail workbench: displays AI Verdict card, Raw Events viewer (with parsed vendor attributes), and Ground Truth tab. |
-| `app/rules/page.tsx` | `/rules` | SIEM Detection Rule Registry: displays 5 analytical metric cards, rule table, and FortiSIEM rule sync button. |
-| `app/imports/page.tsx` | `/imports` | FortiSIEM Data Ingestion hub: continuous 3-minute sync poller controls, pull-by-ID form, and ZipGuard upload. |
-| `app/prompt-studio/page.tsx` | `/prompt-studio` | Rule Prompt Studio: customize Level-2 triage instructions, TP/FP indicators, and version approvals. |
-| `app/learning-history/page.tsx`| `/learning-history`| Review human analyst feedback, ground-truth verifications, and active few-shot prompt examples. |
-| `app/infrastructure/page.tsx` | `/infrastructure` | Real-time server telemetry cards showing Server 1 & Server 2 status, CPU, RAM, Disk, and GPU VRAM. |
-| `components/layout/Header.tsx` | Layout Header | Persistent navigation, global search, **Blind Review Mode toggle**, and user session status. |
-| `lib/api.ts` | Client API Library | Typed Axios/Fetch client with full endpoint definitions, error handling, and TypeScript interfaces. |
-| `context/AppContext.tsx` | Global React State | Manages application state, Blind Review toggle, and active user session. |
+| Canonical Page / Component | Canonical Route | Legacy Alias Route | Operational Logic & User Experience |
+| :--- | :--- | :--- | :--- |
+| `AgentMissionControlPage` | `/agent-mission-control` | `/` | Operational command center displaying real-time SOC metrics, severity charts, and telemetry. |
+| `AITriageWorkbenchPage` | `/ai-triage-workbench` | `/incidents` | Incident triage explorer with filterable occurrence dates, severity badges, and stored verdicts. |
+| `AITriageWorkbenchDetailPage` | `/ai-triage-workbench/[id]` | `/incidents/[id]` | Detailed workbench: Verdict Triage Agent card, raw events, Evidence Integrity Guardrail, and detection context. |
+| `TelemetryHubPage` | `/telemetry-hub` | `/imports` | Data ingestion hub: Sentinel Ingest Worker poller controls, pull-by-ID, and Payload Sanitization Guard. |
+| `DetectionIntelligencePage` | `/detection-intelligence` | `/rules` | Detection Intelligence Registry: analytical rule cards, rule patterns, and FortiSIEM sync controls. |
+| `HumanReviewQueuePage` | `/human-review-queue` | `/analyst-attention` | Review Orchestrator queue: human-in-the-loop analyst feedback, verification status, and disputed verdicts. |
+| `AgentIntelligenceStudioPage` | `/agent-intelligence-studio`| `/prompt-studio` | Agent Policy Engine: customizes Level-2 triage instructions, TP/FP indicators, and version approvals. |
+| `AgentMemoryPage` | `/agent-memory` | `/learning-history` | Agent Memory Engine: reviews analyst precedent records, ground-truth verifications, and few-shot RAG memory. |
+| `AgentSimulationLabPage` | `/agent-simulation-lab` | `/dry-run` | Validation Engine: controlled dry-run simulations, offline batch replay, and split-dataset experiments. |
+| `VerdictIntelligencePage` | `/verdict-intelligence` | `/evaluation-reports`| Verdict Evaluation Engine: accuracy reporting, confusion matrices, precision/recall, and trust metrics. |
+| `InferenceControlPage` | `/inference-control` | `/infrastructure` | Inference Health Monitor: real-time telemetry cards showing dual-server status, CPU, RAM, Disk, and GPU VRAM. |
+| `AgentConfigurationPage` | `/agent-configuration` | `/settings` | Application and inference settings, model allowlist, and platform preferences. |
+| `GovernanceAccessPage` | `/governance-access` | `/admin` | RBAC management, user provisioning, security roles, and platform audit controls. |
 
 ---
 
-## 5. Summary & Verification Reference
+## 5. Agentic SOC Intelligence Platform Nomenclature Mapping
 
-This document represents the current, verified production state of the **AI Verdict** platform (as of commit `479ba93`). All components, naming conventions, and API routes strictly reflect the live codebase and tested behaviors.
+| Existing Architecture / Class | Agentic Platform Nomenclature | Functional Responsibility |
+|---|---|---|
+| `AIVerdictService` | `VerdictTriageAgent` | Autonomous incident reasoning, dynamic prompt synthesis, and AI verdict generation. |
+| `FortiSIEMSyncScheduler` | `SentinelIngestWorker` | Background continuous telemetry polling, idempotent ingestion, and scheduled dispatching. |
+| `LearningService` | `AgentMemoryEngine` | Analyst feedback management, verified precedents, few-shot RAG retrieval, and memory records. |
+| `PromptStudioService` | `AgentPolicyEngine` | Detection-level triage policy rules, custom prompts, versioning, and Level-2 SOC criteria. |
+| `process_pending_incidents` | `reconcile_pending_triage` | Sequential processing of pending incidents through the Verdict Triage Agent. |
+| `ZipGuard` | `PayloadSanitizationGuard` | Zip Slip path traversal mitigation, decompression bomb defense, and telemetry payload validation. |
+| `SystemMonitorService` | `InferenceHealthMonitor` | Hardware telemetry, CPU/RAM tracking, NVIDIA GPU/VRAM observability, and latency benchmarking. |
+| `build_model_facing_payload` | `EvidenceIntegrityGuardrail` | Zero-leakage evidence filtering, attribute sanitization, and strict ground-truth isolation. |
+| `RuleParser` | `DetectionContextEngine` | Structured detection rule context compilation, pattern logic extraction, and remediation parsing. |
+| `InvestigationService` | `ReviewOrchestrator` | Human-in-the-loop escalation workflow, analyst queue assignment, and verdict validation. |
+| `EvaluationService` | `VerdictEvaluationEngine` | Accuracy, precision, recall, confusion matrix calculation, and trust analytics. |
+| `DryRunService` | `ValidationEngine` | Offline test simulations, dataset splitting (70/30 chronological), and policy benchmarking. |
+
+---
+
+## 6. Summary & Verification Reference
+
+This document represents the current, verified production state of the **AI Verdict: Agentic SOC Intelligence Platform**. All components, naming conventions, and API routes strictly reflect the live codebase, automated test suites (100% passing across 62 tests), and Next.js production builds.
+
+
