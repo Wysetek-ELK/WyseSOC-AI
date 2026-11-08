@@ -9,6 +9,7 @@ class EvidenceFieldRequirement(BaseModel):
     required_for_tp: bool = Field(True, description="Whether this field is mandatory to accept TRUE_POSITIVE")
     required_for_fp: bool = Field(False, description="Whether this field is mandatory to accept FALSE_POSITIVE")
     critical: bool = Field(True, description="If True, missing this field forces REQUIRES_ATTENTION")
+    requirement_level: str = Field("CORE", description="CORE, CONDITIONAL, OPTIONAL, UNAVAILABLE, or UNVERIFIED")
     description: str = Field("", description="Human-readable requirement rationale")
 
 

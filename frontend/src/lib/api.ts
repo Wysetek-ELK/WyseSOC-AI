@@ -421,6 +421,9 @@ export interface PromptVersion {
   version_number: number;
   status: "DRAFT" | "APPROVED" | "ARCHIVED";
   is_template_draft: boolean;
+  quality_status?: string;
+  quality_score?: number | null;
+  quality_assessment_id?: string | null;
   common_prompt: string;
   rule_specific_prompt: string;
   detection_conditions: string;
@@ -463,6 +466,131 @@ export interface RulePromptSummaryItem {
   total_versions: number;
   has_approved_prompt: boolean;
   last_updated?: string;
+  detection_archetype?: string;
+  definition_completeness?: string;
+  quality_score?: number | null;
+  quality_validation_status?: string;
+  blocking_issue_count?: number;
+  simulation_status?: string;
+  last_validated_date?: string | null;
+  revalidation_required?: boolean;
+}
+
+export interface QualityGateResult {
+  gate_id: string;
+  gate_name: string;
+  status: "PASSED" | "WARNING" | "FAILED";
+  score: number;
+  max_score: number;
+  details: string;
+  blocking_findings: string[];
+  warnings: string[];
+}
+
+export interface PolicyQualityAssessmentResponse {
+  assessment_id: string;
+  rule_identifier: string;
+  policy_version_number: number;
+  prompt_version_id?: string;
+  archetype: string;
+  validator_version: string;
+  quality_score: number;
+  score_breakdown: Record<string, number>;
+  gate_results: Record<string, QualityGateResult>;
+  gates?: QualityGateResult[];
+  blocking_issues: string[];
+  blocking_findings?: string[];
+  warnings: string[];
+  missing_evidence_mappings: string[];
+  recommendations: string[];
+  simulation_status: string;
+  approval_eligible: boolean;
+  hard_gate_failure?: boolean;
+  validation_status?: string;
+  policy_digest: string;
+  contract_digest: string;
+  rule_digest: string;
+  archetype_version: string;
+  evaluated_at: string;
+}
+
+export interface RuleIntelligenceData {
+  rule_id: string;
+  rule_identifier: string;
+  semantics: {
+    rule_identifier: string;
+    rule_name: string;
+    siem_vendor: string;
+    data_source: string;
+    event_category: string;
+    sub_category?: string;
+    detection_objective: string;
+    definition_status: "VERIFIED" | "INCOMPLETE" | "UNKNOWN" | "CONFLICTING";
+    source_provenance: string;
+    threshold?: number | null;
+    threshold_unit?: string | null;
+    aggregation_window?: string | null;
+    grouping_keys: string[];
+    suppression_conditions: string[];
+    relevant_fields: string[];
+    observed_fields: string[];
+    attck_tactics: string[];
+    attck_techniques: string[];
+    primary_behavior: string;
+    review_required: boolean;
+    missing_requirements: string[];
+    provenance_details: Record<string, string>;
+  };
+  classification: {
+    rule_identifier: string;
+    primary_archetype: string;
+    secondary_archetype?: string;
+    confidence_score: number;
+    classification_reason: string;
+    matched_features: string[];
+    traceability_log: string[];
+    registry_version: string;
+  };
+  archetype_definition: {
+    archetype_id: string;
+    name: string;
+    version: string;
+    detection_purpose: string;
+    mandatory_core_fields: string[];
+    conditional_fields: string[];
+    optional_enrichment_fields: string[];
+    unsupported_fields: string[];
+    tp_indicator_candidates: string[];
+    fp_indicator_candidates: string[];
+    abstention_requirements: string[];
+    escalation_considerations: string[];
+    analyst_question_templates: string[];
+    unsupported_assumptions: string[];
+  };
+  candidate_evidence_contract?: any;
+}
+
+export interface QualitySummaryItem {
+  total_rules: number;
+  rules_with_approved_policies: number;
+  policies_passing_static_checks: number;
+  policies_requiring_review: number;
+  policies_with_critical_issues: number;
+  policies_with_incomplete_definitions: number;
+  policies_with_missing_evidence_mappings: number;
+  policies_lacking_simulation_evidence: number;
+  quality_score_average: number;
+  rules_requiring_revalidation: number;
+}
+
+export interface PolicyDriftEventItem {
+  id: string;
+  trigger_type: string;
+  summary: string;
+  changed_fields: Record<string, any>;
+  revalidation_required: boolean;
+  acknowledged: boolean;
+  created_at: string;
 }
 
 export interface LearningRecord {
@@ -1153,6 +1281,7 @@ export const api = {
     return { blob, filename };
   },
 
+
   async exportSingleRulePrompt(ruleId: string, format: "json" | "markdown" = "json"): Promise<{ blob: Blob; filename: string }> {
     const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/export?format=${format}`);
     if (!res.ok) throw new Error("Failed to export rule prompt configuration");
@@ -1164,6 +1293,78 @@ export const api = {
       if (match && match[1]) filename = match[1];
     }
     return { blob, filename };
+  },
+
+
+  // =================== AGENT INTELLIGENCE STUDIO 2.0 ===================
+  async getRuleIntelligence(ruleId: string): Promise<RuleIntelligenceData> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/intelligence`);
+    if (!res.ok) throw new Error("Failed to fetch rule intelligence and detection semantics");
+    return res.json();
+  },
+
+  async analyzeRuleIntelligence(ruleId: string, authoritativeDefinition?: any): Promise<any> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ authoritative_siem_definition: authoritativeDefinition }),
+    });
+    if (!res.ok) throw new Error("Failed to analyze rule intelligence");
+    return res.json();
+  },
+
+  async generateIntelligentDraft(ruleId: string, authoritativeDefinition?: any): Promise<PromptVersion> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/generate-intelligent-draft`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ authoritative_siem_definition: authoritativeDefinition }),
+    });
+    if (!res.ok) throw new Error("Failed to generate intelligent draft");
+    return res.json();
+  },
+
+  async validatePolicyQuality(ruleId: string, versionId?: string): Promise<PolicyQualityAssessmentResponse> {
+    const url = versionId ? `${API_BASE}/prompts/rule/${ruleId}/validate-quality?version_id=${versionId}` : `${API_BASE}/prompts/rule/${ruleId}/validate-quality`;
+    const res = await fetchWithAuth(url, { method: "POST" });
+    if (!res.ok) throw new Error("Failed to validate policy quality");
+    return res.json();
+  },
+
+  async evaluatePolicySimulation(ruleId: string, versionId?: string): Promise<any> {
+    const url = versionId ? `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation?version_id=${versionId}` : `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation`;
+    const res = await fetchWithAuth(url, { method: "POST" });
+    if (!res.ok) throw new Error("Failed to evaluate policy simulation");
+    return res.json();
+  },
+
+  async getPolicyQualitySummary(): Promise<QualitySummaryItem> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/quality/summary`);
+    if (!res.ok) throw new Error("Failed to fetch policy quality summary");
+    return res.json();
+  },
+
+  async startBulkQualityAudit(): Promise<any> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/quality/bulk-assess`, { method: "POST" });
+    if (!res.ok) throw new Error("Failed to start bulk quality audit");
+    return res.json();
+  },
+
+  async getBulkQualityAuditStatus(jobId: string): Promise<any> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/quality/bulk-assess/${jobId}`);
+    if (!res.ok) throw new Error("Failed to get bulk quality audit status");
+    return res.json();
+  },
+
+  async getRuleDriftEvents(ruleId: string): Promise<PolicyDriftEventItem[]> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/drift`);
+    if (!res.ok) throw new Error("Failed to fetch rule drift events");
+    return res.json();
+  },
+
+  async acknowledgeDriftEvents(ruleId: string): Promise<{ acknowledged_count: number }> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/acknowledge-drift`, { method: "POST" });
+    if (!res.ok) throw new Error("Failed to acknowledge drift events");
+    return res.json();
   },
 
   // =================== PHASE 2: LEARNING HISTORY ===================

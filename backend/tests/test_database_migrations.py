@@ -8,10 +8,10 @@ from app.services.migration_service import (
 
 
 @pytest.mark.asyncio
-async def test_get_head_revision_matches_phase4():
-    """Verifies that the Alembic head revision is 004_phase4_production_hardening."""
+async def test_get_head_revision_matches_current():
+    """Verifies that the Alembic head revision matches the latest AIS 2.0 migration."""
     head = get_head_revision()
-    assert head == "004_phase4_production_hardening"
+    assert head == "005_agent_intelligence_studio_v2"
 
 
 @pytest.mark.asyncio
@@ -41,14 +41,14 @@ async def test_production_startup_blocks_unmigrated_db(db_session):
 async def test_development_startup_allows_clean_initialization(db_session):
     """In development/test mode, verify_schema_on_startup proceeds cleanly."""
     conn = await db_session.connection()
+    head = get_head_revision()
     class MockConnHead:
         async def execute(self, stmt):
             class MockRes:
                 def fetchone(self):
-                    return ("004_phase4_production_hardening",)
+                    return (head,)
             return MockRes()
 
     ok, msg = await verify_schema_on_startup(conn=MockConnHead(), is_production=False, auto_migrate=False)
     assert ok is True
     assert "Database up to date" in msg
-

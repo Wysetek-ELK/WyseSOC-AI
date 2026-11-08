@@ -19,6 +19,9 @@ class PromptVersionResponse(BaseModel):
     escalation_conditions: str
     analyst_questions: List[str] = []
     change_summary: str
+    quality_status: Optional[str] = "GENERATED_DRAFT"
+    quality_score: Optional[float] = None
+    quality_assessment_id: Optional[str] = None
     created_by_user_id: Optional[str] = None
     approved_by_user_id: Optional[str] = None
     approved_at: Optional[datetime] = None
@@ -83,6 +86,16 @@ class RulePromptSummaryItem(BaseModel):
     total_versions: int = 0
     has_approved_prompt: bool = False
     last_updated: Optional[datetime] = None
+    
+    # AIS 2.0 Enhanced Summary Directory Attributes
+    detection_archetype: Optional[str] = "UNKNOWN"
+    definition_completeness: Optional[str] = "UNKNOWN"
+    quality_score: Optional[float] = None
+    quality_validation_status: Optional[str] = "NOT_EVALUATED"
+    blocking_issue_count: int = 0
+    simulation_status: Optional[str] = "NOT_EVALUATED"
+    last_validated_date: Optional[datetime] = None
+    revalidation_required: bool = False
 
     class Config:
         from_attributes = True

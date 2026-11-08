@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey, Integer, JSON
+from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey, Integer, JSON, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -32,6 +32,11 @@ class PromptVersion(Base):
     # Status: DRAFT, APPROVED, ARCHIVED
     status: Mapped[str] = mapped_column(String(32), default="DRAFT", index=True, nullable=False)
     is_template_draft: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # AIS 2.0 Quality Workflow State & Score
+    quality_status: Mapped[str] = mapped_column(String(32), default="GENERATED_DRAFT", nullable=False)
+    quality_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    quality_assessment_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     # Prompt Components
     common_prompt: Mapped[str] = mapped_column(Text, default="")

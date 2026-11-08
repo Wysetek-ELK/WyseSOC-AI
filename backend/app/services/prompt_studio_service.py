@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,49 +9,31 @@ from sqlalchemy.orm import selectinload
 from app.models.prompt import RulePrompt, PromptVersion
 from app.models.rule import Rule
 from app.models.user import User
+from app.models.policy_quality import PolicyQualityAssessmentRecord
+from app.models.rule_intelligence import RuleIntelligenceSnapshot
 from app.schemas.prompt import (
     RulePromptResponse,
     PromptVersionResponse,
     PromptVersionCreate,
 )
+from app.schemas.rule_intelligence import DetectionSemantics
+from app.services.rule_intelligence_analyzer import RuleIntelligenceAnalyzer
+from app.services.detection_archetype_registry import DetectionArchetypeRegistry
+from app.services.evidence_requirement_mapper import EvidenceRequirementMapper
+from app.services.policy_generation_service import PolicyGenerationService, ENTERPRISE_SOC_BASELINE_V2
+from app.services.policy_quality_validator import PolicyQualityValidator
 
-COMMON_SOC_BASELINE = """# ENTERPRISE SOC LEVEL-2 INVESTIGATION & TRIAGE PROTOCOL
-You are an expert Level-2 Security Operations Center (SOC) Senior Incident Investigator.
-Your mission is to perform strict, evidence-grounded triage on incoming SIEM incident telemetry and determine the ground-truth status.
+logger = logging.getLogger("ai_verdict.prompt_studio")
 
-## VERDICT CLASSIFICATION FRAMEWORK:
-
-### 1. FALSE_POSITIVE (Benign Operational Noise / Expected Business Activity):
-Vote FALSE_POSITIVE (confidence 80-98%) when observed indicators match known benign patterns:
-- Web Policy Violations with Same Source & Destination (SAME_SRC_SAME_DEST / PH_RULE_WEB_POL_VIOLATION_*):
-  * Source and Destination IPs/entities are identical, or point to internal RFC-1918 subnets (10.x, 172.16-31.x, 192.168.x) or localhost/loopback (127.0.0.1).
-  * Proxy loopback reflection, internal health probes (/healthz, /ready, keep-alive), or local WAF inspection artifacts.
-  * No external malicious domain or data exfiltration payload is present.
-- Administrative Management: Known administrative maintenance running under authorized accounts, standard patch management (SCCM, Tanium, InTune), monitoring agents (Datadog, Zabbix), or signed vendor software updates.
-- Benign IT/Developer Activity: Internal SSH/RDP between known administrative subnets without anomalous lateral movement or credential dumping.
-
-### 2. TRUE_POSITIVE (Active Threat / Adversary Attack Tradecraft):
-Vote TRUE_POSITIVE (confidence 85-99%) when observed indicators confirm malicious techniques:
-- Suspicious Execution & LOLBins (CrowdStrike / EDR alerts):
-  * PowerShell execution with base64 encoded payloads (-enc, -encodedcommand), download cradles (IWR, Invoke-WebRequest, DownloadString, bitsadmin, certutil -urlcache).
-  * Living-off-the-Land Binaries (LOLBins) used anomalously (vssadmin delete shadows, mshta, rundll32, regsvr32 executing unverified remote scripts).
-  * Reconnaissance commands in rapid sequence (whoami, net user, net group, nltest, systeminfo, ipconfig /all).
-- Credential Access & Defense Evasion: Mimikatz, LSASS memory dumping, tampering with Windows Defender / EDR services, deleting security event logs.
-- Command and Control (C2) & Exfiltration: High-frequency beaconing to untrusted external domains/IPs, DNS tunneling, or unauthorized external data transfer.
-
-### 3. REQUIRES_ATTENTION (Ambiguous / Incomplete Evidence):
-Reserve REQUIRES_ATTENTION strictly for cases where:
-- Critical telemetry is completely absent, corrupted, or truncated so that no meaningful assessment can be made.
-- High-severity alerts with conflicting indicators requiring immediate physical host containment or memory capture by human incident response team.
-DO NOT use REQUIRES_ATTENTION for routine internal web policy, loopback, or health-check alerts — classify them as FALSE_POSITIVE with clear rationale.
-"""
+# Versioned, reviewed enterprise SOC baseline protocol (v2.0.0)
+COMMON_SOC_BASELINE = ENTERPRISE_SOC_BASELINE_V2
 
 
 class AgentPolicyEngine:
     """
-    Agent Policy Engine.
-    Manages rule-level triage policies, prompts, versioning, criteria,
-    and SOC baseline frameworks for the Agentic SOC Intelligence Platform.
+    Agent Policy Engine (AIS 2.0).
+    Manages detection-aware rule-level triage policies, versioning, quality validation,
+    and approval governance for the Agentic SOC Intelligence Platform.
     """
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -99,9 +82,14 @@ class AgentPolicyEngine:
         res = await self.db.execute(query)
         return res.scalars().first()
 
-    async def generate_template_draft(self, rule_id: str, user_id: Optional[str] = None) -> PromptVersion:
+    async def generate_template_draft(
+        self,
+        rule_id: str,
+        user_id: Optional[str] = None,
+        authoritative_siem_definition: Optional[Dict[str, Any]] = None,
+    ) -> PromptVersion:
         """
-        Synthesizes a rule-specific prompt draft based on the ingested SIEM rule text.
+        Synthesizes a detection-aware, evidence-grounded rule prompt draft via PolicyGenerationService.
         This is explicitly tagged as a TEMPLATE-GENERATED DRAFT (NOT AI-generated).
         """
         rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
@@ -122,128 +110,68 @@ class AgentPolicyEngine:
             self.db.add(rule_prompt)
             await self.db.flush()
 
+        ver_res = await self.db.execute(select(PromptVersion).where(PromptVersion.prompt_id == rule_prompt.id))
+        existing_versions = ver_res.scalars().all()
         next_ver = 1
-        if rule_prompt.versions:
-            next_ver = max(v.version_number for v in rule_prompt.versions) + 1
+        if existing_versions:
+            next_ver = max(v.version_number for v in existing_versions) + 1
 
-        # Synthesize rule-specific prompt sections deterministically from parsed rule attributes
-        detection_pattern = rule.pattern_logic or "No specific pattern defined in rule text."
-        triggered_attrs = (rule.parsed_metadata or {}).get("triggered_event_attributes", [])
-        remediation = rule.remediation or "Follow standard incident response runbook."
-
-        detection_conds = f"""Detection Pattern: {detection_pattern}
-Triggered Attributes: {', '.join(triggered_attrs) if triggered_attrs else 'Generic event attributes'}"""
-
-        req_evidence = """1. Full command line and executing process name
-2. Parent process hierarchy (PPID lineage)
-3. User context (SYSTEM, Administrator, Service Account, or Standard Interactive User)
-4. Network connections, remote destination IP/port and domain reputation
-5. File hash (SHA256/MD5) reputation and digital signature validity"""
-
-        norm_name = f"{rule.name} {rule.event_type}".lower()
-
-        if "crowdstrike" in norm_name or "suspicious" in norm_name or "process" in norm_name or "activity" in norm_name:
-            tp_ind = """- Process execution from unusual temp directories (e.g. C:\\Users\\*\\AppData\\Local\\Temp, /tmp)
-- Encoded PowerShell commands (-enc, -encodedcommand) or obfuscated arguments
-- Suspicious child processes spawned from Office apps, web servers, or script interpreters (wscript, cscript)
-- Known LOLBins (Living Off the Land Binaries) abused for discovery or defense evasion"""
-            fp_ind = """- Approved enterprise software deployments (SCCM, Tanium, InTune, Ansible)
-- Scheduled administrative scripts signed by internal corporate PKI
-- Backup software, monitoring agents (Datadog, Splunk Forwarder)"""
-            missing_info = """- Parent process name or command line is truncated in raw event
-- User authentication context is absent from event telemetry
-- Destination IP is not resolved to an internal host or external ASN"""
-            escalation = """- Execution of ransomware precursors (vssadmin delete shadows, bcdedit)
-- Credential dumping tools (Mimikatz, lsass access)
-- Domain Controller or critical database host compromised"""
-            questions = [
-                "What is the parent process that spawned this command?",
-                "Is the user account an interactive user or a dedicated service account?",
-                "Has this executable been observed running on other endpoints in the fleet?",
-                "Does the network connection reach a known malicious C2 infrastructure?",
-            ]
-        elif "web" in norm_name or "policy" in norm_name or "dest" in norm_name or "traffic" in norm_name:
-            tp_ind = """- Repeated outbound connections to known malicious domains or external C2 IP addresses
-- Data exfiltration payloads encoded in HTTP headers, cookies, or URL query parameters
-- Unauthorized port tunneling (e.g. SSH over port 80/443, DNS tunneling)
-- Malicious user-agent strings associated with automated attack tools (sqlmap, nikto, cobaltstrike)"""
-            fp_ind = """- Internal loopback traffic where source IP and destination IP are identical (local proxy reflection, WAF loopback, localhost testing)
-- Web policy alerts triggered by routine internal health-check endpoints (/healthz, /ready, /ping, keep-alive)
-- Local corporate proxy re-routing or gateway inspection artifacts
-- Internal RFC-1918 traffic (10.x, 172.16-31.x, 192.168.x) accessing approved internal intranet portals without anomalous payloads"""
-            missing_info = """- Specific destination URL or HTTP request headers
-- Packet payload data to determine if external communication was attempted"""
-            escalation = """- High-volume data transfer to unclassified external IP
-- Multiple hosts exhibiting identical beaconing behavior"""
-            questions = [
-                "Are the source and destination IPs both internal/loopback or proxy interfaces?",
-                "Is this traffic generated by an automated health check or monitoring service?",
-                "Does the request contain any encoded external web destinations?",
-            ]
-        else:
-            tp_ind = """- Executable or script downloaded from untrusted internet domain
-- High entropy executable matching known malware signatures or unsigned binary
-- Outbound beaconing traffic to suspicious external IP addresses
-- Attempted persistence mechanisms (Registry Run keys, cron jobs, systemd unit injection)"""
-            fp_ind = """- Software patch downloaded directly from verified vendor domain (Microsoft, Palo Alto, Google)
-- Internal security testing or authorized vulnerability scan
-- Benign installation package initiated by IT helpdesk"""
-            missing_info = """- File hash not present in threat intelligence or local hash repository
-- Complete network packet capture or TLS SNI header unavailable"""
-            escalation = """- Malicious file executed across multiple subnets within 15 minutes
-- Lateral movement indicators following file download"""
-            questions = [
-                "What was the download URL or source IP of the suspicious file?",
-                "Was the file executed after download or blocked inline by security controls?",
-                "Does the file hash match any known threat intelligence indicator?",
-            ]
-
-        rule_specific = f"""### SPECIFIC INVESTIGATION DIRECTIVE FOR {rule.name.upper()}
-Vendor / Event Type: {rule.event_type}
-Default Severity: {rule.severity}
-Data Source: {rule.data_source or "SIEM Ingestion"}
-
-OBJECTIVE:
-Investigate alerts triggered under rule condition: {rule.name}.
-Analyze process execution, network connections, source/destination entities, and triggering attributes to classify definitively as TRUE_POSITIVE, FALSE_POSITIVE, or REQUIRES_ATTENTION.
-
-DETECTION CONDITIONS:
-{detection_conds}
-
-### TRUE POSITIVE INDICATORS (MALICIOUS ATTACK):
-{tp_ind}
-
-### FALSE POSITIVE INDICATORS (BENIGN OPERATIONAL NOISE):
-{fp_ind}
-
-### REQUIRED EVIDENCE:
-{req_evidence}
-
-### WHEN TO ABSTAIN (REQUIRES ATTENTION):
-{missing_info}
-"""
+        # Synthesize detection-aware nine-section draft using PolicyGenerationService
+        draft_dict = PolicyGenerationService.generate_nine_section_draft(
+            rule=rule,
+            authoritative_siem_definition=authoritative_siem_definition,
+            user_id=user_id,
+        )
 
         new_version = PromptVersion(
             prompt_id=rule_prompt.id,
             version_number=next_ver,
             status="DRAFT",
             is_template_draft=True,
-            common_prompt=COMMON_SOC_BASELINE.strip(),
-            rule_specific_prompt=rule_specific.strip(),
-            detection_conditions=detection_conds.strip(),
-            required_evidence=req_evidence.strip(),
-            tp_indicators=tp_ind.strip(),
-            fp_indicators=fp_ind.strip(),
-            missing_info_criteria=missing_info.strip(),
-            escalation_conditions=escalation.strip(),
-            analyst_questions=questions,
-            change_summary="TEMPLATE-GENERATED DRAFT: Synthesized from SIEM rule specifications with specialized decision criteria",
+            quality_status=draft_dict["quality_status"],
+            common_prompt=draft_dict["common_prompt"],
+            rule_specific_prompt=draft_dict["rule_specific_prompt"],
+            detection_conditions=draft_dict["detection_conditions"],
+            required_evidence=draft_dict["required_evidence"],
+            tp_indicators=draft_dict["tp_indicators"],
+            fp_indicators=draft_dict["fp_indicators"],
+            missing_info_criteria=draft_dict["missing_info_criteria"],
+            escalation_conditions=draft_dict["escalation_conditions"],
+            analyst_questions=draft_dict["analyst_questions"],
+            change_summary=f"TEMPLATE-GENERATED DRAFT: {draft_dict['change_summary']}",
             created_by_user_id=user_id,
         )
+
+        # Execute initial static quality validation
+        semantics = RuleIntelligenceAnalyzer.analyze_rule(rule, authoritative_siem_definition)
+        classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
+        archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
+        contract = EvidenceRequirementMapper.map_evidence_contract(
+            rule=rule,
+            semantics=semantics,
+            archetype_def=archetype_def,
+            prompt_version=new_version,
+        )
+        assessment = PolicyQualityValidator.validate_policy_quality(
+            rule=rule,
+            prompt_version=new_version,
+            contract=contract,
+            semantics=semantics,
+        )
+
+        new_version.quality_score = assessment.quality_score
+        new_version.quality_assessment_id = assessment.assessment_id
+        if assessment.approval_eligible:
+            new_version.quality_status = "APPROVAL_ELIGIBLE"
+        elif assessment.blocking_issues:
+            new_version.quality_status = "REWORK_REQUIRED"
 
         self.db.add(new_version)
         await self.db.commit()
         await self.db.refresh(new_version)
+
+        # Persist Rule Intelligence Snapshot
+        await self._persist_rule_intelligence_snapshot(rule, semantics, assessment)
 
         return new_version
 
@@ -254,16 +182,21 @@ DETECTION CONDITIONS:
         user_id: Optional[str] = None
     ) -> PromptVersion:
         rule_prompt = await self.get_or_create_rule_prompt(rule_id)
+        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
+        rule = rule_res.scalars().first()
 
+        ver_res = await self.db.execute(select(PromptVersion).where(PromptVersion.prompt_id == rule_prompt.id))
+        existing_versions = ver_res.scalars().all()
         next_ver = 1
-        if rule_prompt.versions:
-            next_ver = max(v.version_number for v in rule_prompt.versions) + 1
+        if existing_versions:
+            next_ver = max(v.version_number for v in existing_versions) + 1
 
         new_ver = PromptVersion(
             prompt_id=rule_prompt.id,
             version_number=next_ver,
             status="DRAFT",
             is_template_draft=False,
+            quality_status="GENERATED_DRAFT",
             common_prompt=data.common_prompt or COMMON_SOC_BASELINE.strip(),
             rule_specific_prompt=data.rule_specific_prompt,
             detection_conditions=data.detection_conditions,
@@ -277,6 +210,26 @@ DETECTION CONDITIONS:
             created_by_user_id=user_id,
         )
 
+        if rule:
+            semantics = RuleIntelligenceAnalyzer.analyze_rule(rule)
+            classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
+            archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
+            contract = EvidenceRequirementMapper.map_evidence_contract(
+                rule=rule,
+                semantics=semantics,
+                archetype_def=archetype_def,
+                prompt_version=new_ver,
+            )
+            assessment = PolicyQualityValidator.validate_policy_quality(
+                rule=rule,
+                prompt_version=new_ver,
+                contract=contract,
+                semantics=semantics,
+            )
+            new_ver.quality_score = assessment.quality_score
+            new_ver.quality_assessment_id = assessment.assessment_id
+            new_ver.quality_status = "APPROVAL_ELIGIBLE" if assessment.approval_eligible else "REWORK_REQUIRED"
+
         self.db.add(new_ver)
         await self.db.commit()
         await self.db.refresh(new_ver)
@@ -289,23 +242,97 @@ DETECTION CONDITIONS:
         user_id: Optional[str] = None,
         change_summary: Optional[str] = None
     ) -> PromptVersion:
+        """
+        REQ-05 / REQ-08: Enhanced Approval Governance Gate.
+        Strictly enforces 8 Policy Quality Gates before production approval.
+        Blocks approval if any blocking findings exist.
+        Binds cryptographic digests of policy, contract, and rule.
+        """
         rule_prompt = await self.get_or_create_rule_prompt(rule_id)
+        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
+        rule = rule_res.scalars().first()
+        if not rule:
+            raise ValueError(f"SIEM Rule {rule_id} not found")
 
-        target_version = None
-        for v in rule_prompt.versions:
-            if v.id == version_id:
-                target_version = v
-                break
+        ver_res = await self.db.execute(select(PromptVersion).where(PromptVersion.prompt_id == rule_prompt.id))
+        all_versions = ver_res.scalars().all()
+        target_version = next((v for v in all_versions if v.id == version_id), None)
 
         if not target_version:
             raise ValueError(f"Prompt version {version_id} not found for rule {rule_id}")
 
+        # Derive semantics and machine-verifiable contract (check snapshot)
+        snap_q = select(RuleIntelligenceSnapshot).where(RuleIntelligenceSnapshot.rule_id == rule.id)
+        snap_res = await self.db.execute(snap_q)
+        snap = snap_res.scalar_one_or_none()
+        auth_def = None
+        if snap and snap.definition_status == "VERIFIED" and snap.threshold is not None:
+            auth_def = {
+                "threshold": snap.threshold,
+                "threshold_unit": snap.threshold_unit,
+                "aggregation_window": snap.aggregation_window,
+            }
+
+        semantics = RuleIntelligenceAnalyzer.analyze_rule(rule, authoritative_siem_definition=auth_def)
+        classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
+        archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
+        contract = EvidenceRequirementMapper.map_evidence_contract(
+            rule=rule,
+            semantics=semantics,
+            archetype_def=archetype_def,
+            prompt_version=target_version,
+        )
+
+        # Execute Strict Quality Validation
+        quality_res = PolicyQualityValidator.validate_policy_quality(
+            rule=rule,
+            prompt_version=target_version,
+            contract=contract,
+            semantics=semantics,
+        )
+
+        # STRICT QUALITY GATE CHECK
+        # Hard gate failure overrides total score
+        if not quality_res.approval_eligible:
+            blocker_text = "; ".join(quality_res.blocking_issues)
+            raise ValueError(
+                f"Policy approval rejected by Quality Validation Gates ({len(quality_res.blocking_issues)} blockers): {blocker_text}"
+            )
+
+        # Persist Assessment Record
+        assessment_record = PolicyQualityAssessmentRecord(
+            id=quality_res.assessment_id,
+            rule_id=rule.id,
+            prompt_version_id=target_version.id,
+            version_number=target_version.version_number,
+            archetype=quality_res.archetype,
+            quality_score=quality_res.quality_score,
+            approval_eligible=True,
+            simulation_status=quality_res.simulation_status.value,
+            score_breakdown=quality_res.score_breakdown,
+            gate_results={k: v.model_dump(mode="json") for k, v in quality_res.gate_results.items()},
+            blocking_issues=quality_res.blocking_issues,
+            warnings=quality_res.warnings,
+            missing_evidence_mappings=quality_res.missing_evidence_mappings,
+            recommendations=quality_res.recommendations,
+            policy_digest=quality_res.policy_digest,
+            contract_digest=quality_res.contract_digest,
+            rule_digest=quality_res.rule_digest,
+            validator_version=quality_res.validator_version,
+            evaluated_at=datetime.utcnow(),
+        )
+        self.db.add(assessment_record)
+
         # Archive any currently active approved version
-        for v in rule_prompt.versions:
+        for v in all_versions:
             if v.status == "APPROVED" and v.id != version_id:
                 v.status = "ARCHIVED"
 
+        # Atomically activate approved version
         target_version.status = "APPROVED"
+        target_version.quality_status = "APPROVED"
+        target_version.quality_score = quality_res.quality_score
+        target_version.quality_assessment_id = quality_res.assessment_id
         target_version.approved_by_user_id = user_id
         target_version.approved_at = datetime.utcnow()
         if change_summary:
@@ -326,22 +353,22 @@ DETECTION CONDITIONS:
     ) -> PromptVersion:
         rule_prompt = await self.get_or_create_rule_prompt(rule_id)
 
-        source_version = None
-        for v in rule_prompt.versions:
-            if v.id == target_version_id:
-                source_version = v
-                break
+        ver_res = await self.db.execute(select(PromptVersion).where(PromptVersion.prompt_id == rule_prompt.id))
+        all_versions = ver_res.scalars().all()
+        source_version = next((v for v in all_versions if v.id == target_version_id), None)
 
         if not source_version:
             raise ValueError(f"Target version {target_version_id} not found")
 
         # Create a new version that clones source_version and approves it
-        next_ver = max(v.version_number for v in rule_prompt.versions) + 1
+        next_ver = max(v.version_number for v in all_versions) + 1 if all_versions else 1
 
         rolled_version = PromptVersion(
             prompt_id=rule_prompt.id,
             version_number=next_ver,
             status="APPROVED",
+            quality_status="APPROVED",
+            quality_score=source_version.quality_score,
             is_template_draft=source_version.is_template_draft,
             common_prompt=source_version.common_prompt,
             rule_specific_prompt=source_version.rule_specific_prompt,
@@ -359,7 +386,7 @@ DETECTION CONDITIONS:
         )
 
         # Archive others
-        for v in rule_prompt.versions:
+        for v in all_versions:
             if v.status == "APPROVED":
                 v.status = "ARCHIVED"
 
@@ -373,11 +400,55 @@ DETECTION CONDITIONS:
         await self.db.refresh(rolled_version)
         return rolled_version
 
+    async def _persist_rule_intelligence_snapshot(
+        self,
+        rule: Rule,
+        semantics: DetectionSemantics,
+        assessment: Optional[Any] = None,
+    ) -> None:
+        """Persists or updates the RuleIntelligenceSnapshot for the rule."""
+        q = select(RuleIntelligenceSnapshot).where(RuleIntelligenceSnapshot.rule_id == rule.id)
+        res = await self.db.execute(q)
+        snap = res.scalar_one_or_none()
+
+        if not snap:
+            snap = RuleIntelligenceSnapshot(
+                rule_id=rule.id,
+                rule_identifier=semantics.rule_identifier,
+                primary_archetype=semantics.primary_behavior,
+                definition_status=semantics.definition_status.value,
+                source_provenance=semantics.source_provenance.value,
+                threshold=semantics.threshold,
+                threshold_unit=semantics.threshold_unit,
+                aggregation_window=semantics.aggregation_window,
+                review_required=semantics.review_required,
+                semantics_payload=semantics.model_dump(mode="json"),
+                rule_digest=assessment.rule_digest if assessment else "",
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            self.db.add(snap)
+        else:
+            snap.primary_archetype = semantics.primary_behavior
+            snap.definition_status = semantics.definition_status.value
+            snap.source_provenance = semantics.source_provenance.value
+            snap.threshold = semantics.threshold
+            snap.threshold_unit = semantics.threshold_unit
+            snap.aggregation_window = semantics.aggregation_window
+            snap.review_required = semantics.review_required
+            snap.semantics_payload = semantics.model_dump(mode="json")
+            snap.updated_at = datetime.utcnow()
+
+        await self.db.commit()
+
     def _version_to_dict(self, v: PromptVersion) -> Dict[str, Any]:
         return {
             "version_id": v.id,
             "version_number": v.version_number,
             "status": v.status,
+            "quality_status": getattr(v, "quality_status", "GENERATED_DRAFT"),
+            "quality_score": getattr(v, "quality_score", None),
+            "quality_assessment_id": getattr(v, "quality_assessment_id", None),
             "is_template_draft": v.is_template_draft,
             "common_prompt": v.common_prompt,
             "rule_specific_prompt": v.rule_specific_prompt,
@@ -481,17 +552,11 @@ DETECTION CONDITIONS:
                 lines.append("### 8. P1/P2 ESCALATION CONDITIONS")
                 lines.append(active_cfg.get("escalation_conditions") or "None specified")
                 lines.append("")
-                lines.append("### 9. STANDARD INVESTIGATIVE Q&A CHECKLIST")
-                questions = active_cfg.get("analyst_questions", [])
-                if questions:
-                    for q_idx, q in enumerate(questions, start=1):
-                        lines.append(f"{q_idx}. {q}")
-                else:
-                    lines.append("*No questions configured.*")
-            else:
-                lines.append("*No prompt configuration found for this rule.*")
-
-            lines.append("")
+                lines.append("### 9. TARGETED ANALYST INVESTIGATION QUESTIONS")
+                questions = active_cfg.get("analyst_questions") or []
+                for q_idx, q in enumerate(questions, start=1):
+                    lines.append(f"{q_idx}. {q}")
+                lines.append("")
             lines.append("---")
             lines.append("")
 
@@ -516,7 +581,7 @@ DETECTION CONDITIONS:
 
         export_data = {
             "schema_version": "1.0",
-            "title": "Agent Intelligence Studio — Rule-Wise Prompts & Configurations",
+            "title": "Agent Intelligence Studio 2.0 — Rule-Wise Prompts & Configurations",
             "exported_at": datetime.utcnow().isoformat(),
             "total_rules": len(items),
             "rules": items,
@@ -582,4 +647,3 @@ DETECTION CONDITIONS:
 
 # Backward compatibility alias
 PromptStudioService = AgentPolicyEngine
-

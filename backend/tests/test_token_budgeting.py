@@ -53,13 +53,13 @@ def test_token_budgeting_priority_trimming():
     assert len(ample_res.budgeted_incident_payload["events"]) == 3
 
     # Case 2: Tight budget where RAG must be trimmed first
-    # Total prompt without RAG is ~1872 tokens. With RAG it is ~1930 tokens.
-    # Set available budget to 1900 tokens (max_context 2900, completion 1000)
+    # Total prompt without RAG is ~1769 tokens. With RAG it is ~1812 tokens.
+    # Set available budget to 1800 tokens (max_context 2800, completion 1000)
     tight_res = TokenBudgetService.budget_prompt(
         compiled_policy=compiled,
         incident_payload=incident_payload,
         rag_block=rag_text,
-        max_context_tokens=2900,
+        max_context_tokens=2800,
         max_completion_tokens=1000,
     )
     # RAG must be trimmed first (P7 trimmed)
