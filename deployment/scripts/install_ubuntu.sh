@@ -34,6 +34,7 @@ apt-get install -y \
   nginx \
   postgresql \
   postgresql-contrib \
+  redis-server \
   libpq-dev \
   python3 \
   python3-pip \
@@ -58,9 +59,11 @@ mkdir -p "$APP_DIR"
 mkdir -p /var/log/ai-verdict
 chown -R "$APP_USER:$APP_USER" /var/log/ai-verdict
 
-echo "[4/8] Configuring PostgreSQL Database '$DB_NAME'..."
+echo "[4/8] Configuring PostgreSQL Database '$DB_NAME' & Redis..."
 systemctl start postgresql
 systemctl enable postgresql
+systemctl start redis-server
+systemctl enable redis-server
 
 sudo -u postgres psql -c "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER';" | grep -q 1 || \
 sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASS';"
@@ -77,12 +80,22 @@ sudo -u "$APP_USER" ./venv/bin/pip install --upgrade pip setuptools wheel
 sudo -u "$APP_USER" ./venv/bin/pip install -r requirements.txt
 
 # Create .env for backend
+AUDIT_KEY=$(openssl rand -hex 32)
 cat <<EOF > "$APP_DIR/backend/.env"
+APP_ENV="production"
 PROJECT_NAME="AI Verdict"
 VERSION="1.0.0"
 SECRET_KEY="$SECRET_KEY"
+AUDIT_SIGNING_KEY="$AUDIT_KEY"
 DATABASE_URL="postgresql+asyncpg://$DB_USER:$DB_PASS@127.0.0.1:5432/$DB_NAME"
 SYNC_DATABASE_URL="postgresql+psycopg2://$DB_USER:$DB_PASS@127.0.0.1:5432/$DB_NAME"
+DB_POOL_SIZE="20"
+DB_MAX_OVERFLOW="10"
+AUTO_MIGRATE_ON_STARTUP="false"
+REDIS_URL="redis://127.0.0.1:6379/0"
+CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
+USE_ASYNC_CELERY="true"
 COOKIE_SECURE="true"
 COOKIE_SAMESITE="lax"
 EOF
@@ -107,12 +120,15 @@ sudo -u "$APP_USER" npm run build
 
 echo "[8/8] Installing systemd services and Nginx configuration..."
 cp "$APP_DIR/deployment/systemd/ai-verdict-backend.service" /etc/systemd/system/
+cp "$APP_DIR/deployment/systemd/ai-verdict-worker.service" /etc/systemd/system/
 cp "$APP_DIR/deployment/systemd/ai-verdict-frontend.service" /etc/systemd/system/
 
 systemctl daemon-reload
 systemctl enable ai-verdict-backend
+systemctl enable ai-verdict-worker
 systemctl enable ai-verdict-frontend
 systemctl restart ai-verdict-backend
+systemctl restart ai-verdict-worker
 systemctl restart ai-verdict-frontend
 
 # Nginx config
@@ -124,6 +140,7 @@ nginx -t && systemctl restart nginx
 echo "=========================================================="
 echo " AI Verdict Installation Complete!"
 echo " Backend Status: $(systemctl is-active ai-verdict-backend)"
+echo " Worker Status:  $(systemctl is-active ai-verdict-worker)"
 echo " Frontend Status: $(systemctl is-active ai-verdict-frontend)"
 echo " Database User: $DB_USER"
 echo " Initial Admin: admin / AdminPassword123!"

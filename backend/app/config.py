@@ -89,6 +89,29 @@ class Settings(BaseSettings):
     SERVER1_HOST: str = os.getenv("SERVER1_HOST", "")
     SERVER1_OUTBOUND_IP: str = os.getenv("SERVER1_OUTBOUND_IP", "")
 
+    # Phase 4: Database Connection Pooling & Migration Hardening
+    DB_POOL_SIZE: int = int(os.getenv("DB_POOL_SIZE", "20"))
+    DB_MAX_OVERFLOW: int = int(os.getenv("DB_MAX_OVERFLOW", "10"))
+    DB_POOL_TIMEOUT: float = float(os.getenv("DB_POOL_TIMEOUT", "30.0"))
+    DB_POOL_RECYCLE: int = int(os.getenv("DB_POOL_RECYCLE", "1800"))
+    AUTO_MIGRATE_ON_STARTUP: bool = os.getenv("AUTO_MIGRATE_ON_STARTUP", "false").lower() == "true"
+
+    # Phase 4: Distributed Task Queue (Celery / Redis)
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", os.getenv("REDIS_URL", "redis://localhost:6379/0"))
+    CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", os.getenv("REDIS_URL", "redis://localhost:6379/0"))
+    USE_ASYNC_CELERY: bool = os.getenv("USE_ASYNC_CELERY", "false").lower() == "true"
+    CELERY_TASK_TIMEOUT_SECONDS: int = int(os.getenv("CELERY_TASK_TIMEOUT_SECONDS", "300"))
+
+    # Phase 4: Workload Scalability & GPU Management
+    LLM_MAX_CONCURRENT_REQUESTS: int = int(os.getenv("LLM_MAX_CONCURRENT_REQUESTS", "4"))
+    LLM_CIRCUIT_BREAKER_FAIL_THRESHOLD: int = int(os.getenv("LLM_CIRCUIT_BREAKER_FAIL_THRESHOLD", "5"))
+    LLM_CIRCUIT_BREAKER_RECOVERY_TIME: float = float(os.getenv("LLM_CIRCUIT_BREAKER_RECOVERY_TIME", "30.0"))
+    QUEUE_BACKPRESSURE_LIMIT: int = int(os.getenv("QUEUE_BACKPRESSURE_LIMIT", "1000"))
+
+    # Phase 4: Cryptographic Audit Trail Signing
+    AUDIT_SIGNING_KEY: str = os.getenv("AUDIT_SIGNING_KEY", "")
+
     def model_post_init(self, __context) -> None:
         self.validate_security()
 

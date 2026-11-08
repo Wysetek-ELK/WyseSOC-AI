@@ -297,3 +297,53 @@ async def get_dry_run_job_results(
 
     return formatted
 
+
+@router.post("/jobs/{job_id}/cancel", response_model=DryRunJobResponse)
+async def cancel_dry_run_job(
+    job_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+):
+    """Operator cancellation of in-flight simulation job."""
+    service = DryRunService(db)
+    job = await service.cancel_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Dry run job not found")
+
+    audit = AuditService(db)
+    await audit.log(
+        user_id=current_user.id,
+        action="DRY_RUN_JOB_CANCELLED",
+        entity_type="DryRunJob",
+        entity_id=job.id,
+        details={"processed_items": job.processed_items, "total_items": job.total_items},
+    )
+
+    return DryRunJobResponse(
+        id=job.id,
+        config_id=job.config_id,
+        config_name=job.config.name if job.config else None,
+        status=job.status,
+        total_items=job.total_items,
+        processed_items=job.processed_items,
+        error_count=job.error_count,
+        is_simulated=job.is_simulated,
+        error_message=job.error_message,
+        started_at=job.started_at,
+        completed_at=job.completed_at,
+    )
+
+
+@router.get("/jobs/{job_id}/progress")
+async def get_dry_run_job_progress(
+    job_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Real-time progress telemetry for asynchronous simulation lab replay."""
+    service = DryRunService(db)
+    progress = await service.get_job_progress(job_id)
+    if not progress:
+        raise HTTPException(status_code=404, detail="Dry run job not found")
+    return progress
+

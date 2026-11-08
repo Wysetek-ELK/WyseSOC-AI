@@ -17,5 +17,7 @@ class AuditLog(Base):
     resource_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     details: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     ip_address: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    signature: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
+    key_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 

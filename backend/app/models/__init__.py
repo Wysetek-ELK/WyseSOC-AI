@@ -12,6 +12,7 @@ from app.models.maturity import RuleMaturityEvaluation
 from app.models.system_metric import SystemServerSample
 from app.models.token_usage import TokenUsageRecord
 from app.models.telemetry_timeline import TelemetryTimelineRecord
+from app.models.task_queue import QueuedTask
 
 __all__ = [
     "Base",
@@ -35,4 +36,5 @@ __all__ = [
     "SystemServerSample",
     "TokenUsageRecord",
     "TelemetryTimelineRecord",
+    "QueuedTask",
 ]

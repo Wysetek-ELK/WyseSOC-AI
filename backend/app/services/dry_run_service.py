@@ -175,6 +175,15 @@ class ValidationEngine:
 
         # Execute replay
         for inc in incidents_to_test:
+            # Check for cancellation signal in DB
+            status_check = await self.db.execute(select(DryRunJob.status).where(DryRunJob.id == job.id))
+            cur_status = status_check.scalar_one_or_none()
+            if cur_status == "CANCELLED":
+                job.status = "CANCELLED"
+                job.completed_at = datetime.utcnow()
+                await self.db.commit()
+                return job
+
             try:
                 # 1. Generate strictly sanitized model-facing payload (ZERO ground-truth leakage)
                 payload_dict = incident_service.get_model_facing_payload(inc)
@@ -285,6 +294,52 @@ class ValidationEngine:
         )
         res = await self.db.execute(query)
         return res.scalars().first()
+
+    async def cancel_job(self, job_id: str) -> Optional[DryRunJob]:
+        """Operator-initiated cancellation of in-flight simulation job."""
+        job = await self.get_job(job_id)
+        if not job:
+            return None
+        if job.status not in ("COMPLETED", "FAILED", "CANCELLED"):
+            job.status = "CANCELLED"
+            job.completed_at = datetime.utcnow()
+            await self.db.commit()
+            await self.db.refresh(job)
+        return job
+
+    async def get_job_progress(self, job_id: str) -> Optional[Dict[str, Any]]:
+        """Calculates real-time replay progress, rate, and estimated time of completion (ETA)."""
+        job = await self.get_job(job_id)
+        if not job:
+            return None
+        total = job.total_items or 0
+        processed = job.processed_items or 0
+        percent = round((processed / total * 100), 1) if total > 0 else 0.0
+
+        elapsed_seconds = 0
+        if job.started_at:
+            end_time = job.completed_at or datetime.utcnow()
+            elapsed_seconds = max(0, int((end_time - job.started_at).total_seconds()))
+
+        eta_seconds = 0
+        if processed > 0 and total > processed and elapsed_seconds > 0:
+            rate = processed / max(1, elapsed_seconds)
+            eta_seconds = int((total - processed) / rate)
+
+        return {
+            "job_id": job.id,
+            "config_id": job.config_id,
+            "status": job.status,
+            "total_items": total,
+            "processed_items": processed,
+            "error_count": job.error_count,
+            "progress_percent": percent,
+            "elapsed_seconds": elapsed_seconds,
+            "eta_seconds": eta_seconds,
+            "is_simulated": job.is_simulated,
+            "started_at": job.started_at,
+            "completed_at": job.completed_at,
+        }
 
     async def list_jobs(self, limit: int = 50) -> List[DryRunJob]:
         query = select(DryRunJob).options(

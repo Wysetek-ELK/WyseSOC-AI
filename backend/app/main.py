@@ -24,6 +24,7 @@ from app.api import (
     tokens,
     telemetry,
     llm_config,
+    health,
 )
 from app.models.user import User
 from app.utils.security import get_password_hash
@@ -36,24 +37,18 @@ async def lifespan(app: FastAPI):
     # REQ-01 / AV-014: Enforce production security configuration validation
     settings.validate_security()
 
-    # Startup: create database tables if they do not exist
+    # Phase 4 / AV-012: Enforce strict schema version verification and eliminate runtime DDL in production
+    is_prod = settings.APP_ENV.lower() in ("production", "prod")
     async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        # Safe migration: ensure ai_verdict column exists on incidents table
-        try:
-            from sqlalchemy import text
-            await conn.execute(text("ALTER TABLE incidents ADD COLUMN ai_verdict JSON"))
-        except Exception:
-            pass
-
-        # Safe migration: ensure token bifurcation columns exist on dry_run_results
-        try:
-            from sqlalchemy import text
-            await conn.execute(text("ALTER TABLE dry_run_results ADD COLUMN prompt_tokens INTEGER DEFAULT 0"))
-            await conn.execute(text("ALTER TABLE dry_run_results ADD COLUMN completion_tokens INTEGER DEFAULT 0"))
-            await conn.execute(text("ALTER TABLE dry_run_results ADD COLUMN total_tokens INTEGER DEFAULT 0"))
-        except Exception:
-            pass
+        if is_prod:
+            from app.services.migration_service import verify_schema_on_startup
+            await verify_schema_on_startup(conn, is_production=True)
+        else:
+            if settings.AUTO_MIGRATE_ON_STARTUP:
+                from app.services.migration_service import verify_schema_on_startup
+                await verify_schema_on_startup(conn, is_production=False, auto_migrate=True)
+            else:
+                await conn.run_sync(Base.metadata.create_all)
 
     # Seed initial administrator if no users exist
     async with AsyncSessionLocal() as session:
@@ -235,20 +230,10 @@ app.include_router(system_monitor.router, prefix=settings.API_V1_STR)
 app.include_router(tokens.router, prefix=settings.API_V1_STR)
 app.include_router(telemetry.router, prefix=settings.API_V1_STR)
 app.include_router(llm_config.router, prefix=settings.API_V1_STR)
+app.include_router(health.router)
 
 # Development-only routes (strictly excluded in production - REQ-08)
 if settings.APP_ENV.lower() not in ("production", "prod"):
     from app.api import dev
     app.include_router(dev.router, prefix=settings.API_V1_STR)
-
-
-
-@app.get("/api/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "service": settings.PROJECT_NAME,
-        "version": settings.VERSION,
-        "platform": "Agentic SOC Intelligence Platform",
-    }
 

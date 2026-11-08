@@ -20,6 +20,7 @@ settings.SECRET_KEY = "test-secret-key-fixture-minimum-32-chars-long-1234567890"
 settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK = True
 
 from app.database import Base, get_db
+import app.models
 from app.main import app
 from app.models.user import User
 from app.utils.security import get_password_hash, create_access_token

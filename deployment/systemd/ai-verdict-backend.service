@@ -1,7 +1,7 @@
 [Unit]
 Description=AI Verdict FastAPI Backend Application Service
-After=network.target postgresql.service
-Wants=postgresql.service
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
 
 [Service]
 Type=simple
@@ -9,13 +9,24 @@ User=aiverdict
 Group=aiverdict
 WorkingDirectory=/opt/ai-verdict/backend
 EnvironmentFile=/opt/ai-verdict/backend/.env
-ExecStart=/opt/ai-verdict/backend/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --proxy-headers --forwarded-allow-ips='*'
+ExecStart=/opt/ai-verdict/backend/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --proxy-headers --forwarded-allow-ips='127.0.0.1'
 Restart=always
 RestartSec=5s
 LimitNOFILE=65535
+
+# Linux Security Hardening Sandbox
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/ai-verdict /opt/ai-verdict/backend
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictNamespaces=true
+
 StandardOutput=append:/var/log/ai-verdict/backend.log
 StandardError=append:/var/log/ai-verdict/backend-error.log
 
 [Install]
 WantedBy=multi-user.target
-

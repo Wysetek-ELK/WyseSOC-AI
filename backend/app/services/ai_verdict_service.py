@@ -404,6 +404,18 @@ class VerdictTriageAgent:
 
         provider = get_model_provider(chosen_provider_type)
 
+        use_gpu_manager = (chosen_provider_type == "OPENAI_COMPATIBLE")
+        if use_gpu_manager:
+            from app.services.gpu_manager import gpu_workload_manager, CircuitBreakerOpenException
+            try:
+                await gpu_workload_manager.acquire_inference_slot()
+            except CircuitBreakerOpenException as cb_exc:
+                if not allow_mock:
+                    raise LocalLLMUnavailableError(str(cb_exc))
+                chosen_provider_type = "SIMULATED"
+                provider = get_model_provider("SIMULATED")
+                use_gpu_manager = False
+
         try:
             verdict = await provider.analyze_incident(
                 incident_payload=payload_dict,
@@ -417,6 +429,13 @@ class VerdictTriageAgent:
                 getattr(verdict, "validation_status", "") in ("CONNECTION_ERROR", "HTTP_ERROR")
                 or (getattr(verdict, "confidence", 100.0) == 0.0 and getattr(verdict, "validation_status", "") != "VALID")
             )
+            if use_gpu_manager:
+                if is_connection_error:
+                    await gpu_workload_manager.release_inference_slot(success=False, error_message=getattr(verdict, "reason", "connection failure"))
+                else:
+                    await gpu_workload_manager.release_inference_slot(success=True)
+                use_gpu_manager = False  # Released
+
             if is_connection_error:
                 self.__class__._is_local_llm_online = False
                 if allow_mock:
@@ -433,6 +452,9 @@ class VerdictTriageAgent:
                 # Successfully received response from Server 2
                 self.__class__._is_local_llm_online = True
         except Exception as exc:
+            if use_gpu_manager:
+                await gpu_workload_manager.release_inference_slot(success=False, error_message=str(exc))
+                use_gpu_manager = False
             self.__class__._is_local_llm_online = False
             if allow_mock and not isinstance(exc, LocalLLMUnavailableError):
                 sim_provider = get_model_provider("SIMULATED")
