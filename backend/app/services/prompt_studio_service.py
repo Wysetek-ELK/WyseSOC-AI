@@ -1,3 +1,4 @@
+import json
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -371,6 +372,180 @@ DETECTION CONDITIONS:
         await self.db.commit()
         await self.db.refresh(rolled_version)
         return rolled_version
+
+    def _version_to_dict(self, v: PromptVersion) -> Dict[str, Any]:
+        return {
+            "version_id": v.id,
+            "version_number": v.version_number,
+            "status": v.status,
+            "is_template_draft": v.is_template_draft,
+            "common_prompt": v.common_prompt,
+            "rule_specific_prompt": v.rule_specific_prompt,
+            "detection_conditions": v.detection_conditions,
+            "required_evidence": v.required_evidence,
+            "tp_indicators": v.tp_indicators,
+            "fp_indicators": v.fp_indicators,
+            "missing_info_criteria": v.missing_info_criteria,
+            "escalation_conditions": v.escalation_conditions,
+            "analyst_questions": v.analyst_questions or [],
+            "change_summary": v.change_summary,
+            "created_by_user_id": v.created_by_user_id,
+            "approved_by_user_id": v.approved_by_user_id,
+            "approved_at": v.approved_at.isoformat() if v.approved_at else None,
+            "created_at": v.created_at.isoformat() if v.created_at else None,
+        }
+
+    def _rule_to_export_item(self, rule: Rule, prompt: Optional[RulePrompt]) -> Dict[str, Any]:
+        versions = prompt.versions if (prompt and prompt.versions) else []
+        active_v = next((v for v in versions if v.id == prompt.active_version_id), None) if prompt else None
+        if not active_v and versions:
+            active_v = versions[0]
+
+        return {
+            "rule_id": rule.id,
+            "rule_identifier": rule.rule_id,
+            "rule_name": rule.name,
+            "event_type": rule.event_type,
+            "severity": rule.severity,
+            "status": rule.status,
+            "data_source": rule.data_source,
+            "detection_tech": rule.detection_tech,
+            "evaluation_mode": rule.evaluation_mode,
+            "description": rule.description,
+            "pattern_logic": rule.pattern_logic,
+            "remediation": rule.remediation,
+            "parsed_metadata": rule.parsed_metadata or {},
+            "prompt_metadata": {
+                "prompt_id": prompt.id if prompt else None,
+                "has_approved_prompt": any(v.status == "APPROVED" for v in versions),
+                "total_versions": len(versions),
+                "active_version_id": prompt.active_version_id if prompt else None,
+                "active_version_number": active_v.version_number if active_v else None,
+                "last_updated": (prompt.updated_at if prompt else rule.updated_at).isoformat() if (prompt or rule) else None,
+            },
+            "active_prompt_configuration": self._version_to_dict(active_v) if active_v else None,
+            "all_versions": [self._version_to_dict(v) for v in versions],
+        }
+
+    def _format_markdown_report(self, export_items: List[Dict[str, Any]], title: str = "Agent Intelligence Studio — Rule-Wise Prompts & Configurations") -> str:
+        lines = [
+            f"# {title}",
+            "",
+            f"- **Generated At:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}",
+            f"- **Total Rules Included:** {len(export_items)}",
+            "",
+            "---",
+            "",
+        ]
+
+        for idx, item in enumerate(export_items, start=1):
+            rule_name = item.get("rule_name", "Unknown Rule")
+            severity = item.get("severity", "MEDIUM")
+            lines.append(f"## {idx}. {rule_name} `[{severity}]`")
+            lines.append(f"- **Internal Rule ID:** `{item.get('rule_id')}`")
+            lines.append(f"- **Event Type:** `{item.get('event_type')}`")
+            lines.append(f"- **Data Source:** {item.get('data_source') or 'N/A'}")
+
+            active_cfg = item.get("active_prompt_configuration")
+            if active_cfg:
+                status_badge = active_cfg.get("status")
+                is_template = " (Template Synthesized)" if active_cfg.get("is_template_draft") else " (Manual Draft)"
+                lines.append(f"- **Active Baseline:** Version {active_cfg.get('version_number')} `[{status_badge}]`{is_template}")
+                lines.append(f"- **Change Summary:** *{active_cfg.get('change_summary') or 'N/A'}*")
+                lines.append("")
+                lines.append("### 1. COMMON SOC BASELINE PROTOCOL")
+                lines.append("```")
+                lines.append(active_cfg.get("common_prompt") or "N/A")
+                lines.append("```")
+                lines.append("")
+                lines.append("### 2. RULE-SPECIFIC DIRECTIVE & PATTERN DETAILS")
+                lines.append("```")
+                lines.append(active_cfg.get("rule_specific_prompt") or "N/A")
+                lines.append("```")
+                lines.append("")
+                lines.append("### 3. DETECTION CONDITIONS & PATTERN LOGIC")
+                lines.append(f"> {active_cfg.get('detection_conditions') or 'None specified'}")
+                lines.append("")
+                lines.append("### 4. MANDATORY EVIDENCE GATHERING CHECKLIST")
+                lines.append(active_cfg.get("required_evidence") or "None specified")
+                lines.append("")
+                lines.append("### 5. TRUE POSITIVE INDICATORS (MALICIOUS ATTACK)")
+                lines.append(active_cfg.get("tp_indicators") or "None specified")
+                lines.append("")
+                lines.append("### 6. FALSE POSITIVE INDICATORS (BENIGN OPERATIONAL NOISE)")
+                lines.append(active_cfg.get("fp_indicators") or "None specified")
+                lines.append("")
+                lines.append("### 7. WHEN TO ABSTAIN (REQUIRES ATTENTION)")
+                lines.append(active_cfg.get("missing_info_criteria") or "None specified")
+                lines.append("")
+                lines.append("### 8. P1/P2 ESCALATION CONDITIONS")
+                lines.append(active_cfg.get("escalation_conditions") or "None specified")
+                lines.append("")
+                lines.append("### 9. STANDARD INVESTIGATIVE Q&A CHECKLIST")
+                questions = active_cfg.get("analyst_questions", [])
+                if questions:
+                    for q_idx, q in enumerate(questions, start=1):
+                        lines.append(f"{q_idx}. {q}")
+                else:
+                    lines.append("*No questions configured.*")
+            else:
+                lines.append("*No prompt configuration found for this rule.*")
+
+            lines.append("")
+            lines.append("---")
+            lines.append("")
+
+        return "\n".join(lines)
+
+    async def export_all_rule_prompts(self, format: str = "json") -> Tuple[str, str, str]:
+        rules_res = await self.db.execute(select(Rule).order_by(Rule.name.asc()))
+        rules = rules_res.scalars().all()
+
+        prompts_res = await self.db.execute(select(RulePrompt).options(selectinload(RulePrompt.versions)))
+        prompts_by_rule_id = {rp.rule_id: rp for rp in prompts_res.scalars().all()}
+
+        items = []
+        for r in rules:
+            rp = prompts_by_rule_id.get(r.id)
+            items.append(self._rule_to_export_item(r, rp))
+
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        if format.lower() in ("markdown", "md"):
+            md_content = self._format_markdown_report(items)
+            return md_content, "text/markdown; charset=utf-8", f"agent_intelligence_studio_rules_prompts_{timestamp}.md"
+
+        export_data = {
+            "schema_version": "1.0",
+            "title": "Agent Intelligence Studio — Rule-Wise Prompts & Configurations",
+            "exported_at": datetime.utcnow().isoformat(),
+            "total_rules": len(items),
+            "rules": items,
+        }
+        return json.dumps(export_data, indent=2), "application/json", f"agent_intelligence_studio_rules_prompts_{timestamp}.json"
+
+    async def export_single_rule_prompt(self, rule_id: str, format: str = "json") -> Tuple[str, str, str]:
+        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
+        rule = rule_res.scalars().first()
+        if not rule:
+            raise ValueError(f"Rule with id {rule_id} not found")
+
+        prompt = await self.get_or_create_rule_prompt(rule_id)
+        item = self._rule_to_export_item(rule, prompt)
+
+        safe_name = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in rule.name.lower())[:40]
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+
+        if format.lower() in ("markdown", "md"):
+            md_content = self._format_markdown_report([item], title=f"Agent Intelligence Policy — {rule.name}")
+            return md_content, "text/markdown; charset=utf-8", f"rule_prompt_{safe_name}_{timestamp}.md"
+
+        export_data = {
+            "schema_version": "1.0",
+            "title": f"Agent Intelligence Policy — {rule.name}",
+            "exported_at": datetime.utcnow().isoformat(),
+            "rule": item,
+        }
+        return json.dumps(export_data, indent=2), "application/json", f"rule_prompt_{safe_name}_{timestamp}.json"
 
 
 # Backward compatibility alias

@@ -109,3 +109,30 @@ async def test_prompt_template_generation_and_versioning(
     assert v3_rollback["version_number"] == 3
     assert v3_rollback["status"] == "APPROVED"
     assert "Rollback to Version 1" in v3_rollback["change_summary"]
+
+    # 6. Export all rules & prompts (JSON & Markdown)
+    export_json = await client.get("/api/prompts/export", headers=headers_analyst)
+    assert export_json.status_code == 200
+    assert "application/json" in export_json.headers["content-type"]
+    assert "attachment" in export_json.headers["content-disposition"]
+    data = export_json.json()
+    assert data["schema_version"] == "1.0"
+    assert len(data["rules"]) >= 1
+    found_rule = next((r for r in data["rules"] if r["rule_id"] == rule.id), None)
+    assert found_rule is not None
+    assert found_rule["active_prompt_configuration"] is not None
+    assert found_rule["active_prompt_configuration"]["version_number"] == 3
+
+    export_md = await client.get("/api/prompts/export?format=markdown", headers=headers_analyst)
+    assert export_md.status_code == 200
+    assert "text/markdown" in export_md.headers["content-type"]
+    assert rule.name in export_md.text
+
+    # 7. Export single rule prompt (JSON & Markdown)
+    single_json = await client.get(f"/api/prompts/rule/{rule.id}/export", headers=headers_analyst)
+    assert single_json.status_code == 200
+    assert single_json.json()["rule"]["rule_id"] == rule.id
+
+    single_md = await client.get(f"/api/prompts/rule/{rule.id}/export?format=markdown", headers=headers_analyst)
+    assert single_md.status_code == 200
+    assert rule.name in single_md.text

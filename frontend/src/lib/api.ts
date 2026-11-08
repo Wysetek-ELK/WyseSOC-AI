@@ -1094,6 +1094,32 @@ export const api = {
     return res.json();
   },
 
+  async exportRulePrompts(format: "json" | "markdown" = "json"): Promise<{ blob: Blob; filename: string }> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/export?format=${format}`);
+    if (!res.ok) throw new Error("Failed to export rule prompts");
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition");
+    let filename = `agent_intelligence_studio_rules_prompts.${format === "json" ? "json" : "md"}`;
+    if (disposition) {
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+    return { blob, filename };
+  },
+
+  async exportSingleRulePrompt(ruleId: string, format: "json" | "markdown" = "json"): Promise<{ blob: Blob; filename: string }> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/export?format=${format}`);
+    if (!res.ok) throw new Error("Failed to export rule prompt configuration");
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition");
+    let filename = `rule_prompt_${ruleId}.${format === "json" ? "json" : "md"}`;
+    if (disposition) {
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+    return { blob, filename };
+  },
+
   // =================== PHASE 2: LEARNING HISTORY ===================
   async getLearningRecords(params: {
     page?: number;

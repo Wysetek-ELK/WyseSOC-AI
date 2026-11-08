@@ -1,5 +1,5 @@
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,6 +65,25 @@ async def get_rule_prompts_summary(
     return items
 
 
+@router.get("/export")
+async def export_all_rule_prompts(
+    format: str = Query("json", pattern="^(json|markdown|md)$"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Exports all SIEM detection rules alongside their active and historical
+    investigative prompt configurations formatted rule-wise as JSON or Markdown.
+    """
+    service = PromptStudioService(db)
+    content, media_type, filename = await service.export_all_rule_prompts(format=format)
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/rule/{rule_id}", response_model=RulePromptResponse)
 async def get_rule_prompt(
     rule_id: str,
@@ -96,6 +115,28 @@ async def get_rule_prompt(
         created_at=prompt.created_at,
         updated_at=prompt.updated_at,
     )
+
+
+@router.get("/rule/{rule_id}/export")
+async def export_single_rule_prompt(
+    rule_id: str,
+    format: str = Query("json", pattern="^(json|markdown|md)$"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Exports a single rule's prompt configuration with active version and version history.
+    """
+    service = PromptStudioService(db)
+    try:
+        content, media_type, filename = await service.export_single_rule_prompt(rule_id=rule_id, format=format)
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.post("/rule/{rule_id}/generate-draft", response_model=PromptVersionResponse)

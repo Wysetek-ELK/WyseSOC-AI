@@ -23,6 +23,8 @@ import {
   Filter,
   RefreshCw,
   Plus,
+  Download,
+  ChevronDown,
 } from "lucide-react";
 import {
   api,
@@ -74,6 +76,62 @@ export default function AgentIntelligenceStudioPage() {
   // Approval modal state
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalSummary, setApprovalSummary] = useState("Approved by SOC Lead");
+
+  // Download / Export state
+  const [downloadingExport, setDownloadingExport] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showStudioExportMenu, setShowStudioExportMenu] = useState(false);
+
+  const handleExportAll = async (format: "json" | "markdown" = "json") => {
+    setDownloadingExport(true);
+    setFeedback(null);
+    setShowExportMenu(false);
+    try {
+      const { blob, filename } = await api.exportRulePrompts(format);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setFeedback({
+        type: "success",
+        text: `Successfully exported rule-wise prompts and configuration (${format.toUpperCase()}).`,
+      });
+    } catch (err: any) {
+      setFeedback({ type: "error", text: `Export failed: ${err.message}` });
+    } finally {
+      setDownloadingExport(false);
+    }
+  };
+
+  const handleExportSingleRule = async (ruleId: string, format: "json" | "markdown" = "json") => {
+    if (!ruleId) return;
+    setDownloadingExport(true);
+    setFeedback(null);
+    setShowStudioExportMenu(false);
+    try {
+      const { blob, filename } = await api.exportSingleRulePrompt(ruleId, format);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setFeedback({
+        type: "success",
+        text: `Downloaded rule prompt configuration (${format.toUpperCase()}).`,
+      });
+    } catch (err: any) {
+      setFeedback({ type: "error", text: `Download failed: ${err.message}` });
+    } finally {
+      setDownloadingExport(false);
+    }
+  };
 
   const loadSummaries = async () => {
     setLoadingSummaries(true);
@@ -427,6 +485,53 @@ export default function AgentIntelligenceStudioPage() {
               <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${loadingSummaries ? "animate-spin" : ""}`} />
               Refresh
             </button>
+
+            {/* Download Rule-Wise Prompts & Configurations */}
+            <div className="relative">
+              <div className="inline-flex rounded-md shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => handleExportAll("json")}
+                  disabled={downloadingExport}
+                  className="px-2.5 py-1 text-xs rounded-l border border-cyan-800/80 bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-200 font-semibold flex items-center gap-1.5 transition-colors"
+                  title="Download all rules and prompt configurations as JSON"
+                >
+                  <Download className={`w-3.5 h-3.5 text-cyan-400 ${downloadingExport ? "animate-bounce" : ""}`} />
+                  {downloadingExport ? "Exporting..." : "Download Rules Config"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowExportMenu((prev) => !prev)}
+                  disabled={downloadingExport}
+                  className="px-1.5 py-1 text-xs rounded-r border-t border-b border-r border-cyan-800/80 bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-200 transition-colors"
+                  title="Choose export format"
+                >
+                  <ChevronDown className="w-3 h-3 text-cyan-400" />
+                </button>
+              </div>
+
+              {showExportMenu && (
+                <div className="absolute right-0 mt-1 w-48 rounded-md border border-slate-800 bg-slate-950 py-1 shadow-xl z-20 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleExportAll("json")}
+                    className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                  >
+                    <span>Download JSON</span>
+                    <span className="text-[10px] text-slate-500 font-mono">.json</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExportAll("markdown")}
+                    className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                  >
+                    <span>Download Markdown</span>
+                    <span className="text-[10px] text-slate-500 font-mono">.md</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             {selectedRuleId && (
               <button
                 onClick={() => setViewMode("studio")}
@@ -624,16 +729,30 @@ export default function AgentIntelligenceStudioPage() {
                         </td>
 
                         <td className="py-2.5 px-3 text-right">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenStudioForRule(item.rule_id);
-                            }}
-                            className="px-2.5 py-1 text-xs rounded border border-cyan-800/80 bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-300 font-semibold inline-flex items-center gap-1 transition-colors shadow-sm"
-                          >
-                            Open Studio <ArrowRight className="w-3 h-3" />
-                          </button>
+                          <div className="inline-flex items-center gap-1.5 justify-end">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleExportSingleRule(item.rule_id, "json");
+                              }}
+                              disabled={downloadingExport}
+                              title="Download rule prompt configuration (JSON)"
+                              className="p-1 rounded border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 transition-colors"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenStudioForRule(item.rule_id);
+                              }}
+                              className="px-2.5 py-1 text-xs rounded border border-cyan-800/80 bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-300 font-semibold inline-flex items-center gap-1 transition-colors shadow-sm"
+                            >
+                              Open Studio <ArrowRight className="w-3 h-3" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -889,6 +1008,52 @@ export default function AgentIntelligenceStudioPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5">
+                    {/* Download Rule Prompt & Configuration */}
+                    <div className="relative">
+                      <div className="inline-flex rounded shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => handleExportSingleRule(selectedRuleId, "json")}
+                          disabled={downloadingExport}
+                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-l text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                          title="Download this rule's prompt & configuration as JSON"
+                        >
+                          <Download className={`w-3.5 h-3.5 text-cyan-400 ${downloadingExport ? "animate-bounce" : ""}`} />
+                          Download Config
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowStudioExportMenu((prev) => !prev)}
+                          disabled={downloadingExport}
+                          className="px-1.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border-t border-b border-r border-slate-700 rounded-r text-xs transition-colors"
+                          title="Choose export format"
+                        >
+                          <ChevronDown className="w-3 h-3 text-cyan-400" />
+                        </button>
+                      </div>
+
+                      {showStudioExportMenu && (
+                        <div className="absolute right-0 mt-1 w-44 rounded-md border border-slate-800 bg-slate-950 py-1 shadow-xl z-20 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => handleExportSingleRule(selectedRuleId, "json")}
+                            className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                          >
+                            <span>JSON Format</span>
+                            <span className="text-[10px] text-slate-500 font-mono">.json</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleExportSingleRule(selectedRuleId, "markdown")}
+                            className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                          >
+                            <span>Markdown Doc</span>
+                            <span className="text-[10px] text-slate-500 font-mono">.md</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
                     {!isEditing ? (
                       <button
                         type="button"
