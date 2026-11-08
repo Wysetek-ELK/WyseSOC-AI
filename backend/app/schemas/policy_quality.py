@@ -44,6 +44,9 @@ class PolicyQualityAssessmentResponse(BaseModel):
     
     # Transparent Quality Score (0 to 100)
     quality_score: float = Field(..., ge=0.0, le=100.0, description="Overall policy quality index (NOT verdict accuracy)")
+    structural_quality_score: Optional[float] = Field(None, description="Score based purely on structural policy gates G1-G7 (0-100)")
+    empirical_validation_score: Optional[float] = Field(None, description="Score from G8 empirical simulation (0-15)")
+    empirical_validation_status: Optional[str] = Field(None, description="Status of empirical historical validation")
     score_breakdown: Dict[str, float] = Field(
         default_factory=dict,
         description="Dimension scores: detection_semantics (20), evidence_contract (20), tp_fp_criteria (20), abstention_escalation (15), internal_consistency (10), historical_simulation (15)"

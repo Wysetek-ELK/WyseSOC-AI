@@ -36,9 +36,22 @@ class VerdictClaimValidator:
         """
         # Harvest available telemetry attributes into a flattened dictionary
         telemetry: Dict[str, Any] = {}
-        for k in ("source_ip", "reporting_ip", "event_type", "severity", "category"):
-            if incident_payload.get(k):
-                telemetry[k] = incident_payload[k]
+        for k, v in incident_payload.items():
+            if k not in ("events", "raw_payload", "canonical_evidence", "canonical_evidence_records") and v is not None:
+                telemetry[str(k)] = v
+                clean_k = str(k).lower().strip()
+                if clean_k in ("host name", "hostname", "host"):
+                    telemetry["endpoint.hostname"] = v
+                elif clean_k in ("command", "command line", "cmdline"):
+                    telemetry["process.command_line"] = v
+                elif clean_k in ("user", "username"):
+                    telemetry["user.name"] = v
+                elif clean_k in ("process blocked", "process_blocked"):
+                    telemetry["endpoint.process_blocked"] = v
+                elif clean_k in ("file quarantined", "file_quarantined"):
+                    telemetry["endpoint.file_quarantined"] = v
+                elif clean_k in ("file name", "filename"):
+                    telemetry["file.name"] = v
 
         # From canonical evidence
         canonical_items = incident_payload.get("canonical_evidence") or incident_payload.get("canonical_evidence_records") or []
@@ -156,6 +169,17 @@ class VerdictClaimValidator:
                 has_contradictions = True
                 continue
 
+            # Check for Process Blocked vs Unhindered Execution Contradiction
+            proc_blocked = telemetry.get("endpoint.process_blocked") or telemetry.get("Process Blocked")
+            if proc_blocked is True:
+                if any(phrase in text_lower for phrase in ("without block", "not blocked", "without interference", "active credential theft", "stole credential", "unhindered", "breach succeeded")):
+                    item.is_grounded = False
+                    item.grounding_status = "CONTRADICTED"
+                    item.contradiction_details = "Contradiction: Model asserted unhindered process execution or credential theft, but telemetry indicates Process Blocked=True."
+                    contradicted_claims += 1
+                    has_contradictions = True
+                    continue
+
             # 3. Check for Fabricated Specific Entities (e.g. IP addresses not in telemetry)
             ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
             ips_in_claim = re.findall(ip_pattern, item.claim_text)
@@ -237,4 +261,22 @@ class VerdictClaimValidator:
             grounding_ratio=round(ratio, 4),
             unsupported_threshold_assertion=has_unsupported_threshold,
             unsupported_claims_list=unsupported_claims_list,
+        )
+
+    @classmethod
+    def validate_claims(
+        cls,
+        model_output: Dict[str, Any],
+        canonical_telemetry: Optional[Dict[str, Any]] = None,
+        incident_payload: Optional[Dict[str, Any]] = None,
+        incident_id: Optional[str] = None,
+        **kwargs
+    ) -> ClaimVerificationResult:
+        payload = canonical_telemetry or incident_payload or {}
+        inc_id = incident_id or str(payload.get("incident_id") or payload.get("id") or "INC-CLAIM-CHECK")
+        return cls.verify_claims(
+            incident_id=inc_id,
+            model_output=model_output,
+            incident_payload=payload,
+            **kwargs
         )

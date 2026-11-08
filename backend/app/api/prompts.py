@@ -13,6 +13,7 @@ from app.models.rule_intelligence import RuleIntelligenceSnapshot
 from app.models.policy_quality import PolicyQualityAssessmentRecord
 from app.models.policy_drift import PolicyDriftEvent
 from app.models.bulk_audit import BulkQualityAuditJobRecord
+from app.models.verdict_intelligence import HistoricalEvaluationRunRecord
 from app.services.prompt_studio_service import PromptStudioService
 from app.services.audit_service import AuditService
 from app.services.rule_intelligence_analyzer import RuleIntelligenceAnalyzer
@@ -373,11 +374,36 @@ async def validate_policy_quality(
     archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
     contract = EvidenceRequirementMapper.map_evidence_contract(rule, semantics, archetype_def, target_ver)
 
+    # Check for recent simulation results in HistoricalEvaluationRunRecord to prevent stale G8
+    latest_run_q = (
+        select(HistoricalEvaluationRunRecord)
+        .where(
+            HistoricalEvaluationRunRecord.rule_id == rule.id,
+            HistoricalEvaluationRunRecord.policy_version_id == str(target_ver.id),
+        )
+        .order_by(desc(HistoricalEvaluationRunRecord.started_at))
+    )
+    latest_run_res = await db.execute(latest_run_q)
+    latest_run = latest_run_res.scalars().first()
+
+    sim_results = None
+    if latest_run:
+        metrics_dict = getattr(latest_run, "metrics", {}) or getattr(latest_run, "metrics_payload", {}) or {}
+        sim_results = {
+            "sample_count": getattr(latest_run, "total_cases", 0) or getattr(latest_run, "sample_size", 0),
+            "critical_regressions": 1 if latest_run.status == "FAILED" or metrics_dict.get("critical_false_negatives", 0) > 0 else 0,
+            "balanced_accuracy": metrics_dict.get("balanced_accuracy") or getattr(latest_run, "balanced_accuracy", None),
+            "ece": metrics_dict.get("ece") or getattr(latest_run, "ece", None),
+            "brier_score": metrics_dict.get("brier_score") or getattr(latest_run, "brier_score", None),
+            "metrics": metrics_dict,
+        }
+
     assessment = PolicyQualityValidator.validate_policy_quality(
         rule=rule,
         prompt_version=target_ver,
         contract=contract,
         semantics=semantics,
+        simulation_results=sim_results,
     )
 
     # Update version status

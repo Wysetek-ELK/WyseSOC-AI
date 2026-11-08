@@ -477,12 +477,25 @@ class PolicySimulationService:
             sim_status = SimulationStatus.EVALUATED_FAILED.value
 
         metrics = run.metrics or {}
+        reg_detected = bool(metrics.get("critical_false_negatives", 0) > 0 or run.validation_state == EvaluationValidationState.REGRESSION_DETECTED.value)
+        status_str = "PASSED" if sim_status == SimulationStatus.EVALUATED_PASSED.value else ("INSUFFICIENT_DATA" if sim_status == SimulationStatus.INSUFFICIENT_DATA.value else "FAILED")
+
         return {
+            "status": status_str,
             "simulation_status": sim_status,
             "sample_count": run.total_cases,
             "min_samples_required": self.MIN_HISTORICAL_SAMPLES,
             "message": run.regression_summary.get("summary_message") if run.regression_summary else metrics.get("message", "Simulation completed."),
             "critical_regressions": metrics.get("critical_false_negatives", 0),
+            "regression_detected": reg_detected,
+            "abstention_rate": float(metrics.get("abstention_rate", 0.0)),
+            "balanced_accuracy": float(metrics.get("balanced_accuracy", 0.0)),
+            "precision": float(metrics.get("precision", 0.0)),
+            "recall": float(metrics.get("recall", 0.0)),
+            "specificity": float(metrics.get("specificity", 0.0)),
+            "decision_coverage": float(metrics.get("decision_coverage", 0.0)),
+            "run_id": str(run.id),
+            "is_calibrated": bool(run.total_cases >= 30),
             "candidate_metrics": metrics,
             "baseline_metrics": run.regression_summary.get("baseline_accuracy"),
             "evaluated_at": datetime.utcnow().isoformat(),

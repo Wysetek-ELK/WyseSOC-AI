@@ -429,10 +429,15 @@ export default function AgentIntelligenceStudioPage() {
       const res = await api.evaluatePolicySimulation(selectedRuleId, selectedVersionId);
       setSimulationResult(res);
       setStudioTab("simulation");
+      const stat = res.status || res.simulation_status || "COMPLETED";
       setFeedback({
-        type: res.status === "FAILED" ? "warning" : "success",
-        text: `Simulation Lab completed: ${res.sample_count} historical incidents evaluated. Status: ${res.status}`,
+        type: stat === "FAILED" || stat === "EVALUATED_FAILED" ? "warning" : "success",
+        text: `Simulation Lab completed: ${res.sample_count} historical incidents evaluated. Status: ${stat}`,
       });
+      // Synchronize G8 quality gate with fresh simulation results
+      if (selectedVersionId) {
+        await fetchQualityValidation(selectedRuleId, selectedVersionId);
+      }
     } catch (err: any) {
       setFeedback({ type: "error", text: `Simulation failed: ${err.message}` });
     } finally {
@@ -1869,16 +1874,30 @@ export default function AgentIntelligenceStudioPage() {
 
                 {qualityAssessment ? (
                   <div className="space-y-3">
-                    {/* Score Summary Box */}
-                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                    {/* Score Summary Box - Separates Structural Quality from Empirical Validation */}
+                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
                       <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Quality Score</div>
+                        <div className="text-[10px] text-slate-500 uppercase">Overall Quality</div>
                         <div className="text-xl font-bold font-mono text-slate-100">{qualityAssessment.quality_score} / 100</div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Hard Gate Status</div>
-                        <div className={`text-sm font-bold mt-1 ${hasHardGateFailure ? "text-rose-400" : "text-emerald-400"}`}>
-                          {hasHardGateFailure ? "FAILED (OVERRIDE)" : "PASSED"}
+                        <div className="text-[10px] text-slate-500 uppercase">Structural (G1–G7)</div>
+                        <div className="text-xl font-bold font-mono text-cyan-400">
+                          {qualityAssessment.structural_quality_score !== null && qualityAssessment.structural_quality_score !== undefined
+                            ? `${qualityAssessment.structural_quality_score} / 100`
+                            : `${Math.round(qualityAssessment.quality_score)} / 100`}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Empirical (G8)</div>
+                        <div className={`text-sm font-bold font-mono mt-1 ${
+                          (qualityAssessment.empirical_validation_status === "EVALUATED_PASSED" || qualityAssessment.simulation_status === "EVALUATED_PASSED")
+                            ? "text-emerald-400"
+                            : (qualityAssessment.empirical_validation_status === "INSUFFICIENT_DATA" || qualityAssessment.simulation_status === "INSUFFICIENT_DATA")
+                            ? "text-amber-400"
+                            : "text-slate-400"
+                        }`}>
+                          {qualityAssessment.empirical_validation_status || qualityAssessment.simulation_status || "NOT_EVALUATED"}
                         </div>
                       </div>
                       <div>
@@ -2118,10 +2137,10 @@ export default function AgentIntelligenceStudioPage() {
                   <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-3 text-xs">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
                       <span className="font-bold text-slate-200">
-                        Contract Schema: {intelligenceData.candidate_evidence_contract.rule_id}
+                        Contract Schema: {intelligenceData.candidate_evidence_contract.contract_id || intelligenceData.candidate_evidence_contract.rule_id}
                       </span>
                       <span className="text-cyan-400 font-mono text-[10px]">
-                        Target Archetype: {intelligenceData.candidate_evidence_contract.target_archetype}
+                        Target Archetype: {intelligenceData.candidate_evidence_contract.target_archetype || intelligenceData.candidate_evidence_contract.detection_archetype}
                       </span>
                     </div>
 
@@ -2129,9 +2148,20 @@ export default function AgentIntelligenceStudioPage() {
                       <div className="p-2.5 rounded bg-slate-900/40 border border-slate-800 space-y-1.5">
                         <span className="font-bold text-emerald-400 uppercase text-[10px]">Core Required Fields:</span>
                         <div className="space-y-1">
-                          {intelligenceData.candidate_evidence_contract.core_fields?.map((f: any, i: number) => (
+                          {(
+                            intelligenceData.candidate_evidence_contract.core_fields ||
+                            intelligenceData.candidate_evidence_contract.required_evidence?.filter((r: any) => r.requirement_level === "CORE").map((r: any) => ({
+                              field_name: r.field,
+                              field_type: r.evidence_type,
+                              critical: r.critical,
+                            })) ||
+                            []
+                          ).map((f: any, i: number) => (
                             <div key={i} className="font-mono text-slate-300 flex justify-between">
-                              <span>• {f.field_name}</span>
+                              <span className="flex items-center gap-1">
+                                • {f.field_name}
+                                {f.critical && <span className="text-[9px] px-1 rounded bg-rose-950 text-rose-300 border border-rose-800">CRITICAL</span>}
+                              </span>
                               <span className="text-[9px] text-slate-500">[{f.field_type}]</span>
                             </div>
                           ))}
@@ -2141,32 +2171,60 @@ export default function AgentIntelligenceStudioPage() {
                       <div className="p-2.5 rounded bg-slate-900/40 border border-slate-800 space-y-1.5">
                         <span className="font-bold text-sky-400 uppercase text-[10px]">Conditional Fields:</span>
                         <div className="space-y-1">
-                          {intelligenceData.candidate_evidence_contract.conditional_fields && intelligenceData.candidate_evidence_contract.conditional_fields.length > 0 ? (
-                            intelligenceData.candidate_evidence_contract.conditional_fields.map((f: any, i: number) => (
-                              <div key={i} className="font-mono text-slate-300 flex justify-between">
-                                <span>• {f.field_name}</span>
-                                <span className="text-[9px] text-slate-500">[{f.condition}]</span>
-                              </div>
-                            ))
-                          ) : (
-                            <span className="text-slate-500 italic">None</span>
-                          )}
+                          {(() => {
+                            const conds =
+                              intelligenceData.candidate_evidence_contract.conditional_fields ||
+                              intelligenceData.candidate_evidence_contract.required_evidence?.filter((r: any) => r.requirement_level === "CONDITIONAL").map((r: any) => ({
+                                field_name: r.field,
+                                condition: r.description || "Conditional",
+                              })) ||
+                              [];
+                            return conds.length > 0 ? (
+                              conds.map((f: any, i: number) => (
+                                <div key={i} className="font-mono text-slate-300 flex justify-between">
+                                  <span>• {f.field_name}</span>
+                                  <span className="text-[9px] text-slate-500">[{f.condition}]</span>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-slate-500 italic">None</span>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
 
-                    {intelligenceData.candidate_evidence_contract.unsupported_fields && intelligenceData.candidate_evidence_contract.unsupported_fields.length > 0 && (
-                      <div className="p-2.5 rounded bg-rose-950/20 border border-rose-900/40 text-rose-300 text-[11px] space-y-1">
-                        <span className="font-bold text-[10px] uppercase">Prohibited / Unsupported Telemetry Assumptions:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {intelligenceData.candidate_evidence_contract.unsupported_fields.map((uf: string, i: number) => (
-                            <span key={i} className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 text-[10px] font-mono">
-                              {uf}
-                            </span>
-                          ))}
-                        </div>
+                    {(() => {
+                      const unsupp =
+                        intelligenceData.candidate_evidence_contract.unsupported_fields ||
+                        intelligenceData.candidate_evidence_contract.required_evidence?.filter((r: any) => r.requirement_level === "UNAVAILABLE").map((r: any) => r.field) ||
+                        [];
+                      return (
+                        unsupp.length > 0 && (
+                          <div className="p-2.5 rounded bg-rose-950/20 border border-rose-900/40 text-rose-300 text-[11px] space-y-1">
+                            <span className="font-bold text-[10px] uppercase">Prohibited / Unsupported Telemetry Assumptions:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {unsupp.map((uf: string, i: number) => (
+                                <span key={i} className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 text-[10px] font-mono">
+                                  {uf}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      );
+                    })()}
+
+                    <div className="p-2.5 rounded bg-slate-900/60 border border-slate-800 grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+                      <div>
+                        <span className="text-slate-500 block uppercase">On Critical Missing Evidence:</span>
+                        <span className="font-mono text-amber-300 font-bold">{intelligenceData.candidate_evidence_contract.on_critical_missing_evidence || "REQUIRES_ATTENTION"}</span>
                       </div>
-                    )}
+                      <div>
+                        <span className="text-slate-500 block uppercase">Contradiction Rules:</span>
+                        <span className="font-mono text-cyan-300">{intelligenceData.candidate_evidence_contract.contradiction_rules?.length || 0} active rules</span>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="p-8 text-center text-slate-500 text-xs">
@@ -2212,23 +2270,23 @@ export default function AgentIntelligenceStudioPage() {
                       <div>
                         <div className="text-[10px] text-slate-500 uppercase">Simulation Status</div>
                         <div className={`text-sm font-bold font-mono mt-1 ${
-                          simulationResult.status === "PASSED"
+                          (simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED")
                             ? "text-emerald-400"
-                            : simulationResult.status === "INSUFFICIENT_DATA"
+                            : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA")
                             ? "text-amber-400"
                             : "text-rose-400"
                         }`}>
-                          {simulationResult.status}
+                          {simulationResult.status || simulationResult.simulation_status || "COMPLETED"}
                         </div>
                       </div>
                       <div>
                         <div className="text-[10px] text-slate-500 uppercase">Sample Count</div>
-                        <div className="text-xl font-bold font-mono text-slate-100">{simulationResult.sample_count}</div>
+                        <div className="text-xl font-bold font-mono text-slate-100">{simulationResult.sample_count ?? 0}</div>
                       </div>
                       <div>
                         <div className="text-[10px] text-slate-500 uppercase">Regression Detected</div>
                         <div className={`text-sm font-bold mt-1 ${simulationResult.regression_detected ? "text-rose-400" : "text-emerald-400"}`}>
-                          {simulationResult.regression_detected ? "YES" : "NO"}
+                          {simulationResult.regression_detected ? "YES (BLOCKED)" : "NO"}
                         </div>
                       </div>
                       <div>
@@ -2239,6 +2297,35 @@ export default function AgentIntelligenceStudioPage() {
                       </div>
                     </div>
 
+                    {simulationResult.balanced_accuracy !== undefined && (
+                      <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/60 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                        <div>
+                          <div className="text-[10px] text-slate-500 uppercase">Balanced Accuracy</div>
+                          <div className="text-base font-bold font-mono text-cyan-400">
+                            {Math.round((simulationResult.balanced_accuracy || 0) * 100)}%
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-slate-500 uppercase">Precision / Recall</div>
+                          <div className="text-base font-bold font-mono text-slate-200">
+                            {Math.round((simulationResult.precision || 0) * 100)}% / {Math.round((simulationResult.recall || 0) * 100)}%
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-slate-500 uppercase">Decision Coverage</div>
+                          <div className="text-base font-bold font-mono text-slate-200">
+                            {Math.round((simulationResult.decision_coverage || 0) * 100)}%
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-slate-500 uppercase">Calibration Status</div>
+                          <div className={`text-xs font-bold font-mono mt-1 ${simulationResult.is_calibrated ? "text-emerald-400" : "text-amber-400"}`}>
+                            {simulationResult.is_calibrated ? "CALIBRATED (N>=30)" : "NOT_CALIBRATED (N<30)"}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {simulationResult.status === "INSUFFICIENT_DATA" && (
                       <div className="p-3 rounded-lg border border-amber-900/60 bg-amber-950/20 text-xs text-amber-300 flex items-start gap-2">
                         <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -2248,6 +2335,16 @@ export default function AgentIntelligenceStudioPage() {
                         </div>
                       </div>
                     )}
+
+                    <div className="flex justify-end pt-1">
+                      <a
+                        href={`/verdict-intelligence?rule_id=${selectedRuleId}`}
+                        className="px-3 py-1.5 rounded border border-cyan-800 bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                        Open in Verdict Intelligence &amp; Calibration Dashboard (Dashboards A–E)
+                      </a>
+                    </div>
                   </div>
                 ) : (
                   <div className="p-8 text-center text-slate-500 text-xs space-y-2">

@@ -225,7 +225,15 @@ class PolicyQualityValidator:
         warnings.extend(g8_warns)
         score_breakdown["historical_simulation"] = g8_score
 
-        # 3. Calculate Overall Policy Quality Score (0 to 100)
+        # 3. Calculate Overall Policy Quality Score (0 to 100) and separate structural health
+        structural_raw = (
+            score_breakdown.get("detection_semantics", 0.0)
+            + score_breakdown.get("evidence_contract", 0.0)
+            + score_breakdown.get("tp_fp_criteria", 0.0)
+            + score_breakdown.get("abstention_escalation", 0.0)
+            + score_breakdown.get("internal_consistency", 0.0)
+        )
+        structural_score = round(min(100.0, (structural_raw / 85.0) * 100.0), 1)
         total_score = round(sum(score_breakdown.values()), 1)
 
         # 4. Strict Approval Eligibility Determination
@@ -256,6 +264,9 @@ class PolicyQualityValidator:
             archetype=archetype_def.archetype_id.value,
             validator_version=cls.VALIDATOR_VERSION,
             quality_score=total_score,
+            structural_quality_score=structural_score,
+            empirical_validation_score=round(g8_score, 1),
+            empirical_validation_status=sim_status.value,
             score_breakdown=score_breakdown,
             gate_results=gate_results,
             blocking_issues=blocking_issues,

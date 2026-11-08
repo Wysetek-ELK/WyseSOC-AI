@@ -26,6 +26,39 @@ from app.schemas.verdict_intelligence import (
 logger = logging.getLogger("ai_verdict.verdict_guardrails")
 
 
+class VerdictGuardrailResult:
+    """
+    Result container for verdict guardrails evaluation.
+    Supports 3-tuple unpacking: (effective_verdict, escalation_reason, confidence_limitations)
+    as well as attribute-based access.
+    """
+    def __init__(
+        self,
+        effective_verdict: UserVisibleVerdict,
+        escalation_reason: Optional[str],
+        confidence_limitations: List[str],
+        guardrails_triggered: Optional[List[str]] = None,
+    ):
+        self.effective_verdict = effective_verdict
+        self.escalation_reason = escalation_reason
+        self.confidence_limitations = confidence_limitations
+        self.guardrails_triggered = guardrails_triggered or []
+
+    def __iter__(self):
+        return iter((self.effective_verdict, self.escalation_reason, self.confidence_limitations))
+
+    def __getitem__(self, idx):
+        return (self.effective_verdict, self.escalation_reason, self.confidence_limitations)[idx]
+
+    def __eq__(self, other):
+        if isinstance(other, (str, UserVisibleVerdict)):
+            return self.effective_verdict == other
+        return super().__eq__(other)
+
+    def __repr__(self):
+        return f"<VerdictGuardrailResult verdict={self.effective_verdict} triggered={self.guardrails_triggered}>"
+
+
 class VerdictGuardrailsEngine:
     """
     Authoritative deterministic gatekeeper that evaluates proposed LLM verdicts
@@ -45,13 +78,14 @@ class VerdictGuardrailsEngine:
         definition_status: str = "VERIFIED",
         authoritative_threshold: Optional[float] = None,
         incident_context: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[UserVisibleVerdict, Optional[str], List[str]]:
+    ) -> VerdictGuardrailResult:
         """
         Determines the effective verdict and escalation reasons.
-        Returns: (effective_verdict, escalation_reason, confidence_limitations)
+        Returns: VerdictGuardrailResult (unpacks as 3-tuple: effective_verdict, escalation_reason, confidence_limitations)
         """
         clean_prop = str(proposed_verdict or "REQUIRES_ATTENTION").upper().strip()
         confidence_limitations: List[str] = []
+        guardrails_triggered: List[str] = []
         escalation_reason: Optional[str] = None
 
         if not is_calibrated:
@@ -66,7 +100,8 @@ class VerdictGuardrailsEngine:
                 "Evidence is insufficient to support an automated verdict."
             )
             confidence_limitations.append("Mandatory evidence missing from incident telemetry.")
-            return UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations
+            guardrails_triggered.append("G1_MANDATORY_EVIDENCE_MISSING")
+            return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations, guardrails_triggered)
 
         # -------------------------------------------------------------
         # Guardrail 2: Material Contradictions Detected
@@ -82,7 +117,8 @@ class VerdictGuardrailsEngine:
                 "Conflicting telemetry prevents a reliable automated decision."
             )
             confidence_limitations.append("Direct telemetry or directional conflict detected.")
-            return UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations
+            guardrails_triggered.append("G2_MATERIAL_CONTRADICTIONS_DETECTED")
+            return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations, guardrails_triggered)
 
         # -------------------------------------------------------------
         # Guardrail 3: Unsupported or Hallucinated Claims
@@ -96,7 +132,8 @@ class VerdictGuardrailsEngine:
                 "Reasoning cannot be grounded in canonical evidence."
             )
             confidence_limitations.append("Model claims failed factual grounding verification.")
-            return UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations
+            guardrails_triggered.append("G2_G3_UNSUPPORTED_OR_HALLUCINATED_CLAIMS")
+            return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations, guardrails_triggered)
 
         # -------------------------------------------------------------
         # Guardrail 4: Incomplete Detection Semantics / Unknown Threshold
@@ -109,7 +146,8 @@ class VerdictGuardrailsEngine:
                     "Provisional policy cannot automatically classify incident without human review."
                 )
                 confidence_limitations.append("Rule definition status is INCOMPLETE: threshold unverified.")
-                return UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations
+                guardrails_triggered.append("G4_INCOMPLETE_DETECTION_SEMANTICS")
+                return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations, guardrails_triggered)
 
         # -------------------------------------------------------------
         # Guardrail 5: Low Trust Score (< 7/10 or raw < 70)
@@ -120,7 +158,8 @@ class VerdictGuardrailsEngine:
                 "is below the automated decision threshold (7/10). Analyst attention required."
             )
             confidence_limitations.append("Trust score below automated decision safety threshold.")
-            return UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations
+            guardrails_triggered.append("G5_LOW_TRUST_SCORE")
+            return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations, guardrails_triggered)
 
         # -------------------------------------------------------------
         # Guardrail 6: Negative/Blanket FP Assumptions Prohibition
@@ -149,7 +188,8 @@ class VerdictGuardrailsEngine:
                     "Cannot classify as benign merely due to lack of confirmed malware or RFC-1918 addressing."
                 )
                 confidence_limitations.append("Affirmative benign business justification absent.")
-                return UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations
+                guardrails_triggered.append("G6_NEGATIVE_FP_PROHIBITION")
+                return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations, guardrails_triggered)
 
         # -------------------------------------------------------------
         # Guardrail 7: Alert Firing Alone Does Not Prove True Positive
@@ -165,14 +205,40 @@ class VerdictGuardrailsEngine:
             if not has_grounded_malicious and not (claim_verification.grounded_claims > 0):
                 escalation_reason = "True Positive asserted without concrete grounded indicators of malicious or unauthorized activity."
                 confidence_limitations.append("Alert firing alone does not prove True Positive.")
-                return UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations
+                guardrails_triggered.append("G7_ALERT_FIRING_ALONE")
+                return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations, guardrails_triggered)
 
         # -------------------------------------------------------------
         # Validated Decisive Verdict
         # -------------------------------------------------------------
         if clean_prop == "TRUE_POSITIVE":
-            return UserVisibleVerdict.TRUE_POSITIVE, None, confidence_limitations
+            return VerdictGuardrailResult(UserVisibleVerdict.TRUE_POSITIVE, None, confidence_limitations, guardrails_triggered)
         elif clean_prop == "FALSE_POSITIVE":
-            return UserVisibleVerdict.FALSE_POSITIVE, None, confidence_limitations
+            return VerdictGuardrailResult(UserVisibleVerdict.FALSE_POSITIVE, None, confidence_limitations, guardrails_triggered)
         else:
-            return UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, "Model suggested analyst attention.", confidence_limitations
+            return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, "Model suggested analyst attention.", confidence_limitations, guardrails_triggered)
+
+    @classmethod
+    def evaluate_guardrails(
+        cls,
+        proposed_verdict: str,
+        evidence_sufficiency: Optional[Any] = None,
+        sufficiency: Optional[Any] = None,
+        claim_verification: Optional[Any] = None,
+        raw_confidence: float = 90.0,
+        raw_trust_score: float = 75.0,
+        incident_telemetry: Optional[Dict[str, Any]] = None,
+        incident_context: Optional[Dict[str, Any]] = None,
+        **kwargs
+    ) -> VerdictGuardrailResult:
+        suff = evidence_sufficiency or sufficiency
+        ctx = incident_telemetry or incident_context
+        return cls.apply_guardrails(
+            proposed_verdict=proposed_verdict,
+            raw_confidence=raw_confidence,
+            sufficiency=suff,
+            claim_verification=claim_verification,
+            raw_trust_score=raw_trust_score,
+            incident_context=ctx,
+            **kwargs
+        )

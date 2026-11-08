@@ -495,6 +495,9 @@ export interface PolicyQualityAssessmentResponse {
   archetype: string;
   validator_version: string;
   quality_score: number;
+  structural_quality_score?: number;
+  empirical_validation_score?: number;
+  empirical_validation_status?: string;
   score_breakdown: Record<string, number>;
   gate_results: Record<string, QualityGateResult>;
   gates?: QualityGateResult[];

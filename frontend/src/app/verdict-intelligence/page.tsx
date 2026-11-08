@@ -44,7 +44,8 @@ import {
 
 function VerdictIntelligenceContent() {
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") || "overview";
+  const ruleParam = searchParams.get("rule_id") || "";
+  const initialTab = searchParams.get("tab") || (ruleParam ? "rules" : "overview");
 
   // Tab State: "overview" | "accuracy" | "rules" | "explain" | "simulation"
   const [activeTab, setActiveTab] = useState<string>(initialTab);
@@ -59,7 +60,7 @@ function VerdictIntelligenceContent() {
 
   // Dashboard C: Rule-wise Data
   const [ruleItems, setRuleItems] = useState<RuleWiseTrustworthinessItem[]>([]);
-  const [ruleSearch, setRuleSearch] = useState<string>("");
+  const [ruleSearch, setRuleSearch] = useState<string>(ruleParam);
   const [selectedArchetypeFilter, setSelectedArchetypeFilter] = useState<string>("ALL");
 
   // Dashboard D: Individual Incident Explanation State

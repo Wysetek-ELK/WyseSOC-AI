@@ -123,6 +123,10 @@ class EvidenceSufficiencyAssessmentResult(BaseModel):
         return self.evidence_status == EvidenceStatus.SUFFICIENT and not self.mandatory_fields_missing and self.overall_sufficiency_score >= 70.0
 
     @property
+    def is_sufficient(self) -> bool:
+        return self.evidence_status == EvidenceStatus.SUFFICIENT and not bool(self.mandatory_fields_missing)
+
+    @property
     def missing_mandatory_fields(self) -> List[str]:
         return self.mandatory_fields_missing
 
@@ -183,6 +187,10 @@ class ClaimVerificationResult(BaseModel):
     def contradictions(self) -> List[str]:
         return [c.contradiction_details for c in self.claims if c.contradiction_details]
 
+    @property
+    def claims_supported(self) -> bool:
+        return not self.has_unsupported_assertions and not self.has_contradictions and (self.grounded_claims > 0 or self.total_claims == 0)
+
 
 # --------------------------------------------------------------------------
 # 3. Verdict Trustworthiness Schemas
@@ -236,6 +244,10 @@ class VerdictTrustAssessmentResult(BaseModel):
     @property
     def trust_score_ordinal(self) -> Optional[int]:
         return self.trust_score
+
+    @property
+    def ordinal_score(self) -> int:
+        return self.trust_score if self.trust_score is not None else 1
 
     @property
     def raw_score_100(self) -> float:

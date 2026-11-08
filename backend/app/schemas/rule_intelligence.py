@@ -21,6 +21,7 @@ class SourceProvenance(str, Enum):
 class ArchetypeId(str, Enum):
     NETWORK_EXFILTRATION = "NETWORK_EXFILTRATION"
     MALWARE_EXECUTION = "MALWARE_EXECUTION"
+    ENDPOINT_MALWARE = "MALWARE_EXECUTION"
     PROCESS_EXECUTION = "PROCESS_EXECUTION"
     NETWORK_CONNECTION = "NETWORK_CONNECTION"
     FILE_MALWARE = "FILE_MALWARE"
@@ -36,6 +37,9 @@ class ArchetypeId(str, Enum):
     ENDPOINT_DEFENSE_EVASION = "ENDPOINT_DEFENSE_EVASION"
     GENERIC = "GENERIC"
     UNKNOWN = "UNKNOWN"
+
+
+DetectionArchetype = ArchetypeId
 
 
 class DetectionSemantics(BaseModel):

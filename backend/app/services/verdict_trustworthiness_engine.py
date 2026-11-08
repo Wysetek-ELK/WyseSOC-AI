@@ -162,13 +162,14 @@ class VerdictTrustworthinessEngine:
         # -------------------------------------------------------------
         # DIMENSION 5: Historical Empirical Validation Support (Max 15 pts)
         # -------------------------------------------------------------
-        if is_calibrated or (historical_sample_count >= 30 and (historical_accuracy is None or historical_accuracy >= 70.0)):
-            acc = (historical_accuracy / 100.0) if historical_accuracy is not None else 0.90
-            hist_pts = acc * 15.0
+        acc_pct = (historical_accuracy * 100.0) if (historical_accuracy is not None and historical_accuracy <= 1.0) else historical_accuracy
+        acc_ratio = (acc_pct / 100.0) if acc_pct is not None else 0.90
+
+        if is_calibrated or (historical_sample_count >= 30 and (acc_pct is None or acc_pct >= 70.0)):
+            hist_pts = acc_ratio * 15.0
             hist_status = "CALIBRATED"
         elif historical_sample_count >= 5:
-            acc = (historical_accuracy / 100.0) if historical_accuracy is not None else 0.75
-            hist_pts = min(10.0, acc * 10.0)
+            hist_pts = min(10.0, acc_ratio * 10.0)
             hist_status = "PARTIALLY_VALIDATED"
         else:
             hist_pts = 5.0  # Conservative baseline points
@@ -259,3 +260,102 @@ class VerdictTrustworthinessEngine:
             evidence_sufficiency=sufficiency,
             claim_verification=claim_verification,
         )
+
+    @classmethod
+    def compute_trust_score(
+        cls,
+        rule_id: str,
+        effective_verdict: Optional[str] = None,
+        proposed_verdict: Optional[str] = None,
+        evidence_assessment: Optional[Any] = None,
+        sufficiency: Optional[Any] = None,
+        claim_result: Optional[Any] = None,
+        claim_verification: Optional[Any] = None,
+        historical_sample_size: int = 0,
+        historical_accuracy: Optional[float] = None,
+        is_calibrated: bool = False,
+        **kwargs
+    ) -> VerdictTrustAssessmentResult:
+        verdict = effective_verdict or proposed_verdict or "REQUIRES_ATTENTION"
+        suff = evidence_assessment or sufficiency
+        claim_res = claim_result or claim_verification
+
+        # 1. Direct Claim Support (Max 35)
+        if claim_res and getattr(claim_res, "total_claims", 0) > 0:
+            claim_support = claim_res.grounding_ratio * 35.0
+            if getattr(claim_res, "has_unsupported_assertions", False):
+                claim_support = max(0.0, claim_support - 10.0)
+        else:
+            claim_support = 25.0 if suff and getattr(suff, "is_sufficient", False) else 5.0
+        dim1 = round(min(35.0, max(0.0, claim_support)), 2)
+
+        # 2. Source Reliability (Max 20)
+        dim2 = round(min(20.0, (getattr(suff, "integrity_provenance_score", 20.0) / 25.0) * 20.0), 2)
+
+        # 3. Contradiction Handling (Max 15)
+        contra_pts = 15.0
+        if getattr(suff, "contradictions_detected", None):
+            contra_pts -= 10.0
+        if getattr(claim_res, "has_contradictions", False) or getattr(claim_res, "contradicted_claims", 0) > 0:
+            contra_pts -= 10.0
+        dim3 = round(max(0.0, min(15.0, contra_pts)), 2)
+
+        # 4. Independent Corroboration (Max 15)
+        dim4 = round(min(15.0, (getattr(suff, "consistency_corroboration_score", 15.0) / 20.0) * 15.0), 2)
+
+        # 5. Historical Empirical Validation (Max 15)
+        acc_pct = (historical_accuracy * 100.0) if (historical_accuracy is not None and historical_accuracy <= 1.0) else historical_accuracy
+        acc_ratio = (acc_pct / 100.0) if acc_pct is not None else 0.90
+        calibrated = is_calibrated or (historical_sample_size >= 30 and (acc_pct is None or acc_pct >= 70.0))
+
+        if calibrated:
+            dim5 = round(acc_ratio * 15.0, 2)
+            hist_status = "CALIBRATED"
+        elif historical_sample_size >= 5:
+            dim5 = round(min(10.0, acc_ratio * 10.0), 2)
+            hist_status = "PARTIALLY_VALIDATED"
+        else:
+            dim5 = 5.0
+            hist_status = "UNCALIBRATED"
+
+        raw_total = round(dim1 + dim2 + dim3 + dim4 + dim5, 2)
+        ordinal = cls.score_to_ordinal(raw_total, is_calibrated=calibrated, sample_count=historical_sample_size)
+        if suff and (getattr(suff, "mandatory_fields_missing", None) or getattr(suff, "evidence_status", None) == EvidenceStatus.CONFLICTING):
+            ordinal = min(3, ordinal)
+
+        breakdown = TrustScoreDimensionBreakdown(
+            direct_claim_support=dim1,
+            source_reliability=dim2,
+            contradiction_handling=dim3,
+            independent_corroboration=dim4,
+            historical_validation_support=dim5,
+            total_raw_score=raw_total,
+        )
+
+        eff_v = UserVisibleVerdict(verdict) if verdict in [v.value for v in UserVisibleVerdict] else UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION
+
+        return VerdictTrustAssessmentResult(
+            incident_id="INC-COMPUTED",
+            rule_id=rule_id,
+            archetype=getattr(suff, "archetype", "UNKNOWN"),
+            suggested_verdict=verdict,
+            effective_verdict=eff_v,
+            trust_score=ordinal,
+            raw_trust_score=raw_total,
+            evidence_sufficiency_score=getattr(suff, "overall_sufficiency_score", 80.0),
+            evidence_status=getattr(suff, "evidence_status", EvidenceStatus.SUFFICIENT),
+            score_dimensions=breakdown,
+            supporting_evidence=[f"{c.claim_text} ({c.grounding_status})" for c in getattr(claim_res, "claims", []) if c.is_grounded],
+            contradictory_evidence=getattr(suff, "contradictions_detected", []),
+            missing_evidence=getattr(suff, "mandatory_fields_missing", []),
+            confidence_limitations=[],
+            historical_validation_status=hist_status,
+            is_calibrated=calibrated,
+            human_readable_explanation=f"Direct computation for {rule_id}. Trust Score: {ordinal}/10.",
+            model_identifier="direct-evaluator",
+            evaluated_at=datetime.utcnow(),
+            evidence_sufficiency=suff,
+            claim_verification=claim_res,
+        )
+
+    calculate_trust_score = compute_trust_score

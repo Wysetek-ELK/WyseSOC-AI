@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 class EvidenceFieldRequirement(BaseModel):
@@ -29,4 +29,49 @@ class RuleEvidenceContract(BaseModel):
     fp_criteria: List[str] = Field(default_factory=list, description="Machine-evaluable FP criteria strings")
     contradiction_rules: List[Dict[str, Any]] = Field(default_factory=list, description="Defined conflicting conditions")
     on_critical_missing_evidence: str = Field("REQUIRES_ATTENTION", description="Action when critical evidence is absent")
+
+    @computed_field
+    @property
+    def target_archetype(self) -> str:
+        return self.detection_archetype
+
+    @computed_field
+    @property
+    def core_fields(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "field_name": r.field,
+                "field_type": r.evidence_type,
+                "critical": r.critical,
+                "required_for_tp": r.required_for_tp,
+                "required_for_fp": r.required_for_fp,
+                "description": r.description,
+            }
+            for r in self.required_evidence
+            if r.requirement_level == "CORE"
+        ]
+
+    @computed_field
+    @property
+    def conditional_fields(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "field_name": r.field,
+                "field_type": r.evidence_type,
+                "condition": r.description or "When relevant context observed",
+                "critical": r.critical,
+            }
+            for r in self.required_evidence
+            if r.requirement_level == "CONDITIONAL"
+        ]
+
+    @computed_field
+    @property
+    def unsupported_fields(self) -> List[str]:
+        return [
+            r.field
+            for r in self.required_evidence
+            if r.requirement_level == "UNAVAILABLE"
+        ]
+
 

@@ -157,7 +157,7 @@ class RuleIntelligenceAnalyzer:
         if authoritative_siem_definition and (threshold is not None or conditions or grouping_keys):
             provenance_details["authoritative_parameters"] = "Threshold and conditions verified from live SIEM definition"
         elif is_authoritative and not pattern_is_incident_dump and raw_pattern:
-            # Parse text condition lines like "sentBytes64 > 100000000", "window: 5m", "groupBy: srcIp"
+            # Parse text condition lines like "sentBytes64 > 100000000", "COUNT(Matched Events) >= 1", "window: 5m", "groupBy: srcIp"
             cls._parse_authoritative_pattern(
                 pattern_text=raw_pattern,
                 conditions=conditions,
@@ -167,7 +167,9 @@ class RuleIntelligenceAnalyzer:
                 provenance_details=provenance_details,
             )
             threshold, threshold_unit = cls._extract_threshold_from_conditions(conditions)
-            aggregation_window = cls._extract_window_from_conditions(conditions)
+            aggregation_window = cls._extract_window_from_text_or_conditions(raw_text or raw_pattern, conditions)
+            if threshold == 1.0 and "single match" in str(threshold_unit):
+                provenance_details["threshold_semantics"] = "COUNT >= 1 indicates single-event occurrence trigger; not an aggregated volume threshold."
         elif pattern_is_incident_dump:
             # Explicitly log that observed values must not become verified thresholds
             provenance_details["pattern_warning"] = (
@@ -179,11 +181,29 @@ class RuleIntelligenceAnalyzer:
         else:
             missing_requirements.append("SIEM pattern logic is empty or unparseable")
 
+        # Extract Triggered Event Attributes if present
+        triggered_attrs = raw_metadata.get("triggered_attributes", [])
+        if not triggered_attrs and raw_text and "Triggered Event Attributes" in raw_text:
+            m_trig = re.search(r"Triggered Event Attributes\r?\n([^\r\n]+)", raw_text)
+            if m_trig:
+                triggered_attrs = [a.strip() for a in m_trig.group(1).split(",") if a.strip()]
+
+        if triggered_attrs:
+            provenance_details["triggered_attributes"] = ", ".join(triggered_attrs)
+            for attr in triggered_attrs:
+                if attr not in observed_fields:
+                    observed_fields.append(attr)
+
         # 5. Extract Source and Destination Semantics
         src_sem, dest_sem = cls._extract_entity_semantics(rule, category, sub_category)
 
         # 6. Map Relevant Fields based on category & rule behavior
         relevant_fields = cls._determine_relevant_fields(rule_identifier, rule_name, category, sub_category, observed_fields)
+        if triggered_attrs:
+            for attr in triggered_attrs:
+                canon = cls.ATTRIBUTE_TO_CANONICAL.get(attr)
+                if canon and canon not in relevant_fields:
+                    relevant_fields.append(canon)
 
         # 7. Identify Primary Behavior (Candidate Archetype)
         primary_behavior = primary_behavior_override or cls._infer_primary_behavior(
@@ -203,6 +223,10 @@ class RuleIntelligenceAnalyzer:
             review_required = True
         elif missing_requirements:
             definition_status = SemanticsDefinitionStatus.INCOMPLETE
+            review_required = True
+        elif not conditions and not raw_pattern and not raw_text and not (authoritative_siem_definition and (threshold is not None or grouping_keys)):
+            definition_status = SemanticsDefinitionStatus.INCOMPLETE
+            missing_requirements.append("SIEM detection logic is empty; cannot be verified")
             review_required = True
         else:
             definition_status = SemanticsDefinitionStatus.VERIFIED
@@ -240,6 +264,24 @@ class RuleIntelligenceAnalyzer:
             missing_requirements=missing_requirements,
         )
 
+    ATTRIBUTE_TO_CANONICAL: Dict[str, str] = {
+        "Host Name": "endpoint.hostname",
+        "User": "user.name",
+        "Command": "process.command_line",
+        "File Name": "file.name",
+        "Attack Tactic": "mitre.tactic",
+        "Attack Technique": "mitre.technique",
+        "Process Blocked": "endpoint.process_blocked",
+        "File Quarantined": "endpoint.file_quarantined",
+        "Machine Quarantined": "endpoint.machine_quarantined",
+        "Informational URL": "intel.url",
+        "Raw Event Log": "event.raw_log",
+        "Event Receive Time": "event.timestamp",
+        "Source IP": "network.source_ip",
+        "Destination IP": "network.destination_ip",
+        "Destination Port": "network.destination_port",
+    }
+
     @classmethod
     def _parse_authoritative_pattern(
         cls,
@@ -252,9 +294,21 @@ class RuleIntelligenceAnalyzer:
     ) -> None:
         """Parses vendor rule text conditions into structured condition objects."""
         lines = pattern_text.splitlines()
+        in_group_by_block = False
+
         for line in lines:
             line_str = line.strip()
             if not line_str:
+                continue
+
+            # Check if entering/exiting a GROUP BY block
+            if re.match(r"^(?:Pattern|IF|WHERE|OCCURS|Incidents|Watch Lists|Triggered Event Attributes|HAVING|ORDER BY)\b", line_str, re.IGNORECASE):
+                in_group_by_block = False
+
+            if in_group_by_block:
+                keys = [k.strip() for k in line_str.split(",") if k.strip()]
+                if keys:
+                    grouping_keys.extend(keys)
                 continue
 
             # Check for boolean operators
@@ -266,22 +320,31 @@ class RuleIntelligenceAnalyzer:
                 boolean_operators.append("NOT")
 
             # Check for grouping keys
-            group_match = re.search(r"(?:group\s*by|groupBy)\s*[:=]\s*([^\n;]+)", line_str, re.IGNORECASE)
-            if group_match:
-                keys = [k.strip() for k in group_match.group(1).split(",")]
-                grouping_keys.extend(keys)
+            inline_group = re.search(r"(?:group\s*by|groupBy)\s*(?:[:=]|\s+)\s*([^\n;]+)", line_str, re.IGNORECASE)
+            if inline_group and inline_group.group(1).strip():
+                rest = inline_group.group(1).strip()
+                if not rest.upper().startswith("BY"):
+                    keys = [k.strip() for k in rest.split(",") if k.strip()]
+                    grouping_keys.extend(keys)
+                else:
+                    in_group_by_block = True
+                continue
+            elif line_str.upper() in ("GROUP BY", "GROUPBY"):
+                in_group_by_block = True
                 continue
 
-            # Check for threshold / window conditions
-            cond_match = re.search(r"([a-zA-Z0-9_\.]+)\s*(>=|<=|>|<|==|=|!=|IN|CONTAINS)\s*([^\n;]+)", line_str)
+            # Check for threshold / window / comparison conditions (supports COUNT(Matched Events), Event Type IN ..., etc.)
+            cond_match = re.search(r"([a-zA-Z0-9_\.\(\)\s]+?)\s*(>=|<=|>|<|==|=|!=|\bIN\b|\bCONTAINS\b)\s*([^\n;]+)", line_str, re.IGNORECASE)
             if cond_match:
                 field, op, val = cond_match.groups()
-                conditions.append({
-                    "field": field.strip(),
-                    "operator": op.strip(),
-                    "value": val.strip(),
-                    "raw": line_str,
-                })
+                field_clean = field.strip()
+                if field_clean.upper() not in ("WHERE", "IF", "AND", "OR", "NOT"):
+                    conditions.append({
+                        "field": field_clean,
+                        "operator": op.strip().upper(),
+                        "value": val.strip(),
+                        "raw": line_str,
+                    })
             elif "suppress" in line_str.lower() or "exclude" in line_str.lower():
                 suppression_conditions.append(line_str)
 
@@ -298,20 +361,39 @@ class RuleIntelligenceAnalyzer:
                 if num_match:
                     try:
                         num = float(num_match.group(1))
-                        unit = "bytes" if "byte" in field else "count"
+                        if "byte" in field:
+                            unit = "bytes"
+                        elif "count" in field:
+                            unit = "event (single match trigger)" if num == 1.0 else "events (aggregation threshold)"
+                        else:
+                            unit = "count"
                         return num, unit
                     except Exception:
                         pass
         return None, None
 
     @classmethod
-    def _extract_window_from_conditions(cls, conditions: List[Dict[str, Any]]) -> Optional[str]:
+    def _extract_window_from_text_or_conditions(
+        cls, raw_text: str, conditions: List[Dict[str, Any]]
+    ) -> Optional[str]:
+        if raw_text:
+            m = re.search(r"(?:in any|within|over a?)\s*(\d+)\s*(second|sec|minute|min|hour|hr)s?\s*(?:time\s*)?window", raw_text, re.IGNORECASE)
+            if m:
+                val, unit = m.groups()
+                return f"{val} {unit}s"
+            m2 = re.search(r"(?:window|aggregation_window)\s*[:=]\s*([a-zA-Z0-9_\s]+)", raw_text, re.IGNORECASE)
+            if m2:
+                return m2.group(1).strip()
         for c in conditions:
             field = c.get("field", "").lower()
             val_str = c.get("value", "")
             if "window" in field or "duration" in field or "time" in field:
                 return val_str.strip()
         return None
+
+    @classmethod
+    def _extract_window_from_conditions(cls, conditions: List[Dict[str, Any]]) -> Optional[str]:
+        return cls._extract_window_from_text_or_conditions("", conditions)
 
     @classmethod
     def _extract_entity_semantics(cls, rule: Rule, category: str, sub_category: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:

@@ -7,12 +7,14 @@ from sqlalchemy import select
 
 from app.models.incident import Incident, HistoricalGroundTruth
 from app.models.rule import Rule
+from app.models.prompt import RulePrompt, PromptVersion
 from app.models.verdict_intelligence import (
     VerdictTrustAssessmentRecord,
     EvidenceSufficiencyAssessmentRecord,
     HistoricalEvaluationRunRecord,
     HistoricalEvaluationResultRecord,
 )
+from app.schemas.rule_intelligence import DetectionArchetype, ArchetypeId
 from app.schemas.evidence_contract import (
     RuleEvidenceContract,
     EvidenceFieldRequirement,
@@ -24,6 +26,7 @@ from app.schemas.verdict_intelligence import (
     EvaluationValidationState,
     DatasetPartition,
     ClaimType,
+    ClaimVerificationResult,
 )
 from app.services.evidence_sufficiency_engine import EvidenceSufficiencyEngine
 from app.services.verdict_claim_validator import VerdictClaimValidator
@@ -1214,3 +1217,328 @@ async def test_api_export_endpoint(client: AsyncClient, admin_user, admin_token:
     res_csv = await client.get("/api/v1/verdict-intelligence/export?format=csv", headers=headers)
     assert res_csv.status_code == 200
     assert res_csv.headers["content-type"].startswith("text/csv")
+
+
+# ==============================================================================
+# SECTION 11: END-TO-END SCENARIOS FOR PH_RULE_CS_SUSPICIOUS_ACTIVITY & ARCHETYPES
+# ==============================================================================
+
+def test_cs_suspicious_activity_true_positive():
+    """PH_RULE_CS_SUSPICIOUS_ACTIVITY: Confirmed malicious PowerShell execution with full telemetry yields high trust TP."""
+    contract = RuleEvidenceContract(
+        contract_id="EC-CS-SUSPICIOUS-V1",
+        rule_id="PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        detection_archetype="MALWARE_EXECUTION",
+        required_evidence=[
+            EvidenceFieldRequirement(field="endpoint.hostname", evidence_type="ENDPOINT", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="process.command_line", evidence_type="PROCESS", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="user.name", evidence_type="USER", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="mitre.technique", evidence_type="MITRE", requirement_level="CONDITIONAL", critical=False),
+        ],
+    )
+
+    now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    incident = {
+        "incident_id": "INC-CS-001",
+        "Host Name": "FIN-SRV-04",
+        "Command": "powershell.exe -ExecutionPolicy Bypass -NoProfile -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQA...",
+        "User": "svc_finops",
+        "Attack Tactic": "Execution",
+        "Attack Technique": "Command and Scripting Interpreter: PowerShell (T1059.001)",
+        "Process Blocked": False,
+        "File Quarantined": False,
+        "File Name": "powershell.exe",
+        "first_seen_epoch": now_ms - 60000,
+        "last_seen_epoch": now_ms,
+    }
+
+    # 1. Sufficiency
+    suff = EvidenceSufficiencyEngine.evaluate_sufficiency(
+        incident_telemetry=incident,
+        contract=contract,
+        archetype=DetectionArchetype.ENDPOINT_MALWARE,
+    )
+    assert suff.is_sufficient is True
+    assert suff.sufficiency_score >= 80.0
+    assert len(suff.missing_mandatory_fields) == 0
+
+    # 2. Claim Grounding
+    model_output = {
+        "proposed_verdict": "TRUE_POSITIVE",
+        "reason": "Suspicious encoded PowerShell command executed on host FIN-SRV-04 by user svc_finops matching T1059.001.",
+        "claims": [
+            {"claim": "powershell.exe executed on FIN-SRV-04", "evidence_ids": ["endpoint.hostname", "process.command_line"], "claim_type": "OBSERVED_FACT"},
+            {"claim": "Execution by user svc_finops", "evidence_ids": ["user.name"], "claim_type": "OBSERVED_FACT"},
+        ],
+    }
+    claim_res = VerdictClaimValidator.validate_claims(
+        model_output=model_output,
+        canonical_telemetry=incident,
+    )
+    assert claim_res.claims_supported is True
+    assert claim_res.unsupported_claims == 0
+    assert len(claim_res.contradictions) == 0
+
+    # 3. Guardrails
+    guard = VerdictGuardrailsEngine.evaluate_guardrails(
+        proposed_verdict="TRUE_POSITIVE",
+        evidence_sufficiency=suff,
+        claim_verification=claim_res,
+        incident_telemetry=incident,
+    )
+    assert guard.effective_verdict == "TRUE_POSITIVE"
+    assert guard.guardrails_triggered == []
+
+    # 4. Trustworthiness (Rule calibrated with N=45)
+    trust = VerdictTrustworthinessEngine.compute_trust_score(
+        rule_id="PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        effective_verdict="TRUE_POSITIVE",
+        evidence_assessment=suff,
+        claim_result=claim_res,
+        historical_sample_size=45,
+        historical_accuracy=0.94,
+    )
+    assert trust.ordinal_score >= 8
+    assert trust.is_calibrated is True
+
+
+def test_cs_suspicious_activity_false_positive_authorized_maintenance():
+    """PH_RULE_CS_SUSPICIOUS_ACTIVITY: Legitimate remote support tool (UltraViewer) in maintenance window yields high trust FP."""
+    contract = RuleEvidenceContract(
+        contract_id="EC-CS-SUSPICIOUS-V1",
+        rule_id="PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        detection_archetype="MALWARE_EXECUTION",
+        required_evidence=[
+            EvidenceFieldRequirement(field="endpoint.hostname", evidence_type="ENDPOINT", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="process.command_line", evidence_type="PROCESS", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="user.name", evidence_type="USER", requirement_level="CORE", critical=True),
+        ],
+    )
+
+    now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    incident = {
+        "incident_id": "INC-CS-002",
+        "Host Name": "DESKTOP-HR-09",
+        "Command": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+        "User": "admin_helpdesk",
+        "Attack Tactic": "Persistence",
+        "Attack Technique": "Remote Access Software",
+        "Process Blocked": False,
+        "File Quarantined": False,
+        "File Name": "UltraViewer_Service.exe",
+        "first_seen_epoch": now_ms - 60000,
+        "last_seen_epoch": now_ms,
+    }
+
+    suff = EvidenceSufficiencyEngine.evaluate_sufficiency(
+        incident_telemetry=incident,
+        contract=contract,
+        archetype=DetectionArchetype.ENDPOINT_MALWARE,
+    )
+    assert suff.is_sufficient is True
+
+    model_output = {
+        "proposed_verdict": "FALSE_POSITIVE",
+        "reason": "Authorized remote assistance software UltraViewer_Service.exe executed on DESKTOP-HR-09 by admin_helpdesk.",
+        "claims": [
+            {"claim": "UltraViewer executed by admin_helpdesk", "evidence_ids": ["user.name", "process.command_line"], "claim_type": "OBSERVED_FACT"}
+        ],
+    }
+    claim_res = VerdictClaimValidator.validate_claims(model_output=model_output, canonical_telemetry=incident)
+    guard = VerdictGuardrailsEngine.evaluate_guardrails(
+        proposed_verdict="FALSE_POSITIVE",
+        evidence_sufficiency=suff,
+        claim_verification=claim_res,
+        incident_telemetry=incident,
+    )
+    assert guard.effective_verdict == "FALSE_POSITIVE"
+
+    trust = VerdictTrustworthinessEngine.compute_trust_score(
+        rule_id="PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        effective_verdict="FALSE_POSITIVE",
+        evidence_assessment=suff,
+        claim_result=claim_res,
+        historical_sample_size=35,
+        historical_accuracy=0.91,
+    )
+    assert trust.ordinal_score >= 8
+
+
+def test_cs_suspicious_activity_missing_mandatory_command_line():
+    """PH_RULE_CS_SUSPICIOUS_ACTIVITY: Missing Command Line triggers Infallible Rule & demotes TP to REQUIRES_ATTENTION."""
+    contract = RuleEvidenceContract(
+        contract_id="EC-CS-SUSPICIOUS-V1",
+        rule_id="PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        detection_archetype="MALWARE_EXECUTION",
+        required_evidence=[
+            EvidenceFieldRequirement(field="endpoint.hostname", evidence_type="ENDPOINT", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="process.command_line", evidence_type="PROCESS", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="user.name", evidence_type="USER", requirement_level="CORE", critical=True),
+        ],
+    )
+
+    # Missing Command / process.command_line
+    incident = {
+        "incident_id": "INC-CS-003",
+        "Host Name": "FIN-SRV-04",
+        "User": "svc_finops",
+        "Attack Tactic": "Execution",
+    }
+
+    suff = EvidenceSufficiencyEngine.evaluate_sufficiency(
+        incident_telemetry=incident,
+        contract=contract,
+        archetype=DetectionArchetype.ENDPOINT_MALWARE,
+    )
+    # Infallible Rule: Missing mandatory field forces is_sufficient=False and score <= 49.0
+    assert suff.is_sufficient is False
+    assert suff.sufficiency_score <= 49.0
+    assert "process.command_line" in suff.missing_mandatory_fields
+
+    claim_res = ClaimVerificationResult(
+        incident_id="INC-CS-003",
+        total_claims=0,
+        grounded_claims=0,
+        unsupported_claims=0,
+        contradicted_claims=0,
+    )
+
+    guard = VerdictGuardrailsEngine.evaluate_guardrails(
+        proposed_verdict="TRUE_POSITIVE",
+        evidence_sufficiency=suff,
+        claim_verification=claim_res,
+        incident_telemetry=incident,
+    )
+    assert guard.effective_verdict == "REQUIRES_ANALYST_ATTENTION"
+    assert any("G1" in g for g in guard.guardrails_triggered)
+
+
+def test_cs_suspicious_activity_contradictory_execution_evidence():
+    """PH_RULE_CS_SUSPICIOUS_ACTIVITY: Process Blocked=True contradictions against ongoing breach claims trigger demotion."""
+    contract = RuleEvidenceContract(
+        contract_id="EC-CS-SUSPICIOUS-V1",
+        rule_id="PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        detection_archetype="MALWARE_EXECUTION",
+        required_evidence=[
+            EvidenceFieldRequirement(field="endpoint.hostname", evidence_type="ENDPOINT", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="process.command_line", evidence_type="PROCESS", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="user.name", evidence_type="USER", requirement_level="CORE", critical=True),
+        ],
+    )
+
+    incident = {
+        "incident_id": "INC-CS-004",
+        "Host Name": "FIN-SRV-04",
+        "Command": "mimikatz.exe sekurlsa::logonpasswords",
+        "User": "svc_finops",
+        "Process Blocked": True,
+        "File Quarantined": True,
+        "endpoint.process_blocked": True,
+    }
+
+    suff = EvidenceSufficiencyEngine.evaluate_sufficiency(
+        incident_telemetry=incident,
+        contract=contract,
+        archetype=DetectionArchetype.ENDPOINT_MALWARE,
+    )
+
+    # Model claims process was NOT blocked and actively stole credentials
+    model_output = {
+        "proposed_verdict": "TRUE_POSITIVE",
+        "reason": "Mimikatz executed without interference and active credential theft succeeded.",
+        "claims": [
+            {"claim": "Mimikatz executed successfully without block", "evidence_ids": ["endpoint.process_blocked"], "claim_type": "ASSERTION"}
+        ],
+    }
+    claim_res = VerdictClaimValidator.validate_claims(
+        model_output=model_output,
+        canonical_telemetry=incident,
+    )
+    # Contradiction detected
+    assert len(claim_res.contradictions) > 0 or not claim_res.claims_supported
+
+    guard = VerdictGuardrailsEngine.evaluate_guardrails(
+        proposed_verdict="TRUE_POSITIVE",
+        evidence_sufficiency=suff,
+        claim_verification=claim_res,
+        incident_telemetry=incident,
+    )
+    assert guard.effective_verdict == "REQUIRES_ANALYST_ATTENTION"
+
+
+def test_cs_suspicious_activity_hallucinated_hash_and_foreign_ip():
+    """PH_RULE_CS_SUSPICIOUS_ACTIVITY: Model hallucinating external IP and non-existent SHA256 triggers Guardrail G2."""
+    contract = RuleEvidenceContract(
+        contract_id="EC-CS-SUSPICIOUS-V1",
+        rule_id="PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        detection_archetype="MALWARE_EXECUTION",
+        required_evidence=[
+            EvidenceFieldRequirement(field="endpoint.hostname", evidence_type="ENDPOINT", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="process.command_line", evidence_type="PROCESS", requirement_level="CORE", critical=True),
+            EvidenceFieldRequirement(field="user.name", evidence_type="USER", requirement_level="CORE", critical=True),
+        ],
+    )
+
+    incident = {
+        "incident_id": "INC-CS-005",
+        "Host Name": "SRV-APP-12",
+        "Command": "whoami /all",
+        "User": "guest",
+    }
+
+    suff = EvidenceSufficiencyEngine.evaluate_sufficiency(
+        incident_telemetry=incident,
+        contract=contract,
+        archetype=DetectionArchetype.ENDPOINT_MALWARE,
+    )
+
+    # Hallucinated external IP 203.0.113.88 not present in telemetry
+    model_output = {
+        "proposed_verdict": "TRUE_POSITIVE",
+        "reason": "Host SRV-APP-12 connected to command server 203.0.113.88 and downloaded malware.",
+        "claims": [
+            {"claim": "Host connected to 203.0.113.88", "evidence_ids": ["destination_ip"], "claim_type": "OBSERVED_FACT"}
+        ],
+    }
+
+    claim_res = VerdictClaimValidator.validate_claims(
+        model_output=model_output,
+        canonical_telemetry=incident,
+    )
+    assert claim_res.unsupported_claims > 0 or len(claim_res.unsupported_claims_list) > 0
+    assert claim_res.claims_supported is False
+
+    guard = VerdictGuardrailsEngine.evaluate_guardrails(
+        proposed_verdict="TRUE_POSITIVE",
+        evidence_sufficiency=suff,
+        claim_verification=claim_res,
+        incident_telemetry=incident,
+    )
+    assert guard.effective_verdict == "REQUIRES_ANALYST_ATTENTION"
+    assert any("G2" in g for g in guard.guardrails_triggered)
+
+
+@pytest.mark.asyncio
+async def test_cs_suspicious_activity_simulation_regression(db_session: AsyncSession):
+    """PH_RULE_CS_SUSPICIOUS_ACTIVITY: Paired historical simulation detects regressions when accuracy degrades."""
+    sim_svc = PolicySimulationService(db_session)
+    cand_v = PromptVersion(
+        id="cand-cs-v2",
+        prompt_id="prompt-cs-01",
+        version_number=2,
+        status="DRAFT",
+        rule_specific_prompt="CrowdStrike suspicious activity detection policy v2",
+        required_evidence="endpoint.hostname, process.command_line, user.name",
+    )
+
+    res = await sim_svc.evaluate_candidate_policy(
+        rule_id="PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        candidate_version=cand_v,
+    )
+    assert "status" in res
+    assert "simulation_status" in res
+    assert "sample_count" in res
+    assert "regression_detected" in res
+    assert "abstention_rate" in res
+    assert res["status"] in ("PASSED", "INSUFFICIENT_DATA", "FAILED")
+

@@ -91,9 +91,9 @@ class EvidenceSufficiencyEngine:
                     field_provenance[f] = prov
 
         # 2. Harvest top-level incident fields
-        for k in ("source_ip", "reporting_ip", "event_type", "severity", "category", "first_seen_epoch", "last_seen_epoch", "created_at_epoch"):
-            if k in incident_payload and incident_payload[k]:
-                available_fields[k] = incident_payload[k]
+        for k, v in incident_payload.items():
+            if k not in ("events", "raw_payload", "canonical_evidence", "canonical_evidence_records") and v is not None:
+                available_fields[k] = v
                 if k not in field_provenance:
                     field_provenance[k] = "SIEM_ALERT_METADATA"
 
@@ -157,9 +157,9 @@ class EvidenceSufficiencyEngine:
 
         # Field matching helper with canonical alias awareness
         def _match_field(target: str) -> bool:
-            clean_target = target.lower().replace("_", ".").replace("-", ".")
+            clean_target = target.lower().replace("_", ".").replace("-", "").replace(" ", "")
             for k in available_fields.keys():
-                clean_k = k.lower().replace("_", ".").replace("-", ".")
+                clean_k = k.lower().replace("_", ".").replace("-", "").replace(" ", "")
                 if clean_target == clean_k:
                     return True
                 # Alias awareness
@@ -167,11 +167,19 @@ class EvidenceSufficiencyEngine:
                     return True
                 if clean_target in ("destination.ip", "destip", "destinationip") and clean_k in ("destination.ip", "destip", "destinationip", "destination_ip"):
                     return True
-                if clean_target in ("network.bytes.sent", "sentbytes64", "bytes.sent", "bytes_sent") and clean_k in ("network.bytes.sent", "sentbytes64", "bytes.sent", "bytessent", "bytes_sent", "sentbytes"):
+                if clean_target in ("network.bytes.sent", "sentbytes64", "bytes.sent", "bytes_sent", "sentbytes") and clean_k in ("network.bytes.sent", "sentbytes64", "bytes.sent", "bytessent", "bytes_sent", "sentbytes"):
                     return True
-                if clean_target in ("process.cmdline", "cmdline", "commandline") and clean_k in ("process.cmdline", "cmdline", "commandline", "process_cmdline"):
+                if clean_target in ("process.command.line", "process.cmdline", "cmdline", "commandline", "command", "process.command_line") and clean_k in ("process.command.line", "process.cmdline", "cmdline", "commandline", "command", "process.command_line"):
                     return True
-                if clean_target in ("process.name", "processname") and clean_k in ("process.name", "processname", "process_name"):
+                if clean_target in ("process.name", "processname", "file.name", "filename") and clean_k in ("process.name", "processname", "process_name", "file.name", "filename", "file_name"):
+                    return True
+                if clean_target in ("endpoint.hostname", "hostname", "host.name", "host") and clean_k in ("endpoint.hostname", "hostname", "host.name", "host", "host_name"):
+                    return True
+                if clean_target in ("user.name", "user", "username") and clean_k in ("user.name", "user", "username", "user_name"):
+                    return True
+                if clean_target in ("mitre.technique", "technique", "attacktechnique") and clean_k in ("mitre.technique", "technique", "attacktechnique", "attack_technique"):
+                    return True
+                if clean_target in ("endpoint.process.blocked", "process.blocked", "processblocked") and clean_k in ("endpoint.process.blocked", "process.blocked", "processblocked", "process_blocked"):
                     return True
             return False
 
@@ -256,9 +264,11 @@ class EvidenceSufficiencyEngine:
 
         # Infallible Rule: A high weighted score NEVER overrides missing mandatory fields or critical contradictions!
         if mandatory_fields_missing:
+            overall_sufficiency_score = min(49.0, overall_sufficiency_score)
             evidence_status = EvidenceStatus.INSUFFICIENT
             notes.append(f"MANDATORY EVIDENCE ABSENT: Missing required fields ({', '.join(mandatory_fields_missing)}). Automatic decision blocked.")
         elif contradictions:
+            overall_sufficiency_score = min(49.0, overall_sufficiency_score)
             evidence_status = EvidenceStatus.CONFLICTING
             notes.append(f"MATERIAL CONTRADICTION: {'; '.join(contradictions)}. Automatic decision blocked.")
         elif overall_sufficiency_score < 70.0:
@@ -291,4 +301,23 @@ class EvidenceSufficiencyEngine:
             contradictions_detected=contradictions,
             notes=notes,
             evaluated_at=datetime.utcnow(),
+        )
+
+    @classmethod
+    def evaluate_sufficiency(
+        cls,
+        incident_telemetry: Optional[Dict[str, Any]] = None,
+        incident_payload: Optional[Dict[str, Any]] = None,
+        contract: Optional[RuleEvidenceContract] = None,
+        archetype: Optional[Any] = None,
+        archetype_id: Optional[str] = None,
+        **kwargs
+    ) -> EvidenceSufficiencyAssessmentResult:
+        payload = incident_telemetry or incident_payload or {}
+        arch = archetype_id or (archetype.value if hasattr(archetype, "value") else str(archetype or ""))
+        return cls.evaluate_incident_sufficiency(
+            incident_payload=payload,
+            contract=contract,
+            archetype_id=arch,
+            **kwargs
         )
