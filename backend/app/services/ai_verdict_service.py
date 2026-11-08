@@ -38,9 +38,9 @@ class VerdictTriageAgent:
 
     @classmethod
     async def is_local_llm_available(cls, force_refresh: bool = False) -> bool:
-        """Checks if Server 2 LLM endpoint is reachable, caching result for 15s."""
+        """Checks if Server 2 LLM endpoint is reachable, caching result for 30s."""
         now = time.time()
-        if not force_refresh and cls._is_local_llm_online is not None and (now - cls._last_probe_time) < 15.0:
+        if not force_refresh and cls._is_local_llm_online is not None and (now - cls._last_probe_time) < 30.0:
             return cls._is_local_llm_online
 
         cls._last_probe_time = now
@@ -190,14 +190,18 @@ class VerdictTriageAgent:
         if model_provider_type:
             chosen_provider_type = model_provider_type
         else:
-            is_online = await self.is_local_llm_available()
-            if not is_online:
-                if allow_mock:
-                    chosen_provider_type = "SIMULATED"
+            # If flagged offline from a previous failed inference, check if recovered
+            if self.__class__._is_local_llm_online is False:
+                is_online = await self.is_local_llm_available(force_refresh=True)
+                if not is_online:
+                    if allow_mock:
+                        chosen_provider_type = "SIMULATED"
+                    else:
+                        raise LocalLLMUnavailableError(
+                            "Local LLM (Server 2) is currently offline. AI verdict generation is deferred until Local LLM comes online."
+                        )
                 else:
-                    raise LocalLLMUnavailableError(
-                        "Local LLM (Server 2) is currently offline. AI verdict generation is deferred until Local LLM comes online."
-                    )
+                    chosen_provider_type = "OPENAI_COMPATIBLE"
             else:
                 chosen_provider_type = "OPENAI_COMPATIBLE"
 
@@ -408,10 +412,11 @@ class VerdictTriageAgent:
         failed = 0
 
         for iid in target_ids:
-            # Check LLM online status before processing each incident
-            if not await self.is_local_llm_available() and not allow_mock:
-                print(f"[Batch AI Verdict] Local LLM went offline at incident {iid}. Stopping batch.")
-                break
+            # If flagged offline from a failure, verify if recovered before continuing batch
+            if self.__class__._is_local_llm_online is False:
+                if not await self.is_local_llm_available(force_refresh=True) and not allow_mock:
+                    print(f"[Batch AI Verdict] Local LLM is offline at incident {iid}. Stopping batch.")
+                    break
 
             try:
                 v = await self.evaluate_incident(iid, username=username, allow_simulated_fallback=allow_mock)
@@ -486,10 +491,11 @@ class VerdictTriageAgent:
         failed_count = 0
 
         for iid in pending_ids:
-            # Re-check LLM availability before each individual incident
-            if not await self.is_local_llm_available() and not allow_mock:
-                print(f"[LLM Backlog Processor] Local LLM went offline at incident {iid}. Halting processing.")
-                break
+            # If flagged offline from a failure, verify if recovered before processing incident
+            if self.__class__._is_local_llm_online is False:
+                if not await self.is_local_llm_available(force_refresh=True) and not allow_mock:
+                    print(f"[LLM Backlog Processor] Local LLM is offline at incident {iid}. Halting processing.")
+                    break
 
             try:
                 await self.evaluate_incident(iid, username=username, allow_simulated_fallback=allow_mock)
