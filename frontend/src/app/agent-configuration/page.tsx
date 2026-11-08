@@ -55,7 +55,7 @@ export default function AgentConfigurationPage() {
   const [llmPort, setLlmPort] = useState(8000);
   const [llmProtocol, setLlmProtocol] = useState("http");
   const [llmModelName, setLlmModelName] = useState("Qwen/Qwen2.5-7B-Instruct-AWQ");
-  const [llmTimeout, setLlmTimeout] = useState(30);
+  const [llmTimeout, setLlmTimeout] = useState(60);
   const [llmAllowMockFallback, setLlmAllowMockFallback] = useState(true);
   const [llmBaseUrl, setLlmBaseUrl] = useState("");
   const [llmIsOnline, setLlmIsOnline] = useState(false);
@@ -695,7 +695,7 @@ export default function AgentConfigurationPage() {
                     className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
                   />
                   <span className="text-[10px] text-slate-400 block">
-                    Recommended: 30 seconds for high-throughput reasoning.
+                    Recommended: 60 seconds for complex incident reasoning and evidence synthesis.
                   </span>
                 </div>
 
