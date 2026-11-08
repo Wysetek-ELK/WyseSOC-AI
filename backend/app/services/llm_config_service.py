@@ -113,9 +113,12 @@ class LLMConfigService:
         parsed = cls.parse_llm_url(settings.LOCAL_LLM_BASE_URL)
         server1_ip = await cls.get_server1_outbound_ip()
 
-        # Check online status from AIVerdictService
+        # Check live online status from AIVerdictService (utilizes 15s cache)
         from app.services.ai_verdict_service import AIVerdictService
-        is_online = bool(getattr(AIVerdictService, "_is_local_llm_online", False))
+        try:
+            is_online = await AIVerdictService.is_local_llm_available()
+        except Exception:
+            is_online = bool(getattr(AIVerdictService, "_is_local_llm_online", False))
 
         return LLMConfigResponse(
             host=parsed["host"],

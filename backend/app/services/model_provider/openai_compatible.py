@@ -180,15 +180,15 @@ class OpenAICompatibleProvider(BaseModelProvider):
         base_url: str = "http://127.0.0.1:8001/v1",
         api_key: Optional[str] = None,
         model_name: str = "qwen3-8b-instruct",
-        timeout_seconds: float = 30.0,
-        max_tokens: int = 1024,
+        timeout_seconds: float = 60.0,
+        max_tokens: int = 350,
         temperature: float = 0.1,
     ):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key or "EMPTY"
         self.model_name = model_name
-        self.timeout_seconds = timeout_seconds
-        self.max_tokens = max_tokens
+        self.timeout_seconds = max(float(timeout_seconds), 60.0)
+        self.max_tokens = min(int(max_tokens), 350) if max_tokens else 350
         self.temperature = temperature
 
     async def get_health(self) -> ProviderHealthResponse:
@@ -291,7 +291,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_content},
             ],
-            "max_tokens": min(self.max_tokens, 1024),
+            "max_tokens": min(self.max_tokens, 350),
             "temperature": self.temperature,
         }
 
@@ -320,7 +320,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
                         latency_ms=latency_ms,
                         model_identifier=self.model_name,
                         prompt_version_number=prompt_version_number,
-                        validation_status="INVALID_SCHEMA",
+                        validation_status="HTTP_ERROR",
                         is_simulated=False,
                     )
 
@@ -394,6 +394,23 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     total_tokens=total_tokens,
                 )
 
+        except httpx.TimeoutException as e:
+            latency_ms = int((time.time() - start_time) * 1000)
+            return StructuredModelVerdict(
+                incident_id=incident_id,
+                rule_id=rule_id,
+                verdict="REQUIRES_ATTENTION",
+                confidence=0.0,
+                reason=f"Inference request timed out after {latency_ms/1000:.1f}s on Server 2",
+                supporting_evidence=[],
+                missing_evidence=["Inference response within timeout deadline"],
+                analyst_questions=["Check Server 2 GPU load or increase timeout"],
+                latency_ms=latency_ms,
+                model_identifier=self.model_name,
+                prompt_version_number=prompt_version_number,
+                validation_status="CONNECTION_ERROR",
+                is_simulated=False,
+            )
         except Exception as e:
             latency_ms = int((time.time() - start_time) * 1000)
             return StructuredModelVerdict(
@@ -401,14 +418,14 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 rule_id=rule_id,
                 verdict="REQUIRES_ATTENTION",
                 confidence=0.0,
-                reason=f"Inference execution exception: {str(e)}",
+                reason=f"Inference execution exception: {type(e).__name__} ({str(e) or 'connection failed'})",
                 supporting_evidence=[],
                 missing_evidence=["Successful API response"],
                 analyst_questions=["Verify local LLM connectivity on Server 2"],
                 latency_ms=latency_ms,
                 model_identifier=self.model_name,
                 prompt_version_number=prompt_version_number,
-                validation_status="INVALID_SCHEMA",
+                validation_status="CONNECTION_ERROR",
                 is_simulated=False,
             )
 

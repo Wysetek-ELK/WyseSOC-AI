@@ -149,21 +149,32 @@ class VerdictTriageAgent:
             lr_q = await self.db.execute(
                 select(LearningRecord)
                 .where(
-                    (LearningRecord.rule_id == rule.id) | (LearningRecord.verification_status == "VERIFIED")
+                    LearningRecord.rule_id == rule.id,
+                    LearningRecord.verification_status == "VERIFIED"
                 )
                 .options(selectinload(LearningRecord.incident))
                 .order_by(desc(LearningRecord.feedback_timestamp))
-                .limit(3)
+                .limit(1)
             )
             learning_records = lr_q.scalars().all()
+            if not learning_records:
+                lr_fallback = await self.db.execute(
+                    select(LearningRecord)
+                    .where(LearningRecord.verification_status == "VERIFIED")
+                    .options(selectinload(LearningRecord.incident))
+                    .order_by(desc(LearningRecord.feedback_timestamp))
+                    .limit(1)
+                )
+                learning_records = lr_fallback.scalars().all()
+
             if learning_records:
-                few_shot_lines = ["\n\n### VERIFIED HISTORICAL PRECEDENTS (FEW-SHOT EXAMPLES):"]
+                few_shot_lines = ["\n\n### VERIFIED HISTORICAL PRECEDENT (FEW-SHOT EXAMPLE):"]
                 for lr in learning_records:
                     prec_title = lr.incident.title if lr.incident else "Historical Alert"
                     few_shot_lines.append(
                         f"- Precedent: {prec_title}\n"
                         f"  Verified Determination: {lr.verified_verdict}\n"
-                        f"  Analyst Rationale: {lr.analyst_explanation[:250]}"
+                        f"  Analyst Rationale: {lr.analyst_explanation[:150]}"
                     )
                 prompt_text += "\n".join(few_shot_lines)
 
@@ -199,10 +210,11 @@ class VerdictTriageAgent:
                 prompt_text=prompt_text,
                 prompt_version_number=prompt_ver_num,
             )
-            # If OPENAI_COMPATIBLE returned an error/unreachable
+            
+            # Check if OPENAI_COMPATIBLE provider suffered an actual connection failure or HTTP error
             is_connection_error = (
-                verdict.verdict == "REQUIRES_ATTENTION"
-                and any(err_hint in verdict.reason.lower() for err_hint in ("connect", "exception", "failed", "offline", "degraded", "refused"))
+                getattr(verdict, "validation_status", "") in ("CONNECTION_ERROR", "HTTP_ERROR")
+                or (getattr(verdict, "confidence", 100.0) == 0.0 and getattr(verdict, "validation_status", "") != "VALID")
             )
             if is_connection_error:
                 self.__class__._is_local_llm_online = False
@@ -216,6 +228,9 @@ class VerdictTriageAgent:
                     )
                 else:
                     raise LocalLLMUnavailableError(f"Local LLM connection error: {verdict.reason}")
+            else:
+                # Successfully received response from Server 2
+                self.__class__._is_local_llm_online = True
         except Exception as exc:
             self.__class__._is_local_llm_online = False
             if allow_mock and not isinstance(exc, LocalLLMUnavailableError):
