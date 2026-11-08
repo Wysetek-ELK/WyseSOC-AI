@@ -5,10 +5,10 @@
 **Date:** November 2026  
 **Environment:** Dry-Run Intelligence Validation (Non-Production Shadow Mode)  
 **Target Rule:** `PH_RULE_CS_SUSPICIOUS_ACTIVITY` (CrowdStrike Suspicious Activity) & `PH_RULE_LARGE_OUTBOUND_XFER`  
-**Deployed Commit SHA:** `de5945c` (Parent: `e1b37fa7`)  
+**Deployed Commit SHA:** `8763f02` (Hotfix for simulation 500; Baseline: `d8b24ff`, `de5945c`)  
 **Deployment Target:** `remote-server (production)`  
 **Health Check Status:** HTTP 200 OK (Attempt 1)  
-**Test Suite Verification:** 219 / 219 Backend Tests Passed (100%), Next.js Turbopack Build 28 / 28 Routes Passed (0 Errors)
+**Test Suite Verification:** 220 / 220 Backend Tests Passed (100%), Next.js Turbopack Build 28 / 28 Routes Passed (0 Errors)
 
 ---
 
@@ -171,3 +171,37 @@ Coverage Areas Verified   :
 > 1. **Shadow Mode Operation:** All automated evaluations, Trust Scores, and guardrail verdicts operate strictly in dry-run/shadow mode. No automated live SIEM ticket closures, firewall blocklist updates, or host containment actions are executed.
 > 2. **Sample Size Requirements:** A rule requires a minimum of $N \ge 30$ historical adjudicated incidents to achieve calibration. Any rule with $N < 30$ is strictly capped at a maximum Trust Score of 6/10, ensuring no small-sample rule can trigger automated actions.
 > 3. **Non-Production Certification:** This system has been verified in the dry-run remote Linux environment. Production readiness certification, automated live ticketing, cloud CI/CD pipelines, and multi-tenant authentication redesign remain strictly outside the scope of AIS 2.1.
+
+---
+
+## 8. Post-Deployment Defect Resolution: HTTP 500 Simulation Evaluation Fix
+
+### 8.1 Symptom
+During frontend interaction in Agent Intelligence Studio, clicking "Run Historical Simulation" triggered:
+`POST /api/prompts/rule/0974a66e-ede2-4a6a-821b-6283a99c8aa4/evaluate-simulation?version_id=b6d9df2f-aad8-4208-89de-3e94e64e1b49 500 (Internal Server Error)`
+
+### 8.2 Root Causes Identified
+1. **Unchecked Null Access on `run.regression_summary`:**
+   In `backend/app/services/policy_simulation_service.py` line 500:
+   `"baseline_metrics": run.regression_summary.get("baseline_accuracy"),`
+   When `run_dry_run_intelligence_evaluation` completed without a baseline run ID, `run.regression_summary` was `None`. Unlike line 488 which had a defensive guard (`if run.regression_summary else ...`), line 500 called `.get()` directly on `None`, throwing an unhandled `AttributeError: 'NoneType' object has no attribute 'get'`.
+2. **Strict Rule Identifier & Version Resolution Mismatch:**
+   In `backend/app/api/prompts.py`, `evaluate_policy_simulation` queried rules strictly by `Rule.id == rule_id`. If `version_id` string matching did not match `v.id`, `target_ver` evaluated to `None`. The endpoint lacked a defensive null check or fallback before passing `target_ver` to `evaluate_candidate_policy`, leading to `candidate_version.version_number` raising `AttributeError`.
+3. **Missing Instance Resolution in Evidence Contract Service:**
+   `EvidenceContractService(db).get_active_contract_for_rule` was invoked in `policy_simulation_service.py` and `verdict_intelligence.py` as an instance method, but only a `@classmethod` was defined, falling into an exception caught with a warning.
+
+### 8.3 Remediation Implemented
+1. **Defensive `regression_summary` Guarding:**
+   - Initialized `HistoricalEvaluationRunRecord` with `regression_summary={}`, `metrics={}`, `selective_metrics=[]`, `calibration_metrics={}`.
+   - Guarded `baseline_metrics` at line 500: `reg_summary.get("baseline_accuracy")` where `reg_summary = run.regression_summary or {}`.
+2. **Resilient Rule & Version Resolution:**
+   - Updated `backend/app/api/prompts.py` to query `select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id))`.
+   - Stringified version comparison: `str(v.id) == str(version_id)`.
+   - Added automatic fallback to active version or first version, and explicit 404 handling if no version exists.
+   - Wrapped `evaluate_candidate_policy` execution in a try/except block returning structured 500 error logs instead of unhandled crashes.
+3. **Instance-Level `get_active_contract_for_rule` Support:**
+   - Implemented `__init__(self, db)` and `async def get_active_contract_for_rule(self, rule_id)` in `EvidenceContractService`, resolving the contract dynamically from DB session.
+4. **Automated Verification:**
+   - Added `test_api_evaluate_simulation_endpoint` covering UUID, rule_identifier, fallback to active version, and empty query parameters.
+   - Total backend tests passed: **220 / 220 (100%)**.
+   - Remote deployment of commit `8763f02` verified with health check passing (`HTTP 200 OK`).
