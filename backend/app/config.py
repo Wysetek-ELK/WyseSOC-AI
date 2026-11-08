@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     FORTISIEM_VERIFY_SSL: bool = os.getenv("FORTISIEM_VERIFY_SSL", "false").lower() == "true"
     FORTISIEM_TIMEOUT: float = float(os.getenv("FORTISIEM_TIMEOUT", "25.0"))
     FORTISIEM_MOCK_FALLBACK: bool = os.getenv("FORTISIEM_MOCK_FALLBACK", "true").lower() == "true"
-    FORTISIEM_AUTO_POLL_ENABLED: bool = os.getenv("FORTISIEM_AUTO_POLL_ENABLED", "false").lower() == "true"
+    FORTISIEM_AUTO_POLL_ENABLED: bool = os.getenv("FORTISIEM_AUTO_POLL_ENABLED", "true").lower() == "true"
     FORTISIEM_POLL_INTERVAL_SECONDS: int = int(os.getenv("FORTISIEM_POLL_INTERVAL_SECONDS", "180"))
     FORTISIEM_AUTO_AI_VERDICT: bool = os.getenv("FORTISIEM_AUTO_AI_VERDICT", "true").lower() == "true"
 

@@ -89,7 +89,11 @@ class FortiSIEMSyncScheduler:
         """Continuous background execution loop."""
         try:
             # First cycle executes immediately on start
-            await self._execute_single_cycle(force_pull_all=not self.initial_pull_completed)
+            try:
+                await self._execute_single_cycle(force_pull_all=not self.initial_pull_completed)
+            except Exception as e:
+                self.last_status = "ERROR"
+                self.last_error = f"Initial cycle error: {str(e)}"
 
             while self._is_running:
                 now = datetime.now(timezone.utc)
@@ -107,7 +111,11 @@ class FortiSIEMSyncScheduler:
                 if not self._is_running:
                     break
 
-                await self._execute_single_cycle(force_pull_all=False)
+                try:
+                    await self._execute_single_cycle(force_pull_all=False)
+                except Exception as e:
+                    self.last_status = "ERROR"
+                    self.last_error = f"Periodic cycle error: {str(e)}"
 
         except asyncio.CancelledError:
             pass

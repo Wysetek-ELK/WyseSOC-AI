@@ -186,6 +186,7 @@ async def start_scheduler(
     Starts continuous FortiSIEM incident polling (default: every 180 seconds / 3 minutes).
     Automatically runs AI verdict evaluations on all newly ingested alerts.
     """
+    settings.FORTISIEM_AUTO_POLL_ENABLED = True
     status = fortisiem_scheduler.start(
         interval_seconds=req.interval_seconds or 180,
         auto_ai_verdict=req.auto_ai_verdict if req.auto_ai_verdict is not None else True,
@@ -200,6 +201,7 @@ async def stop_scheduler(
     """
     Halts the continuous background poller.
     """
+    settings.FORTISIEM_AUTO_POLL_ENABLED = False
     status = fortisiem_scheduler.stop()
     return FortiSIEMSchedulerStatusResponse(**status)
 
