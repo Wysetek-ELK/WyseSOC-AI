@@ -1,10 +1,12 @@
 import time
+import asyncio
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Union
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, desc, or_
+from sqlalchemy import select, update, desc, or_, func
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.models.incident import Incident
 from app.models.rule import Rule
 from app.models.learning import LearningRecord
@@ -13,6 +15,11 @@ from app.models.audit import AuditLog
 from app.services.model_payload_allowlist import build_model_facing_payload
 from app.services.model_provider.factory import get_model_provider
 from app.services.prompt_studio_service import PromptStudioService, COMMON_SOC_BASELINE
+
+
+class LocalLLMUnavailableError(Exception):
+    """Raised when Server 2 Local LLM is offline or unreachable."""
+    pass
 
 
 class AIVerdictService:
@@ -30,10 +37,10 @@ class AIVerdictService:
         self.db = db
 
     @classmethod
-    async def is_local_llm_available(cls) -> bool:
-        """Checks if Server 2 LLM endpoint is reachable, caching result for 30s."""
+    async def is_local_llm_available(cls, force_refresh: bool = False) -> bool:
+        """Checks if Server 2 LLM endpoint is reachable, caching result for 15s."""
         now = time.time()
-        if cls._is_local_llm_online is not None and (now - cls._last_probe_time) < 30.0:
+        if not force_refresh and cls._is_local_llm_online is not None and (now - cls._last_probe_time) < 15.0:
             return cls._is_local_llm_online
 
         cls._last_probe_time = now
@@ -45,12 +52,19 @@ class AIVerdictService:
             cls._is_local_llm_online = False
         return cls._is_local_llm_online
 
+    async def get_pending_incident_count(self) -> int:
+        """Returns the number of incidents currently awaiting an AI verdict."""
+        res = await self.db.execute(
+            select(func.count(Incident.id)).where(Incident.ai_verdict.is_(None))
+        )
+        return res.scalar() or 0
+
     async def evaluate_incident(
         self,
         incident_id_or_obj: Union[str, Incident],
         username: str = "system",
         model_provider_type: Optional[str] = None,
-        allow_simulated_fallback: bool = True,
+        allow_simulated_fallback: bool = False,
     ) -> Dict[str, Any]:
         """
         Evaluates a single incident with the LLM.
@@ -160,12 +174,21 @@ class AIVerdictService:
             "description": rule.description if rule else "",
         }
 
-        # 5. Invoke Model Provider with resilient fallback
+        # 5. Invoke Model Provider with strict offline enforcement
+        allow_mock = allow_simulated_fallback or getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
         if model_provider_type:
             chosen_provider_type = model_provider_type
         else:
             is_online = await self.is_local_llm_available()
-            chosen_provider_type = "OPENAI_COMPATIBLE" if is_online else "SIMULATED"
+            if not is_online:
+                if allow_mock:
+                    chosen_provider_type = "SIMULATED"
+                else:
+                    raise LocalLLMUnavailableError(
+                        "Local LLM (Server 2) is currently offline. AI verdict generation is deferred until Local LLM comes online."
+                    )
+            else:
+                chosen_provider_type = "OPENAI_COMPATIBLE"
 
         provider = get_model_provider(chosen_provider_type)
 
@@ -176,23 +199,26 @@ class AIVerdictService:
                 prompt_text=prompt_text,
                 prompt_version_number=prompt_ver_num,
             )
-            # If OPENAI_COMPATIBLE returned an error/unreachable and fallback is permitted, switch to SIMULATED
+            # If OPENAI_COMPATIBLE returned an error/unreachable
             is_connection_error = (
                 verdict.verdict == "REQUIRES_ATTENTION"
                 and any(err_hint in verdict.reason.lower() for err_hint in ("connect", "exception", "failed", "offline", "degraded", "refused"))
             )
-            if is_connection_error and allow_simulated_fallback:
+            if is_connection_error:
                 self.__class__._is_local_llm_online = False
-                sim_provider = get_model_provider("SIMULATED")
-                verdict = await sim_provider.analyze_incident(
-                    incident_payload=payload_dict,
-                    rule_spec=rule_spec,
-                    prompt_text=prompt_text,
-                    prompt_version_number=prompt_ver_num,
-                )
+                if allow_mock:
+                    sim_provider = get_model_provider("SIMULATED")
+                    verdict = await sim_provider.analyze_incident(
+                        incident_payload=payload_dict,
+                        rule_spec=rule_spec,
+                        prompt_text=prompt_text,
+                        prompt_version_number=prompt_ver_num,
+                    )
+                else:
+                    raise LocalLLMUnavailableError(f"Local LLM connection error: {verdict.reason}")
         except Exception as exc:
-            if allow_simulated_fallback:
-                self.__class__._is_local_llm_online = False
+            self.__class__._is_local_llm_online = False
+            if allow_mock and not isinstance(exc, LocalLLMUnavailableError):
                 sim_provider = get_model_provider("SIMULATED")
                 verdict = await sim_provider.analyze_incident(
                     incident_payload=payload_dict,
@@ -201,7 +227,9 @@ class AIVerdictService:
                     prompt_version_number=prompt_ver_num,
                 )
             else:
-                raise exc
+                if isinstance(exc, LocalLLMUnavailableError):
+                    raise exc
+                raise LocalLLMUnavailableError(f"Local LLM inference failed: {str(exc)}") from exc
 
         # 6. Format Structured Verdict
         verdict_data = {
@@ -268,11 +296,26 @@ class AIVerdictService:
         only_pending: bool = True,
         max_batch: int = 50,
         username: str = "batch_evaluator",
+        allow_simulated_fallback: bool = False,
     ) -> Dict[str, Any]:
         """
         Evaluates a batch of incidents in sequence.
-        Useful for continuous ingestion or on-demand batch evaluation.
+        Halts immediately if the Local LLM is offline, leaving incidents pending.
         """
+        is_online = await self.is_local_llm_available()
+        allow_mock = allow_simulated_fallback or getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
+        if not is_online and not allow_mock:
+            pending_count = await self.get_pending_incident_count()
+            return {
+                "success": False,
+                "total_requested": 0,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "results": [],
+                "message": f"Local LLM (Server 2) is currently offline. {pending_count} incidents remain queued.",
+            }
+
         stmt = select(Incident).options(
             selectinload(Incident.rule),
             selectinload(Incident.events),
@@ -283,7 +326,7 @@ class AIVerdictService:
         elif only_pending:
             stmt = stmt.where(Incident.ai_verdict.is_(None))
 
-        stmt = stmt.order_by(desc(Incident.created_at_epoch), desc(Incident.created_at)).limit(max_batch)
+        stmt = stmt.order_by(Incident.created_at_epoch.asc().nulls_last(), Incident.created_at.asc()).limit(max_batch)
         res = await self.db.execute(stmt)
         incidents = res.scalars().all()
         target_ids = [str(inc.incident_id or inc.id) for inc in incidents]
@@ -293,10 +336,17 @@ class AIVerdictService:
         failed = 0
 
         for iid in target_ids:
+            # Check LLM online status before processing each incident
+            if not await self.is_local_llm_available() and not allow_mock:
+                print(f"[Batch AI Verdict] Local LLM went offline at incident {iid}. Stopping batch.")
+                break
+
             try:
-                v = await self.evaluate_incident(iid, username=username)
+                v = await self.evaluate_incident(iid, username=username, allow_simulated_fallback=allow_mock)
+                await self.db.commit()
                 results.append(v)
                 successful += 1
+                await asyncio.sleep(0.15)
             except Exception as e:
                 failed += 1
                 results.append({
@@ -313,4 +363,78 @@ class AIVerdictService:
             "failed": failed,
             "results": results,
             "message": f"Evaluated {successful} incidents with AI Verdict ({failed} failures).",
+        }
+
+    async def process_pending_incidents(
+        self,
+        max_batch: int = 100,
+        username: str = "llm_backlog_worker",
+        pause_between_s: float = 0.15,
+    ) -> Dict[str, Any]:
+        """
+        Discovers all pending incidents without an AI verdict, and once Local LLM is
+        online, processes them one by one sequentially.
+        If Local LLM is offline or goes offline mid-batch, halts immediately.
+        """
+        is_online = await self.is_local_llm_available(force_refresh=True)
+        allow_mock = getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
+        pending_total = await self.get_pending_incident_count()
+
+        if not is_online and not allow_mock:
+            return {
+                "success": False,
+                "is_llm_online": False,
+                "message": f"Local LLM (Server 2) is currently offline. {pending_total} incidents pending in queue.",
+                "processed": 0,
+                "failed": 0,
+                "pending_remaining": pending_total,
+            }
+
+        if pending_total == 0:
+            return {
+                "success": True,
+                "is_llm_online": True,
+                "message": "All incidents have AI verdicts. No pending incidents in queue.",
+                "processed": 0,
+                "failed": 0,
+                "pending_remaining": 0,
+            }
+
+        # Query pending incident IDs chronologically
+        stmt = (
+            select(Incident.incident_id)
+            .where(Incident.ai_verdict.is_(None))
+            .order_by(Incident.created_at_epoch.asc().nulls_last(), Incident.created_at.asc())
+            .limit(max_batch)
+        )
+        res = await self.db.execute(stmt)
+        pending_ids = res.scalars().all()
+
+        processed_count = 0
+        failed_count = 0
+
+        for iid in pending_ids:
+            # Re-check LLM availability before each individual incident
+            if not await self.is_local_llm_available() and not allow_mock:
+                print(f"[LLM Backlog Processor] Local LLM went offline at incident {iid}. Halting processing.")
+                break
+
+            try:
+                await self.evaluate_incident(iid, username=username, allow_simulated_fallback=allow_mock)
+                await self.db.commit()
+                processed_count += 1
+                if pause_between_s > 0:
+                    await asyncio.sleep(pause_between_s)
+            except Exception as exc:
+                failed_count += 1
+                print(f"[LLM Backlog Processor] Error evaluating incident {iid}: {exc}")
+
+        remaining = await self.get_pending_incident_count()
+        return {
+            "success": True,
+            "is_llm_online": True,
+            "processed": processed_count,
+            "failed": failed_count,
+            "pending_remaining": remaining,
+            "message": f"Processed {processed_count} pending incidents one by one ({remaining} remaining).",
         }

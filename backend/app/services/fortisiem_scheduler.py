@@ -99,14 +99,31 @@ class FortiSIEMSyncScheduler:
                 now = datetime.now(timezone.utc)
                 self.next_sync_time = now + timedelta(seconds=self.interval_seconds)
 
-                # Wait for interval or stop event
-                try:
-                    await asyncio.wait_for(self._stop_event.wait(), timeout=float(self.interval_seconds))
-                    # Stop event was set
-                    break
-                except asyncio.TimeoutError:
-                    # Timeout reached: execute next cycle
-                    pass
+                # Divide the interval into 30s checks to promptly process pending incidents when LLM comes online
+                elapsed = 0
+                step = 30
+                while elapsed < self.interval_seconds and self._is_running:
+                    wait_time = min(step, self.interval_seconds - elapsed)
+                    try:
+                        await asyncio.wait_for(self._stop_event.wait(), timeout=float(wait_time))
+                        # Stop event was set
+                        break
+                    except asyncio.TimeoutError:
+                        elapsed += wait_time
+
+                    if not self._is_running:
+                        break
+
+                    # If not yet time for a full FortiSIEM poll, check if Local LLM came online to process pending backlog
+                    if elapsed < self.interval_seconds and self.auto_ai_verdict:
+                        try:
+                            async with AsyncSessionLocal() as session:
+                                service = FortiSIEMService(session)
+                                p_res = await service.process_pending_incidents(max_count=25, username="scheduler")
+                                if p_res.get("processed", 0) > 0:
+                                    self.total_ai_verdicts_count += p_res["processed"]
+                        except Exception:
+                            pass
 
                 if not self._is_running:
                     break
@@ -160,6 +177,16 @@ class FortiSIEMSyncScheduler:
 
                 if checkpoint:
                     self.checkpoint_epoch = max(self.checkpoint_epoch or 0, checkpoint)
+
+                # Process pending incidents backlog one by one if Local LLM is online
+                if self.auto_ai_verdict:
+                    try:
+                        pending_res = await service.process_pending_incidents(max_count=50, username="scheduler")
+                        backlog_processed = pending_res.get("processed", 0)
+                        if backlog_processed > 0:
+                            ai_verdicts += backlog_processed
+                    except Exception as pend_exc:
+                        print(f"[Scheduler Backlog Processing Warning]: {pend_exc}")
 
                 self.total_pulled_count += newly_ingested
                 self.total_ai_verdicts_count += ai_verdicts

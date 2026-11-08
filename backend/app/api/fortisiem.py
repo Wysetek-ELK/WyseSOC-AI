@@ -170,11 +170,33 @@ async def pull_all_incidents(
 @router.get("/scheduler/status", response_model=FortiSIEMSchedulerStatusResponse)
 async def get_scheduler_status(
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Returns real-time status, checkpoint watermark, and metrics for continuous 3-minute poller.
+    Includes pending AI verdict count and LLM online status.
     """
-    return FortiSIEMSchedulerStatusResponse(**fortisiem_scheduler.get_status())
+    ai_service = AIVerdictService(db)
+    is_online = await ai_service.is_local_llm_available()
+    pending_count = await ai_service.get_pending_incident_count()
+
+    raw_status = fortisiem_scheduler.get_status()
+    raw_status["is_llm_online"] = is_online
+    raw_status["pending_ai_verdicts_count"] = pending_count
+    return FortiSIEMSchedulerStatusResponse(**raw_status)
+
+
+@router.post("/process-pending-verdicts", response_model=Dict[str, Any])
+async def process_pending_verdicts(
+    max_count: int = 100,
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Evaluates pending incidents lacking AI verdicts one by one once Local LLM is online.
+    """
+    service = FortiSIEMService(db)
+    return await service.process_pending_incidents(max_count=max_count, username=current_user.username)
 
 
 @router.post("/scheduler/start", response_model=FortiSIEMSchedulerStatusResponse)

@@ -11,6 +11,9 @@ backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
+from app.config import settings
+settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK = True
+
 from app.database import Base, get_db
 from app.main import app
 from app.models.user import User

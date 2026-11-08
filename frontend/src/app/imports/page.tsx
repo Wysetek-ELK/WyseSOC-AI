@@ -56,6 +56,7 @@ export default function ImportsPage() {
   // Continuous Scheduler States
   const [schedulerStatus, setSchedulerStatus] = useState<FortiSIEMSchedulerStatusResponse | null>(null);
   const [isOperatingScheduler, setIsOperatingScheduler] = useState(false);
+  const [isProcessingPending, setIsProcessingPending] = useState(false);
   const [schedulerMsg, setSchedulerMsg] = useState<string | null>(null);
 
   const loadJobs = async () => {
@@ -207,6 +208,21 @@ export default function ImportsPage() {
     }
   };
 
+  const handleProcessPending = async () => {
+    setIsProcessingPending(true);
+    setSchedulerMsg(null);
+    try {
+      const res = await api.processPendingFortiSiemVerdicts(100);
+      await loadSchedulerStatus();
+      await loadJobs();
+      setSchedulerMsg(res.message || "Processed pending incidents with Local LLM.");
+    } catch (err: any) {
+      setSchedulerMsg(err.message || "Failed processing pending incidents.");
+    } finally {
+      setIsProcessingPending(false);
+    }
+  };
+
   const formatEpoch = (isoStr: string) => {
     return new Date(isoStr).toLocaleString();
   };
@@ -250,8 +266,19 @@ export default function ImportsPage() {
             </p>
           </div>
 
-          {/* Poller Status Pill */}
-          <div className="flex items-center gap-2">
+          {/* Status Pills */}
+          <div className="flex flex-wrap items-center gap-2">
+            {schedulerStatus?.is_llm_online ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700 font-mono shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                Local LLM Online
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-700 font-mono shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                Local LLM Offline (Queued)
+              </span>
+            )}
             {schedulerStatus?.is_running ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 font-mono shadow-sm">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -267,7 +294,7 @@ export default function ImportsPage() {
         </div>
 
         {/* Poller Control Bar & Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs font-mono">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs font-mono">
           <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
             <span className="text-[10px] text-slate-400 block font-sans">Polling Interval</span>
             <span className="font-bold text-cyan-300 text-sm">{schedulerStatus?.interval_seconds || 180}s (3m)</span>
@@ -279,6 +306,12 @@ export default function ImportsPage() {
           <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
             <span className="text-[10px] text-slate-400 block font-sans">AI Verdicts Generated</span>
             <span className="font-bold text-sky-400 text-sm">{schedulerStatus?.total_ai_verdicts_count || 0}</span>
+          </div>
+          <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
+            <span className="text-[10px] text-slate-400 block font-sans">Pending LLM Queue</span>
+            <span className={`font-bold text-sm ${(schedulerStatus?.pending_ai_verdicts_count ?? 0) > 0 ? "text-amber-400 animate-pulse" : "text-slate-400"}`}>
+              {schedulerStatus?.pending_ai_verdicts_count ?? 0} pending
+            </span>
           </div>
           <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
             <span className="text-[10px] text-slate-400 block font-sans">Last Cycle Status</span>
@@ -340,6 +373,24 @@ export default function ImportsPage() {
               <Zap className="h-3.5 w-3.5 text-cyan-400" />
               Sync Cycle Now
             </button>
+
+            {/* 4. Process Pending Button */}
+            {(schedulerStatus?.pending_ai_verdicts_count ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={handleProcessPending}
+                disabled={isProcessingPending || !schedulerStatus?.is_llm_online}
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-600 bg-amber-950/60 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:text-white hover:bg-amber-900 disabled:opacity-50 transition-colors shadow-sm"
+                title={schedulerStatus?.is_llm_online ? "Process pending incidents with Local LLM one by one" : "Local LLM is offline. Backlog will auto-process once Local LLM comes online."}
+              >
+                {isProcessingPending ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                )}
+                <span>Process Pending ({schedulerStatus?.pending_ai_verdicts_count})</span>
+              </button>
+            )}
           </div>
 
           {/* Options: Auto AI Verdict checkbox */}

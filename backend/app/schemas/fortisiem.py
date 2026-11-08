@@ -54,6 +54,8 @@ class FortiSIEMSchedulerStatusResponse(BaseModel):
     total_pulled_count: int = 0
     total_ai_verdicts_count: int = 0
     recent_sync_logs: List[Dict[str, Any]] = Field(default_factory=list)
+    is_llm_online: bool = False
+    pending_ai_verdicts_count: int = 0
 
 
 class FortiSIEMSchedulerControlRequest(BaseModel):

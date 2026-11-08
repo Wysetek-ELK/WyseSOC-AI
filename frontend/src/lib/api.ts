@@ -179,6 +179,8 @@ export interface FortiSIEMSchedulerStatusResponse {
   last_error?: string;
   total_pulled_count: number;
   total_ai_verdicts_count: number;
+  is_llm_online?: boolean;
+  pending_ai_verdicts_count?: number;
   recent_sync_logs: Array<{
     timestamp: string;
     status: string;
@@ -746,6 +748,14 @@ export const api = {
       method: "POST",
     });
     if (!res.ok) throw new Error("Failed to trigger immediate sync");
+    return res.json();
+  },
+
+  async processPendingFortiSiemVerdicts(max_count: number = 100): Promise<any> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/process-pending-verdicts?max_count=${max_count}`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to process pending AI verdicts");
     return res.json();
   },
 

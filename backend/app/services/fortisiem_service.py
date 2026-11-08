@@ -1143,24 +1143,33 @@ class FortiSIEMService:
         ai_verdicts_generated = 0
         if auto_triage_llm and incidents_to_evaluate:
             ai_service = AIVerdictService(self.db)
-            # Evaluate up to 2 synchronously to provide immediate verified verdict in response
-            sync_batch = incidents_to_evaluate[:2]
-            for iid in sync_batch:
-                try:
-                    await ai_service.evaluate_incident(iid, username=username)
-                    ai_verdicts_generated += 1
-                except Exception as eval_exc:
-                    print(f"[FortiSIEM Auto-Triage Error] Failed evaluating incident {iid}: {eval_exc}")
+            is_llm_online = await ai_service.is_local_llm_available()
+            allow_mock = getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
 
-            # Dispatch remaining to background worker so HTTP response returns immediately without 504 timeout
-            remaining = incidents_to_evaluate[2:]
-            if remaining:
-                asyncio.create_task(self._evaluate_incidents_background(remaining, username))
+            if is_llm_online or allow_mock:
+                # Evaluate up to 2 synchronously to provide immediate verified verdict in response
+                sync_batch = incidents_to_evaluate[:2]
+                for iid in sync_batch:
+                    try:
+                        await ai_service.evaluate_incident(iid, username=username, allow_simulated_fallback=allow_mock)
+                        ai_verdicts_generated += 1
+                    except Exception as eval_exc:
+                        print(f"[FortiSIEM Auto-Triage Error] Failed evaluating incident {iid}: {eval_exc}")
+
+                # Dispatch remaining to background worker so HTTP response returns immediately without 504 timeout
+                remaining = incidents_to_evaluate[2:]
+                if remaining:
+                    asyncio.create_task(self._evaluate_incidents_background(remaining, username))
+            else:
+                print(
+                    f"[FortiSIEM Ingestion] Local LLM (Server 2) is offline. "
+                    f"{len(incidents_to_evaluate)} newly ingested incidents saved and queued for evaluation once Local LLM is online."
+                )
 
         checkpoint = highest_timestamp if highest_timestamp > 0 else int(time.time() * 1000)
 
         bg_queued_count = max(0, len(incidents_to_evaluate) - ai_verdicts_generated)
-        bg_msg = f" (+{bg_queued_count} queued in background)" if bg_queued_count > 0 else ""
+        bg_msg = f" (+{bg_queued_count} queued for Local LLM)" if bg_queued_count > 0 else ""
 
         return {
             "success": True,
@@ -1179,20 +1188,43 @@ class FortiSIEMService:
 
     @classmethod
     async def _evaluate_incidents_background(cls, incident_ids: List[str], username: str) -> None:
-        """Evaluates pending incidents asynchronously in the background so HTTP callers never time out."""
+        """Evaluates pending incidents asynchronously in the background one by one once Local LLM is online."""
         if not incident_ids:
             return
         try:
             from app.database import AsyncSessionLocal
             async with AsyncSessionLocal() as session:
                 ai_service = AIVerdictService(session)
+                allow_mock = getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
                 for iid in incident_ids:
+                    # Halt immediately if Local LLM goes offline mid-batch
+                    if not await ai_service.is_local_llm_available() and not allow_mock:
+                        print(f"[Background AI Worker] Local LLM went offline. Halting remaining {len(incident_ids)} incidents until online.")
+                        break
                     try:
-                        await ai_service.evaluate_incident(iid, username=username)
+                        await ai_service.evaluate_incident(iid, username=username, allow_simulated_fallback=allow_mock)
+                        await session.commit()
+                        await asyncio.sleep(0.15)
                     except Exception as exc:
                         print(f"[Background AI Evaluation] Incident {iid}: {exc}")
         except Exception as bg_exc:
             print(f"[Background AI Worker Error]: {bg_exc}")
+
+    async def process_pending_incidents(
+        self,
+        max_count: int = 100,
+        username: str = "scheduler",
+    ) -> Dict[str, Any]:
+        """
+        Discovers all incidents in the database without an AI verdict,
+        and once Local LLM is online, evaluates them sequentially one by one.
+        """
+        ai_service = AIVerdictService(self.db)
+        return await ai_service.process_pending_incidents(
+            max_batch=max_count,
+            username=username,
+            pause_between_s=0.15,
+        )
 
     async def pull_incremental_incidents(
         self,

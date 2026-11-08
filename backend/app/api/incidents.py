@@ -17,7 +17,7 @@ from app.schemas.incident import (
     ModelFacingIncidentPayload,
 )
 from app.services.incident_service import IncidentService
-from app.services.ai_verdict_service import AIVerdictService
+from app.services.ai_verdict_service import AIVerdictService, LocalLLMUnavailableError
 from app.services.model_payload_allowlist import build_model_facing_payload
 from app.services.model_provider.factory import get_model_provider
 from app.services.prompt_studio_service import PromptStudioService, COMMON_SOC_BASELINE
@@ -137,8 +137,14 @@ async def request_incident_ai_verdict(
         verdict_data = await ai_service.evaluate_incident(
             incident_id_or_obj=identifier,
             username=current_user.username,
+            allow_simulated_fallback=False,
         )
         return verdict_data
+    except LocalLLMUnavailableError as llm_err:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Local LLM (Server 2) is offline: {str(llm_err)}. Incident is queued for automatic processing once Local LLM comes online.",
+        )
     except ValueError as ve:
         raise HTTPException(status_code=404, detail=str(ve))
     except Exception as exc:
