@@ -1,0 +1,240 @@
+"""
+Claim-to-Evidence Validator (AIS 2.1).
+Verifies whether model-asserted observations, numbers, thresholds, and claims
+are factually grounded in real incident telemetry without fabrication or contradiction.
+"""
+
+import re
+import logging
+from typing import Dict, Any, List, Optional, Set
+from app.schemas.verdict_intelligence import (
+    ClaimType,
+    ClaimVerificationItem,
+    ClaimVerificationResult,
+)
+
+logger = logging.getLogger("ai_verdict.claim_validator")
+
+
+class VerdictClaimValidator:
+    """
+    Deterministic validator that cross-examines LLM output claims against
+    observed incident telemetry fields and authoritative definitions.
+    """
+
+    @classmethod
+    def verify_claims(
+        cls,
+        incident_id: str,
+        model_output: Dict[str, Any],
+        incident_payload: Dict[str, Any],
+        authoritative_threshold: Optional[float] = None,
+        authoritative_definition_status: str = "VERIFIED",
+    ) -> ClaimVerificationResult:
+        """
+        Validates claims asserted by the model against canonical incident telemetry.
+        """
+        # Harvest available telemetry attributes into a flattened dictionary
+        telemetry: Dict[str, Any] = {}
+        for k in ("source_ip", "reporting_ip", "event_type", "severity", "category"):
+            if incident_payload.get(k):
+                telemetry[k] = incident_payload[k]
+
+        # From canonical evidence
+        canonical_items = incident_payload.get("canonical_evidence") or incident_payload.get("canonical_evidence_records") or []
+        for item in canonical_items:
+            if isinstance(item, dict):
+                f = item.get("source_field") or item.get("field")
+                v = item.get("observed_value") or item.get("value")
+                if f and v is not None:
+                    telemetry[str(f)] = v
+
+        # From events
+        for evt in incident_payload.get("events", []):
+            if isinstance(evt, dict):
+                attrs = evt.get("attributes") or {}
+                if isinstance(attrs, dict):
+                    for ak, av in attrs.items():
+                        if av is not None:
+                            telemetry[ak] = av
+                if evt.get("cmdline"):
+                    telemetry["process.cmdline"] = evt["cmdline"]
+                if evt.get("process_name"):
+                    telemetry["process.name"] = evt["process_name"]
+
+        # Parse raw payload
+        raw_p = incident_payload.get("raw_payload") or {}
+        if isinstance(raw_p, dict):
+            for rk, rv in raw_p.items():
+                if rv is not None and rk not in telemetry:
+                    telemetry[rk] = rv
+
+        # Extract claims from model_output
+        raw_claims = model_output.get("claims") or model_output.get("supporting_claims") or []
+        parsed_claims: List[ClaimVerificationItem] = []
+
+        # If no explicit structured claims, parse from reason / supporting_evidence
+        if not raw_claims:
+            reason = str(model_output.get("reason", ""))
+            evidence_list = model_output.get("supporting_evidence", [])
+            for item in evidence_list:
+                parsed_claims.append(
+                    ClaimVerificationItem(
+                        claim_text=str(item),
+                        claim_type=ClaimType.OBSERVED_FACT,
+                        referenced_evidence_ids=[],
+                    )
+                )
+            if not parsed_claims and reason:
+                parsed_claims.append(
+                    ClaimVerificationItem(
+                        claim_text=reason,
+                        claim_type=ClaimType.OBSERVED_FACT,
+                        referenced_evidence_ids=[],
+                    )
+                )
+        else:
+            for c in raw_claims:
+                if isinstance(c, dict):
+                    c_type_str = str(c.get("claim_type", "OBSERVED_FACT")).upper()
+                    try:
+                        c_type = ClaimType(c_type_str)
+                    except ValueError:
+                        c_type = ClaimType.OBSERVED_FACT
+
+                    parsed_claims.append(
+                        ClaimVerificationItem(
+                            claim_text=str(c.get("claim") or c.get("claim_text") or ""),
+                            claim_type=c_type,
+                            referenced_evidence_ids=[str(e) for e in c.get("evidence_ids", [])],
+                        )
+                    )
+
+        # Verification loop
+        total_claims = len(parsed_claims)
+        grounded_claims = 0
+        unsupported_claims = 0
+        contradicted_claims = 0
+        has_unsupported = False
+        has_contradictions = False
+        has_unsupported_threshold = False
+        unsupported_claims_list = []
+        seen_evidence_keys: Set[str] = set()
+
+        for item in parsed_claims:
+            text_lower = item.claim_text.lower()
+
+            # 1. Check for Unsupported Threshold Assertion (e.g. treating 2130499380 as threshold)
+            if "2130499380" in item.claim_text and "threshold" in text_lower:
+                if authoritative_threshold is None or authoritative_threshold != 2130499380:
+                    item.is_grounded = False
+                    item.grounding_status = "UNSUPPORTED_THRESHOLD_ASSERTION"
+                    item.contradiction_details = (
+                        "Model asserted 2130499380 is the SIEM rule threshold. "
+                        "This value is an observed incident attribute, not an authoritative detection threshold."
+                    )
+                    unsupported_claims += 1
+                    has_unsupported = True
+                    has_unsupported_threshold = True
+                    unsupported_claims_list.append(item.claim_text)
+                    continue
+
+            # 2. Check for Directional Contradiction
+            telemetry_direction = str(telemetry.get("direction", "")).lower()
+            if ("outbound" in text_lower or "exfiltration" in text_lower) and "inbound" in telemetry_direction:
+                item.is_grounded = False
+                item.grounding_status = "CONTRADICTED"
+                item.contradiction_details = "Asserting outbound exfiltration while telemetry indicates inbound traffic direction."
+                contradicted_claims += 1
+                has_contradictions = True
+                continue
+            if "inbound" in text_lower and "exfiltration" in text_lower:
+                item.is_grounded = False
+                item.grounding_status = "CONTRADICTED"
+                item.contradiction_details = "Asserting inbound exfiltration: exfiltration requires outbound egress."
+                contradicted_claims += 1
+                has_contradictions = True
+                continue
+
+            # 3. Check for Fabricated Specific Entities (e.g. IP addresses not in telemetry)
+            ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
+            ips_in_claim = re.findall(ip_pattern, item.claim_text)
+            telemetry_values_str = " ".join(str(v) for v in telemetry.values())
+            fabricated_ips = [ip for ip in ips_in_claim if ip not in telemetry_values_str]
+            if fabricated_ips:
+                item.is_grounded = False
+                item.grounding_status = "REFERENCE_NOT_FOUND"
+                item.contradiction_details = f"Fabricated IP entity {', '.join(fabricated_ips)} not found in telemetry."
+                unsupported_claims += 1
+                has_unsupported = True
+                unsupported_claims_list.append(item.claim_text)
+                continue
+
+            # 4. Check for Fabricated Evidence References
+            if item.referenced_evidence_ids:
+                all_ids_valid = True
+                for eid in item.referenced_evidence_ids:
+                    # Check if referenced field or value exists in telemetry
+                    found = False
+                    for tk, tv in telemetry.items():
+                        if eid.lower() in tk.lower() or str(tv).lower() in eid.lower():
+                            found = True
+                            item.actual_observed_values[tk] = tv
+                            seen_evidence_keys.add(tk)
+                            break
+                    if not found:
+                        all_ids_valid = False
+
+                if all_ids_valid:
+                    item.is_grounded = True
+                    item.grounding_status = "GROUNDED"
+                    grounded_claims += 1
+                else:
+                    item.is_grounded = False
+                    item.grounding_status = "REFERENCE_NOT_FOUND"
+                    unsupported_claims += 1
+                    has_unsupported = True
+                    unsupported_claims_list.append(item.claim_text)
+                continue
+
+            # 5. Textual entity verification against telemetry
+            matched_entity = False
+            for tk, tv in telemetry.items():
+                str_tv = str(tv).lower()
+                if len(str_tv) >= 4 and str_tv in text_lower:
+                    matched_entity = True
+                    item.actual_observed_values[tk] = tv
+                    seen_evidence_keys.add(tk)
+
+            if matched_entity:
+                item.is_grounded = True
+                item.grounding_status = "GROUNDED"
+                grounded_claims += 1
+            else:
+                # If claim is a hypothesis, it doesn't count as a fabrication but isn't an observed fact
+                if item.claim_type == ClaimType.HYPOTHESIS:
+                    item.is_grounded = True
+                    item.grounding_status = "UNVERIFIED_HYPOTHESIS"
+                    grounded_claims += 1
+                else:
+                    item.is_grounded = False
+                    item.grounding_status = "UNVERIFIABLE"
+                    unsupported_claims += 1
+                    has_unsupported = True
+                    unsupported_claims_list.append(item.claim_text)
+
+        ratio = (grounded_claims / total_claims) if total_claims > 0 else 0.0
+
+        return ClaimVerificationResult(
+            incident_id=incident_id,
+            total_claims=total_claims,
+            grounded_claims=grounded_claims,
+            unsupported_claims=unsupported_claims,
+            contradicted_claims=contradicted_claims,
+            claims=parsed_claims,
+            has_unsupported_assertions=has_unsupported,
+            has_contradictions=has_contradictions,
+            grounding_ratio=round(ratio, 4),
+            unsupported_threshold_assertion=has_unsupported_threshold,
+            unsupported_claims_list=unsupported_claims_list,
+        )

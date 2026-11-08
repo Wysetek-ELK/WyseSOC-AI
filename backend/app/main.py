@@ -25,6 +25,7 @@ from app.api import (
     telemetry,
     llm_config,
     health,
+    verdict_intelligence,
 )
 from app.models.user import User
 from app.utils.security import get_password_hash
@@ -230,6 +231,8 @@ app.include_router(system_monitor.router, prefix=settings.API_V1_STR)
 app.include_router(tokens.router, prefix=settings.API_V1_STR)
 app.include_router(telemetry.router, prefix=settings.API_V1_STR)
 app.include_router(llm_config.router, prefix=settings.API_V1_STR)
+app.include_router(verdict_intelligence.router, prefix=settings.API_V1_STR)
+app.include_router(verdict_intelligence.router, prefix="/api/v1")
 app.include_router(health.router)
 app.include_router(health.router, prefix=settings.API_V1_STR)
 

@@ -17,6 +17,13 @@ from app.models.rule_intelligence import RuleIntelligenceSnapshot
 from app.models.policy_quality import PolicyQualityAssessmentRecord
 from app.models.policy_drift import PolicyDriftEvent
 from app.models.bulk_audit import BulkQualityAuditJobRecord
+from app.models.verdict_intelligence import (
+    VerdictTrustAssessmentRecord,
+    EvidenceSufficiencyAssessmentRecord,
+    GroundTruthValidationRecord,
+    HistoricalEvaluationRunRecord,
+    HistoricalEvaluationResultRecord,
+)
 
 __all__ = [
     "Base",
@@ -45,4 +52,9 @@ __all__ = [
     "PolicyQualityAssessmentRecord",
     "PolicyDriftEvent",
     "BulkQualityAuditJobRecord",
+    "VerdictTrustAssessmentRecord",
+    "EvidenceSufficiencyAssessmentRecord",
+    "GroundTruthValidationRecord",
+    "HistoricalEvaluationRunRecord",
+    "HistoricalEvaluationResultRecord",
 ]

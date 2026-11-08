@@ -1529,6 +1529,102 @@ export const api = {
     if (!res.ok) throw new Error("Failed to fetch server historical telemetry");
     return res.json();
   },
+
+  // =================== VERDICT INTELLIGENCE VALIDATION (AIS 2.1) ===================
+  async evaluateIncidentTrust(req: {
+    incident_id: string;
+    rule_id?: string;
+    policy_version_number?: number;
+    allow_simulation?: boolean;
+    custom_model_output?: any;
+  }): Promise<VerdictTrustAssessmentResult> {
+    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/evaluate-incident-trust`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to evaluate incident trust" }));
+      throw new Error(err.detail || "Failed to evaluate incident trust");
+    }
+    return res.json();
+  },
+
+  async getIncidentTrust(incidentId: string): Promise<VerdictTrustAssessmentResult | null> {
+    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/incident/${encodeURIComponent(incidentId)}/trust`);
+    if (!res.ok) return null;
+    return res.json();
+  },
+
+  async startHistoricalEvaluation(req: {
+    run_name?: string;
+    rule_id?: string;
+    archetype?: string;
+    dataset_filter?: string;
+    sample_limit?: number;
+    policy_version_id?: string;
+    baseline_run_id?: string;
+    provider_type?: string;
+  }): Promise<any> {
+    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/dry-run/evaluate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to start historical evaluation" }));
+      throw new Error(err.detail || "Failed to start historical evaluation");
+    }
+    return res.json();
+  },
+
+  async listEvaluationRuns(limit: number = 20): Promise<any[]> {
+    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/dry-run/runs?limit=${limit}`);
+    if (!res.ok) throw new Error("Failed to list evaluation runs");
+    return res.json();
+  },
+
+  async getEvaluationRunDetails(runId: string): Promise<{ run: any; results: any[] }> {
+    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/dry-run/runs/${encodeURIComponent(runId)}`);
+    if (!res.ok) throw new Error("Failed to fetch evaluation run details");
+    return res.json();
+  },
+
+  async compareEvaluationRuns(baselineRunId: string, candidateRunId: string): Promise<RegressionComparisonReport> {
+    const res = await fetchWithAuth(
+      `${API_BASE}/verdict-intelligence/dry-run/compare?baseline_run_id=${encodeURIComponent(baselineRunId)}&candidate_run_id=${encodeURIComponent(candidateRunId)}`
+    );
+    if (!res.ok) throw new Error("Failed to compare evaluation runs");
+    return res.json();
+  },
+
+  async getVerdictTrustOverview(): Promise<VerdictTrustOverviewResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/metrics/summary`);
+    if (!res.ok) throw new Error("Failed to fetch verdict trust overview");
+    return res.json();
+  },
+
+  async getRuleWiseTrustworthiness(): Promise<RuleWiseTrustworthinessItem[]> {
+    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/metrics/rule-wise`);
+    if (!res.ok) throw new Error("Failed to fetch rule-wise trustworthiness metrics");
+    return res.json();
+  },
+
+  async exportEvaluationReport(runId?: string, format: "json" | "csv" = "json"): Promise<{ blob: Blob; filename: string }> {
+    const url = runId
+      ? `${API_BASE}/verdict-intelligence/export?run_id=${encodeURIComponent(runId)}&format=${format}`
+      : `${API_BASE}/verdict-intelligence/export?format=${format}`;
+    const res = await fetchWithAuth(url);
+    if (!res.ok) throw new Error("Failed to export evaluation report");
+    const blob = await res.blob();
+    const disposition = res.headers.get("content-disposition");
+    let filename = `verdict_validation_${runId || "all"}.${format}`;
+    if (disposition) {
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+    return { blob, filename };
+  },
 };
 
 export interface DryRunConfig {
@@ -1833,6 +1929,108 @@ export interface GlobalTelemetryTimelineResponse {
     details?: Record<string, any>;
   }>;
 }
+
+export interface TrustScoreDimensionBreakdown {
+  direct_claim_support: number;
+  source_reliability: number;
+  contradiction_handling: number;
+  independent_corroboration: number;
+  historical_validation_support: number;
+  total_raw_score: number;
+}
+
+export interface VerdictTrustAssessmentResult {
+  incident_id: string;
+  rule_id: string;
+  archetype: string;
+  suggested_verdict: string;
+  effective_verdict: "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ANALYST_ATTENTION";
+  trust_score?: number | null;
+  raw_trust_score: number;
+  evidence_sufficiency_score: number;
+  evidence_status: "SUFFICIENT" | "INSUFFICIENT" | "CONFLICTING" | "UNCALIBRATED";
+  score_dimensions: TrustScoreDimensionBreakdown;
+  supporting_evidence: string[];
+  contradictory_evidence: string[];
+  missing_evidence: string[];
+  confidence_limitations: string[];
+  historical_validation_status: string;
+  is_calibrated: boolean;
+  calibrated_probability?: number | null;
+  applicable_policy_version?: number | null;
+  applicable_contract_version?: string | null;
+  escalation_reason?: string | null;
+  human_readable_explanation: string;
+  model_identifier: string;
+  is_simulated: boolean;
+  evaluated_at: string;
+}
+
+export interface VerdictTrustOverviewResponse {
+  total_evaluated_incidents: number;
+  true_positive_recommendations: number;
+  false_positive_recommendations: number;
+  analyst_attention_decisions: number;
+  average_trust_score: number;
+  average_sufficiency_score: number;
+  trust_score_distribution: Record<string, number>;
+  low_trust_verdicts_count: number;
+  missing_evidence_count: number;
+  conflicting_evidence_count: number;
+}
+
+export interface RuleWiseTrustworthinessItem {
+  rule_id: string;
+  rule_name: string;
+  archetype: string;
+  incident_count: number;
+  average_trust_score?: number | null;
+  evidence_sufficiency?: number | null;
+  measured_accuracy?: number | null;
+  tp_recall?: number | null;
+  fp_specificity?: number | null;
+  abstention_rate?: number | null;
+  validation_status: string;
+}
+
+export interface CaseRegressionDetail {
+  incident_id: string;
+  rule_id: string;
+  ground_truth: string;
+  baseline_verdict: string;
+  candidate_verdict: string;
+  baseline_trust?: number | null;
+  candidate_trust?: number | null;
+  regression_type: string;
+  reason: string;
+}
+
+export interface RegressionComparisonReport {
+  rule_id?: string | null;
+  baseline_run_id: string;
+  candidate_run_id: string;
+  validation_state: "VALIDATED" | "REGRESSION_DETECTED" | "INCONCLUSIVE" | "INSUFFICIENT_DATA" | "EVALUATION_FAILED";
+  sample_count: number;
+  baseline_accuracy?: number | null;
+  candidate_accuracy?: number | null;
+  accuracy_delta?: number | null;
+  baseline_coverage: number;
+  candidate_coverage: number;
+  coverage_delta: number;
+  baseline_recall?: number | null;
+  candidate_recall?: number | null;
+  recall_delta?: number | null;
+  baseline_specificity?: number | null;
+  candidate_specificity?: number | null;
+  specificity_delta?: number | null;
+  critical_regressions_count: number;
+  statistically_significant: boolean;
+  p_value_estimate?: number | null;
+  regressed_cases: CaseRegressionDetail[];
+  improved_cases: CaseRegressionDetail[];
+  summary_message: string;
+}
+
 
 
 
