@@ -1336,7 +1336,16 @@ export const api = {
   async evaluatePolicySimulation(ruleId: string, versionId?: string): Promise<any> {
     const url = versionId ? `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation?version_id=${versionId}` : `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation`;
     const res = await fetchWithAuth(url, { method: "POST" });
-    if (!res.ok) throw new Error("Failed to evaluate policy simulation");
+    if (!res.ok) {
+      let msg = "Failed to evaluate policy simulation";
+      try {
+        const body = await res.json();
+        if (body && body.detail) {
+          msg = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+        }
+      } catch (_) {}
+      throw new Error(msg);
+    }
     return res.json();
   },
 

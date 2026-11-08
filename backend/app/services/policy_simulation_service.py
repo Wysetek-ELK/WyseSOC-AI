@@ -526,9 +526,17 @@ class PolicySimulationService:
         elif run.validation_state == EvaluationValidationState.REGRESSION_DETECTED.value:
             sim_status = SimulationStatus.EVALUATED_FAILED.value
 
+        def _to_float(v: Any, default: float = 0.0) -> float:
+            if v is None:
+                return default
+            try:
+                return float(v)
+            except (ValueError, TypeError):
+                return default
+
         metrics = run.metrics or {}
         reg_summary = run.regression_summary or {}
-        reg_detected = bool(metrics.get("critical_false_negatives", 0) > 0 or run.validation_state == EvaluationValidationState.REGRESSION_DETECTED.value)
+        reg_detected = bool((metrics.get("critical_false_negatives") or 0) > 0 or run.validation_state == EvaluationValidationState.REGRESSION_DETECTED.value)
         status_str = "PASSED" if sim_status == SimulationStatus.EVALUATED_PASSED.value else ("INSUFFICIENT_DATA" if sim_status == SimulationStatus.INSUFFICIENT_DATA.value else "FAILED")
 
         return {
@@ -537,14 +545,14 @@ class PolicySimulationService:
             "sample_count": run.total_cases,
             "min_samples_required": self.MIN_HISTORICAL_SAMPLES,
             "message": reg_summary.get("summary_message") if reg_summary else metrics.get("message", "Simulation completed."),
-            "critical_regressions": metrics.get("critical_false_negatives", 0),
+            "critical_regressions": int(metrics.get("critical_false_negatives") or 0),
             "regression_detected": reg_detected,
-            "abstention_rate": float(metrics.get("abstention_rate", 0.0)),
-            "balanced_accuracy": float(metrics.get("balanced_accuracy", 0.0)),
-            "precision": float(metrics.get("precision", 0.0)),
-            "recall": float(metrics.get("recall", 0.0)),
-            "specificity": float(metrics.get("specificity", 0.0)),
-            "decision_coverage": float(metrics.get("decision_coverage", 0.0)),
+            "abstention_rate": _to_float(metrics.get("abstention_rate"), 0.0),
+            "balanced_accuracy": _to_float(metrics.get("balanced_accuracy"), 0.0),
+            "precision": _to_float(metrics.get("precision"), 0.0),
+            "recall": _to_float(metrics.get("recall"), 0.0),
+            "specificity": _to_float(metrics.get("specificity"), 0.0),
+            "decision_coverage": _to_float(metrics.get("decision_coverage"), 0.0),
             "run_id": str(run.id),
             "is_calibrated": bool(run.total_cases >= 30),
             "candidate_metrics": metrics,

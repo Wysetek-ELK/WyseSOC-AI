@@ -1275,6 +1275,43 @@ async def test_api_evaluate_simulation_endpoint(client: AsyncClient, admin_user,
     res3 = await client.post(f"/api/prompts/rule/{rule.id}/evaluate-simulation", headers=headers)
     assert res3.status_code == 200
 
+    # 4. Defensive test: Ensure evaluate_candidate_policy handles metrics with None values without TypeError
+    sim_svc = PolicySimulationService(db_session)
+    mock_run = HistoricalEvaluationRunRecord(
+        id=str(uuid.uuid4()),
+        run_name="Mock Run With None Metrics",
+        rule_id=rule.id,
+        status="COMPLETED",
+        validation_state="INSUFFICIENT_DATA",
+        total_cases=5,
+        metrics={
+            "balanced_accuracy": None,
+            "precision": None,
+            "recall": None,
+            "specificity": None,
+            "abstention_rate": None,
+            "critical_false_negatives": None,
+        },
+        regression_summary=None,
+    )
+    db_session.add(mock_run)
+    await db_session.flush()
+
+    # Mock run_dry_run_intelligence_evaluation returning mock_run
+    orig_fn = sim_svc.run_dry_run_intelligence_evaluation
+    async def mock_eval(*args, **kwargs):
+        return mock_run
+    sim_svc.run_dry_run_intelligence_evaluation = mock_eval
+
+    res_none = await sim_svc.evaluate_candidate_policy(rule_id=rule.id, candidate_version=pv)
+    assert res_none["balanced_accuracy"] == 0.0
+    assert res_none["precision"] == 0.0
+    assert res_none["recall"] == 0.0
+    assert res_none["specificity"] == 0.0
+    assert res_none["abstention_rate"] == 0.0
+    assert res_none["critical_regressions"] == 0
+    sim_svc.run_dry_run_intelligence_evaluation = orig_fn
+
 
 # ==============================================================================
 # SECTION 11: END-TO-END SCENARIOS FOR PH_RULE_CS_SUSPICIOUS_ACTIVITY & ARCHETYPES
