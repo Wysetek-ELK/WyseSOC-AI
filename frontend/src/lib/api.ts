@@ -258,6 +258,43 @@ export interface FortiSIEMTestConnectionResponse {
   details?: Record<string, any>;
 }
 
+export interface LLMConfigResponse {
+  host: string;
+  port: number;
+  protocol: string;
+  base_url: string;
+  model_name: string;
+  timeout: number;
+  allow_mock_fallback: boolean;
+  is_online: boolean;
+  server1_outbound_ip?: string;
+}
+
+export interface LLMConfigUpdate {
+  host: string;
+  port?: number;
+  protocol?: string;
+  model_name?: string;
+  timeout?: number;
+  allow_mock_fallback?: boolean;
+}
+
+export interface LLMTestConnectionRequest {
+  host: string;
+  port?: number;
+  protocol?: string;
+  timeout?: number;
+}
+
+export interface LLMTestConnectionResponse {
+  success: boolean;
+  status_code?: number;
+  latency_ms?: number;
+  message: string;
+  models: string[];
+  tested_url: string;
+}
+
 export interface FortiSIEMRuleSyncResponse {
   success: boolean;
   synced_rules_count: number;
@@ -707,6 +744,38 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Connection test request failed" }));
       throw new Error(err.detail || "Connection test error");
+    }
+    return res.json();
+  },
+
+  async getLLMConfig(): Promise<LLMConfigResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/llm/config`);
+    if (!res.ok) throw new Error("Failed to fetch LLM configuration");
+    return res.json();
+  },
+
+  async updateLLMConfig(data: LLMConfigUpdate): Promise<LLMConfigResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/llm/config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to update LLM configuration" }));
+      throw new Error(err.detail || "Update error");
+    }
+    return res.json();
+  },
+
+  async testLLMConnection(data: LLMTestConnectionRequest): Promise<LLMTestConnectionResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/llm/test-connection`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "LLM connection test request failed" }));
+      throw new Error(err.detail || "LLM connection test error");
     }
     return res.json();
   },

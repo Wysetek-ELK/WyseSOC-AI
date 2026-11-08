@@ -16,9 +16,18 @@ import {
   EyeOff,
   RefreshCw,
   Save,
+  Globe,
+  Radio,
+  ExternalLink,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { api, FortiSIEMConfigResponse, FortiSIEMTestConnectionResponse } from "@/lib/api";
+import {
+  api,
+  FortiSIEMConfigResponse,
+  FortiSIEMTestConnectionResponse,
+  LLMConfigResponse,
+  LLMTestConnectionResponse,
+} from "@/lib/api";
 
 export default function AgentConfigurationPage() {
   const { blindReviewMode, setBlindReviewMode, theme, toggleTheme, user } = useApp();
@@ -41,6 +50,24 @@ export default function AgentConfigurationPage() {
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Local LLM Server 2 States
+  const [llmHost, setLlmHost] = useState("");
+  const [llmPort, setLlmPort] = useState(8000);
+  const [llmProtocol, setLlmProtocol] = useState("http");
+  const [llmModelName, setLlmModelName] = useState("Qwen/Qwen2.5-7B-Instruct-AWQ");
+  const [llmTimeout, setLlmTimeout] = useState(30);
+  const [llmAllowMockFallback, setLlmAllowMockFallback] = useState(true);
+  const [llmBaseUrl, setLlmBaseUrl] = useState("");
+  const [llmIsOnline, setLlmIsOnline] = useState(false);
+  const [server1OutboundIp, setServer1OutboundIp] = useState<string | null>(null);
+
+  const [isLoadingLLM, setIsLoadingLLM] = useState(true);
+  const [isSavingLLM, setIsSavingLLM] = useState(false);
+  const [isTestingLLM, setIsTestingLLM] = useState(false);
+  const [llmTestResult, setLlmTestResult] = useState<LLMTestConnectionResponse | null>(null);
+  const [llmSaveSuccess, setLlmSaveSuccess] = useState<string | null>(null);
+  const [llmSaveError, setLlmSaveError] = useState<string | null>(null);
+
   const loadFortiSiemConfig = async () => {
     setIsLoadingConfig(true);
     try {
@@ -59,9 +86,103 @@ export default function AgentConfigurationPage() {
     }
   };
 
+  const loadLLMConfig = async () => {
+    setIsLoadingLLM(true);
+    try {
+      const cfg = await api.getLLMConfig();
+      setLlmHost(cfg.host || "");
+      setLlmPort(cfg.port || 8000);
+      setLlmProtocol(cfg.protocol || "http");
+      setLlmModelName(cfg.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ");
+      setLlmTimeout(cfg.timeout || 30);
+      setLlmAllowMockFallback(cfg.allow_mock_fallback);
+      setLlmBaseUrl(cfg.base_url || "");
+      setLlmIsOnline(cfg.is_online);
+      if (cfg.server1_outbound_ip) {
+        setServer1OutboundIp(cfg.server1_outbound_ip);
+      }
+    } catch (err) {
+      console.error("Failed to load LLM configuration", err);
+    } finally {
+      setIsLoadingLLM(false);
+    }
+  };
+
   useEffect(() => {
     loadFortiSiemConfig();
+    loadLLMConfig();
   }, []);
+
+  const handleTestLLMConnection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!llmHost.trim()) {
+      setLlmSaveError("LLM Server IP address or hostname is required to test connection.");
+      return;
+    }
+
+    setIsTestingLLM(true);
+    setLlmTestResult(null);
+    setLlmSaveError(null);
+    setLlmSaveSuccess(null);
+
+    try {
+      const res = await api.testLLMConnection({
+        host: llmHost.trim(),
+        port: llmPort,
+        protocol: llmProtocol,
+        timeout: 5,
+      });
+      setLlmTestResult(res);
+      if (res.success) {
+        setLlmIsOnline(true);
+      }
+    } catch (err: any) {
+      setLlmTestResult({
+        success: false,
+        message: err.message || "Failed to reach LLM Server 2",
+        models: [],
+        tested_url: `${llmProtocol}://${llmHost.trim()}:${llmPort}/v1/models`,
+      });
+    } finally {
+      setIsTestingLLM(false);
+    }
+  };
+
+  const handleSaveLLMConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!llmHost.trim()) {
+      setLlmSaveError("LLM Server IP address or hostname is required.");
+      return;
+    }
+
+    setIsSavingLLM(true);
+    setLlmSaveError(null);
+    setLlmSaveSuccess(null);
+
+    try {
+      const updated = await api.updateLLMConfig({
+        host: llmHost.trim(),
+        port: llmPort,
+        protocol: llmProtocol,
+        model_name: llmModelName.trim(),
+        timeout: llmTimeout,
+        allow_mock_fallback: llmAllowMockFallback,
+      });
+      setLlmHost(updated.host);
+      setLlmPort(updated.port);
+      setLlmProtocol(updated.protocol);
+      setLlmBaseUrl(updated.base_url);
+      setLlmModelName(updated.model_name);
+      setLlmTimeout(updated.timeout);
+      setLlmAllowMockFallback(updated.allow_mock_fallback);
+      setLlmSaveSuccess(`LLM Server configuration saved! Target base URL updated to ${updated.base_url}`);
+      setLlmTestResult(null);
+    } catch (err: any) {
+      setLlmSaveError(err.message || "Failed to save LLM configuration.");
+    } finally {
+      setIsSavingLLM(false);
+    }
+  };
 
   const handleTestConnection = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -391,7 +512,270 @@ export default function AgentConfigurationPage() {
           )}
         </div>
 
-        {/* 2. Investigation Controls */}
+        {/* 2. Local LLM Inference Engine (Server 2) Integration Panel */}
+        <div id="llm-server" className="rounded-xl border border-indigo-900/60 bg-gradient-to-br from-slate-950 via-slate-900/90 to-indigo-950/20 p-3.5 sm:p-4 space-y-3 shadow-lg shadow-indigo-950/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800">
+            <div>
+              <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-2">
+                <Cpu className="h-4 w-4 text-indigo-400" />
+                Local LLM Inference Engine (Server 2) Integration
+              </h2>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Configure LLM Server IP address, inference port, and OpenAI-compatible endpoint parameters
+              </p>
+            </div>
+
+            {/* Live Indicator */}
+            <div>
+              {llmIsOnline ? (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Online &amp; Reachable
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-950 text-amber-300 border border-amber-800 font-mono">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                  Offline / Standby
+                </span>
+              )}
+            </div>
+          </div>
+
+          {!isAdmin && (
+            <div className="rounded-lg border border-amber-800/80 bg-amber-950/30 p-2.5 text-xs text-amber-300 flex items-center gap-2">
+              <Lock className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+              <span>You are viewing in read-only mode. Administrator permissions are required to update LLM Server IP.</span>
+            </div>
+          )}
+
+          {isLoadingLLM ? (
+            <div className="flex items-center gap-2 text-xs text-slate-400 py-3">
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-indigo-400" />
+              Loading LLM configuration...
+            </div>
+          ) : (
+            <form onSubmit={handleSaveLLMConfig} className="space-y-3 pt-0.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Host IP / FQDN */}
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    LLM Server IP Address / FQDN <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    disabled={!isAdmin || isSavingLLM}
+                    value={llmHost}
+                    onChange={(e) => setLlmHost(e.target.value)}
+                    placeholder="e.g., 192.0.2.10 or llm.example.com"
+                    className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                  />
+                  <span className="text-[10px] text-slate-400 block">
+                    Target IP of Server 2 hosting vLLM or OpenAI-compatible inference.
+                  </span>
+                </div>
+
+                {/* Port */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Inference Port <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={65535}
+                    disabled={!isAdmin || isSavingLLM}
+                    value={llmPort}
+                    onChange={(e) => setLlmPort(Number(e.target.value))}
+                    className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                  />
+                  <span className="text-[10px] text-slate-400 block">
+                    Standard: 8000 (vLLM), 8080, or 11434 (Ollama)
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Protocol */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Protocol
+                  </label>
+                  <select
+                    disabled={!isAdmin || isSavingLLM}
+                    value={llmProtocol}
+                    onChange={(e) => setLlmProtocol(e.target.value)}
+                    className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                  >
+                    <option value="http">http://</option>
+                    <option value="https">https://</option>
+                  </select>
+                </div>
+
+                {/* Model Name */}
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Model Identifier
+                  </label>
+                  <input
+                    type="text"
+                    disabled={!isAdmin || isSavingLLM}
+                    value={llmModelName}
+                    onChange={(e) => setLlmModelName(e.target.value)}
+                    placeholder="e.g., Qwen/Qwen2.5-7B-Instruct-AWQ"
+                    className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              {/* Computed Endpoint Preview & Network Diagnostic */}
+              <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-2.5 space-y-2 text-[11px]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <span className="text-slate-400 font-sans">Active Target Base URL:</span>
+                  <code className="text-indigo-300 font-mono font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                    {llmBaseUrl || `${llmProtocol}://${llmHost || "127.0.0.1"}:${llmPort}/v1`}
+                  </code>
+                </div>
+
+                {server1OutboundIp && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-1.5 border-t border-slate-800/80">
+                    <span className="text-slate-400 font-sans">
+                      Server 1 Outbound Public IP (for AWS Security Group):
+                    </span>
+                    <span className="text-emerald-400 font-mono font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                      {server1OutboundIp}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Toggles */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-800">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Inference Timeout (Seconds)
+                  </label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={180}
+                    disabled={!isAdmin || isSavingLLM}
+                    value={llmTimeout}
+                    onChange={(e) => setLlmTimeout(Number(e.target.value))}
+                    className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                  />
+                  <span className="text-[10px] text-slate-400 block">
+                    Recommended: 30 seconds for high-throughput reasoning.
+                  </span>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none pt-2">
+                  <input
+                    type="checkbox"
+                    disabled={!isAdmin || isSavingLLM}
+                    checked={llmAllowMockFallback}
+                    onChange={(e) => setLlmAllowMockFallback(e.target.checked)}
+                    className="rounded border-slate-700 bg-slate-900 text-indigo-500 focus:ring-0 disabled:opacity-50"
+                  />
+                  <div>
+                    <span className="font-semibold block text-[11px]">Allow Offline Heuristic Fallback</span>
+                    <span className="text-[10px] text-slate-400 block">
+                      Enables simulated fallback if Server 2 is undergoing maintenance
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Feedback Alerts */}
+              {llmSaveSuccess && (
+                <div className="rounded-md border border-emerald-800 bg-emerald-950/40 p-2.5 text-xs text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                  <span>{llmSaveSuccess}</span>
+                </div>
+              )}
+
+              {llmSaveError && (
+                <div className="rounded-md border border-rose-800 bg-rose-950/40 p-2.5 text-xs text-rose-300 flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-rose-400" />
+                  <span>{llmSaveError}</span>
+                </div>
+              )}
+
+              {/* Test Connection Result Box */}
+              {llmTestResult && (
+                <div
+                  className={`rounded-md border p-2.5 text-xs font-mono space-y-1 ${
+                    llmTestResult.success
+                      ? "border-emerald-800 bg-emerald-950/30 text-emerald-300"
+                      : "border-rose-800 bg-rose-950/30 text-rose-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-bold text-xs">
+                    {llmTestResult.success ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    ) : (
+                      <AlertCircle className="h-3.5 w-3.5 text-rose-400" />
+                    )}
+                    {llmTestResult.success ? "LLM Server Connection Successful" : "LLM Server Connection Failed"}
+                  </div>
+                  <p className="text-[11px] font-sans text-slate-300">{llmTestResult.message}</p>
+                  <div className="flex flex-wrap gap-4 text-[10px] text-slate-400 pt-0.5">
+                    {llmTestResult.latency_ms !== undefined && (
+                      <span>Latency: {llmTestResult.latency_ms} ms</span>
+                    )}
+                    {llmTestResult.tested_url && (
+                      <span>Endpoint: {llmTestResult.tested_url}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {isAdmin && (
+                <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleTestLLMConnection}
+                    disabled={isTestingLLM || isSavingLLM || !llmHost.trim()}
+                    className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                  >
+                    {isTestingLLM ? (
+                      <>
+                        <RefreshCw className="h-3 w-3 animate-spin text-indigo-400" />
+                        Testing Connection...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-3 w-3 text-amber-400" />
+                        Test Connection
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSavingLLM || isTestingLLM || !llmHost.trim()}
+                    className="rounded-md bg-indigo-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors flex items-center gap-1.5 shadow-sm shadow-indigo-900/40"
+                  >
+                    {isSavingLLM ? (
+                      <>
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        Saving Configuration...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3 text-indigo-200" />
+                        Save LLM Configuration
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </form>
+          )}
+        </div>
+
+        {/* 3. Investigation Controls */}
         <div className="rounded-xl border border-slate-800 bg-slate-950 p-3.5 sm:p-4 space-y-3">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Sliders className="h-3.5 w-3.5 text-cyan-400" />
@@ -455,8 +839,10 @@ export default function AgentConfigurationPage() {
               <span className="text-slate-200">PostgreSQL (Production) / SQLite (Local Dev)</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-800/80">
-              <span className="text-slate-400">Future LLM Host (Server 2):</span>
-              <span className="text-amber-400">Gated / Disconnected (Phase 1 Governance)</span>
+              <span className="text-slate-400">Local LLM Host (Server 2):</span>
+              <span className={llmIsOnline ? "text-emerald-400 font-mono" : "text-amber-400 font-mono"}>
+                {llmBaseUrl || `${llmHost || "Not Configured"}:${llmPort}`} ({llmIsOnline ? "ONLINE" : "STANDBY / OFFLINE"})
+              </span>
             </div>
             <div className="flex justify-between py-1">
               <span className="text-slate-400">SIEM Write-Back & Auto Closure:</span>

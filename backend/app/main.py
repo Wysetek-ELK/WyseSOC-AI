@@ -23,6 +23,7 @@ from app.api import (
     system_monitor,
     tokens,
     telemetry,
+    llm_config,
 )
 from app.models.user import User
 from app.utils.security import get_password_hash
@@ -230,6 +231,7 @@ app.include_router(fortisiem.router, prefix=settings.API_V1_STR)
 app.include_router(system_monitor.router, prefix=settings.API_V1_STR)
 app.include_router(tokens.router, prefix=settings.API_V1_STR)
 app.include_router(telemetry.router, prefix=settings.API_V1_STR)
+app.include_router(llm_config.router, prefix=settings.API_V1_STR)
 
 
 
