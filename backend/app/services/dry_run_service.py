@@ -181,6 +181,10 @@ class ValidationEngine:
                     prompt_version_number=prompt_ver_num,
                 )
 
+                p_tok = getattr(verdict, "prompt_tokens", 0) or max(40, len(prompt_text) // 4)
+                c_tok = getattr(verdict, "completion_tokens", 0) or max(20, len(verdict.reason) // 4)
+                t_tok = getattr(verdict, "total_tokens", 0) or (p_tok + c_tok)
+
                 # 3. Save result
                 result_entry = DryRunResult(
                     job_id=job.id,
@@ -196,8 +200,34 @@ class ValidationEngine:
                     prompt_version_number=verdict.prompt_version_number,
                     validation_status=verdict.validation_status,
                     is_simulated=verdict.is_simulated,
+                    prompt_tokens=p_tok,
+                    completion_tokens=c_tok,
+                    total_tokens=t_tok,
                 )
                 self.db.add(result_entry)
+
+                # 3b. Record persistent bifurcated token usage on Server 1
+                from app.models.token_usage import TokenUsageRecord
+                tok_rec = TokenUsageRecord(
+                    process_type="SIMULATION_REPLAY",
+                    process_id=job.id,
+                    incident_id=inc.incident_id,
+                    rule_id=inc.rule.rule_id if inc.rule else inc.event_type,
+                    model_identifier=verdict.model_identifier,
+                    prompt_tokens=p_tok,
+                    completion_tokens=c_tok,
+                    total_tokens=t_tok,
+                    latency_ms=verdict.latency_ms,
+                    is_simulated=verdict.is_simulated,
+                    executed_by_user="simulation_engine",
+                    timestamp=datetime.utcnow(),
+                    details={
+                        "job_id": job.id,
+                        "config_name": config.name,
+                        "split_strategy": config.split_strategy,
+                    },
+                )
+                self.db.add(tok_rec)
                 job.processed_items += 1
 
             except Exception as e:

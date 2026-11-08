@@ -579,6 +579,28 @@ class IngestionService:
         )
         self.db.add(ground_truth)
 
+        # Record Historical Telemetry Ingestion Timeline on Server 1
+        from app.models.telemetry_timeline import TelemetryTimelineRecord
+        self.db.add(
+            TelemetryTimelineRecord(
+                incident_id=incident_id,
+                event_type="TELEMETRY_INGESTION",
+                stage="INGESTION",
+                summary=f"Incident telemetry ingested into Server 1 persistent storage: {len(raw_events)} raw events captured.",
+                source="Sentinel Ingest Worker (Server 1 Storage)",
+                severity=severity,
+                source_ip=incident.source_ip,
+                reporting_device=incident.reporting_device,
+                epoch_ms=created_at_epoch or int(datetime.utcnow().timestamp() * 1000),
+                token_count=0,
+                details={
+                    "event_count": len(raw_events),
+                    "event_type": event_type,
+                    "customer": str(raw_data.get("customer") or ""),
+                },
+            )
+        )
+
         await self.db.commit()
         return "imported", f"Successfully imported incident {incident_id}"
 

@@ -20,6 +20,7 @@ import {
   Play,
   Pause,
   DownloadCloud,
+  Database,
 } from "lucide-react";
 import {
   api,
@@ -59,6 +60,22 @@ export default function TelemetryHubPage() {
   const [isProcessingPending, setIsProcessingPending] = useState(false);
   const [schedulerMsg, setSchedulerMsg] = useState<string | null>(null);
 
+  // Global Telemetry Timeline State on Server 1
+  const [globalTimeline, setGlobalTimeline] = useState<any[]>([]);
+  const [loadingTimeline, setLoadingTimeline] = useState(false);
+
+  const loadGlobalTimeline = async () => {
+    setLoadingTimeline(true);
+    try {
+      const res = await api.getGlobalTelemetryTimeline(30);
+      setGlobalTimeline(res.timeline || []);
+    } catch {
+      // fallback
+    } finally {
+      setLoadingTimeline(false);
+    }
+  };
+
   const loadJobs = async () => {
     setLoadingJobs(true);
     try {
@@ -93,6 +110,7 @@ export default function TelemetryHubPage() {
     loadJobs();
     loadSiemStatus();
     loadSchedulerStatus();
+    loadGlobalTimeline();
 
     // Poll scheduler status every 10s to keep countdown/status fresh
     const interval = setInterval(loadSchedulerStatus, 10000);
@@ -763,6 +781,78 @@ export default function TelemetryHubPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* 5. Historical Telemetry Timeline (Server 1 Storage) */}
+      <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:p-3.5 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          <div>
+            <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+              <Database className="h-3.5 w-3.5 text-cyan-400" />
+              Historical Telemetry Timeline (Server 1 Storage)
+            </h2>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Persistent chronological telemetry log stored on Server 1 for future auditing and analysis
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-800 text-emerald-300">
+              Server 1 Persistent DB
+            </span>
+            <button
+              onClick={loadGlobalTimeline}
+              disabled={loadingTimeline}
+              className="text-[10px] text-slate-400 hover:text-slate-200 flex items-center gap-1 font-mono"
+            >
+              <RefreshCw className={`h-3 w-3 ${loadingTimeline ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {globalTimeline.length === 0 ? (
+          <div className="py-6 text-center text-slate-500 font-mono text-xs">
+            No global telemetry timeline milestones recorded yet. Telemetry batches will appear here as they are ingested on Server 1.
+          </div>
+        ) : (
+          <div className="relative border-l border-slate-800 pl-4 space-y-3 text-xs font-mono">
+            {globalTimeline.map((item, idx) => (
+              <div key={item.id || idx} className="relative">
+                <span className="absolute -left-[23px] flex h-3 w-3 items-center justify-center rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 text-[7px]">
+                  ●
+                </span>
+                <div className="rounded bg-slate-950 border border-slate-800/80 p-2.5 space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold text-[9px]">
+                        {item.stage || "INGESTION"}
+                      </span>
+                      {item.incident_id && (
+                        <Link
+                          href={`/ai-triage-workbench/${item.incident_id}`}
+                          className="text-cyan-400 hover:underline font-bold"
+                        >
+                          Incident #{item.incident_id}
+                        </Link>
+                      )}
+                    </div>
+                    <span className="text-slate-500">{new Date(item.timestamp).toLocaleString()}</span>
+                  </div>
+                  <p className="text-slate-300 text-xs font-sans">{item.summary}</p>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5 border-t border-slate-900">
+                    <span>Source: {item.source}</span>
+                    {item.token_count > 0 && (
+                      <span className="text-purple-300 font-bold">
+                        Tokens: {item.token_count.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

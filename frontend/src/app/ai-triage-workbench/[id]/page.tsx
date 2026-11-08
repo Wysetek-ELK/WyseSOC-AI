@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { api, IncidentDetail, IncidentAiVerdictResponse } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
+import { HistoricalTelemetryTimeline } from "@/components/telemetry/HistoricalTelemetryTimeline";
 
 export default function AITriageWorkbenchDetailPage({
   params,
@@ -427,13 +428,14 @@ export default function AITriageWorkbenchDetailPage({
 
         <button
           onClick={() => setActiveTab("timeline")}
-          className={`px-3 py-1.5 border-b-2 transition-colors whitespace-nowrap ${
+          className={`px-3 py-1.5 border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
             activeTab === "timeline"
               ? "border-cyan-500 text-cyan-300 font-semibold"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
-          Lifecycle Timeline
+          <Clock className="h-3 w-3 text-cyan-400" />
+          Historical Telemetry Timeline
         </button>
       </div>
 
@@ -758,56 +760,9 @@ export default function AITriageWorkbenchDetailPage({
         </div>
       )}
 
-      {/* Tab 7: Timeline */}
+      {/* Tab 7: Historical Telemetry Timeline */}
       {activeTab === "timeline" && (
-        <div className="rounded-lg border border-slate-800 bg-slate-950 p-4 space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-            Incident Lifecycle Milestones
-          </h2>
-          <div className="relative border-l border-slate-800 pl-5 space-y-4 text-xs font-mono">
-            {/* First Seen */}
-            <div className="relative">
-              <span className="absolute -left-[27px] flex h-3.5 w-3.5 items-center justify-center rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 text-[8px]">
-                ●
-              </span>
-              <div className="font-semibold text-slate-200">First Telemetry Observed</div>
-              <div className="text-slate-500 text-[10px]">{formatEpoch(incident.first_seen_epoch)}</div>
-            </div>
-
-            {/* Created */}
-            <div className="relative">
-              <span className="absolute -left-[27px] flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-950 border border-blue-500 text-blue-300 text-[8px]">
-                ●
-              </span>
-              <div className="font-semibold text-slate-200">SIEM Incident Alert Created</div>
-              <div className="text-slate-500 text-[10px]">{formatEpoch(incident.created_at_epoch, incident.created_at)}</div>
-            </div>
-
-            {/* Last Seen */}
-            <div className="relative">
-              <span className="absolute -left-[27px] flex h-3.5 w-3.5 items-center justify-center rounded-full bg-slate-800 border border-slate-600 text-slate-300 text-[8px]">
-                ●
-              </span>
-              <div className="font-semibold text-slate-200">Last Telemetry Observed</div>
-              <div className="text-slate-500 text-[10px]">{formatEpoch(incident.last_seen_epoch)}</div>
-            </div>
-
-            {/* Cleared / Resolved */}
-            {incident.ground_truth?.cleared_time_epoch && !blindReviewMode && (
-              <div className="relative">
-                <span className="absolute -left-[27px] flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-950 border border-emerald-500 text-emerald-300 text-[8px]">
-                  ●
-                </span>
-                <div className="font-semibold text-slate-200">
-                  SIEM Ticket Cleared ({incident.ground_truth.resolution})
-                </div>
-                <div className="text-slate-500 text-[10px]">
-                  {formatEpoch(incident.ground_truth.cleared_time_epoch)}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <HistoricalTelemetryTimeline incidentId={incident.incident_id} />
       )}
     </div>
   );

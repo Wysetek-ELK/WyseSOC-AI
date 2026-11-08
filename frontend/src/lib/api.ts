@@ -599,6 +599,32 @@ export const api = {
     return res.json();
   },
 
+  async getIncidentTimeline(id: string): Promise<IncidentTimelineResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/incidents/${encodeURIComponent(id)}/timeline`);
+    if (!res.ok) throw new Error("Failed to load incident telemetry timeline");
+    return res.json();
+  },
+
+  async getTokenAnalytics(windowDays: number = 30, processType?: string): Promise<TokenAnalyticsResponse> {
+    const params = new URLSearchParams();
+    if (windowDays) params.append("window_days", windowDays.toString());
+    if (processType) params.append("process_type", processType);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/tokens/analytics${qs}`);
+    if (!res.ok) throw new Error("Failed to load token bifurcation analytics");
+    return res.json();
+  },
+
+  async getGlobalTelemetryTimeline(limit: number = 50, stage?: string): Promise<GlobalTelemetryTimelineResponse> {
+    const params = new URLSearchParams();
+    if (limit) params.append("limit", limit.toString());
+    if (stage) params.append("stage", stage);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/telemetry/timeline${qs}`);
+    if (!res.ok) throw new Error("Failed to load global telemetry timeline");
+    return res.json();
+  },
+
   // Rules
   async getRules(params: { page?: number; page_size?: number; search?: string; severity?: string; status?: string } = {}) {
     const q = new URLSearchParams();
@@ -1355,5 +1381,116 @@ export interface ServersHistoryResponse {
     };
   };
 }
+
+export interface TimelineMilestone {
+  stage: string;
+  type: string;
+  title: string;
+  timestamp: string;
+  epoch_ms?: number;
+  source: string;
+  description: string;
+  icon?: string;
+  severity?: string;
+  token_bifurcation?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+    latency_ms: number;
+    model: string;
+  };
+  metadata?: Record<string, any>;
+}
+
+export interface IncidentTimelineResponse {
+  success: boolean;
+  incident_id: string;
+  title: string;
+  storage_node: string;
+  token_summary: {
+    total_tokens: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+    records_count: number;
+  };
+  milestone_count: number;
+  milestones: TimelineMilestone[];
+}
+
+export interface TokenProcessBifurcation {
+  process_type: string;
+  calls: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  percentage_of_total: number;
+  avg_latency_ms: number;
+}
+
+export interface TokenModelBifurcation {
+  model_identifier: string;
+  calls: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  percentage_of_total: number;
+}
+
+export interface TokenLedgerItem {
+  id: string;
+  process_type: string;
+  process_id?: string;
+  incident_id?: string;
+  rule_id?: string;
+  model_identifier: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  latency_ms: number;
+  is_simulated: boolean;
+  executed_by_user: string;
+  timestamp: string;
+  details?: Record<string, any>;
+}
+
+export interface TokenAnalyticsResponse {
+  window_days: number;
+  cutoff_timestamp: string;
+  storage_location: string;
+  totals: {
+    total_tokens: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+    prompt_percentage: number;
+    completion_percentage: number;
+    total_calls: number;
+    avg_latency_ms: number;
+  };
+  by_process: TokenProcessBifurcation[];
+  by_model: TokenModelBifurcation[];
+  recent_ledger: TokenLedgerItem[];
+}
+
+export interface GlobalTelemetryTimelineResponse {
+  success: boolean;
+  storage_node: string;
+  total_records: number;
+  timeline: Array<{
+    id: string;
+    incident_id?: string;
+    event_type: string;
+    stage: string;
+    summary: string;
+    source: string;
+    severity: string;
+    source_ip?: string;
+    reporting_device?: string;
+    epoch_ms?: number;
+    token_count: number;
+    timestamp: string;
+    details?: Record<string, any>;
+  }>;
+}
+
 
 

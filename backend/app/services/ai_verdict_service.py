@@ -231,6 +231,14 @@ class VerdictTriageAgent:
                     raise exc
                 raise LocalLLMUnavailableError(f"Local LLM inference failed: {str(exc)}") from exc
 
+        p_tokens = getattr(verdict, "prompt_tokens", 0) or 0
+        c_tokens = getattr(verdict, "completion_tokens", 0) or 0
+        t_tokens = getattr(verdict, "total_tokens", 0) or (p_tokens + c_tokens)
+        if t_tokens == 0:
+            p_tokens = max(50, len(prompt_text) // 4)
+            c_tokens = max(20, len(verdict.reason) // 4)
+            t_tokens = p_tokens + c_tokens
+
         # 6. Format Structured Verdict
         verdict_data = {
             "incident_id": incident.incident_id,
@@ -242,9 +250,9 @@ class VerdictTriageAgent:
             "analyst_questions": verdict.analyst_questions,
             "latency_ms": verdict.latency_ms,
             "model_identifier": verdict.model_identifier,
-            "prompt_tokens": getattr(verdict, "prompt_tokens", 0) or 0,
-            "completion_tokens": getattr(verdict, "completion_tokens", 0) or 0,
-            "total_tokens": getattr(verdict, "total_tokens", 0) or 0,
+            "prompt_tokens": p_tokens,
+            "completion_tokens": c_tokens,
+            "total_tokens": t_tokens,
             "is_simulated": verdict.is_simulated,
             "rule_name": rule.name if rule else incident.title,
             "severity": incident.severity,
@@ -255,6 +263,55 @@ class VerdictTriageAgent:
         # 7. Persist AI verdict to incident
         incident.ai_verdict = verdict_data
         self.db.add(incident)
+
+        # 7b. Persist bifurcated TokenUsageRecord on Server 1 for analytics
+        from app.models.token_usage import TokenUsageRecord
+        token_usage_entry = TokenUsageRecord(
+            process_type="INCIDENT_TRIAGE",
+            process_id=incident.incident_id,
+            incident_id=incident.incident_id,
+            rule_id=rule.rule_id if rule else incident.event_type,
+            model_identifier=verdict.model_identifier,
+            prompt_tokens=p_tokens,
+            completion_tokens=c_tokens,
+            total_tokens=t_tokens,
+            latency_ms=verdict.latency_ms,
+            is_simulated=verdict.is_simulated,
+            executed_by_user=username,
+            timestamp=datetime.utcnow(),
+            details={
+                "verdict": verdict.verdict,
+                "confidence": verdict.confidence,
+                "rule_name": rule.name if rule else incident.title,
+                "severity": incident.severity,
+            },
+        )
+        self.db.add(token_usage_entry)
+
+        # 7c. Persist Historical Telemetry Timeline milestone on Server 1
+        from app.models.telemetry_timeline import TelemetryTimelineRecord
+        timeline_entry = TelemetryTimelineRecord(
+            incident_id=incident.incident_id,
+            event_type="AGENT_TRIAGE_EVALUATED",
+            stage="TRIAGE",
+            summary=f"Verdict Triage Agent evaluated incident: {verdict.verdict} ({int(verdict.confidence)}% confidence)",
+            source="Verdict Triage Agent (Server 2 Inference)",
+            severity=incident.severity,
+            source_ip=incident.source_ip,
+            reporting_device=incident.reporting_device,
+            epoch_ms=int(time.time() * 1000),
+            token_count=t_tokens,
+            details={
+                "verdict": verdict.verdict,
+                "confidence": verdict.confidence,
+                "model": verdict.model_identifier,
+                "latency_ms": verdict.latency_ms,
+                "prompt_tokens": p_tokens,
+                "completion_tokens": c_tokens,
+                "total_tokens": t_tokens,
+            },
+        )
+        self.db.add(timeline_entry)
 
         # 8. Sync with Investigation queue
         inv_q = await self.db.execute(

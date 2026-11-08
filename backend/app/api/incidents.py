@@ -150,3 +150,22 @@ async def request_incident_ai_verdict(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"AI verdict evaluation failed: {str(exc)}")
 
+
+@router.get("/{identifier}/timeline")
+async def get_incident_historical_timeline(
+    identifier: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Returns the complete Historical Telemetry Timeline for an incident from Server 1 persistent storage,
+    including raw event progression, SIEM correlation, and bifurcated token metrics.
+    """
+    from app.services.telemetry_timeline_service import TelemetryTimelineService
+    svc = TelemetryTimelineService(db)
+    result = await svc.get_incident_timeline(identifier)
+    if not result.get("success"):
+        raise HTTPException(status_code=404, detail=result.get("error", "Incident timeline not found"))
+    return result
+
+

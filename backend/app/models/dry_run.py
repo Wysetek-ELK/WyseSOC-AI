@@ -76,6 +76,9 @@ class DryRunResult(Base):
     analyst_questions: Mapped[List[str]] = mapped_column(JSON, default=list)
 
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    prompt_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    completion_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    total_tokens: Mapped[int] = mapped_column(Integer, default=0)
     model_identifier: Mapped[str] = mapped_column(String(64), default="simulated-v1")
     prompt_version_number: Mapped[int] = mapped_column(Integer, default=1)
 

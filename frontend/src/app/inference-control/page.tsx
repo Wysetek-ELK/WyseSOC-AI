@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ServerInfrastructureMonitor } from "@/components/system/ServerInfrastructureMonitor";
+import { TokenBifurcationWidget } from "@/components/telemetry/TokenBifurcationWidget";
 import { Server, Activity, ShieldCheck, Cpu } from "lucide-react";
 
 export default function InferenceControlPage() {
@@ -29,6 +30,9 @@ export default function InferenceControlPage() {
 
       {/* Main Inference Health Monitor */}
       <ServerInfrastructureMonitor />
+
+      {/* Token Consumption & Bifurcation Ledger on Server 1 */}
+      <TokenBifurcationWidget />
     </div>
   );
 }

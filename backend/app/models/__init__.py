@@ -10,6 +10,8 @@ from app.models.learning import LearningRecord
 from app.models.dry_run import DryRunConfig, DryRunJob, DryRunResult
 from app.models.maturity import RuleMaturityEvaluation
 from app.models.system_metric import SystemServerSample
+from app.models.token_usage import TokenUsageRecord
+from app.models.telemetry_timeline import TelemetryTimelineRecord
 
 __all__ = [
     "Base",
@@ -31,4 +33,6 @@ __all__ = [
     "DryRunResult",
     "RuleMaturityEvaluation",
     "SystemServerSample",
+    "TokenUsageRecord",
+    "TelemetryTimelineRecord",
 ]

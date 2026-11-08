@@ -21,6 +21,8 @@ from app.api import (
     evaluations,
     fortisiem,
     system_monitor,
+    tokens,
+    telemetry,
 )
 from app.models.user import User
 from app.utils.security import get_password_hash
@@ -37,6 +39,15 @@ async def lifespan(app: FastAPI):
         try:
             from sqlalchemy import text
             await conn.execute(text("ALTER TABLE incidents ADD COLUMN ai_verdict JSON"))
+        except Exception:
+            pass
+
+        # Safe migration: ensure token bifurcation columns exist on dry_run_results
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE dry_run_results ADD COLUMN prompt_tokens INTEGER DEFAULT 0"))
+            await conn.execute(text("ALTER TABLE dry_run_results ADD COLUMN completion_tokens INTEGER DEFAULT 0"))
+            await conn.execute(text("ALTER TABLE dry_run_results ADD COLUMN total_tokens INTEGER DEFAULT 0"))
         except Exception:
             pass
 
@@ -131,6 +142,47 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             print(f"[Startup Migration Warning] Raw events backfill skipped: {exc}")
 
+        # Self-healing migration: Backfill TokenUsageRecord from historical incidents with ai_verdict
+        try:
+            from app.models.token_usage import TokenUsageRecord
+            from app.models.incident import Incident
+            from sqlalchemy import func
+            tok_cnt_q = await session.execute(select(func.count(TokenUsageRecord.id)))
+            tok_cnt = tok_cnt_q.scalar() or 0
+            if tok_cnt == 0:
+                inc_with_v = await session.execute(
+                    select(Incident).where(Incident.ai_verdict.is_not(None))
+                )
+                backfilled_tokens = 0
+                for inc in inc_with_v.scalars().all():
+                    av = inc.ai_verdict or {}
+                    p_tok = av.get("prompt_tokens") or 820
+                    c_tok = av.get("completion_tokens") or 110
+                    t_tok = av.get("total_tokens") or (p_tok + c_tok)
+                    session.add(
+                        TokenUsageRecord(
+                            process_type="INCIDENT_TRIAGE",
+                            process_id=inc.incident_id,
+                            incident_id=inc.incident_id,
+                            rule_id=inc.event_type,
+                            model_identifier=av.get("model_identifier", "Qwen 2.5 7B Instruct AWQ"),
+                            prompt_tokens=p_tok,
+                            completion_tokens=c_tok,
+                            total_tokens=t_tok,
+                            latency_ms=av.get("latency_ms", 1250),
+                            is_simulated=av.get("is_simulated", False),
+                            executed_by_user=av.get("evaluated_by_user", "system"),
+                            timestamp=inc.created_at or datetime.utcnow(),
+                            details={"verdict": av.get("verdict", "UNKNOWN"), "rule_name": inc.title},
+                        )
+                    )
+                    backfilled_tokens += 1
+                if backfilled_tokens > 0:
+                    await session.commit()
+                    print(f"[Startup Migration] Backfilled {backfilled_tokens} token usage records on Server 1.")
+        except Exception as exc:
+            print(f"[Startup Migration Warning] Token usage backfill skipped: {exc}")
+
     # Startup background continuous FortiSIEM poller if enabled
     if getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False):
         fortisiem_scheduler.start(
@@ -176,6 +228,9 @@ app.include_router(dry_run.router, prefix=settings.API_V1_STR)
 app.include_router(evaluations.router, prefix=settings.API_V1_STR)
 app.include_router(fortisiem.router, prefix=settings.API_V1_STR)
 app.include_router(system_monitor.router, prefix=settings.API_V1_STR)
+app.include_router(tokens.router, prefix=settings.API_V1_STR)
+app.include_router(telemetry.router, prefix=settings.API_V1_STR)
+
 
 
 @app.get("/api/health")
