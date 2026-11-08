@@ -717,13 +717,9 @@ class IngestionService:
             from app.services.prompt_studio_service import PromptStudioService
             prompt_svc = PromptStudioService(self.db)
             draft = await prompt_svc.generate_template_draft(rule_id=new_rule.id)
-            # Ensure rule prompt points to active version
-            from app.models.prompt import RulePrompt
-            rp_res = await self.db.execute(select(RulePrompt).where(RulePrompt.rule_id == new_rule.id))
-            rp = rp_res.scalars().first()
-            if rp and not rp.active_version_id and draft:
-                rp.active_version_id = draft.id
-                await self.db.flush()
+            # REQ-03 / AV-001: Template drafts remain strictly in DRAFT status.
+            # Do NOT automatically set active_version_id = draft.id.
+            # Production triage requires explicit Administrator approval in Agent Intelligence Studio.
         except Exception:
             pass
 

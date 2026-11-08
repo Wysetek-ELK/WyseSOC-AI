@@ -338,7 +338,7 @@ class ReviewOrchestrator:
                         missing_evidence=missing_ev,
                         evidence_references=ev_refs,
                         answered_questions=qa_data,
-                        verification_status="VERIFIED",
+                        verification_status="PENDING_REVIEW",
                         feedback_timestamp=datetime.utcnow(),
                     )
                     self.db.add(lr)
@@ -350,7 +350,7 @@ class ReviewOrchestrator:
                     lr.missing_evidence = missing_ev
                     lr.evidence_references = ev_refs
                     lr.answered_questions = qa_data
-                    lr.verification_status = "VERIFIED"
+                    lr.verification_status = "PENDING_REVIEW"
                     lr.feedback_timestamp = datetime.utcnow()
 
         await self.db.commit()

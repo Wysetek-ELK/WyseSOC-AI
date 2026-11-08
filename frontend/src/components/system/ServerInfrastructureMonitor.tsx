@@ -541,12 +541,14 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
                 <span className="text-slate-400 flex items-center gap-1">
                   <Gauge className="h-3 w-3 text-purple-400" /> GPU Compute Load
                 </span>
-                <span className="text-purple-300 font-bold">{s2?.gpu_percent ?? 0}%</span>
+                <span className="text-purple-300 font-bold">
+                  {s2?.gpu_percent != null ? `${s2.gpu_percent}%` : "Unavailable"}
+                </span>
               </div>
               <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
                 <div
                   className="h-full bg-purple-500 transition-all duration-500"
-                  style={{ width: `${Math.min(100, Math.max(3, s2?.gpu_percent || 0))}%` }}
+                  style={{ width: `${s2?.gpu_percent != null ? Math.min(100, Math.max(3, s2.gpu_percent)) : 0}%` }}
                 />
               </div>
             </div>
@@ -558,16 +560,22 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
                   <Layers className="h-3 w-3 text-pink-400" /> VRAM & KV Cache
                 </span>
                 <span className="text-pink-300 font-bold">
-                  {s2?.gpu_memory_percent ?? 0}%{" "}
-                  <span className="text-[10px] text-slate-400 font-normal">
-                    ({s2?.gpu_memory_used_gb ?? 0} / {s2?.gpu_memory_total_gb ?? 24} GB)
-                  </span>
+                  {s2?.gpu_memory_percent != null ? (
+                    <>
+                      {s2.gpu_memory_percent}%{" "}
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        ({s2?.gpu_memory_used_gb ?? 0} / {s2?.gpu_memory_total_gb ?? 24} GB)
+                      </span>
+                    </>
+                  ) : (
+                    "Unavailable"
+                  )}
                 </span>
               </div>
               <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
                 <div
                   className="h-full bg-pink-500 transition-all duration-500"
-                  style={{ width: `${Math.min(100, Math.max(3, s2?.gpu_memory_percent || 0))}%` }}
+                  style={{ width: `${s2?.gpu_memory_percent != null ? Math.min(100, Math.max(3, s2.gpu_memory_percent)) : 0}%` }}
                 />
               </div>
             </div>
@@ -579,16 +587,18 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
                   <Clock className="h-3 w-3 text-emerald-400" /> API Latency & Queue
                 </span>
                 <span className="text-emerald-300 font-bold">
-                  {s2?.latency_ms ?? 0} ms{" "}
-                  <span className="text-[10px] text-slate-400 font-normal">
-                    ({s2?.active_requests ?? 0} active reqs)
-                  </span>
+                  {s2?.latency_ms != null ? `${s2.latency_ms} ms` : "N/A"}{" "}
+                  {s2?.active_requests != null && (
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      ({s2.active_requests} active reqs)
+                    </span>
+                  )}
                 </span>
               </div>
               <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
                 <div
                   className="h-full bg-emerald-500 transition-all duration-500"
-                  style={{ width: `${Math.min(100, Math.max(3, ((s2?.latency_ms || 20) / 200) * 100))}%` }}
+                  style={{ width: `${s2?.latency_ms != null ? Math.min(100, Math.max(3, (s2.latency_ms / 200) * 100)) : 0}%` }}
                 />
               </div>
             </div>
@@ -598,9 +608,14 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
           <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/80">
             <span className="flex items-center gap-1">
               <Thermometer className="h-3 w-3 text-amber-400" />
-              Temp: <strong className="text-slate-300">{s2?.gpu_temp_c ?? 54}°C</strong>
+              Temp: <strong className="text-slate-300">{s2?.gpu_temp_c != null ? `${s2.gpu_temp_c}°C` : "N/A"}</strong>
             </span>
-            <span>Engine: <strong className="text-slate-300">vLLM 0.33 (AWQ)</strong></span>
+            <span>
+              Metrics:{" "}
+              <strong className={s2?.details?.metrics_available ? "text-emerald-400" : "text-slate-400"}>
+                {s2?.details?.metrics_available ? "Prometheus Live" : "Metrics Unavailable"}
+              </strong>
+            </span>
           </div>
         </div>
       </div>

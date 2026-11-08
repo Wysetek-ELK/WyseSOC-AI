@@ -13,7 +13,12 @@ class LearningRecordCreate(BaseModel):
     missing_evidence: List[str] = Field(default_factory=list)
     evidence_references: List[str] = Field(default_factory=list)
     answered_questions: List[Dict[str, Any]] = Field(default_factory=list)
-    verification_status: str = Field("VERIFIED", max_length=32)
+    verification_status: str = Field("PENDING_REVIEW", max_length=32)
+
+
+class LearningRecordVerifyRequest(BaseModel):
+    verification_status: str = Field(..., description="Status must be VERIFIED, REJECTED, DISPUTED, or PENDING_REVIEW")
+    review_notes: Optional[str] = Field(None, max_length=2000)
 
 
 class LearningRecordResponse(BaseModel):

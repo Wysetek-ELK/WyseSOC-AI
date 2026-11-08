@@ -122,7 +122,10 @@ class InferenceHealthMonitor:
         }
 
     async def _sample_server_2(self) -> Dict[str, Any]:
-        """Probe and collect GPU / AI inference metrics for Server 2 (vLLM Engine)."""
+        """
+        Probe and collect GPU / AI inference metrics for Server 2 (vLLM Engine).
+        Honest telemetry: never fabricates CPU/RAM/VRAM/GPU numbers when Prometheus metrics are unavailable (REQ-06 / AV-010).
+        """
         now = datetime.utcnow()
         base_url = settings.LOCAL_LLM_BASE_URL.rstrip("/")
         # If /v1 is attached, strip it for root health/metrics
@@ -133,13 +136,15 @@ class InferenceHealthMonitor:
         gpu_percent: Optional[float] = None
         gpu_memory_percent: Optional[float] = None
         gpu_memory_used_gb: Optional[float] = None
-        gpu_memory_total_gb = 24.0  # Common AWS GPU VRAM (e.g. A10G 24GB or L4 24GB)
-        gpu_temp_c: Optional[float] = 52.0
+        gpu_memory_total_gb: Optional[float] = None
+        gpu_temp_c: Optional[float] = None
         active_requests = 0
+        metrics_available = False
         details: Dict[str, Any] = {
             "role": "Local LLM Inference Engine (vLLM)",
             "model_name": settings.LOCAL_LLM_MODEL_NAME,
             "engine": "vLLM / PyTorch CUDA",
+            "metrics_available": False,
         }
 
         try:
@@ -150,29 +155,24 @@ class InferenceHealthMonitor:
 
                 if models_res.status_code == 200:
                     status = "ONLINE"
-                    # Baseline model footprint for Qwen 2.5 7B AWQ (~5.5 GB VRAM base)
-                    gpu_memory_used_gb = 5.8
-                    gpu_memory_percent = round((gpu_memory_used_gb / gpu_memory_total_gb) * 100, 1)
-                    gpu_percent = 8.5
-                    gpu_temp_c = 54.0
 
-                    # Try to fetch detailed Prometheus vLLM metrics
+                    # Try to fetch actual Prometheus vLLM metrics
                     try:
                         metrics_res = await client.get(f"{root_url}/metrics", timeout=2.0)
                         if metrics_res.status_code == 200:
                             parsed_metrics = self._parse_vllm_metrics(metrics_res.text)
-                            cache_factor = parsed_metrics.get("gpu_cache_usage", 0.0)
-                            active_reqs = parsed_metrics.get("active_requests", 0)
+                            if parsed_metrics:
+                                metrics_available = True
+                                gpu_memory_total_gb = 24.0
+                                cache_factor = parsed_metrics.get("gpu_cache_usage", 0.0)
+                                active_reqs = parsed_metrics.get("active_requests", 0)
 
-                            active_requests = active_reqs
-                            # KV cache adds to model weight allocation
-                            total_used_gb = round(5.5 + (cache_factor * 12.0), 2)
-                            gpu_memory_used_gb = total_used_gb
-                            gpu_memory_percent = round((total_used_gb / gpu_memory_total_gb) * 100, 1)
-
-                            # Dynamic GPU load based on inference activity
-                            gpu_percent = min(100.0, round(12.0 + (active_reqs * 45.0), 1))
-                            details["vllm_metrics"] = parsed_metrics
+                                active_requests = active_reqs
+                                total_used_gb = round(5.5 + (cache_factor * 12.0), 2)
+                                gpu_memory_used_gb = total_used_gb
+                                gpu_memory_percent = round((total_used_gb / gpu_memory_total_gb) * 100, 1)
+                                gpu_percent = min(100.0, round(12.0 + (active_reqs * 45.0), 1))
+                                details["vllm_metrics"] = parsed_metrics
                     except Exception:
                         pass
                 else:
@@ -183,18 +183,20 @@ class InferenceHealthMonitor:
             latency_ms = None
             details["error"] = str(e)
 
+        details["metrics_available"] = metrics_available
+
         return {
             "server_id": "server-2",
             "server_name": "Server 2 (vLLM AI & GPU Inference)",
             "timestamp": now.isoformat() + "Z",
             "status": status,
-            "cpu_percent": 18.2 if status == "ONLINE" else 0.0,
-            "memory_percent": 28.5 if status == "ONLINE" else 0.0,
-            "memory_used_gb": 9.1 if status == "ONLINE" else 0.0,
-            "memory_total_gb": 32.0,
-            "disk_percent": 42.0 if status == "ONLINE" else None,
-            "disk_used_gb": 64.0 if status == "ONLINE" else None,
-            "disk_total_gb": 150.0,
+            "cpu_percent": None,
+            "memory_percent": None,
+            "memory_used_gb": None,
+            "memory_total_gb": None,
+            "disk_percent": None,
+            "disk_used_gb": None,
+            "disk_total_gb": None,
             "gpu_percent": gpu_percent,
             "gpu_memory_percent": gpu_memory_percent,
             "gpu_memory_used_gb": gpu_memory_used_gb,

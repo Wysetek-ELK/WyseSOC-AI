@@ -8,8 +8,9 @@ from app.models.user import User
 from app.models.rule import Rule
 from app.models.incident import Incident
 from app.schemas.rule import RuleResponse, RuleDetailResponse, RuleListResponse, RuleStatsResponse
+from app.schemas.fortisiem import FortiSIEMRuleSyncResponse
 from app.services.rule_parser import RuleParser
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_role
 
 router = APIRouter(prefix="/rules", tags=["SIEM Rules"])
 
@@ -176,6 +177,21 @@ async def get_rule_stats(
     )
 
 
+@router.post("/sync/fortisiem", response_model=FortiSIEMRuleSyncResponse)
+async def sync_rules_from_fortisiem(
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Route alias matching documented specification: POST /api/rules/sync/fortisiem (REQ-08 / AV-015).
+    Synchronizes detection rules from FortiSIEM Supervisor.
+    """
+    from app.services.fortisiem_service import FortiSIEMService
+    service = FortiSIEMService(db)
+    result = await service.sync_all_rules_from_siem()
+    return FortiSIEMRuleSyncResponse(**result)
+
+
 @router.get("/{identifier}", response_model=RuleDetailResponse)
 async def get_rule_detail(
     identifier: str,
@@ -215,4 +231,51 @@ async def get_rule_detail(
         created_at=rule.created_at,
         updated_at=rule.updated_at,
     )
+
+
+@router.get("/{identifier}/compiled-policy")
+async def get_rule_compiled_policy(
+    identifier: str,
+    execution_mode: str = Query("LIVE"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Returns the unified nine-section compiled investigation policy (P3-REQ-01).
+    """
+    stmt = select(Rule).where(
+        or_(Rule.id == identifier, Rule.rule_id == identifier, Rule.event_type == identifier)
+    )
+    res = await db.execute(stmt)
+    rule = res.scalar_one_or_none()
+    if not rule:
+        raise HTTPException(status_code=404, detail=f"SIEM Rule '{identifier}' not found")
+
+    from app.services.prompt_studio_service import PromptStudioService
+    svc = PromptStudioService(db)
+    compiled = await svc.compile_active_policy(rule.id, execution_mode=execution_mode)
+    return compiled.model_dump()
+
+
+@router.get("/{identifier}/calibration-report")
+async def get_rule_calibration_report(
+    identifier: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Returns the empirical evaluation and honest calibration report for a rule (P3-REQ-07).
+    """
+    stmt = select(Rule).where(
+        or_(Rule.id == identifier, Rule.rule_id == identifier, Rule.event_type == identifier)
+    )
+    res = await db.execute(stmt)
+    rule = res.scalar_one_or_none()
+    if not rule:
+        raise HTTPException(status_code=404, detail=f"SIEM Rule '{identifier}' not found")
+
+    from app.services.calibration_evaluation_service import CalibrationEvaluationService
+    report = await CalibrationEvaluationService.generate_rule_calibration_report(db, rule.id)
+    return report.model_dump()
+
 

@@ -13,6 +13,7 @@ import {
   Layers,
   Clock,
   ShieldCheck,
+  ShieldAlert,
   Server,
   Network,
   Tag,
@@ -25,6 +26,8 @@ import {
   AlertCircle,
   Database,
   RefreshCw,
+  Scale,
+  FileSearch,
 } from "lucide-react";
 import { api, IncidentDetail, IncidentAiVerdictResponse } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
@@ -42,7 +45,7 @@ export default function AITriageWorkbenchDetailPage({
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
   const [modelPayload, setModelPayload] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "events" | "rule" | "ground_truth" | "raw_json" | "model_payload" | "timeline"
+    "overview" | "events" | "rule" | "ground_truth" | "raw_json" | "model_payload" | "timeline" | "canonical_evidence"
   >("overview");
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -248,7 +251,8 @@ export default function AITriageWorkbenchDetailPage({
       )}
 
       {aiVerdict && (
-        <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-3 shadow-lg">
+        <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-3.5 shadow-lg">
+          {/* Header Row */}
           <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2.5 gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded">
@@ -264,6 +268,22 @@ export default function AITriageWorkbenchDetailPage({
                   Stored Verdict
                 </span>
               )}
+              {aiVerdict.contract_id && (
+                <span className="text-[10px] font-mono text-purple-300 bg-purple-950/60 border border-purple-800/60 px-1.5 py-0.5 rounded flex items-center gap-1" title={`Contract: ${aiVerdict.contract_id} v${aiVerdict.contract_version || 1}`}>
+                  <Scale className="h-2.5 w-2.5 text-purple-400" />
+                  Contract: {aiVerdict.contract_id} (v{aiVerdict.contract_version || 1})
+                </span>
+              )}
+              {aiVerdict.compiler_version && (
+                <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-1.5 py-0.5 rounded flex items-center gap-1" title={`Compiled Policy Digest: ${aiVerdict.compilation_digest || 'N/A'}`}>
+                  <FileCode className="h-2.5 w-2.5 text-emerald-400" />
+                  Compiler: {aiVerdict.compiler_version} ({aiVerdict.policy_sections_count || 9}/9 secs)
+                </span>
+              )}
+              <span className="text-[10px] font-mono text-amber-300 bg-amber-950/60 border border-amber-800/60 px-1.5 py-0.5 rounded flex items-center gap-1" title="Honest calibration status: Withheld until >= 30 verified ground truth cases">
+                <ShieldCheck className="h-2.5 w-2.5 text-amber-400" />
+                Calibration: {aiVerdict.calibration_status || "NOT_CALIBRATED"}
+              </span>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-400">
               <span className="flex items-center gap-1 text-slate-300" title="Inference Execution Time">
@@ -289,8 +309,27 @@ export default function AITriageWorkbenchDetailPage({
             </div>
           </div>
 
+          {/* Overrule Alert Banner (when LLM proposed TP/FP but validator overrode to REQUIRES_ATTENTION) */}
+          {aiVerdict.proposed_verdict && aiVerdict.proposed_verdict !== aiVerdict.verdict && (
+            <div className="rounded-lg border border-amber-500/80 bg-amber-950/40 p-3 text-xs text-amber-200 flex items-start gap-2.5">
+              <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <div className="font-semibold text-amber-300 flex items-center gap-2">
+                  <span>Deterministic Safety Override Applied</span>
+                  <span className="text-[10px] font-mono bg-amber-900/60 border border-amber-700 px-1.5 py-0.2 rounded text-amber-200">
+                    Proposed: {aiVerdict.proposed_verdict} → Final: {aiVerdict.verdict}
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-300/90 leading-relaxed">
+                  The model proposed a decisive <strong>{aiVerdict.proposed_verdict}</strong>, but independent verification rejected it due to incomplete telemetry, ungrounded claims, or unapproved policy contracts.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Authoritative Verdict Card */}
           <div
-            className={`rounded-lg border p-3 flex items-center justify-between ${
+            className={`rounded-lg border p-3 flex flex-wrap items-center justify-between gap-3 ${
               aiVerdict.verdict === "TRUE_POSITIVE"
                 ? "bg-rose-950/50 border-rose-800 text-rose-200"
                 : aiVerdict.verdict === "FALSE_POSITIVE"
@@ -300,46 +339,227 @@ export default function AITriageWorkbenchDetailPage({
           >
             <div className="flex items-center gap-2.5">
               {aiVerdict.verdict === "TRUE_POSITIVE" ? (
-                <AlertTriangle className="h-5 w-5 text-rose-400" />
+                <AlertTriangle className="h-6 w-6 text-rose-400 shrink-0" />
               ) : aiVerdict.verdict === "FALSE_POSITIVE" ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0" />
               ) : (
-                <AlertCircle className="h-5 w-5 text-amber-400" />
+                <AlertCircle className="h-6 w-6 text-amber-400 shrink-0" />
               )}
               <div>
-                <div className="text-[10px] uppercase font-mono tracking-wider opacity-80">
-                  Model Determination
+                <div className="text-[10px] uppercase font-mono tracking-wider opacity-80 flex items-center gap-1.5">
+                  Authoritative Platform Verdict
+                  {aiVerdict.is_decisive_accepted ? (
+                    <span className="text-[9px] bg-emerald-900/80 border border-emerald-600 px-1 py-0.2 rounded text-emerald-300 font-bold">
+                      VERIFIED ACCEPTED
+                    </span>
+                  ) : (
+                    <span className="text-[9px] bg-amber-900/80 border border-amber-600 px-1 py-0.2 rounded text-amber-300 font-bold">
+                      ABSTAINED / FORCED ATTENTION
+                    </span>
+                  )}
                 </div>
-                <div className="text-sm font-bold tracking-tight">
+                <div className="text-base font-extrabold tracking-tight">
                   {aiVerdict.verdict.replace(/_/g, " ")}
                 </div>
               </div>
             </div>
 
-            <div className="text-right">
-              <div className="text-[10px] uppercase font-mono tracking-wider opacity-80">
-                Confidence
-              </div>
-              <div className="text-base font-extrabold font-mono">
-                {Math.round(aiVerdict.confidence)}%
+            <div className="flex items-center gap-6">
+              {aiVerdict.raw_model_confidence !== undefined && aiVerdict.raw_model_confidence !== aiVerdict.confidence && (
+                <div className="text-right border-r border-slate-700/60 pr-5">
+                  <div className="text-[10px] uppercase font-mono tracking-wider text-slate-400" title="Raw uncalibrated score generated by LLM prior to validation">
+                    Raw LLM Score
+                  </div>
+                  <div className="text-xs font-mono text-slate-300">
+                    {Math.round(aiVerdict.raw_model_confidence)}% <span className="text-[9px] text-slate-500">(Uncalibrated)</span>
+                  </div>
+                </div>
+              )}
+              <div className="text-right">
+                <div className="text-[10px] uppercase font-mono tracking-wider opacity-80" title="Effective confidence after independent deterministic evidence verification">
+                  Effective Confidence
+                </div>
+                <div className="text-lg font-extrabold font-mono">
+                  {Math.round(aiVerdict.confidence)}%
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Phase 2 Evidence Grounding & Verification Metrics Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+            {/* Metric 1: Completeness */}
+            <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+              <span className="text-[9px] text-slate-400 block uppercase">Evidence Completeness</span>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className={`text-sm font-bold ${
+                  (aiVerdict.evidence_completeness ?? 0) >= 0.8
+                    ? "text-emerald-400"
+                    : (aiVerdict.evidence_completeness ?? 0) >= 0.4
+                    ? "text-amber-400"
+                    : "text-rose-400"
+                }`}>
+                  {Math.round((aiVerdict.evidence_completeness ?? 0) * 100)}%
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  ({aiVerdict.canonical_evidence_count ?? 0} canonical recs)
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 2: Claim Grounding */}
+            <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+              <span className="text-[9px] text-slate-400 block uppercase">Claim Grounding Ratio</span>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <span className={`text-sm font-bold ${
+                  (aiVerdict.grounding_ratio ?? 1) >= 0.99
+                    ? "text-emerald-400"
+                    : "text-rose-400"
+                }`}>
+                  {Math.round((aiVerdict.grounding_ratio ?? 1) * 100)}%
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  ({aiVerdict.grounded_claims_count ?? 0}/{aiVerdict.total_claims_count ?? 0} grounded)
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 3: Validation Status */}
+            <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+              <span className="text-[9px] text-slate-400 block uppercase">Validation Status</span>
+              <div className="mt-0.5 truncate">
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded border inline-block ${
+                  aiVerdict.validation_status === "VALIDATED"
+                    ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                    : aiVerdict.validation_status === "INSUFFICIENT_EVIDENCE"
+                    ? "bg-amber-950 text-amber-300 border-amber-800"
+                    : "bg-rose-950 text-rose-300 border-rose-800"
+                }`}>
+                  {aiVerdict.validation_status || "UNVERIFIED"}
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 4: Replay Audit */}
+            <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
+              <span className="text-[9px] text-slate-400 block uppercase">Replay Signature</span>
+              <div className="flex items-center justify-between mt-0.5">
+                <span className="text-xs text-cyan-300 font-mono truncate" title={aiVerdict.replay_signature}>
+                  {aiVerdict.replay_signature ? `${aiVerdict.replay_signature.substring(0, 10)}...` : "N/A"}
+                </span>
+                {aiVerdict.replay_signature && (
+                  <button
+                    onClick={() => copyToClipboard(aiVerdict.replay_signature || "")}
+                    className="text-[9px] text-slate-400 hover:text-white"
+                    title="Copy full cryptographic signature"
+                  >
+                    Copy
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Analyst Action Directive */}
+          {aiVerdict.analyst_action_directive && (
+            <div className="rounded-lg border border-cyan-800/60 bg-cyan-950/30 p-2.5 text-xs text-cyan-200 flex items-start gap-2">
+              <FileCheck2 className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-cyan-300 font-semibold block text-[11px] uppercase tracking-wider">
+                  Analyst Action Directive:
+                </strong>
+                <p className="text-xs text-slate-200 font-sans mt-0.5 leading-relaxed">
+                  {aiVerdict.analyst_action_directive}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Reason & Analytical Justification */}
           <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 space-y-1">
             <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
               <Bot className="h-3 w-3 text-cyan-400" />
-              Analytical Justification
+              Analytical Justification & Deterministic Evaluation
             </div>
             <p className="text-xs text-slate-200 leading-relaxed font-sans">
               {aiVerdict.reason}
             </p>
           </div>
 
+          {/* Validation Reason Codes */}
+          {aiVerdict.validation_reason_codes && aiVerdict.validation_reason_codes.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                Validation Assessment Codes ({aiVerdict.validation_reason_codes.length}):
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {aiVerdict.validation_reason_codes.map((code, idx) => (
+                  <span
+                    key={idx}
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                      code.includes("PASSED")
+                        ? "bg-emerald-950/70 text-emerald-300 border-emerald-800"
+                        : code.includes("CLAIM_UNGROUNDED") || code.includes("CONTRADICTION")
+                        ? "bg-rose-950/80 text-rose-300 border-rose-800"
+                        : "bg-amber-950/70 text-amber-300 border-amber-800"
+                    }`}
+                  >
+                    {code}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Unsupported Claims Alert (if any hallucinated claims detected) */}
+          {aiVerdict.unsupported_claims && aiVerdict.unsupported_claims.length > 0 && (
+            <div className="rounded-lg border border-rose-800/80 bg-rose-950/40 p-3 space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-rose-300 font-semibold">
+                <AlertTriangle className="h-4 w-4 text-rose-400" />
+                <span>Unsupported / Fabricated Claims Detected ({aiVerdict.unsupported_claims.length})</span>
+              </div>
+              <p className="text-[11px] text-rose-200/90 leading-relaxed">
+                The model cited facts not present in verified incident telemetry. Independent verification flagged and neutralized these claims:
+              </p>
+              <div className="space-y-1 font-mono text-[11px]">
+                {aiVerdict.unsupported_claims.map((claim, idx) => (
+                  <div key={idx} className="p-1.5 rounded bg-rose-950 border border-rose-800/60 flex items-center justify-between">
+                    <div>
+                      <span className="text-rose-400 font-bold">{claim.claim_type}: </span>
+                      <span className="text-slate-200">{String(claim.asserted_value)} </span>
+                      <span className="text-slate-500">({claim.field})</span>
+                    </div>
+                    <span className="text-[9px] bg-rose-900 text-rose-200 px-1 py-0.2 rounded uppercase">
+                      {claim.grounding_status || "UNGROUNDED"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Missing Required Telemetry */}
+          {aiVerdict.missing_evidence && aiVerdict.missing_evidence.length > 0 && (
+            <div className="rounded-lg border border-slate-800/80 bg-slate-900/40 p-3 space-y-1.5">
+              <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                <AlertCircle className="h-3 w-3" />
+                Missing Required Evidence Telemetry ({aiVerdict.missing_evidence.length})
+              </div>
+              <ul className="text-xs space-y-1 text-slate-300 list-disc list-inside font-mono">
+                {aiVerdict.missing_evidence.map((item, idx) => (
+                  <li key={idx} className="text-[11px] text-amber-200/90 leading-tight">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Supporting Evidence Attributes */}
           {aiVerdict.supporting_evidence && aiVerdict.supporting_evidence.length > 0 && (
             <div className="rounded-lg border border-slate-800/80 bg-slate-900/40 p-3 space-y-1.5">
               <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
-                Supporting Evidence Attributes
+                Supporting Evidence Attributes ({aiVerdict.supporting_evidence.length})
               </div>
               <ul className="text-xs space-y-1 text-slate-300 list-disc list-inside">
                 {aiVerdict.supporting_evidence.map((ev, idx) => (
@@ -348,6 +568,43 @@ export default function AITriageWorkbenchDetailPage({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Phase 3 Verified Historical Precedents (Semantic RAG) */}
+          {aiVerdict.retrieved_precedents && aiVerdict.retrieved_precedents.length > 0 && (
+            <div className="rounded-lg border border-indigo-900/60 bg-indigo-950/20 p-3 space-y-2 text-xs">
+              <div className="flex items-center justify-between text-indigo-300 font-semibold">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-indigo-400" />
+                  <span>Verified Historical Precedents ({aiVerdict.retrieved_precedents.length})</span>
+                </div>
+                <span className="text-[10px] font-mono text-indigo-400/80">
+                  Tenant-Isolated & Exact-Rule Scoped
+                </span>
+              </div>
+              <div className="space-y-2">
+                {aiVerdict.retrieved_precedents.map((prec, idx) => (
+                  <div key={idx} className="p-2.5 rounded bg-slate-900/90 border border-indigo-900/40 text-[11px] font-mono space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-indigo-300 font-bold">{prec.incident_title || prec.incident_id}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-400">Similarity: {(prec.similarity_score * 100).toFixed(0)}%</span>
+                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                          prec.verified_verdict === "TRUE_POSITIVE"
+                            ? "bg-rose-950 text-rose-300 border border-rose-800"
+                            : "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                        }`}>
+                          {prec.verified_verdict}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-slate-300 font-sans text-xs">
+                      {prec.analyst_explanation}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -436,6 +693,23 @@ export default function AITriageWorkbenchDetailPage({
         >
           <Clock className="h-3 w-3 text-cyan-400" />
           Historical Telemetry Timeline
+        </button>
+
+        <button
+          onClick={() => setActiveTab("canonical_evidence")}
+          className={`px-3 py-1.5 border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+            activeTab === "canonical_evidence"
+              ? "border-cyan-500 text-cyan-300 font-semibold"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Scale className="h-3 w-3 text-cyan-400" />
+          Canonical Evidence
+          {modelPayload?.canonical_evidence && (
+            <span className="rounded bg-slate-800 px-1 py-0.2 text-[9px] font-mono text-cyan-300">
+              {modelPayload.canonical_evidence.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -763,6 +1037,82 @@ export default function AITriageWorkbenchDetailPage({
       {/* Tab 7: Historical Telemetry Timeline */}
       {activeTab === "timeline" && (
         <HistoricalTelemetryTimeline incidentId={incident.incident_id} />
+      )}
+
+      {/* Tab 8: Canonical Evidence Records */}
+      {activeTab === "canonical_evidence" && (
+        <div className="space-y-3 font-mono text-xs">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                <Scale className="h-3.5 w-3.5" />
+                Normalized Canonical Evidence Records
+              </h2>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                Each SIEM field is normalized into an immutable, deterministically keyed evidence record with SHA-256 cryptographic digest.
+              </p>
+            </div>
+            {modelPayload?.canonical_evidence && (
+              <span className="text-[10px] text-slate-400">
+                Total: <strong className="text-cyan-300">{modelPayload.canonical_evidence.length}</strong> items
+              </span>
+            )}
+          </div>
+
+          {!modelPayload?.canonical_evidence || modelPayload.canonical_evidence.length === 0 ? (
+            <div className="p-8 rounded-lg border border-slate-800 bg-slate-950 text-center text-slate-400">
+              No normalized canonical evidence records available for this incident.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {modelPayload.canonical_evidence.map((ev: any, idx: number) => (
+                <div
+                  key={ev.evidence_id || idx}
+                  className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 hover:border-slate-700 transition-colors"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
+                    <span className="text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-1.5 py-0.2 rounded font-bold">
+                      {ev.evidence_category}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(ev.evidence_id)}
+                      className="text-[9px] text-slate-400 hover:text-white"
+                      title="Copy evidence ID"
+                    >
+                      {ev.evidence_id}
+                    </button>
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] text-slate-500 block">Canonical Field:</span>
+                    <span className="text-cyan-300 font-bold">{ev.canonical_field}</span>
+                    {ev.raw_field_name && (
+                      <span className="text-[10px] text-slate-500 ml-1.5">
+                        (raw: <span className="text-slate-400">{ev.raw_field_name}</span>)
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] text-slate-500 block">Observed Value:</span>
+                    <div className="p-1.5 rounded bg-slate-900 border border-slate-800/80 text-slate-200 text-[11px] break-all max-h-24 overflow-y-auto">
+                      {typeof ev.observed_value === "object"
+                        ? JSON.stringify(ev.observed_value)
+                        : String(ev.observed_value)}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[9px] text-slate-500 pt-1 border-t border-slate-900">
+                    <span>Event: {ev.source_event_id || "incident_level"}</span>
+                    <span title={ev.integrity_digest}>
+                      SHA: {ev.integrity_digest ? ev.integrity_digest.substring(0, 10) : "N/A"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

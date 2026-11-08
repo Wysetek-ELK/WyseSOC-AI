@@ -130,7 +130,8 @@ async def test_analyst_verdict_and_ground_truth_isolation(client: AsyncClient, d
     lr = lr_res.scalars().first()
     assert lr is not None
     assert lr.verified_verdict == "TRUE_POSITIVE"
-    assert lr.verification_status == "VERIFIED"
+    # Under Phase 1 REQ-05 / AV-008, analyst feedback enters as PENDING_REVIEW awaiting supervisor approval
+    assert lr.verification_status == "PENDING_REVIEW"
 
 
 @pytest.mark.asyncio

@@ -547,6 +547,38 @@ DETECTION CONDITIONS:
         }
         return json.dumps(export_data, indent=2), "application/json", f"rule_prompt_{safe_name}_{timestamp}.json"
 
+    async def compile_active_policy(
+        self,
+        rule_id: str,
+        execution_mode: str = "LIVE",
+    ):
+        """
+        Compiles the active prompt policy for a rule into the unified nine-section format (P3-REQ-01).
+        """
+        from app.schemas.compiled_policy import CompilationExecutionMode
+        from app.services.policy_compiler_service import PolicyCompilerService
+
+        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
+        rule = rule_res.scalars().first()
+        if not rule:
+            raise ValueError(f"Rule with id {rule_id} not found")
+
+        prompt = await self.get_or_create_rule_prompt(rule_id)
+        versions = prompt.versions if (prompt and prompt.versions) else []
+        active_v = next((v for v in versions if v.id == prompt.active_version_id), None) if prompt else None
+
+        try:
+            mode = CompilationExecutionMode(execution_mode.upper())
+        except Exception:
+            mode = CompilationExecutionMode.LIVE
+
+        return PolicyCompilerService.compile_policy(
+            rule=rule,
+            prompt_version=active_v,
+            execution_mode=mode,
+            raise_on_unapproved=False,
+        )
+
 
 # Backward compatibility alias
 PromptStudioService = AgentPolicyEngine

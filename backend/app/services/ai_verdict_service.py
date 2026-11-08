@@ -15,6 +15,15 @@ from app.models.audit import AuditLog
 from app.services.model_payload_allowlist import build_model_facing_payload
 from app.services.model_provider.factory import get_model_provider
 from app.services.prompt_studio_service import PromptStudioService, COMMON_SOC_BASELINE
+from app.services.evidence_normalization_service import EvidenceNormalizationService
+from app.services.evidence_contract_service import EvidenceContractService
+from app.services.evidence_preflight_validator import EvidencePreflightValidator
+from app.services.model_claim_extractor import ModelClaimExtractor
+from app.services.independent_verdict_validator import IndependentVerdictValidator
+from app.schemas.compiled_policy import CompilationExecutionMode
+from app.services.policy_compiler_service import PolicyCompilerService
+from app.services.verified_semantic_retrieval_service import VerifiedSemanticRetrievalService
+from app.services.token_budget_service import TokenBudgetService
 
 
 class LocalLLMUnavailableError(Exception):
@@ -115,68 +124,264 @@ class VerdictTriageAgent:
                 .values(rule_id=rule.id)
             )
 
-        # 3. Build model-facing payload (strict allowlist - zero ground-truth leakage)
+        # 3. Canonical Evidence Normalization (P2-REQ-01)
+        norm_result = EvidenceNormalizationService.normalize_incident_evidence(
+            incident=incident,
+            events=incident.events or [],
+        )
+
+        # 3b. Build model-facing payload (strict allowlist - zero ground-truth leakage)
         payload_dict = build_model_facing_payload(
             incident=incident,
             rule=rule,
             events=incident.events or [],
         )
+        payload_dict["canonical_evidence"] = [r.model_dump() for r in norm_result.records]
 
-        # 4. Resolve prompt text with Level-2 SOC criteria
+        # 4. Resolve evaluation mode & Model Availability Guard (REQ-02 / AV-004)
+        is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+        if is_prod:
+            allow_mock = False
+        else:
+            allow_mock = allow_simulated_fallback or getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
+
+        if not allow_mock and not model_provider_type:
+            is_online = await self.is_local_llm_available()
+            if not is_online:
+                raise LocalLLMUnavailableError(
+                    "Local LLM (Server 2) is currently offline. AI verdict generation is deferred until Local LLM comes online."
+                )
+
+        # 4b. Resolve prompt text with Level-2 SOC criteria
         prompt_service = PromptStudioService(self.db)
         prompt_text = COMMON_SOC_BASELINE
         prompt_ver_num = 1
 
+        active_v = None
         if rule:
             rp = await prompt_service.get_or_create_rule_prompt(rule.id)
-            if rp and rp.versions:
-                active_v = next((v for v in rp.versions if v.id == rp.active_version_id), rp.versions[0])
-                prompt_ver_num = active_v.version_number
-                parts = [active_v.common_prompt or COMMON_SOC_BASELINE]
-                if active_v.rule_specific_prompt:
-                    parts.append(active_v.rule_specific_prompt)
-                if active_v.tp_indicators and active_v.tp_indicators not in (active_v.rule_specific_prompt or ""):
-                    parts.append(f"### TRUE POSITIVE CRITERIA (MALICIOUS ATTACK):\n{active_v.tp_indicators}")
-                if active_v.fp_indicators and active_v.fp_indicators not in (active_v.rule_specific_prompt or ""):
-                    parts.append(f"### FALSE POSITIVE CRITERIA (BENIGN / OPERATIONAL NOISE):\n{active_v.fp_indicators}")
-                if active_v.required_evidence and active_v.required_evidence not in (active_v.rule_specific_prompt or ""):
-                    parts.append(f"### REQUIRED EVIDENCE EVALUATION:\n{active_v.required_evidence}")
-                if active_v.missing_info_criteria and active_v.missing_info_criteria not in (active_v.rule_specific_prompt or ""):
-                    parts.append(f"### WHEN TO VOTE REQUIRES_ATTENTION:\n{active_v.missing_info_criteria}")
-                prompt_text = "\n\n".join(parts)
+            if rp and rp.active_version_id and rp.versions:
+                candidate = next((v for v in rp.versions if v.id == rp.active_version_id), None)
+                if candidate and candidate.status == "APPROVED":
+                    active_v = candidate
 
-            # In-Context Learning (Few-Shot RAG from Verified Learning History)
-            lr_q = await self.db.execute(
-                select(LearningRecord)
-                .where(
-                    LearningRecord.rule_id == rule.id,
-                    LearningRecord.verification_status == "VERIFIED"
-                )
-                .options(selectinload(LearningRecord.incident))
-                .order_by(desc(LearningRecord.feedback_timestamp))
-                .limit(1)
-            )
-            learning_records = lr_q.scalars().all()
-            if not learning_records:
-                lr_fallback = await self.db.execute(
-                    select(LearningRecord)
-                    .where(LearningRecord.verification_status == "VERIFIED")
-                    .options(selectinload(LearningRecord.incident))
-                    .order_by(desc(LearningRecord.feedback_timestamp))
-                    .limit(1)
-                )
-                learning_records = lr_fallback.scalars().all()
+            # REQ-03 (AV-001 & AV-002): Refuse to evaluate with unapproved prompt drafts in live triage
+            if not active_v:
+                if not allow_simulated_fallback or is_prod:
+                    verdict_data = {
+                        "incident_id": incident.incident_id,
+                        "proposed_verdict": "REQUIRES_ATTENTION",
+                        "verdict": "REQUIRES_ATTENTION",
+                        "confidence": 0.0,
+                        "raw_model_confidence": 0.0,
+                        "reason": "DETECTION_POLICY_PENDING_APPROVAL: No approved investigation policy exists for this detection rule. Triage deferred to human analyst.",
+                        "supporting_evidence": [],
+                        "missing_evidence": ["Approved detection rule investigation policy (Studio approval required)"],
+                        "analyst_questions": ["Please review and approve the detection policy in Agent Intelligence Studio."],
+                        "latency_ms": 0,
+                        "model_identifier": "POLICY_GUARD",
+                        "prompt_tokens": 0,
+                        "completion_tokens": 0,
+                        "total_tokens": 0,
+                        "is_simulated": False,
+                        "validation_status": "POLICY_NOT_APPROVED",
+                        "validation_reason_codes": ["POLICY_NOT_APPROVED", "EVIDENCE_CONTRACT_UNVERIFIED"],
+                        "evidence_completeness": 0.0,
+                        "grounding_ratio": 0.0,
+                        "canonical_evidence_count": norm_result.total_evidence_count,
+                        "rule_name": rule.name if rule else incident.title,
+                        "severity": incident.severity,
+                        "evaluated_at": datetime.utcnow().isoformat(),
+                        "evaluated_by_user": username,
+                    }
+                    incident.ai_verdict = verdict_data
+                    self.db.add(incident)
 
-            if learning_records:
-                few_shot_lines = ["\n\n### VERIFIED HISTORICAL PRECEDENT (FEW-SHOT EXAMPLE):"]
-                for lr in learning_records:
-                    prec_title = lr.incident.title if lr.incident else "Historical Alert"
-                    few_shot_lines.append(
-                        f"- Precedent: {prec_title}\n"
-                        f"  Verified Determination: {lr.verified_verdict}\n"
-                        f"  Analyst Rationale: {lr.analyst_explanation[:150]}"
+                    # Sync with Investigation record if present
+                    inv_q = await self.db.execute(
+                        select(Investigation).where(Investigation.incident_id == incident.id)
                     )
-                prompt_text += "\n".join(few_shot_lines)
+                    inv = inv_q.scalars().first()
+                    if inv and not inv.analyst_verdict:
+                        note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
+                        if inv.analyst_notes:
+                            inv.analyst_notes = f"{inv.analyst_notes}\n\n{note_entry}"
+                        else:
+                            inv.analyst_notes = note_entry
+                        inv.updated_at = datetime.utcnow()
+                        self.db.add(inv)
+
+                    audit = AuditLog(
+                        user_id="SYSTEM" if username in ("system", "scheduler") else username,
+                        username=username,
+                        action="AI_VERDICT_EVALUATE",
+                        resource_type="INCIDENT",
+                        resource_id=incident.incident_id,
+                        details={
+                            "verdict": "REQUIRES_ATTENTION",
+                            "confidence": 0.0,
+                            "validation_status": "POLICY_NOT_APPROVED",
+                            "reason": verdict_data["reason"],
+                        },
+                    )
+                    self.db.add(audit)
+                    await self.db.commit()
+                    return verdict_data
+                else:
+                    # In simulation / test mode, allow testing with draft version if available
+                    if rp and rp.versions:
+                        active_v = rp.versions[0]
+
+        # P2-REQ-02: Resolve Evidence Contract for the rule and active policy
+        contract = EvidenceContractService.get_contract_for_rule(rule, active_v)
+
+        # P2-REQ-03: Preflight Evidence Validation
+        preflight = EvidencePreflightValidator.validate_preflight(
+            incident_id=incident.incident_id,
+            contract=contract,
+            normalization_result=norm_result,
+            allow_simulation=allow_mock,
+        )
+
+        # Preflight Gate: If critical required telemetry is missing in live triage, abstain immediately
+        if preflight.must_abstain_immediately and (not allow_simulated_fallback or is_prod):
+            verdict_data = {
+                "incident_id": incident.incident_id,
+                "proposed_verdict": "REQUIRES_ATTENTION",
+                "verdict": "REQUIRES_ATTENTION",
+                "confidence": 0.0,
+                "raw_model_confidence": 0.0,
+                "reason": f"CRITICAL_TELEMETRY_MISSING: {preflight.reason}",
+                "supporting_evidence": [],
+                "missing_evidence": preflight.missing_evidence_fields,
+                "analyst_questions": [f"Review missing critical telemetry: {', '.join(preflight.critical_missing_fields)}"],
+                "latency_ms": 0,
+                "model_identifier": "PREFLIGHT_GUARD",
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+                "is_simulated": False,
+                "validation_status": preflight.preflight_status,
+                "validation_reason_codes": ["EVIDENCE_MISSING"] if preflight.critical_missing_fields else ["EVIDENCE_CONTRACT_UNVERIFIED"],
+                "evidence_completeness": preflight.evidence_completeness,
+                "grounding_ratio": 0.0,
+                "canonical_evidence_count": norm_result.total_evidence_count,
+                "contract_id": contract.contract_id,
+                "contract_version": contract.version_number,
+                "validator_version": IndependentVerdictValidator.VALIDATOR_VERSION,
+                "rule_name": rule.name if rule else incident.title,
+                "severity": incident.severity,
+                "evaluated_at": datetime.utcnow().isoformat(),
+                "evaluated_by_user": username,
+            }
+            incident.ai_verdict = verdict_data
+            self.db.add(incident)
+
+            inv_q = await self.db.execute(
+                select(Investigation).where(Investigation.incident_id == incident.id)
+            )
+            inv = inv_q.scalars().first()
+            if inv and not inv.analyst_verdict:
+                note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
+                if inv.analyst_notes:
+                    inv.analyst_notes = f"{inv.analyst_notes}\n\n{note_entry}"
+                else:
+                    inv.analyst_notes = note_entry
+                inv.updated_at = datetime.utcnow()
+                self.db.add(inv)
+
+            audit = AuditLog(
+                user_id="SYSTEM" if username in ("system", "scheduler") else username,
+                username=username,
+                action="AI_VERDICT_EVALUATE",
+                resource_type="INCIDENT",
+                resource_id=incident.incident_id,
+                details={
+                    "verdict": "REQUIRES_ATTENTION",
+                    "confidence": 0.0,
+                    "validation_status": preflight.preflight_status,
+                    "reason": verdict_data["reason"],
+                },
+            )
+            self.db.add(audit)
+            await self.db.commit()
+            return verdict_data
+
+        # P3-REQ-01: Compile Unified Nine-Section Policy
+        exec_mode = CompilationExecutionMode.LIVE if (is_prod or not allow_mock) else CompilationExecutionMode.SIMULATION
+        compiled_policy = PolicyCompilerService.compile_policy(
+            rule=rule,
+            prompt_version=active_v,
+            execution_mode=exec_mode,
+            raise_on_unapproved=False,
+        )
+        prompt_ver_num = compiled_policy.version_number or 1
+
+        # P3-REQ-03 & P3-REQ-04: Rule-Specific Verified Semantic RAG
+        rag_result = await VerifiedSemanticRetrievalService.retrieve_verified_precedents(
+            db=self.db,
+            incident=incident,
+            rule_id=rule.id if rule else "UNKNOWN_RULE",
+            max_precedents=2,
+        )
+
+        # P3-REQ-05: Evidence-Preserving Token Budgeting
+        payload_dict["evidence_contract"] = {
+            "contract_id": contract.contract_id,
+            "version": contract.version_number,
+            "required_fields": [r.field for r in contract.required_evidence],
+        }
+        budgeted = TokenBudgetService.budget_prompt(
+            compiled_policy=compiled_policy,
+            incident_payload=payload_dict,
+            rag_block=rag_result.formatted_rag_block,
+        )
+
+        # Context Overflow Gate: If mandatory core exceeds context window, abstain safely
+        if not budgeted.can_proceed_to_inference:
+            verdict_data = {
+                "incident_id": incident.incident_id,
+                "proposed_verdict": "REQUIRES_ATTENTION",
+                "verdict": "REQUIRES_ATTENTION",
+                "confidence": 0.0,
+                "raw_model_confidence": 0.0,
+                "reason": budgeted.abstention_reason or "CONTEXT_WINDOW_EXCEEDED",
+                "supporting_evidence": [],
+                "missing_evidence": ["Reduced telemetry size (exceeds model context limit)"],
+                "analyst_questions": ["Please inspect raw incident logs directly in SIEM."],
+                "latency_ms": 0,
+                "model_identifier": "TOKEN_BUDGET_GUARD",
+                "prompt_tokens": budgeted.breakdown.total_prompt_tokens,
+                "completion_tokens": 0,
+                "total_tokens": budgeted.breakdown.total_prompt_tokens,
+                "is_simulated": False,
+                "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+                "validation_reason_codes": ["CONTEXT_WINDOW_EXCEEDED"],
+                "evidence_completeness": preflight.evidence_completeness,
+                "grounding_ratio": 0.0,
+                "canonical_evidence_count": norm_result.total_evidence_count,
+                "contract_id": contract.contract_id,
+                "contract_version": contract.version_number,
+                "validator_version": IndependentVerdictValidator.VALIDATOR_VERSION,
+                "compiler_version": compiled_policy.compiler_version,
+                "compilation_digest": compiled_policy.compilation_digest,
+                "policy_sections_count": len(compiled_policy.sections),
+                "calibration_status": "NOT_CALIBRATED",
+                "is_calibrated": False,
+                "rule_name": rule.name if rule else incident.title,
+                "severity": incident.severity,
+                "evaluated_at": datetime.utcnow().isoformat(),
+                "evaluated_by_user": username,
+            }
+            incident.ai_verdict = verdict_data
+            self.db.add(incident)
+            await self.db.commit()
+            return verdict_data
+
+        prompt_text = budgeted.budgeted_system_prompt
+        if budgeted.budgeted_rag_block:
+            prompt_text += f"\n\n{budgeted.budgeted_rag_block}"
+        payload_dict = budgeted.budgeted_incident_payload
 
         rule_spec = {
             "id": rule.id if rule else (incident.rule_id or "UNKNOWN"),
@@ -185,23 +390,15 @@ class VerdictTriageAgent:
             "description": rule.description if rule else "",
         }
 
-        # 5. Invoke Model Provider with strict offline enforcement
-        allow_mock = allow_simulated_fallback or getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
+        # 5. Invoke Model Provider with strict offline enforcement (REQ-02 / AV-004)
         if model_provider_type:
+            if is_prod and model_provider_type == "SIMULATED":
+                raise ValueError("Simulated model provider is strictly forbidden in production mode.")
             chosen_provider_type = model_provider_type
         else:
-            # If flagged offline from a previous failed inference, check if recovered
-            if self.__class__._is_local_llm_online is False:
-                is_online = await self.is_local_llm_available(force_refresh=True)
-                if not is_online:
-                    if allow_mock:
-                        chosen_provider_type = "SIMULATED"
-                    else:
-                        raise LocalLLMUnavailableError(
-                            "Local LLM (Server 2) is currently offline. AI verdict generation is deferred until Local LLM comes online."
-                        )
-                else:
-                    chosen_provider_type = "OPENAI_COMPATIBLE"
+            if allow_mock:
+                is_online = await self.is_local_llm_available()
+                chosen_provider_type = "OPENAI_COMPATIBLE" if is_online else "SIMULATED"
             else:
                 chosen_provider_type = "OPENAI_COMPATIBLE"
 
@@ -258,14 +455,44 @@ class VerdictTriageAgent:
             c_tokens = max(20, len(verdict.reason) // 4)
             t_tokens = p_tokens + c_tokens
 
-        # 6. Format Structured Verdict
-        verdict_data = {
-            "incident_id": incident.incident_id,
+        # P2-REQ-04: Structured Claim Extraction and Grounding
+        raw_verdict_dict = verdict.model_dump() if hasattr(verdict, "model_dump") else (verdict.dict() if hasattr(verdict, "dict") else {
             "verdict": verdict.verdict,
             "confidence": verdict.confidence,
             "reason": verdict.reason,
             "supporting_evidence": verdict.supporting_evidence,
-            "missing_evidence": verdict.missing_evidence,
+            "supporting_claims": getattr(verdict, "supporting_claims", []),
+        })
+        claim_grounding = ModelClaimExtractor.extract_and_ground_claims(
+            incident_id=incident.incident_id,
+            raw_verdict_output=raw_verdict_dict,
+            normalization_result=norm_result,
+        )
+
+        # P2-REQ-05 & P2-REQ-06: Independent Deterministic Verdict Validation
+        val_res = IndependentVerdictValidator.validate_verdict(
+            incident_id=incident.incident_id,
+            proposed_verdict=verdict.verdict,
+            raw_model_confidence=verdict.confidence,
+            preflight=preflight,
+            claim_grounding=claim_grounding,
+            normalization_result=norm_result,
+            contract=contract,
+            allow_simulation=allow_mock,
+            compilation_digest=compiled_policy.compilation_digest,
+        )
+
+        # 6. Format Structured Authoritative Verdict (P2-REQ-07, P3-REQ-01, P3-REQ-07)
+        verdict_data = {
+            "incident_id": incident.incident_id,
+            "proposed_verdict": val_res.proposed_verdict,
+            "verdict": val_res.final_verdict,
+            "confidence": val_res.validated_confidence_display if val_res.validated_confidence_display is not None else verdict.confidence,
+            "raw_model_confidence": verdict.confidence,
+            "reason": verdict.reason if val_res.is_decisive_accepted else f"{val_res.analyst_action_directive} [Validation: {'; '.join(val_res.validation_reason_codes)}]. Model rationale: {verdict.reason}",
+            "supporting_evidence": verdict.supporting_evidence,
+            "supporting_claims": [c.model_dump() if hasattr(c, "model_dump") else c.dict() for c in claim_grounding.claims],
+            "missing_evidence": val_res.missing_evidence_fields or verdict.missing_evidence,
             "analyst_questions": verdict.analyst_questions,
             "latency_ms": verdict.latency_ms,
             "model_identifier": verdict.model_identifier,
@@ -273,6 +500,33 @@ class VerdictTriageAgent:
             "completion_tokens": c_tokens,
             "total_tokens": t_tokens,
             "is_simulated": verdict.is_simulated,
+            "validation_status": val_res.validation_status,
+            "validation_reason_codes": val_res.validation_reason_codes,
+            "is_decisive_accepted": val_res.is_decisive_accepted,
+            "evidence_completeness": val_res.evidence_completeness,
+            "grounding_ratio": val_res.grounding_ratio,
+            "total_claims_count": val_res.total_claims_count,
+            "grounded_claims_count": val_res.grounded_claims_count,
+            "unsupported_claims_count": val_res.unsupported_claims_count,
+            "unsupported_claims": val_res.unsupported_claims,
+            "detected_contradictions": val_res.detected_contradictions,
+            "analyst_action_directive": val_res.analyst_action_directive,
+            "canonical_evidence_count": norm_result.total_evidence_count,
+            "contract_id": val_res.contract_id,
+            "contract_version": val_res.contract_version,
+            "validator_version": val_res.validator_version,
+            "compiler_version": compiled_policy.compiler_version,
+            "compilation_digest": compiled_policy.compilation_digest,
+            "policy_sections_count": len(compiled_policy.sections),
+            "policy_version_number": compiled_policy.version_number,
+            "policy_status": compiled_policy.policy_status,
+            "calibration_status": "NOT_CALIBRATED",
+            "is_calibrated": False,
+            "rag_retrieval_status": rag_result.retrieval_status,
+            "retrieved_precedents_count": len(rag_result.precedents),
+            "retrieved_precedents": [p.model_dump() for p in rag_result.precedents],
+            "token_budget_breakdown": budgeted.breakdown.model_dump(),
+            "replay_signature": val_res.replay_signature,
             "rule_name": rule.name if rule else incident.title,
             "severity": incident.severity,
             "evaluated_at": datetime.utcnow().isoformat(),
@@ -379,7 +633,8 @@ class VerdictTriageAgent:
         Halts immediately if the Local LLM is offline, leaving incidents pending.
         """
         is_online = await self.is_local_llm_available()
-        allow_mock = allow_simulated_fallback or getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
+        is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+        allow_mock = False if is_prod else (allow_simulated_fallback or getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False))
         if not is_online and not allow_mock:
             pending_count = await self.get_pending_incident_count()
             return {
@@ -454,7 +709,8 @@ class VerdictTriageAgent:
         If Local LLM is offline or goes offline mid-batch, halts immediately.
         """
         is_online = await self.is_local_llm_available(force_refresh=True)
-        allow_mock = getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
+        is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+        allow_mock = False if is_prod else getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
         pending_total = await self.get_pending_incident_count()
 
         if not is_online and not allow_mock:

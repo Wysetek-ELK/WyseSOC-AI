@@ -121,6 +121,53 @@ class AgentMemoryEngine:
             created_at=r.created_at,
         )
 
+    async def update_verification_status(
+        self,
+        record_id: str,
+        status: str,
+        reviewer_username: str,
+        review_notes: Optional[str] = None,
+    ) -> Optional[LearningRecordResponse]:
+        """
+        Supervisor / Admin verification gate for learning history (REQ-05 / AV-008).
+        Ensures unreviewed analyst feedback cannot immediately contaminate AI prompts.
+        """
+        status_norm = status.strip().upper()
+        if status_norm not in ("VERIFIED", "REJECTED", "DISPUTED", "PENDING_REVIEW"):
+            raise ValueError(f"Invalid verification status: {status}")
+
+        query = select(LearningRecord).where(LearningRecord.id == record_id).options(
+            selectinload(LearningRecord.rule),
+            selectinload(LearningRecord.incident)
+        )
+        res = await self.db.execute(query)
+        rec = res.scalars().first()
+        if not rec:
+            return None
+
+        rec.verification_status = status_norm
+        await self.db.commit()
+        await self.db.refresh(rec)
+
+        return LearningRecordResponse(
+            id=rec.id,
+            rule_id=rec.rule_id,
+            rule_name=rec.rule.name if rec.rule else None,
+            incident_id=rec.incident_id,
+            incident_vendor_id=rec.incident.incident_id if rec.incident else None,
+            incident_title=rec.incident.title if rec.incident else None,
+            verified_verdict=rec.verified_verdict,
+            analyst_explanation=rec.analyst_explanation,
+            tp_indicators=rec.tp_indicators or [],
+            fp_indicators=rec.fp_indicators or [],
+            missing_evidence=rec.missing_evidence or [],
+            evidence_references=rec.evidence_references or [],
+            answered_questions=rec.answered_questions or [],
+            verification_status=rec.verification_status,
+            feedback_timestamp=rec.feedback_timestamp,
+            created_at=rec.created_at,
+        )
+
     async def find_similar_cases(self, params: SimilarCaseQuery) -> List[SimilarCaseMatch]:
         """
         DETERMINISTIC SIMILARITY ENGINE

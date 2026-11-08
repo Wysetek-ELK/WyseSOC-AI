@@ -92,6 +92,19 @@ class SimulatedModelProvider(BaseModelProvider):
 
         latency_ms = max(1, int((time.time() - start_time) * 1000) + 12)
 
+        # Extract structured claims from canonical evidence if available
+        supporting_claims: List[Dict[str, Any]] = []
+        canonical_evs = incident_payload.get("canonical_evidence", [])
+        if canonical_evs:
+            for ce in canonical_evs[:4]:
+                if isinstance(ce, dict) and ce.get("evidence_id") and ce.get("source_field"):
+                    supporting_claims.append({
+                        "claim_type": ce.get("evidence_type", "PROCESS_EXECUTION"),
+                        "evidence_ids": [ce.get("evidence_id")],
+                        "field": ce.get("source_field"),
+                        "asserted_value": ce.get("observed_value"),
+                    })
+
         return StructuredModelVerdict(
             incident_id=incident_id,
             rule_id=rule_id,
@@ -99,6 +112,7 @@ class SimulatedModelProvider(BaseModelProvider):
             confidence=confidence,
             reason=reason,
             supporting_evidence=supp_ev,
+            supporting_claims=supporting_claims,
             missing_evidence=missing_ev,
             analyst_questions=questions,
             latency_ms=latency_ms,

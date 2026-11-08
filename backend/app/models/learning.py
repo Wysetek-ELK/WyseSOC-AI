@@ -27,7 +27,7 @@ class LearningRecord(Base):
     evidence_references: Mapped[List[str]] = mapped_column(JSON, default=list)
     answered_questions: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list)
 
-    verification_status: Mapped[str] = mapped_column(String(32), default="VERIFIED", index=True)  # VERIFIED, DISPUTED, UNDER_REVIEW
+    verification_status: Mapped[str] = mapped_column(String(32), default="PENDING_REVIEW", index=True)  # PENDING_REVIEW, VERIFIED, REJECTED, DISPUTED
     feedback_timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 

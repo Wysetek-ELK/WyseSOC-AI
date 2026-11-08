@@ -14,6 +14,50 @@ from app.schemas.incident import (
     ModelFacingEvent,
 )
 
+FORBIDDEN_GROUND_TRUTH_KEYS = {
+    "resolution",
+    "cleared_reason",
+    "clearedreason",
+    "cleared_user",
+    "cleareduser",
+    "cleared_time",
+    "clearedtime",
+    "cleared_time_epoch",
+    "comments",
+    "analyst_verdict",
+    "analyst_notes",
+    "analyst_explanation",
+    "analyst_verdict_confidence",
+    "actual_verdict",
+    "human_label",
+    "ground_truth",
+    "ground_truth_verdict",
+    "incidentressummary",
+    "incident_res_summary",
+    "verification_status",
+    "verified_verdict",
+    "historical_resolution",
+}
+
+
+def sanitize_blind_review_payload(data: Any) -> Any:
+    """
+    Recursively purges all analyst determinations, ground truth annotations,
+    and historical closure comments from raw payloads and event telemetry
+    during blind review evaluations (REQ-04 / AV-006).
+    """
+    if isinstance(data, dict):
+        cleaned = {}
+        for k, v in data.items():
+            norm_k = str(k).lower().replace("-", "_").replace(" ", "_")
+            if norm_k in FORBIDDEN_GROUND_TRUTH_KEYS or any(f in norm_k for f in ["cleared_reason", "clearedreason", "incidentres"]):
+                continue
+            cleaned[k] = sanitize_blind_review_payload(v)
+        return cleaned
+    elif isinstance(data, list):
+        return [sanitize_blind_review_payload(item) for item in data]
+    return data
+
 
 class IncidentService:
     def __init__(self, db: AsyncSession):
@@ -172,7 +216,7 @@ class IncidentService:
                 await self.db.commit()
                 inc.events = repaired
 
-        # Build events response
+        # Build events response (purging ground-truth leakage in blind review mode)
         events_resp = [
             IncidentEventResponse(
                 id=evt.id,
@@ -180,7 +224,7 @@ class IncidentService:
                 event_receive_time=evt.event_receive_time or inc.first_seen_epoch,
                 event_type=evt.event_type,
                 raw_log=evt.raw_log,
-                attributes=evt.attributes or {},
+                attributes=sanitize_blind_review_payload(evt.attributes or {}) if blind_review else (evt.attributes or {}),
             )
             for evt in inc.events
         ]
@@ -199,6 +243,8 @@ class IncidentService:
                 is_ml_generated=inc.ground_truth.is_ml_generated,
                 created_at=inc.ground_truth.created_at,
             )
+
+        sanitized_raw_payload = sanitize_blind_review_payload(inc.raw_payload or {}) if blind_review else (inc.raw_payload or {})
 
         return IncidentDetailResponse(
             id=inc.id,
@@ -226,7 +272,7 @@ class IncidentService:
             last_seen_epoch=inc.last_seen_epoch,
             created_at_epoch=inc.created_at_epoch,
             updated_at_epoch=inc.updated_at_epoch,
-            raw_payload=inc.raw_payload or {},
+            raw_payload=sanitized_raw_payload,
             events=events_resp,
             ground_truth=gt_resp,
             ai_verdict=inc.ai_verdict,

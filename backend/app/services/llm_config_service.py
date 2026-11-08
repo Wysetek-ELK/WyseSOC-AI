@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import socket
 import logging
 from urllib.parse import urlparse
 from typing import Dict, Any, Optional, List
@@ -78,32 +79,39 @@ class LLMConfigService:
     @classmethod
     async def get_server1_outbound_ip(cls) -> Optional[str]:
         """
-        Discovers the outbound public IP of Server 1 (cached for 1 hour).
-        Used by SOC engineers to whitelist Server 1 in Server 2's firewall/security group.
+        Resolves Server 1's network address / outbound IP without contacting external
+        third-party discovery services (REQ-07 / AV-011).
+        Checks settings.SERVER1_OUTBOUND_IP, then settings.SERVER1_HOST, then local hostname socket.
         """
         now = time.time()
         if cls._cached_server1_ip and (now - cls._cached_ip_timestamp < 3600):
             return cls._cached_server1_ip
 
-        endpoints = [
-            "https://api.ipify.org",
-            "https://ifconfig.me/ip",
-            "https://icanhazip.com",
-        ]
-        for ep in endpoints:
-            try:
-                async with httpx.AsyncClient(timeout=3.0) as client:
-                    res = await client.get(ep)
-                    if res.status_code == 200:
-                        ip = res.text.strip()
-                        if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip):
-                            cls._cached_server1_ip = ip
-                            cls._cached_ip_timestamp = now
-                            return ip
-            except Exception:
-                continue
+        # 1. Check explicitly configured outbound IP
+        configured_ip = getattr(settings, "SERVER1_OUTBOUND_IP", None)
+        if configured_ip and configured_ip.strip():
+            cls._cached_server1_ip = configured_ip.strip()
+            cls._cached_ip_timestamp = now
+            return cls._cached_server1_ip
 
-        return cls._cached_server1_ip
+        # 2. Check configured host if not loopback or catch-all
+        configured_host = getattr(settings, "SERVER1_HOST", None)
+        if configured_host and configured_host.strip() and configured_host not in ("0.0.0.0", "127.0.0.1", "localhost"):
+            cls._cached_server1_ip = configured_host.strip()
+            cls._cached_ip_timestamp = now
+            return cls._cached_server1_ip
+
+        # 3. Resolve local interface IP via socket
+        try:
+            local_ip = socket.gethostbyname(socket.gethostname())
+            if local_ip and local_ip != "127.0.0.1":
+                cls._cached_server1_ip = local_ip
+                cls._cached_ip_timestamp = now
+                return cls._cached_server1_ip
+        except Exception:
+            pass
+
+        return None
 
     @classmethod
     async def get_config(cls) -> LLMConfigResponse:
@@ -145,6 +153,7 @@ class LLMConfigService:
         )
 
         # 1. Update in-memory settings
+        is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
         settings.LOCAL_LLM_BASE_URL = parsed["base_url"]
 
         if data.model_name and data.model_name.strip():
@@ -154,51 +163,53 @@ class LLMConfigService:
             settings.LOCAL_LLM_TIMEOUT = float(data.timeout)
 
         if data.allow_mock_fallback is not None:
-            settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK = bool(data.allow_mock_fallback)
+            # In production, mock fallback is strictly disabled (REQ-02 / AV-004)
+            settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK = False if is_prod else bool(data.allow_mock_fallback)
 
         # Reset online status so next evaluation/monitoring triggers a fresh probe
         from app.services.ai_verdict_service import AIVerdictService
         AIVerdictService._is_local_llm_online = None
 
-        # 2. Persist to backend .env file
-        env_path = os.path.join(BASE_DIR, ".env")
-        env_lines = []
+        # 2. Persist to backend .env file (development / staging only - avoided in production)
+        if not is_prod:
+            env_path = os.path.join(BASE_DIR, ".env")
+            env_lines = []
 
-        if os.path.exists(env_path):
-            with open(env_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    match = re.match(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=", line)
-                    if match:
-                        key = match.group(1)
-                        if key in (
-                            "LOCAL_LLM_BASE_URL",
-                            "LOCAL_LLM_MODEL_NAME",
-                            "LOCAL_LLM_TIMEOUT",
-                            "LOCAL_LLM_ALLOW_MOCK_FALLBACK",
-                        ):
-                            continue
-                    env_lines.append(line)
+            if os.path.exists(env_path):
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        match = re.match(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=", line)
+                        if match:
+                            key = match.group(1)
+                            if key in (
+                                "LOCAL_LLM_BASE_URL",
+                                "LOCAL_LLM_MODEL_NAME",
+                                "LOCAL_LLM_TIMEOUT",
+                                "LOCAL_LLM_ALLOW_MOCK_FALLBACK",
+                            ):
+                                continue
+                        env_lines.append(line)
 
-        # Append updated LLM variables
-        env_updates = [
-            f'\n# Local LLM Server 2 Integration (vLLM / OpenAI-Compatible)\n',
-            f'LOCAL_LLM_BASE_URL="{settings.LOCAL_LLM_BASE_URL}"\n',
-            f'LOCAL_LLM_MODEL_NAME="{settings.LOCAL_LLM_MODEL_NAME}"\n',
-            f'LOCAL_LLM_TIMEOUT={settings.LOCAL_LLM_TIMEOUT}\n',
-            f'LOCAL_LLM_ALLOW_MOCK_FALLBACK={"true" if settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK else "false"}\n',
-        ]
-        env_lines.extend(env_updates)
+            # Append updated LLM variables
+            env_updates = [
+                f'\n# Local LLM Server 2 Integration (vLLM / OpenAI-Compatible)\n',
+                f'LOCAL_LLM_BASE_URL="{settings.LOCAL_LLM_BASE_URL}"\n',
+                f'LOCAL_LLM_MODEL_NAME="{settings.LOCAL_LLM_MODEL_NAME}"\n',
+                f'LOCAL_LLM_TIMEOUT={settings.LOCAL_LLM_TIMEOUT}\n',
+                f'LOCAL_LLM_ALLOW_MOCK_FALLBACK={"true" if settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK else "false"}\n',
+            ]
+            env_lines.extend(env_updates)
 
-        try:
-            with open(env_path, "w", encoding="utf-8") as f:
-                f.writelines(env_lines)
-            if hasattr(os, "chmod"):
-                try:
-                    os.chmod(env_path, 0o600)
-                except Exception:
-                    pass
-        except Exception as e:
-            logger.warning(f"Could not persist LLM settings to {env_path}: {e}")
+            try:
+                with open(env_path, "w", encoding="utf-8") as f:
+                    f.writelines(env_lines)
+                if hasattr(os, "chmod"):
+                    try:
+                        os.chmod(env_path, 0o600)
+                    except Exception:
+                        pass
+            except Exception as e:
+                logger.warning(f"Could not persist LLM settings to {env_path}: {e}")
 
         logger.info(f"Updated LOCAL_LLM_BASE_URL to {settings.LOCAL_LLM_BASE_URL}")
 

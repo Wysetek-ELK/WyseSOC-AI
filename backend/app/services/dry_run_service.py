@@ -13,6 +13,9 @@ from app.services.model_provider.factory import get_model_provider
 from app.services.incident_service import IncidentService
 from app.schemas.incident import ModelFacingIncidentPayload
 from app.schemas.dry_run import DryRunConfigCreate
+from app.schemas.compiled_policy import CompilationExecutionMode
+from app.services.policy_compiler_service import PolicyCompilerService
+from app.services.token_budget_service import TokenBudgetService
 
 
 class ValidationEngine:
@@ -118,25 +121,35 @@ class ValidationEngine:
         provider = get_model_provider(config.provider_type)
         is_simulated = (config.provider_type.upper() == "SIMULATED")
 
-        # Resolve prompt text
-        prompt_text = "Perform standard SOC incident analysis."
-        prompt_ver_num = 1
+        # Resolve prompt policy with 100% Live-Simulation Parity (P3-REQ-02)
+        target_pv = None
+        target_rule = None
         if config.prompt_version_id:
             pv_res = await self.db.execute(select(PromptVersion).where(PromptVersion.id == config.prompt_version_id))
-            pv = pv_res.scalars().first()
-            if pv:
-                prompt_text = f"{pv.common_prompt}\n\n{pv.rule_specific_prompt}"
-                prompt_ver_num = pv.version_number
+            target_pv = pv_res.scalars().first()
         elif config.rule_id:
-            # Get active prompt for rule
+            r_res = await self.db.execute(select(Rule).where(Rule.id == config.rule_id))
+            target_rule = r_res.scalars().first()
             rp_res = await self.db.execute(
                 select(RulePrompt).where(RulePrompt.rule_id == config.rule_id).options(selectinload(RulePrompt.versions))
             )
             rp = rp_res.scalars().first()
             if rp and rp.versions:
-                active_v = next((v for v in rp.versions if v.id == rp.active_version_id), rp.versions[0])
-                prompt_text = f"{active_v.common_prompt}\n\n{active_v.rule_specific_prompt}"
-                prompt_ver_num = active_v.version_number
+                target_pv = next((v for v in rp.versions if v.id == rp.active_version_id), rp.versions[0])
+
+        if not target_rule and target_pv:
+            rp_q = await self.db.execute(select(RulePrompt).where(RulePrompt.id == target_pv.prompt_id).options(selectinload(RulePrompt.rule)))
+            rp_obj = rp_q.scalars().first()
+            if rp_obj:
+                target_rule = rp_obj.rule
+
+        compiled_policy = PolicyCompilerService.compile_policy(
+            rule=target_rule,
+            prompt_version=target_pv,
+            execution_mode=CompilationExecutionMode.SIMULATION,
+            raise_on_unapproved=False,
+        )
+        prompt_ver_num = compiled_policy.version_number or 1
 
         # Dataset splitting
         incidents_to_test = await self.split_dataset(
@@ -173,9 +186,17 @@ class ValidationEngine:
                     "severity": inc.severity,
                 }
 
+                budgeted = TokenBudgetService.budget_prompt(
+                    compiled_policy=compiled_policy,
+                    incident_payload=payload_dict,
+                    rag_block="",
+                )
+                prompt_text = budgeted.budgeted_system_prompt
+                budgeted_payload = budgeted.budgeted_incident_payload
+
                 # 2. Invoke provider
                 verdict = await provider.analyze_incident(
-                    incident_payload=payload_dict,
+                    incident_payload=budgeted_payload,
                     rule_spec=rule_dict,
                     prompt_text=prompt_text,
                     prompt_version_number=prompt_ver_num,

@@ -1,10 +1,22 @@
 import os
-from typing import List
+from typing import List, Set
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_DB_FILE = os.path.join(BASE_DIR, "ai_verdict.db").replace("\\", "/")
 ENV_FILE = os.path.join(BASE_DIR, ".env")
+
+KNOWN_INSECURE_SECRETS: Set[str] = {
+    "ai-verdict-super-secure-enterprise-secret-key-phase1-2026",
+    "secret",
+    "secretkey",
+    "changeme",
+    "password",
+    "admin",
+    "12345678",
+    "default",
+    "",
+}
 
 
 class Settings(BaseSettings):
@@ -14,12 +26,14 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
+    APP_NAME: str = "AI Verdict"
     PROJECT_NAME: str = "AI Verdict"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
+    APP_ENV: str = os.getenv("APP_ENV", "development")
 
     # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "ai-verdict-super-secure-enterprise-secret-key-phase1-2026")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480  # 8 hours
 
@@ -59,8 +73,8 @@ class Settings(BaseSettings):
     FORTISIEM_PASSWORD: str = os.getenv("FORTISIEM_PASSWORD", "")
     FORTISIEM_VERIFY_SSL: bool = os.getenv("FORTISIEM_VERIFY_SSL", "false").lower() == "true"
     FORTISIEM_TIMEOUT: float = float(os.getenv("FORTISIEM_TIMEOUT", "25.0"))
-    FORTISIEM_MOCK_FALLBACK: bool = os.getenv("FORTISIEM_MOCK_FALLBACK", "true").lower() == "true"
-    FORTISIEM_AUTO_POLL_ENABLED: bool = os.getenv("FORTISIEM_AUTO_POLL_ENABLED", "true").lower() == "true"
+    FORTISIEM_MOCK_FALLBACK: bool = os.getenv("FORTISIEM_MOCK_FALLBACK", "false").lower() == "true"
+    FORTISIEM_AUTO_POLL_ENABLED: bool = os.getenv("FORTISIEM_AUTO_POLL_ENABLED", "false").lower() == "true"
     FORTISIEM_POLL_INTERVAL_SECONDS: int = int(os.getenv("FORTISIEM_POLL_INTERVAL_SECONDS", "180"))
     FORTISIEM_AUTO_AI_VERDICT: bool = os.getenv("FORTISIEM_AUTO_AI_VERDICT", "true").lower() == "true"
 
@@ -69,7 +83,32 @@ class Settings(BaseSettings):
     LOCAL_LLM_MODEL_NAME: str = os.getenv("LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ")
     LOCAL_LLM_API_KEY: str = os.getenv("LOCAL_LLM_API_KEY", "EMPTY")
     LOCAL_LLM_TIMEOUT: float = float(os.getenv("LOCAL_LLM_TIMEOUT", "60.0"))
-    LOCAL_LLM_ALLOW_MOCK_FALLBACK: bool = os.getenv("LOCAL_LLM_ALLOW_MOCK_FALLBACK", "false").lower() == "true"
+    LOCAL_LLM_ALLOW_MOCK_FALLBACK: bool = False
+
+    # Server 1 Networking
+    SERVER1_HOST: str = os.getenv("SERVER1_HOST", "")
+    SERVER1_OUTBOUND_IP: str = os.getenv("SERVER1_OUTBOUND_IP", "")
+
+    def model_post_init(self, __context) -> None:
+        self.validate_security()
+
+    def validate_security(self) -> None:
+        """Validates production security configuration."""
+        is_prod = self.APP_ENV.lower() in ("production", "prod")
+        if is_prod:
+            if not self.SECRET_KEY or self.SECRET_KEY in KNOWN_INSECURE_SECRETS:
+                raise RuntimeError(
+                    "Critical Security Blocker (AV-014): Insecure or missing SECRET_KEY in production. "
+                    "Please set a cryptographically strong SECRET_KEY (minimum 32 characters) via environment variable."
+                )
+            if len(self.SECRET_KEY) < 32:
+                raise RuntimeError(
+                    "Critical Security Blocker (AV-014): SECRET_KEY is too short for production (minimum 32 characters required)."
+                )
+        else:
+            # In development or testing, assign a safe dedicated development secret if unconfigured
+            if not self.SECRET_KEY or self.SECRET_KEY in KNOWN_INSECURE_SECRETS:
+                self.SECRET_KEY = "dev-insecure-test-key-32-chars-minimum-ok-for-local"
 
 
 settings = Settings()

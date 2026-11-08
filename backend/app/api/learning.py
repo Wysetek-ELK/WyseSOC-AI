@@ -2,6 +2,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.api.deps import get_current_active_user, require_analyst, require_admin
 from app.models.user import User
@@ -9,6 +10,7 @@ from app.services.learning_service import LearningService
 from app.services.audit_service import AuditService
 from app.schemas.learning import (
     LearningRecordResponse,
+    LearningRecordVerifyRequest,
     LearningListResponse,
     SimilarCaseQuery,
     SimilarCaseMatch,
@@ -62,6 +64,47 @@ async def get_learning_record(
     return rec
 
 
+@router.put("/records/{id}/verify", response_model=LearningRecordResponse)
+async def verify_learning_record(
+    id: str,
+    req: LearningRecordVerifyRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Supervisor / Admin verification gate for learning history (REQ-05 / AV-008).
+    Only approved learning records can be promoted to VERIFIED status for few-shot prompt injection.
+    """
+    service = LearningService(db)
+    try:
+        rec = await service.update_verification_status(
+            record_id=id,
+            status=req.verification_status,
+            reviewer_username=current_user.username,
+            review_notes=req.review_notes,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not rec:
+        raise HTTPException(status_code=404, detail="Learning record not found")
+
+    audit = AuditService(db)
+    await audit.log(
+        action="LEARNING_RECORD_VERIFIED",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="LearningRecord",
+        entity_id=id,
+        details={
+            "verification_status": req.verification_status,
+            "review_notes": req.review_notes,
+        },
+    )
+
+    return rec
+
+
 @router.post("/similar-cases", response_model=List[SimilarCaseMatch])
 async def find_similar_cases(
     req: SimilarCaseQuery,
@@ -78,6 +121,12 @@ async def seed_historical_learning_records(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
+    if settings.APP_ENV.lower() in ("production", "prod"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Seeding historical learning records is forbidden in production environments.",
+        )
+
     service = LearningService(db)
     count = await service.seed_verified_cases_from_historical_incidents()
 

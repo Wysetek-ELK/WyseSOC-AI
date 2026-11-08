@@ -4,6 +4,7 @@ import zipfile
 import re
 import time
 import asyncio
+import logging
 from datetime import datetime
 from typing import Dict, Any, Tuple, List, Optional
 import httpx
@@ -20,6 +21,20 @@ from app.models.prompt import RulePrompt
 from app.services.ingestion_service import IngestionService
 from app.services.investigation_service import InvestigationService
 from app.services.ai_verdict_service import AIVerdictService
+
+logger = logging.getLogger(__name__)
+
+
+class ConfigDict(dict):
+    """Dictionary that also allows attribute-style access for convenience."""
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(f"'ConfigDict' object has no attribute '{name}'")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        self[name] = value
 
 
 class FortiSIEMService:
@@ -227,11 +242,8 @@ class FortiSIEMService:
                     from app.services.prompt_studio_service import PromptStudioService
                     ps_svc = PromptStudioService(self.db)
                     draft = await ps_svc.generate_template_draft(rule_id=new_rule.id)
-                    rp_q = await self.db.execute(select(RulePrompt).where(RulePrompt.rule_id == new_rule.id))
-                    rp = rp_q.scalars().first()
-                    if rp and not rp.active_version_id and draft:
-                        rp.active_version_id = draft.id
-                        await self.db.flush()
+                    # REQ-03 / AV-001: Newly generated template drafts remain unapproved DRAFT status.
+                    # Do NOT auto-activate. Policy requires explicit Administrator approval.
                 except Exception:
                     pass
 
@@ -1260,7 +1272,7 @@ class FortiSIEMService:
     def get_config(cls) -> Dict[str, Any]:
         """Returns the current FortiSIEM connector configuration (password masked)."""
         is_configured = bool(settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip())
-        return {
+        return ConfigDict({
             "is_configured": is_configured,
             "host": settings.FORTISIEM_HOST,
             "username": settings.FORTISIEM_USERNAME,
@@ -1271,13 +1283,13 @@ class FortiSIEMService:
             "auto_poll_enabled": getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False),
             "poll_interval_seconds": getattr(settings, "FORTISIEM_POLL_INTERVAL_SECONDS", 180),
             "auto_ai_verdict": getattr(settings, "FORTISIEM_AUTO_AI_VERDICT", True),
-        }
+        })
 
     @classmethod
     def update_config(
         cls,
-        host: str,
-        username: str,
+        host: Any = None,
+        username: Optional[str] = None,
         password: Optional[str] = None,
         verify_ssl: bool = False,
         timeout: float = 25.0,
@@ -1285,15 +1297,32 @@ class FortiSIEMService:
         auto_poll_enabled: Optional[bool] = None,
         poll_interval_seconds: Optional[int] = None,
         auto_ai_verdict: Optional[bool] = None,
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Updates FortiSIEM settings dynamically in memory and persists to .env file.
+        Supports both Pydantic schema objects or keyword arguments.
         """
-        clean_host = host.strip().rstrip("/")
+        if hasattr(host, "host"):
+            data = host
+            raw_host = getattr(data, "host", "") or ""
+            raw_user = getattr(data, "username", "") or ""
+            password = getattr(data, "password", None) if getattr(data, "password", None) is not None else password
+            verify_ssl = getattr(data, "verify_ssl", verify_ssl)
+            timeout = getattr(data, "timeout", timeout)
+            mock_fallback = getattr(data, "mock_fallback", mock_fallback)
+            auto_poll_enabled = getattr(data, "auto_poll_enabled", auto_poll_enabled)
+            poll_interval_seconds = getattr(data, "poll_interval_seconds", poll_interval_seconds)
+            auto_ai_verdict = getattr(data, "auto_ai_verdict", auto_ai_verdict)
+        else:
+            raw_host = str(host or "")
+            raw_user = str(username or "")
+
+        clean_host = raw_host.strip().rstrip("/")
         if clean_host and not (clean_host.startswith("http://") or clean_host.startswith("https://")):
             clean_host = f"https://{clean_host}"
 
-        clean_user = username.strip()
+        clean_user = raw_user.strip()
 
         # 1. Update in-memory settings
         settings.FORTISIEM_HOST = clean_host
@@ -1310,55 +1339,13 @@ class FortiSIEMService:
         if auto_ai_verdict is not None:
             settings.FORTISIEM_AUTO_AI_VERDICT = bool(auto_ai_verdict)
 
-        # 2. Persist to backend .env file
-        env_path = os.path.join(BASE_DIR, ".env")
-        env_lines = []
-
-        if os.path.exists(env_path):
-            with open(env_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    match = re.match(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=", line)
-                    if match:
-                        key = match.group(1)
-                        if key in (
-                            "FORTISIEM_HOST",
-                            "FORTISIEM_USERNAME",
-                            "FORTISIEM_PASSWORD",
-                            "FORTISIEM_VERIFY_SSL",
-                            "FORTISIEM_TIMEOUT",
-                            "FORTISIEM_MOCK_FALLBACK",
-                            "FORTISIEM_AUTO_POLL_ENABLED",
-                            "FORTISIEM_POLL_INTERVAL_SECONDS",
-                            "FORTISIEM_AUTO_AI_VERDICT",
-                        ):
-                            continue  # Rewrite updated values below
-                    env_lines.append(line)
-
-        # Append or rewrite FortiSIEM variables
-        env_updates = [
-            f'\n# FortiSIEM Live Supervisor Connection\n',
-            f'FORTISIEM_HOST="{settings.FORTISIEM_HOST}"\n',
-            f'FORTISIEM_USERNAME="{settings.FORTISIEM_USERNAME}"\n',
-            f'FORTISIEM_PASSWORD="{settings.FORTISIEM_PASSWORD}"\n',
-            f'FORTISIEM_VERIFY_SSL={"true" if settings.FORTISIEM_VERIFY_SSL else "false"}\n',
-            f'FORTISIEM_TIMEOUT={settings.FORTISIEM_TIMEOUT}\n',
-            f'FORTISIEM_MOCK_FALLBACK={"true" if settings.FORTISIEM_MOCK_FALLBACK else "false"}\n',
-            f'FORTISIEM_AUTO_POLL_ENABLED={"true" if settings.FORTISIEM_AUTO_POLL_ENABLED else "false"}\n',
-            f'FORTISIEM_POLL_INTERVAL_SECONDS={settings.FORTISIEM_POLL_INTERVAL_SECONDS}\n',
-            f'FORTISIEM_AUTO_AI_VERDICT={"true" if settings.FORTISIEM_AUTO_AI_VERDICT else "false"}\n',
-        ]
-        env_lines.extend(env_updates)
-
-        try:
-            with open(env_path, "w", encoding="utf-8") as f:
-                f.writelines(env_lines)
-            if hasattr(os, "chmod"):
-                try:
-                    os.chmod(env_path, 0o600)
-                except Exception:
-                    pass
-        except Exception:
-            pass
+        # REQ-01 / AV-014: Plaintext credential writes to .env on disk are strictly removed.
+        # Credentials and connection parameters update in-memory for the running service.
+        # Persistent environment variables must be provisioned via secure secret store or systemd environment.
+        logger.info(
+            "FortiSIEM configuration updated in-memory for the active session. "
+            "Plaintext .env persistence is disabled to comply with REQ-01 / AV-014 security policies."
+        )
 
         return cls.get_config()
 

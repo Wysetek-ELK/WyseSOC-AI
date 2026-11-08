@@ -11,7 +11,12 @@ backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
+os.environ["APP_ENV"] = "testing"
+os.environ["SECRET_KEY"] = "test-secret-key-fixture-minimum-32-chars-long-1234567890"
+
 from app.config import settings
+settings.APP_ENV = "testing"
+settings.SECRET_KEY = "test-secret-key-fixture-minimum-32-chars-long-1234567890"
 settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK = True
 
 from app.database import Base, get_db

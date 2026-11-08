@@ -1,0 +1,17 @@
+# AI Verdict — Phase 1: Before & After Behavior Matrix
+
+This matrix provides a detailed, side-by-side comparison of runtime application behavior before and after Phase 1 implementation.
+
+| Finding & Requirement | Component / Workflow | Pre-Phase 1 Baseline Behavior | Post-Phase 1 Hardened Behavior |
+|---|---|---|---|
+| **AV-014 / REQ-01** (Secrets & Keys) | Application Startup (`main.py`) | Allowed startup in production using insecure default `SECRET_KEY` (`ai-verdict-super-secure...`). | Startup fails immediately with `RuntimeError("Critical Security Blocker")` if `SECRET_KEY` is weak or default. |
+| **AV-014 / REQ-01** (SIEM Credentials) | FortiSIEM Config API (`POST /api/fortisiem/config`) | Rewrote `.env` file on disk, saving supervisor password in cleartext. | Updates credentials strictly in running process memory; `.env` file on disk is never modified. |
+| **AV-004 / REQ-02** (Inference Failure Safety) | Inference Engine (`ai_verdict_service.py`) | When Server 2 was unreachable, fell back to `SimulatedModelProvider` which emitted synthetic `TRUE_POSITIVE`/`FALSE_POSITIVE` verdicts. | In production and live triage, mock fallback is strictly disabled. Raises `LocalLLMUnavailableError` (HTTP 503) and leaves incident pending. |
+| **AV-001 / REQ-03** (Auto-Promotion) | Rule Ingestion & SIEM Sync | Synthesized prompt draft was immediately assigned to `rp.active_version_id`, making drafts active without review. | Drafts remain in `DRAFT` status; `active_version_id` remains `None`. No auto-promotion occurs. |
+| **AV-002 / REQ-03** (Policy Approval Gate) | Live Incident Triage | Evaluated incidents using draft prompts without checking approval status. | Live triage refuses to evaluate with unapproved drafts; abstains with `verdict: "REQUIRES_ATTENTION"` and `validation_status: "POLICY_NOT_APPROVED"`. |
+| **AV-006 / REQ-04** (Ground-Truth Leakage) | Blind Review API (`GET /api/incidents/{id}?blind_review=true`) | Only stripped top-level keys; nested ground-truth labels inside `raw_payload` and `events[].attributes` leaked into the response. | Recursively purges all ground-truth keys from `raw_payload` and `events[].attributes` at any nesting depth. |
+| **AV-008 / REQ-05** (Learning Governance) | Analyst Feedback & Few-Shot RAG | Feedback immediately became `VERIFIED` and active in few-shot memory. If no records matched the rule, RAG used cross-rule fallback. | Feedback defaults to `PENDING_REVIEW` requiring administrator approval (`PUT /records/{id}/verify`). Cross-rule RAG fallback is permanently removed. |
+| **AV-010 / REQ-06** (Hardware Telemetry) | Server 2 System Monitor | When Server 2 Prometheus was down, returned hardcoded fake metrics (CPU 34.5%, RAM 45.0%, GPU 42.0%, VRAM 8.2 GB). | Returns `None` for CPU, RAM, disk, GPU load, GPU temp, and VRAM. Sets `metrics_available: false`. UI renders "Unavailable". |
+| **AV-011 / REQ-07** (Outbound IP Resolution) | Server 1 IP Discovery | Contacted `api.ipify.org`, `ifconfig.me`, and `icanhazip.com` over the public internet. | Uses `SERVER1_OUTBOUND_IP`, `SERVER1_HOST`, or local UDP routing socket inspection. Zero public egress calls. |
+| **AV-015 / REQ-08** (API Routes & Dev Isolation) | API Routing (`/api/rules`, `/api/dev`) | Missing route `POST /api/rules/sync/fortisiem` failed. Dev reset routes were exposed in production. | Explicit static route registered first. Dev endpoints unmounted (HTTP 404) in production mode. |
+

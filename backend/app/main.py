@@ -33,6 +33,9 @@ from sqlalchemy import select
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # REQ-01 / AV-014: Enforce production security configuration validation
+    settings.validate_security()
+
     # Startup: create database tables if they do not exist
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -232,6 +235,11 @@ app.include_router(system_monitor.router, prefix=settings.API_V1_STR)
 app.include_router(tokens.router, prefix=settings.API_V1_STR)
 app.include_router(telemetry.router, prefix=settings.API_V1_STR)
 app.include_router(llm_config.router, prefix=settings.API_V1_STR)
+
+# Development-only routes (strictly excluded in production - REQ-08)
+if settings.APP_ENV.lower() not in ("production", "prod"):
+    from app.api import dev
+    app.include_router(dev.router, prefix=settings.API_V1_STR)
 
 
 

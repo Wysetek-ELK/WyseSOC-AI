@@ -15,9 +15,19 @@ export interface User {
 export interface IncidentAiVerdictResponse {
   incident_id: string;
   verdict: "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ATTENTION";
+  proposed_verdict?: "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ATTENTION";
   confidence: number;
+  raw_model_confidence?: number;
   reason: string;
   supporting_evidence: string[];
+  supporting_claims?: Array<{
+    claim_type: string;
+    field: string;
+    asserted_value: any;
+    is_grounded: boolean;
+    grounding_status: string;
+    reason?: string;
+  }>;
   missing_evidence: string[];
   analyst_questions: string[];
   latency_ms: number;
@@ -30,6 +40,42 @@ export interface IncidentAiVerdictResponse {
   total_tokens?: number;
   evaluated_at?: string;
   evaluated_by_user?: string;
+  validation_status?: string;
+  validation_reason_codes?: string[];
+  is_decisive_accepted?: boolean;
+  evidence_completeness?: number;
+  grounding_ratio?: number;
+  total_claims_count?: number;
+  grounded_claims_count?: number;
+  unsupported_claims_count?: number;
+  unsupported_claims?: Array<Record<string, any>>;
+  detected_contradictions?: string[];
+  analyst_action_directive?: string;
+  canonical_evidence_count?: number;
+  contract_id?: string;
+  contract_version?: number;
+  validator_version?: string;
+  replay_signature?: string;
+  compiler_version?: string;
+  compilation_digest?: string;
+  policy_sections_count?: number;
+  policy_version_number?: number;
+  policy_status?: string;
+  calibration_status?: string;
+  is_calibrated?: boolean;
+  rag_retrieval_status?: string;
+  retrieved_precedents_count?: number;
+  retrieved_precedents?: Array<{
+    precedent_id: string;
+    incident_id: string;
+    incident_title: string;
+    rule_id: string;
+    verified_verdict: string;
+    analyst_explanation: string;
+    similarity_score: number;
+    feedback_timestamp: string;
+  }>;
+  token_budget_breakdown?: Record<string, any>;
 }
 
 export interface IncidentListItem {
