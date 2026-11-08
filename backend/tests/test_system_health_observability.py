@@ -13,6 +13,10 @@ async def test_health_check_endpoint(client: AsyncClient):
     assert response.status_code == 200
     data = response.json()
 
+    # Also test /api/health prefix for backward compatibility and governor health check
+    api_resp = await client.get("/api/health")
+    assert api_resp.status_code == 200
+
     assert "status" in data
     assert data["status"] in ("healthy", "degraded", "unhealthy")
     assert "components" in data

@@ -231,6 +231,7 @@ app.include_router(tokens.router, prefix=settings.API_V1_STR)
 app.include_router(telemetry.router, prefix=settings.API_V1_STR)
 app.include_router(llm_config.router, prefix=settings.API_V1_STR)
 app.include_router(health.router)
+app.include_router(health.router, prefix=settings.API_V1_STR)
 
 # Development-only routes (strictly excluded in production - REQ-08)
 if settings.APP_ENV.lower() not in ("production", "prod"):
