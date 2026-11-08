@@ -1,6 +1,7 @@
+import logging
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Response, BackgroundTasks
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,6 +40,8 @@ from app.schemas.policy_quality import (
     PolicyQualityAssessmentResponse,
     QualitySummaryItem,
 )
+
+logger = logging.getLogger("ai_verdict.prompts")
 
 router = APIRouter(prefix="/prompts", tags=["Prompt Studio"])
 
@@ -240,7 +243,7 @@ async def get_rule_intelligence(
     """
     REQ-01 / REQ-02: Returns structured detection semantics and archetype classification for a rule.
     """
-    rule_res = await db.execute(select(Rule).where(Rule.id == rule_id))
+    rule_res = await db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
     rule = rule_res.scalars().first()
     if not rule:
         raise HTTPException(status_code=404, detail=f"SIEM Rule {rule_id} not found")
@@ -270,7 +273,7 @@ async def analyze_rule_intelligence(
     """
     REQ-01: Re-analyzes rule semantics with optional authoritative SIEM rule definition.
     """
-    rule_res = await db.execute(select(Rule).where(Rule.id == rule_id))
+    rule_res = await db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
     rule = rule_res.scalars().first()
     if not rule:
         raise HTTPException(status_code=404, detail=f"SIEM Rule {rule_id} not found")
@@ -337,7 +340,7 @@ async def validate_policy_quality(
     REQ-05 / REQ-06: Evaluates policy quality against 8 mandatory gates.
     Returns quality score, gate findings, blocking issues, and approval eligibility.
     """
-    rule_res = await db.execute(select(Rule).where(Rule.id == rule_id))
+    rule_res = await db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
     rule = rule_res.scalars().first()
     if not rule:
         raise HTTPException(status_code=404, detail=f"SIEM Rule {rule_id} not found")
@@ -350,9 +353,9 @@ async def validate_policy_quality(
 
     target_ver = None
     if version_id:
-        target_ver = next((v for v in rule_prompt.versions if v.id == version_id), None)
-    else:
-        target_ver = next((v for v in rule_prompt.versions if v.id == rule_prompt.active_version_id), None) or rule_prompt.versions[0]
+        target_ver = next((v for v in rule_prompt.versions if str(v.id) == str(version_id)), None)
+    if not target_ver:
+        target_ver = next((v for v in rule_prompt.versions if v.id == rule_prompt.active_version_id), None) or (rule_prompt.versions[0] if rule_prompt.versions else None)
 
     if not target_ver:
         raise HTTPException(status_code=404, detail="Specified prompt version not found")
@@ -427,7 +430,7 @@ async def evaluate_policy_simulation(
     REQ-07: Executes historical regression simulation on candidate policy.
     Reports INSUFFICIENT_DATA if historical cases < 5.
     """
-    rule_res = await db.execute(select(Rule).where(Rule.id == rule_id))
+    rule_res = await db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
     rule = rule_res.scalars().first()
     if not rule:
         raise HTTPException(status_code=404, detail=f"SIEM Rule {rule_id} not found")
@@ -440,18 +443,25 @@ async def evaluate_policy_simulation(
 
     target_ver = None
     if version_id:
-        target_ver = next((v for v in rule_prompt.versions if v.id == version_id), None)
-    else:
-        target_ver = next((v for v in rule_prompt.versions if v.id == rule_prompt.active_version_id), None) or rule_prompt.versions[0]
+        target_ver = next((v for v in rule_prompt.versions if str(v.id) == str(version_id)), None)
+    if not target_ver:
+        target_ver = next((v for v in rule_prompt.versions if v.id == rule_prompt.active_version_id), None) or (rule_prompt.versions[0] if rule_prompt.versions else None)
+
+    if not target_ver:
+        raise HTTPException(status_code=404, detail="Specified prompt version not found")
 
     baseline_ver = next((v for v in rule_prompt.versions if v.id == rule_prompt.active_version_id), None)
 
     sim_svc = PolicySimulationService(db)
-    return await sim_svc.evaluate_candidate_policy(
-        rule_id=rule.id,
-        candidate_version=target_ver,
-        baseline_version=baseline_ver,
-    )
+    try:
+        return await sim_svc.evaluate_candidate_policy(
+            rule_id=rule.id,
+            candidate_version=target_ver,
+            baseline_version=baseline_ver,
+        )
+    except Exception as exc:
+        logger.error(f"Error evaluating policy simulation for rule {rule_id}: {exc}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Simulation evaluation failed: {str(exc)}")
 
 
 @router.get("/rule/{rule_id}/drift")

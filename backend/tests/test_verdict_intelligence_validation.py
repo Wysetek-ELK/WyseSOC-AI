@@ -1219,6 +1219,63 @@ async def test_api_export_endpoint(client: AsyncClient, admin_user, admin_token:
     assert res_csv.headers["content-type"].startswith("text/csv")
 
 
+@pytest.mark.asyncio
+async def test_api_evaluate_simulation_endpoint(client: AsyncClient, admin_user, admin_token: str, db_session: AsyncSession):
+    """Test POST /api/prompts/rule/{rule_id}/evaluate-simulation endpoint with UUID, rule_identifier, and missing version fallback."""
+    rule = Rule(
+        id=str(uuid.uuid4()),
+        rule_id="PH_RULE_SIM_TEST_01",
+        name="Simulation Test Rule",
+        event_type="ProcessExecution",
+        severity="HIGH",
+    )
+    db_session.add(rule)
+    await db_session.flush()
+
+    rule_prompt = RulePrompt(
+        id=str(uuid.uuid4()),
+        rule_id=rule.id,
+        title=rule.name,
+    )
+    db_session.add(rule_prompt)
+    await db_session.flush()
+
+    pv = PromptVersion(
+        id=str(uuid.uuid4()),
+        prompt_id=rule_prompt.id,
+        version_number=1,
+        status="DRAFT",
+        is_template_draft=False,
+        tp_indicators="Encoded command",
+        fp_indicators="Maintenance script",
+    )
+    db_session.add(pv)
+    await db_session.flush()
+
+    rule_prompt.active_version_id = pv.id
+    await db_session.commit()
+
+    headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # 1. Evaluate with exact rule.id UUID and version_id
+    res1 = await client.post(f"/api/prompts/rule/{rule.id}/evaluate-simulation?version_id={pv.id}", headers=headers)
+    assert res1.status_code == 200
+    data1 = res1.json()
+    assert data1["status"] in ("PASSED", "INSUFFICIENT_DATA", "FAILED")
+    assert "sample_count" in data1
+    assert data1["baseline_metrics"] is None
+
+    # 2. Evaluate with SIEM rule_id string and nonexistent version_id (should fall back to active version safely)
+    res2 = await client.post(f"/api/prompts/rule/{rule.rule_id}/evaluate-simulation?version_id=nonexistent-v-id", headers=headers)
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert data2["status"] in ("PASSED", "INSUFFICIENT_DATA", "FAILED")
+
+    # 3. Evaluate with without version_id query param
+    res3 = await client.post(f"/api/prompts/rule/{rule.id}/evaluate-simulation", headers=headers)
+    assert res3.status_code == 200
+
+
 # ==============================================================================
 # SECTION 11: END-TO-END SCENARIOS FOR PH_RULE_CS_SUSPICIOUS_ACTIVITY & ARCHETYPES
 # ==============================================================================

@@ -1,7 +1,9 @@
 import logging
 from typing import Optional, List, Dict, Any
+from sqlalchemy import select, or_
+from sqlalchemy.orm import selectinload
 from app.models.rule import Rule
-from app.models.prompt import PromptVersion
+from app.models.prompt import PromptVersion, RulePrompt
 from app.schemas.evidence_contract import RuleEvidenceContract, EvidenceFieldRequirement
 from app.schemas.rule_intelligence import DetectionSemantics, ArchetypeId, SemanticsDefinitionStatus
 from app.services.rule_intelligence_analyzer import RuleIntelligenceAnalyzer
@@ -17,6 +19,35 @@ class EvidenceContractService:
     Derives and validates machine-verifiable evidence contracts tied to approved
     rule policies in Agent Intelligence Studio.
     """
+
+    def __init__(self, db: Optional[Any] = None):
+        self.db = db
+
+    async def get_active_contract_for_rule(self, rule_id: str) -> Optional[RuleEvidenceContract]:
+        """
+        Retrieves the active evidence contract for a given rule_id (UUID or rule_identifier).
+        """
+        if not self.db:
+            return None
+        try:
+            q = select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id))
+            res = await self.db.execute(q)
+            rule = res.scalars().first()
+            if not rule:
+                return None
+
+            p_q = select(RulePrompt).where(RulePrompt.rule_id == rule.id).options(selectinload(RulePrompt.versions))
+            p_res = await self.db.execute(p_q)
+            rp = p_res.scalars().first()
+
+            active_ver = None
+            if rp and rp.versions:
+                active_ver = next((v for v in rp.versions if v.id == rp.active_version_id), None) or (rp.versions[0] if rp.versions else None)
+
+            return self.get_contract_for_rule(rule, active_ver)
+        except Exception as exc:
+            logger.warning(f"Error fetching active contract for rule {rule_id}: {exc}")
+            return None
 
     @classmethod
     def get_contract_for_rule(

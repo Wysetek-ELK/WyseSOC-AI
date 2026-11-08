@@ -10,11 +10,12 @@ Integrates the dry-run intelligence validation pipeline:
 
 import math
 import uuid
+import json
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, desc
+from sqlalchemy import select, and_, or_, desc
 
 from app.models.rule import Rule
 from app.models.prompt import PromptVersion, RulePrompt
@@ -69,6 +70,17 @@ class PolicySimulationService:
         Executes full dry-run intelligence evaluation over historical incidents.
         Computes Trust Scores, empirical accuracy, calibration, and regression against baseline.
         """
+        # Resolve rule IDs (both internal UUID and rule_identifier) to match incidents robustly
+        rule_ids = [rule_id] if rule_id else []
+        if rule_id:
+            try:
+                rule_res = await self.db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
+                matched_rule = rule_res.scalars().first()
+                if matched_rule:
+                    rule_ids = list({rule_id, matched_rule.id, matched_rule.rule_id})
+            except Exception as e:
+                logger.warning(f"Failed to resolve rule identifiers for {rule_id}: {e}")
+
         run_record = HistoricalEvaluationRunRecord(
             id=str(uuid.uuid4()),
             run_name=run_name,
@@ -80,6 +92,10 @@ class PolicySimulationService:
             baseline_run_id=baseline_run_id,
             status="RUNNING",
             validation_state=EvaluationValidationState.INCONCLUSIVE.value,
+            metrics={},
+            selective_metrics=[],
+            calibration_metrics={},
+            regression_summary={},
             config_snapshot={
                 "provider_type": provider_type,
                 "sample_limit": sample_limit,
@@ -95,8 +111,8 @@ class PolicySimulationService:
             select(Incident, HistoricalGroundTruth)
             .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
         )
-        if rule_id:
-            q = q.where(Incident.rule_id == rule_id)
+        if rule_ids:
+            q = q.where(Incident.rule_id.in_(rule_ids))
 
         q = q.order_by(desc(Incident.created_at)).limit(sample_limit)
         res = await self.db.execute(q)
@@ -127,16 +143,26 @@ class PolicySimulationService:
         eval_items: List[Dict[str, Any]] = []
 
         for inc, gt in rows:
+            # Safely handle raw payload whether dict or JSON string
+            raw_payload = inc.raw_payload
+            if isinstance(raw_payload, str):
+                try:
+                    raw_payload = json.loads(raw_payload)
+                except Exception:
+                    raw_payload = {}
+            elif not isinstance(raw_payload, dict):
+                raw_payload = {}
+
             # Build incident payload
             inc_dict = {
-                "id": inc.id,
-                "incident_id": inc.incident_id,
-                "rule_id": inc.rule_id or rule_id or "RULE-UNKNOWN",
-                "source_ip": inc.source_ip,
-                "event_type": inc.event_type,
-                "severity": inc.severity,
-                "category": inc.category,
-                "raw_payload": inc.raw_payload or {},
+                "id": str(inc.id),
+                "incident_id": str(inc.incident_id or inc.id or "INC-UNKNOWN")[:64],
+                "rule_id": str(inc.rule_id or rule_id or "RULE-UNKNOWN")[:128],
+                "source_ip": inc.source_ip or "",
+                "event_type": inc.event_type or "",
+                "severity": inc.severity or "MEDIUM",
+                "category": inc.category or "",
+                "raw_payload": raw_payload,
                 "first_seen_epoch": inc.first_seen_epoch,
                 "last_seen_epoch": inc.last_seen_epoch,
             }
@@ -182,15 +208,15 @@ class PolicySimulationService:
             result_record = HistoricalEvaluationResultRecord(
                 id=str(uuid.uuid4()),
                 run_id=run_record.id,
-                incident_id=inc.incident_id,
-                rule_id=inc.rule_id or rule_id or "RULE-UNKNOWN",
-                suggested_verdict=trust_res.suggested_verdict,
-                effective_verdict=trust_res.effective_verdict.value,
-                ground_truth_label=gt_label,
+                incident_id=str(inc.incident_id or inc.id or "INC-UNKNOWN")[:64],
+                rule_id=str(inc.rule_id or rule_id or "RULE-UNKNOWN")[:128],
+                suggested_verdict=str(trust_res.suggested_verdict or "REQUIRES_ATTENTION")[:32],
+                effective_verdict=str(trust_res.effective_verdict.value)[:32],
+                ground_truth_label=str(gt_label)[:32] if gt_label else None,
                 trust_score=trust_res.trust_score,
                 raw_trust_score=trust_res.raw_trust_score,
                 evidence_sufficiency_score=trust_res.evidence_sufficiency_score,
-                evidence_status=trust_res.evidence_status.value,
+                evidence_status=str(trust_res.evidence_status.value)[:32],
                 is_correct=is_correct,
                 is_abstained=(trust_res.effective_verdict == UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION),
                 is_critical_error=is_critical_error,
@@ -199,7 +225,7 @@ class PolicySimulationService:
                     "contradictions": trust_res.contradictory_evidence,
                     "missing": trust_res.missing_evidence,
                 },
-                escalation_reason=trust_res.escalation_reason,
+                escalation_reason=str(trust_res.escalation_reason)[:256] if trust_res.escalation_reason else None,
                 created_at=datetime.utcnow(),
             )
             self.db.add(result_record)
@@ -457,16 +483,40 @@ class PolicySimulationService:
     async def evaluate_candidate_policy(
         self,
         rule_id: str,
-        candidate_version: PromptVersion,
+        candidate_version: Optional[PromptVersion] = None,
         baseline_version: Optional[PromptVersion] = None,
     ) -> Dict[str, Any]:
         """
         Maintains 100% backward compatibility with AIS 2.0 G8 approval check.
         """
+        version_num = getattr(candidate_version, "version_number", 1) if candidate_version else 1
+        pv_id = str(getattr(candidate_version, "id", "")) if candidate_version else None
+
+        # Look up baseline run if baseline_version is provided
+        baseline_run_id = None
+        if baseline_version and getattr(baseline_version, "id", None):
+            try:
+                base_run_q = (
+                    select(HistoricalEvaluationRunRecord)
+                    .where(
+                        HistoricalEvaluationRunRecord.policy_version_id == str(baseline_version.id),
+                        HistoricalEvaluationRunRecord.status == "COMPLETED",
+                    )
+                    .order_by(desc(HistoricalEvaluationRunRecord.completed_at))
+                    .limit(1)
+                )
+                base_run_res = await self.db.execute(base_run_q)
+                base_run = base_run_res.scalars().first()
+                if base_run and base_run.total_cases >= self.MIN_HISTORICAL_SAMPLES:
+                    baseline_run_id = base_run.id
+            except Exception as e:
+                logger.warning(f"Failed to lookup baseline run: {e}")
+
         run = await self.run_dry_run_intelligence_evaluation(
-            run_name=f"G8 Regression Gate Check (v{candidate_version.version_number})",
+            run_name=f"G8 Regression Gate Check (v{version_num})",
             rule_id=rule_id,
-            policy_version_id=str(candidate_version.id),
+            policy_version_id=pv_id,
+            baseline_run_id=baseline_run_id,
             sample_limit=50,
         )
 
@@ -477,6 +527,7 @@ class PolicySimulationService:
             sim_status = SimulationStatus.EVALUATED_FAILED.value
 
         metrics = run.metrics or {}
+        reg_summary = run.regression_summary or {}
         reg_detected = bool(metrics.get("critical_false_negatives", 0) > 0 or run.validation_state == EvaluationValidationState.REGRESSION_DETECTED.value)
         status_str = "PASSED" if sim_status == SimulationStatus.EVALUATED_PASSED.value else ("INSUFFICIENT_DATA" if sim_status == SimulationStatus.INSUFFICIENT_DATA.value else "FAILED")
 
@@ -485,7 +536,7 @@ class PolicySimulationService:
             "simulation_status": sim_status,
             "sample_count": run.total_cases,
             "min_samples_required": self.MIN_HISTORICAL_SAMPLES,
-            "message": run.regression_summary.get("summary_message") if run.regression_summary else metrics.get("message", "Simulation completed."),
+            "message": reg_summary.get("summary_message") if reg_summary else metrics.get("message", "Simulation completed."),
             "critical_regressions": metrics.get("critical_false_negatives", 0),
             "regression_detected": reg_detected,
             "abstention_rate": float(metrics.get("abstention_rate", 0.0)),
@@ -497,6 +548,6 @@ class PolicySimulationService:
             "run_id": str(run.id),
             "is_calibrated": bool(run.total_cases >= 30),
             "candidate_metrics": metrics,
-            "baseline_metrics": run.regression_summary.get("baseline_accuracy"),
+            "baseline_metrics": reg_summary.get("baseline_accuracy"),
             "evaluated_at": datetime.utcnow().isoformat(),
         }
