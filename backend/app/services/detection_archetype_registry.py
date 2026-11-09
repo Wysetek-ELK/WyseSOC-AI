@@ -110,6 +110,95 @@ class DetectionArchetypeRegistry:
             ],
         ),
 
+        ArchetypeId.NETWORK_SCAN: ArchetypeDefinition(
+            archetype_id=ArchetypeId.NETWORK_SCAN,
+            name="Network Scan & Host Reconnaissance",
+            version=REGISTRY_VERSION,
+            detection_purpose="Detection of network port scanning, horizontal host reconnaissance, and unauthorized network sweeps.",
+            core_telemetry_categories=["NETWORK_TRAFFIC", "FIREWALL_SESSION", "RECONNAISSANCE"],
+            mandatory_core_fields=[
+                "security.event_type",
+                "event.timestamp",
+                "network.source_ip",
+                "network.destination_port",
+            ],
+            conditional_fields=[
+                "network.destination_ip",
+                "network.destination_ip_list",
+                "network.protocol",
+                "scan.rate_per_second",
+                "scan.connection_count",
+                "network.tcp_flags",
+            ],
+            optional_enrichment_fields=[
+                "geo.source_country",
+                "network.bytes_out",
+                "network.bytes_in",
+                "endpoint.hostname",
+            ],
+            unsupported_fields=[
+                "file.hash_sha256",
+                "process.name",
+                "process.command_line",
+                "process.parent_name",
+                "registry.key_path",
+            ],
+            tp_indicator_candidates=[
+                "High volume of sequential TCP connection attempts to a fixed destination port across multiple destination hosts",
+                "Rapid horizontal host sweep across internal subnet or address range within short aggregation window",
+                "High ratio of TCP SYN packets with RST or unanswered packets, indicating port discovery without established application sessions",
+                "Reconnaissance scan originating from untrusted, unauthorized, or external source IP",
+                "Targeted destination port matches sensitive or high-value service (e.g. 22/SSH, 445/SMB, 3389/RDP, 8080/HTTP-Admin)",
+            ],
+            fp_indicator_candidates=[
+                "Authorized network vulnerability scanner (e.g. Nessus, Qualys, Rapid7, OpenVAS) operating from designated scanning host with active change ticket",
+                "Approved IT infrastructure discovery, SNMP inventory scan, or monitoring health check with verified change request",
+                "Documented load balancer or application cluster health probe sweep",
+                "Authorized penetration test or red team exercise active during scheduled maintenance window",
+            ],
+            abstention_requirements=[
+                "Source IP address is unrecorded, corrupted, or missing from telemetry",
+                "Destination port or target host identity cannot be resolved from available flow records",
+                "Connection counts and time window cannot be verified from available firewall/SIEM records",
+                "Detection threshold or aggregation window from SIEM rule definition is unverified",
+            ],
+            escalation_considerations=[
+                "Scanning source successfully establishes completed connections or authentication to sensitive internal assets (Domain Controllers, database servers)",
+                "Scanning activity is followed by exploit attempts, brute force attacks, or lateral movement payloads",
+                "Originating scanning host is an internal asset exhibiting signs of previous compromise",
+            ],
+            analyst_question_templates=[
+                "What was the total number of unique destination hosts contacted by the source IP during the aggregation window?",
+                "Is the source IP registered in the corporate asset inventory as an authorized vulnerability scanner or monitoring server?",
+                "Did the scanning activity result in completed TCP sessions or application-layer data exchange?",
+                "Is there an approved change management ticket corresponding to this scan window and source asset?",
+                "Are there corroborating firewall alerts, IPS signatures, or endpoint anomalies associated with the scanning source?",
+            ],
+            unsupported_assumptions=[
+                "Internal RFC-1918 traffic is NOT automatically benign; adversaries conduct internal network reconnaissance post-compromise",
+                "Loopback or local subnet traffic is NOT automatically benign without verifying scanner identity",
+                "Observed incidentCount or connection count in a single incident is NOT an authoritative detection threshold",
+                "Absence of file hashes or process telemetry does NOT invalidate network scanning alerts",
+            ],
+            contradiction_rules=[
+                {
+                    "rule_id": "MALWARE_CRITERIA_ON_NETWORK_SCAN",
+                    "rule_type": "MALWARE_CRITERIA_ON_NETWORK_SCAN",
+                    "description": "Demanding file hash or process lineage for pure network firewall scan alert",
+                },
+                {
+                    "rule_id": "SCAN_LABELED_AS_EXFILTRATION",
+                    "rule_type": "SCAN_LABELED_AS_EXFILTRATION",
+                    "description": "Confusing reconnaissance probe packets with bulk data exfiltration",
+                },
+                {
+                    "rule_id": "EXTERNAL_SCAN_ON_LOOPBACK",
+                    "rule_type": "EXTERNAL_SCAN_ON_LOOPBACK",
+                    "description": "Claiming external internet scanning when source is loopback 127.0.0.1",
+                },
+            ],
+        ),
+
         ArchetypeId.NETWORK_CONNECTION: ArchetypeDefinition(
             archetype_id=ArchetypeId.NETWORK_CONNECTION,
             name="Network Connection & Traffic Flow",
@@ -597,7 +686,27 @@ class DetectionArchetypeRegistry:
                 secondary = ArchetypeId.CLOUD_DATA_ACCESS
                 matched_features.append("Secondary: Cloud data access features")
 
-        # 2. Check for File Malware
+        # 2. Check for Network Scan / Reconnaissance
+        elif (
+            "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT" in combo
+            or "HOST_SCAN" in combo
+            or "HOST SCAN" in combo
+            or "PORT_SCAN" in combo
+            or "PORT SCAN" in combo
+            or "NETWORK_SCAN" in combo
+            or "NETWORK SCAN" in combo
+            or "T1595" in combo
+            or "T1018" in combo
+            or ("SCAN" in name and "MALWARE" not in name and "PROCESS" not in name and "VIRUS" not in name and "FILE" not in name)
+            or ("RECONNAISSANCE" in combo and "MALWARE" not in name and "PROCESS" not in name and "POWERSHELL" not in name)
+            or ("DISCOVERY" in category and "SCAN" in combo)
+            or primary_behavior == ArchetypeId.NETWORK_SCAN.value
+        ):
+            primary = ArchetypeId.NETWORK_SCAN
+            confidence = 0.95
+            matched_features.append(f"Network scan / host reconnaissance pattern: rule='{rule_id}', name='{name}'")
+
+        # 3. Check for File Malware
         elif (
             "FILE_MALWARE" in combo
             or "ANTIVIRUS" in combo

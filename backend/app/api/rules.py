@@ -1,5 +1,6 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, desc
 
@@ -277,5 +278,33 @@ async def get_rule_calibration_report(
     from app.services.calibration_evaluation_service import CalibrationEvaluationService
     report = await CalibrationEvaluationService.generate_rule_calibration_report(db, rule.id)
     return report.model_dump()
+
+
+class RuleDefinitionImportRequest(BaseModel):
+    definition_text: str = Field(..., description="Authoritative XML or JSON rule definition content")
+    format_type: str = Field("XML", description="Format: 'XML' or 'JSON'")
+
+
+@router.post("/{identifier}/import-definition")
+async def import_rule_definition(
+    identifier: str,
+    payload: RuleDefinitionImportRequest,
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Imports authoritative FortiSIEM XML/JSON rule definition (P3-REQ-01 / Root Cause Remediation).
+    Updates definition_status to VERIFIED and stores authoritative detection conditions.
+    """
+    from app.services.fortisiem_service import FortiSIEMService
+    svc = FortiSIEMService(db)
+    result = await svc.import_authoritative_rule_definition(
+        rule_identifier=identifier,
+        definition_text=payload.definition_text,
+        format_type=payload.format_type,
+    )
+    if not result or not result.get("success"):
+        raise HTTPException(status_code=400, detail="Failed to import authoritative rule definition.")
+    return result
 
 

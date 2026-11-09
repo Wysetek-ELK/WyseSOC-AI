@@ -331,6 +331,7 @@ class AgentPolicyEngine:
         # Atomically activate approved version
         target_version.status = "APPROVED"
         target_version.quality_status = "APPROVED"
+        target_version.is_template_draft = False
         target_version.quality_score = quality_res.quality_score
         target_version.quality_assessment_id = quality_res.assessment_id
         target_version.approved_by_user_id = user_id
@@ -369,7 +370,7 @@ class AgentPolicyEngine:
             status="APPROVED",
             quality_status="APPROVED",
             quality_score=source_version.quality_score,
-            is_template_draft=source_version.is_template_draft,
+            is_template_draft=False,
             common_prompt=source_version.common_prompt,
             rule_specific_prompt=source_version.rule_specific_prompt,
             detection_conditions=source_version.detection_conditions,

@@ -348,19 +348,28 @@ class PolicyQualityValidator:
         score = 20.0
 
         # Mandatory reference case check: Incomplete SIEM rule definition
-        if semantics.definition_status == SemanticsDefinitionStatus.INCOMPLETE:
+        if semantics.definition_status in (SemanticsDefinitionStatus.INCOMPLETE, SemanticsDefinitionStatus.UNKNOWN):
             blockers.append(
                 f"RULE_DEFINITION_INCOMPLETE: Rule '{semantics.rule_identifier}' lacks authoritative SIEM "
-                "detection logic. Observed incident telemetry (e.g. sentBytes64) cannot serve as a verified threshold."
+                "detection logic. Observed incident telemetry (e.g. incidentCount, sentBytes64) cannot serve as a verified threshold."
             )
-            score -= 12.0
+            score -= 10.0
 
         if semantics.source_provenance == SourceProvenance.AUTO_SYNCED_FROM_INCIDENT:
             warns.append("Rule was auto-synced from incident telemetry cache-miss. Source parameters are unverified.")
             score -= 4.0
+        elif semantics.source_provenance == SourceProvenance.HEURISTIC_PARSER:
+            warns.append("Rule definition was inferred via heuristic parser without authoritative SIEM definition/XML.")
+            score -= 6.0
+
+        # Check if runtime incident metadata is present in rule conditions/logic
+        s3 = getattr(prompt_version, "detection_conditions", "") or ""
+        conds_str = str(getattr(semantics, "conditions", []) or []) + str(s3)
+        if "incidentCount" in conds_str or "incidentDetail" in conds_str:
+            warns.append("Incident runtime counter observed in rule conditions. Authoritative correlation parameters required.")
+            score -= 4.0
 
         # Check if policy Section 3 invents a threshold
-        s3 = getattr(prompt_version, "detection_conditions", "") or ""
         if semantics.threshold is None and re.search(r"threshold\s*[:=]\s*\d+", s3, re.IGNORECASE):
             # Check if this threshold is fictitious
             blockers.append(
@@ -368,6 +377,9 @@ class PolicyQualityValidator:
                 "in the authoritative SIEM rule definition."
             )
             score -= 8.0
+
+        if semantics.definition_status in (SemanticsDefinitionStatus.INCOMPLETE, SemanticsDefinitionStatus.UNKNOWN):
+            score = min(score, 10.0)
 
         score = max(0.0, score)
         status = GateStatus.FAILED if blockers else (GateStatus.WARNING if warns else GateStatus.PASSED)
@@ -421,6 +433,27 @@ class PolicyQualityValidator:
                     "rather than network transfer direction, destination authorization, and byte volume."
                 )
 
+        elif archetype_def.archetype_id == ArchetypeId.NETWORK_SCAN:
+            # Check if policy erroneously focuses on endpoint malware execution
+            malware_hits = []
+            if "powershell" in all_text and "scan" not in all_text:
+                malware_hits.append("powershell")
+            if "lolbin" in all_text:
+                malware_hits.append("lolbin")
+            if "hash" in all_text and "sha256" in all_text:
+                malware_hits.append("file hash")
+            if "parent process" in all_text or "ppid" in all_text:
+                malware_hits.append("parent process lineage")
+            if "malware execution" in all_text:
+                malware_hits.append("malware execution")
+
+            if len(malware_hits) >= 2:
+                blockers.append(
+                    f"ARCHETYPE_RELEVANCE_MISMATCH: Policy for {archetype_def.name} ({semantics.rule_identifier}) "
+                    f"inappropriately emphasizes malware execution concepts ({', '.join(malware_hits)}) "
+                    "rather than network scan rate, source IP authorization, target hosts, and destination port."
+                )
+
         status = GateStatus.FAILED if blockers else (GateStatus.WARNING if warns else GateStatus.PASSED)
         details = f"Archetype: {archetype_def.name}. Verified alignment of directives with detection intent."
         return status, blockers, warns, details
@@ -455,6 +488,20 @@ class PolicyQualityValidator:
                 blockers.append(f"UNMAPPED_CORE_EVIDENCE: Mandatory field '{field}' for archetype {archetype_def.archetype_id.value} is missing from contract.")
                 score -= 4.0
 
+        # Check if policy demands unsupported fields from archetype
+        req_ev_text = (getattr(prompt_version, "required_evidence", "") or "").lower()
+        unsupported_demands = []
+        for uf in archetype_def.unsupported_fields:
+            short_u = uf.split(".")[-1]
+            if short_u in req_ev_text or uf.lower() in req_ev_text:
+                unsupported_demands.append(uf)
+        if unsupported_demands:
+            warns.append(
+                f"UNSUPPORTED_EVIDENCE_DEMAND: Policy requires fields ({', '.join(unsupported_demands)}) "
+                f"that are unsupported by archetype {archetype_def.name}."
+            )
+            score -= min(6.0, len(unsupported_demands) * 3.0)
+
         score = max(0.0, score)
         status = GateStatus.FAILED if blockers else (GateStatus.WARNING if warns else GateStatus.PASSED)
         details = f"Contract {contract.contract_id}: {len(contract.required_evidence)} fields defined."
@@ -472,10 +519,16 @@ class PolicyQualityValidator:
         if len(tp_text.strip()) < 20:
             blockers.append("INADEQUATE_TP_CRITERIA: True positive indicators are empty or unacceptably brief.")
             score = 0.0
-        elif "suspicious" in tp_text.lower() and not any(k in tp_text.lower() for k in ("exceed", "unauthorized", "payload", "anomalous", "beacon", "spike", "failed")):
+        elif "suspicious" in tp_text.lower() and not any(k in tp_text.lower() for k in ("exceed", "unauthorized", "payload", "anomalous", "beacon", "spike", "failed", "scan", "sweep", "connection", "sequential")):
             warns.append("TP indicators equate general suspiciousness with confirmed maliciousness without objective criteria.")
             score -= 3.0
 
+        if archetype_def.archetype_id in (ArchetypeId.NETWORK_SCAN, ArchetypeId.NETWORK_EXFILTRATION):
+            if any(term in tp_text.lower() for term in ("file hash", "sha256", "powershell download", "quarantined")):
+                warns.append("TP indicators reference irrelevant endpoint malware artifacts for a network detection rule.")
+                score -= 3.0
+
+        score = max(0.0, score)
         status = GateStatus.FAILED if blockers else (GateStatus.WARNING if warns else GateStatus.PASSED)
         details = "Evaluated objective specificity of True Positive criteria."
         return score, status, blockers, warns, details
@@ -515,8 +568,13 @@ class PolicyQualityValidator:
             warns.append("False positive criteria are brief; legitimate administrative exceptions should be expanded.")
             score -= 2.0
 
-        score = max(0.0, score)
-        status = GateStatus.FAILED if blockers else (GateStatus.WARNING if warns else GateStatus.PASSED)
+        if blockers:
+            score = 0.0
+            status = GateStatus.FAILED
+        else:
+            score = max(0.0, score)
+            status = GateStatus.WARNING if warns else GateStatus.PASSED
+
         details = "Evaluated False Positive criteria for unsafe benign assumptions."
         return score, status, blockers, warns, details
 
@@ -534,10 +592,17 @@ class PolicyQualityValidator:
         if len(missing_text.strip()) < 15:
             blockers.append("MISSING_CRITICAL_ABSTENTION: Abstention criteria (when to vote REQUIRES_ATTENTION) are undefined.")
             score -= 8.0
+        elif "requires_attention" not in missing_text.lower() and "abstain" not in missing_text.lower():
+            warns.append("Abstention criteria do not explicitly mandate voting REQUIRES_ATTENTION when telemetry is deficient.")
+            score -= 3.0
 
         if len(escalation_text.strip()) < 15:
             warns.append("P1/P2 escalation conditions are minimal.")
             score -= 4.0
+
+        if "benign" in escalation_text.lower() and ("internal" in escalation_text.lower() or "rfc-1918" in escalation_text.lower()):
+            blockers.append("UNSAFE_ESCALATION_ASSUMPTION: Escalation logic assumes internal targets are safe or benign.")
+            score -= 5.0
 
         # Autonomous containment check: Policy should not order unsupported autonomous network cutoffs
         if "isolate host immediately" in escalation_text.lower() and "human" not in escalation_text.lower():

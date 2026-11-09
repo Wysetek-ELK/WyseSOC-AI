@@ -55,6 +55,10 @@ CANONICAL_FIELD_CATALOG: Set[str] = {
     "event.timestamp",
     "dlp.findings",
     "sentBytes64",
+    "scan.rate_per_second",
+    "scan.connection_count",
+    "network.destination_ip_list",
+    "network.tcp_flags",
 }
 
 
@@ -103,7 +107,9 @@ class EvidenceRequirementMapper:
             
             req_tp = True
             req_fp = (field in ("network.destination_ip", "network.source_ip", "user.name", "endpoint.hostname", "process.name", "security.event_type"))
-            is_crit = field in ("network.destination_ip", "process.command_line", "file.hash_sha256", "user.name", "security.event_type", "network.bytes_out")
+            is_crit = field in ("network.destination_ip", "process.command_line", "file.hash_sha256", "user.name", "security.event_type", "network.bytes_out") or (
+                archetype_def.archetype_id == ArchetypeId.NETWORK_SCAN and field in ("network.source_ip", "network.destination_port", "security.event_type", "event.timestamp")
+            )
 
             desc = cls._get_field_description(field, archetype_def.archetype_id)
             reqs.append(
@@ -209,7 +215,9 @@ class EvidenceRequirementMapper:
 
     @staticmethod
     def _get_evidence_type_for_field(field: str) -> str:
-        if field.startswith("network.") or field == "sentBytes64":
+        if field.startswith("scan."):
+            return "SCAN_METRIC"
+        elif field.startswith("network.") or field == "sentBytes64":
             return "NETWORK_CONNECTION"
         elif field.startswith("process."):
             return "PROCESS_EXECUTION"
@@ -234,11 +242,16 @@ class EvidenceRequirementMapper:
     @staticmethod
     def _get_field_description(field: str, archetype: ArchetypeId) -> str:
         desc_map = {
-            "network.source_ip": "Source IP address initiating connection or data transfer",
-            "network.destination_ip": "Target external destination IP address receiving transfer",
+            "network.source_ip": "Source IP address initiating connection, scan, or data transfer",
+            "network.destination_ip": "Target destination IP address receiving connection",
+            "network.destination_ip_list": "List of targeted destination IP addresses in network scan",
             "network.direction": "Verified connection direction (outbound vs inbound)",
             "network.bytes_out": "Verified volume of outbound transferred bytes",
-            "network.destination_port": "Target destination port",
+            "network.destination_port": "Target destination port (e.g. fixed scanned port)",
+            "network.protocol": "Network transport protocol (e.g. TCP, UDP)",
+            "network.tcp_flags": "Observed TCP control flags (SYN, RST, ACK)",
+            "scan.rate_per_second": "Connection attempt rate per second during scan window",
+            "scan.connection_count": "Total count of connection attempts observed in aggregation window",
             "event.timestamp": "Canonical event occurrence timestamp",
             "user.name": "User context or service account performing action",
             "process.name": "Target executing binary or script name",

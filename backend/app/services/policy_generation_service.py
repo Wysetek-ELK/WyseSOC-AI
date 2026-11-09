@@ -169,6 +169,15 @@ class PolicyGenerationService:
                 "3. Verify binary digital signature, vendor signer identity, and cryptographic hash reputation.",
                 "4. Check for Living-off-the-Land Binary (LOLBin) abuse or execution from suspicious writable temporary paths.",
             ])
+        elif archetype_def.archetype_id == ArchetypeId.NETWORK_SCAN:
+            lines.extend([
+                "1. Verify scanning behavior: Confirm sequential connection attempts from source IP across multiple destination host IPs on a fixed destination port.",
+                "2. Determine source identity and authorization: Check originating IP against known authorized vulnerability scanners (e.g. Nessus, Qualys, Rapid7), monitoring discovery systems, or active IT change tickets.",
+                "3. Assess scan rate, volume, and duration: Determine target breadth (number of unique hosts) and frequency within the aggregation window.",
+                "4. Analyze TCP connection characteristics: Evaluate handshake completion ratio (SYN packets answered by RST/timeouts vs established application sessions).",
+                "5. DO NOT assume internal RFC-1918 traffic or loopback connections are benign without verifying scanner identity; adversaries conduct internal reconnaissance post-compromise.",
+                "6. Check for corroborating post-scan reconnaissance: Verify whether scan attempts were followed by exploit payloads, brute force attempts, or lateral movement.",
+            ])
         elif archetype_def.archetype_id == ArchetypeId.BRUTE_FORCE:
             lines.extend([
                 "1. Analyze authentication outcome sequence: Identify whether consecutive failures concluded in a successful logon.",

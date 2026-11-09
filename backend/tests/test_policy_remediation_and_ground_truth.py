@@ -215,8 +215,8 @@ async def test_recommendations_cover_all_failed_and_warning_gates():
 @pytest.mark.asyncio
 async def test_heavy_tcp_scan_before_after_remediation():
     """
-    REQ-Phase1: End-to-end before/after validation for Heavy TCP Host Scan On Fixed Port (MEDIUM).
-    Version 1 is blocked from approval; Version 2 candidate resolves all blockers.
+    REQ-Phase1 & Phase2: End-to-end before/after validation for Heavy TCP Host Scan On Fixed Port (MEDIUM).
+    Version 1 is blocked from approval; Version 2 candidate resolves all blockers with NETWORK_SCAN archetype.
     """
     rule = Rule(
         id="rule_heavy_tcp_scan",
@@ -234,9 +234,13 @@ async def test_heavy_tcp_scan_before_after_remediation():
         definition_status=SemanticsDefinitionStatus.VERIFIED,
         source_provenance=SourceProvenance.AUTHORITATIVE_SIEM_DEFINITION,
     )
-    archetype_def = DetectionArchetypeRegistry.get_archetype_definition(ArchetypeId.UNKNOWN)
 
-    # Version 1 (Flawed)
+    # Classify with real registry — resolves to NETWORK_SCAN
+    classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
+    assert classification.primary_archetype == ArchetypeId.NETWORK_SCAN
+    archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
+
+    # Version 1 (Flawed Legacy Policy)
     v1 = PromptVersion(
         id="pv_v1_flawed",
         prompt_id="rp_heavy_tcp",
@@ -253,25 +257,25 @@ async def test_heavy_tcp_scan_before_after_remediation():
     res_v1 = PolicyQualityValidator.validate_policy_quality(rule, v1, c1, semantics)
 
     assert res_v1.approval_eligible is False
-    assert res_v1.gate_results["G2_ARCHETYPE_RELEVANCE"].status == GateStatus.WARNING
-    assert res_v1.gate_results["G2_ARCHETYPE_RELEVANCE"].score == 10.0
     assert res_v1.gate_results["G5_FP_CRITERIA_VALIDITY"].status == GateStatus.FAILED
+    assert res_v1.gate_results["G5_FP_CRITERIA_VALIDITY"].score == 0.0
     assert res_v1.gate_results["G7_POLICY_CONSISTENCY"].status == GateStatus.WARNING
 
-    # Version 2 (Remediated Candidate)
+    # Version 2 (Remediated Candidate Policy with NETWORK_SCAN archetype)
     v2 = PromptVersion(
         id="pv_v2_remediated",
         prompt_id="rp_heavy_tcp",
         version_number=2,
         status="DRAFT",
-        rule_specific_prompt="Analyze TCP scan telemetry on fixed destination port against authorized vulnerability scanners.",
+        rule_specific_prompt="Analyze TCP scan telemetry on fixed destination port. Evaluate connection rates, destination diversity, and authorization status against known vulnerability scanners.",
         required_evidence=(
             "1. security.event_type (ENUM) [CRITICAL] — Authoritative event type\n"
             "2. event.timestamp (DATETIME) [CRITICAL] — Event timestamp\n"
             "3. network.source_ip (IPV4) [STANDARD] — Originating scanner or host IP\n"
-            "4. network.destination_port (INTEGER) [STANDARD] — Destination port"
+            "4. network.destination_port (INTEGER) [STANDARD] — Destination port\n"
+            "5. detection.threshold (FLOAT) [CRITICAL] — Authoritative detection trigger threshold"
         ),
-        fp_indicators="1. Authorized vulnerability scan with active change ticket.\n2. Approved health monitoring probe.",
+        fp_indicators="1. Authorized vulnerability scan with active change ticket.\n2. Approved health monitoring probe.\n3. Verified IT discovery service.",
         tp_indicators="1. Rapid sequential TCP connections from untrusted host.\n2. Targeted service is high-value port.",
         missing_info_criteria="Abstain and vote REQUIRES_ATTENTION if source IP is unrecorded or logs truncated.",
         escalation_conditions="Escalate immediately if scan establishes successful connections to critical assets.",
@@ -281,10 +285,125 @@ async def test_heavy_tcp_scan_before_after_remediation():
 
     assert res_v2.approval_eligible is True
     assert len(res_v2.blocking_issues) == 0
+    assert res_v2.gate_results["G1_RULE_INTEGRITY"].status == GateStatus.PASSED
+    assert res_v2.gate_results["G1_RULE_INTEGRITY"].score == 20.0
+    assert res_v2.gate_results["G2_ARCHETYPE_RELEVANCE"].status == GateStatus.PASSED
+    assert res_v2.gate_results["G2_ARCHETYPE_RELEVANCE"].score == 20.0
+    assert res_v2.gate_results["G3_EVIDENCE_FEASIBILITY"].status == GateStatus.PASSED
+    assert res_v2.gate_results["G3_EVIDENCE_FEASIBILITY"].score == 20.0
+    assert res_v2.gate_results["G4_TP_CRITERIA_VALIDITY"].status == GateStatus.PASSED
+    assert res_v2.gate_results["G4_TP_CRITERIA_VALIDITY"].score == 10.0
     assert res_v2.gate_results["G5_FP_CRITERIA_VALIDITY"].status == GateStatus.PASSED
+    assert res_v2.gate_results["G5_FP_CRITERIA_VALIDITY"].score == 10.0
+    assert res_v2.gate_results["G6_ABSTENTION_ESCALATION"].status == GateStatus.PASSED
+    assert res_v2.gate_results["G6_ABSTENTION_ESCALATION"].score == 15.0
     assert res_v2.gate_results["G7_POLICY_CONSISTENCY"].status == GateStatus.PASSED
-    assert res_v2.gate_results["G2_ARCHETYPE_RELEVANCE"].status == GateStatus.WARNING
+    assert res_v2.gate_results["G7_POLICY_CONSISTENCY"].score == 10.0
     assert res_v2.gate_results["G8_SIMULATION_REGRESSION"].status == GateStatus.WARNING
+    assert res_v2.gate_results["G8_SIMULATION_REGRESSION"].score == 0.0
+
+    # Structural quality 100/100, Total score 85/100 with G8 INSUFFICIENT_DATA
+    assert res_v2.structural_quality_score == 100.0
+    assert res_v2.quality_score == 85.0
+
+
+@pytest.mark.asyncio
+async def test_authoritative_rule_import_and_g1_scoring(db_session: AsyncSession):
+    """
+    REQ-Phase1: Incomplete or heuristic definitions receive penalized G1 scores;
+    importing authoritative XML updates definition_status to VERIFIED and awards full 20.0 points.
+    """
+    from app.services.fortisiem_service import FortiSIEMService
+
+    xml_content = """<rule id="PH_RULE_TEST_PORT_SCAN">
+        <name>Test Port Scan Rule</name>
+        <description>Detects rapid scanning against host ports.</description>
+        <severity>HIGH</severity>
+        <subCategory>Reconnaissance</subCategory>
+        <condition>
+            <window>60</window>
+            <groupBy>srcIpAddr</groupBy>
+            <expression>COUNT(DISTINCT destPort) &gt;= 20</expression>
+        </condition>
+    </rule>"""
+
+    siem_svc = FortiSIEMService(db_session)
+    res = await siem_svc.import_authoritative_rule_definition(
+        rule_identifier="PH_RULE_TEST_PORT_SCAN",
+        definition_text=xml_content,
+        format_type="XML",
+    )
+    assert res["success"] is True
+    assert res["definition_status"] == "VERIFIED"
+
+    stmt = select(Rule).where(Rule.rule_id == "PH_RULE_TEST_PORT_SCAN")
+    rule = (await db_session.execute(stmt)).scalars().first()
+    assert rule is not None
+    assert "Expression: COUNT(DISTINCT destPort) >= 20" in rule.pattern_logic
+    assert rule.parsed_metadata.get("definition_status") == "VERIFIED"
+
+
+@pytest.mark.asyncio
+async def test_strict_rule_filtering_and_rule_mismatch_exclusion(db_session: AsyncSession):
+    """
+    REQ-Phase2 & Phase3: Historical simulation must strictly exclude incidents belonging
+    to other rules (e.g. Crowdstrike, Prisma SASE) with RULE_MISMATCH reasons and
+    never simulate them against a non-matching target rule.
+    """
+    # Create target rule
+    target_rule = Rule(
+        id="rule_target_tcp_scan_01",
+        rule_id="PH_RULE_HEAVY_TCP_HOST_SCAN_TARGET",
+        name="Heavy TCP Host Scan Target",
+        event_type="TCP_SCAN_TARGET",
+    )
+    db_session.add(target_rule)
+
+    # Create other rule (e.g. Crowdstrike endpoint alert)
+    other_rule = Rule(
+        id="rule_other_cs_alert_01",
+        rule_id="PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        name="Crowdstrike Suspicious Activity",
+        event_type="CS_ALERT",
+    )
+    db_session.add(other_rule)
+    await db_session.flush()
+
+    # Seed 3 Crowdstrike incidents (must NOT be evaluated as TCP scan)
+    for i in range(3):
+        inc_cs = Incident(
+            incident_id=f"INC_CS_{i}_{uuid.uuid4().hex[:6]}",
+            rule_id=other_rule.id,
+            event_type="CS_ALERT",
+            source_ip=f"10.0.0.{i}",
+            raw_payload={"src": f"10.0.0.{i}", "alert": "Suspicious PowerShell"},
+        )
+        db_session.add(inc_cs)
+        await db_session.flush()
+        db_session.add(HistoricalGroundTruth(
+            incident_id=inc_cs.id,
+            resolution="True Positive",
+            comments="Crowdstrike malware execution alert",
+            is_ml_generated=False,
+        ))
+
+    await db_session.commit()
+
+    sim_service = PolicySimulationService(db_session)
+    run_record = await sim_service.run_dry_run_intelligence_evaluation(
+        run_name="Test-Rule-Mismatch-Strict-Filter",
+        rule_id=target_rule.id,
+        archetype="NETWORK_SCAN",
+    )
+
+    funnel = run_record.metrics["funnel"]
+    assert funnel["total_scanned"] >= 3
+    assert funnel["rule_matched"] == 0
+    assert funnel["evaluated"] == 0
+    assert funnel["eligible"] == 0
+    assert funnel["exclusion_reasons"]["RULE_MISMATCH"] >= 3
+    assert run_record.validation_state == "INSUFFICIENT_DATA"
+    assert any(ex["reason"] == "RULE_MISMATCH" for ex in funnel["exclusions_detail"])
 
 
 @pytest.mark.asyncio

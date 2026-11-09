@@ -109,38 +109,59 @@ class PolicySimulationService:
         await self.db.flush()
 
         # 1. Fetch eligible historical incidents with ground truth
-        q = (
+        # Scan candidate historical incidents from dataset
+        scanned_q = (
             select(Incident, HistoricalGroundTruth)
             .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
+            .order_by(desc(Incident.created_at))
+            .limit(sample_limit)
         )
-        if rule_ids:
-            q = q.where(Incident.rule_id.in_(rule_ids))
+        scanned_res = await self.db.execute(scanned_q)
+        scanned_rows = scanned_res.all()
 
-        q = q.order_by(desc(Incident.created_at)).limit(sample_limit)
-        res = await self.db.execute(q)
-        rows = res.all()
+        # If rule_ids provided, ensure rule-matched incidents are specifically retrieved
+        matched_rows = []
+        if rule_ids:
+            matched_q = (
+                select(Incident, HistoricalGroundTruth)
+                .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
+                .where(Incident.rule_id.in_(rule_ids))
+                .order_by(desc(Incident.created_at))
+                .limit(sample_limit)
+            )
+            matched_res = await self.db.execute(matched_q)
+            matched_rows = matched_res.all()
+
+        # Build scanned pool (maintaining deterministic order and uniqueness)
+        seen_ids = set()
+        rows = []
+        for r in matched_rows + scanned_rows:
+            inc_obj = r[0]
+            if inc_obj.id not in seen_ids:
+                seen_ids.add(inc_obj.id)
+                rows.append(r)
 
         total_cases = len(rows)
         run_record.total_cases = total_cases
 
-        if total_cases < self.MIN_HISTORICAL_SAMPLES:
+        if total_cases == 0:
             run_record.status = "COMPLETED"
             run_record.validation_state = EvaluationValidationState.INSUFFICIENT_DATA.value
             run_record.completed_at = datetime.utcnow()
             run_record.metrics = {
-                "message": f"Insufficient historical incidents (N={total_cases} < {self.MIN_HISTORICAL_SAMPLES}). Empirical evaluation requires at least {self.MIN_HISTORICAL_SAMPLES} samples.",
+                "message": f"Zero historical incidents found in dataset. Empirical evaluation requires at least {self.MIN_HISTORICAL_SAMPLES} samples.",
                 "funnel": {
-                    "total_scanned": total_cases,
-                    "rule_matched": total_cases,
+                    "total_scanned": 0,
+                    "rule_matched": 0,
                     "analyst_labeled": 0,
                     "eligible": 0,
-                    "excluded": total_cases,
+                    "excluded": 0,
                     "evaluated": 0,
-                    "exclusion_reasons": {"INSUFFICIENT_SAMPLE_SIZE": total_cases},
+                    "exclusion_reasons": {"INSUFFICIENT_SAMPLE_SIZE": 0},
                     "exclusions_detail": [],
                 },
                 "verified_ground_truth_cases": 0,
-                "total_evaluated_incidents": total_cases,
+                "total_evaluated_incidents": 0,
             }
             await self.db.commit()
             return run_record
@@ -158,7 +179,9 @@ class PolicySimulationService:
         analyst_labeled_count = 0
         eligible_count = 0
         excluded_count = 0
+        rule_matched_count = 0
         exclusion_reasons: Dict[str, int] = {
+            "RULE_MISMATCH": 0,
             "MISSING_ANALYST_LABEL": 0,
             "AMBIGUOUS_LABEL": 0,
             "CORRUPT_OR_EMPTY_PAYLOAD": 0,
@@ -167,6 +190,27 @@ class PolicySimulationService:
         exclusions_detail: List[Dict[str, Any]] = []
 
         for inc, gt in rows:
+            # Enforce strict rule-specific historical incident filtering
+            is_rule_match = True
+            if rule_ids and (inc.rule_id not in rule_ids):
+                is_rule_match = False
+
+            if not is_rule_match:
+                exclusion_reason = "RULE_MISMATCH"
+                target_desc = rule_id or "target rule"
+                exclusion_detail = f"Incident belongs to rule '{inc.rule_id}', not target evaluation rule '{target_desc}'."
+                exclusion_reasons["RULE_MISMATCH"] += 1
+                excluded_count += 1
+                exclusions_detail.append({
+                    "incident_id": str(inc.incident_id or inc.id),
+                    "reason": exclusion_reason,
+                    "detail": exclusion_detail,
+                })
+                # Strictly exclude non-matching rule incidents from policy evaluation
+                continue
+
+            rule_matched_count += 1
+
             # Safely handle raw payload whether dict or JSON string
             raw_payload = inc.raw_payload
             if isinstance(raw_payload, str):
@@ -315,7 +359,7 @@ class PolicySimulationService:
         # 3. Calculate Empirical Accuracy & Uncertainty Metrics with Funnel
         funnel_model = IncidentEligibilityFunnel(
             total_scanned=total_cases,
-            rule_matched=total_cases,
+            rule_matched=rule_matched_count,
             analyst_labeled=analyst_labeled_count,
             eligible=eligible_count,
             excluded=excluded_count,
@@ -325,11 +369,25 @@ class PolicySimulationService:
         )
         metrics = EmpiricalAccuracyEvaluator.evaluate_performance(eval_items, funnel=funnel_model)
         metrics_dict = metrics.model_dump()
-        metrics_dict["message"] = (
-            f"Evaluated {len(eval_items)} historical incidents ({eligible_count} verified ground-truth cases, {excluded_count} excluded)."
-            if eligible_count >= self.MIN_HISTORICAL_SAMPLES else
-            f"Evaluated {len(eval_items)} historical incidents. Insufficient verified ground-truth cases (N_eligible = {eligible_count} < {self.MIN_HISTORICAL_SAMPLES}) for empirical accuracy validation."
-        )
+
+        if rule_matched_count < self.MIN_HISTORICAL_SAMPLES or eligible_count < self.MIN_HISTORICAL_SAMPLES:
+            run_record.validation_state = EvaluationValidationState.INSUFFICIENT_DATA.value
+            target_desc = rule_id or "target rule"
+            if rule_matched_count == 0:
+                metrics_dict["message"] = (
+                    f"Zero historical incidents in the evaluation dataset match rule '{target_desc}' "
+                    f"(0/{total_cases} scanned). Insufficient verified ground-truth cases (N=0 < {self.MIN_HISTORICAL_SAMPLES})."
+                )
+            else:
+                metrics_dict["message"] = (
+                    f"Evaluated {len(eval_items)} historical incidents ({rule_matched_count} rule-matched from {total_cases} scanned). "
+                    f"Insufficient verified ground-truth cases (N_eligible = {eligible_count} < {self.MIN_HISTORICAL_SAMPLES}) for empirical accuracy validation."
+                )
+        else:
+            metrics_dict["message"] = (
+                f"Evaluated {len(eval_items)} historical incidents ({eligible_count} verified ground-truth cases, {excluded_count} excluded)."
+            )
+
         run_record.metrics = metrics_dict
         run_record.evaluated_cases = len(eval_items)
         run_record.verified_ground_truth_cases = metrics.verified_ground_truth_cases

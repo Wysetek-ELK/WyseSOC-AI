@@ -60,10 +60,10 @@ class RuleIntelligenceAnalyzer:
             source_prov = SourceProvenance.AUTHORITATIVE_SIEM_DEFINITION
             source_version = str(authoritative_siem_definition.get("version") or "1.0")
             prov_note = "Extracted from authoritative live SIEM supervisor definition"
-        elif raw_metadata.get("source") == "FORTISIEM_LIVE_RULE_API":
+        elif raw_metadata.get("source") in ("FORTISIEM_LIVE_RULE_API", "AUTHORITATIVE_XML_IMPORT") or raw_metadata.get("provenance") in ("AUTHORITATIVE_XML_IMPORT", "AUTHORITATIVE_SIEM_DEFINITION"):
             source_prov = SourceProvenance.AUTHORITATIVE_SIEM_DEFINITION
             source_version = str(raw_metadata.get("version") or "1.0")
-            prov_note = "Extracted from verified live SIEM rule API metadata"
+            prov_note = "Extracted from authoritative XML/rule definition import"
         elif raw_text and ("Pattern Conditions:" in raw_text or "Pattern:" in raw_text) and raw_metadata.get("source") != "AUTO_SYNCED_FROM_INCIDENT":
             source_prov = SourceProvenance.VENDOR_RULE_FILE
             source_version = "1.0"
@@ -467,6 +467,24 @@ class RuleIntelligenceAnalyzer:
                 "network.destination_ip",
                 "dns.response_code",
             ]
+        elif (
+            "scan" in combo
+            or "reconnaissance" in combo
+            or "t1595" in combo
+            or "t1018" in combo
+            or "host_scan" in combo
+            or "port_scan" in combo
+        ):
+            fields = [
+                "security.event_type",
+                "event.timestamp",
+                "network.source_ip",
+                "network.destination_port",
+                "network.destination_ip",
+                "network.protocol",
+                "scan.rate_per_second",
+                "scan.connection_count",
+            ]
         else:
             fields = [
                 "network.source_ip",
@@ -515,6 +533,17 @@ class RuleIntelligenceAnalyzer:
 
         if "dns" in combo and ("tunnel" in combo or "covert" in combo):
             return ArchetypeId.DNS_TUNNELING.value
+
+        if (
+            "scan" in combo
+            or "reconnaissance" in combo
+            or "t1595" in combo
+            or "t1018" in combo
+            or "host_scan" in combo
+            or "port_scan" in combo
+            or ("discovery" in combo and "scan" in combo)
+        ) and "malware" not in combo and "process" not in combo and "powershell" not in combo:
+            return ArchetypeId.NETWORK_SCAN.value
 
         if "brute" in combo or ("auth" in combo and "fail" in combo) or "credential access" in tactics:
             return ArchetypeId.BRUTE_FORCE.value
@@ -566,5 +595,10 @@ class RuleIntelligenceAnalyzer:
             return f"Detect unauthorized access to credential stores, memory scraping, or token theft ({rule_name})."
         elif archetype == ArchetypeId.DNS_TUNNELING.value:
             return f"Detect covert command-and-control or data exfiltration over anomalous DNS queries ({rule_name})."
+        elif archetype == ArchetypeId.NETWORK_SCAN.value:
+            return (
+                f"Detect unauthorized or anomalous network scanning, host reconnaissance, or port sweeps "
+                f"attempting to map internal or perimeter attack surface ({rule_name})."
+            )
         else:
             return f"Investigate SIEM detection alert '{rule_name}' within category '{category}'."
