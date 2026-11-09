@@ -576,6 +576,18 @@ async def test_six_stage_eligibility_funnel_and_exclusions(db_session: AsyncSess
     assert reasons["HEURISTIC_OR_ML_LABEL"] == 2
     assert reasons["MISSING_ANALYST_LABEL"] == 1
     assert len(funnel["exclusions_detail"]) == 3
+    # Check that rule_id is populated on exclusions_detail
+    assert all("rule_id" in ex for ex in funnel["exclusions_detail"])
+
+    # Verify stage_details populated for pop-up drilldown modal
+    stage_details = summary.get("stage_details") or funnel.get("stage_details")
+    assert stage_details is not None
+    assert len(stage_details["scanned"]) == 7
+    assert len(stage_details["rule_matched"]) == 7
+    assert len(stage_details["analyst_labeled"]) == 6
+    assert len(stage_details["eligible"]) == 4
+    assert len(stage_details["excluded"]) == 3
+    assert len(stage_details["evaluated"]) == 7
 
     # Sample sufficiency: 4 < 5 -> INSUFFICIENT_DATA
     assert summary["simulation_status"] == SimulationStatus.INSUFFICIENT_DATA.value

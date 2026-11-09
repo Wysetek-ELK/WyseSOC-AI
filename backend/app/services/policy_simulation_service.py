@@ -188,8 +188,19 @@ class PolicySimulationService:
             "HEURISTIC_OR_ML_LABEL": 0,
         }
         exclusions_detail: List[Dict[str, Any]] = []
+        stage_details: Dict[str, List[Dict[str, Any]]] = {
+            "scanned": [],
+            "rule_matched": [],
+            "analyst_labeled": [],
+            "eligible": [],
+            "excluded": [],
+            "evaluated": [],
+        }
 
         for inc, gt in rows:
+            inc_id_str = str(inc.incident_id or inc.id)
+            inc_rule_str = str(inc.rule_id or "")
+
             # Enforce strict rule-specific historical incident filtering
             is_rule_match = True
             if rule_ids and (inc.rule_id not in rule_ids):
@@ -201,8 +212,18 @@ class PolicySimulationService:
                 exclusion_detail = f"Incident belongs to rule '{inc.rule_id}', not target evaluation rule '{target_desc}'."
                 exclusion_reasons["RULE_MISMATCH"] += 1
                 excluded_count += 1
-                exclusions_detail.append({
-                    "incident_id": str(inc.incident_id or inc.id),
+                ex_rec = {
+                    "incident_id": inc_id_str,
+                    "rule_id": inc_rule_str,
+                    "reason": exclusion_reason,
+                    "detail": exclusion_detail,
+                }
+                exclusions_detail.append(ex_rec)
+                stage_details["excluded"].append(ex_rec)
+                stage_details["scanned"].append({
+                    "incident_id": inc_id_str,
+                    "rule_id": inc_rule_str,
+                    "status": "EXCLUDED",
                     "reason": exclusion_reason,
                     "detail": exclusion_detail,
                 })
@@ -210,6 +231,19 @@ class PolicySimulationService:
                 continue
 
             rule_matched_count += 1
+            stage_details["scanned"].append({
+                "incident_id": inc_id_str,
+                "rule_id": inc_rule_str,
+                "status": "RULE_MATCHED",
+                "reason": None,
+                "detail": f"Matched target rule '{rule_id or inc_rule_str}'",
+            })
+            stage_details["rule_matched"].append({
+                "incident_id": inc_id_str,
+                "rule_id": inc_rule_str,
+                "has_analyst_label": bool(gt and gt.resolution),
+                "resolution": str(gt.resolution) if gt and gt.resolution else None,
+            })
 
             # Safely handle raw payload whether dict or JSON string
             raw_payload = inc.raw_payload
@@ -238,6 +272,13 @@ class PolicySimulationService:
                 exclusion_reasons["MISSING_ANALYST_LABEL"] += 1
             else:
                 analyst_labeled_count += 1
+                stage_details["analyst_labeled"].append({
+                    "incident_id": inc_id_str,
+                    "rule_id": inc_rule_str,
+                    "resolution": str(gt.resolution),
+                    "comments": str(gt.comments or ""),
+                    "is_ml_generated": bool(gt.is_ml_generated),
+                })
                 is_automated_res = (
                     gt.is_ml_generated
                     or "machine learning" in (gt.comments or "").lower()
@@ -266,14 +307,24 @@ class PolicySimulationService:
                     elif adj_label in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
                         eligible_count += 1
                         gt_label = adj_label.value
+                        stage_details["eligible"].append({
+                            "incident_id": inc_id_str,
+                            "rule_id": inc_rule_str,
+                            "ground_truth": gt_label,
+                            "resolution": str(gt.resolution),
+                            "comments": str(gt.comments or ""),
+                        })
 
             if exclusion_reason:
                 excluded_count += 1
-                exclusions_detail.append({
-                    "incident_id": str(inc.incident_id or inc.id),
+                ex_rec = {
+                    "incident_id": inc_id_str,
+                    "rule_id": inc_rule_str,
                     "reason": exclusion_reason,
                     "detail": exclusion_detail,
-                })
+                }
+                exclusions_detail.append(ex_rec)
+                stage_details["excluded"].append(ex_rec)
 
             # Build incident payload
             inc_dict = {
@@ -356,6 +407,8 @@ class PolicySimulationService:
                 "escalation_reason": trust_res.escalation_reason,
             })
 
+        stage_details["evaluated"] = eval_items
+
         # 3. Calculate Empirical Accuracy & Uncertainty Metrics with Funnel
         funnel_model = IncidentEligibilityFunnel(
             total_scanned=total_cases,
@@ -365,10 +418,12 @@ class PolicySimulationService:
             excluded=excluded_count,
             evaluated=len(eval_items),
             exclusion_reasons=exclusion_reasons,
-            exclusions_detail=[IncidentExclusionRecord(**ex) for ex in exclusions_detail[:50]],
+            exclusions_detail=[IncidentExclusionRecord(**ex) for ex in exclusions_detail[:500]],
+            stage_details=stage_details,
         )
         metrics = EmpiricalAccuracyEvaluator.evaluate_performance(eval_items, funnel=funnel_model)
         metrics_dict = metrics.model_dump()
+        metrics_dict["stage_details"] = stage_details
 
         if rule_matched_count < self.MIN_HISTORICAL_SAMPLES or eligible_count < self.MIN_HISTORICAL_SAMPLES:
             run_record.validation_state = EvaluationValidationState.INSUFFICIENT_DATA.value
@@ -785,6 +840,7 @@ class PolicySimulationService:
             "excluded_count": funnel_data.get("excluded", max(0, run.total_cases - eligible_gt_cases)),
             "exclusion_reasons": funnel_data.get("exclusion_reasons", {}),
             "exclusions_detail": funnel_data.get("exclusions_detail", []),
+            "stage_details": funnel_data.get("stage_details") or metrics.get("stage_details") or {},
             "funnel": funnel_data,
             "min_samples_required": self.MIN_HISTORICAL_SAMPLES,
             "message": msg,

@@ -296,6 +296,7 @@ class IncidentExclusionRecord(BaseModel):
     incident_id: str
     reason: str  # MISSING_ANALYST_LABEL, AMBIGUOUS_LABEL, CORRUPT_OR_EMPTY_PAYLOAD, RULE_MISMATCH, HEURISTIC_OR_ML_LABEL
     detail: str
+    rule_id: Optional[str] = None
 
 
 class IncidentEligibilityFunnel(BaseModel):
@@ -307,6 +308,7 @@ class IncidentEligibilityFunnel(BaseModel):
     evaluated: int = 0
     exclusion_reasons: Dict[str, int] = Field(default_factory=dict)
     exclusions_detail: List[IncidentExclusionRecord] = Field(default_factory=list)
+    stage_details: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)
 
 
 class WilsonConfidenceInterval(BaseModel):

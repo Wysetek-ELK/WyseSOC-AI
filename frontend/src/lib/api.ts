@@ -563,7 +563,15 @@ export interface PolicySimulationResult {
   verified_ground_truth_cases?: number;
   excluded_count?: number;
   exclusion_reasons?: Record<string, number>;
-  exclusions_detail?: Array<{ incident_id: string; reason: string; detail: string }>;
+  exclusions_detail?: Array<{ incident_id: string; reason: string; detail: string; rule_id?: string }>;
+  stage_details?: {
+    scanned?: Array<{ incident_id: string; rule_id?: string; status: string; reason?: string | null; detail?: string }>;
+    rule_matched?: Array<{ incident_id: string; rule_id?: string; has_analyst_label?: boolean; resolution?: string | null }>;
+    analyst_labeled?: Array<{ incident_id: string; rule_id?: string; resolution: string; comments?: string; is_ml_generated?: boolean }>;
+    eligible?: Array<{ incident_id: string; rule_id?: string; ground_truth: string; resolution?: string; comments?: string }>;
+    excluded?: Array<{ incident_id: string; rule_id?: string; reason: string; detail: string }>;
+    evaluated?: Array<any>;
+  };
   funnel?: {
     total_scanned: number;
     rule_matched: number;

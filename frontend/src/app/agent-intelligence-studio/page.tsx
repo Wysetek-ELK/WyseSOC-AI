@@ -28,6 +28,9 @@ import {
   Activity,
   Cpu,
   XCircle,
+  X,
+  Eye,
+  Copy,
   ExternalLink,
   Sliders,
   Award,
@@ -89,6 +92,19 @@ export default function AgentIntelligenceStudioPage() {
   const [simulationResult, setSimulationResult] = useState<PolicySimulationResult | null>(null);
   const [loadingSimulation, setLoadingSimulation] = useState(false);
   const [showExclusions, setShowExclusions] = useState(false);
+
+  // Funnel & Card Drilldown Pop-up Modal State
+  const [drilldownModal, setDrilldownModal] = useState<{
+    isOpen: boolean;
+    cardType: "scanned" | "rule_matched" | "analyst_labeled" | "eligible" | "excluded" | "evaluated" | "confusion_tp" | "confusion_tn" | "confusion_fp" | "confusion_fn" | "confusion_abstained" | null;
+    title: string;
+    description: string;
+    badgeCount: number;
+    items: Array<any>;
+  } | null>(null);
+  const [drilldownSearch, setDrilldownSearch] = useState("");
+  const [drilldownReasonFilter, setDrilldownReasonFilter] = useState<string>("ALL");
+  const [drilldownCopied, setDrilldownCopied] = useState(false);
 
   // Drift Events State
   const [driftEvents, setDriftEvents] = useState<PolicyDriftEventItem[]>([]);
@@ -309,6 +325,175 @@ export default function AgentIntelligenceStudioPage() {
       fetchQualityValidation(selectedRuleId, selectedVersionId);
     }
   }, [selectedRuleId, selectedVersionId]);
+
+  // Close drilldown modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && drilldownModal?.isOpen) {
+        setDrilldownModal(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [drilldownModal]);
+
+  // Open modal for Funnel Cards (1. Scanned, 2. Rule-Matched, 3. Analyst-Labeled, 4. Eligible, 5. Excluded, 6. Evaluated)
+  const openFunnelCardModal = (cardType: "scanned" | "rule_matched" | "analyst_labeled" | "eligible" | "excluded" | "evaluated") => {
+    if (!simulationResult) return;
+    setDrilldownSearch("");
+    setDrilldownReasonFilter("ALL");
+
+    if (cardType === "excluded") {
+      const excludedItems = simulationResult.exclusions_detail || simulationResult.stage_details?.excluded || [];
+      setDrilldownModal({
+        isOpen: true,
+        cardType: "excluded",
+        title: "5. Excluded Incidents",
+        description: "Historical incidents excluded from empirical ground-truth validation with documented exclusion justifications.",
+        badgeCount: simulationResult.excluded_count ?? excludedItems.length,
+        items: excludedItems,
+      });
+    } else if (cardType === "scanned") {
+      const scannedItems = simulationResult.stage_details?.scanned || [
+        ...(simulationResult.exclusions_detail || []).map((ex) => ({
+          incident_id: ex.incident_id,
+          rule_id: (ex as any).rule_id || "Unassigned / Mismatched",
+          status: "EXCLUDED",
+          reason: ex.reason,
+          detail: ex.detail,
+        })),
+        ...(simulationResult.per_incident_results || []).map((res) => ({
+          incident_id: res.incident_id,
+          rule_id: res.rule_id,
+          status: "RULE_MATCHED",
+          reason: res.ground_truth || "EVALUATED",
+          detail: `Effective verdict: ${res.effective_verdict} (Trust: ${res.trust_score}/10)`,
+        })),
+      ];
+      setDrilldownModal({
+        isOpen: true,
+        cardType: "scanned",
+        title: "1. Scanned Incidents",
+        description: "All historical incidents retrieved and inspected from the historical dataset during simulation.",
+        badgeCount: simulationResult.total_scanned ?? scannedItems.length,
+        items: scannedItems,
+      });
+    } else if (cardType === "rule_matched") {
+      const matchedItems = simulationResult.stage_details?.rule_matched || [
+        ...(simulationResult.per_incident_results || []).map((res) => ({
+          incident_id: res.incident_id,
+          rule_id: res.rule_id,
+          has_analyst_label: Boolean(res.ground_truth),
+          resolution: res.ground_truth || "Unlabeled / Pending",
+          detail: `Effective verdict: ${res.effective_verdict} (Trust: ${res.trust_score}/10)`,
+        })),
+      ];
+      setDrilldownModal({
+        isOpen: true,
+        cardType: "rule_matched",
+        title: "2. Rule-Matched Incidents",
+        description: "Incidents whose alert rule association strictly matches the target rule under evaluation.",
+        badgeCount: simulationResult.rule_matched ?? matchedItems.length,
+        items: matchedItems,
+      });
+    } else if (cardType === "analyst_labeled") {
+      const labeledItems = simulationResult.stage_details?.analyst_labeled || [
+        ...(simulationResult.per_incident_results || [])
+          .filter((res) => Boolean(res.ground_truth))
+          .map((res) => ({
+            incident_id: res.incident_id,
+            rule_id: res.rule_id,
+            resolution: res.ground_truth,
+            comments: res.escalation_reason || "Documented in SIEM incident resolution",
+            detail: `Resolution: ${res.ground_truth}`,
+          })),
+      ];
+      setDrilldownModal({
+        isOpen: true,
+        cardType: "analyst_labeled",
+        title: "3. Analyst-Labeled Incidents",
+        description: "Incidents with closed resolution metadata recorded by human SOC analysts.",
+        badgeCount: simulationResult.analyst_labeled ?? labeledItems.length,
+        items: labeledItems,
+      });
+    } else if (cardType === "eligible") {
+      const eligibleItems = simulationResult.stage_details?.eligible || [
+        ...(simulationResult.per_incident_results || [])
+          .filter((res) => res.ground_truth === "VERIFIED_TP" || res.ground_truth === "VERIFIED_FP")
+          .map((res) => ({
+            incident_id: res.incident_id,
+            rule_id: res.rule_id,
+            ground_truth: res.ground_truth,
+            resolution: res.ground_truth === "VERIFIED_TP" ? "Confirmed True Positive" : "Verified False Positive",
+            detail: `Independently verified ground-truth label: ${res.ground_truth}`,
+          })),
+      ];
+      setDrilldownModal({
+        isOpen: true,
+        cardType: "eligible",
+        title: "4. Eligible Ground Truth Incidents",
+        description: "Independently verified human True Positive and False Positive benchmark controls eligible for empirical scoring.",
+        badgeCount: simulationResult.eligible_ground_truth_count ?? eligibleItems.length,
+        items: eligibleItems,
+      });
+    } else if (cardType === "evaluated") {
+      const evalItems = simulationResult.per_incident_results || [];
+      setDrilldownModal({
+        isOpen: true,
+        cardType: "evaluated",
+        title: "6. Evaluated Incidents",
+        description: "Incidents evaluated through policy directives, evidence contracts, and verdict trustworthiness scoring.",
+        badgeCount: simulationResult.evaluated_cases ?? evalItems.length,
+        items: evalItems,
+      });
+    }
+  };
+
+  // Open modal for Confusion Matrix cards
+  const openConfusionModal = (bucket: "tp" | "tn" | "fp" | "fn" | "abstained") => {
+    if (!simulationResult || !simulationResult.per_incident_results) return;
+    setDrilldownSearch("");
+    setDrilldownReasonFilter("ALL");
+
+    const mapping = {
+      tp: {
+        title: "True Positives (Confirmed Attack Detected)",
+        desc: "Incidents correctly identified as TRUE_POSITIVE aligned with verified malicious ground truth.",
+        filter: (r: any) => r.effective_verdict === "TRUE_POSITIVE" && (r.ground_truth === "VERIFIED_TP" || r.is_correct === true),
+      },
+      tn: {
+        title: "True Negatives (Benign Activity Cleared)",
+        desc: "Incidents correctly identified as FALSE_POSITIVE aligned with verified benign ground truth.",
+        filter: (r: any) => r.effective_verdict === "FALSE_POSITIVE" && (r.ground_truth === "VERIFIED_FP" || r.is_correct === true),
+      },
+      fp: {
+        title: "False Positives (Benign Flagged as Attack)",
+        desc: "Benign activity incorrectly classified as True Positive (Over-alerting).",
+        filter: (r: any) => r.effective_verdict === "TRUE_POSITIVE" && (r.ground_truth === "VERIFIED_FP" || r.is_critical_error === false),
+      },
+      fn: {
+        title: "False Negatives (Critical Missed Attacks)",
+        desc: "Confirmed malicious incidents incorrectly dismissed as False Positive (Safety violation).",
+        filter: (r: any) => r.effective_verdict === "FALSE_POSITIVE" && (r.ground_truth === "VERIFIED_TP" || r.is_critical_error === true),
+      },
+      abstained: {
+        title: "Abstentions (Requires Analyst Review)",
+        desc: "Incidents abstained due to missing mandatory evidence or contradictory telemetry.",
+        filter: (r: any) => r.effective_verdict === "REQUIRES_ANALYST_ATTENTION" || r.is_abstained,
+      },
+    };
+
+    const target = mapping[bucket];
+    const filtered = simulationResult.per_incident_results.filter(target.filter);
+    setDrilldownModal({
+      isOpen: true,
+      cardType: `confusion_${bucket}` as any,
+      title: target.title,
+      description: target.desc,
+      badgeCount: filtered.length,
+      items: filtered,
+    });
+  };
 
   const loadVersionIntoForm = (v: PromptVersion) => {
     setEditCommon(v.common_prompt || "");
@@ -2303,51 +2488,131 @@ export default function AgentIntelligenceStudioPage() {
                         </span>
                         {simulationResult.excluded_count ? (
                           <button
-                            onClick={() => setShowExclusions(!showExclusions)}
-                            className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono underline"
+                            type="button"
+                            onClick={() => openFunnelCardModal("excluded")}
+                            className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono underline cursor-pointer flex items-center gap-1"
+                            title="Click to view detailed excluded incidents pop-up"
                           >
-                            {showExclusions ? "Hide Exclusion Reasons" : `View ${simulationResult.excluded_count} Exclusions`}
+                            <Eye className="w-3 h-3" />
+                            View {simulationResult.excluded_count} Exclusions
                           </button>
                         ) : null}
                       </div>
 
                       <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
-                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
-                          <div className="text-[9px] text-slate-500 uppercase">1. Scanned</div>
+                        {/* 1. Scanned */}
+                        <button
+                          type="button"
+                          onClick={() => openFunnelCardModal("scanned")}
+                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-cyan-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-cyan-950/20 text-left transition-all cursor-pointer group relative"
+                          title="Click to inspect all scanned historical incidents"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-slate-400 uppercase font-semibold">1. Scanned</span>
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                          </div>
                           <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
                             {simulationResult.total_scanned ?? simulationResult.sample_count ?? 0}
                           </div>
-                        </div>
-                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
-                          <div className="text-[9px] text-slate-500 uppercase">2. Rule-Matched</div>
+                          <span className="text-[8px] text-slate-500 group-hover:text-cyan-400 transition-colors block mt-0.5 font-sans">
+                            Click to inspect →
+                          </span>
+                        </button>
+
+                        {/* 2. Rule-Matched */}
+                        <button
+                          type="button"
+                          onClick={() => openFunnelCardModal("rule_matched")}
+                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-cyan-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-cyan-950/20 text-left transition-all cursor-pointer group relative"
+                          title="Click to inspect rule-matched incidents"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-slate-400 uppercase font-semibold">2. Rule-Matched</span>
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                          </div>
                           <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
                             {simulationResult.rule_matched ?? simulationResult.sample_count ?? 0}
                           </div>
-                        </div>
-                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
-                          <div className="text-[9px] text-slate-500 uppercase">3. Analyst-Labeled</div>
+                          <span className="text-[8px] text-slate-500 group-hover:text-cyan-400 transition-colors block mt-0.5 font-sans">
+                            Click to inspect →
+                          </span>
+                        </button>
+
+                        {/* 3. Analyst-Labeled */}
+                        <button
+                          type="button"
+                          onClick={() => openFunnelCardModal("analyst_labeled")}
+                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-purple-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-purple-950/20 text-left transition-all cursor-pointer group relative"
+                          title="Click to inspect analyst-labeled incidents"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-slate-400 uppercase font-semibold">3. Analyst-Labeled</span>
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-purple-400 transition-colors" />
+                          </div>
                           <div className="text-base font-bold font-mono text-purple-300 mt-0.5">
                             {simulationResult.analyst_labeled ?? simulationResult.eligible_ground_truth_count ?? 0}
                           </div>
-                        </div>
-                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
-                          <div className="text-[9px] text-slate-500 uppercase">4. Eligible GT</div>
+                          <span className="text-[8px] text-slate-500 group-hover:text-purple-400 transition-colors block mt-0.5 font-sans">
+                            Click to inspect →
+                          </span>
+                        </button>
+
+                        {/* 4. Eligible GT */}
+                        <button
+                          type="button"
+                          onClick={() => openFunnelCardModal("eligible")}
+                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-emerald-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-emerald-950/20 text-left transition-all cursor-pointer group relative"
+                          title="Click to inspect eligible verified ground truth cases"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-slate-400 uppercase font-semibold">4. Eligible GT</span>
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-emerald-400 transition-colors" />
+                          </div>
                           <div className="text-base font-bold font-mono text-emerald-400 mt-0.5">
                             {simulationResult.eligible_ground_truth_count ?? simulationResult.verified_ground_truth_cases ?? 0}
                           </div>
-                        </div>
-                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
-                          <div className="text-[9px] text-slate-500 uppercase">5. Excluded</div>
+                          <span className="text-[8px] text-slate-500 group-hover:text-emerald-400 transition-colors block mt-0.5 font-sans">
+                            Click to inspect →
+                          </span>
+                        </button>
+
+                        {/* 5. Excluded */}
+                        <button
+                          type="button"
+                          onClick={() => openFunnelCardModal("excluded")}
+                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-amber-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-amber-950/20 text-left transition-all cursor-pointer group relative"
+                          title="Click to view pop-up window of excluded incidents with exact reasons"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-slate-400 uppercase font-semibold">5. Excluded</span>
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-amber-400 transition-colors" />
+                          </div>
                           <div className={`text-base font-bold font-mono mt-0.5 ${(simulationResult.excluded_count ?? 0) > 0 ? "text-amber-400" : "text-slate-400"}`}>
                             {simulationResult.excluded_count ?? 0}
                           </div>
-                        </div>
-                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
-                          <div className="text-[9px] text-slate-500 uppercase">6. Evaluated</div>
+                          <span className="text-[8px] text-slate-500 group-hover:text-amber-400 transition-colors block mt-0.5 font-sans">
+                            Click to inspect →
+                          </span>
+                        </button>
+
+                        {/* 6. Evaluated */}
+                        <button
+                          type="button"
+                          onClick={() => openFunnelCardModal("evaluated")}
+                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-cyan-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-cyan-950/20 text-left transition-all cursor-pointer group relative"
+                          title="Click to inspect evaluated simulation cases"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-slate-400 uppercase font-semibold">6. Evaluated</span>
+                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                          </div>
                           <div className="text-base font-bold font-mono text-cyan-300 mt-0.5">
                             {simulationResult.evaluated_cases ?? simulationResult.sample_count ?? 0}
                           </div>
-                        </div>
+                          <span className="text-[8px] text-slate-500 group-hover:text-cyan-400 transition-colors block mt-0.5 font-sans">
+                            Click to inspect →
+                          </span>
+                        </button>
                       </div>
 
                       {/* Expandable Exclusion Breakdown */}
@@ -2427,41 +2692,86 @@ export default function AgentIntelligenceStudioPage() {
                       </div>
 
                       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-                        <div className="p-2 rounded bg-emerald-950/40 border border-emerald-900/60">
-                          <span className="text-[9px] uppercase tracking-wider text-emerald-300 block font-semibold">True Positives (TP)</span>
-                          <span className="text-lg font-bold font-mono text-emerald-400 mt-0.5 block">
+                        <button
+                          type="button"
+                          onClick={() => openConfusionModal("tp")}
+                          className="p-2 rounded bg-emerald-950/40 border border-emerald-900/60 hover:bg-emerald-900/50 hover:border-emerald-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
+                          title="Click to inspect True Positive incidents"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[9px] uppercase tracking-wider text-emerald-300 font-semibold">True Positives (TP)</span>
+                            <Eye className="w-3 h-3 text-emerald-500 opacity-60 group-hover:opacity-100" />
+                          </div>
+                          <span className="text-lg font-bold font-mono text-emerald-400 mt-0.5 block text-center">
                             {simulationResult.confusion_matrix?.tp ?? 0}
                           </span>
-                          <span className="text-[9px] text-slate-400 block">Confirmed Attack Detected</span>
-                        </div>
-                        <div className="p-2 rounded bg-sky-950/40 border border-sky-900/60">
-                          <span className="text-[9px] uppercase tracking-wider text-sky-300 block font-semibold">True Negatives (TN)</span>
-                          <span className="text-lg font-bold font-mono text-sky-400 mt-0.5 block">
+                          <span className="text-[9px] text-slate-400 block text-center">Confirmed Attack Detected</span>
+                          <span className="text-[9px] text-emerald-400/70 group-hover:text-emerald-300 text-center block pt-0.5">Click to inspect →</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openConfusionModal("tn")}
+                          className="p-2 rounded bg-sky-950/40 border border-sky-900/60 hover:bg-sky-900/50 hover:border-sky-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
+                          title="Click to inspect True Negative incidents"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[9px] uppercase tracking-wider text-sky-300 font-semibold">True Negatives (TN)</span>
+                            <Eye className="w-3 h-3 text-sky-500 opacity-60 group-hover:opacity-100" />
+                          </div>
+                          <span className="text-lg font-bold font-mono text-sky-400 mt-0.5 block text-center">
                             {simulationResult.confusion_matrix?.tn ?? 0}
                           </span>
-                          <span className="text-[9px] text-slate-400 block">Benign Verified Safe</span>
-                        </div>
-                        <div className="p-2 rounded bg-rose-950/40 border border-rose-900/60">
-                          <span className="text-[9px] uppercase tracking-wider text-rose-300 block font-semibold">False Positives (FP)</span>
-                          <span className="text-lg font-bold font-mono text-rose-400 mt-0.5 block">
+                          <span className="text-[9px] text-slate-400 block text-center">Benign Verified Safe</span>
+                          <span className="text-[9px] text-sky-400/70 group-hover:text-sky-300 text-center block pt-0.5">Click to inspect →</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openConfusionModal("fp")}
+                          className="p-2 rounded bg-rose-950/40 border border-rose-900/60 hover:bg-rose-900/50 hover:border-rose-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
+                          title="Click to inspect False Positive incidents"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[9px] uppercase tracking-wider text-rose-300 font-semibold">False Positives (FP)</span>
+                            <Eye className="w-3 h-3 text-rose-500 opacity-60 group-hover:opacity-100" />
+                          </div>
+                          <span className="text-lg font-bold font-mono text-rose-400 mt-0.5 block text-center">
                             {simulationResult.confusion_matrix?.fp ?? 0}
                           </span>
-                          <span className="text-[9px] text-slate-400 block">Benign Flagged as Attack</span>
-                        </div>
-                        <div className="p-2 rounded bg-red-950/60 border border-red-800">
-                          <span className="text-[9px] uppercase tracking-wider text-red-300 block font-semibold">False Negatives (FN)</span>
-                          <span className="text-lg font-bold font-mono text-red-400 mt-0.5 block">
+                          <span className="text-[9px] text-slate-400 block text-center">Benign Flagged as Attack</span>
+                          <span className="text-[9px] text-rose-400/70 group-hover:text-rose-300 text-center block pt-0.5">Click to inspect →</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openConfusionModal("fn")}
+                          className="p-2 rounded bg-red-950/60 border border-red-800 hover:bg-red-900/60 hover:border-red-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
+                          title="Click to inspect False Negative incidents"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[9px] uppercase tracking-wider text-red-300 font-semibold">False Negatives (FN)</span>
+                            <Eye className="w-3 h-3 text-red-400 opacity-60 group-hover:opacity-100" />
+                          </div>
+                          <span className="text-lg font-bold font-mono text-red-400 mt-0.5 block text-center">
                             {simulationResult.confusion_matrix?.fn ?? 0}
                           </span>
-                          <span className="text-[9px] text-red-300/80 block font-bold">Critical Missed Attacks</span>
-                        </div>
-                        <div className="p-2 rounded bg-amber-950/40 border border-amber-900/60">
-                          <span className="text-[9px] uppercase tracking-wider text-amber-300 block font-semibold">Abstentions</span>
-                          <span className="text-lg font-bold font-mono text-amber-400 mt-0.5 block">
+                          <span className="text-[9px] text-red-300/80 block font-bold text-center">Critical Missed Attacks</span>
+                          <span className="text-[9px] text-red-400/80 group-hover:text-red-300 text-center block pt-0.5">Click to inspect →</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openConfusionModal("abstained")}
+                          className="p-2 rounded bg-amber-950/40 border border-amber-900/60 hover:bg-amber-900/50 hover:border-amber-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
+                          title="Click to inspect Abstained incidents"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[9px] uppercase tracking-wider text-amber-300 font-semibold">Abstentions</span>
+                            <Eye className="w-3 h-3 text-amber-500 opacity-60 group-hover:opacity-100" />
+                          </div>
+                          <span className="text-lg font-bold font-mono text-amber-400 mt-0.5 block text-center">
                             {simulationResult.confusion_matrix?.abstained ?? 0}
                           </span>
-                          <span className="text-[9px] text-slate-400 block">Routed to Analyst Review</span>
-                        </div>
+                          <span className="text-[9px] text-slate-400 block text-center">Routed to Analyst Review</span>
+                          <span className="text-[9px] text-amber-400/70 group-hover:text-amber-300 text-center block pt-0.5">Click to inspect →</span>
+                        </button>
                       </div>
                     </div>
 
@@ -2670,6 +2980,283 @@ export default function AgentIntelligenceStudioPage() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Simulation Diagnostic Drilldown Modal */}
+      {drilldownModal?.isOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setDrilldownModal(null);
+          }}
+        >
+          <div className="bg-slate-950 border border-slate-800 rounded-xl max-w-5xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-slate-800 bg-slate-900/80 flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-1.5 rounded-lg bg-purple-950/80 border border-purple-800/80 text-purple-300">
+                    <Database className="w-4 h-4" />
+                  </span>
+                  <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                    {drilldownModal.title}
+                    <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-purple-950 text-purple-300 border border-purple-800">
+                      {drilldownModal.badgeCount}
+                    </span>
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-400 pl-8">
+                  {drilldownModal.description}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ids = (drilldownModal.items || [])
+                      .map((it: any) => it.incident_id || it.id)
+                      .filter(Boolean)
+                      .join("\n");
+                    if (ids) {
+                      navigator.clipboard.writeText(ids);
+                      setDrilldownCopied(true);
+                      setTimeout(() => setDrilldownCopied(false), 2000);
+                    }
+                  }}
+                  className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 flex items-center gap-1.5 transition-colors"
+                  title="Copy list of incident IDs to clipboard"
+                >
+                  {drilldownCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-300 font-semibold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Copy IDs</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDrilldownModal(null)}
+                  className="p-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+                  title="Close (Esc)"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="p-3 border-b border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Filter by Incident ID, Rule, Reason, or Detail..."
+                  value={drilldownSearch}
+                  onChange={(e) => setDrilldownSearch(e.target.value)}
+                  className="w-full pl-8 pr-7 py-1.5 rounded bg-slate-900 border border-slate-800 text-slate-200 placeholder-slate-500 text-xs focus:outline-none focus:border-purple-600"
+                />
+                {drilldownSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setDrilldownSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Exclusion Reason Quick Filters if available */}
+              {(() => {
+                const uniqueReasons = Array.from(
+                  new Set(
+                    (drilldownModal.items || [])
+                      .map((it: any) => it.reason)
+                      .filter(Boolean)
+                  )
+                ) as string[];
+
+                if (uniqueReasons.length > 0) {
+                  return (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 max-w-full">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1">
+                        <Filter className="w-3 h-3 text-slate-500" /> Reason:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDrilldownReasonFilter("ALL")}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${
+                          drilldownReasonFilter === "ALL"
+                            ? "bg-purple-950 text-purple-300 border border-purple-800"
+                            : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800"
+                        }`}
+                      >
+                        ALL ({drilldownModal.items?.length || 0})
+                      </button>
+                      {uniqueReasons.map((rsn) => {
+                        const count = (drilldownModal.items || []).filter((it: any) => it.reason === rsn).length;
+                        return (
+                          <button
+                            key={rsn}
+                            type="button"
+                            onClick={() => setDrilldownReasonFilter(rsn)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${
+                              drilldownReasonFilter === rsn
+                                ? "bg-purple-950 text-purple-300 border border-purple-800"
+                                : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800"
+                            }`}
+                          >
+                            {rsn} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            {/* Modal Body / Table */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {(() => {
+                const q = drilldownSearch.toLowerCase().trim();
+                const filtered = (drilldownModal.items || []).filter((it: any) => {
+                  if (drilldownReasonFilter !== "ALL" && it.reason !== drilldownReasonFilter) {
+                    return false;
+                  }
+                  if (!q) return true;
+                  const idStr = String(it.incident_id || it.id || "").toLowerCase();
+                  const ruleStr = String(it.rule_id || it.incident_rule || "").toLowerCase();
+                  const rsnStr = String(it.reason || it.ground_truth || it.status || it.effective_verdict || "").toLowerCase();
+                  const detailStr = String(it.detail || it.comments || it.escalation_reason || "").toLowerCase();
+                  return idStr.includes(q) || ruleStr.includes(q) || rsnStr.includes(q) || detailStr.includes(q);
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="py-12 text-center text-slate-500 space-y-2">
+                      <AlertCircle className="w-8 h-8 text-slate-600 mx-auto" />
+                      <p className="text-sm font-medium text-slate-400">No matching incident records found.</p>
+                      <p className="text-xs text-slate-600">
+                        {drilldownSearch
+                          ? `No items matched search query "${drilldownSearch}"`
+                          : "No items present for this stage."}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                      <span>Showing <strong>{filtered.length}</strong> of <strong>{drilldownModal.items?.length || 0}</strong> records</span>
+                      <span className="font-mono text-[10px]">Rule: {selectedRuleId}</span>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-800 overflow-hidden">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead className="bg-slate-900/90 text-slate-400 text-[10px] uppercase font-bold border-b border-slate-800">
+                          <tr>
+                            <th className="py-2 px-3 w-12 text-center">#</th>
+                            <th className="py-2 px-3 w-28">Incident ID</th>
+                            <th className="py-2 px-3 w-48">Rule Association</th>
+                            <th className="py-2 px-3 w-40">Status / Category</th>
+                            <th className="py-2 px-3">Diagnostic Justification / Telemetry Detail</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/80 bg-slate-950/40">
+                          {filtered.map((item: any, idx: number) => {
+                            const incidentId = item.incident_id || item.id || `INC-${idx + 1}`;
+                            const ruleAssoc = item.rule_id || item.incident_rule || (item.rule_id === null ? "None" : selectedRuleId);
+                            const reasonBadge = item.reason || item.ground_truth || item.status || item.effective_verdict || "INSPECTED";
+                            const detailText = item.detail || item.comments || item.escalation_reason || (
+                              item.suggested_verdict ? `AI Suggested: ${item.suggested_verdict} | Effective: ${item.effective_verdict} (Trust: ${item.trust_score ?? 'N/A'}/10)` : "—"
+                            );
+
+                            // Reason badge color styling
+                            let badgeStyle = "bg-slate-900 text-slate-300 border-slate-800";
+                            if (reasonBadge === "RULE_MISMATCH") {
+                              badgeStyle = "bg-indigo-950/60 text-indigo-300 border-indigo-800";
+                            } else if (reasonBadge === "HEURISTIC_OR_ML_LABEL" || reasonBadge === "UNRESOLVED") {
+                              badgeStyle = "bg-amber-950/60 text-amber-300 border-amber-800";
+                            } else if (reasonBadge === "VERIFIED_TP" || reasonBadge === "TRUE_POSITIVE") {
+                              badgeStyle = "bg-emerald-950/60 text-emerald-300 border-emerald-800";
+                            } else if (reasonBadge === "VERIFIED_FP" || reasonBadge === "FALSE_POSITIVE") {
+                              badgeStyle = "bg-sky-950/60 text-sky-300 border-sky-800";
+                            } else if (reasonBadge === "EXCLUDED") {
+                              badgeStyle = "bg-rose-950/60 text-rose-300 border-rose-800";
+                            } else if (reasonBadge === "REQUIRES_ANALYST_ATTENTION" || reasonBadge === "ABSTAINED") {
+                              badgeStyle = "bg-amber-950/60 text-amber-300 border-amber-800";
+                            }
+
+                            return (
+                              <tr key={idx} className="hover:bg-slate-900/40 transition-colors">
+                                <td className="py-2.5 px-3 text-center text-slate-500 font-mono text-[10px]">
+                                  {idx + 1}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="font-mono font-bold text-cyan-400 bg-cyan-950/30 px-1.5 py-0.5 rounded border border-cyan-900/50">
+                                    {incidentId}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="font-mono text-[11px] text-slate-300 break-all">
+                                    {ruleAssoc}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <div className="flex flex-col gap-1 items-start">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold border ${badgeStyle}`}>
+                                      {reasonBadge}
+                                    </span>
+                                    {item.trust_score != null && (
+                                      <span className="text-[10px] font-mono text-purple-400">
+                                        Trust: {item.trust_score}/10
+                                      </span>
+                                    )}
+                                    {item.is_critical_error && (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-red-950 text-red-300 border border-red-800">
+                                        CRITICAL MISSED TP
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 text-[11px] text-slate-300 leading-relaxed">
+                                  {detailText}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 border-t border-slate-800 bg-slate-900/80 flex items-center justify-between text-xs text-slate-400">
+              <span className="text-[11px] text-slate-500">
+                🛡️ <strong>Governance Gating:</strong> Verification requires strict rule matching and independent analyst resolution.
+              </span>
+              <button
+                type="button"
+                onClick={() => setDrilldownModal(null)}
+                className="px-4 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
