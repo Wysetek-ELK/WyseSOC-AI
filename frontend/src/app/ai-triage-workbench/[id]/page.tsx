@@ -54,6 +54,29 @@ export default function AITriageWorkbenchDetailPage({
   const [analyzing, setAnalyzing] = useState(false);
   const [aiVerdict, setAiVerdict] = useState<IncidentAiVerdictResponse | null>(null);
   const [verdictError, setVerdictError] = useState<string | null>(null);
+  const [syncingResolution, setSyncingResolution] = useState(false);
+  const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
+
+  const handleSyncResolution = async () => {
+    if (!incident) return;
+    setSyncingResolution(true);
+    setSyncSuccessMessage(null);
+    try {
+      const res = await api.syncFortiSiemIncidentResolution(incident.incident_id);
+      const refreshed = await api.getIncidentDetail(incidentId, blindReviewMode);
+      setIncident(refreshed);
+      setSyncSuccessMessage(
+        res.resolution
+          ? `Resolution pulled: ${res.resolution}${res.cleared_user ? ` by ${res.cleared_user}` : ""}`
+          : "Synchronized with FortiSIEM (Incident remains Open)."
+      );
+      setTimeout(() => setSyncSuccessMessage(null), 5000);
+    } catch (err: any) {
+      setError(err.message || "Failed to sync resolution from FortiSIEM");
+    } finally {
+      setSyncingResolution(false);
+    }
+  };
 
   const handleRequestAiVerdict = async () => {
     setAnalyzing(true);
@@ -810,6 +833,110 @@ export default function AITriageWorkbenchDetailPage({
                 </div>
               )}
             </div>
+
+            {/* FortiSIEM Resolution & Ground Truth Card */}
+            <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 sm:p-3.5 space-y-2.5 text-xs">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-slate-300 text-xs">
+                  <ShieldCheck className="h-3.5 w-3.5 text-cyan-400" />
+                  <span>SIEM Resolution & Ground Truth</span>
+                </div>
+                <button
+                  onClick={handleSyncResolution}
+                  disabled={syncingResolution}
+                  className="inline-flex items-center gap-1 rounded bg-slate-900 border border-cyan-800/60 px-2 py-0.5 text-[10px] font-semibold text-cyan-300 hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                  title="Pull latest closure status, resolution, and cleared reason from FortiSIEM"
+                >
+                  <RefreshCw className={`h-2.5 w-2.5 ${syncingResolution ? "animate-spin text-cyan-400" : ""}`} />
+                  <span>{syncingResolution ? "Syncing..." : "Sync SIEM"}</span>
+                </button>
+              </div>
+
+              {syncSuccessMessage && (
+                <div className="rounded bg-emerald-950/70 border border-emerald-800 p-2 text-[11px] text-emerald-300 flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span>{syncSuccessMessage}</span>
+                </div>
+              )}
+
+              {blindReviewMode ? (
+                <div className="rounded bg-amber-950/30 border border-amber-900/60 p-2.5 text-[11px] text-amber-300 flex items-center gap-2">
+                  <EyeOff className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                  <span>Resolution details hidden in Blind Review mode.</span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* Status & Resolution Row */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 block mb-0.5">
+                        Incident Status
+                      </span>
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded border text-[10px] font-bold ${
+                        incident.status_name === "Manually Cleared" || incident.status_code === 2
+                          ? "bg-purple-950/80 text-purple-300 border-purple-800"
+                          : "bg-blue-950/80 text-blue-300 border-blue-800"
+                      }`}>
+                        {incident.status_name === "Manually Cleared" && <Check className="h-2.5 w-2.5" />}
+                        {incident.status_name}
+                      </span>
+                    </div>
+
+                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 block mb-0.5">
+                        Resolution
+                      </span>
+                      <span className={`inline-block px-1.5 py-0.2 rounded border text-[10px] font-bold ${
+                        incident.ground_truth?.resolution === "True Positive"
+                          ? "bg-rose-950/90 text-rose-300 border-rose-800"
+                          : incident.ground_truth?.resolution === "False Positive"
+                          ? "bg-emerald-950/90 text-emerald-300 border-emerald-800"
+                          : "bg-slate-900 text-slate-400 border-slate-800"
+                      }`}>
+                        {incident.ground_truth?.resolution || "Unresolved / Open"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Cleared Reason */}
+                  {incident.ground_truth?.cleared_reason && (
+                    <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 block mb-0.5">
+                        Cleared Reason
+                      </span>
+                      <p className="text-[11px] text-slate-200 font-sans italic">
+                        "{incident.ground_truth.cleared_reason}"
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Cleared User & Cleared Time */}
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/80">
+                    <div>
+                      <span className="text-slate-500 block text-[9px]">Cleared User:</span>
+                      <span className="text-slate-200 font-semibold truncate block">
+                        {incident.ground_truth?.cleared_user || "N/A"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px]">Cleared Time:</span>
+                      <span className="text-slate-200 truncate block">
+                        {incident.ground_truth?.cleared_time_epoch
+                          ? formatEpoch(incident.ground_truth.cleared_time_epoch)
+                          : "N/A"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {incident.ground_truth?.comments && (
+                    <div className="text-[10px] text-slate-400 pt-1">
+                      <span className="text-slate-500 block text-[9px]">Comments:</span>
+                      <span className="text-slate-300">{incident.ground_truth.comments}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -943,23 +1070,45 @@ export default function AITriageWorkbenchDetailPage({
           ) : (
             <div className="rounded-lg border border-slate-800 bg-slate-950 p-3.5 space-y-3 text-xs font-mono">
               <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                <div>
-                  <span className="text-[9px] text-slate-500 uppercase block">Historical Verdict Label:</span>
-                  <span
-                    className={`mt-0.5 inline-block px-2.5 py-0.5 rounded border text-xs font-bold ${
-                      incident.ground_truth.resolution.includes("True")
-                        ? "bg-rose-950 text-rose-300 border-rose-800"
-                        : "bg-emerald-950 text-emerald-300 border-emerald-800"
-                    }`}
-                  >
-                    {incident.ground_truth.resolution || "Unlabeled"}
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <span className="text-[9px] text-slate-500 uppercase block">Historical Verdict Label:</span>
+                    <span
+                      className={`mt-0.5 inline-block px-2.5 py-0.5 rounded border text-xs font-bold ${
+                        incident.ground_truth.resolution.includes("True")
+                          ? "bg-rose-950 text-rose-300 border-rose-800"
+                          : incident.ground_truth.resolution.includes("False")
+                          ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                          : "bg-slate-900 text-slate-400 border-slate-800"
+                      }`}
+                    >
+                      {incident.ground_truth.resolution || "Unlabeled"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] text-slate-500 uppercase block">Status:</span>
+                    <span className="mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-bold bg-slate-900 text-slate-200 border-slate-800">
+                      {incident.status_name}
+                    </span>
+                  </div>
                 </div>
-                {incident.ground_truth.is_ml_generated && (
-                  <span className="rounded bg-purple-950 text-purple-300 border border-purple-800 px-1.5 py-0.5 text-[9px] uppercase font-bold">
-                    Machine Learning Note
-                  </span>
-                )}
+
+                <div className="flex items-center gap-2">
+                  {incident.ground_truth.is_ml_generated && (
+                    <span className="rounded bg-purple-950 text-purple-300 border border-purple-800 px-1.5 py-0.5 text-[9px] uppercase font-bold">
+                      Machine Learning Note
+                    </span>
+                  )}
+                  <button
+                    onClick={handleSyncResolution}
+                    disabled={syncingResolution}
+                    className="inline-flex items-center gap-1 rounded bg-slate-900 border border-cyan-800/60 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${syncingResolution ? "animate-spin text-cyan-400" : ""}`} />
+                    <span>{syncingResolution ? "Syncing..." : "Sync from FortiSIEM"}</span>
+                  </button>
+                </div>
               </div>
 
               <div>

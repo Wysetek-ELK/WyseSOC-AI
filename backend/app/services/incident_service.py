@@ -132,8 +132,14 @@ class IncidentService:
         items: List[IncidentListItemResponse] = []
         for inc in incidents:
             hist_res = None
+            cleared_reason = None
+            cleared_user = None
+            cleared_time_epoch = None
             if not blind_review and inc.ground_truth:
                 hist_res = inc.ground_truth.resolution
+                cleared_reason = inc.ground_truth.cleared_reason
+                cleared_user = inc.ground_truth.cleared_user
+                cleared_time_epoch = inc.ground_truth.cleared_time_epoch
             elif blind_review:
                 hist_res = "[Hidden - Blind Review]"
 
@@ -155,6 +161,9 @@ class IncidentService:
                     first_seen_epoch=inc.first_seen_epoch,
                     last_seen_epoch=inc.last_seen_epoch,
                     historical_resolution=hist_res,
+                    cleared_reason=cleared_reason,
+                    cleared_user=cleared_user,
+                    cleared_time_epoch=cleared_time_epoch,
                     ai_verdict=inc.ai_verdict,
                     event_count=len(inc.events),
                     created_at=inc.created_at,

@@ -23,6 +23,8 @@ from app.schemas.fortisiem import (
     FortiSIEMRuleSyncResponse,
     FortiSIEMRulePullRequest,
     FortiSIEMRulePullResponse,
+    FortiSIEMSyncResolutionsResponse,
+    FortiSIEMSingleSyncResponse,
 )
 from app.services.fortisiem_service import FortiSIEMService
 from app.services.fortisiem_scheduler import fortisiem_scheduler
@@ -289,3 +291,32 @@ async def pull_fortisiem_rule(
         force_refresh=req.force_refresh,
     )
     return FortiSIEMRulePullResponse(**result)
+
+
+@router.post("/sync-resolutions", response_model=FortiSIEMSyncResolutionsResponse)
+async def sync_fortisiem_resolutions(
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Pulls and synchronizes historical incident resolutions, cleared reasons,
+    cleared users, and closure status from FortiSIEM across all database incidents.
+    """
+    service = FortiSIEMService(db)
+    result = await service.sync_all_resolutions()
+    return FortiSIEMSyncResolutionsResponse(**result)
+
+
+@router.post("/incident/{incident_id}/sync-resolution", response_model=FortiSIEMSingleSyncResponse)
+async def sync_single_incident_resolution(
+    incident_id: str,
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Synchronizes the latest resolution, clearing notes, analyst username,
+    and closure status for a specific incident from FortiSIEM into the local database.
+    """
+    service = FortiSIEMService(db)
+    result = await service.sync_single_incident_resolution(incident_id)
+    return FortiSIEMSingleSyncResponse(**result)

@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.models.incident import Incident, HistoricalGroundTruth
 from app.models.investigation import Investigation
 from app.services.incident_service import IncidentService
+from app.services.ingestion_service import IngestionService
 from app.config import settings
 
 
@@ -435,6 +436,174 @@ async def test_fortisiem_live_rule_enrichment_on_incident_cache_miss(client: Asy
         assert created_rule.rule_id == unseen_event_type
         assert created_rule.parsed_metadata.get("source") == "FORTISIEM_LIVE_RULE_API"
         assert created_rule.parsed_metadata.get("attackTechnique") == "T1078"
+
+
+@pytest.mark.asyncio
+async def test_fortisiem_pull_manually_cleared_resolution(client: AsyncClient, admin_token: str, db_session: AsyncSession, monkeypatch):
+    """
+    Verify pulling an incident with FortiSIEM closure fields:
+    - Incident Status: Manually Cleared
+    - Cleared Reason: TEst
+    - Cleared User: rohitp
+    - Resolution: False Positive
+    - Cleared Time: 1793783492775
+    Correctly populates HistoricalGroundTruth and Incident status.
+    """
+    import respx
+    import httpx
+
+    monkeypatch.setattr(settings, "FORTISIEM_HOST", "https://192.0.2.10")
+    monkeypatch.setattr(settings, "FORTISIEM_USERNAME", "api_user")
+    monkeypatch.setattr(settings, "FORTISIEM_PASSWORD", "api_pass")
+    monkeypatch.setattr(settings, "FORTISIEM_MOCK_FALLBACK", False)
+
+    mock_incident = {
+        "incidentId": "888999111",
+        "eventType": "PH_RULE_TEST_CLEARED",
+        "eventName": "Live Cleared Test Alert",
+        "severity": "MEDIUM",
+        "incidentStatus": "Manually Cleared",
+        "clearedReason": "TEst",
+        "clearedUser": "rohitp",
+        "resolution": "False Positive",
+        "clearedTime": 1793783492775,
+        "comments": "Analyst reviewed and cleared as FP",
+        "rawEvents": [
+            {
+                "eventId": "evt_cl_1",
+                "eventType": "TEST_LOG",
+                "attribute": {"procName": "safe_app.exe"}
+            }
+        ]
+    }
+
+    with respx.mock(assert_all_called=True) as respx_mock:
+        respx_mock.get(
+            "https://192.0.2.10/phoenix/rest/incident/incidentDetail"
+        ).mock(return_value=httpx.Response(200, json=mock_incident))
+
+        res = await client.post(
+            "/api/fortisiem/fetch",
+            json={"incident_id": "888999111", "force_refresh": True},
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert data["status_name"] == "Manually Cleared"
+        assert data["resolution"] == "False Positive"
+        assert data["cleared_reason"] == "TEst"
+        assert data["cleared_user"] == "rohitp"
+
+        # Verify DB records
+        q = await db_session.execute(
+            select(Incident, HistoricalGroundTruth)
+            .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
+            .where(Incident.incident_id == "888999111")
+        )
+        row = q.first()
+        assert row is not None
+        inc, gt = row
+        assert inc.status_code == 2
+        assert inc.status_name == "Manually Cleared"
+        assert gt is not None
+        assert gt.resolution == "False Positive"
+        assert gt.cleared_reason == "TEst"
+        assert gt.cleared_user == "rohitp"
+        assert gt.cleared_time_epoch == 1793783492775
+
+
+@pytest.mark.asyncio
+async def test_fortisiem_sync_ground_truth_for_existing_open_incident(client: AsyncClient, admin_token: str, db_session: AsyncSession, monkeypatch):
+    """
+    Verify that when an existing incident was ingested while Open,
+    re-pulling or syncing from FortiSIEM updates its ground truth and marks it Manually Cleared.
+    """
+    import respx
+    import httpx
+
+    # 1. Ingest incident as Open
+    ingestion = IngestionService(db_session)
+    open_payload = {
+        "incidentId": "888999222",
+        "title": "Initially Open Incident",
+        "eventName": "Initially Open Alert",
+        "eventType": "PH_RULE_OPEN_TEST",
+        "severity": "HIGH",
+        "status": 1,
+        "incidentStatus": "0",
+    }
+    await ingestion.ingest_single_json(open_payload, filename="open.json", username="test")
+
+    # Verify initially open
+    q1 = await db_session.execute(select(Incident).where(Incident.incident_id == "888999222"))
+    inc1 = q1.scalar_one_or_none()
+    assert inc1 is not None
+    assert inc1.status_code == 1
+    assert inc1.status_name == "Open"
+
+    # 2. Setup mock for updated FortiSIEM resolution
+    monkeypatch.setattr(settings, "FORTISIEM_HOST", "https://192.0.2.10")
+    monkeypatch.setattr(settings, "FORTISIEM_USERNAME", "api_user")
+    monkeypatch.setattr(settings, "FORTISIEM_PASSWORD", "api_pass")
+    monkeypatch.setattr(settings, "FORTISIEM_MOCK_FALLBACK", False)
+
+    resolved_payload = {
+        "incidentId": "888999222",
+        "eventType": "PH_RULE_OPEN_TEST",
+        "title": "Initially Open Incident",
+        "incidentStatus": "Manually Cleared",
+        "incidentReso": "True Positive",
+        "clearReason": "Malware confirmed on host",
+        "caseUser": "analyst1",
+        "incidentClearedTime": 1793799999000,
+    }
+
+    with respx.mock(assert_all_called=False) as respx_mock:
+        respx_mock.get(
+            "https://192.0.2.10/phoenix/rest/incident/incidentDetail"
+        ).mock(return_value=httpx.Response(200, json=resolved_payload))
+
+        # Call single incident sync endpoint
+        res = await client.post(
+            "/api/fortisiem/incident/888999222/sync-resolution",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert data["status_name"] == "Manually Cleared"
+        assert data["resolution"] == "True Positive"
+        assert data["cleared_reason"] == "Malware confirmed on host"
+        assert data["cleared_user"] == "analyst1"
+
+        # Verify DB is updated
+        q2 = await db_session.execute(
+            select(Incident, HistoricalGroundTruth)
+            .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
+            .where(Incident.incident_id == "888999222")
+        )
+        inc2, gt2 = q2.first()
+        assert inc2.status_code == 2
+        assert inc2.status_name == "Manually Cleared"
+        assert gt2.resolution == "True Positive"
+        assert gt2.cleared_reason == "Malware confirmed on host"
+        assert gt2.cleared_user == "analyst1"
+
+
+@pytest.mark.asyncio
+async def test_fortisiem_sync_all_resolutions_endpoint(client: AsyncClient, admin_token: str):
+    """Verify the /api/fortisiem/sync-resolutions endpoint runs cleanly."""
+    res = await client.post(
+        "/api/fortisiem/sync-resolutions",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["success"] is True
+    assert "total_incidents_checked" in data
+    assert "resolutions_updated" in data
+
 
 
 

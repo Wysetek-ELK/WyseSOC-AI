@@ -841,6 +841,194 @@ class FortiSIEMService:
             )
         raise HTTPException(status_code=404, detail=msg)
 
+    @staticmethod
+    def extract_ground_truth_data(raw_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extracts normalized resolution, clearing info, and closure status
+        from FortiSIEM incident telemetry across all API schemas.
+        """
+        from app.services.ingestion_service import parse_any_timestamp
+
+        raw_res = str(
+            raw_data.get("resolution") or
+            raw_data.get("incidentResolution") or
+            raw_data.get("incidentReso") or
+            raw_data.get("incidentRes") or
+            raw_data.get("Resolution") or
+            ""
+        ).strip()
+        if raw_res.lower() in ("open", "none", "null", "unassigned", "0"):
+            resolution = ""
+        elif "false positive" in raw_res.lower() or raw_res.lower() == "fp":
+            resolution = "False Positive"
+        elif "true positive" in raw_res.lower() or raw_res.lower() == "tp":
+            resolution = "True Positive"
+        else:
+            resolution = raw_res
+
+        cleared_reason = str(
+            raw_data.get("clearedReason") or
+            raw_data.get("clearReason") or
+            raw_data.get("incidentClearedReason") or
+            raw_data.get("Cleared Reason") or
+            ""
+        ).strip()
+
+        comments = str(
+            raw_data.get("comments") or
+            raw_data.get("incidentComments") or
+            raw_data.get("comment") or
+            raw_data.get("notes") or
+            raw_data.get("Comments") or
+            ""
+        ).strip()
+
+        cleared_user = str(
+            raw_data.get("clearedUser") or
+            raw_data.get("cmsClearUser") or
+            raw_data.get("clearUser") or
+            raw_data.get("caseUser") or
+            raw_data.get("case_user") or
+            raw_data.get("Cleared User") or
+            raw_data.get("Case User") or
+            ""
+        ).strip()
+
+        cleared_time = parse_any_timestamp(
+            raw_data.get("clearedTime") or
+            raw_data.get("incidentClearedTime") or
+            raw_data.get("clearTime") or
+            raw_data.get("Cleared Time")
+        )
+        if cleared_time == 0:
+            cleared_time = None
+
+        resolved_at = parse_any_timestamp(
+            raw_data.get("resolvedAt") or
+            raw_data.get("incidentResolvedTime") or
+            raw_data.get("incidentResTime") or
+            raw_data.get("Resolved Time")
+        )
+        if resolved_at == 0:
+            resolved_at = None
+        if resolved_at is None and cleared_time is not None:
+            resolved_at = cleared_time
+
+        raw_status = raw_data.get("incidentStatus") or raw_data.get("statusName") or raw_data.get("status") or raw_data.get("Incident Status")
+        status_code = 1
+        try:
+            if raw_status is not None:
+                status_code = int(raw_status)
+        except Exception:
+            status_code = 2 if str(raw_status).strip().lower() in ("closed", "manually cleared", "auto cleared", "resolved") else 1
+
+        raw_status_str = str(raw_status or "").strip()
+        if (
+            status_code == 2 or
+            raw_status_str.lower() in ("closed", "manually cleared", "auto cleared", "resolved") or
+            cleared_reason or
+            cleared_user or
+            (cleared_time and cleared_time > 0) or
+            resolution
+        ):
+            status_code = 2
+            status_name = "Manually Cleared" if (cleared_user or "manually" in raw_status_str.lower()) else ("Closed" if not raw_status_str or raw_status_str == "2" else raw_status_str)
+        else:
+            status_code = 1
+            status_name = "Open"
+
+        is_ml_generated = (
+            "Machine Learning" in comments or
+            "Machine Learning" in resolution or
+            "ML" in comments or
+            "Resolution set by Machine Learning" in comments
+        )
+
+        return {
+            "resolution": resolution,
+            "cleared_reason": cleared_reason,
+            "comments": comments,
+            "cleared_user": cleared_user,
+            "cleared_time_epoch": cleared_time,
+            "resolved_at_epoch": resolved_at,
+            "is_ml_generated": is_ml_generated,
+            "status_code": status_code,
+            "status_name": status_name,
+        }
+
+    async def sync_incident_ground_truth(self, incident: Incident, raw_data: Dict[str, Any]) -> bool:
+        """
+        Synchronizes historical resolution, clearing notes, and status
+        from fresh raw telemetry into an existing Incident and HistoricalGroundTruth.
+        Returns True if any ground truth fields were updated.
+        """
+        gt_data = self.extract_ground_truth_data(raw_data)
+        updated = False
+
+        # Load existing Ground Truth record
+        gt_res = await self.db.execute(
+            select(HistoricalGroundTruth).where(HistoricalGroundTruth.incident_id == incident.id)
+        )
+        gt = gt_res.scalar_one_or_none()
+
+        if not gt:
+            gt = HistoricalGroundTruth(
+                incident_id=incident.id,
+                resolution=gt_data["resolution"],
+                cleared_reason=gt_data["cleared_reason"],
+                comments=gt_data["comments"],
+                cleared_user=gt_data["cleared_user"],
+                cleared_time_epoch=gt_data["cleared_time_epoch"],
+                resolved_at_epoch=gt_data["resolved_at_epoch"],
+                is_ml_generated=gt_data["is_ml_generated"],
+            )
+            self.db.add(gt)
+            if gt_data["resolution"] or gt_data["cleared_reason"] or gt_data["cleared_user"]:
+                updated = True
+        else:
+            if gt_data["resolution"] and gt.resolution != gt_data["resolution"]:
+                gt.resolution = gt_data["resolution"]
+                updated = True
+            if gt_data["cleared_reason"] and gt.cleared_reason != gt_data["cleared_reason"]:
+                gt.cleared_reason = gt_data["cleared_reason"]
+                updated = True
+            if gt_data["comments"] and gt.comments != gt_data["comments"]:
+                gt.comments = gt_data["comments"]
+                updated = True
+            if gt_data["cleared_user"] and gt.cleared_user != gt_data["cleared_user"]:
+                gt.cleared_user = gt_data["cleared_user"]
+                updated = True
+            if gt_data["cleared_time_epoch"] and gt.cleared_time_epoch != gt_data["cleared_time_epoch"]:
+                gt.cleared_time_epoch = gt_data["cleared_time_epoch"]
+                updated = True
+            if gt_data["resolved_at_epoch"] and gt.resolved_at_epoch != gt_data["resolved_at_epoch"]:
+                gt.resolved_at_epoch = gt_data["resolved_at_epoch"]
+                updated = True
+            if gt_data["is_ml_generated"] != gt.is_ml_generated:
+                gt.is_ml_generated = gt_data["is_ml_generated"]
+                updated = True
+            if updated:
+                gt.updated_at = datetime.utcnow()
+
+        # Update Incident status if closed/cleared
+        if gt_data["status_code"] == 2 and incident.status_code != 2:
+            incident.status_code = 2
+            incident.status_name = gt_data["status_name"]
+            updated = True
+        elif gt_data["status_name"] and incident.status_name != gt_data["status_name"]:
+            incident.status_name = gt_data["status_name"]
+            updated = True
+
+        # Merge raw_data into incident raw_payload
+        if raw_data and isinstance(incident.raw_payload, dict):
+            merged_payload = dict(incident.raw_payload)
+            for k, v in raw_data.items():
+                if v is not None and v != "":
+                    merged_payload[k] = v
+            incident.raw_payload = merged_payload
+
+        return updated
+
     async def pull_and_ingest(
         self,
         incident_id: str,
@@ -861,6 +1049,22 @@ class FortiSIEMService:
         existing_inc = existing_res.scalar_one_or_none()
 
         if existing_inc and not force_refresh:
+            # Check if live SIEM or fresh telemetry has updated resolution / status
+            res_updated = False
+            try:
+                raw_data, _ = await self.fetch_incident_from_siem(clean_id)
+                if raw_data:
+                    res_updated = await self.sync_incident_ground_truth(existing_inc, raw_data)
+                    if res_updated:
+                        await self.db.commit()
+            except Exception:
+                pass
+
+            gt_res = await self.db.execute(
+                select(HistoricalGroundTruth).where(HistoricalGroundTruth.incident_id == existing_inc.id)
+            )
+            gt = gt_res.scalar_one_or_none()
+
             return {
                 "success": True,
                 "incident_id": existing_inc.incident_id,
@@ -871,7 +1075,16 @@ class FortiSIEMService:
                 "status_name": existing_inc.status_name,
                 "event_count": len(existing_inc.events),
                 "source": "DATABASE_CACHE",
-                "message": f"Incident '{clean_id}' is already present in the local database.",
+                "resolution": gt.resolution if gt else "",
+                "cleared_reason": gt.cleared_reason if gt else "",
+                "cleared_user": gt.cleared_user if gt else "",
+                "cleared_time_epoch": gt.cleared_time_epoch if gt else None,
+                "resolution_updated": res_updated,
+                "message": (
+                    f"Incident '{clean_id}' resolution synchronized from FortiSIEM."
+                    if res_updated
+                    else f"Incident '{clean_id}' is already present in the local database."
+                ),
             }
 
         # Fetch telemetry
@@ -909,6 +1122,11 @@ class FortiSIEMService:
         if not saved:
             raise HTTPException(status_code=500, detail="Failed to retrieve saved incident after ingestion.")
 
+        gt_res = await self.db.execute(
+            select(HistoricalGroundTruth).where(HistoricalGroundTruth.incident_id == saved.id)
+        )
+        saved_gt = gt_res.scalar_one_or_none()
+
         return {
             "success": True,
             "incident_id": saved.incident_id,
@@ -919,6 +1137,11 @@ class FortiSIEMService:
             "status_name": saved.status_name,
             "event_count": len(saved.events),
             "source": source_type,
+            "resolution": saved_gt.resolution if saved_gt else "",
+            "cleared_reason": saved_gt.cleared_reason if saved_gt else "",
+            "cleared_user": saved_gt.cleared_user if saved_gt else "",
+            "cleared_time_epoch": saved_gt.cleared_time_epoch if saved_gt else None,
+            "resolution_updated": bool(saved_gt and saved_gt.resolution),
             "message": (
                 f"Incident '{clean_id}' successfully pulled live from FortiSIEM Supervisor."
                 if source_type == "LIVE"
@@ -1041,6 +1264,7 @@ class FortiSIEMService:
 
         newly_ingested = 0
         already_cached = 0
+        resolutions_synced = 0
         highest_timestamp = 0
         incidents_to_evaluate: List[str] = []
         sample_results: List[Dict[str, Any]] = []
@@ -1099,6 +1323,13 @@ class FortiSIEMService:
                 already_cached += 1
                 ts = existing_inc.last_seen_epoch or existing_inc.created_at_epoch or 0
                 highest_timestamp = max(highest_timestamp, ts)
+                # Check and sync latest resolution / status from FortiSIEM telemetry
+                try:
+                    res_changed = await self.sync_incident_ground_truth(existing_inc, raw_inc)
+                    if res_changed:
+                        resolutions_synced += 1
+                except Exception:
+                    pass
                 if existing_inc.ai_verdict is None and auto_triage_llm:
                     incidents_to_evaluate.append(clean_id)
                 if len(sample_results) < 10:
@@ -1183,17 +1414,23 @@ class FortiSIEMService:
         bg_queued_count = max(0, len(incidents_to_evaluate) - ai_verdicts_generated)
         bg_msg = f" (+{bg_queued_count} queued for Local LLM)" if bg_queued_count > 0 else ""
 
+        # Commit any cached incident resolution updates
+        if resolutions_synced > 0:
+            await self.db.commit()
+
         return {
             "success": True,
             "total_discovered": len(discovered_incidents[:max_count]),
             "newly_ingested": newly_ingested,
             "already_cached": already_cached,
+            "resolutions_updated": resolutions_synced,
             "ai_verdicts_generated": ai_verdicts_generated,
             "checkpoint_epoch": checkpoint,
             "source": source_mode,
             "sample_incidents": sample_results,
             "message": (
-                f"Batch pull completed: {newly_ingested} newly ingested, {already_cached} already cached. "
+                f"Batch pull completed: {newly_ingested} newly ingested, {already_cached} cached "
+                f"({resolutions_synced} resolutions updated). "
                 f"{ai_verdicts_generated} AI verdicts generated{bg_msg} via LLM ({source_mode})."
             ),
         }
@@ -1433,3 +1670,117 @@ class FortiSIEMService:
                 "message": f"Connection error: {str(exc)}",
                 "details": {"error": str(exc)},
             }
+
+    async def sync_all_resolutions(self) -> Dict[str, Any]:
+        """
+        Synchronizes FortiSIEM resolution, cleared reasons, cleared users, and statuses:
+        1. Evaluates all local incidents whose raw_payload contains resolution / clearing details.
+        2. Queries live FortiSIEM REST API to pull the latest incident statuses & resolutions.
+        """
+        # 1. Local raw_payload sync across all incidents in the database
+        inc_res = await self.db.execute(
+            select(Incident).options(selectinload(Incident.ground_truth))
+        )
+        incidents = inc_res.scalars().all()
+        total_checked = len(incidents)
+        updated_count = 0
+        inc_map = {inc.incident_id: inc for inc in incidents}
+
+        for inc in incidents:
+            if inc.raw_payload:
+                changed = await self.sync_incident_ground_truth(inc, inc.raw_payload)
+                if changed:
+                    updated_count += 1
+
+        # 2. Live FortiSIEM query if host is configured
+        if settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip():
+            base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
+            auth = None
+            if settings.FORTISIEM_USERNAME and settings.FORTISIEM_PASSWORD:
+                auth = (settings.FORTISIEM_USERNAME, settings.FORTISIEM_PASSWORD)
+
+            now_ms = int(time.time() * 1000)
+            start_ms = now_ms - (90 * 86400 * 1000)
+            try:
+                async with httpx.AsyncClient(
+                    verify=settings.FORTISIEM_VERIFY_SSL,
+                    timeout=settings.FORTISIEM_TIMEOUT,
+                ) as client:
+                    for s_time in (start_ms, 0):
+                        res = await client.get(
+                            f"{base_url}/phoenix/rest/pub/incident",
+                            params={"timeFrom": s_time, "timeTo": now_ms, "start": 0, "size": 100},
+                            auth=auth,
+                            headers={"Accept": "application/json"},
+                        )
+                        if res.status_code == 200:
+                            data = res.json()
+                            items = data.get("data", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+                            for it in items:
+                                if isinstance(it, dict):
+                                    iid = str(it.get("incidentId") or it.get("id") or "").strip()
+                                    if iid in inc_map:
+                                        chg = await self.sync_incident_ground_truth(inc_map[iid], it)
+                                        if chg:
+                                            updated_count += 1
+                            if items:
+                                break
+            except Exception as e:
+                logger.warning(f"Error querying live FortiSIEM for resolutions: {e}")
+
+        await self.db.commit()
+
+        # Count total non-empty resolutions now in DB
+        gt_count_res = await self.db.execute(
+            select(HistoricalGroundTruth).where(HistoricalGroundTruth.resolution != "")
+        )
+        active_gt = len(gt_count_res.scalars().all())
+
+        return {
+            "success": True,
+            "total_incidents_checked": total_checked,
+            "resolutions_updated": updated_count,
+            "total_with_resolution": active_gt,
+            "message": f"Successfully synchronized resolutions: {updated_count} incidents updated. {active_gt} total resolved incidents in database.",
+        }
+
+    async def sync_single_incident_resolution(self, incident_id: str) -> Dict[str, Any]:
+        """
+        Pulls latest resolution from live FortiSIEM for a specific incident and persists to DB.
+        """
+        clean_id = str(incident_id).strip()
+        q = await self.db.execute(
+            select(Incident).where(
+                or_(Incident.incident_id == clean_id, Incident.id == clean_id)
+            ).options(selectinload(Incident.ground_truth))
+        )
+        inc = q.scalar_one_or_none()
+        if not inc:
+            raise HTTPException(status_code=404, detail=f"Incident '{clean_id}' not found in database.")
+
+        raw_data, source_type = await self.fetch_incident_from_siem(inc.incident_id)
+        updated = await self.sync_incident_ground_truth(inc, raw_data)
+        await self.db.commit()
+
+        # Fetch refreshed ground truth
+        gt_res = await self.db.execute(
+            select(HistoricalGroundTruth).where(HistoricalGroundTruth.incident_id == inc.id)
+        )
+        gt = gt_res.scalar_one_or_none()
+
+        return {
+            "success": True,
+            "incident_id": inc.incident_id,
+            "db_id": inc.id,
+            "status_name": inc.status_name,
+            "status_code": inc.status_code,
+            "resolution": gt.resolution if gt else "",
+            "cleared_reason": gt.cleared_reason if gt else "",
+            "cleared_user": gt.cleared_user if gt else "",
+            "cleared_time_epoch": gt.cleared_time_epoch if gt else None,
+            "comments": gt.comments if gt else "",
+            "is_ml_generated": gt.is_ml_generated if gt else False,
+            "updated": updated,
+            "source": source_type,
+            "message": f"Resolution successfully synchronized for incident '{inc.incident_id}'.",
+        }

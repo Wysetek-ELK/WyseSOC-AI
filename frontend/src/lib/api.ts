@@ -95,6 +95,9 @@ export interface IncidentListItem {
   first_seen_epoch?: number;
   last_seen_epoch?: number;
   historical_resolution?: string;
+  cleared_reason?: string;
+  cleared_user?: string;
+  cleared_time_epoch?: number;
   ai_verdict?: IncidentAiVerdictResponse | null;
   event_count: number;
   created_at: string;
@@ -182,6 +185,11 @@ export interface FortiSIEMPullResponse {
   status_name: string;
   event_count: number;
   source: string;
+  resolution?: string;
+  cleared_reason?: string;
+  cleared_user?: string;
+  cleared_time_epoch?: number;
+  resolution_updated?: boolean;
   message: string;
   error?: string;
 }
@@ -199,6 +207,7 @@ export interface FortiSIEMBatchPullResponse {
   total_discovered: number;
   newly_ingested: number;
   already_cached: number;
+  resolutions_updated?: number;
   ai_verdicts_generated: number;
   checkpoint_epoch?: number;
   source: string;
@@ -211,6 +220,31 @@ export interface FortiSIEMBatchPullResponse {
     status: string;
     has_ai_verdict: boolean;
   }>;
+}
+
+export interface FortiSIEMSyncResolutionsResponse {
+  success: boolean;
+  total_incidents_checked: number;
+  resolutions_updated: number;
+  total_with_resolution: number;
+  message: string;
+}
+
+export interface FortiSIEMSingleSyncResponse {
+  success: boolean;
+  incident_id: string;
+  db_id: string;
+  status_name: string;
+  status_code: number;
+  resolution: string;
+  cleared_reason: string;
+  cleared_user: string;
+  cleared_time_epoch?: number;
+  comments: string;
+  is_ml_generated: boolean;
+  updated: boolean;
+  source: string;
+  message: string;
 }
 
 export interface FortiSIEMSchedulerStatusResponse {
@@ -1059,6 +1093,28 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Batch AI verdict failed" }));
       throw new Error(err.detail || "Batch verdict error");
+    }
+    return res.json();
+  },
+
+  async syncFortiSiemResolutions(): Promise<FortiSIEMSyncResolutionsResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/sync-resolutions`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to sync resolutions from FortiSIEM" }));
+      throw new Error(err.detail || "Resolution sync error");
+    }
+    return res.json();
+  },
+
+  async syncFortiSiemIncidentResolution(incidentId: string): Promise<FortiSIEMSingleSyncResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/incident/${encodeURIComponent(incidentId)}/sync-resolution`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: `Failed to sync resolution for incident '${incidentId}'` }));
+      throw new Error(err.detail || "Single incident resolution sync error");
     }
     return res.json();
   },

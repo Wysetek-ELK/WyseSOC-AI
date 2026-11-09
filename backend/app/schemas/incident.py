@@ -45,6 +45,9 @@ class IncidentListItemResponse(BaseModel):
     first_seen_epoch: Optional[int] = None
     last_seen_epoch: Optional[int] = None
     historical_resolution: Optional[str] = None  # Included in list unless blind review mode
+    cleared_reason: Optional[str] = None
+    cleared_user: Optional[str] = None
+    cleared_time_epoch: Optional[int] = None
     ai_verdict: Optional[Dict[str, Any]] = None  # Stored AI evaluation verdict
     event_count: int = 0
     created_at: datetime

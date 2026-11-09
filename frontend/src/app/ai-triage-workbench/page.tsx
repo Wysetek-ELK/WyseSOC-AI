@@ -52,6 +52,24 @@ function AITriageWorkbenchContent() {
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [aiVerdict, setAiVerdict] = useState<IncidentAiVerdictResponse | null>(null);
   const [verdictError, setVerdictError] = useState<string | null>(null);
+  const [syncingResolutions, setSyncingResolutions] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
+
+  const handleSyncResolutions = async () => {
+    setSyncingResolutions(true);
+    setSyncStatusMsg(null);
+    try {
+      const res = await api.syncFortiSiemResolutions();
+      setSyncStatusMsg(res.message);
+      loadIncidents();
+      setTimeout(() => setSyncStatusMsg(null), 6000);
+    } catch (err: any) {
+      setSyncStatusMsg(`Sync error: ${err.message}`);
+      setTimeout(() => setSyncStatusMsg(null), 6000);
+    } finally {
+      setSyncingResolutions(false);
+    }
+  };
 
   const handleRequestAiVerdict = async (incidentId: string) => {
     setAnalyzingId(incidentId);
@@ -177,6 +195,16 @@ function AITriageWorkbenchContent() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleSyncResolutions}
+            disabled={syncingResolutions}
+            className="flex items-center gap-1.5 rounded-md border border-purple-800 bg-purple-950/60 px-2.5 py-1 text-xs font-semibold text-purple-300 hover:bg-purple-900/80 transition-colors shadow-sm disabled:opacity-50"
+            title="Sync latest resolutions, cleared reasons, and closure status from FortiSIEM across all incidents"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${syncingResolutions ? "animate-spin text-purple-400" : "text-purple-400"}`} />
+            <span>{syncingResolutions ? "Syncing..." : "Sync Resolutions"}</span>
+          </button>
+
           <Link
             href="/telemetry-hub"
             className="flex items-center gap-1.5 rounded-md border border-cyan-800 bg-cyan-950/60 px-2.5 py-1 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/80 transition-colors shadow-sm"
@@ -207,6 +235,15 @@ function AITriageWorkbenchContent() {
           </button>
         </div>
       </div>
+
+      {syncStatusMsg && (
+        <div className="rounded-lg border border-purple-800/80 bg-purple-950/40 p-2.5 text-xs text-purple-300 flex items-center gap-2.5 animate-fadeIn">
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-purple-400" />
+          <div className="text-[11px] leading-tight font-medium">
+            {syncStatusMsg}
+          </div>
+        </div>
+      )}
 
       {blindReviewMode && (
         <div className="rounded-lg border border-amber-800/80 bg-amber-950/40 p-2.5 text-xs text-amber-300 flex items-center gap-2.5">
@@ -333,12 +370,25 @@ function AITriageWorkbenchContent() {
                 incidents.map((inc) => (
                   <tr key={inc.id} className="hover:bg-slate-900/40 transition-colors">
                     <td className="py-1.5 px-2.5 font-bold text-slate-100">
-                      <Link
-                        href={`/incidents/${inc.incident_id}`}
-                        className="text-cyan-400 hover:underline"
-                      >
-                        {inc.incident_id}
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          href={`/incidents/${inc.incident_id}`}
+                          className="text-cyan-400 hover:underline"
+                        >
+                          {inc.incident_id}
+                        </Link>
+                      </div>
+                      <div className="mt-0.5">
+                        <span className={`px-1 py-0.2 rounded text-[8px] font-bold border ${
+                          inc.status_name === "Manually Cleared"
+                            ? "bg-purple-950/80 text-purple-300 border-purple-800"
+                            : inc.status_code === 2
+                            ? "bg-slate-900 text-slate-400 border-slate-800"
+                            : "bg-blue-950/80 text-blue-300 border-blue-800"
+                        }`}>
+                          {inc.status_name}
+                        </span>
+                      </div>
                     </td>
                     <td className="py-1.5 px-2.5 text-slate-300">
                       <div className="font-semibold text-slate-200 truncate max-w-[200px]" title={inc.rule_name || inc.title}>
@@ -379,13 +429,22 @@ function AITriageWorkbenchContent() {
                     <td className="py-1.5 px-2.5">
                       <div className="flex flex-col gap-1 items-start">
                         <span
-                          className={`px-1.5 py-0.2 rounded border text-[9px] ${getVerdictBadge(
+                          className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${getVerdictBadge(
                             inc.historical_resolution
                           )}`}
-                          title="Historical SOC Analyst Closure Verdict"
+                          title={`Historical SOC Analyst Closure Verdict${inc.cleared_user ? ` (Cleared by: ${inc.cleared_user})` : ""}${inc.cleared_reason ? ` | Reason: ${inc.cleared_reason}` : ""}`}
                         >
                           {inc.historical_resolution || "Unlabeled"}
                         </span>
+                        {!blindReviewMode && (inc.cleared_user || inc.cleared_reason) && (
+                          <div
+                            className="text-[9px] text-slate-400 leading-tight max-w-[150px] truncate"
+                            title={`Analyst: ${inc.cleared_user || "N/A"}${inc.cleared_reason ? ` | Reason: ${inc.cleared_reason}` : ""}`}
+                          >
+                            {inc.cleared_user && <span className="text-slate-300 font-mono">@{inc.cleared_user} </span>}
+                            {inc.cleared_reason && <span className="text-slate-500 italic truncate">"{inc.cleared_reason}"</span>}
+                          </div>
+                        )}
                         {inc.ai_verdict && (
                           <span
                             className={`px-1.5 py-0.2 rounded border text-[9px] font-semibold flex items-center gap-1 ${

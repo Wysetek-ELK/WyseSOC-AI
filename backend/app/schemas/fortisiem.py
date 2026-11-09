@@ -17,6 +17,11 @@ class FortiSIEMPullResponse(BaseModel):
     status_name: str = "Open"
     event_count: int = 0
     source: str = "LIVE"  # "LIVE" or "FIXTURE_FALLBACK"
+    resolution: Optional[str] = None
+    cleared_reason: Optional[str] = None
+    cleared_user: Optional[str] = None
+    cleared_time_epoch: Optional[int] = None
+    resolution_updated: bool = False
     message: str = ""
     error: Optional[str] = None
 
@@ -34,11 +39,37 @@ class FortiSIEMBatchPullResponse(BaseModel):
     total_discovered: int = 0
     newly_ingested: int = 0
     already_cached: int = 0
+    resolutions_updated: int = 0
     ai_verdicts_generated: int = 0
     checkpoint_epoch: Optional[int] = None
     source: str = "LIVE"  # "LIVE" or "FIXTURE_FALLBACK"
     message: str = ""
     sample_incidents: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class FortiSIEMSyncResolutionsResponse(BaseModel):
+    success: bool
+    total_incidents_checked: int = 0
+    resolutions_updated: int = 0
+    total_with_resolution: int = 0
+    message: str = ""
+
+
+class FortiSIEMSingleSyncResponse(BaseModel):
+    success: bool
+    incident_id: str
+    db_id: str
+    status_name: str
+    status_code: int
+    resolution: str = ""
+    cleared_reason: str = ""
+    cleared_user: str = ""
+    cleared_time_epoch: Optional[int] = None
+    comments: str = ""
+    is_ml_generated: bool = False
+    updated: bool = False
+    source: str = "LIVE"
+    message: str = ""
 
 
 class FortiSIEMSchedulerStatusResponse(BaseModel):

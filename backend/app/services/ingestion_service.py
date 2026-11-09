@@ -495,13 +495,21 @@ class IngestionService:
             else:
                 severity = "MEDIUM"
 
-        status_code = raw_data.get("status")
+        raw_status = raw_data.get("incidentStatus") or raw_data.get("statusName") or raw_data.get("status") or raw_data.get("Incident Status")
+        status_code = 1
         try:
-            status_code = int(status_code) if status_code is not None else 1
+            if raw_status is not None:
+                status_code = int(raw_status)
         except Exception:
-            status_code = 1
+            status_code = 2 if str(raw_status).strip().lower() in ("closed", "manually cleared", "auto cleared", "resolved") else 1
 
-        status_name = "Closed" if status_code == 2 else "Open"
+        raw_status_str = str(raw_status or "").strip()
+        if status_code == 2 or raw_status_str.lower() in ("closed", "manually cleared", "auto cleared", "resolved"):
+            status_code = 2
+            status_name = "Manually Cleared" if "manually" in raw_status_str.lower() else ("Closed" if not raw_status_str or raw_status_str == "2" else raw_status_str)
+        else:
+            status_code = 1
+            status_name = "Open"
 
         # Timestamps: robust extraction across FortiSIEM APIs, formats, and event telemetry
         first_seen, last_seen, created_at_epoch, updated_at_epoch = extract_incident_timestamps(raw_data)
@@ -554,17 +562,81 @@ class IngestionService:
                 self.db.add(evt_obj)
 
         # ISOLATED GROUND TRUTH
-        resolution = str(raw_data.get("resolution") or "").strip()
-        cleared_reason = str(raw_data.get("clearedReason") or "").strip()
-        comments = str(raw_data.get("comments") or "").strip()
-        cleared_user = str(raw_data.get("clearedUser") or raw_data.get("cmsClearUser") or "").strip()
-        cleared_time = parse_any_timestamp(raw_data.get("clearedTime") or raw_data.get("incidentClearedTime"))
-        resolved_at = parse_any_timestamp(raw_data.get("resolvedAt") or raw_data.get("incidentResolvedTime"))
+        raw_res = str(
+            raw_data.get("resolution") or
+            raw_data.get("incidentResolution") or
+            raw_data.get("incidentReso") or
+            raw_data.get("incidentRes") or
+            raw_data.get("Resolution") or
+            ""
+        ).strip()
+        if raw_res.lower() in ("open", "none", "null", "unassigned", "0"):
+            resolution = ""
+        elif "false positive" in raw_res.lower() or raw_res.lower() == "fp":
+            resolution = "False Positive"
+        elif "true positive" in raw_res.lower() or raw_res.lower() == "tp":
+            resolution = "True Positive"
+        else:
+            resolution = raw_res
+
+        cleared_reason = str(
+            raw_data.get("clearedReason") or
+            raw_data.get("clearReason") or
+            raw_data.get("incidentClearedReason") or
+            raw_data.get("Cleared Reason") or
+            ""
+        ).strip()
+
+        comments = str(
+            raw_data.get("comments") or
+            raw_data.get("incidentComments") or
+            raw_data.get("comment") or
+            raw_data.get("notes") or
+            raw_data.get("Comments") or
+            ""
+        ).strip()
+
+        cleared_user = str(
+            raw_data.get("clearedUser") or
+            raw_data.get("cmsClearUser") or
+            raw_data.get("clearUser") or
+            raw_data.get("caseUser") or
+            raw_data.get("case_user") or
+            raw_data.get("Cleared User") or
+            raw_data.get("Case User") or
+            ""
+        ).strip()
+
+        cleared_time = parse_any_timestamp(
+            raw_data.get("clearedTime") or
+            raw_data.get("incidentClearedTime") or
+            raw_data.get("clearTime") or
+            raw_data.get("Cleared Time")
+        )
+        if cleared_time == 0:
+            cleared_time = None
+
+        resolved_at = parse_any_timestamp(
+            raw_data.get("resolvedAt") or
+            raw_data.get("incidentResolvedTime") or
+            raw_data.get("incidentResTime") or
+            raw_data.get("Resolved Time")
+        )
+        if resolved_at == 0:
+            resolved_at = None
+        if resolved_at is None and cleared_time is not None:
+            resolved_at = cleared_time
+
+        # If incident had clearing details or resolution, ensure status reflects Closed / Manually Cleared
+        if (cleared_reason or cleared_user or (cleared_time and cleared_time > 0) or resolution) and incident.status_code == 1:
+            incident.status_code = 2
+            incident.status_name = "Manually Cleared" if cleared_user or "manually" in str(raw_status or "").lower() else "Closed"
 
         is_ml_generated = (
             "Machine Learning" in comments or
             "Machine Learning" in resolution or
-            "ML" in comments
+            "ML" in comments or
+            "Resolution set by Machine Learning" in comments
         )
 
         ground_truth = HistoricalGroundTruth(
