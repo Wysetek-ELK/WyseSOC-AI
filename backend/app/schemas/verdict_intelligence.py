@@ -51,9 +51,11 @@ class GroundTruthProvenance(str, Enum):
 
 class EvaluationValidationState(str, Enum):
     VALIDATED = "VALIDATED"
+    PASS = "PASS"
     REGRESSION_DETECTED = "REGRESSION_DETECTED"
     INCONCLUSIVE = "INCONCLUSIVE"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+    NOT_ASSESSED = "NOT_ASSESSED"
     EVALUATION_FAILED = "EVALUATION_FAILED"
 
 
@@ -216,6 +218,8 @@ class VerdictTrustAssessmentResult(BaseModel):
     suggested_verdict: str  # Original LLM recommendation
     effective_verdict: UserVisibleVerdict  # Guardrail-adjusted: TRUE_POSITIVE, FALSE_POSITIVE, REQUIRES_ANALYST_ATTENTION
     trust_score: Optional[int] = Field(None, ge=1, le=10, description="1-10 ordinal scale or None if NOT_SCORABLE")
+    trust_status: str = Field("CALCULATED", description="CALCULATED or NOT_CALCULABLE")
+    calculation_version: str = Field("v2.2.0", description="Trustworthiness evaluation calculation engine version")
     raw_trust_score: float = Field(..., ge=0.0, le=100.0)
     evidence_sufficiency_score: float = Field(..., ge=0.0, le=100.0)
     evidence_status: EvidenceStatus
@@ -288,6 +292,23 @@ class GroundTruthItem(BaseModel):
 # 5. Empirical Accuracy & Statistical Uncertainty Schemas
 # --------------------------------------------------------------------------
 
+class IncidentExclusionRecord(BaseModel):
+    incident_id: str
+    reason: str  # MISSING_ANALYST_LABEL, AMBIGUOUS_LABEL, CORRUPT_OR_EMPTY_PAYLOAD, RULE_MISMATCH, HEURISTIC_OR_ML_LABEL
+    detail: str
+
+
+class IncidentEligibilityFunnel(BaseModel):
+    total_scanned: int = 0
+    rule_matched: int = 0
+    analyst_labeled: int = 0
+    eligible: int = 0
+    excluded: int = 0
+    evaluated: int = 0
+    exclusion_reasons: Dict[str, int] = Field(default_factory=dict)
+    exclusions_detail: List[IncidentExclusionRecord] = Field(default_factory=list)
+
+
 class WilsonConfidenceInterval(BaseModel):
     point_estimate: Optional[float] = None
     lower_bound: Optional[float] = None
@@ -309,6 +330,13 @@ class EmpiricalAccuracyMetrics(BaseModel):
     verified_ground_truth_cases: int
     unverified_cases: int
     conflicting_cases: int
+
+    # Ground truth class distribution
+    tp_ground_truth_count: int = 0
+    fp_ground_truth_count: int = 0
+
+    # Eligibility Funnel
+    funnel: Optional[IncidentEligibilityFunnel] = None
 
     # Confusion matrix on decisive automatic decisions
     true_positives: int
@@ -402,6 +430,7 @@ class RegressionComparisonReport(BaseModel):
     baseline_run_id: str
     candidate_run_id: str
     validation_state: EvaluationValidationState
+    regression_status: Optional[str] = None  # PASS, REGRESSION_DETECTED, INSUFFICIENT_DATA, NOT_ASSESSED
     sample_count: int
     baseline_accuracy: Optional[float] = None
     candidate_accuracy: Optional[float] = None
@@ -418,6 +447,9 @@ class RegressionComparisonReport(BaseModel):
     critical_regressions_count: int = 0
     statistically_significant: bool = False
     p_value_estimate: Optional[float] = None
+    dataset_hash: Optional[str] = None
+    policy_digest: Optional[str] = None
+    contract_digest: Optional[str] = None
     regressed_cases: List[CaseRegressionDetail] = Field(default_factory=list)
     improved_cases: List[CaseRegressionDetail] = Field(default_factory=list)
     summary_message: str

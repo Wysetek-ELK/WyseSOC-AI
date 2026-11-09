@@ -551,6 +551,81 @@ export interface PolicyQualityAssessmentResponse {
   evaluated_at: string;
 }
 
+export interface PolicySimulationResult {
+  status: string;
+  simulation_status: string;
+  sample_count: number;
+  evaluated_cases?: number;
+  total_scanned?: number;
+  rule_matched?: number;
+  analyst_labeled?: number;
+  eligible_ground_truth_count?: number;
+  verified_ground_truth_cases?: number;
+  excluded_count?: number;
+  exclusion_reasons?: Record<string, number>;
+  exclusions_detail?: Array<{ incident_id: string; reason: string; detail: string }>;
+  funnel?: {
+    total_scanned: number;
+    rule_matched: number;
+    analyst_labeled: number;
+    eligible: number;
+    excluded: number;
+    evaluated: number;
+    exclusion_reasons: Record<string, number>;
+  };
+  min_samples_required: number;
+  message: string;
+  critical_regressions: number;
+  regression_detected: boolean;
+  regression_status: "PASS" | "REGRESSION_DETECTED" | "INSUFFICIENT_DATA" | "NOT_ASSESSED";
+  empirical_validation_status: "EVALUATED_PASSED" | "EVALUATED_FAILED" | "INSUFFICIENT_DATA" | "INCONCLUSIVE";
+  abstention_rate?: number | null;
+  balanced_accuracy?: number | null;
+  precision?: number | null;
+  recall?: number | null;
+  specificity?: number | null;
+  false_positive_rate?: number | null;
+  false_negative_rate?: number | null;
+  decision_coverage?: number | null;
+  overall_accuracy?: number | null;
+  confusion_matrix?: {
+    tp: number;
+    fp: number;
+    tn: number;
+    fn: number;
+    abstained: number;
+  };
+  ground_truth_distribution?: {
+    tp: number;
+    fp: number;
+    unverified: number;
+  };
+  run_id?: string;
+  is_calibrated: boolean;
+  calibration_status: string;
+  brier_score?: number | null;
+  ece?: number | null;
+  candidate_metrics?: any;
+  baseline_metrics?: any;
+  regressed_cases?: any[];
+  improved_cases?: any[];
+  per_incident_results?: Array<{
+    incident_id: string;
+    rule_id: string;
+    ground_truth?: string | null;
+    suggested_verdict: string;
+    effective_verdict: string;
+    trust_score?: number | null;
+    raw_trust_score: number;
+    evidence_status: string;
+    is_correct?: boolean | null;
+    is_abstained: boolean;
+    is_critical_error?: boolean;
+    escalation_reason?: string | null;
+  }>;
+  evaluated_at: string;
+}
+
 export interface RuleIntelligenceData {
   rule_id: string;
   rule_identifier: string;
@@ -1389,7 +1464,7 @@ export const api = {
     return res.json();
   },
 
-  async evaluatePolicySimulation(ruleId: string, versionId?: string): Promise<any> {
+  async evaluatePolicySimulation(ruleId: string, versionId?: string): Promise<PolicySimulationResult> {
     const url = versionId ? `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation?version_id=${versionId}` : `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation`;
     const res = await fetchWithAuth(url, { method: "POST" });
     if (!res.ok) {

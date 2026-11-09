@@ -433,9 +433,14 @@ class PolicyQualityValidator:
                 "UNSAFE_FP_ASSUMPTION: Policy contains blanket assertion that internal RFC-1918 traffic is benign."
             )
             score -= 5.0
+        elif any(term in combo for term in ("loopback", "127.0.0.1", "::1")) and "benign" in combo and "not" not in combo and "verify" not in combo:
+            blockers.append(
+                "UNSAFE_FP_ASSUMPTION: Policy contains blanket assertion that loopback / 127.0.0.1 traffic is automatically benign."
+            )
+            score -= 5.0
 
         # Check for hardcoded prescriptive confidence ranges
-        if re.search(r"confidence\s*(?:8\d|9\d)\s*-\s*(?:8\d|9\d)%", combo):
+        if re.search(r"confidence\s*(?:of\s*)?(?:[6-9]\d)\s*(?:-|to)\s*(?:[7-9]\d|100)%", combo) or re.search(r"confidence\s*(?:8\d|9\d)\s*-\s*(?:8\d|9\d)%", combo):
             blockers.append(
                 "PRESCRIPTIVE_CONFIDENCE_RANGE: Policy specifies hardcoded artificial confidence ranges (e.g. 80-98%)."
             )
@@ -527,23 +532,28 @@ class PolicyQualityValidator:
             return 0.0, GateStatus.WARNING, sim_status, blockers, warns, details
 
         sample_count = simulation_results.get("sample_count", 0)
-        if sample_count < 5:
-            sim_status = SimulationStatus.INSUFFICIENT_DATA
-            warns.append(f"Insufficient adjudicated historical cases ({sample_count} < 5) to empirically validate policy.")
-            details = f"Simulation status: INSUFFICIENT_DATA (sample size {sample_count})."
-            return 5.0, GateStatus.WARNING, sim_status, blockers, warns, details
+        eligible_count = simulation_results.get("eligible_ground_truth_count", simulation_results.get("verified_ground_truth_cases", sample_count))
+        sim_status_raw = str(simulation_results.get("simulation_status") or simulation_results.get("status") or "NOT_EVALUATED")
 
         # Evaluate regression metrics
         regressions = simulation_results.get("critical_regressions", 0)
-        if regressions > 0:
+        reg_detected = simulation_results.get("regression_detected", False) or (simulation_results.get("regression_status") == "REGRESSION_DETECTED")
+        if regressions > 0 or reg_detected:
             sim_status = SimulationStatus.EVALUATED_FAILED
             blockers.append(f"FAILED_REGRESSION_GATE: Simulation detected {regressions} critical regressions against baseline.")
             details = f"Simulation FAILED: {regressions} critical regressions observed on historical dataset."
             return 0.0, GateStatus.FAILED, sim_status, blockers, warns, details
 
+        # Evaluate empirical sample sufficiency
+        if sim_status_raw == "INSUFFICIENT_DATA" or sample_count < 5 or eligible_count < 5:
+            sim_status = SimulationStatus.INSUFFICIENT_DATA
+            warns.append(f"G8_INSUFFICIENT_DATA: Insufficient verified historical cases (evaluated={sample_count}, eligible_ground_truth={eligible_count} < 5) to empirically validate policy.")
+            details = f"Simulation status: INSUFFICIENT_DATA (evaluated cases: {sample_count}, verified ground-truth cases: {eligible_count} < 5)."
+            return 0.0, GateStatus.WARNING, sim_status, blockers, warns, details
+
         sim_status = SimulationStatus.EVALUATED_PASSED
         score = 15.0
-        details = f"Simulation PASSED on {sample_count} historical incidents. Zero critical regressions."
+        details = f"Simulation PASSED on {sample_count} historical incidents ({eligible_count} verified ground-truth cases). Zero critical regressions."
         return score, GateStatus.PASSED, sim_status, blockers, warns, details
 
     # -------------------------------------------------------------------------

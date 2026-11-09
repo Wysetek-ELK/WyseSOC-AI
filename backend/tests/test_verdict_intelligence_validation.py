@@ -1304,11 +1304,12 @@ async def test_api_evaluate_simulation_endpoint(client: AsyncClient, admin_user,
     sim_svc.run_dry_run_intelligence_evaluation = mock_eval
 
     res_none = await sim_svc.evaluate_candidate_policy(rule_id=rule.id, candidate_version=pv)
-    assert res_none["balanced_accuracy"] == 0.0
-    assert res_none["precision"] == 0.0
-    assert res_none["recall"] == 0.0
-    assert res_none["specificity"] == 0.0
-    assert res_none["abstention_rate"] == 0.0
+    # Per AIS 2.0 enhancement requirement: undefined accuracy metrics return None (rendered as N/A in UI) instead of 0.0
+    assert res_none["balanced_accuracy"] is None
+    assert res_none["precision"] is None
+    assert res_none["recall"] is None
+    assert res_none["specificity"] is None
+    assert res_none["abstention_rate"] is None
     assert res_none["critical_regressions"] == 0
     sim_svc.run_dry_run_intelligence_evaluation = orig_fn
 

@@ -32,6 +32,7 @@ class CalibrationEvaluator:
     def evaluate_calibration(
         cls,
         evaluations: List[Dict[str, Any]],
+        min_samples: int = MIN_CALIBRATION_SAMPLES,
     ) -> CalibrationReport:
         """
         Computes reliability bins, ECE, and Brier Score for decisive cases with verified ground truth.
@@ -58,7 +59,7 @@ class CalibrationEvaluator:
 
         sample_count = len(valid_cases)
 
-        if sample_count < cls.MIN_CALIBRATION_SAMPLES:
+        if sample_count < min_samples:
             # Build uncalibrated observation bins
             bins = cls._compute_bins(valid_cases)
             return CalibrationReport(
@@ -70,7 +71,24 @@ class CalibrationEvaluator:
                 sample_count=sample_count,
                 reliability_bins=bins,
                 calibration_notes=[
-                    f"BELOW_MINIMUM_THRESHOLD: Sample size (N={sample_count}) is below required minimum of {cls.MIN_CALIBRATION_SAMPLES} for empirical calibration.",
+                    f"BELOW_MINIMUM_THRESHOLD: Sample size (N={sample_count}) is below required minimum of {min_samples} for empirical calibration.",
+                ],
+            )
+
+        gt_tp_count = sum(1 for e in evaluations if str(e.get("ground_truth_label", "")).upper().strip() == GroundTruthLabel.VERIFIED_TP.value)
+        gt_fp_count = sum(1 for e in evaluations if str(e.get("ground_truth_label", "")).upper().strip() == GroundTruthLabel.VERIFIED_FP.value)
+        if gt_tp_count < 3 or gt_fp_count < 3:
+            bins = cls._compute_bins(valid_cases)
+            return CalibrationReport(
+                is_calibrated=False,
+                status="NOT_CALIBRATED",
+                calibration_method=None,
+                brier_score=None,
+                expected_calibration_error=None,
+                sample_count=sample_count,
+                reliability_bins=bins,
+                calibration_notes=[
+                    f"INSUFFICIENT_CLASS_REPRESENTATION: Sample size (N={sample_count}) lacks balanced representation (TP={gt_tp_count}, FP={gt_fp_count}; minimum 3 each required for calibration).",
                 ],
             )
 

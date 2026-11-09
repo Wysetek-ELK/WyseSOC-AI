@@ -392,9 +392,15 @@ async def validate_policy_quality(
     sim_results = None
     if latest_run:
         metrics_dict = getattr(latest_run, "metrics", {}) or getattr(latest_run, "metrics_payload", {}) or {}
+        reg_summary = getattr(latest_run, "regression_summary", {}) or {}
+        eligible_gt = metrics_dict.get("verified_ground_truth_cases", getattr(latest_run, "verified_ground_truth_cases", 0))
         sim_results = {
             "sample_count": getattr(latest_run, "total_cases", 0) or getattr(latest_run, "sample_size", 0),
-            "critical_regressions": 1 if latest_run.status == "FAILED" or metrics_dict.get("critical_false_negatives", 0) > 0 else 0,
+            "eligible_ground_truth_count": eligible_gt,
+            "verified_ground_truth_cases": eligible_gt,
+            "simulation_status": latest_run.validation_state,
+            "regression_status": reg_summary.get("regression_status") or ("NOT_ASSESSED" if not latest_run.baseline_run_id else latest_run.validation_state),
+            "critical_regressions": 1 if latest_run.status == "FAILED" or metrics_dict.get("critical_false_negatives", 0) > 0 or latest_run.validation_state == "REGRESSION_DETECTED" else 0,
             "balanced_accuracy": metrics_dict.get("balanced_accuracy") or getattr(latest_run, "balanced_accuracy", None),
             "ece": metrics_dict.get("ece") or getattr(latest_run, "ece", None),
             "brier_score": metrics_dict.get("brier_score") or getattr(latest_run, "brier_score", None),

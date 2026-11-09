@@ -44,6 +44,7 @@ class VerdictTrustworthinessEngine:
     Evaluates incident evidence, model assertions, and historical validation support
     to produce an explainable, auditable Trust Score and guardrailed verdict.
     """
+    CALCULATION_VERSION = "v2.2.0"
 
     @classmethod
     def score_to_ordinal(cls, raw_total: float, is_calibrated: bool = False, sample_count: int = 0) -> int:
@@ -216,10 +217,26 @@ class VerdictTrustworthinessEngine:
             incident_context=incident_payload,
         )
 
+        # Check if supporting evidence is completely unavailable
+        has_meaningful_telemetry = any(
+            v is not None and v != "" and v != {}
+            for k, v in incident_payload.items()
+            if k not in ("incident_id", "id", "rule_id")
+        ) if incident_payload else False
+        is_empty_telemetry = not has_meaningful_telemetry
+        is_totally_insufficient = sufficiency.overall_sufficiency_score <= 0.0 and len(sufficiency.mandatory_fields_missing) >= 3
+
+        if is_empty_telemetry or is_totally_insufficient:
+            trust_status = "NOT_CALCULABLE"
+            ordinal_score = None
+            confidence_limitations.append("NOT_CALCULABLE: Sufficient supporting telemetry is unavailable to calculate a trustworthy verdict score.")
+        else:
+            trust_status = "CALCULATED"
+
         # Build human-readable explanation
         explanation_lines = [
             f"Suggested Verdict: {suggested_verdict} | Guardrail-Adjusted Effective Verdict: {effective_verdict.value}.",
-            f"Verdict Trust Score: {ordinal_score}/10 (Raw: {raw_total:.1f}/100) | Evidence Sufficiency: {sufficiency.overall_sufficiency_score:.1f}/100.",
+            f"Verdict Trust Score: {f'{ordinal_score}/10' if ordinal_score is not None else 'NOT_CALCULABLE'} (Raw: {raw_total:.1f}/100) | Evidence Sufficiency: {sufficiency.overall_sufficiency_score:.1f}/100.",
         ]
         if escalation_reason:
             explanation_lines.append(f"Escalation Reason: {escalation_reason}")
@@ -239,6 +256,8 @@ class VerdictTrustworthinessEngine:
             suggested_verdict=suggested_verdict,
             effective_verdict=effective_verdict,
             trust_score=ordinal_score,
+            trust_status=trust_status,
+            calculation_version=cls.CALCULATION_VERSION,
             raw_trust_score=raw_total,
             evidence_sufficiency_score=sufficiency.overall_sufficiency_score,
             evidence_status=sufficiency.evidence_status,
@@ -341,6 +360,8 @@ class VerdictTrustworthinessEngine:
             suggested_verdict=verdict,
             effective_verdict=eff_v,
             trust_score=ordinal,
+            trust_status="CALCULATED",
+            calculation_version=cls.CALCULATION_VERSION,
             raw_trust_score=raw_total,
             evidence_sufficiency_score=getattr(suff, "overall_sufficiency_score", 80.0),
             evidence_status=getattr(suff, "evidence_status", EvidenceStatus.SUFFICIENT),

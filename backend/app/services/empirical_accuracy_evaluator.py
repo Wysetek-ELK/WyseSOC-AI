@@ -18,6 +18,7 @@ from app.schemas.verdict_intelligence import (
     EmpiricalAccuracyMetrics,
     WilsonConfidenceInterval,
     RiskCoveragePoint,
+    IncidentEligibilityFunnel,
 )
 
 logger = logging.getLogger("ai_verdict.empirical_accuracy")
@@ -60,6 +61,7 @@ class EmpiricalAccuracyEvaluator:
         cls,
         evaluations: List[Dict[str, Any]],
         compute_curve: bool = True,
+        funnel: Optional[IncidentEligibilityFunnel] = None,
     ) -> EmpiricalAccuracyMetrics:
         """
         Calculates empirical evaluation metrics across evaluated incidents.
@@ -73,6 +75,8 @@ class EmpiricalAccuracyEvaluator:
         verified_gt_count = 0
         unverified_count = 0
         conflicting_count = 0
+        tp_gt_count = 0
+        fp_gt_count = 0
 
         tp = 0
         fp = 0
@@ -110,6 +114,10 @@ class EmpiricalAccuracyEvaluator:
                 continue
 
             verified_gt_count += 1
+            if gt_upper == GroundTruthLabel.VERIFIED_TP.value:
+                tp_gt_count += 1
+            elif gt_upper == GroundTruthLabel.VERIFIED_FP.value:
+                fp_gt_count += 1
 
             # Check if system abstained
             if eff_verdict in ("REQUIRES_ANALYST_ATTENTION", "REQUIRES_ATTENTION", "ABSTAIN"):
@@ -167,6 +175,9 @@ class EmpiricalAccuracyEvaluator:
             verified_ground_truth_cases=verified_gt_count,
             unverified_cases=unverified_count,
             conflicting_cases=conflicting_count,
+            tp_ground_truth_count=tp_gt_count,
+            fp_ground_truth_count=fp_gt_count,
+            funnel=funnel,
             true_positives=tp,
             false_positives=fp,
             true_negatives=tn,

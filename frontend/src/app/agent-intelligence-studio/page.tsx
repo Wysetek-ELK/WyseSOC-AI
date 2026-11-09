@@ -45,6 +45,7 @@ import {
   QualityGateResult,
   QualitySummaryItem,
   PolicyDriftEventItem,
+  PolicySimulationResult,
 } from "@/lib/api";
 
 export default function AgentIntelligenceStudioPage() {
@@ -85,8 +86,9 @@ export default function AgentIntelligenceStudioPage() {
   const [loadingQuality, setLoadingQuality] = useState(false);
 
   // Policy Simulation State
-  const [simulationResult, setSimulationResult] = useState<any | null>(null);
+  const [simulationResult, setSimulationResult] = useState<PolicySimulationResult | null>(null);
   const [loadingSimulation, setLoadingSimulation] = useState(false);
+  const [showExclusions, setShowExclusions] = useState(false);
 
   // Drift Events State
   const [driftEvents, setDriftEvents] = useState<PolicyDriftEventItem[]>([]);
@@ -2236,102 +2238,348 @@ export default function AgentIntelligenceStudioPage() {
 
             {/* TAB 5: SIMULATION LAB */}
             {studioTab === "simulation" && (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40">
+              <div className="space-y-4">
+                <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                         <Activity className="w-4 h-4 text-purple-400" />
-                        Simulation Lab &amp; Regression Validator
+                        Simulation Lab &amp; Empirical Accuracy Validation
                       </h3>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        Evaluate policy candidate against historical incidents. Verifies false positive avoidance and decisive stability.
+                        Dry-run replay against historical incidents to evaluate verdict trustworthiness, evidence confidence, empirical confusion matrix, and paired regression.
                       </p>
                     </div>
                     <button
                       onClick={handleRunSimulation}
                       disabled={loadingSimulation}
-                      className="px-2.5 py-1 text-xs rounded border border-purple-800 bg-purple-950/60 hover:bg-purple-900/60 text-purple-200 font-semibold flex items-center gap-1.5"
+                      className="px-3 py-1.5 text-xs rounded border border-purple-800 bg-purple-950/70 hover:bg-purple-900/80 text-purple-200 font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
                     >
-                      <RefreshCw className={`w-3 h-3 text-purple-400 ${loadingSimulation ? "animate-spin" : ""}`} />
-                      Run Simulation
+                      <RefreshCw className={`w-3.5 h-3.5 text-purple-400 ${loadingSimulation ? "animate-spin" : ""}`} />
+                      {loadingSimulation ? "Running Simulation..." : "Run Simulation"}
                     </button>
                   </div>
                 </div>
 
                 {loadingSimulation ? (
-                  <div className="py-12 text-center text-slate-400 text-xs space-y-2">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-purple-400" />
-                    <p>Executing historical incident simulation test suite...</p>
+                  <div className="py-16 text-center text-slate-400 text-xs space-y-3">
+                    <RefreshCw className="w-8 h-8 animate-spin mx-auto text-purple-400" />
+                    <p className="text-sm font-medium text-slate-200">Replaying historical incidents through dry-run validation pipeline...</p>
+                    <p className="text-[11px] text-slate-500">Evaluating Evidence Sufficiency, Verdict Trustworthiness, and Empirical Accuracy</p>
                   </div>
                 ) : simulationResult ? (
-                  <div className="space-y-3 text-xs">
-                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Simulation Status</div>
-                        <div className={`text-sm font-bold font-mono mt-1 ${
-                          (simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED")
-                            ? "text-emerald-400"
-                            : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA")
-                            ? "text-amber-400"
-                            : "text-rose-400"
-                        }`}>
-                          {simulationResult.status || simulationResult.simulation_status || "COMPLETED"}
+                  <div className="space-y-4 text-xs">
+                    {/* Messaging Banner */}
+                    <div className={`p-3 rounded-lg border flex items-start gap-2.5 text-xs ${
+                      (simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED")
+                        ? "bg-emerald-950/30 border-emerald-900/60 text-emerald-200"
+                        : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA")
+                        ? "bg-amber-950/30 border-amber-900/60 text-amber-200"
+                        : "bg-rose-950/30 border-rose-900/60 text-rose-200"
+                    }`}>
+                      {(simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED") ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      ) : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA") ? (
+                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                      )}
+                      <div className="space-y-0.5">
+                        <div className="font-semibold text-slate-100">
+                          {simulationResult.message || "Simulation evaluation completed."}
                         </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Sample Count</div>
-                        <div className="text-xl font-bold font-mono text-slate-100">{simulationResult.sample_count ?? 0}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Regression Detected</div>
-                        <div className={`text-sm font-bold mt-1 ${simulationResult.regression_detected ? "text-rose-400" : "text-emerald-400"}`}>
-                          {simulationResult.regression_detected ? "YES (BLOCKED)" : "NO"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Abstention Rate</div>
-                        <div className="text-xl font-bold font-mono text-slate-100">
-                          {Math.round((simulationResult.abstention_rate || 0) * 100)}%
+                        <div className="text-[11px] opacity-80">
+                          Simulation Status: <span className="font-mono font-bold">{simulationResult.status || simulationResult.simulation_status}</span> | Empirical Validation: <span className="font-mono font-bold">{simulationResult.empirical_validation_status}</span> | Regression Check: <span className="font-mono font-bold">{simulationResult.regression_status}</span>
                         </div>
                       </div>
                     </div>
 
-                    {simulationResult.balanced_accuracy !== undefined && (
-                      <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/60 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                        <div>
-                          <div className="text-[10px] text-slate-500 uppercase">Balanced Accuracy</div>
-                          <div className="text-base font-bold font-mono text-cyan-400">
-                            {Math.round((simulationResult.balanced_accuracy || 0) * 100)}%
+                    {/* Funnel: Historical Incident Eligibility Funnel */}
+                    <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-950 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                          Historical Incident Eligibility Funnel
+                        </span>
+                        {simulationResult.excluded_count ? (
+                          <button
+                            onClick={() => setShowExclusions(!showExclusions)}
+                            className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono underline"
+                          >
+                            {showExclusions ? "Hide Exclusion Reasons" : `View ${simulationResult.excluded_count} Exclusions`}
+                          </button>
+                        ) : null}
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="text-[9px] text-slate-500 uppercase">1. Scanned</div>
+                          <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                            {simulationResult.total_scanned ?? simulationResult.sample_count ?? 0}
                           </div>
                         </div>
-                        <div>
-                          <div className="text-[10px] text-slate-500 uppercase">Precision / Recall</div>
-                          <div className="text-base font-bold font-mono text-slate-200">
-                            {Math.round((simulationResult.precision || 0) * 100)}% / {Math.round((simulationResult.recall || 0) * 100)}%
+                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="text-[9px] text-slate-500 uppercase">2. Rule-Matched</div>
+                          <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                            {simulationResult.rule_matched ?? simulationResult.sample_count ?? 0}
                           </div>
                         </div>
-                        <div>
-                          <div className="text-[10px] text-slate-500 uppercase">Decision Coverage</div>
-                          <div className="text-base font-bold font-mono text-slate-200">
-                            {Math.round((simulationResult.decision_coverage || 0) * 100)}%
+                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="text-[9px] text-slate-500 uppercase">3. Analyst-Labeled</div>
+                          <div className="text-base font-bold font-mono text-purple-300 mt-0.5">
+                            {simulationResult.analyst_labeled ?? simulationResult.eligible_ground_truth_count ?? 0}
                           </div>
                         </div>
-                        <div>
-                          <div className="text-[10px] text-slate-500 uppercase">Calibration Status</div>
-                          <div className={`text-xs font-bold font-mono mt-1 ${simulationResult.is_calibrated ? "text-emerald-400" : "text-amber-400"}`}>
-                            {simulationResult.is_calibrated ? "CALIBRATED (N>=30)" : "NOT_CALIBRATED (N<30)"}
+                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="text-[9px] text-slate-500 uppercase">4. Eligible GT</div>
+                          <div className="text-base font-bold font-mono text-emerald-400 mt-0.5">
+                            {simulationResult.eligible_ground_truth_count ?? simulationResult.verified_ground_truth_cases ?? 0}
+                          </div>
+                        </div>
+                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="text-[9px] text-slate-500 uppercase">5. Excluded</div>
+                          <div className={`text-base font-bold font-mono mt-0.5 ${(simulationResult.excluded_count ?? 0) > 0 ? "text-amber-400" : "text-slate-400"}`}>
+                            {simulationResult.excluded_count ?? 0}
+                          </div>
+                        </div>
+                        <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="text-[9px] text-slate-500 uppercase">6. Evaluated</div>
+                          <div className="text-base font-bold font-mono text-cyan-300 mt-0.5">
+                            {simulationResult.evaluated_cases ?? simulationResult.sample_count ?? 0}
                           </div>
                         </div>
                       </div>
-                    )}
 
-                    {simulationResult.status === "INSUFFICIENT_DATA" && (
-                      <div className="p-3 rounded-lg border border-amber-900/60 bg-amber-950/20 text-xs text-amber-300 flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                        <div>
-                          <strong>Insufficient Historical Incident Data (N &lt; 5):</strong> Fewer than 5 historical incidents exist for this detection rule. 
-                          The policy is validated statically, but historical regression verification cannot be confirmed. Gate 8 reports warning only.
+                      {/* Expandable Exclusion Breakdown */}
+                      {showExclusions && simulationResult.exclusion_reasons && (
+                        <div className="p-2.5 rounded bg-slate-900/90 border border-slate-800 space-y-1.5 text-[11px]">
+                          <span className="font-semibold text-slate-300 block">Exclusion Breakdown (Why incidents were excluded from empirical ground truth):</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[10px]">
+                            {Object.entries(simulationResult.exclusion_reasons).map(([reason, count]) => (
+                              <div key={reason} className="p-1.5 rounded bg-slate-950/80 border border-slate-800 flex justify-between">
+                                <span className="font-mono text-slate-400">{reason}:</span>
+                                <span className="font-bold text-amber-300 font-mono">{count} incidents</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Key Status Row: Empirical Validation & Regression Status */}
+                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Empirical Accuracy Status</div>
+                        <div className={`text-sm font-bold font-mono mt-1 ${
+                          simulationResult.empirical_validation_status === "EVALUATED_PASSED"
+                            ? "text-emerald-400"
+                            : simulationResult.empirical_validation_status === "INSUFFICIENT_DATA"
+                            ? "text-amber-400"
+                            : "text-rose-400"
+                        }`}>
+                          {simulationResult.empirical_validation_status || "INSUFFICIENT_DATA"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Version Regression Status</div>
+                        <div className={`text-sm font-bold font-mono mt-1 ${
+                          simulationResult.regression_status === "PASS"
+                            ? "text-emerald-400"
+                            : simulationResult.regression_status === "REGRESSION_DETECTED"
+                            ? "text-rose-400"
+                            : simulationResult.regression_status === "INSUFFICIENT_DATA"
+                            ? "text-amber-400"
+                            : "text-slate-400"
+                        }`}>
+                          {simulationResult.regression_status || "NOT_ASSESSED"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Decision Coverage</div>
+                        <div className="text-xl font-bold font-mono text-slate-100 mt-0.5">
+                          {simulationResult.decision_coverage != null
+                            ? `${Math.round(simulationResult.decision_coverage * 100)}%`
+                            : "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Abstention Rate</div>
+                        <div className="text-xl font-bold font-mono text-slate-100 mt-0.5">
+                          {simulationResult.abstention_rate != null
+                            ? `${Math.round(simulationResult.abstention_rate * 100)}%`
+                            : "N/A"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Confusion Matrix Card & Ground Truth Distribution */}
+                    <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/60 space-y-2.5">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                          <Table className="w-3.5 h-3.5 text-purple-400" />
+                          Empirical Confusion Matrix &amp; Ground Truth Distribution
+                        </span>
+                        <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+                          <span>Verified TP: <strong className="text-emerald-400">{simulationResult.ground_truth_distribution?.tp ?? simulationResult.confusion_matrix?.tp ?? 0}</strong></span>
+                          <span>|</span>
+                          <span>Verified FP: <strong className="text-sky-400">{simulationResult.ground_truth_distribution?.fp ?? simulationResult.confusion_matrix?.tn ?? 0}</strong></span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+                        <div className="p-2 rounded bg-emerald-950/40 border border-emerald-900/60">
+                          <span className="text-[9px] uppercase tracking-wider text-emerald-300 block font-semibold">True Positives (TP)</span>
+                          <span className="text-lg font-bold font-mono text-emerald-400 mt-0.5 block">
+                            {simulationResult.confusion_matrix?.tp ?? 0}
+                          </span>
+                          <span className="text-[9px] text-slate-400 block">Confirmed Attack Detected</span>
+                        </div>
+                        <div className="p-2 rounded bg-sky-950/40 border border-sky-900/60">
+                          <span className="text-[9px] uppercase tracking-wider text-sky-300 block font-semibold">True Negatives (TN)</span>
+                          <span className="text-lg font-bold font-mono text-sky-400 mt-0.5 block">
+                            {simulationResult.confusion_matrix?.tn ?? 0}
+                          </span>
+                          <span className="text-[9px] text-slate-400 block">Benign Verified Safe</span>
+                        </div>
+                        <div className="p-2 rounded bg-rose-950/40 border border-rose-900/60">
+                          <span className="text-[9px] uppercase tracking-wider text-rose-300 block font-semibold">False Positives (FP)</span>
+                          <span className="text-lg font-bold font-mono text-rose-400 mt-0.5 block">
+                            {simulationResult.confusion_matrix?.fp ?? 0}
+                          </span>
+                          <span className="text-[9px] text-slate-400 block">Benign Flagged as Attack</span>
+                        </div>
+                        <div className="p-2 rounded bg-red-950/60 border border-red-800">
+                          <span className="text-[9px] uppercase tracking-wider text-red-300 block font-semibold">False Negatives (FN)</span>
+                          <span className="text-lg font-bold font-mono text-red-400 mt-0.5 block">
+                            {simulationResult.confusion_matrix?.fn ?? 0}
+                          </span>
+                          <span className="text-[9px] text-red-300/80 block font-bold">Critical Missed Attacks</span>
+                        </div>
+                        <div className="p-2 rounded bg-amber-950/40 border border-amber-900/60">
+                          <span className="text-[9px] uppercase tracking-wider text-amber-300 block font-semibold">Abstentions</span>
+                          <span className="text-lg font-bold font-mono text-amber-400 mt-0.5 block">
+                            {simulationResult.confusion_matrix?.abstained ?? 0}
+                          </span>
+                          <span className="text-[9px] text-slate-400 block">Routed to Analyst Review</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Empirical Accuracy Metrics Grid (displays N/A instead of 0%) */}
+                    <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Balanced Accuracy</div>
+                        <div className="text-base font-bold font-mono text-cyan-400 mt-0.5">
+                          {simulationResult.balanced_accuracy != null
+                            ? `${Math.round(simulationResult.balanced_accuracy * 100)}%`
+                            : "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Precision / Recall</div>
+                        <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                          {simulationResult.precision != null ? `${Math.round(simulationResult.precision * 100)}%` : "N/A"}
+                          {" / "}
+                          {simulationResult.recall != null ? `${Math.round(simulationResult.recall * 100)}%` : "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Specificity (TNR)</div>
+                        <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                          {simulationResult.specificity != null
+                            ? `${Math.round(simulationResult.specificity * 100)}%`
+                            : "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">False Positive Rate (FPR)</div>
+                        <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                          {simulationResult.false_positive_rate != null
+                            ? `${Math.round(simulationResult.false_positive_rate * 100)}%`
+                            : "N/A"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Calibration & Regression Stats Row */}
+                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Calibration Status</div>
+                        <div className={`text-xs font-bold font-mono mt-1 ${simulationResult.is_calibrated ? "text-emerald-400" : "text-amber-400"}`}>
+                          {simulationResult.calibration_status || (simulationResult.is_calibrated ? "CALIBRATED (N>=30)" : "NOT_CALIBRATED (N<30)")}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Brier Calibration Score</div>
+                        <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                          {simulationResult.brier_score != null ? simulationResult.brier_score.toFixed(4) : "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Expected Calibration Error (ECE)</div>
+                        <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                          {simulationResult.ece != null ? simulationResult.ece.toFixed(4) : "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase">Critical Regressions</div>
+                        <div className={`text-base font-bold font-mono mt-0.5 ${simulationResult.critical_regressions > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                          {simulationResult.critical_regressions}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Per-Incident Simulation Results Drilldown Table */}
+                    {simulationResult.per_incident_results && simulationResult.per_incident_results.length > 0 && (
+                      <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-2">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                            Per-Incident Simulation Verdicts &amp; Trust Scores ({simulationResult.per_incident_results.length} cases)
+                          </span>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto space-y-1">
+                          {simulationResult.per_incident_results.map((r, i) => (
+                            <div key={i} className="p-2 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-between text-[11px]">
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-slate-200">{r.incident_id}</span>
+                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono border ${
+                                    r.ground_truth === "VERIFIED_TP"
+                                      ? "bg-rose-950 text-rose-300 border-rose-800"
+                                      : r.ground_truth === "VERIFIED_FP"
+                                      ? "bg-sky-950 text-sky-300 border-sky-800"
+                                      : "bg-slate-900 text-slate-400 border-slate-800"
+                                  }`}>
+                                    GT: {r.ground_truth || "UNLABELED"}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-400">
+                                  AI Suggested: <span className="font-mono text-slate-300">{r.suggested_verdict}</span> | Effective: <span className="font-mono font-bold text-slate-200">{r.effective_verdict}</span>
+                                </div>
+                              </div>
+                              <div className="text-right space-y-0.5">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <span className="text-[10px] text-slate-500 uppercase">Trust Score:</span>
+                                  <span className="font-mono font-bold text-indigo-400">
+                                    {r.trust_score != null ? `${r.trust_score}/10` : "NOT_CALCULABLE"}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold border ${
+                                    r.is_critical_error
+                                      ? "bg-red-950 text-red-300 border-red-800"
+                                      : r.is_abstained
+                                      ? "bg-amber-950 text-amber-300 border-amber-800"
+                                      : r.is_correct
+                                      ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                      : "bg-slate-900 text-slate-400 border-slate-800"
+                                  }`}>
+                                    {r.is_critical_error ? "MISSED TP (FN)" : r.is_abstained ? "ABSTAINED" : r.is_correct ? "CORRECT" : "WRONG"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
