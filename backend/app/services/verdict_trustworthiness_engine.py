@@ -218,12 +218,11 @@ class VerdictTrustworthinessEngine:
         )
 
         # Check if supporting evidence is completely unavailable
-        has_meaningful_telemetry = any(
-            v is not None and v != "" and v != {}
+        has_telemetry = any(
+            k not in ("id", "incident_id", "rule_id", "severity", "category", "created_at") and bool(v)
             for k, v in incident_payload.items()
-            if k not in ("incident_id", "id", "rule_id")
-        ) if incident_payload else False
-        is_empty_telemetry = not has_meaningful_telemetry
+        )
+        is_empty_telemetry = not has_telemetry
         is_totally_insufficient = sufficiency.overall_sufficiency_score <= 0.0 and len(sufficiency.mandatory_fields_missing) >= 3
 
         if is_empty_telemetry or is_totally_insufficient:

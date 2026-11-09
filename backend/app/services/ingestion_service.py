@@ -633,10 +633,12 @@ class IngestionService:
             incident.status_name = "Manually Cleared" if cleared_user or "manually" in str(raw_status or "").lower() else "Closed"
 
         is_ml_generated = (
-            "Machine Learning" in comments or
-            "Machine Learning" in resolution or
-            "ML" in comments or
-            "Resolution set by Machine Learning" in comments
+            "machine learning" in comments.lower() or
+            "machine learning" in resolution.lower() or
+            "ml" in comments.lower() or
+            "resolution set by machine learning" in comments.lower() or
+            "automated" in comments.lower() or
+            "auto cleared" in str(raw_status or "").lower()
         )
 
         ground_truth = HistoricalGroundTruth(

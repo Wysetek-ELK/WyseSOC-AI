@@ -104,11 +104,12 @@ class PolicyQualityValidator:
         # GATE 2: Detection Archetype Relevance (Weight evaluated with G1 / G7)
         # -------------------------------------------------------------------------
         g2_status, g2_blockers, g2_warns, g2_details = cls._evaluate_gate_2_relevance(prompt_version, archetype_def, semantics)
+        g2_score = cls.WEIGHT_DETECTION_SEMANTICS if g2_status == GateStatus.PASSED else (10.0 if g2_status == GateStatus.WARNING else 0.0)
         gate_results["G2_ARCHETYPE_RELEVANCE"] = QualityGateResult(
             gate_id="G2",
             gate_name="Detection Archetype Relevance",
             status=g2_status,
-            score=cls.WEIGHT_DETECTION_SEMANTICS if g2_status == GateStatus.PASSED else (10.0 if g2_status == GateStatus.WARNING else 0.0),
+            score=g2_score,
             max_score=cls.WEIGHT_DETECTION_SEMANTICS,
             details=g2_details,
             blocking_findings=g2_blockers,
@@ -116,6 +117,12 @@ class PolicyQualityValidator:
         )
         blocking_issues.extend(g2_blockers)
         warnings.extend(g2_warns)
+
+        # Ensure score_breakdown reflects G2 penalty
+        if g2_status == GateStatus.WARNING:
+            score_breakdown["detection_semantics"] = min(score_breakdown.get("detection_semantics", 20.0), 10.0)
+        elif g2_status == GateStatus.FAILED:
+            score_breakdown["detection_semantics"] = 0.0
 
         # -------------------------------------------------------------------------
         # GATE 3: Evidence Contract Feasibility (Weight: 20 pts)
@@ -240,19 +247,65 @@ class PolicyQualityValidator:
         # MANDATORY: Zero blocking issues allowed. High score does NOT override blocking findings.
         approval_eligible = (len(blocking_issues) == 0)
 
-        # Build corrective recommendations
-        if blocking_issues:
-            for b in blocking_issues:
-                if "INCOMPLETE" in b or "threshold" in b.lower():
-                    recommendations.append("Obtain authoritative SIEM rule definition from Supervisor XML/JSON API.")
-                elif "RELEVANCE_MISMATCH" in b or "malware" in b.lower():
-                    recommendations.append("Remove malware-execution directives from network data transfer policy.")
-                elif "UNSAFE_FP" in b or "rfc-1918" in b.lower() or "loopback" in b.lower():
-                    recommendations.append("Revise Section 1 & Section 6 to remove blanket benign assumptions on internal RFC-1918 traffic.")
-                elif "CONFIDENCE_RANGE" in b:
-                    recommendations.append("Remove hardcoded subjective confidence ranges (e.g. 80-98%) from policy prompt.")
-                elif "CONTRADICTION" in b:
-                    recommendations.append("Align required evidence in Section 4 with machine-verifiable Evidence Contract fields.")
+        # Build comprehensive corrective recommendations covering all failed and warning gates
+        seen_recs = set()
+        def add_rec(text: str):
+            if text and text not in seen_recs:
+                seen_recs.add(text)
+                recommendations.append(text)
+
+        for gate_key, gate_res in gate_results.items():
+            if gate_res.status in (GateStatus.FAILED, GateStatus.WARNING):
+                all_findings = gate_res.blocking_findings + gate_res.warnings
+                findings_text = " ".join(all_findings).lower()
+
+                if gate_key == "G1_RULE_INTEGRITY":
+                    if "incomplete" in findings_text or "threshold" in findings_text:
+                        add_rec("Obtain authoritative SIEM rule definition from Supervisor XML/JSON API.")
+                    if "invented_threshold" in findings_text:
+                        add_rec("Remove fabricated or unverified numeric thresholds from Section 3 detection conditions.")
+                    if "auto-synced" in findings_text:
+                        add_rec("Verify and augment rule definition from authoritative SIEM configuration.")
+
+                elif gate_key == "G2_ARCHETYPE_RELEVANCE":
+                    if "inadequate_telemetry" in findings_text or "unclassified" in findings_text:
+                        add_rec("Enrich rule telemetry mappings and bind authoritative detection archetype instead of Unclassified / Inadequate Telemetry.")
+                    if "relevance_mismatch" in findings_text or "malware" in findings_text:
+                        add_rec("Remove malware-execution directives from network data transfer policy.")
+
+                elif gate_key == "G3_EVIDENCE_FEASIBILITY":
+                    if "missing_evidence_contract" in findings_text:
+                        add_rec("Bind an authoritative Evidence Contract to the policy version.")
+                    elif "unmapped" in findings_text or "critical" in findings_text:
+                        add_rec("Map missing contract fields to verifiable telemetry attributes or classify as unmapped context.")
+
+                elif gate_key == "G4_TP_CRITERIA_VALIDITY":
+                    add_rec("Define concrete, measurable, and evidence-backed True Positive criteria in Section 5.")
+
+                elif gate_key == "G5_FP_CRITERIA_VALIDITY":
+                    if "confidence_range" in findings_text or "prescriptive_confidence" in findings_text:
+                        add_rec("Remove hardcoded subjective confidence ranges (e.g. 80-98%) from policy prompt.")
+                    if "unsafe_fp" in findings_text or "rfc-1918" in findings_text or "loopback" in findings_text:
+                        add_rec("Revise Section 1 & Section 6 to remove blanket benign assumptions on internal or loopback traffic.")
+                    if "brief" in findings_text:
+                        add_rec("Expand False Positive indicators with specific, observable operational exceptions.")
+
+                elif gate_key == "G6_ABSTENTION_ESCALATION":
+                    add_rec("Specify mandatory abstention triggers and human analyst escalation conditions in Sections 7 & 8.")
+
+                elif gate_key == "G7_POLICY_CONSISTENCY":
+                    if "critical" in findings_text and ("event_type" in findings_text or "security.event_type" in findings_text):
+                        add_rec("Explicitly reference critical contract fields (e.g. security.event_type) in Section 4 required evidence.")
+                    elif "contradiction" in findings_text or "contract" in findings_text:
+                        add_rec("Align required evidence in Section 4 with machine-verifiable Evidence Contract fields.")
+                    else:
+                        add_rec("Resolve inconsistencies between policy prompt sections and Evidence Contract requirements.")
+
+                elif gate_key == "G8_SIMULATION_REGRESSION":
+                    if "regression" in findings_text:
+                        add_rec("Investigate and resolve behavioral regression against approved baseline version on frozen dataset.")
+                    elif "insufficient_data" in findings_text or "not been executed" in findings_text:
+                        add_rec("Collect at least 5 independently verified, analyst-labeled historical incidents before empirical approval.")
 
         assessment_id = f"PQA-{semantics.rule_identifier}-V{prompt_version.version_number}-{hashlib.sha256(policy_digest.encode()).hexdigest()[:8]}"
 
@@ -335,6 +388,18 @@ class PolicyQualityValidator:
             getattr(prompt_version, "tp_indicators", "") or "",
             getattr(prompt_version, "fp_indicators", "") or "",
         ]).lower()
+
+        # Check if archetype is UNKNOWN / Inadequate Telemetry
+        if archetype_def.archetype_id == ArchetypeId.UNKNOWN:
+            warns.append(
+                "INADEQUATE_TELEMETRY: Rule is classified as 'Unclassified / Inadequate Telemetry'. "
+                "Archetype semantics are not definitively established to validate policy relevance."
+            )
+            details = (
+                "Archetype: Unclassified / Inadequate Telemetry. Inadequate telemetry semantics to establish "
+                "definitive behavioral archetype. Telemetry enrichment required."
+            )
+            return GateStatus.WARNING, blockers, warns, details
 
         # Check for archetype relevance mismatch (e.g. malware in network exfiltration)
         if archetype_def.archetype_id == ArchetypeId.NETWORK_EXFILTRATION:
@@ -496,14 +561,14 @@ class PolicyQualityValidator:
         warns = []
         score = 10.0
 
-        req_evidence_text = getattr(prompt_version, "required_evidence", "").lower()
+        req_evidence_text = (getattr(prompt_version, "required_evidence", "") or "").lower()
 
         # Check if contract required fields contradict prompt required evidence
         if contract:
             crit_fields = [r.field for r in contract.required_evidence if r.critical]
             for cf in crit_fields:
                 short_f = cf.split(".")[-1]
-                if short_f not in req_evidence_text:
+                if short_f not in req_evidence_text and cf.lower() not in req_evidence_text:
                     warns.append(f"Field '{cf}' marked critical in contract but not explicitly listed in Section 4.")
                     score -= 1.0
 
