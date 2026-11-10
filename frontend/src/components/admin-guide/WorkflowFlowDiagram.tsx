@@ -259,15 +259,34 @@ export function WorkflowFlowDiagram({
   const reducedMotion = manualReducedMotion ?? osReducedMotion;
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [mobileListMode, setMobileListMode] = useState<boolean>(false);
+  const [isDraggingCanvas, setIsDraggingCanvas] = useState<boolean>(false);
+  const [fitPulseActive, setFitPulseActive] = useState<boolean>(false);
+  const fitPulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canvasBounds = useMemo(() => {
+    const minLaneX = swimlanes.reduce((m, l) => Math.min(m, l.position.x), Infinity);
+    const minLaneY = swimlanes.reduce((m, l) => Math.min(m, l.position.y), Infinity);
+    const minStepX = steps.reduce((m, s) => Math.min(m, s.position.x), Infinity);
+    const minStepY = steps.reduce((m, s) => Math.min(m, s.position.y), Infinity);
     const maxLaneX = swimlanes.reduce((m, l) => Math.max(m, l.position.x + l.width), 0);
     const maxLaneY = swimlanes.reduce((m, l) => Math.max(m, l.position.y + l.height), 0);
     const maxStepX = steps.reduce((m, s) => Math.max(m, s.position.x + NODE_WIDTH), 0);
     const maxStepY = steps.reduce((m, s) => Math.max(m, s.position.y + NODE_OUTCOME_HEIGHT), 0);
+    const minX = Number.isFinite(Math.min(minLaneX, minStepX))
+      ? Math.min(minLaneX, minStepX)
+      : 0;
+    const minY = Number.isFinite(Math.min(minLaneY, minStepY))
+      ? Math.min(minLaneY, minStepY)
+      : 0;
+    const maxX = Math.max(maxLaneX, maxStepX);
+    const maxY = Math.max(maxLaneY, maxStepY);
     return {
-      width: Math.max(maxLaneX, maxStepX) + 24,
-      height: Math.max(maxLaneY, maxStepY) + 40,
+      minX,
+      minY,
+      contentWidth: Math.max(100, maxX - minX),
+      contentHeight: Math.max(100, maxY - minY),
+      width: maxX + 16,
+      height: maxY + 16,
     };
   }, [swimlanes, steps]);
 
@@ -290,6 +309,12 @@ export function WorkflowFlowDiagram({
   } | null>(null);
 
   useEffect(() => {
+    return () => {
+      if (fitPulseTimerRef.current) clearTimeout(fitPulseTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     const el = viewportRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const obs = new ResizeObserver((entries) => {
@@ -303,12 +328,18 @@ export function WorkflowFlowDiagram({
   }, [mobileListMode, isFullscreen]);
 
   const fittedTransform = useMemo(() => {
-    const pad = 28;
-    const scaleX = (viewportSize.w - pad) / canvasBounds.width;
-    const scaleY = (viewportSize.h - pad) / canvasBounds.height;
-    const zoom = Math.max(0.35, Math.min(scaleX, scaleY, 1.05));
-    const panX = (viewportSize.w - canvasBounds.width * zoom) / 2;
-    const panY = (viewportSize.h - canvasBounds.height * zoom) / 2;
+    const pad = 20;
+    const availW = Math.max(120, viewportSize.w - pad);
+    const availH = Math.max(120, viewportSize.h - pad);
+    const scaleX = availW / canvasBounds.contentWidth;
+    const scaleY = availH / canvasBounds.contentHeight;
+    const zoom = Math.max(0.18, Math.min(scaleX, scaleY, 1.15));
+    const panX =
+      (viewportSize.w - canvasBounds.contentWidth * zoom) / 2 -
+      canvasBounds.minX * zoom;
+    const panY =
+      (viewportSize.h - canvasBounds.contentHeight * zoom) / 2 -
+      canvasBounds.minY * zoom;
     return { zoom, panX, panY };
   }, [viewportSize, canvasBounds]);
 
@@ -317,7 +348,10 @@ export function WorkflowFlowDiagram({
   useEffect(() => {
     if (!isFullscreen) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsFullscreen(false);
+      if (e.key === "Escape") {
+        setIsFullscreen(false);
+        setManualTransform(null);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -393,14 +427,31 @@ export function WorkflowFlowDiagram({
     [steps]
   );
 
-  const handleFitView = () => setManualTransform(null);
+  const handleFitView = () => {
+    const el = viewportRef.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (w > 50 && h > 50) {
+        setViewportSize((prev) =>
+          Math.abs(prev.w - w) < 0.5 && Math.abs(prev.h - h) < 0.5 ? prev : { w, h }
+        );
+      }
+    }
+    setManualTransform(null);
+    setFitPulseActive(true);
+    if (fitPulseTimerRef.current) clearTimeout(fitPulseTimerRef.current);
+    fitPulseTimerRef.current = setTimeout(() => setFitPulseActive(false), 950);
+  };
 
   const handleZoomBy = (factor: number) => {
     const cur = manualTransform || fittedTransform;
-    const nextZoom = Math.max(0.35, Math.min(1.85, cur.zoom * factor));
+    const nextZoom = Math.max(0.18, Math.min(1.85, cur.zoom * factor));
     const cx = viewportSize.w / 2;
     const cy = viewportSize.h / 2;
     const ratio = nextZoom / cur.zoom;
+    setFitPulseActive(false);
     setManualTransform({
       zoom: nextZoom,
       panX: cx - (cx - cur.panX) * ratio,
@@ -412,6 +463,8 @@ export function WorkflowFlowDiagram({
     const target = e.target as HTMLElement | null;
     if (target?.closest("button, a, [data-flow-node], [data-no-pan]")) return;
     const cur = manualTransform || fittedTransform;
+    setFitPulseActive(false);
+    setIsDraggingCanvas(true);
     dragStateRef.current = {
       dragging: true,
       startX: e.clientX,
@@ -434,6 +487,7 @@ export function WorkflowFlowDiagram({
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsDraggingCanvas(false);
     if (dragStateRef.current) {
       dragStateRef.current = null;
       try {
@@ -584,17 +638,25 @@ export function WorkflowFlowDiagram({
             <button
               type="button"
               onClick={handleFitView}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
+              className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                fitPulseActive
+                  ? "border-cyan-500/80 bg-cyan-950/80 text-cyan-200 font-semibold"
+                  : "border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800"
+              }`}
               title="Fit diagram to screen"
+              aria-label="Fit diagram to screen"
             >
               <Scan className="h-3.5 w-3.5" />
-              <span className="hidden lg:inline">Fit</span>
+              <span className="hidden lg:inline">{fitPulseActive ? "Fitted" : "Fit"}</span>
             </button>
           )}
 
           <button
             type="button"
-            onClick={() => setIsFullscreen((f) => !f)}
+            onClick={() => {
+              setManualTransform(null);
+              setIsFullscreen((f) => !f);
+            }}
             className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
             title={isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen Diagram Mode"}
             aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
@@ -680,7 +742,7 @@ export function WorkflowFlowDiagram({
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
                 onWheel={handleWheel}
-                className="relative flex-1 min-h-0 w-full overflow-hidden bg-slate-950 cursor-grab active:cursor-grabbing select-none"
+                className="relative flex-1 min-h-0 w-full overflow-hidden bg-slate-950 cursor-grab active:cursor-grabbing select-none touch-none"
                 style={{
                   backgroundImage: "radial-gradient(#1e293b 1px, transparent 1px)",
                   backgroundSize: "18px 18px",
@@ -695,7 +757,9 @@ export function WorkflowFlowDiagram({
                     transform: `translate(${activeTransform.panX}px, ${activeTransform.panY}px) scale(${activeTransform.zoom})`,
                     transformOrigin: "0 0",
                   }}
-                  className="relative will-change-transform"
+                  className={`relative will-change-transform ${
+                    isDraggingCanvas || reducedMotion ? "" : "transition-transform duration-200 ease-out"
+                  }`}
                 >
                 {/* Layer 1: Swimlane Group Backdrops */}
                 {swimlanes.map((lane) => {
@@ -921,15 +985,26 @@ export function WorkflowFlowDiagram({
                     <button
                       type="button"
                       onClick={handleFitView}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-slate-300 hover:bg-slate-800 hover:text-cyan-300 transition-colors"
+                      className={`inline-flex items-center gap-1 px-2 py-1 transition-colors ${
+                        fitPulseActive
+                          ? "bg-cyan-950/90 text-cyan-200 font-semibold"
+                          : "text-slate-300 hover:bg-slate-800 hover:text-cyan-300"
+                      }`}
                       title="Fit to Screen"
                       aria-label="Fit to Screen"
                     >
                       <Scan className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Fit</span>
+                      <span className="hidden sm:inline">{fitPulseActive ? "Fitted" : "Fit"}</span>
                     </button>
                   </div>
-                  <span className="rounded border border-slate-800 bg-slate-900/80 px-1.5 py-0.5 text-cyan-300 tabular-nums">
+                  <span
+                    className={`rounded border px-1.5 py-0.5 tabular-nums transition-colors ${
+                      fitPulseActive
+                        ? "border-cyan-500/70 bg-cyan-950/80 text-cyan-200 font-bold"
+                        : "border-slate-800 bg-slate-900/80 text-cyan-300"
+                    }`}
+                  >
+                    {fitPulseActive ? "Fitted " : ""}
                     {Math.round(activeTransform.zoom * 100)}%
                   </span>
                   <span className="hidden md:inline text-slate-500">
