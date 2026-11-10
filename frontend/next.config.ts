@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Allow long-running Server 2 LLM / chat inference requests (up to 300s) proxied through Next rewrites
+    proxyTimeout: 300_000,
+  },
   async rewrites() {
     return [
       {

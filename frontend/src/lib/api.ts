@@ -832,6 +832,37 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   return res;
 }
 
+async function parseChatHttpError(res: Response): Promise<string> {
+  const text = await res.text().catch(() => "");
+  let detail = `Chatbot request failed (HTTP ${res.status})`;
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed?.detail) return parsed.detail;
+  } catch {
+    if (res.status === 504) {
+      return "Gateway Timeout (504): Reverse proxy or Server 2 timed out waiting for LLM response.";
+    }
+  }
+  return detail;
+}
+
+interface ChatStreamDoneEvent {
+  type: "done";
+  model?: string;
+  latency_ms?: number;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  attached_incident_id?: string | null;
+  server_url?: string;
+  timestamp?: string;
+}
+
+type ChatStreamEvent =
+  | { type: "delta"; content?: string }
+  | { type: "error"; status_code?: number; detail?: string }
+  | ChatStreamDoneEvent;
+
 export const api = {
   // Auth
   async login(username: string, password: string) {
@@ -1791,10 +1822,96 @@ export const api = {
       body: JSON.stringify(req),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Chatbot Server 2 inference failed" }));
-      throw new Error(err.detail || "Failed to get response from Server 2 Local LLM");
+      throw new Error(await parseChatHttpError(res));
     }
     return res.json();
+  },
+
+  async streamChatMessage(
+    req: ChatRequest,
+    callbacks: {
+      onDelta: (chunk: string) => void;
+    }
+  ): Promise<ChatResponse> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 300_000);
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+        signal: controller.signal,
+      });
+
+      // Fallback cleanly if streaming endpoint is not available (e.g. older backend instance)
+      if (res.status === 404 || res.status === 405) {
+        return this.sendChatMessage(req);
+      }
+
+      if (!res.ok || !res.body) {
+        throw new Error(await parseChatHttpError(res));
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulated = "";
+      const metaHolder: { done: ChatStreamDoneEvent | null } = { done: null };
+
+      const processLine = (rawLine: string) => {
+        const line = rawLine.trim();
+        if (!line || line.startsWith(":") || !line.startsWith("data:")) return;
+        const jsonPart = line.slice(5).trim();
+        if (!jsonPart || jsonPart === "[DONE]") return;
+        let evt: ChatStreamEvent;
+        try {
+          evt = JSON.parse(jsonPart) as ChatStreamEvent;
+        } catch {
+          return;
+        }
+        if (evt.type === "delta" && typeof evt.content === "string") {
+          accumulated += evt.content;
+          callbacks.onDelta(evt.content);
+        } else if (evt.type === "error") {
+          throw new Error(evt.detail || "Server 2 LLM stream error");
+        } else if (evt.type === "done") {
+          metaHolder.done = evt;
+        }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const l of lines) {
+          processLine(l);
+        }
+      }
+      if (buffer.trim()) {
+        processLine(buffer);
+      }
+
+      const doneMeta = metaHolder.done;
+      return {
+        message: {
+          role: "assistant",
+          content: accumulated,
+          timestamp: doneMeta?.timestamp || new Date().toISOString(),
+        },
+        model: doneMeta?.model || "local-llm",
+        latency_ms: doneMeta?.latency_ms || 0,
+        prompt_tokens: doneMeta?.prompt_tokens || 0,
+        completion_tokens: doneMeta?.completion_tokens || 0,
+        total_tokens: doneMeta?.total_tokens || 0,
+        attached_incident_id: doneMeta?.attached_incident_id ?? undefined,
+        server_url: doneMeta?.server_url || "",
+        is_simulated: false,
+      };
+    } finally {
+      clearTimeout(timer);
+    }
   },
 };
 

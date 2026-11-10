@@ -219,6 +219,7 @@ export default function SocChatbotPage() {
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamSeqRef = useRef<number>(0);
 
   const loadStatus = async () => {
     setCheckingStatus(true);
@@ -270,20 +271,48 @@ export default function SocChatbotPage() {
     setErrorMsg(null);
     setSending(true);
 
-    try {
-      const res = await api.sendChatMessage({
-        messages: nextMessages.map((m) => ({
-          role: m.role,
-          content: m.content,
-          timestamp: m.timestamp,
-        })),
-        incident_id: attachedIncidentId || undefined,
-        temperature,
-        max_tokens: 1024,
-      });
+    streamSeqRef.current += 1;
+    const streamingId = `a-stream-${streamSeqRef.current}`;
+    let hasStreamedChunk = false;
 
-      const assistantMsg: RichChatMessage = {
-        id: `a-${Date.now()}`,
+    try {
+      const res = await api.streamChatMessage(
+        {
+          messages: nextMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp,
+          })),
+          incident_id: attachedIncidentId || undefined,
+          temperature,
+          max_tokens: 1024,
+        },
+        {
+          onDelta: (delta) => {
+            if (!hasStreamedChunk) {
+              hasStreamedChunk = true;
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: streamingId,
+                  role: "assistant",
+                  content: delta,
+                  timestamp: new Date().toISOString(),
+                },
+              ]);
+            } else {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === streamingId ? { ...m, content: m.content + delta } : m
+                )
+              );
+            }
+          },
+        }
+      );
+
+      const finalMsg: RichChatMessage = {
+        id: streamingId,
         role: "assistant",
         content: res.message.content,
         timestamp: res.message.timestamp || new Date().toISOString(),
@@ -294,8 +323,15 @@ export default function SocChatbotPage() {
         total_tokens: res.total_tokens,
         attached_incident_id: res.attached_incident_id || undefined,
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+      setMessages((prev) =>
+        prev.some((m) => m.id === streamingId)
+          ? prev.map((m) => (m.id === streamingId ? finalMsg : m))
+          : [...prev, finalMsg]
+      );
     } catch (err: any) {
+      if (hasStreamedChunk) {
+        setMessages((prev) => prev.filter((m) => m.id !== streamingId));
+      }
       setErrorMsg(err.message || "Failed to connect to Local LLM (Server 2).");
     } finally {
       setSending(false);
@@ -605,7 +641,12 @@ export default function SocChatbotPage() {
               );
             })}
 
-            {sending && (
+            {sending &&
+              !(
+                messages.length > 0 &&
+                messages[messages.length - 1].role === "assistant" &&
+                messages[messages.length - 1].latency_ms === undefined
+              ) && (
               <div className="flex gap-3 justify-start">
                 <div className="w-8 h-8 rounded-lg bg-indigo-950 border border-indigo-800 flex items-center justify-center shrink-0 text-indigo-300">
                   <RefreshCw className="w-4 h-4 animate-spin" />
