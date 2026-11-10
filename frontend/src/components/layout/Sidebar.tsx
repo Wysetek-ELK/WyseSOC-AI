@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Server,
   MessageSquareCode,
+  BookOpenCheck,
 } from "lucide-react";
 
 interface NavItem {
@@ -121,6 +122,11 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Governance & Access",
         href: "/governance-access",
         icon: ShieldCheck,
+      },
+      {
+        title: "AI Verdict Admin Guide",
+        href: "/admin-guide",
+        icon: BookOpenCheck,
       },
     ],
   },

@@ -29,3 +29,54 @@ body {
   background: #475569;
 }
 
+/* Admin Guide lightweight workflow animations */
+@keyframes flowDash {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.flow-edge-animated {
+  stroke-dasharray: 6 6;
+  animation: flowDash 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-edge-animated {
+    animation: none !important;
+  }
+}
+
+.guide-reduced-motion .flow-edge-animated {
+  animation: none !important;
+}
+
+/* Dark cybersecurity styling for React Flow controls */
+.ai-verdict-flow .react-flow__controls {
+  background: rgba(2, 6, 23, 0.9);
+  border: 1px solid #1e293b;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.ai-verdict-flow .react-flow__controls-button {
+  background: rgba(15, 23, 42, 0.9);
+  border-bottom: 1px solid #1e293b;
+  color: #cbd5e1;
+  fill: #cbd5e1;
+}
+
+.ai-verdict-flow .react-flow__controls-button:hover {
+  background: #1e293b;
+  color: #22d3ee;
+  fill: #22d3ee;
+}
+
+.ai-verdict-flow .react-flow__attribution {
+  display: none;
+}
+

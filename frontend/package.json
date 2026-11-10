@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:admin-guide": "node --experimental-strip-types --test tests/admin-guide.test.mjs"
   },
   "dependencies": {
+    "@xyflow/react": "^12.12.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.69.0",
     "next": "16.4.5",
