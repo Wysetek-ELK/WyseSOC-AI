@@ -202,9 +202,10 @@ class OpenAICompatibleProvider(BaseModelProvider):
         ]
         
         last_error = None
+        probe_timeout = httpx.Timeout(connect=4.0, read=6.0, write=5.0, pool=4.0)
         for endpoint in health_endpoints:
             try:
-                async with httpx.AsyncClient(timeout=3.0) as client:
+                async with httpx.AsyncClient(timeout=probe_timeout) as client:
                     res = await client.get(
                         endpoint,
                         headers={"Authorization": f"Bearer {self.api_key}"}

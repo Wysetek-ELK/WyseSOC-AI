@@ -168,6 +168,7 @@ async def _prepare_chat_upstream(
             role = "user"
         messages_payload.append({"role": role, "content": m.content})
 
+    LLMConfigService.sync_runtime_settings()
     target_model = settings.LOCAL_LLM_MODEL_NAME
     parsed = LLMConfigService.parse_llm_url(settings.LOCAL_LLM_BASE_URL)
     completion_url = f"{parsed['base_url']}/chat/completions"

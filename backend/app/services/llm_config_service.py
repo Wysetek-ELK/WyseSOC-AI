@@ -1,8 +1,11 @@
 import os
 import re
+import sys
+import json
 import time
 import socket
 import logging
+import tempfile
 from urllib.parse import urlparse
 from typing import Dict, Any, Optional, List
 import httpx
@@ -25,6 +28,109 @@ class LLMConfigService:
     """
     _cached_server1_ip: Optional[str] = None
     _cached_ip_timestamp: float = 0.0
+    _process_start_time: float = time.time()
+    _last_synced_state_mtime_ns: int = 0
+
+    @classmethod
+    def _state_file_path(cls) -> str:
+        is_pytest = "pytest" in sys.modules or "PYTEST_CURRENT_TEST" in os.environ
+        filename = "test_llm_config_state.json" if is_pytest else "llm_config_state.json"
+        return os.path.join(BASE_DIR, filename)
+
+    @classmethod
+    def _persist_runtime_state(cls) -> None:
+        """
+        Atomically writes active Server 2 configuration to a shared runtime state file
+        so all Uvicorn API workers and background workers stay synchronized even in production.
+        """
+        state_file = cls._state_file_path()
+        payload = {
+            "base_url": settings.LOCAL_LLM_BASE_URL,
+            "model_name": settings.LOCAL_LLM_MODEL_NAME,
+            "timeout": float(settings.LOCAL_LLM_TIMEOUT),
+            "allow_mock_fallback": bool(settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK),
+            "updated_at": time.time(),
+        }
+        tmp_path: Optional[str] = None
+        try:
+            parent_dir = os.path.dirname(os.path.abspath(state_file))
+            os.makedirs(parent_dir, exist_ok=True)
+            fd, tmp_path = tempfile.mkstemp(prefix=".llm_cfg_", suffix=".tmp", dir=parent_dir)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, state_file)
+            cls._last_synced_state_mtime_ns = os.stat(state_file).st_mtime_ns
+        except Exception as exc:
+            logger.warning(f"Failed to persist shared LLM runtime state: {exc}")
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except Exception:
+                    pass
+
+    @classmethod
+    def sync_runtime_settings(cls) -> bool:
+        """
+        Synchronizes in-memory LOCAL_LLM_* settings from the shared runtime state file
+        when another worker process updates Server 2 config.
+        Returns True if settings changed in the current worker process.
+        """
+        state_file = cls._state_file_path()
+        if not os.path.exists(state_file):
+            return False
+
+        is_pytest = "pytest" in sys.modules or "PYTEST_CURRENT_TEST" in os.environ
+        try:
+            st = os.stat(state_file)
+            if is_pytest and (st.st_mtime_ns / 1e9) < cls._process_start_time:
+                return False
+            if st.st_mtime_ns <= cls._last_synced_state_mtime_ns:
+                return False
+
+            with open(state_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return False
+
+            changed = False
+            new_url = str(data.get("base_url") or "").strip()
+            if new_url and new_url != settings.LOCAL_LLM_BASE_URL:
+                settings.LOCAL_LLM_BASE_URL = new_url
+                changed = True
+
+            new_model = str(data.get("model_name") or "").strip()
+            if new_model and new_model != settings.LOCAL_LLM_MODEL_NAME:
+                settings.LOCAL_LLM_MODEL_NAME = new_model
+                changed = True
+
+            if data.get("timeout") is not None:
+                new_timeout = float(data["timeout"])
+                if new_timeout != float(settings.LOCAL_LLM_TIMEOUT):
+                    settings.LOCAL_LLM_TIMEOUT = new_timeout
+                    changed = True
+
+            if data.get("allow_mock_fallback") is not None:
+                is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+                new_mock = False if is_prod else bool(data["allow_mock_fallback"])
+                if new_mock != bool(settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK):
+                    settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK = new_mock
+                    changed = True
+
+            cls._last_synced_state_mtime_ns = st.st_mtime_ns
+            if changed:
+                from app.services.ai_verdict_service import AIVerdictService
+                AIVerdictService._is_local_llm_online = None
+                AIVerdictService._last_probe_time = 0.0
+                logger.info(
+                    f"Synced shared LLM runtime config in PID {os.getpid()}: "
+                    f"base_url={settings.LOCAL_LLM_BASE_URL}, model={settings.LOCAL_LLM_MODEL_NAME}"
+                )
+            return changed
+        except Exception as exc:
+            logger.debug(f"Could not sync shared LLM runtime state: {exc}")
+            return False
 
     @staticmethod
     def parse_llm_url(
@@ -118,6 +224,7 @@ class LLMConfigService:
         """
         Returns the active LLM Server 2 configuration.
         """
+        cls.sync_runtime_settings()
         parsed = cls.parse_llm_url(settings.LOCAL_LLM_BASE_URL)
         server1_ip = await cls.get_server1_outbound_ip()
 
@@ -169,6 +276,10 @@ class LLMConfigService:
         # Reset online status so next evaluation/monitoring triggers a fresh probe
         from app.services.ai_verdict_service import AIVerdictService
         AIVerdictService._is_local_llm_online = None
+        AIVerdictService._last_probe_time = 0.0
+
+        # Persist shared runtime state so all Uvicorn & Celery workers pick up changes immediately
+        cls._persist_runtime_state()
 
         # 2. Persist to backend .env file (development / staging only - avoided in production)
         if not is_prod:
@@ -253,9 +364,12 @@ class LLMConfigService:
                     models = [m.get("id", "") for m in data.get("data", []) if m.get("id")]
                     model_str = ", ".join(models) if models else settings.LOCAL_LLM_MODEL_NAME
 
-                    # Mark local LLM online
+                    # Mark local LLM online if testing the currently configured endpoint
                     from app.services.ai_verdict_service import AIVerdictService
-                    AIVerdictService._is_local_llm_online = True
+                    active_parsed = cls.parse_llm_url(settings.LOCAL_LLM_BASE_URL)
+                    if base_url == active_parsed["base_url"]:
+                        AIVerdictService._is_local_llm_online = True
+                        AIVerdictService._last_probe_time = time.time()
 
                     return LLMTestConnectionResponse(
                         success=True,

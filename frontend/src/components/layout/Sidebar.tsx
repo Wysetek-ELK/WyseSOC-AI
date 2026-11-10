@@ -189,9 +189,8 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`relative flex flex-col border-r border-slate-800 bg-slate-950 text-slate-200 transition-all duration-200 select-none ${
-        collapsed ? "w-14" : "w-60"
-      }`}
+      className={`relative flex flex-col border-r border-slate-800 bg-slate-950 text-slate-200 transition-all duration-200 select-none ${collapsed ? "w-14" : "w-60"
+        }`}
     >
       {/* Brand Header */}
       <div className="flex h-12 items-center justify-between px-3 border-b border-slate-800">
@@ -236,11 +235,10 @@ export function Sidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
-                    active
+                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${active
                       ? "bg-cyan-950/60 text-cyan-300 border border-cyan-700/50 shadow-sm shadow-cyan-900/20"
                       : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60"
-                  }`}
+                    }`}
                   title={collapsed ? item.title : undefined}
                 >
                   <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "text-cyan-400" : "text-slate-400"}`} />
@@ -273,29 +271,53 @@ export function Sidebar() {
           >
             <div className="flex items-center justify-between mb-0.5">
               <span className="text-slate-400 text-[9px]">INFERENCE</span>
-              <span className="flex items-center gap-1 text-emerald-400 text-[9px]">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                ACTIVE
-              </span>
+              {llmStatus?.is_healthy ? (
+                <span className="flex items-center gap-1 text-emerald-400 text-[9px]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  ACTIVE
+                </span>
+              ) : llmStatus === null ? (
+                <span className="flex items-center gap-1 text-slate-400 text-[9px]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
+                  CHECKING
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-amber-400 text-[9px]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+                  S2 OFFLINE
+                </span>
+              )}
             </div>
             <div className="text-[9px] text-slate-400 leading-tight">
               Arch: <span className="text-slate-300">{llmStatus?.is_healthy ? "S1 + S2 (GPU)" : "Server 1"}</span>
             </div>
-            <div className="text-[9px] text-slate-400 leading-tight flex items-center justify-between">
+            <div className="text-[9px] text-slate-400 leading-tight flex items-center justify-between gap-1">
               <span>LLM:</span>
               {llmStatus?.is_healthy ? (
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  Qwen 2.5 7B (Active)
+                <span
+                  className="text-emerald-400 font-semibold flex items-center gap-1 truncate max-w-[130px]"
+                  title={llmStatus.model || "Local LLM Active"}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                  {llmStatus.model
+                    ? `${llmStatus.model.split("/").pop()?.replace(/-Instruct.*$/i, "") || llmStatus.model} (Active)`
+                    : "Qwen 2.5 7B (Active)"}
                 </span>
               ) : (
-                <span className="text-amber-400">P1 (Native)</span>
+                <span className="text-amber-400">S2 Offline</span>
               )}
             </div>
           </Link>
         ) : (
-          <Link href="/inference-control" className="flex justify-center py-1" title="Inference Control Active">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" title="Inference Control Active"></span>
+          <Link
+            href="/inference-control"
+            className="flex justify-center py-1"
+            title={llmStatus?.is_healthy ? "Server 2 LLM Active" : "Server 2 LLM Offline"}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${llmStatus?.is_healthy ? "bg-emerald-400" : "bg-amber-400"}`}
+              title={llmStatus?.is_healthy ? "Server 2 LLM Active" : "Server 2 LLM Offline"}
+            ></span>
           </Link>
         )}
       </div>

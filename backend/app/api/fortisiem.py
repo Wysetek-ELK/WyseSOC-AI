@@ -191,12 +191,69 @@ async def get_scheduler_status(
 @router.post("/process-pending-verdicts", response_model=Dict[str, Any])
 async def process_pending_verdicts(
     max_count: int = 100,
+    background: bool = False,
     current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Evaluates pending incidents lacking AI verdicts one by one once Local LLM is online.
+    Set background=true for non-blocking full-backlog drainage without HTTP timeouts.
     """
+    from app.services.llm_config_service import LLMConfigService
+    LLMConfigService.sync_runtime_settings()
+
+    if background:
+        from app.services.ai_verdict_service import AIVerdictService
+        from app.services.fortisiem_scheduler import fortisiem_scheduler
+        from app.config import settings
+
+        verdict_svc = AIVerdictService(db)
+        is_online = await AIVerdictService.is_local_llm_available(force_refresh=True)
+        is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+        allow_mock = False if is_prod else getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
+        pending_total = await verdict_svc.get_pending_incident_count()
+
+        if not is_online and not allow_mock:
+            return {
+                "success": False,
+                "is_llm_online": False,
+                "started": False,
+                "processed": 0,
+                "failed": 0,
+                "pending_remaining": pending_total,
+                "message": f"Local LLM (Server 2) is currently offline. {pending_total} incidents pending in queue.",
+            }
+
+        if pending_total == 0:
+            return {
+                "success": True,
+                "is_llm_online": True,
+                "started": False,
+                "processed": 0,
+                "failed": 0,
+                "pending_remaining": 0,
+                "message": "All incidents already have AI verdicts.",
+            }
+
+        started = fortisiem_scheduler.trigger_pending_reconciliation(
+            force=True,
+            username=current_user.username,
+        )
+        return {
+            "success": True,
+            "is_llm_online": True,
+            "started": started,
+            "already_running": not started,
+            "processed": 0,
+            "failed": 0,
+            "pending_remaining": pending_total,
+            "message": (
+                f"Started background AI verdict reconciliation for {pending_total} pending incidents."
+                if started
+                else f"Background AI verdict reconciliation is already running ({pending_total} pending)."
+            ),
+        }
+
     service = FortiSIEMService(db)
     return await service.process_pending_incidents(max_count=max_count, username=current_user.username)
 

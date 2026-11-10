@@ -127,9 +127,13 @@ class InferenceHealthMonitor:
         Honest telemetry: never fabricates CPU/RAM/VRAM/GPU numbers when Prometheus metrics are unavailable (REQ-06 / AV-010).
         """
         now = datetime.utcnow()
-        base_url = settings.LOCAL_LLM_BASE_URL.rstrip("/")
+        from app.services.llm_config_service import LLMConfigService
+        LLMConfigService.sync_runtime_settings()
+        parsed_llm = LLMConfigService.parse_llm_url(settings.LOCAL_LLM_BASE_URL)
+        base_url = parsed_llm["base_url"]
         # If /v1 is attached, strip it for root health/metrics
         root_url = base_url[:-3] if base_url.endswith("/v1") else base_url
+        auth_headers = {"Authorization": f"Bearer {settings.LOCAL_LLM_API_KEY}"}
 
         status = "OFFLINE"
         latency_ms: Optional[float] = None
@@ -147,18 +151,36 @@ class InferenceHealthMonitor:
             "metrics_available": False,
         }
 
+        probe_timeout = httpx.Timeout(connect=4.0, read=6.0, write=5.0, pool=4.0)
         try:
-            async with httpx.AsyncClient(timeout=3.5) as client:
+            async with httpx.AsyncClient(timeout=probe_timeout) as client:
                 t0 = time.perf_counter()
-                models_res = await client.get(f"{base_url}/models")
-                latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+                models_res = None
+                try:
+                    models_res = await client.get(f"{base_url}/models", headers=auth_headers)
+                except Exception as models_exc:
+                    details["models_error"] = str(models_exc)
 
-                if models_res.status_code == 200:
+                if models_res is not None and models_res.status_code == 200:
+                    latency_ms = round((time.perf_counter() - t0) * 1000, 1)
                     status = "ONLINE"
+                    details.pop("error", None)
+                else:
+                    # Fallback to root /health endpoint so status aligns cleanly with OpenAICompatibleProvider.get_health()
+                    health_res = await client.get(f"{root_url}/health", headers=auth_headers)
+                    latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+                    if health_res.status_code == 200:
+                        status = "ONLINE"
+                        details.pop("error", None)
+                    else:
+                        code = models_res.status_code if models_res is not None else health_res.status_code
+                        status = "DEGRADED"
+                        details["error"] = f"HTTP {code}"
 
+                if status == "ONLINE":
                     # Try to fetch actual Prometheus vLLM metrics
                     try:
-                        metrics_res = await client.get(f"{root_url}/metrics", timeout=2.0)
+                        metrics_res = await client.get(f"{root_url}/metrics", headers=auth_headers, timeout=2.5)
                         if metrics_res.status_code == 200:
                             parsed_metrics = self._parse_vllm_metrics(metrics_res.text)
                             if parsed_metrics:
@@ -175,9 +197,6 @@ class InferenceHealthMonitor:
                                 details["vllm_metrics"] = parsed_metrics
                     except Exception:
                         pass
-                else:
-                    status = "DEGRADED"
-                    details["error"] = f"HTTP {models_res.status_code}"
         except Exception as e:
             status = "OFFLINE"
             latency_ms = None

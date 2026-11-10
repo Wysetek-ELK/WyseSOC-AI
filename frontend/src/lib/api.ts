@@ -1190,8 +1190,20 @@ export const api = {
     return res.json();
   },
 
-  async processPendingFortiSiemVerdicts(max_count: number = 100): Promise<any> {
-    const res = await fetchWithAuth(`${API_BASE}/fortisiem/process-pending-verdicts?max_count=${max_count}`, {
+  async processPendingFortiSiemVerdicts(
+    max_count: number = 100,
+    background: boolean = false
+  ): Promise<{
+    success?: boolean;
+    is_llm_online?: boolean;
+    started?: boolean;
+    already_running?: boolean;
+    processed?: number;
+    failed?: number;
+    pending_remaining?: number;
+    message?: string;
+  }> {
+    const res = await fetchWithAuth(`${API_BASE}/fortisiem/process-pending-verdicts?max_count=${max_count}&background=${background}`, {
       method: "POST",
     });
     if (!res.ok) throw new Error("Failed to process pending AI verdicts");

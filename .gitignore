@@ -29,8 +29,10 @@ frontend/yarn-error.log*
 Thumbs.db
 *.zip
 
-# Runtime Scheduler State
+# Runtime Scheduler & LLM Config State
 scheduler_state.json*
 test_scheduler_state.json*
+llm_config_state.json*
+test_llm_config_state.json*
 
 

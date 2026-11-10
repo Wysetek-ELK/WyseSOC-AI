@@ -41,6 +41,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
   const [error, setError] = useState<string | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastS2StatusRef = useRef<string | null>(null);
 
   const loadMetrics = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
@@ -48,6 +49,22 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
     try {
       const live = await api.getServersLive();
       setLiveData(live);
+      const nextS2Status = live?.server_2?.status ?? null;
+      if (
+        typeof window !== "undefined" &&
+        nextS2Status &&
+        (isManual || lastS2StatusRef.current !== nextS2Status)
+      ) {
+        lastS2StatusRef.current = nextS2Status;
+        window.dispatchEvent(
+          new CustomEvent("llm-status-change", {
+            detail: {
+              is_healthy: nextS2Status === "ONLINE",
+              model: live.server_2?.details?.model_name,
+            },
+          })
+        );
+      }
     } catch (err: any) {
       console.warn("Failed to load live server telemetry:", err);
     }

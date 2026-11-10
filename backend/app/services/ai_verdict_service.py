@@ -47,9 +47,14 @@ class VerdictTriageAgent:
 
     @classmethod
     async def is_local_llm_available(cls, force_refresh: bool = False) -> bool:
-        """Checks if Server 2 LLM endpoint is reachable, caching result for 30s."""
+        """Checks if Server 2 LLM endpoint is reachable, caching positive status for 30s and offline status for 8s."""
+        from app.services.llm_config_service import LLMConfigService
+        if LLMConfigService.sync_runtime_settings():
+            force_refresh = True
+
         now = time.time()
-        if not force_refresh and cls._is_local_llm_online is not None and (now - cls._last_probe_time) < 30.0:
+        cache_ttl = 30.0 if cls._is_local_llm_online else 8.0
+        if not force_refresh and cls._is_local_llm_online is not None and (now - cls._last_probe_time) < cache_ttl:
             return cls._is_local_llm_online
 
         cls._last_probe_time = now
@@ -702,6 +707,10 @@ class VerdictTriageAgent:
                 successful += 1
                 await asyncio.sleep(0.15)
             except Exception as e:
+                try:
+                    await self.db.rollback()
+                except Exception:
+                    pass
                 failed += 1
                 results.append({
                     "incident_id": iid,
@@ -730,6 +739,8 @@ class VerdictTriageAgent:
         online, processes them one by one sequentially with the Verdict Triage Agent.
         If Local LLM is offline or goes offline mid-batch, halts immediately.
         """
+        from app.services.llm_config_service import LLMConfigService
+        LLMConfigService.sync_runtime_settings()
         is_online = await self.is_local_llm_available(force_refresh=True)
         is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
         allow_mock = False if is_prod else getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
@@ -782,6 +793,10 @@ class VerdictTriageAgent:
                 if pause_between_s > 0:
                     await asyncio.sleep(pause_between_s)
             except Exception as exc:
+                try:
+                    await self.db.rollback()
+                except Exception:
+                    pass
                 failed_count += 1
                 print(f"[LLM Backlog Processor] Error evaluating incident {iid}: {exc}")
 

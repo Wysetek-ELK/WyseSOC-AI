@@ -187,11 +187,22 @@ class SentinelIngestWorker:
         if self._supervisor_task and not self._supervisor_task.done():
             self._supervisor_task.cancel()
 
+        backlog_task = getattr(self, "_backlog_task", None)
+        if backlog_task and not backlog_task.done():
+            backlog_task.cancel()
+
         # Release leadership if this worker was the active leader
         state = self._read_state()
+        state_changed = False
         if state.get("leader_id") == self._worker_id:
             state["leader_id"] = None
             state["heartbeat_at"] = None
+            state_changed = True
+        if state.get("backlog_worker_id") == self._worker_id:
+            state["backlog_worker_id"] = None
+            state["backlog_heartbeat_at"] = None
+            state_changed = True
+        if state_changed:
             self._write_state(state)
         self._is_local_leader = False
 
@@ -327,17 +338,162 @@ class SentinelIngestWorker:
         self._is_local_leader = False
         return False
 
+    def _get_backlog_lock(self) -> asyncio.Lock:
+        lock = getattr(self, "_backlog_lock", None)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._backlog_lock = lock
+        return lock
+
+    def _claim_or_renew_backlog_lease(self) -> bool:
+        """
+        Cross-worker coordinator lease for background pending-incident AI reconciliation.
+        Ensures only one worker drains pending verdicts even when continuous FortiSIEM polling is off.
+        """
+        state = self._read_state()
+        now = datetime.now(timezone.utc)
+        owner = state.get("backlog_worker_id")
+        hb_str = state.get("backlog_heartbeat_at")
+
+        is_stale = True
+        if hb_str:
+            try:
+                hb = datetime.fromisoformat(hb_str)
+                if hb.tzinfo is None:
+                    hb = hb.replace(tzinfo=timezone.utc)
+                if (now - hb).total_seconds() < 90.0:
+                    is_stale = False
+            except Exception:
+                is_stale = True
+
+        if owner == self._worker_id or not owner or is_stale:
+            state["backlog_worker_id"] = self._worker_id
+            state["backlog_heartbeat_at"] = now.isoformat()
+            self._write_state(state)
+            return True
+        return False
+
+    async def run_pending_reconciliation_until_drained(
+        self,
+        max_batch: int = 25,
+        max_batches: int = 60,
+        username: str = "llm_backlog_worker",
+    ) -> Dict[str, Any]:
+        """
+        Sequentially drains pending incidents (ai_verdict IS NULL) once Local LLM Server 2 is online.
+        Runs without short asyncio.wait_for cancellation timers so real GPU inference completes cleanly.
+        """
+        from app.services.llm_config_service import LLMConfigService
+        lock = self._get_backlog_lock()
+        if lock.locked():
+            return {
+                "success": True,
+                "already_running": True,
+                "processed": 0,
+                "failed": 0,
+                "pending_remaining": None,
+                "message": "Pending verdict reconciliation is already running in this worker.",
+            }
+
+        async with lock:
+            total_processed = 0
+            total_failed = 0
+            last_remaining = 0
+            is_llm_online = False
+
+            for _ in range(max_batches):
+                if getattr(self, "_shutdown_requested", False):
+                    break
+
+                LLMConfigService.sync_runtime_settings()
+                self._claim_or_renew_backlog_lease()
+
+                try:
+                    async with AsyncSessionLocal() as session:
+                        service = FortiSIEMService(session)
+                        res = await service.process_pending_incidents(
+                            max_count=max_batch,
+                            username=username,
+                        )
+                except Exception as exc:
+                    logger.warning(f"[Pending Verdict Reconciliation Error]: {exc}")
+                    break
+
+                is_llm_online = bool(res.get("is_llm_online", False))
+                processed = int(res.get("processed", 0))
+                failed = int(res.get("failed", 0))
+                last_remaining = int(res.get("pending_remaining", 0))
+                total_processed += processed
+                total_failed += failed
+
+                if processed > 0:
+                    self.total_ai_verdicts_count += processed
+                    st = self._read_state()
+                    st["total_ai_verdicts_count"] = self.total_ai_verdicts_count
+                    self._write_state(st)
+
+                if not is_llm_online or last_remaining == 0 or processed == 0:
+                    break
+
+            return {
+                "success": is_llm_online or total_processed > 0,
+                "is_llm_online": is_llm_online,
+                "processed": total_processed,
+                "failed": total_failed,
+                "pending_remaining": last_remaining,
+                "message": (
+                    f"Processed {total_processed} pending incidents ({last_remaining} remaining)."
+                    if is_llm_online
+                    else f"Local LLM (Server 2) unavailable; {last_remaining} incidents remain pending."
+                ),
+            }
+
+    def trigger_pending_reconciliation(
+        self,
+        force: bool = False,
+        username: str = "llm_backlog_worker",
+    ) -> bool:
+        """
+        Triggers asynchronous background reconciliation of pending incidents if not already running.
+        """
+        if getattr(self, "_shutdown_requested", False):
+            return False
+
+        is_pytest = "pytest" in sys.modules or "PYTEST_CURRENT_TEST" in os.environ
+        if is_pytest and not force:
+            return False
+
+        existing = getattr(self, "_backlog_task", None)
+        if existing is not None and not existing.done():
+            return False
+
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return False
+
+        self._backlog_task = asyncio.create_task(
+            self.run_pending_reconciliation_until_drained(username=username)
+        )
+        return True
+
     async def _supervisor_loop(self) -> None:
         """
         Supervisor loop running in every worker process:
         - Monitors `scheduler_state.json`.
         - If continuous sync is enabled, ensures a healthy leader is actively running.
-        - If this worker is leader, ensures local `_worker_loop` is running.
+        - If Server 2 LLM is online and pending incidents exist, ensures one worker reconciles them cleanly.
         """
+        from app.services.llm_config_service import LLMConfigService
+        from app.services.ai_verdict_service import AIVerdictService
+
+        check_counter = 0
         while not self._shutdown_requested:
             try:
+                LLMConfigService.sync_runtime_settings()
                 state = self._read_state()
                 is_enabled = bool(state.get("is_enabled", False)) or getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False)
+                auto_ai_verdict = bool(state.get("auto_ai_verdict", True))
 
                 if is_enabled:
                     if not state.get("is_enabled", False):
@@ -353,6 +509,22 @@ class SentinelIngestWorker:
                         self._stop_event.set()
                         self._task.cancel()
                     self._is_local_leader = False
+
+                # Even when FortiSIEM polling is off, check every ~30s if pending verdicts await an online Server 2
+                check_counter += 1
+                is_pytest = "pytest" in sys.modules or "PYTEST_CURRENT_TEST" in os.environ
+                if (
+                    auto_ai_verdict
+                    and not is_pytest
+                    and check_counter % 3 == 1
+                    and (getattr(self, "_backlog_task", None) is None or self._backlog_task.done())
+                ):
+                    if self._claim_or_renew_backlog_lease():
+                        async with AsyncSessionLocal() as session:
+                            verdict_svc = AIVerdictService(session)
+                            pending_count = await verdict_svc.get_pending_incident_count()
+                        if pending_count > 0 and await AIVerdictService.is_local_llm_available():
+                            self.trigger_pending_reconciliation(username="llm_auto_reconciler")
 
             except asyncio.CancelledError:
                 break
@@ -424,22 +596,14 @@ class SentinelIngestWorker:
                 st["heartbeat_at"] = hb_now.isoformat()
                 self._write_state(st)
 
-                # Process pending incident triage backlog if Local LLM is available
+                # Process pending incident triage backlog asynchronously without killing batches on short timeouts
                 if self.auto_ai_verdict and not self._stop_event.is_set():
                     try:
-                        async with AsyncSessionLocal() as session:
-                            service = FortiSIEMService(session)
-                            p_res = await asyncio.wait_for(
-                                service.process_pending_incidents(max_count=20, username="scheduler"),
-                                timeout=25.0,
-                            )
-                            if p_res.get("processed", 0) > 0:
-                                self.total_ai_verdicts_count += p_res["processed"]
-                                st = self._read_state()
-                                st["total_ai_verdicts_count"] = self.total_ai_verdicts_count
-                                self._write_state(st)
-                    except Exception:
-                        pass
+                        from app.services.llm_config_service import LLMConfigService
+                        LLMConfigService.sync_runtime_settings()
+                        self.trigger_pending_reconciliation(username="scheduler")
+                    except Exception as pend_exc:
+                        logger.warning(f"[Scheduler Worker Backlog Trigger Warning]: {pend_exc}")
 
             if self._stop_event.is_set() or self._shutdown_requested:
                 break
@@ -519,16 +683,20 @@ class SentinelIngestWorker:
                 if checkpoint:
                     self.checkpoint_epoch = max(self.checkpoint_epoch or 0, checkpoint)
 
-                # Process backlog of pending incidents if Local LLM is online
+                # Process an immediate slice of pending incidents if Local LLM is online, then drain remainder asynchronously
                 if self.auto_ai_verdict:
                     try:
+                        from app.services.llm_config_service import LLMConfigService
+                        LLMConfigService.sync_runtime_settings()
                         pending_res = await asyncio.wait_for(
-                            service.process_pending_incidents(max_count=50, username="scheduler"),
-                            timeout=35.0,
+                            service.process_pending_incidents(max_count=10, username="scheduler"),
+                            timeout=180.0,
                         )
                         backlog_processed = pending_res.get("processed", 0)
                         if backlog_processed > 0:
                             ai_verdicts += backlog_processed
+                        if pending_res.get("pending_remaining", 0) > 0 and pending_res.get("is_llm_online"):
+                            self.trigger_pending_reconciliation(username="scheduler")
                     except Exception as pend_exc:
                         logger.warning(f"[Scheduler Backlog Warning]: {pend_exc}")
 

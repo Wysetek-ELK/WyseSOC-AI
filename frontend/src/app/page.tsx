@@ -30,6 +30,22 @@ export default function AgentMissionControlPage() {
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [mounted, setMounted] = useState<boolean>(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [isReconcilingPending, setIsReconcilingPending] = useState<boolean>(false);
+  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
+
+  const handleReconcilePending = async () => {
+    setIsReconcilingPending(true);
+    setPendingNotice(null);
+    try {
+      const res = await api.processPendingFortiSiemVerdicts(100, true);
+      setPendingNotice(res.message || "Pending verdict reconciliation triggered.");
+      await loadData(false);
+    } catch (err: unknown) {
+      setPendingNotice(err instanceof Error ? err.message : "Failed to start pending verdict processing.");
+    } finally {
+      setIsReconcilingPending(false);
+    }
+  };
 
   const loadData = async (showSpinner: boolean = true) => {
     if (showSpinner) setIsLoading(true);
@@ -230,14 +246,36 @@ export default function AgentMissionControlPage() {
                 <span>Agent Triaged</span>
                 <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
               </div>
-              <div className="mt-1 text-xl font-bold font-mono text-cyan-300">
-                {isLoading ? "..." : (metrics?.ai_evaluated_count ?? 0).toLocaleString()}
+              <div className="mt-1 flex items-baseline justify-between gap-2">
+                <div className="text-xl font-bold font-mono text-cyan-300">
+                  {isLoading ? "..." : (metrics?.ai_evaluated_count ?? 0).toLocaleString()}
+                </div>
+                {!isLoading &&
+                  metrics &&
+                  metrics.total_incidents > (metrics.ai_evaluated_count || 0) && (
+                    <button
+                      type="button"
+                      onClick={handleReconcilePending}
+                      disabled={isReconcilingPending}
+                      className="rounded border border-cyan-700/70 bg-cyan-950/80 px-1.5 py-0.5 text-[9px] font-mono font-semibold text-cyan-200 hover:bg-cyan-900/80 disabled:opacity-50 transition-colors"
+                      title="Process remaining pending incidents with Server 2 Local LLM"
+                    >
+                      {isReconcilingPending
+                        ? "Starting..."
+                        : `Process ${(metrics.total_incidents - (metrics.ai_evaluated_count || 0)).toLocaleString()} Pending`}
+                    </button>
+                  )}
               </div>
               <div className="mt-0.5 text-[10px] text-cyan-400/80 font-mono">
                 {metrics?.total_incidents
                   ? Math.round(((metrics.ai_evaluated_count || 0) / metrics.total_incidents) * 100)
                   : 0}% Triaged by Agent
               </div>
+              {pendingNotice && (
+                <div className="mt-1 text-[9px] font-mono text-amber-300 leading-snug" title={pendingNotice}>
+                  {pendingNotice}
+                </div>
+              )}
             </div>
 
             {/* AI False Positives (Noise Auto-Dismissed) */}

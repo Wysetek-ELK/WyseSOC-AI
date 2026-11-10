@@ -245,10 +245,10 @@ export default function TelemetryHubPage() {
     setIsProcessingPending(true);
     setSchedulerMsg(null);
     try {
-      const res = await api.processPendingFortiSiemVerdicts(100);
+      const res = await api.processPendingFortiSiemVerdicts(100, true);
       await loadSchedulerStatus();
       await loadJobs();
-      setSchedulerMsg(res.message || "Processed pending incidents with Local LLM.");
+      setSchedulerMsg(res.message || "Started background pending AI verdict processing with Local LLM.");
     } catch (err: any) {
       setSchedulerMsg(err.message || "Failed processing pending incidents.");
     } finally {
