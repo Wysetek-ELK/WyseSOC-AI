@@ -195,15 +195,24 @@ if celery_app is not None:
 
 
     @celery_app.task(bind=True)
-    def run_dry_run_job_task(self, job_id: str):
+    def run_dry_run_job_task(self, job_or_config_id: str):
         """Celery worker task for executing asynchronous simulation lab jobs."""
-        from app.services.dry_run_service import dry_run_service
+        from app.services.dry_run_service import DryRunService
+        from app.models.dry_run import DryRunJob
+        from sqlalchemy import select
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
             async def _run():
                 async with AsyncSessionLocal() as session:
-                    return await dry_run_service.execute_dry_run_job(db=session, job_id=job_id)
+                    svc = DryRunService(session)
+                    cfg_id = job_or_config_id
+                    job_res = await session.execute(select(DryRunJob).where(DryRunJob.id == job_or_config_id))
+                    existing_job = job_res.scalar_one_or_none()
+                    if existing_job and existing_job.config_id:
+                        cfg_id = existing_job.config_id
+                    return await svc.execute_dry_run_job(config_id=cfg_id)
             return loop.run_until_complete(_run())
         finally:
             loop.close()

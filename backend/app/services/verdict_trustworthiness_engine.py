@@ -126,9 +126,12 @@ class VerdictTrustworthinessEngine:
             claim_support = claim_verification.grounding_ratio * 35.0
             if claim_verification.has_unsupported_assertions:
                 claim_support = max(0.0, claim_support - 10.0)
+        elif suggested_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+            # Decisive proposals with zero claims cannot earn high direct-claim credit
+            claim_support = 0.0
         else:
-            # If model made no explicit claims, base on evidence presence
-            claim_support = 20.0 if sufficiency.evidence_status == EvidenceStatus.SUFFICIENT else 5.0
+            # Explicit abstention may receive modest sufficiency credit
+            claim_support = 15.0 if sufficiency.evidence_status == EvidenceStatus.SUFFICIENT else 5.0
 
         dim1 = round(min(35.0, max(0.0, claim_support)), 2)
 
@@ -181,11 +184,12 @@ class VerdictTrustworthinessEngine:
         # -------------------------------------------------------------
         # Total Raw Score & Ordinal 1–10 Normalization
         # -------------------------------------------------------------
+        effective_calibrated = bool(is_calibrated or hist_status == "CALIBRATED")
         raw_total = round(dim1 + dim2 + dim3 + dim4 + dim5, 2)
         ordinal_score = cls.score_to_ordinal(
             raw_total=raw_total,
-            is_calibrated=(hist_status == "CALIBRATED"),
-            sample_count=historical_sample_count if historical_sample_count > 0 else (50 if is_calibrated else 0),
+            is_calibrated=effective_calibrated,
+            sample_count=historical_sample_count if historical_sample_count > 0 else (50 if effective_calibrated else 0),
         )
 
         # If mandatory evidence is absent or material contradictions exist, score cannot exceed 3/10
@@ -211,7 +215,7 @@ class VerdictTrustworthinessEngine:
             claim_verification=claim_verification,
             raw_trust_score=raw_total,
             trust_score_ordinal=ordinal_score,
-            is_calibrated=is_calibrated,
+            is_calibrated=effective_calibrated,
             definition_status=definition_status,
             authoritative_threshold=authoritative_threshold,
             incident_context=incident_payload,
@@ -266,7 +270,7 @@ class VerdictTrustworthinessEngine:
             missing_evidence=sufficiency.mandatory_fields_missing,
             confidence_limitations=confidence_limitations,
             historical_validation_status=hist_status,
-            is_calibrated=is_calibrated,
+            is_calibrated=effective_calibrated,
             calibrated_probability=calibrated_prob,
             applicable_policy_version=incident_payload.get("prompt_version_number"),
             applicable_contract_version=incident_payload.get("contract_version"),

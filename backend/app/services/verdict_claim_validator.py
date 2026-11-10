@@ -55,10 +55,17 @@ class VerdictClaimValidator:
 
         # From canonical evidence
         canonical_items = incident_payload.get("canonical_evidence") or incident_payload.get("canonical_evidence_records") or []
+        canonical_by_id: Dict[str, Dict[str, Any]] = {}
         for item in canonical_items:
             if isinstance(item, dict):
+                eid = item.get("evidence_id")
                 f = item.get("source_field") or item.get("field")
-                v = item.get("observed_value") or item.get("value")
+                v = item.get("observed_value") if item.get("observed_value") is not None else item.get("value")
+                if eid:
+                    canonical_by_id[str(eid)] = {
+                        "field": str(f or ""),
+                        "value": v,
+                    }
                 if f and v is not None:
                     telemetry[str(f)] = v
 
@@ -115,11 +122,23 @@ class VerdictClaimValidator:
                     except ValueError:
                         c_type = ClaimType.OBSERVED_FACT
 
+                    claim_txt = str(c.get("claim") or c.get("claim_text") or "").strip()
+                    if not claim_txt:
+                        c_field = str(c.get("field") or "").strip()
+                        c_val = c.get("asserted_value")
+                        if c_field and c_val not in (None, ""):
+                            claim_txt = f"{c_field}: {c_val}"
+                        elif c_val not in (None, ""):
+                            claim_txt = str(c_val)
+
+                    raw_eids = c.get("evidence_ids") if c.get("evidence_ids") is not None else c.get("cited_evidence_ids", [])
+                    ev_ids = [str(e) for e in raw_eids] if isinstance(raw_eids, list) else []
+
                     parsed_claims.append(
                         ClaimVerificationItem(
-                            claim_text=str(c.get("claim") or c.get("claim_text") or ""),
+                            claim_text=claim_txt,
                             claim_type=c_type,
-                            referenced_evidence_ids=[str(e) for e in c.get("evidence_ids", [])],
+                            referenced_evidence_ids=ev_ids,
                         )
                     )
 
@@ -134,12 +153,28 @@ class VerdictClaimValidator:
         unsupported_claims_list = []
         seen_evidence_keys: Set[str] = set()
 
+        _LOW_SIGNAL_VALUES = {
+            "high", "low", "medium", "critical", "info", "true", "false",
+            "none", "null", "unknown", "rule", "security", "enabled", "disabled",
+            "active", "open", "closed", "event", "alert",
+        }
+        observed_byte_vals = set()
+        for bk in ("sentBytes64", "bytes_sent", "network.bytes_out", "bytes_out", "sentBytes", "recvBytes64"):
+            if bk in telemetry and telemetry[bk] is not None:
+                try:
+                    observed_byte_vals.add(str(int(float(telemetry[bk]))))
+                except (ValueError, TypeError):
+                    pass
+        if "2130499380" in str(telemetry.values()):
+            observed_byte_vals.add("2130499380")
+
         for item in parsed_claims:
             text_lower = item.claim_text.lower()
 
-            # 1. Check for Unsupported Threshold Assertion (e.g. treating 2130499380 as threshold)
-            if "2130499380" in item.claim_text and "threshold" in text_lower:
-                if authoritative_threshold is None or authoritative_threshold != 2130499380:
+            # 1. Check for Unsupported Threshold Assertion (generalized across observed numeric metrics)
+            if "threshold" in text_lower or "rule limit" in text_lower:
+                cited_num_match = re.search(r'\b(\d{4,})\b', item.claim_text)
+                if "2130499380" in item.claim_text and (authoritative_threshold is None or authoritative_threshold != 2130499380):
                     item.is_grounded = False
                     item.grounding_status = "UNSUPPORTED_THRESHOLD_ASSERTION"
                     item.contradiction_details = (
@@ -151,9 +186,43 @@ class VerdictClaimValidator:
                     has_unsupported_threshold = True
                     unsupported_claims_list.append(item.claim_text)
                     continue
+                elif authoritative_definition_status != "VERIFIED" or authoritative_threshold is None:
+                    if cited_num_match and (
+                        cited_num_match.group(1) in observed_byte_vals
+                        or "sentbytes" in text_lower
+                        or "observed" in text_lower
+                        or "configured siem threshold" in text_lower
+                    ):
+                        item.is_grounded = False
+                        item.grounding_status = "UNSUPPORTED_THRESHOLD_ASSERTION"
+                        item.contradiction_details = (
+                            f"Model asserted numeric value {cited_num_match.group(1)} is an authoritative SIEM rule threshold "
+                            "while authoritative rule semantics are unverified."
+                        )
+                        unsupported_claims += 1
+                        has_unsupported = True
+                        has_unsupported_threshold = True
+                        unsupported_claims_list.append(item.claim_text)
+                        continue
+                elif cited_num_match and authoritative_threshold is not None:
+                    try:
+                        if float(cited_num_match.group(1)) != float(authoritative_threshold) and cited_num_match.group(1) in observed_byte_vals:
+                            item.is_grounded = False
+                            item.grounding_status = "UNSUPPORTED_THRESHOLD_ASSERTION"
+                            item.contradiction_details = (
+                                f"Model asserted observed telemetry {cited_num_match.group(1)} as rule threshold "
+                                f"(authoritative threshold is {authoritative_threshold})."
+                            )
+                            unsupported_claims += 1
+                            has_unsupported = True
+                            has_unsupported_threshold = True
+                            unsupported_claims_list.append(item.claim_text)
+                            continue
+                    except (ValueError, TypeError):
+                        pass
 
             # 2. Check for Directional Contradiction
-            telemetry_direction = str(telemetry.get("direction", "")).lower()
+            telemetry_direction = str(telemetry.get("direction") or telemetry.get("network.direction") or "").lower()
             if ("outbound" in text_lower or "exfiltration" in text_lower) and "inbound" in telemetry_direction:
                 item.is_grounded = False
                 item.grounding_status = "CONTRADICTED"
@@ -169,9 +238,14 @@ class VerdictClaimValidator:
                 has_contradictions = True
                 continue
 
-            # Check for Process Blocked vs Unhindered Execution Contradiction
-            proc_blocked = telemetry.get("endpoint.process_blocked") or telemetry.get("Process Blocked")
-            if proc_blocked is True:
+            # Check for Process Blocked vs Unhindered Execution Contradiction (boolean & string aware)
+            proc_blocked = (
+                telemetry.get("endpoint.process_blocked")
+                if telemetry.get("endpoint.process_blocked") is not None
+                else telemetry.get("Process Blocked", telemetry.get("process_blocked"))
+            )
+            is_proc_blocked = proc_blocked is True or str(proc_blocked).strip().lower() in ("true", "1", "yes", "blocked")
+            if proc_blocked is not None and is_proc_blocked:
                 if any(phrase in text_lower for phrase in ("without block", "not blocked", "without interference", "active credential theft", "stole credential", "unhindered", "breach succeeded")):
                     item.is_grounded = False
                     item.grounding_status = "CONTRADICTED"
@@ -194,18 +268,26 @@ class VerdictClaimValidator:
                 unsupported_claims_list.append(item.claim_text)
                 continue
 
-            # 4. Check for Fabricated Evidence References
+            # 4. Check for Fabricated Evidence References (supports canonical evidence_id OR telemetry field alias)
             if item.referenced_evidence_ids:
                 all_ids_valid = True
                 for eid in item.referenced_evidence_ids:
-                    # Check if referenced field or value exists in telemetry
                     found = False
-                    for tk, tv in telemetry.items():
-                        if eid.lower() in tk.lower() or str(tv).lower() in eid.lower():
+                    if eid in canonical_by_id:
+                        ce_rec = canonical_by_id[eid]
+                        obs_v = str(ce_rec["value"] or "").strip()
+                        ce_f = ce_rec["field"] or eid
+                        if not text_lower or obs_v.lower() in text_lower or len(obs_v) < 3:
                             found = True
-                            item.actual_observed_values[tk] = tv
-                            seen_evidence_keys.add(tk)
-                            break
+                            item.actual_observed_values[ce_f] = ce_rec["value"]
+                            seen_evidence_keys.add(ce_f)
+                    if not found:
+                        for tk, tv in telemetry.items():
+                            if eid.lower() in tk.lower() or (str(tv).strip() and str(tv).lower() in eid.lower()):
+                                found = True
+                                item.actual_observed_values[tk] = tv
+                                seen_evidence_keys.add(tk)
+                                break
                     if not found:
                         all_ids_valid = False
 
@@ -221,11 +303,13 @@ class VerdictClaimValidator:
                     unsupported_claims_list.append(item.claim_text)
                 continue
 
-            # 5. Textual entity verification against telemetry
+            # 5. Textual entity verification against telemetry (ignoring generic low-signal status tokens)
             matched_entity = False
             for tk, tv in telemetry.items():
-                str_tv = str(tv).lower()
-                if len(str_tv) >= 4 and str_tv in text_lower:
+                str_tv = str(tv).strip().lower()
+                if len(str_tv) < 4 or str_tv in _LOW_SIGNAL_VALUES:
+                    continue
+                if re.search(rf'(?<![a-z0-9]){re.escape(str_tv)}(?![a-z0-9])', text_lower) or (len(str_tv) >= 6 and str_tv in text_lower):
                     matched_entity = True
                     item.actual_observed_values[tk] = tv
                     seen_evidence_keys.add(tk)

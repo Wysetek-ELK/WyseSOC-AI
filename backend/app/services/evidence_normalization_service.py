@@ -44,10 +44,12 @@ FIELD_MAPPINGS: Dict[str, Dict[str, str]] = {
 
     # Network Connection
     "srcip": {"field": "network.source_ip", "type": "NETWORK_CONNECTION"},
+    "srcipaddr": {"field": "network.source_ip", "type": "NETWORK_CONNECTION"},
     "src_ip": {"field": "network.source_ip", "type": "NETWORK_CONNECTION"},
     "source_ip": {"field": "network.source_ip", "type": "NETWORK_CONNECTION"},
     "sourceip": {"field": "network.source_ip", "type": "NETWORK_CONNECTION"},
     "destip": {"field": "network.destination_ip", "type": "NETWORK_CONNECTION"},
+    "destipaddr": {"field": "network.destination_ip", "type": "NETWORK_CONNECTION"},
     "dest_ip": {"field": "network.destination_ip", "type": "NETWORK_CONNECTION"},
     "destination_ip": {"field": "network.destination_ip", "type": "NETWORK_CONNECTION"},
     "destinationip": {"field": "network.destination_ip", "type": "NETWORK_CONNECTION"},
@@ -57,6 +59,15 @@ FIELD_MAPPINGS: Dict[str, Dict[str, str]] = {
     "dest_port": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
     "proto": {"field": "network.protocol", "type": "NETWORK_CONNECTION"},
     "protocol": {"field": "network.protocol", "type": "NETWORK_CONNECTION"},
+    "sentbytes64": {"field": "network.bytes_out", "type": "NETWORK_CONNECTION"},
+    "sentbytes": {"field": "network.bytes_out", "type": "NETWORK_CONNECTION"},
+    "bytes_out": {"field": "network.bytes_out", "type": "NETWORK_CONNECTION"},
+    "bytes_sent": {"field": "network.bytes_out", "type": "NETWORK_CONNECTION"},
+    "recvbytes64": {"field": "network.bytes_in", "type": "NETWORK_CONNECTION"},
+    "recvbytes": {"field": "network.bytes_in", "type": "NETWORK_CONNECTION"},
+    "bytes_in": {"field": "network.bytes_in", "type": "NETWORK_CONNECTION"},
+    "direction": {"field": "network.direction", "type": "NETWORK_CONNECTION"},
+    "trafficdirection": {"field": "network.direction", "type": "NETWORK_CONNECTION"},
 
     # DNS / Web
     "destdomain": {"field": "dns.domain", "type": "DNS_QUERY"},
@@ -78,15 +89,26 @@ FIELD_MAPPINGS: Dict[str, Dict[str, str]] = {
     # Endpoint Telemetry
     "devname": {"field": "endpoint.hostname", "type": "ENDPOINT_TELEMETRY"},
     "hostname": {"field": "endpoint.hostname", "type": "ENDPOINT_TELEMETRY"},
+    "host name": {"field": "endpoint.hostname", "type": "ENDPOINT_TELEMETRY"},
     "dev_name": {"field": "endpoint.hostname", "type": "ENDPOINT_TELEMETRY"},
     "devip": {"field": "endpoint.ip", "type": "ENDPOINT_TELEMETRY"},
     "devid": {"field": "endpoint.device_id", "type": "ENDPOINT_TELEMETRY"},
+    "process blocked": {"field": "endpoint.process_blocked", "type": "ENDPOINT_TELEMETRY"},
+    "process_blocked": {"field": "endpoint.process_blocked", "type": "ENDPOINT_TELEMETRY"},
+    "processblocked": {"field": "endpoint.process_blocked", "type": "ENDPOINT_TELEMETRY"},
+    "file quarantined": {"field": "endpoint.file_quarantined", "type": "ENDPOINT_TELEMETRY"},
+    "file_quarantined": {"field": "endpoint.file_quarantined", "type": "ENDPOINT_TELEMETRY"},
+    "filequarantined": {"field": "endpoint.file_quarantined", "type": "ENDPOINT_TELEMETRY"},
 
     # Security & Event Actions
     "action": {"field": "security.action", "type": "SECURITY_EVENT"},
     "status": {"field": "security.status", "type": "SECURITY_EVENT"},
     "eventmsg": {"field": "security.message", "type": "SECURITY_EVENT"},
     "rawmsg": {"field": "security.raw_message", "type": "SECURITY_EVENT"},
+    "attacktactic": {"field": "mitre.tactic", "type": "SECURITY_EVENT"},
+    "attack tactic": {"field": "mitre.tactic", "type": "SECURITY_EVENT"},
+    "attacktechnique": {"field": "mitre.technique", "type": "SECURITY_EVENT"},
+    "attack technique": {"field": "mitre.technique", "type": "SECURITY_EVENT"},
 }
 
 
@@ -112,6 +134,7 @@ class EvidenceNormalizationService:
         incident_id = str(incident.incident_id or incident.id)
         records: List[CanonicalEvidenceRecord] = []
         seen_digests = set()
+        seen_rec_ids = set()
 
         def add_record(
             source_field: str,
@@ -134,6 +157,10 @@ class EvidenceNormalizationService:
             seen_digests.add(digest)
 
             rec_id = CanonicalEvidenceRecord.generate_id(incident_id, source_event_id, source_field)
+            if rec_id in seen_rec_ids:
+                # Disambiguate distinct observed values colliding under the same source event & canonical field
+                rec_id = f"{rec_id}-{digest[:6]}"
+            seen_rec_ids.add(rec_id)
             record = CanonicalEvidenceRecord(
                 evidence_id=rec_id,
                 incident_id=incident_id,

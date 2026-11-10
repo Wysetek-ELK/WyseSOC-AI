@@ -65,6 +65,7 @@ function VerdictIntelligenceContent() {
 
   // Dashboard D: Individual Incident Explanation State
   const [lookupIncidentId, setLookupIncidentId] = useState<string>("");
+  const [allowSimulation, setAllowSimulation] = useState<boolean>(false);
   const [selectedAssessment, setSelectedAssessment] = useState<VerdictTrustAssessmentResult | null>(null);
   const [evaluatingIncident, setEvaluatingIncident] = useState<boolean>(false);
 
@@ -127,7 +128,7 @@ function VerdictIntelligenceContent() {
     try {
       const res = await api.evaluateIncidentTrust({
         incident_id: lookupIncidentId.trim(),
-        allow_simulation: true,
+        allow_simulation: allowSimulation,
       });
       setSelectedAssessment(res);
       setActiveTab("explain");
@@ -301,6 +302,15 @@ function VerdictIntelligenceContent() {
             <ShieldCheck className="w-4 h-4" />
             {evaluatingIncident ? "Evaluating..." : "Evaluate Trust"}
           </button>
+          <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer select-none whitespace-nowrap pl-2" title="When disabled, requires a stored AI verdict or custom model output">
+            <input
+              type="checkbox"
+              checked={allowSimulation}
+              onChange={(e) => setAllowSimulation(e.target.checked)}
+              className="rounded border-slate-600 bg-slate-900 text-indigo-500"
+            />
+            Allow simulation fallback
+          </label>
         </form>
 
         <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -857,6 +867,11 @@ function VerdictIntelligenceContent() {
                     <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
                       {selectedAssessment.archetype}
                     </span>
+                    {selectedAssessment.is_simulated && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-950/60 text-amber-300 border border-amber-700/60 font-mono">
+                        SIMULATED
+                      </span>
+                    )}
                   </div>
                   <h2 className="text-xl font-bold text-white mt-1">
                     Rule: {selectedAssessment.rule_id}

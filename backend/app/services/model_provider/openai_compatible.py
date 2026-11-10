@@ -274,7 +274,17 @@ class OpenAICompatibleProvider(BaseModelProvider):
             '  "verdict": "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ATTENTION",\n'
             '  "confidence": <float 0-100>,\n'
             '  "reason": "<string>",\n'
+            '  "supporting_claims": [\n'
+            '    {\n'
+            '      "claim_type": "PROCESS_EXECUTION" | "NETWORK_CONNECTION" | "FILE_HASH" | "USER_CONTEXT" | "OBSERVED_FACT",\n'
+            '      "field": "<canonical source_field>",\n'
+            '      "asserted_value": "<exact observed value>",\n'
+            '      "claim_text": "<concise grounded observation>",\n'
+            '      "evidence_ids": ["<canonical evidence_id from incident.canonical_evidence>"]\n'
+            "    }\n"
+            "  ],\n"
             '  "supporting_evidence": ["<string>"],\n'
+            '  "contradictory_evidence": ["<string>"],\n'
             '  "missing_evidence": ["<string>"],\n'
             '  "analyst_questions": ["<string>"]\n'
             "}"
@@ -376,6 +386,11 @@ class OpenAICompatibleProvider(BaseModelProvider):
                         total_tokens=total_tokens,
                     )
 
+                raw_claims = parsed.get("supporting_claims") or parsed.get("claims") or []
+                supporting_claims = [c for c in raw_claims if isinstance(c, dict)] if isinstance(raw_claims, list) else []
+                raw_contra = parsed.get("contradictory_evidence") or []
+                contradictory_ev = [str(c) for c in raw_contra] if isinstance(raw_contra, list) else []
+
                 return StructuredModelVerdict(
                     incident_id=incident_id,
                     rule_id=rule_id,
@@ -383,6 +398,8 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     confidence=float(parsed.get("confidence", 90.0)),
                     reason=str(parsed.get("reason", "")),
                     supporting_evidence=parsed.get("supporting_evidence", []) if isinstance(parsed.get("supporting_evidence"), list) else [],
+                    supporting_claims=supporting_claims,
+                    contradictory_evidence=contradictory_ev,
                     missing_evidence=parsed.get("missing_evidence", []) if isinstance(parsed.get("missing_evidence"), list) else [],
                     analyst_questions=parsed.get("analyst_questions", []) if isinstance(parsed.get("analyst_questions"), list) else [],
                     latency_ms=latency_ms,

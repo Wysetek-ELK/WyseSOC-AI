@@ -3,7 +3,7 @@ import logging
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, or_
 from sqlalchemy.orm import selectinload
 
 from app.models.prompt import RulePrompt, PromptVersion
@@ -11,6 +11,7 @@ from app.models.rule import Rule
 from app.models.user import User
 from app.models.policy_quality import PolicyQualityAssessmentRecord
 from app.models.rule_intelligence import RuleIntelligenceSnapshot
+from app.models.verdict_intelligence import HistoricalEvaluationRunRecord
 from app.schemas.prompt import (
     RulePromptResponse,
     PromptVersionResponse,
@@ -39,7 +40,11 @@ class AgentPolicyEngine:
         self.db = db
 
     async def get_or_create_rule_prompt(self, rule_id: str) -> RulePrompt:
-        query = select(RulePrompt).where(RulePrompt.rule_id == rule_id).options(
+        rule_res = await self.db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
+        rule = rule_res.scalars().first()
+        resolved_rule_id = rule.id if rule else rule_id
+
+        query = select(RulePrompt).where(RulePrompt.rule_id == resolved_rule_id).options(
             selectinload(RulePrompt.rule),
             selectinload(RulePrompt.versions)
         )
@@ -47,8 +52,6 @@ class AgentPolicyEngine:
         prompt = res.scalars().first()
 
         if not prompt:
-            rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
-            rule = rule_res.scalars().first()
             if not rule:
                 raise ValueError(f"SIEM Rule {rule_id} not found")
 
@@ -64,13 +67,13 @@ class AgentPolicyEngine:
             await self.generate_template_draft(rule_id=rule.id, user_id=None)
             if prompt in self.db:
                 self.db.expire(prompt)
-            prompt = await self.get_rule_prompt(rule_id)
+            prompt = await self.get_rule_prompt(rule.id)
         elif not prompt.versions or len(prompt.versions) == 0:
             # Self-healing: if rule_prompt exists in database but has no versions, auto-generate initial template draft
-            await self.generate_template_draft(rule_id=rule_id, user_id=None)
+            await self.generate_template_draft(rule_id=resolved_rule_id, user_id=None)
             if prompt in self.db:
                 self.db.expire(prompt)
-            prompt = await self.get_rule_prompt(rule_id)
+            prompt = await self.get_rule_prompt(resolved_rule_id)
 
         return prompt
 
@@ -283,12 +286,45 @@ class AgentPolicyEngine:
             prompt_version=target_version,
         )
 
-        # Execute Strict Quality Validation
+        # Look up latest completed empirical simulation run for G8 enforcement during approval
+        sim_results = None
+        try:
+            sim_q = (
+                select(HistoricalEvaluationRunRecord)
+                .where(
+                    HistoricalEvaluationRunRecord.rule_id.in_([rule.id, rule.rule_id]),
+                    HistoricalEvaluationRunRecord.policy_version_id == str(target_version.id),
+                    HistoricalEvaluationRunRecord.status == "COMPLETED",
+                )
+                .order_by(desc(HistoricalEvaluationRunRecord.completed_at))
+                .limit(1)
+            )
+            sim_res_exec = await self.db.execute(sim_q)
+            latest_sim_run = sim_res_exec.scalars().first()
+            if latest_sim_run:
+                m_dict = getattr(latest_sim_run, "metrics", {}) or {}
+                r_sum = getattr(latest_sim_run, "regression_summary", {}) or {}
+                cfg_snap = getattr(latest_sim_run, "config_snapshot", {}) or {}
+                eligible_gt = m_dict.get("verified_ground_truth_cases", getattr(latest_sim_run, "verified_ground_truth_cases", 0))
+                sim_results = {
+                    "sample_count": getattr(latest_sim_run, "total_cases", 0),
+                    "eligible_ground_truth_count": eligible_gt,
+                    "verified_ground_truth_cases": eligible_gt,
+                    "simulation_status": latest_sim_run.validation_state,
+                    "regression_status": r_sum.get("regression_status") or ("NOT_ASSESSED" if not latest_sim_run.baseline_run_id else latest_sim_run.validation_state),
+                    "critical_regressions": 1 if latest_sim_run.status == "FAILED" or m_dict.get("critical_false_negatives", 0) > 0 or latest_sim_run.validation_state == "REGRESSION_DETECTED" else 0,
+                    "policy_digest": cfg_snap.get("policy_digest"),
+                }
+        except Exception as sim_exc:
+            logger.warning(f"Simulation lookup warning during approve_version: {sim_exc}")
+
+        # Execute Strict Quality Validation (including G8 Regression Blocker if simulation ran)
         quality_res = PolicyQualityValidator.validate_policy_quality(
             rule=rule,
             prompt_version=target_version,
             contract=contract,
             semantics=semantics,
+            simulation_results=sim_results,
         )
 
         # STRICT QUALITY GATE CHECK
@@ -361,6 +397,33 @@ class AgentPolicyEngine:
         if not source_version:
             raise ValueError(f"Target version {target_version_id} not found")
 
+        # Validate rollback candidate safety against current rule/contract before activating
+        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
+        rule = rule_res.scalars().first()
+        rollback_quality_score = source_version.quality_score
+        if rule:
+            semantics = RuleIntelligenceAnalyzer.analyze_rule(rule)
+            classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
+            archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
+            contract = EvidenceRequirementMapper.map_evidence_contract(
+                rule=rule,
+                semantics=semantics,
+                archetype_def=archetype_def,
+                prompt_version=source_version,
+            )
+            quality_res = PolicyQualityValidator.validate_policy_quality(
+                rule=rule,
+                prompt_version=source_version,
+                contract=contract,
+                semantics=semantics,
+            )
+            rollback_quality_score = quality_res.quality_score
+            if not quality_res.approval_eligible:
+                blocker_text = "; ".join(quality_res.blocking_issues)
+                raise ValueError(
+                    f"Rollback target version rejected by Quality Validation Gates ({len(quality_res.blocking_issues)} blockers): {blocker_text}"
+                )
+
         # Create a new version that clones source_version and approves it
         next_ver = max(v.version_number for v in all_versions) + 1 if all_versions else 1
 
@@ -369,7 +432,7 @@ class AgentPolicyEngine:
             version_number=next_ver,
             status="APPROVED",
             quality_status="APPROVED",
-            quality_score=source_version.quality_score,
+            quality_score=rollback_quality_score,
             is_template_draft=False,
             common_prompt=source_version.common_prompt,
             rule_specific_prompt=source_version.rule_specific_prompt,

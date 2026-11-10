@@ -321,7 +321,13 @@ export default function AITriageWorkbenchDetailPage({
                 <span className="text-[10px] text-slate-500">({aiVerdict.prompt_tokens || 0} in / {aiVerdict.completion_tokens || 0} out)</span>
               </span>
 
-              <span className="text-emerald-400 font-semibold">• GPU Live</span>
+              {aiVerdict.model_identifier && ["POLICY_GUARD", "PREFLIGHT_GUARD", "TOKEN_BUDGET_GUARD"].includes(aiVerdict.model_identifier) ? (
+                <span className="text-amber-400 font-semibold">• Deterministic Guard ({aiVerdict.model_identifier})</span>
+              ) : aiVerdict.is_simulated ? (
+                <span className="text-amber-300 font-semibold">• Simulated Mode</span>
+              ) : (
+                <span className="text-emerald-400 font-semibold">• GPU Live</span>
+              )}
               <button
                 onClick={() => setAiVerdict(null)}
                 className="text-slate-400 hover:text-slate-200 text-xs px-1"
@@ -434,16 +440,29 @@ export default function AITriageWorkbenchDetailPage({
             <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
               <span className="text-[9px] text-slate-400 block uppercase">Claim Grounding Ratio</span>
               <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className={`text-sm font-bold ${
-                  (aiVerdict.grounding_ratio ?? 1) >= 0.99
-                    ? "text-emerald-400"
-                    : "text-rose-400"
-                }`}>
-                  {Math.round((aiVerdict.grounding_ratio ?? 1) * 100)}%
-                </span>
-                <span className="text-[10px] text-slate-500">
-                  ({aiVerdict.grounded_claims_count ?? 0}/{aiVerdict.total_claims_count ?? 0} grounded)
-                </span>
+                {(aiVerdict.total_claims_count ?? 0) === 0 ? (
+                  <>
+                    <span className={`text-sm font-bold ${aiVerdict.verdict === "REQUIRES_ATTENTION" ? "text-amber-400" : "text-rose-400"}`}>
+                      N/A
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      (0/0 claims — unclaimed)
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`text-sm font-bold ${
+                      (aiVerdict.grounding_ratio ?? 0) >= 0.99
+                        ? "text-emerald-400"
+                        : "text-rose-400"
+                    }`}>
+                      {Math.round((aiVerdict.grounding_ratio ?? 0) * 100)}%
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      ({aiVerdict.grounded_claims_count ?? 0}/{aiVerdict.total_claims_count ?? 0} grounded)
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1221,7 +1240,7 @@ export default function AITriageWorkbenchDetailPage({
                 >
                   <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
                     <span className="text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-1.5 py-0.2 rounded font-bold">
-                      {ev.evidence_category}
+                      {ev.evidence_type || ev.evidence_category || "TELEMETRY"}
                     </span>
                     <button
                       onClick={() => copyToClipboard(ev.evidence_id)}
@@ -1234,10 +1253,11 @@ export default function AITriageWorkbenchDetailPage({
 
                   <div>
                     <span className="text-[9px] text-slate-500 block">Canonical Field:</span>
-                    <span className="text-cyan-300 font-bold">{ev.canonical_field}</span>
-                    {ev.raw_field_name && (
+                    <span className="text-cyan-300 font-bold">{ev.source_field || ev.canonical_field}</span>
+                    {(ev.raw_field_name || ev.source_system) && (
                       <span className="text-[10px] text-slate-500 ml-1.5">
-                        (raw: <span className="text-slate-400">{ev.raw_field_name}</span>)
+                        ({ev.raw_field_name ? "raw: " : "src: "}
+                        <span className="text-slate-400">{ev.raw_field_name || ev.source_system}</span>)
                       </span>
                     )}
                   </div>

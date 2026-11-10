@@ -149,6 +149,29 @@ class AgentMemoryEngine:
         await self.db.commit()
         await self.db.refresh(rec)
 
+        # Trigger Policy Lifecycle Monitor on verified analyst divergence (REQ-10)
+        if status_norm == "VERIFIED" and rec.rule_id:
+            try:
+                from app.services.policy_lifecycle_monitor import PolicyLifecycleMonitor
+                model_v = "UNKNOWN"
+                inc_vendor_id = str(rec.incident_id)
+                if rec.incident:
+                    inc_vendor_id = str(rec.incident.incident_id or rec.incident.id)
+                    if isinstance(rec.incident.ai_verdict, dict):
+                        model_v = str(rec.incident.ai_verdict.get("verdict") or "UNKNOWN")
+                monitor = PolicyLifecycleMonitor(self.db)
+                await monitor.ingest_verified_analyst_feedback(
+                    rule_id=rec.rule_id,
+                    incident_id=inc_vendor_id,
+                    adjudicated_verdict=rec.verified_verdict,
+                    model_verdict=model_v,
+                    analyst_notes=rec.analyst_explanation or "",
+                    user_id=reviewer_username,
+                )
+            except Exception as mon_exc:
+                import logging
+                logging.getLogger(__name__).warning(f"PolicyLifecycleMonitor verified-feedback hook failed: {mon_exc}")
+
         return LearningRecordResponse(
             id=rec.id,
             rule_id=rec.rule_id,

@@ -32,10 +32,12 @@ from app.models.verdict_intelligence import (
     HistoricalEvaluationRunRecord,
     HistoricalEvaluationResultRecord,
 )
+from app.config import settings
 from app.schemas.verdict_intelligence import (
     IncidentTrustEvaluationRequest,
     HistoricalEvaluationRunRequest,
     VerdictTrustAssessmentResult,
+    TrustScoreDimensionBreakdown,
     EvidenceSufficiencyAssessmentResult,
     EmpiricalAccuracyMetrics,
     RegressionComparisonReport,
@@ -99,23 +101,66 @@ async def evaluate_incident_trust(
         "contract_version": contract.status if contract else "UNVERIFIED",
     }
 
-    # Model output (custom or simulated)
+    sim_srv = PolicySimulationService(db)
+    is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+
+    # Model output (custom, saved real/evaluated output, or explicitly permitted simulation)
     if req.custom_model_output:
         model_output = req.custom_model_output
+    elif isinstance(inc.ai_verdict, dict) and inc.ai_verdict.get("verdict") and not (inc.ai_verdict.get("is_simulated") and not req.allow_simulation):
+        model_output = {
+            "verdict": inc.ai_verdict.get("proposed_verdict") or inc.ai_verdict.get("verdict"),
+            "confidence": inc.ai_verdict.get("raw_model_confidence") or inc.ai_verdict.get("confidence") or 0.0,
+            "reason": inc.ai_verdict.get("reason", ""),
+            "supporting_claims": inc.ai_verdict.get("supporting_claims") or [],
+            "supporting_evidence": inc.ai_verdict.get("supporting_evidence") or [],
+            "model_identifier": inc.ai_verdict.get("model_identifier", "stored-verdict"),
+            "is_simulated": bool(inc.ai_verdict.get("is_simulated", False)),
+        }
+    elif is_prod or not req.allow_simulation:
+        raise HTTPException(
+            status_code=400,
+            detail="Simulated trust evaluation is disabled in production or when allow_simulation=False without stored verdict or custom_model_output.",
+        )
     else:
-        sim_srv = PolicySimulationService(db)
         model_output = sim_srv._simulate_model_output(inc_payload, contract)
+
+    # Query real rule-level historical empirical stats (no fabricated samples or 85% accuracy)
+    hist_stats = await sim_srv.get_rule_calibration_stats(rule_id)
 
     # 3. Evaluate Trust Score
     trust_res = VerdictTrustworthinessEngine.evaluate_verdict_trust(
         incident_payload=inc_payload,
         model_output=model_output,
         contract=contract,
-        historical_sample_count=10,
-        historical_accuracy=85.0,
+        historical_sample_count=int(hist_stats.get("sample_count", 0)),
+        historical_accuracy=hist_stats.get("accuracy"),
+        is_calibrated=bool(hist_stats.get("is_calibrated", False)),
     )
 
-    # 4. Persist Record
+    # 4. Persist Evidence Sufficiency & Trust Records
+    if trust_res.evidence_sufficiency is not None:
+        suff = trust_res.evidence_sufficiency
+        suff_rec = EvidenceSufficiencyAssessmentRecord(
+            incident_id=inc.incident_id,
+            rule_id=rule_id,
+            archetype=suff.archetype,
+            overall_sufficiency_score=suff.overall_sufficiency_score,
+            required_coverage_score=suff.required_coverage_score,
+            integrity_provenance_score=suff.integrity_provenance_score,
+            consistency_corroboration_score=suff.consistency_corroboration_score,
+            freshness_relevance_score=suff.freshness_relevance_score,
+            evidence_status=suff.evidence_status.value,
+            mandatory_fields_present=suff.mandatory_fields_present,
+            mandatory_fields_missing=suff.mandatory_fields_missing,
+            conditional_fields_evaluated=suff.conditional_fields_evaluated,
+            optional_enrichment_present=suff.optional_enrichment_present,
+            unsupported_fields_requested=suff.unsupported_fields_requested,
+            contradictions_detected=suff.contradictions_detected,
+            evaluated_at=datetime.utcnow(),
+        )
+        db.add(suff_rec)
+
     record = VerdictTrustAssessmentRecord(
         incident_id=inc.incident_id,
         rule_id=rule_id,
@@ -135,7 +180,7 @@ async def evaluate_incident_trust(
         is_calibrated=trust_res.is_calibrated,
         applicable_policy_version=trust_res.applicable_policy_version,
         applicable_contract_version=trust_res.applicable_contract_version,
-        escalation_reason=trust_res.escalation_reason,
+        escalation_reason=str(trust_res.escalation_reason)[:256] if trust_res.escalation_reason else None,
         human_readable_explanation=trust_res.human_readable_explanation,
         model_identifier=trust_res.model_identifier,
         is_simulated=trust_res.is_simulated,
@@ -167,6 +212,15 @@ async def get_incident_trust(
     if not rec:
         return None
 
+    dims = rec.score_dimensions if isinstance(rec.score_dimensions, dict) and "direct_claim_support" in rec.score_dimensions else {
+        "direct_claim_support": 0.0,
+        "source_reliability": 0.0,
+        "contradiction_handling": 0.0,
+        "independent_corroboration": 0.0,
+        "historical_validation_support": 0.0,
+        "total_raw_score": float(rec.raw_trust_score or 0.0),
+    }
+
     return VerdictTrustAssessmentResult(
         incident_id=rec.incident_id,
         rule_id=rec.rule_id,
@@ -174,10 +228,11 @@ async def get_incident_trust(
         suggested_verdict=rec.suggested_verdict,
         effective_verdict=rec.effective_verdict,
         trust_score=rec.trust_score,
+        trust_status="CALCULATED" if rec.trust_score is not None else "NOT_CALCULABLE",
         raw_trust_score=rec.raw_trust_score,
         evidence_sufficiency_score=rec.evidence_sufficiency_score,
         evidence_status=rec.evidence_status,
-        score_dimensions=rec.score_dimensions or {},
+        score_dimensions=TrustScoreDimensionBreakdown(**dims),
         supporting_evidence=rec.supporting_evidence or [],
         contradictory_evidence=rec.contradictory_evidence or [],
         missing_evidence=rec.missing_evidence or [],

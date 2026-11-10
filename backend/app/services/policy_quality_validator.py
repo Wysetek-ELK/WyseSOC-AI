@@ -217,7 +217,10 @@ class PolicyQualityValidator:
         # -------------------------------------------------------------------------
         # GATE 8: Simulation & Regression Evidence (Weight: 15 pts)
         # -------------------------------------------------------------------------
-        g8_score, g8_status, sim_status, g8_blockers, g8_warns, g8_details = cls._evaluate_gate_8_simulation(simulation_results)
+        g8_score, g8_status, sim_status, g8_blockers, g8_warns, g8_details = cls._evaluate_gate_8_simulation(
+            simulation_results,
+            current_policy_digest=policy_digest,
+        )
         gate_results["G8_SIMULATION_REGRESSION"] = QualityGateResult(
             gate_id="G8",
             gate_name="Simulation & Regression Validation",
@@ -543,21 +546,22 @@ class PolicyQualityValidator:
 
         fp_text = getattr(prompt_version, "fp_indicators", "") or ""
         common_text = getattr(prompt_version, "common_prompt", "") or ""
+        fp_lower = fp_text.lower()
         combo = f"{fp_text} {common_text}".lower()
 
-        # Check for unsafe benign assumptions (e.g. blanket RFC-1918 / loopback is safe)
-        if "rfc-1918" in combo and "benign" in combo and "not" not in combo and "verify" not in combo:
+        # Check FP section directly for unsafe benign assumptions (not diluted by common baseline phrasing)
+        if "rfc-1918" in fp_lower and "benign" in fp_lower and "not automatically benign" not in fp_lower and "not benign" not in fp_lower and "verify" not in fp_lower:
             blockers.append(
                 "UNSAFE_FP_ASSUMPTION: Policy contains blanket assertion that internal RFC-1918 traffic is benign."
             )
             score -= 5.0
-        elif any(term in combo for term in ("loopback", "127.0.0.1", "::1")) and "benign" in combo and "not" not in combo and "verify" not in combo:
+        elif any(term in fp_lower for term in ("loopback", "127.0.0.1", "::1")) and "benign" in fp_lower and "not automatically benign" not in fp_lower and "not benign" not in fp_lower and "verify" not in fp_lower:
             blockers.append(
                 "UNSAFE_FP_ASSUMPTION: Policy contains blanket assertion that loopback / 127.0.0.1 traffic is automatically benign."
             )
             score -= 5.0
 
-        # Check for hardcoded prescriptive confidence ranges
+        # Check for hardcoded prescriptive confidence ranges across FP and baseline text
         if re.search(r"confidence\s*(?:of\s*)?(?:[6-9]\d)\s*(?:-|to)\s*(?:[7-9]\d|100)%", combo) or re.search(r"confidence\s*(?:8\d|9\d)\s*-\s*(?:8\d|9\d)%", combo):
             blockers.append(
                 "PRESCRIPTIVE_CONFIDENCE_RANGE: Policy specifies hardcoded artificial confidence ranges (e.g. 80-98%)."
@@ -627,29 +631,50 @@ class PolicyQualityValidator:
         score = 10.0
 
         req_evidence_text = (getattr(prompt_version, "required_evidence", "") or "").lower()
+        tp_text = (getattr(prompt_version, "tp_indicators", "") or "").strip().lower()
+        fp_text = (getattr(prompt_version, "fp_indicators", "") or "").strip().lower()
 
-        # Check if contract required fields contradict prompt required evidence
+        # Check if contract required fields are completely omitted or contradict Section 4
         if contract:
             crit_fields = [r.field for r in contract.required_evidence if r.critical]
-            for cf in crit_fields:
-                short_f = cf.split(".")[-1]
-                if short_f not in req_evidence_text and cf.lower() not in req_evidence_text:
-                    warns.append(f"Field '{cf}' marked critical in contract but not explicitly listed in Section 4.")
-                    score -= 1.0
+            if crit_fields and len(req_evidence_text.strip()) < 10:
+                blockers.append(
+                    "G7_CONTRACT_EVIDENCE_OMITTED: Section 4 Required Evidence is blank/missing despite critical fields in Evidence Contract."
+                )
+                score -= 5.0
+            else:
+                for cf in crit_fields:
+                    short_f = cf.split(".")[-1]
+                    if short_f not in req_evidence_text and cf.lower() not in req_evidence_text:
+                        warns.append(f"Field '{cf}' marked critical in contract but not explicitly listed in Section 4.")
+                        score -= 1.0
+
+        # Check direct TP/FP self-contradiction
+        if len(tp_text) >= 15 and tp_text == fp_text:
+            blockers.append(
+                "G7_TP_FP_SELF_CONTRADICTION: Section 5 (TP indicators) and Section 6 (FP indicators) contain identical contradictory text."
+            )
+            score -= 6.0
 
         # Check if unverified threshold in Section 3 contradicts Section 4
         if semantics.definition_status == SemanticsDefinitionStatus.INCOMPLETE:
             if "authoritative threshold" in req_evidence_text and semantics.threshold is None:
                 warns.append("Section 4 requires an authoritative threshold that does not exist in SIEM rule definition.")
 
-        score = max(0.0, score)
-        status = GateStatus.FAILED if blockers else (GateStatus.WARNING if warns else GateStatus.PASSED)
+        if blockers:
+            score = 0.0
+            status = GateStatus.FAILED
+        else:
+            score = max(0.0, score)
+            status = GateStatus.WARNING if warns else GateStatus.PASSED
         details = "Evaluated internal consistency between 9 policy sections and Evidence Contract."
         return score, status, blockers, warns, details
 
     @classmethod
     def _evaluate_gate_8_simulation(
-        cls, simulation_results: Optional[Dict[str, Any]]
+        cls,
+        simulation_results: Optional[Dict[str, Any]],
+        current_policy_digest: Optional[str] = None,
     ) -> Tuple[float, GateStatus, SimulationStatus, List[str], List[str], str]:
         blockers = []
         warns = []
@@ -659,6 +684,14 @@ class PolicyQualityValidator:
             sim_status = SimulationStatus.NOT_EVALUATED
             warns.append("Historical incident simulation has not been executed for this policy revision.")
             details = "Simulation status: NOT_EVALUATED. Empirical performance unverified."
+            return 0.0, GateStatus.WARNING, sim_status, blockers, warns, details
+
+        # Check for policy digest staleness if both digests are available
+        sim_digest = simulation_results.get("policy_digest")
+        if sim_digest and current_policy_digest and sim_digest != current_policy_digest:
+            sim_status = SimulationStatus.NOT_EVALUATED
+            warns.append("G8_STALE_SIMULATION: Policy content was modified after the last historical simulation run. Re-run simulation for current digest.")
+            details = "Simulation status: NOT_EVALUATED (stale policy digest). Empirical performance unverified for current text."
             return 0.0, GateStatus.WARNING, sim_status, blockers, warns, details
 
         sample_count = simulation_results.get("sample_count", 0)

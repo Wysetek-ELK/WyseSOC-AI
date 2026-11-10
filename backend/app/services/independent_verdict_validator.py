@@ -34,6 +34,8 @@ class IndependentVerdictValidator:
         contract: RuleEvidenceContract,
         allow_simulation: bool = False,
         compilation_digest: Optional[str] = None,
+        model_reason: str = "",
+        contradictory_evidence: Optional[List[str]] = None,
     ) -> VerdictValidationResult:
         """
         Executes the 8 mandatory deterministic checks and determines the final authoritative verdict.
@@ -41,6 +43,10 @@ class IndependentVerdictValidator:
         clean_prop_verdict = str(proposed_verdict or "REQUIRES_ATTENTION").upper().strip()
         reason_codes: List[str] = []
         contradictions: List[str] = list(preflight.detected_contradictions)
+        if contradictory_evidence:
+            for ce in contradictory_evidence:
+                if str(ce).strip():
+                    contradictions.append(str(ce).strip())
         unsupported_claims: List[Dict[str, Any]] = list(claim_grounding.unsupported_claim_details)
 
         # Output Integrity Check (Check 8)
@@ -101,32 +107,58 @@ class IndependentVerdictValidator:
                         validation_status = "REJECTED"
                         action_directive = "Activity occurs strictly on internal/loopback stack. Verify if local proxy reflection or healthcheck."
 
+        # Check 4b: Unresolved Contradictions Prevent Decisive Classification
+        if contradictions and clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+            final_verdict = "REQUIRES_ATTENTION"
+            validation_status = "REJECTED"
+            if "EVIDENCE_CONTRADICTION" not in reason_codes:
+                reason_codes.append("EVIDENCE_CONTRADICTION")
+            action_directive = "Material contradictory evidence detected in incident telemetry. Human Tier 2 review required."
+
         # Check 5: Verdict-Specific Decision Criteria
         if clean_prop_verdict == "TRUE_POSITIVE":
-            # For TP: must have at least one grounded claim or evidence completeness >= 0.6
-            if preflight.evidence_completeness < 0.6 or (claim_grounding.total_claims > 0 and claim_grounding.grounded_claims == 0):
+            # For TP: must meet evidence completeness AND provide at least one grounded claim (prevent empty-claim bypass)
+            if preflight.evidence_completeness < 0.6 or claim_grounding.grounded_claims == 0:
                 final_verdict = "REQUIRES_ATTENTION"
                 if validation_status not in ("REJECTED", "ABSTAINED"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
                 if "TP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("TP_CRITERIA_UNSATISFIED")
                 if "Model fabricated" not in action_directive:
-                    action_directive = "Insufficient corroborating evidence to confirm malicious attack. Manual triage required."
+                    action_directive = "Insufficient grounded claims or corroborating evidence to confirm malicious attack. Manual triage required."
             elif not reason_codes and final_verdict == "TRUE_POSITIVE":
                 is_decisive = True
                 reason_codes.append("EVIDENCE_VALIDATED")
                 action_directive = "High-confidence malicious attack confirmed with verified evidence. Escalate to IR team."
 
         elif clean_prop_verdict == "FALSE_POSITIVE":
-            # For FP: must have verified telemetry; cannot be FP solely on suspicion
-            if preflight.preflight_status == "INSUFFICIENT" or preflight.evidence_completeness < 0.5:
+            # For FP: must have verified telemetry, at least one grounded claim, and cannot rely on blanket negative assumptions
+            reason_lower = (model_reason or "").lower()
+            affirmative_benign_terms = (
+                "authorized", "approved", "backup", "maintenance", "legitimate", "scheduled",
+                "harmless", "routine", "expected", "verified vendor", "business", "change ticket",
+                "service", "admin", "scanner", "healthcheck",
+            )
+            has_blanket_negative_fp = any(
+                phrase in reason_lower
+                for phrase in ("no evidence of compromise", "rfc-1918", "rfc1918", "internal ip only", "nothing suspicious found")
+            ) and not any(term in reason_lower for term in affirmative_benign_terms)
+
+            if preflight.preflight_status == "INSUFFICIENT" or preflight.evidence_completeness < 0.5 or claim_grounding.grounded_claims == 0:
                 final_verdict = "REQUIRES_ATTENTION"
                 if validation_status not in ("REJECTED", "ABSTAINED"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
                 if "FP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("FP_CRITERIA_UNSATISFIED")
                 if "Model fabricated" not in action_directive:
-                    action_directive = "Missing telemetry prevents confirming false positive. Human verification required."
+                    action_directive = "Missing grounded claim or benign evidence prevents confirming false positive. Human verification required."
+            elif has_blanket_negative_fp:
+                final_verdict = "REQUIRES_ATTENTION"
+                if validation_status not in ("REJECTED", "ABSTAINED"):
+                    validation_status = "INSUFFICIENT_EVIDENCE"
+                if "FP_CRITERIA_UNSATISFIED" not in reason_codes:
+                    reason_codes.append("FP_CRITERIA_UNSATISFIED")
+                action_directive = "False positive rejected: blanket RFC-1918 or negative-evidence assumption without affirmative benign authorization."
             elif not reason_codes and final_verdict == "FALSE_POSITIVE":
                 is_decisive = True
                 reason_codes.append("EVIDENCE_VALIDATED")
@@ -213,4 +245,6 @@ class IndependentVerdictValidator:
             normalization_result=norm_result,
             contract=contract,
             allow_simulation=True,
+            model_reason=str(saved_model_output.get("reason", "")),
+            contradictory_evidence=saved_model_output.get("contradictory_evidence") if isinstance(saved_model_output.get("contradictory_evidence"), list) else None,
         )

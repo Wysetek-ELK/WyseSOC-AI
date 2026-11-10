@@ -121,7 +121,7 @@ class VerdictGuardrailsEngine:
             return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations, guardrails_triggered)
 
         # -------------------------------------------------------------
-        # Guardrail 3: Unsupported or Hallucinated Claims
+        # Guardrail 3: Unsupported, Hallucinated, or Missing Decisive Claims
         # -------------------------------------------------------------
         if claim_verification.has_unsupported_assertions and clean_prop in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
             unsupported_texts = [
@@ -133,6 +133,14 @@ class VerdictGuardrailsEngine:
             )
             confidence_limitations.append("Model claims failed factual grounding verification.")
             guardrails_triggered.append("G2_G3_UNSUPPORTED_OR_HALLUCINATED_CLAIMS")
+            return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations, guardrails_triggered)
+
+        if clean_prop in ("TRUE_POSITIVE", "FALSE_POSITIVE") and claim_verification.grounded_claims == 0:
+            escalation_reason = (
+                f"Model proposed decisive {clean_prop} without any verified grounded claims supporting the conclusion."
+            )
+            confidence_limitations.append("Zero grounded claims available to substantiate decisive classification.")
+            guardrails_triggered.append("G3_EMPTY_DECISIVE_CLAIMS")
             return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, escalation_reason, confidence_limitations, guardrails_triggered)
 
         # -------------------------------------------------------------

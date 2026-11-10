@@ -117,6 +117,15 @@ async def get_incident_model_payload(
         rule=incident.rule,
         events=incident.events
     )
+    try:
+        from app.services.evidence_normalization_service import EvidenceNormalizationService
+        norm_res = EvidenceNormalizationService.normalize_incident_evidence(
+            incident=incident,
+            events=incident.events or [],
+        )
+        payload_dict["canonical_evidence"] = [r.model_dump() for r in norm_res.records]
+    except Exception:
+        payload_dict["canonical_evidence"] = []
 
     return ModelFacingIncidentPayload(**payload_dict)
 

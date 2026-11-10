@@ -134,6 +134,7 @@ class ModelFacingIncidentPayload(BaseModel):
     last_seen_epoch: Optional[int] = None
     created_at_epoch: Optional[int] = None
     events: List[ModelFacingEvent] = []
+    canonical_evidence: List[Dict[str, Any]] = []
     rule_id: Optional[str] = None
     rule_name: Optional[str] = None
     rule_pattern: Optional[str] = None

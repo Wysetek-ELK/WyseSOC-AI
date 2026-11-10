@@ -36,16 +36,23 @@ class ModelClaimExtractor:
 
         claims: List[ModelSupportingClaim] = []
 
-        # 1. Parse Explicit Structured Claims if provided
-        structured_claims = raw_verdict_output.get("supporting_claims")
+        # 1. Parse Explicit Structured Claims if provided (supports P2 and PolicyCompiler V3 formats)
+        structured_claims = raw_verdict_output.get("supporting_claims") or raw_verdict_output.get("claims")
         if isinstance(structured_claims, list) and structured_claims:
             for item in structured_claims:
                 if isinstance(item, dict):
+                    raw_ids = item.get("evidence_ids") if item.get("evidence_ids") is not None else item.get("cited_evidence_ids", [])
+                    ev_ids = [str(e) for e in raw_ids] if isinstance(raw_ids, list) else []
+                    has_explicit_asserted = "asserted_value" in item and item.get("asserted_value") not in (None, "")
+                    asserted = item.get("asserted_value") if has_explicit_asserted else (item.get("claim_text") or item.get("claim") or "")
+                    field_name = str(item.get("field") or "unknown")
+                    if field_name == "unknown" and ev_ids and ev_ids[0] in evidence_by_id:
+                        field_name = evidence_by_id[ev_ids[0]].source_field
                     claim = ModelSupportingClaim(
                         claim_type=str(item.get("claim_type", "PROCESS_EXECUTION")),
-                        evidence_ids=[str(e) for e in item.get("evidence_ids", [])],
-                        field=str(item.get("field", "unknown")),
-                        asserted_value=item.get("asserted_value", ""),
+                        evidence_ids=ev_ids,
+                        field=field_name,
+                        asserted_value=asserted,
                     )
                     claims.append(claim)
 
@@ -122,11 +129,15 @@ class ModelClaimExtractor:
                     actual_val = str(rec.observed_value)
                     matched_id = rec.evidence_id
 
-                    # Check value match
+                    # Check value match (handles both exact asserted values and sentence-style claim_text citations)
                     assert_str = str(claim.asserted_value).strip().lower()
                     obs_str = actual_val.strip().lower()
 
-                    if assert_str == obs_str or (len(assert_str) > 4 and assert_str in obs_str) or (len(obs_str) > 4 and obs_str in assert_str):
+                    if (
+                        assert_str == obs_str
+                        or (len(assert_str) > 4 and assert_str in obs_str)
+                        or (len(obs_str) >= 3 and obs_str in assert_str)
+                    ):
                         pass
                     else:
                         all_ids_valid = False

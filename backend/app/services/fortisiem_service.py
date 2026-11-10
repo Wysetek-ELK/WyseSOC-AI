@@ -477,6 +477,20 @@ class FortiSIEMService:
         existing = res.scalars().first()
 
         if existing:
+            drift_payload = {
+                "pattern_logic": parsed["pattern_logic"],
+                "severity": parsed["severity"],
+                "parsed_metadata": {**(existing.parsed_metadata or {}), **parsed["metadata"], "definition_status": "VERIFIED", "provenance": "AUTHORITATIVE_XML_IMPORT"},
+            }
+            try:
+                from app.services.policy_lifecycle_monitor import PolicyLifecycleMonitor
+                await PolicyLifecycleMonitor(self.db).detect_and_handle_rule_drift(
+                    rule=existing,
+                    updated_rule_dict=drift_payload,
+                )
+            except Exception:
+                pass
+
             existing.name = parsed["name"]
             existing.severity = parsed["severity"]
             existing.pattern_logic = parsed["pattern_logic"]
@@ -708,6 +722,18 @@ class FortiSIEMService:
             )
 
         if existing_rule and force_refresh:
+            try:
+                from app.services.policy_lifecycle_monitor import PolicyLifecycleMonitor
+                await PolicyLifecycleMonitor(self.db).detect_and_handle_rule_drift(
+                    rule=existing_rule,
+                    updated_rule_dict={
+                        "pattern_logic": parsed_rule["pattern_logic"],
+                        "severity": parsed_rule["severity"],
+                        "parsed_metadata": parsed_rule["metadata"],
+                    },
+                )
+            except Exception:
+                pass
             existing_rule.name = parsed_rule["name"]
             existing_rule.description = parsed_rule["description"]
             existing_rule.severity = parsed_rule["severity"]
@@ -735,16 +761,11 @@ class FortiSIEMService:
             self.db.add(new_rule)
             await self.db.flush()
 
-            # Synthesize template draft prompt in Rule Prompt Studio
+            # Synthesize template draft prompt in Rule Prompt Studio (remains DRAFT pending Administrator approval)
             try:
                 from app.services.prompt_studio_service import PromptStudioService
                 prompt_svc = PromptStudioService(self.db)
-                draft = await prompt_svc.generate_template_draft(rule_id=new_rule.id)
-                rp_res = await self.db.execute(select(RulePrompt).where(RulePrompt.rule_id == new_rule.id))
-                rp = rp_res.scalars().first()
-                if rp and not rp.active_version_id and draft:
-                    rp.active_version_id = draft.id
-                    await self.db.flush()
+                await prompt_svc.generate_template_draft(rule_id=new_rule.id)
             except Exception:
                 pass
 
@@ -1567,7 +1588,8 @@ class FortiSIEMService:
         if auto_triage_llm and incidents_to_evaluate:
             ai_service = AIVerdictService(self.db)
             is_llm_online = await ai_service.is_local_llm_available()
-            allow_mock = getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
+            is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+            allow_mock = False if is_prod else getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
 
             if is_llm_online or allow_mock:
                 # Evaluate up to 2 synchronously to provide immediate verified verdict in response
@@ -1624,7 +1646,8 @@ class FortiSIEMService:
             from app.database import AsyncSessionLocal
             async with AsyncSessionLocal() as session:
                 ai_service = AIVerdictService(session)
-                allow_mock = getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
+                is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+                allow_mock = False if is_prod else getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
                 for iid in incident_ids:
                     # Halt immediately if Local LLM goes offline mid-batch
                     if not await ai_service.is_local_llm_available() and not allow_mock:

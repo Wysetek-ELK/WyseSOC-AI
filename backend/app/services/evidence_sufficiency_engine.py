@@ -146,10 +146,15 @@ class EvidenceSufficiencyEngine:
         mandatory_fields_present: List[str] = []
         mandatory_fields_missing: List[str] = []
 
-        # Determine expected mandatory fields from contract or archetype
+        # Determine expected mandatory telemetry fields from contract or archetype
         expected_mandatory: List[str] = []
         if contract and hasattr(contract, "required_evidence") and contract.required_evidence:
-            expected_mandatory = [f.field for f in contract.required_evidence if getattr(f, "critical", False) or getattr(f, "required_for_tp", False)]
+            crit_fields = [f.field for f in contract.required_evidence if getattr(f, "critical", False)]
+            expected_mandatory = crit_fields or [
+                f.field
+                for f in contract.required_evidence
+                if getattr(f, "required_for_tp", False) and not str(f.field).startswith("detection.")
+            ]
         elif archetype_def and hasattr(archetype_def, "mandatory_core_fields") and archetype_def.mandatory_core_fields:
             expected_mandatory = list(archetype_def.mandatory_core_fields[:3])
         else:

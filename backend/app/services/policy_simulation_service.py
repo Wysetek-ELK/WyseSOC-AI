@@ -58,6 +58,108 @@ class PolicySimulationService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    async def get_rule_calibration_stats(self, rule_id: Optional[str]) -> Dict[str, Any]:
+        """
+        Queries real empirical validation sample count and measured accuracy from
+        persisted HistoricalGroundTruth and completed HistoricalEvaluationRunRecord data.
+        Never fabricates sample counts or accuracy percentages.
+        """
+        if not rule_id:
+            return {
+                "sample_count": 0,
+                "accuracy": None,
+                "is_calibrated": False,
+                "calibration_status": "UNCALIBRATED",
+            }
+
+        rule_ids = {rule_id}
+        try:
+            r_res = await self.db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
+            r_obj = r_res.scalars().first()
+            if r_obj:
+                rule_ids.update({r_obj.id, r_obj.rule_id})
+        except Exception:
+            pass
+
+        # 1. Check latest completed empirical evaluation run for this rule
+        try:
+            run_q = (
+                select(HistoricalEvaluationRunRecord)
+                .where(
+                    HistoricalEvaluationRunRecord.rule_id.in_(list(rule_ids)),
+                    HistoricalEvaluationRunRecord.status == "COMPLETED",
+                )
+                .order_by(desc(HistoricalEvaluationRunRecord.completed_at))
+                .limit(1)
+            )
+            run_res = await self.db.execute(run_q)
+            latest_run = run_res.scalars().first()
+            if latest_run and (latest_run.verified_ground_truth_cases or 0) > 0:
+                gt_cases = int(latest_run.verified_ground_truth_cases or 0)
+                metrics = latest_run.metrics or {}
+                calib = latest_run.calibration_metrics or {}
+                measured_acc = metrics.get("overall_accuracy")
+                if measured_acc is None:
+                    measured_acc = metrics.get("balanced_accuracy")
+                acc_pct = (
+                    round(float(measured_acc) * 100.0, 2)
+                    if measured_acc is not None and float(measured_acc) <= 1.0
+                    else (float(measured_acc) if measured_acc is not None else None)
+                )
+                is_cal = bool(calib.get("is_calibrated", False)) or (
+                    gt_cases >= 30 and acc_pct is not None and acc_pct >= 70.0
+                )
+                cal_status = (
+                    "CALIBRATED"
+                    if is_cal
+                    else ("PARTIALLY_VALIDATED" if gt_cases >= 5 else "UNCALIBRATED")
+                )
+                return {
+                    "sample_count": gt_cases,
+                    "accuracy": acc_pct,
+                    "is_calibrated": is_cal,
+                    "calibration_status": cal_status,
+                }
+        except Exception as e:
+            logger.warning(f"Failed querying completed evaluation runs for rule {rule_id}: {e}")
+
+        # 2. Fallback: count real verified non-ML HistoricalGroundTruth records for this rule
+        try:
+            gt_q = (
+                select(Incident, HistoricalGroundTruth)
+                .join(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
+                .where(
+                    Incident.rule_id.in_(list(rule_ids)),
+                    HistoricalGroundTruth.is_ml_generated == False,
+                )
+            )
+            gt_res = await self.db.execute(gt_q)
+            verified_count = 0
+            for _, gt in gt_res.all():
+                adj = HistoricalGroundTruthValidator.adjudicate_ground_truth_label(
+                    raw_resolution=gt.resolution,
+                    analyst_comments=gt.comments,
+                    is_ml_generated=gt.is_ml_generated,
+                )
+                if adj in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
+                    verified_count += 1
+
+            return {
+                "sample_count": verified_count,
+                "accuracy": None,
+                "is_calibrated": False,
+                "calibration_status": "PARTIALLY_VALIDATED" if verified_count >= 5 else "UNCALIBRATED",
+            }
+        except Exception as e:
+            logger.warning(f"Failed counting historical ground truth for rule {rule_id}: {e}")
+
+        return {
+            "sample_count": 0,
+            "accuracy": None,
+            "is_calibrated": False,
+            "calibration_status": "UNCALIBRATED",
+        }
+
     async def run_dry_run_intelligence_evaluation(
         self,
         run_name: str,
@@ -74,6 +176,7 @@ class PolicySimulationService:
         """
         # Resolve rule IDs (both internal UUID and rule_identifier) to match incidents robustly
         rule_ids = [rule_id] if rule_id else []
+        matched_rule: Optional[Rule] = None
         if rule_id:
             try:
                 rule_res = await self.db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
@@ -82,6 +185,32 @@ class PolicySimulationService:
                     rule_ids = list({rule_id, matched_rule.id, matched_rule.rule_id})
             except Exception as e:
                 logger.warning(f"Failed to resolve rule identifiers for {rule_id}: {e}")
+
+        # Resolve candidate PromptVersion & compile policy if policy_version_id supplied
+        candidate_pv: Optional[PromptVersion] = None
+        compiled_policy = None
+        policy_digest: Optional[str] = None
+        if policy_version_id:
+            try:
+                pv_res = await self.db.execute(select(PromptVersion).where(PromptVersion.id == policy_version_id))
+                candidate_pv = pv_res.scalar_one_or_none()
+            except Exception as e:
+                logger.warning(f"Failed loading candidate PromptVersion {policy_version_id}: {e}")
+
+        if candidate_pv:
+            try:
+                from app.services.policy_compiler_service import PolicyCompilerService
+                from app.schemas.compiled_policy import CompilationExecutionMode
+                from app.services.policy_quality_validator import PolicyQualityValidator
+                compiled_policy = PolicyCompilerService.compile_policy(
+                    rule=matched_rule,
+                    prompt_version=candidate_pv,
+                    execution_mode=CompilationExecutionMode.SIMULATION,
+                    raise_on_unapproved=False,
+                )
+                policy_digest = PolicyQualityValidator.compute_policy_digest(candidate_pv)
+            except Exception as e:
+                logger.warning(f"Failed compiling candidate policy version {policy_version_id}: {e}")
 
         run_record = HistoricalEvaluationRunRecord(
             id=str(uuid.uuid4()),
@@ -101,6 +230,8 @@ class PolicySimulationService:
             config_snapshot={
                 "provider_type": provider_type,
                 "sample_limit": sample_limit,
+                "policy_version_id": policy_version_id,
+                "policy_digest": policy_digest,
                 "evaluated_at": datetime.utcnow().isoformat(),
             },
             started_at=datetime.utcnow(),
@@ -166,9 +297,32 @@ class PolicySimulationService:
             await self.db.commit()
             return run_record
 
-        # 2. Fetch Evidence Contract for rule if available
+        # Resolve real historical calibration stats for this rule (never fabricate 85% or count excluded rows)
+        hist_stats = await self.get_rule_calibration_stats(rule_id)
+        hist_sample_count = int(hist_stats.get("sample_count", 0))
+        hist_accuracy = hist_stats.get("accuracy")
+        hist_is_calibrated = bool(hist_stats.get("is_calibrated", False))
+
+        # Resolve Evidence Contract (using candidate version when supplied)
         contract = None
-        if rule_id:
+        if candidate_pv and matched_rule:
+            try:
+                from app.services.rule_intelligence_analyzer import RuleIntelligenceAnalyzer
+                from app.services.detection_archetype_registry import DetectionArchetypeRegistry
+                from app.services.evidence_requirement_mapper import EvidenceRequirementMapper
+                sem = RuleIntelligenceAnalyzer.analyze_rule(matched_rule)
+                cls_res = DetectionArchetypeRegistry.classify_rule(sem, matched_rule)
+                arch_def = DetectionArchetypeRegistry.get_archetype_definition(cls_res.primary_archetype)
+                contract = EvidenceRequirementMapper.map_evidence_contract(
+                    rule=matched_rule,
+                    semantics=sem,
+                    archetype_def=arch_def,
+                    prompt_version=candidate_pv,
+                )
+            except Exception as e:
+                logger.warning(f"Candidate contract mapping warning for rule {rule_id}: {e}")
+
+        if not contract and rule_id:
             try:
                 contract_srv = EvidenceContractService(self.db)
                 contract = await contract_srv.get_active_contract_for_rule(rule_id)
@@ -343,17 +497,37 @@ class PolicySimulationService:
             # Blind review sanitization: strip answers from model input
             sanitized_inc = HistoricalGroundTruthValidator.sanitize_incident_for_inference(inc_dict)
 
-            # Generate model proposal (heuristic simulation aligned with telemetry)
-            sim_output = self._simulate_model_output(sanitized_inc, contract)
+            # Generate model proposal honoring configured provider_type and candidate PromptVersion
+            if str(provider_type).upper() == "OPENAI_COMPATIBLE":
+                from app.services.model_provider.factory import get_model_provider
+                llm_provider = get_model_provider("OPENAI_COMPATIBLE")
+                system_prompt = compiled_policy.compiled_system_prompt if compiled_policy else (
+                    getattr(candidate_pv, "rule_specific_prompt", "") or "Analyze security telemetry conservatively."
+                )
+                rule_spec = {
+                    "id": matched_rule.id if matched_rule else (rule_id or "RULE-SIM"),
+                    "name": matched_rule.name if matched_rule else (rule_id or "Simulation Rule"),
+                    "severity": matched_rule.severity if matched_rule else "MEDIUM",
+                }
+                model_res = await llm_provider.analyze_incident(
+                    incident_payload=sanitized_inc,
+                    rule_spec=rule_spec,
+                    prompt_text=system_prompt,
+                    prompt_version_number=getattr(candidate_pv, "version_number", 1) if candidate_pv else 1,
+                )
+                sim_output = model_res.model_dump() if hasattr(model_res, "model_dump") else model_res.dict()
+            else:
+                sim_output = self._simulate_model_output(sanitized_inc, contract, prompt_version=candidate_pv)
 
-            # Evaluate Verdict Trustworthiness
+            # Evaluate Verdict Trustworthiness using real rule-level historical stats
             trust_res = VerdictTrustworthinessEngine.evaluate_verdict_trust(
                 incident_payload=sanitized_inc,
                 model_output=sim_output,
                 contract=contract,
-                archetype_id=archetype,
-                historical_sample_count=total_cases,
-                historical_accuracy=85.0 if total_cases >= 5 else None,
+                archetype_id=archetype or (getattr(contract, "detection_archetype", None) if contract else None),
+                historical_sample_count=hist_sample_count,
+                historical_accuracy=hist_accuracy,
+                is_calibrated=hist_is_calibrated,
             )
 
             # Correctness evaluation
@@ -634,16 +808,28 @@ class PolicySimulationService:
         self,
         incident_payload: Dict[str, Any],
         contract: Optional[Any] = None,
+        prompt_version: Optional[PromptVersion] = None,
     ) -> Dict[str, Any]:
         """
-        Generates simulated LLM reasoning and claims based on observed incident telemetry.
+        Generates simulated LLM reasoning and claims based on observed incident telemetry
+        and the candidate PromptVersion policy criteria (TP/FP/missing-info rules).
         """
         src = incident_payload.get("source_ip", "")
         evt = str(incident_payload.get("event_type", ""))
         raw = incident_payload.get("raw_payload") or {}
+        if not isinstance(raw, dict):
+            raw = {}
+
+        tp_policy_text = (getattr(prompt_version, "tp_indicators", "") or "").lower()
+        fp_policy_text = (getattr(prompt_version, "fp_indicators", "") or "").lower()
+        missing_policy_text = (getattr(prompt_version, "missing_info_criteria", "") or "").lower()
 
         # Check for exfiltration byte indicator
-        bytes_sent = raw.get("sentBytes64") or raw.get("bytes_sent") or 0
+        bytes_sent = raw.get("sentBytes64") or raw.get("bytes_sent") or raw.get("bytes_out") or 0
+        try:
+            bytes_sent_int = int(float(bytes_sent))
+        except (ValueError, TypeError):
+            bytes_sent_int = 0
 
         claims = []
         if src:
@@ -652,37 +838,69 @@ class PolicySimulationService:
                 "evidence_ids": ["source_ip"],
                 "claim_type": "OBSERVED_FACT",
             })
-        if bytes_sent:
+        if bytes_sent_int:
             claims.append({
-                "claim": f"Total observed outbound transfer volume is {bytes_sent} bytes",
+                "claim": f"Total observed outbound transfer volume is {bytes_sent_int} bytes",
                 "evidence_ids": ["sentBytes64"],
                 "claim_type": "OBSERVED_FACT",
             })
 
-        # Suggest TP if volume exceeds 1GB and external destination present
-        if bytes_sent and int(bytes_sent) > 1_000_000_000:
+        raw_str = str(raw).lower()
+        inc_str = str(incident_payload).lower()
+
+        # Enforce candidate policy abstention trigger if command_line / critical fields absent when required
+        cmd_val = raw.get("command_line") or raw.get("cmdline") or raw.get("Command")
+        if ("command" in missing_policy_text or "command_line" in missing_policy_text) and not cmd_val and not bytes_sent_int:
             return {
-                "verdict": "TRUE_POSITIVE",
-                "confidence": 92.0,
-                "reason": f"High volume outbound transfer of {bytes_sent} bytes observed from {src}.",
+                "verdict": "REQUIRES_ATTENTION",
+                "confidence": 40.0,
+                "reason": "Policy abstention triggered: required command-line telemetry missing from incident.",
                 "claims": claims,
-                "supporting_evidence": [f"Source IP {src}", f"Bytes sent {bytes_sent}"],
-                "model_identifier": "simulated-v2.1",
+                "supporting_evidence": [],
+                "model_identifier": "simulated-v2.2-policy-aware",
                 "is_simulated": True,
             }
-        elif "backup" in str(raw).lower() or "backup" in str(incident_payload).lower():
+
+        # Policy-aware False Positive check
+        is_backup_ctx = "backup" in raw_str or "backup" in inc_str or bool(raw.get("authorization_ticket"))
+        is_maint_ctx = any(k in raw_str or k in inc_str for k in ("maintenance", "ccmexec", "patch", "scheduled"))
+        if is_backup_ctx or (is_maint_ctx and ("maintenance" in fp_policy_text or "scheduled" in fp_policy_text or not fp_policy_text)):
+            dest = raw.get("destination_ip") or raw.get("business_service") or "verified endpoint"
             claims.append({
-                "claim": "Transfer destination verified as authorized cloud backup repository",
-                "evidence_ids": ["destination.ip"],
+                "claim": f"Transfer or maintenance activity verified against authorized endpoint {dest}",
+                "evidence_ids": ["destination_ip" if raw.get("destination_ip") else "raw_payload"],
                 "claim_type": "OBSERVED_FACT",
             })
             return {
                 "verdict": "FALSE_POSITIVE",
                 "confidence": 88.0,
-                "reason": "Authorized scheduled backup transfer to verified endpoint.",
+                "reason": "Authorized scheduled backup or approved maintenance activity confirmed.",
                 "claims": claims,
-                "supporting_evidence": ["Authorized backup destination confirmed"],
-                "model_identifier": "simulated-v2.1",
+                "supporting_evidence": ["Authorized operational maintenance/backup confirmed"],
+                "model_identifier": "simulated-v2.2-policy-aware",
+                "is_simulated": True,
+            }
+
+        # Policy-aware True Positive check
+        malicious_cmd = cmd_val and any(k in str(cmd_val).lower() for k in ("-enc", "powershell", "mimikatz", "rundll32", "lsass"))
+        if bytes_sent_int > 1_000_000_000 or malicious_cmd:
+            if malicious_cmd:
+                claims.append({
+                    "claim": f"Suspicious process command line observed: {cmd_val}",
+                    "evidence_ids": ["command_line"],
+                    "claim_type": "OBSERVED_FACT",
+                })
+            return {
+                "verdict": "TRUE_POSITIVE",
+                "confidence": 92.0,
+                "reason": (
+                    f"High volume outbound transfer of {bytes_sent_int} bytes observed from {src}."
+                    if bytes_sent_int > 1_000_000_000
+                    else f"Suspicious execution indicator observed in telemetry ({cmd_val})."
+                ),
+                "claims": claims,
+                "supporting_evidence": [f"Source IP {src}", f"Indicator: {bytes_sent_int or cmd_val}"],
+                "model_identifier": "simulated-v2.2-policy-aware",
                 "is_simulated": True,
             }
         else:
@@ -692,7 +910,7 @@ class PolicySimulationService:
                 "reason": "Telemetry insufficient to prove malicious or benign justification.",
                 "claims": claims,
                 "supporting_evidence": [],
-                "model_identifier": "simulated-v2.1",
+                "model_identifier": "simulated-v2.2-policy-aware",
                 "is_simulated": True,
             }
 
@@ -720,6 +938,7 @@ class PolicySimulationService:
                     select(HistoricalEvaluationRunRecord)
                     .where(
                         HistoricalEvaluationRunRecord.policy_version_id == str(baseline_version.id),
+                        HistoricalEvaluationRunRecord.rule_id == rule_id,
                         HistoricalEvaluationRunRecord.status == "COMPLETED",
                     )
                     .order_by(desc(HistoricalEvaluationRunRecord.completed_at))
@@ -870,6 +1089,7 @@ class PolicySimulationService:
                 "unverified": int(metrics.get("unverified_cases", 0)),
             },
             "run_id": str(run.id),
+            "policy_digest": (run.config_snapshot or {}).get("policy_digest"),
             "is_calibrated": bool(run.calibration_metrics.get("is_calibrated", False)),
             "calibration_status": run.calibration_metrics.get("status", "NOT_CALIBRATED"),
             "brier_score": _to_optional_float(run.calibration_metrics.get("brier_score")),

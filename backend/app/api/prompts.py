@@ -69,6 +69,23 @@ async def get_rule_prompts_summary(
     drift_res = await db.execute(select(PolicyDriftEvent).where(PolicyDriftEvent.acknowledged == False))
     drift_rule_ids = {d.rule_id for d in drift_res.scalars().all()}
 
+    # Pre-fetch latest simulation run and quality assessment per rule
+    sim_runs_res = await db.execute(
+        select(HistoricalEvaluationRunRecord).order_by(desc(HistoricalEvaluationRunRecord.started_at))
+    )
+    sim_by_rule: Dict[str, HistoricalEvaluationRunRecord] = {}
+    for srun in sim_runs_res.scalars().all():
+        if srun.rule_id and srun.rule_id not in sim_by_rule:
+            sim_by_rule[srun.rule_id] = srun
+
+    qa_res = await db.execute(
+        select(PolicyQualityAssessmentRecord).order_by(desc(PolicyQualityAssessmentRecord.evaluated_at))
+    )
+    qa_by_rule: Dict[str, PolicyQualityAssessmentRecord] = {}
+    for qa in qa_res.scalars().all():
+        if qa.rule_id and qa.rule_id not in qa_by_rule:
+            qa_by_rule[qa.rule_id] = qa
+
     items = []
     for r in rules:
         rp = prompts_by_rule_id.get(r.id)
@@ -82,6 +99,17 @@ async def get_rule_prompts_summary(
         completeness = snap.definition_status if snap else "UNKNOWN"
         q_score = target_v.quality_score if target_v else None
         q_status = target_v.quality_status if target_v else "NOT_EVALUATED"
+
+        latest_qa = qa_by_rule.get(r.id)
+        latest_sim = sim_by_rule.get(r.id) or sim_by_rule.get(r.rule_id)
+        real_sim_status = (
+            latest_qa.simulation_status
+            if latest_qa and latest_qa.simulation_status
+            else (latest_sim.validation_state if latest_sim else "NOT_EVALUATED")
+        )
+        blocker_cnt = len(latest_qa.blocking_issues) if latest_qa and isinstance(latest_qa.blocking_issues, list) else (
+            1 if (completeness == "INCOMPLETE" and not has_approved) else 0
+        )
 
         revalidation_req = (r.id in drift_rule_ids) or (target_v and target_v.quality_status == "REVIEW_REQUIRED")
 
@@ -103,9 +131,9 @@ async def get_rule_prompts_summary(
                 definition_completeness=completeness,
                 quality_score=q_score,
                 quality_validation_status=q_status,
-                blocking_issue_count=1 if (completeness == "INCOMPLETE" and not has_approved) else 0,
-                simulation_status="NOT_EVALUATED",
-                last_validated_date=snap.updated_at if snap else None,
+                blocking_issue_count=blocker_cnt,
+                simulation_status=real_sim_status,
+                last_validated_date=(latest_qa.evaluated_at if latest_qa else (snap.updated_at if snap else None)),
                 revalidation_required=revalidation_req,
             )
         )
@@ -381,7 +409,7 @@ async def validate_policy_quality(
     latest_run_q = (
         select(HistoricalEvaluationRunRecord)
         .where(
-            HistoricalEvaluationRunRecord.rule_id == rule.id,
+            HistoricalEvaluationRunRecord.rule_id.in_([rule.id, rule.rule_id]),
             HistoricalEvaluationRunRecord.policy_version_id == str(target_ver.id),
         )
         .order_by(desc(HistoricalEvaluationRunRecord.started_at))
@@ -393,6 +421,7 @@ async def validate_policy_quality(
     if latest_run:
         metrics_dict = getattr(latest_run, "metrics", {}) or getattr(latest_run, "metrics_payload", {}) or {}
         reg_summary = getattr(latest_run, "regression_summary", {}) or {}
+        cfg_snapshot = getattr(latest_run, "config_snapshot", {}) or {}
         eligible_gt = metrics_dict.get("verified_ground_truth_cases", getattr(latest_run, "verified_ground_truth_cases", 0))
         sim_results = {
             "sample_count": getattr(latest_run, "total_cases", 0) or getattr(latest_run, "sample_size", 0),
@@ -404,6 +433,7 @@ async def validate_policy_quality(
             "balanced_accuracy": metrics_dict.get("balanced_accuracy") or getattr(latest_run, "balanced_accuracy", None),
             "ece": metrics_dict.get("ece") or getattr(latest_run, "ece", None),
             "brier_score": metrics_dict.get("brier_score") or getattr(latest_run, "brier_score", None),
+            "policy_digest": cfg_snapshot.get("policy_digest"),
             "metrics": metrics_dict,
         }
 
@@ -588,10 +618,31 @@ async def create_manual_draft(
     return PromptVersionResponse.model_validate(ver)
 
 
+async def _trigger_bounded_rule_reevaluation(rule_id: str) -> None:
+    """Safely triggers bounded reevaluation of deferred POLICY_NOT_APPROVED incidents upon policy approval."""
+    from app.config import settings
+    if getattr(settings, "APP_ENV", "development").lower() == "testing":
+        return
+    try:
+        from app.database import AsyncSessionLocal
+        from app.services.ai_verdict_service import VerdictTriageAgent
+        async with AsyncSessionLocal() as bg_db:
+            agent = VerdictTriageAgent(bg_db)
+            await agent.reconcile_pending_triage(
+                max_batch=15,
+                username="policy_approval_reeval",
+                include_reevaluation_eligible=True,
+                rule_id=rule_id,
+            )
+    except Exception as exc:
+        logger.warning(f"Bounded reevaluation trigger warning for rule {rule_id}: {exc}")
+
+
 @router.post("/rule/{rule_id}/approve/{version_id}", response_model=PromptVersionResponse)
 async def approve_prompt_version(
     rule_id: str,
     version_id: str,
+    background_tasks: BackgroundTasks,
     req: Optional[PromptApprovalRequest] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),  # Approval gating requires Lead / Administrator
@@ -613,6 +664,7 @@ async def approve_prompt_version(
         details={"version_number": ver.version_number, "status": "APPROVED", "quality_score": ver.quality_score},
     )
 
+    background_tasks.add_task(_trigger_bounded_rule_reevaluation, rule_id)
     return PromptVersionResponse.model_validate(ver)
 
 

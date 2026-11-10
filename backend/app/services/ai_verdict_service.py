@@ -41,9 +41,36 @@ class VerdictTriageAgent:
 
     _last_probe_time: float = 0.0
     _is_local_llm_online: Optional[bool] = None
+    _incident_locks: Dict[str, asyncio.Lock] = {}
 
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    @classmethod
+    def _get_incident_lock(cls, incident_key: str) -> asyncio.Lock:
+        try:
+            loop_id = id(asyncio.get_running_loop())
+        except RuntimeError:
+            loop_id = 0
+        scoped_key = f"{loop_id}:{incident_key}"
+        lock = cls._incident_locks.get(scoped_key)
+        if lock is None:
+            lock = asyncio.Lock()
+            cls._incident_locks[scoped_key] = lock
+        return lock
+
+    @staticmethod
+    def _upsert_ai_verdict_note(inv: Investigation, note_entry: str) -> None:
+        """Idempotently inserts or updates automated AI Verdict note without duplicating on reevaluation."""
+        if not inv or inv.analyst_verdict:
+            return
+        existing = inv.analyst_notes or ""
+        if note_entry in existing:
+            return
+        lines = [line for line in existing.split("\n\n") if line.strip() and not line.strip().startswith("[AI Verdict (")]
+        lines.append(note_entry)
+        inv.analyst_notes = "\n\n".join(lines)
+        inv.updated_at = datetime.utcnow()
 
     @classmethod
     async def is_local_llm_available(cls, force_refresh: bool = False) -> bool:
@@ -96,6 +123,27 @@ class VerdictTriageAgent:
         incident = res.scalar_one_or_none()
         if not incident:
             raise ValueError(f"Incident '{clean_target_id}' not found.")
+
+        inc_lock = self._get_incident_lock(str(incident.incident_id or incident.id))
+        async with inc_lock:
+            return await self._evaluate_incident_locked(
+                incident=incident,
+                username=username,
+                model_provider_type=model_provider_type,
+                allow_simulated_fallback=allow_simulated_fallback,
+            )
+
+    async def _evaluate_incident_locked(
+        self,
+        incident: Incident,
+        username: str = "system",
+        model_provider_type: Optional[str] = None,
+        allow_simulated_fallback: bool = False,
+    ) -> Dict[str, Any]:
+        """Protected single-incident evaluation execution under per-incident concurrency lock."""
+        prev_attempts = 0
+        if isinstance(incident.ai_verdict, dict):
+            prev_attempts = int(incident.ai_verdict.get("reevaluation_attempts", 0) or 0)
 
         # 2. Auto-resolve Rule if incident is unmapped
         rule = incident.rule
@@ -169,73 +217,79 @@ class VerdictTriageAgent:
                 candidate = next((v for v in rp.versions if v.id == rp.active_version_id), None)
                 if candidate and candidate.status == "APPROVED":
                     active_v = candidate
+        else:
+            rp = None
 
-            # REQ-03 (AV-001 & AV-002): Refuse to evaluate with unapproved prompt drafts in live triage
-            if not active_v:
-                if not allow_simulated_fallback or is_prod:
-                    verdict_data = {
-                        "incident_id": incident.incident_id,
-                        "proposed_verdict": "REQUIRES_ATTENTION",
+        # REQ-03 (AV-001 & AV-002): Refuse to evaluate with unapproved prompt drafts or unmapped rule policy in live triage
+        if not active_v:
+            if not allow_simulated_fallback or is_prod:
+                deferral_detail = (
+                    "DETECTION_POLICY_PENDING_APPROVAL: No approved investigation policy exists for this detection rule. Triage deferred to human analyst."
+                    if rule
+                    else "DETECTION_POLICY_PENDING_APPROVAL: Incident has no matched approved detection rule policy. Triage deferred to human analyst."
+                )
+                verdict_data = {
+                    "incident_id": incident.incident_id,
+                    "proposed_verdict": "REQUIRES_ATTENTION",
+                    "verdict": "REQUIRES_ATTENTION",
+                    "confidence": 0.0,
+                    "raw_model_confidence": 0.0,
+                    "reason": deferral_detail,
+                    "supporting_evidence": [],
+                    "missing_evidence": ["Approved detection rule investigation policy (Studio approval required)"],
+                    "analyst_questions": ["Please review and approve the detection policy in Agent Intelligence Studio."],
+                    "latency_ms": 0,
+                    "model_identifier": "POLICY_GUARD",
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0,
+                    "is_simulated": False,
+                    "validation_status": "POLICY_NOT_APPROVED",
+                    "validation_reason_codes": ["POLICY_NOT_APPROVED", "EVIDENCE_CONTRACT_UNVERIFIED"],
+                    "evidence_completeness": 0.0,
+                    "grounding_ratio": 0.0,
+                    "canonical_evidence_count": norm_result.total_evidence_count,
+                    "reevaluation_eligible": True,
+                    "deferral_reason": "POLICY_NOT_APPROVED",
+                    "reevaluation_attempts": prev_attempts + 1,
+                    "rule_name": rule.name if rule else incident.title,
+                    "severity": incident.severity,
+                    "evaluated_at": datetime.utcnow().isoformat(),
+                    "evaluated_by_user": username,
+                }
+                incident.ai_verdict = verdict_data
+                self.db.add(incident)
+
+                # Sync with Investigation record if present (idempotent upsert)
+                inv_q = await self.db.execute(
+                    select(Investigation).where(Investigation.incident_id == incident.id)
+                )
+                inv = inv_q.scalars().first()
+                if inv and not inv.analyst_verdict:
+                    note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
+                    self._upsert_ai_verdict_note(inv, note_entry)
+                    self.db.add(inv)
+
+                audit = AuditLog(
+                    user_id="SYSTEM" if username in ("system", "scheduler") else username,
+                    username=username,
+                    action="AI_VERDICT_EVALUATE",
+                    resource_type="INCIDENT",
+                    resource_id=incident.incident_id,
+                    details={
                         "verdict": "REQUIRES_ATTENTION",
                         "confidence": 0.0,
-                        "raw_model_confidence": 0.0,
-                        "reason": "DETECTION_POLICY_PENDING_APPROVAL: No approved investigation policy exists for this detection rule. Triage deferred to human analyst.",
-                        "supporting_evidence": [],
-                        "missing_evidence": ["Approved detection rule investigation policy (Studio approval required)"],
-                        "analyst_questions": ["Please review and approve the detection policy in Agent Intelligence Studio."],
-                        "latency_ms": 0,
-                        "model_identifier": "POLICY_GUARD",
-                        "prompt_tokens": 0,
-                        "completion_tokens": 0,
-                        "total_tokens": 0,
-                        "is_simulated": False,
                         "validation_status": "POLICY_NOT_APPROVED",
-                        "validation_reason_codes": ["POLICY_NOT_APPROVED", "EVIDENCE_CONTRACT_UNVERIFIED"],
-                        "evidence_completeness": 0.0,
-                        "grounding_ratio": 0.0,
-                        "canonical_evidence_count": norm_result.total_evidence_count,
-                        "rule_name": rule.name if rule else incident.title,
-                        "severity": incident.severity,
-                        "evaluated_at": datetime.utcnow().isoformat(),
-                        "evaluated_by_user": username,
-                    }
-                    incident.ai_verdict = verdict_data
-                    self.db.add(incident)
-
-                    # Sync with Investigation record if present
-                    inv_q = await self.db.execute(
-                        select(Investigation).where(Investigation.incident_id == incident.id)
-                    )
-                    inv = inv_q.scalars().first()
-                    if inv and not inv.analyst_verdict:
-                        note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
-                        if inv.analyst_notes:
-                            inv.analyst_notes = f"{inv.analyst_notes}\n\n{note_entry}"
-                        else:
-                            inv.analyst_notes = note_entry
-                        inv.updated_at = datetime.utcnow()
-                        self.db.add(inv)
-
-                    audit = AuditLog(
-                        user_id="SYSTEM" if username in ("system", "scheduler") else username,
-                        username=username,
-                        action="AI_VERDICT_EVALUATE",
-                        resource_type="INCIDENT",
-                        resource_id=incident.incident_id,
-                        details={
-                            "verdict": "REQUIRES_ATTENTION",
-                            "confidence": 0.0,
-                            "validation_status": "POLICY_NOT_APPROVED",
-                            "reason": verdict_data["reason"],
-                        },
-                    )
-                    self.db.add(audit)
-                    await self.db.commit()
-                    return verdict_data
-                else:
-                    # In simulation / test mode, allow testing with draft version if available
-                    if rp and rp.versions:
-                        active_v = rp.versions[0]
+                        "reason": verdict_data["reason"],
+                    },
+                )
+                self.db.add(audit)
+                await self.db.commit()
+                return verdict_data
+            else:
+                # In simulation / test mode, allow testing with draft version if available
+                if rp and rp.versions:
+                    active_v = rp.versions[0]
 
         # P2-REQ-02: Resolve Evidence Contract for the rule and active policy
         contract = EvidenceContractService.get_contract_for_rule(rule, active_v)
@@ -274,6 +328,9 @@ class VerdictTriageAgent:
                 "contract_id": contract.contract_id,
                 "contract_version": contract.version_number,
                 "validator_version": IndependentVerdictValidator.VALIDATOR_VERSION,
+                "reevaluation_eligible": True,
+                "deferral_reason": preflight.preflight_status,
+                "reevaluation_attempts": prev_attempts + 1,
                 "rule_name": rule.name if rule else incident.title,
                 "severity": incident.severity,
                 "evaluated_at": datetime.utcnow().isoformat(),
@@ -288,11 +345,7 @@ class VerdictTriageAgent:
             inv = inv_q.scalars().first()
             if inv and not inv.analyst_verdict:
                 note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
-                if inv.analyst_notes:
-                    inv.analyst_notes = f"{inv.analyst_notes}\n\n{note_entry}"
-                else:
-                    inv.analyst_notes = note_entry
-                inv.updated_at = datetime.utcnow()
+                self._upsert_ai_verdict_note(inv, note_entry)
                 self.db.add(inv)
 
             audit = AuditLog(
@@ -373,6 +426,9 @@ class VerdictTriageAgent:
                 "policy_sections_count": len(compiled_policy.sections),
                 "calibration_status": "NOT_CALIBRATED",
                 "is_calibrated": False,
+                "reevaluation_eligible": True,
+                "deferral_reason": "CONTEXT_WINDOW_EXCEEDED",
+                "reevaluation_attempts": prev_attempts + 1,
                 "rule_name": rule.name if rule else incident.title,
                 "severity": incident.severity,
                 "evaluated_at": datetime.utcnow().isoformat(),
@@ -477,10 +533,15 @@ class VerdictTriageAgent:
         p_tokens = getattr(verdict, "prompt_tokens", 0) or 0
         c_tokens = getattr(verdict, "completion_tokens", 0) or 0
         t_tokens = getattr(verdict, "total_tokens", 0) or (p_tokens + c_tokens)
-        if t_tokens == 0:
-            p_tokens = max(50, len(prompt_text) // 4)
-            c_tokens = max(20, len(verdict.reason) // 4)
-            t_tokens = p_tokens + c_tokens
+        token_usage_source = "API_USAGE"
+        if t_tokens == 0 and getattr(verdict, "validation_status", "VALID") in ("VALID", None) or getattr(verdict, "is_simulated", False):
+            if t_tokens == 0:
+                p_tokens = max(50, len(prompt_text) // 4)
+                c_tokens = max(20, len(verdict.reason) // 4)
+                t_tokens = p_tokens + c_tokens
+                token_usage_source = "ESTIMATED"
+        elif t_tokens == 0:
+            token_usage_source = "UNAVAILABLE"
 
         # P2-REQ-04: Structured Claim Extraction and Grounding
         raw_verdict_dict = verdict.model_dump() if hasattr(verdict, "model_dump") else (verdict.dict() if hasattr(verdict, "dict") else {
@@ -489,6 +550,7 @@ class VerdictTriageAgent:
             "reason": verdict.reason,
             "supporting_evidence": verdict.supporting_evidence,
             "supporting_claims": getattr(verdict, "supporting_claims", []),
+            "contradictory_evidence": getattr(verdict, "contradictory_evidence", []),
         })
         claim_grounding = ModelClaimExtractor.extract_and_ground_claims(
             incident_id=incident.incident_id,
@@ -507,16 +569,133 @@ class VerdictTriageAgent:
             contract=contract,
             allow_simulation=allow_mock,
             compilation_digest=compiled_policy.compilation_digest,
+            model_reason=verdict.reason,
+            contradictory_evidence=getattr(verdict, "contradictory_evidence", None),
         )
+
+        # AIS 2.1: Unified Verdict Trustworthiness & Real Empirical Calibration Lookup
+        from app.services.policy_simulation_service import PolicySimulationService
+        from app.services.verdict_trustworthiness_engine import VerdictTrustworthinessEngine
+        from app.models.verdict_intelligence import VerdictTrustAssessmentRecord, EvidenceSufficiencyAssessmentRecord
+        from app.models.rule_intelligence import RuleIntelligenceSnapshot
+        from app.schemas.verdict_intelligence import UserVisibleVerdict
+
+        hist_stats = await PolicySimulationService(self.db).get_rule_calibration_stats(rule.id if rule else None)
+        snap = None
+        if rule:
+            snap_res = await self.db.execute(select(RuleIntelligenceSnapshot).where(RuleIntelligenceSnapshot.rule_id == rule.id))
+            snap = snap_res.scalars().first()
+
+        auth_threshold = snap.threshold if snap else None
+        def_status = snap.definition_status if snap else (
+            (rule.parsed_metadata or {}).get("definition_status", "VERIFIED") if rule else "INCOMPLETE"
+        )
+
+        trust_payload = dict(payload_dict)
+        trust_payload["rule_id"] = rule.rule_id if rule else incident.event_type
+        trust_payload["prompt_version_number"] = compiled_policy.version_number
+        trust_payload["contract_version"] = contract.status
+        trust_res = VerdictTrustworthinessEngine.evaluate_verdict_trust(
+            incident_payload=trust_payload,
+            model_output=raw_verdict_dict,
+            contract=contract,
+            archetype_id=getattr(contract, "detection_archetype", None) or (snap.primary_archetype if snap else None),
+            authoritative_threshold=auth_threshold,
+            definition_status=def_status,
+            historical_sample_count=int(hist_stats.get("sample_count", 0)),
+            historical_accuracy=hist_stats.get("accuracy"),
+            is_calibrated=bool(hist_stats.get("is_calibrated", False)),
+        )
+
+        # Reconcile authoritative live verdict with AIS 2.1 hard safety guardrails
+        # (cold-start uncalibrated score <= 6 alone does not block contract-approved valid triage,
+        #  whereas missing mandatory telemetry, contradictions, ungrounded/empty claims, incomplete threshold,
+        #  or unsupported FP assumptions strictly enforce REQUIRES_ATTENTION).
+        final_auth_verdict = val_res.final_verdict
+        final_is_decisive = val_res.is_decisive_accepted
+        final_validation_status = val_res.validation_status
+        final_reason_codes = list(val_res.validation_reason_codes)
+        final_confidence_display = val_res.validated_confidence_display if val_res.validated_confidence_display is not None else verdict.confidence
+        final_action_directive = val_res.analyst_action_directive
+
+        if final_auth_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE") and trust_res.effective_verdict == UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION:
+            esc_lower = (trust_res.escalation_reason or "").lower()
+            is_hard_guardrail_block = bool(
+                trust_res.missing_evidence
+                or trust_res.contradictory_evidence
+                or (trust_res.claim_verification and (trust_res.claim_verification.has_unsupported_assertions or trust_res.claim_verification.has_contradictions or trust_res.claim_verification.grounded_claims == 0))
+                or "siem detection threshold" in esc_lower
+                or "threshold is unverified" in esc_lower
+                or "incomplete" in esc_lower
+                or "business authorization" in esc_lower
+                or "alert firing alone" in esc_lower
+            )
+            if is_hard_guardrail_block:
+                final_auth_verdict = "REQUIRES_ATTENTION"
+                final_is_decisive = False
+                final_validation_status = "GUARDRAIL_ABSTAINED"
+                final_confidence_display = 0.0
+                if "TRUST_GUARDRAIL_BLOCK" not in final_reason_codes:
+                    final_reason_codes.append("TRUST_GUARDRAIL_BLOCK")
+                if trust_res.escalation_reason:
+                    final_action_directive = trust_res.escalation_reason
+
+        # Persist AIS 2.1 assessment records alongside live verdict
+        if trust_res.evidence_sufficiency is not None:
+            suff = trust_res.evidence_sufficiency
+            self.db.add(EvidenceSufficiencyAssessmentRecord(
+                incident_id=incident.incident_id,
+                rule_id=rule.id if rule else incident.event_type,
+                archetype=suff.archetype,
+                overall_sufficiency_score=suff.overall_sufficiency_score,
+                required_coverage_score=suff.required_coverage_score,
+                integrity_provenance_score=suff.integrity_provenance_score,
+                consistency_corroboration_score=suff.consistency_corroboration_score,
+                freshness_relevance_score=suff.freshness_relevance_score,
+                evidence_status=suff.evidence_status.value,
+                mandatory_fields_present=suff.mandatory_fields_present,
+                mandatory_fields_missing=suff.mandatory_fields_missing,
+                conditional_fields_evaluated=suff.conditional_fields_evaluated,
+                optional_enrichment_present=suff.optional_enrichment_present,
+                unsupported_fields_requested=suff.unsupported_fields_requested,
+                contradictions_detected=suff.contradictions_detected,
+                evaluated_at=datetime.utcnow(),
+            ))
+
+        self.db.add(VerdictTrustAssessmentRecord(
+            incident_id=incident.incident_id,
+            rule_id=rule.id if rule else incident.event_type,
+            archetype=trust_res.archetype,
+            suggested_verdict=trust_res.suggested_verdict,
+            effective_verdict=trust_res.effective_verdict.value,
+            trust_score=trust_res.trust_score,
+            raw_trust_score=trust_res.raw_trust_score,
+            evidence_sufficiency_score=trust_res.evidence_sufficiency_score,
+            evidence_status=trust_res.evidence_status.value,
+            score_dimensions=trust_res.score_dimensions.model_dump(),
+            supporting_evidence=trust_res.supporting_evidence,
+            contradictory_evidence=trust_res.contradictory_evidence,
+            missing_evidence=trust_res.missing_evidence,
+            confidence_limitations=trust_res.confidence_limitations,
+            historical_validation_status=trust_res.historical_validation_status,
+            is_calibrated=trust_res.is_calibrated,
+            applicable_policy_version=compiled_policy.version_number,
+            applicable_contract_version=contract.status,
+            escalation_reason=str(trust_res.escalation_reason)[:256] if trust_res.escalation_reason else None,
+            human_readable_explanation=trust_res.human_readable_explanation,
+            model_identifier=verdict.model_identifier,
+            is_simulated=verdict.is_simulated,
+            evaluated_at=datetime.utcnow(),
+        ))
 
         # 6. Format Structured Authoritative Verdict (P2-REQ-07, P3-REQ-01, P3-REQ-07)
         verdict_data = {
             "incident_id": incident.incident_id,
             "proposed_verdict": val_res.proposed_verdict,
-            "verdict": val_res.final_verdict,
-            "confidence": val_res.validated_confidence_display if val_res.validated_confidence_display is not None else verdict.confidence,
+            "verdict": final_auth_verdict,
+            "confidence": final_confidence_display,
             "raw_model_confidence": verdict.confidence,
-            "reason": verdict.reason if val_res.is_decisive_accepted else f"{val_res.analyst_action_directive} [Validation: {'; '.join(val_res.validation_reason_codes)}]. Model rationale: {verdict.reason}",
+            "reason": verdict.reason if final_is_decisive else f"{final_action_directive} [Validation: {'; '.join(final_reason_codes)}]. Model rationale: {verdict.reason}",
             "supporting_evidence": verdict.supporting_evidence,
             "supporting_claims": [c.model_dump() if hasattr(c, "model_dump") else c.dict() for c in claim_grounding.claims],
             "missing_evidence": val_res.missing_evidence_fields or verdict.missing_evidence,
@@ -526,10 +705,11 @@ class VerdictTriageAgent:
             "prompt_tokens": p_tokens,
             "completion_tokens": c_tokens,
             "total_tokens": t_tokens,
+            "token_usage_source": token_usage_source,
             "is_simulated": verdict.is_simulated,
-            "validation_status": val_res.validation_status,
-            "validation_reason_codes": val_res.validation_reason_codes,
-            "is_decisive_accepted": val_res.is_decisive_accepted,
+            "validation_status": final_validation_status,
+            "validation_reason_codes": final_reason_codes,
+            "is_decisive_accepted": final_is_decisive,
             "evidence_completeness": val_res.evidence_completeness,
             "grounding_ratio": val_res.grounding_ratio,
             "total_claims_count": val_res.total_claims_count,
@@ -537,7 +717,7 @@ class VerdictTriageAgent:
             "unsupported_claims_count": val_res.unsupported_claims_count,
             "unsupported_claims": val_res.unsupported_claims,
             "detected_contradictions": val_res.detected_contradictions,
-            "analyst_action_directive": val_res.analyst_action_directive,
+            "analyst_action_directive": final_action_directive,
             "canonical_evidence_count": norm_result.total_evidence_count,
             "contract_id": val_res.contract_id,
             "contract_version": val_res.contract_version,
@@ -547,8 +727,20 @@ class VerdictTriageAgent:
             "policy_sections_count": len(compiled_policy.sections),
             "policy_version_number": compiled_policy.version_number,
             "policy_status": compiled_policy.policy_status,
-            "calibration_status": "NOT_CALIBRATED",
-            "is_calibrated": False,
+            "trust_score": trust_res.trust_score,
+            "trust_status": trust_res.trust_status,
+            "raw_trust_score": trust_res.raw_trust_score,
+            "evidence_sufficiency_score": trust_res.evidence_sufficiency_score,
+            "evidence_status": trust_res.evidence_status.value,
+            "score_dimensions": trust_res.score_dimensions.model_dump(),
+            "confidence_limitations": trust_res.confidence_limitations,
+            "calibration_status": "CALIBRATED" if trust_res.is_calibrated else "NOT_CALIBRATED",
+            "historical_validation_status": trust_res.historical_validation_status,
+            "is_calibrated": trust_res.is_calibrated,
+            "historical_sample_count": int(hist_stats.get("sample_count", 0)),
+            "reevaluation_eligible": bool(not final_is_decisive and ("EVIDENCE_MISSING" in final_reason_codes or "EVIDENCE_CONTRACT_UNVERIFIED" in final_reason_codes)),
+            "deferral_reason": ("EVIDENCE_MISSING" if not final_is_decisive and "EVIDENCE_MISSING" in final_reason_codes else None),
+            "reevaluation_attempts": prev_attempts + 1,
             "rag_retrieval_status": rag_result.retrieval_status,
             "retrieved_precedents_count": len(rag_result.precedents),
             "retrieved_precedents": [p.model_dump() for p in rag_result.precedents],
@@ -564,7 +756,7 @@ class VerdictTriageAgent:
         incident.ai_verdict = verdict_data
         self.db.add(incident)
 
-        # 7b. Persist bifurcated TokenUsageRecord on Server 1 for analytics
+        # 7b. Persist bifurcated TokenUsageRecord on Server 1 for analytics (records authoritative outcome)
         from app.models.token_usage import TokenUsageRecord
         token_usage_entry = TokenUsageRecord(
             process_type="INCIDENT_TRIAGE",
@@ -580,21 +772,25 @@ class VerdictTriageAgent:
             executed_by_user=username,
             timestamp=datetime.utcnow(),
             details={
-                "verdict": verdict.verdict,
-                "confidence": verdict.confidence,
+                "verdict": final_auth_verdict,
+                "proposed_verdict": val_res.proposed_verdict,
+                "confidence": final_confidence_display,
+                "raw_model_confidence": verdict.confidence,
+                "trust_score": trust_res.trust_score,
+                "token_usage_source": token_usage_source,
                 "rule_name": rule.name if rule else incident.title,
                 "severity": incident.severity,
             },
         )
         self.db.add(token_usage_entry)
 
-        # 7c. Persist Historical Telemetry Timeline milestone on Server 1
+        # 7c. Persist Historical Telemetry Timeline milestone on Server 1 with authoritative verdict
         from app.models.telemetry_timeline import TelemetryTimelineRecord
         timeline_entry = TelemetryTimelineRecord(
             incident_id=incident.incident_id,
             event_type="AGENT_TRIAGE_EVALUATED",
             stage="TRIAGE",
-            summary=f"Verdict Triage Agent evaluated incident: {verdict.verdict} ({int(verdict.confidence)}% confidence)",
+            summary=f"Verdict Triage Agent evaluated incident: {final_auth_verdict} ({int(final_confidence_display)}% confidence, trust={trust_res.trust_score}/10)",
             source="Verdict Triage Agent (Server 2 Inference)",
             severity=incident.severity,
             source_ip=incident.source_ip,
@@ -602,8 +798,12 @@ class VerdictTriageAgent:
             epoch_ms=int(time.time() * 1000),
             token_count=t_tokens,
             details={
-                "verdict": verdict.verdict,
-                "confidence": verdict.confidence,
+                "verdict": final_auth_verdict,
+                "proposed_verdict": val_res.proposed_verdict,
+                "confidence": final_confidence_display,
+                "raw_model_confidence": verdict.confidence,
+                "trust_score": trust_res.trust_score,
+                "validation_status": final_validation_status,
                 "model": verdict.model_identifier,
                 "latency_ms": verdict.latency_ms,
                 "prompt_tokens": p_tokens,
@@ -613,21 +813,17 @@ class VerdictTriageAgent:
         )
         self.db.add(timeline_entry)
 
-        # 8. Sync with Investigation queue
+        # 8. Sync with Investigation queue using authoritative validated verdict (idempotent)
         inv_q = await self.db.execute(
             select(Investigation).where(Investigation.incident_id == incident.id)
         )
         inv = inv_q.scalars().first()
         if inv and not inv.analyst_verdict:
-            note_entry = f"[AI Verdict ({verdict.verdict} - {int(verdict.confidence)}%)]: {verdict.reason}"
-            if inv.analyst_notes:
-                inv.analyst_notes = f"{inv.analyst_notes}\n\n{note_entry}"
-            else:
-                inv.analyst_notes = note_entry
-            inv.updated_at = datetime.utcnow()
+            note_entry = f"[AI Verdict ({final_auth_verdict} - {int(final_confidence_display)}%)]: {verdict_data['reason']}"
+            self._upsert_ai_verdict_note(inv, note_entry)
             self.db.add(inv)
 
-        # 9. Audit log
+        # 9. Audit log with authoritative outcome and model proposal provenance
         audit = AuditLog(
             user_id="SYSTEM" if username in ("system", "scheduler") else username,
             username=username,
@@ -635,8 +831,12 @@ class VerdictTriageAgent:
             resource_type="INCIDENT",
             resource_id=incident.incident_id,
             details={
-                "verdict": verdict.verdict,
-                "confidence": verdict.confidence,
+                "verdict": final_auth_verdict,
+                "proposed_verdict": val_res.proposed_verdict,
+                "confidence": final_confidence_display,
+                "raw_model_confidence": verdict.confidence,
+                "trust_score": trust_res.trust_score,
+                "validation_status": final_validation_status,
                 "latency_ms": verdict.latency_ms,
                 "model": verdict.model_identifier,
                 "is_simulated": verdict.is_simulated,
@@ -733,10 +933,13 @@ class VerdictTriageAgent:
         max_batch: int = 100,
         username: str = "llm_backlog_worker",
         pause_between_s: float = 0.15,
+        include_reevaluation_eligible: bool = False,
+        rule_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Reconciles pending triage incidents lacking an AI verdict. Once Local LLM is
-        online, processes them one by one sequentially with the Verdict Triage Agent.
+        Reconciles pending triage incidents lacking an AI verdict, plus bounded
+        reevaluation of recoverable abstentions (e.g., POLICY_NOT_APPROVED once
+        a rule policy is approved) when include_reevaluation_eligible=True.
         If Local LLM is offline or goes offline mid-batch, halts immediately.
         """
         from app.services.llm_config_service import LLMConfigService
@@ -745,6 +948,35 @@ class VerdictTriageAgent:
         is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
         allow_mock = False if is_prod else getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
         pending_total = await self.get_pending_incident_count()
+
+        # Query pending incident IDs chronologically
+        stmt = (
+            select(Incident.incident_id)
+            .where(Incident.ai_verdict.is_(None))
+            .order_by(Incident.created_at_epoch.asc().nulls_last(), Incident.created_at.asc())
+            .limit(max_batch)
+        )
+        if rule_id:
+            stmt = stmt.where(Incident.rule_id == rule_id)
+        res = await self.db.execute(stmt)
+        pending_ids = list(res.scalars().all())
+
+        # Bounded discovery of reevaluation-eligible deferred incidents
+        if include_reevaluation_eligible and len(pending_ids) < max_batch:
+            rem_cap = max_batch - len(pending_ids)
+            re_q = select(Incident).where(Incident.ai_verdict.isnot(None))
+            if rule_id:
+                re_q = re_q.where(Incident.rule_id == rule_id)
+            re_q = re_q.order_by(Incident.created_at_epoch.asc().nulls_last(), Incident.created_at.asc()).limit(rem_cap * 3)
+            re_res = await self.db.execute(re_q)
+            for inc_obj in re_res.scalars().all():
+                if len(pending_ids) >= max_batch:
+                    break
+                av = inc_obj.ai_verdict
+                if isinstance(av, dict) and av.get("reevaluation_eligible") is True and int(av.get("reevaluation_attempts", 0) or 0) < 3:
+                    iid = str(inc_obj.incident_id)
+                    if iid not in pending_ids:
+                        pending_ids.append(iid)
 
         if not is_online and not allow_mock:
             return {
@@ -756,7 +988,7 @@ class VerdictTriageAgent:
                 "pending_remaining": pending_total,
             }
 
-        if pending_total == 0:
+        if not pending_ids:
             return {
                 "success": True,
                 "is_llm_online": True,
@@ -765,16 +997,6 @@ class VerdictTriageAgent:
                 "failed": 0,
                 "pending_remaining": 0,
             }
-
-        # Query pending incident IDs chronologically
-        stmt = (
-            select(Incident.incident_id)
-            .where(Incident.ai_verdict.is_(None))
-            .order_by(Incident.created_at_epoch.asc().nulls_last(), Incident.created_at.asc())
-            .limit(max_batch)
-        )
-        res = await self.db.execute(stmt)
-        pending_ids = res.scalars().all()
 
         processed_count = 0
         failed_count = 0
