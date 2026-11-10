@@ -228,8 +228,11 @@ export function WorkflowFlowDiagram({
   jumpNonce = 0,
 }: WorkflowFlowDiagramProps) {
   const markerPrefix = useId().replace(/:/g, "");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const scrubberRef = useRef<HTMLDivElement>(null);
+  const hudRef = useRef<HTMLDivElement>(null);
 
   const initialIdx = useMemo(() => {
     if (!initialStepId) return 0;
@@ -261,6 +264,7 @@ export function WorkflowFlowDiagram({
   const [mobileListMode, setMobileListMode] = useState<boolean>(false);
   const [isDraggingCanvas, setIsDraggingCanvas] = useState<boolean>(false);
   const [fitPulseActive, setFitPulseActive] = useState<boolean>(false);
+  const [canvasPanelHeight, setCanvasPanelHeight] = useState<number | null>(null);
   const fitPulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canvasBounds = useMemo(() => {
@@ -313,6 +317,30 @@ export function WorkflowFlowDiagram({
       if (fitPulseTimerRef.current) clearTimeout(fitPulseTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (isFullscreen || mobileListMode || typeof window === "undefined") return;
+    const syncPanelHeight = () => {
+      const cardEl = rootRef.current;
+      if (!cardEl) return;
+      const cardTop = cardEl.getBoundingClientRect().top;
+      const mainEl = cardEl.closest("main");
+      const mainTop = mainEl ? mainEl.getBoundingClientRect().top : 0;
+      const topBound = Math.max(mainTop + 8, cardTop);
+      const chromeAbove =
+        (toolbarRef.current?.offsetHeight || 76) +
+        (scrubberRef.current?.offsetHeight || 32);
+      const avail = Math.floor(window.innerHeight - topBound - chromeAbove - 18);
+      const clamped = Math.max(300, Math.min(680, avail));
+      setCanvasPanelHeight((prev) => (prev === clamped ? prev : clamped));
+    };
+    const rafId = requestAnimationFrame(syncPanelHeight);
+    window.addEventListener("resize", syncPanelHeight);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", syncPanelHeight);
+    };
+  }, [isFullscreen, mobileListMode]);
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -428,17 +456,78 @@ export function WorkflowFlowDiagram({
   );
 
   const handleFitView = () => {
-    const el = viewportRef.current;
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
-      if (w > 50 && h > 50) {
-        setViewportSize((prev) =>
-          Math.abs(prev.w - w) < 0.5 && Math.abs(prev.h - h) < 0.5 ? prev : { w, h }
-        );
+    if (!isFullscreen && rootRef.current && typeof window !== "undefined") {
+      const cardEl = rootRef.current;
+      const mainEl = cardEl.closest("main");
+      const mainTop = mainEl ? mainEl.getBoundingClientRect().top : 0;
+      const chromeAbove =
+        (toolbarRef.current?.offsetHeight || 76) +
+        (scrubberRef.current?.offsetHeight || 32);
+      const screenFitH = Math.max(
+        300,
+        Math.min(720, Math.floor(window.innerHeight - (mainTop + 8) - chromeAbove - 18))
+      );
+      setCanvasPanelHeight(screenFitH);
+
+      const hudH = hudRef.current?.getBoundingClientRect().height || 38;
+      const el = viewportRef.current;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const nextVw = rect.width;
+        const nextVh =
+          screenFitH === canvasPanelHeight
+            ? rect.height
+            : Math.max(120, screenFitH - hudH);
+        if (nextVw > 50 && nextVh > 50) {
+          setViewportSize((prev) =>
+            Math.abs(prev.w - nextVw) < 0.5 && Math.abs(prev.h - nextVh) < 0.5
+              ? prev
+              : { w: nextVw, h: nextVh }
+          );
+        }
+      }
+
+      if (mainEl) {
+        requestAnimationFrame(() => {
+          const curCard = rootRef.current;
+          const curMain = curCard?.closest("main");
+          if (!curCard || !curMain) return;
+          const cTop = curCard.getBoundingClientRect().top;
+          const mTop = curMain.getBoundingClientRect().top;
+          const maxScroll = Math.max(0, curMain.scrollHeight - curMain.clientHeight);
+          const targetScroll = Math.max(0, Math.min(maxScroll, curMain.scrollTop + (cTop - (mTop + 8))));
+          curMain.scrollTo({
+            top: targetScroll,
+            behavior: reducedMotion ? "auto" : "smooth",
+          });
+          // If content below the card is shorter than needed to reach mTop+8, keep card bottom within window.innerHeight
+          const projectedTop = cTop - (targetScroll - curMain.scrollTop);
+          const curChrome =
+            (toolbarRef.current?.offsetHeight || 76) +
+            (scrubberRef.current?.offsetHeight || 32);
+          const safePanelH = Math.max(
+            300,
+            Math.min(720, Math.floor(window.innerHeight - Math.max(mTop + 8, projectedTop) - curChrome - 18))
+          );
+          if (safePanelH < screenFitH) {
+            setCanvasPanelHeight(safePanelH);
+          }
+        });
+      }
+    } else {
+      const el = viewportRef.current;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 50 && rect.height > 50) {
+          setViewportSize((prev) =>
+            Math.abs(prev.w - rect.width) < 0.5 && Math.abs(prev.h - rect.height) < 0.5
+              ? prev
+              : { w: rect.width, h: rect.height }
+          );
+        }
       }
     }
+
     setManualTransform(null);
     setFitPulseActive(true);
     if (fitPulseTimerRef.current) clearTimeout(fitPulseTimerRef.current);
@@ -523,13 +612,18 @@ export function WorkflowFlowDiagram({
 
   return (
     <div
+      ref={rootRef}
+      data-flow-root="true"
       className={`${reducedMotion ? "guide-reduced-motion" : ""} ${isFullscreen
           ? "fixed inset-0 z-50 bg-slate-950 p-3 sm:p-4 flex flex-col overflow-hidden"
           : "rounded-xl border border-slate-800 bg-slate-950/90 overflow-hidden"
         }`}
     >
       {/* Toolbar Header */}
-      <div className="border-b border-slate-800 bg-slate-900/70 px-3 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+      <div
+        ref={toolbarRef}
+        className="border-b border-slate-800 bg-slate-900/70 px-3 py-2.5 flex flex-wrap items-center justify-between gap-2.5"
+      >
         <div>
           <div className="flex items-center gap-2">
             <Network className="h-4 w-4 text-cyan-400 shrink-0" />
@@ -702,7 +796,12 @@ export function WorkflowFlowDiagram({
       >
         {/* Left / Top: Interactive Pan/Zoom SVG Diagram OR Accessible Step List */}
         <div
-          className={`xl:col-span-8 flex flex-col border-b xl:border-b-0 xl:border-r border-slate-800 ${isFullscreen ? "h-full min-h-[380px]" : "h-[520px] sm:h-[600px] lg:h-[640px]"
+          style={
+            !isFullscreen && canvasPanelHeight
+              ? { height: `${canvasPanelHeight}px` }
+              : undefined
+          }
+          className={`xl:col-span-8 flex flex-col border-b xl:border-b-0 xl:border-r border-slate-800 ${isFullscreen ? "h-full min-h-[380px]" : "h-[460px] sm:h-[540px] lg:h-[600px]"
             }`}
         >
           {mobileListMode ? (
@@ -959,6 +1058,7 @@ export function WorkflowFlowDiagram({
 
               {/* Dedicated Non-Overlapping Zoom, Pan Hint & Color Legend HUD Bar (Outside viewportRef so clicks never trigger pan capture) */}
               <div
+                ref={hudRef}
                 data-no-pan="true"
                 className="shrink-0 border-t border-slate-800 bg-slate-950/95 px-2.5 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono"
               >
@@ -1038,7 +1138,12 @@ export function WorkflowFlowDiagram({
 
         {/* Right / Bottom: 6-Part Component Step Inspector */}
         <div
-          className={`xl:col-span-4 bg-slate-900/30 p-3.5 space-y-3 overflow-y-auto ${isFullscreen ? "h-full" : "max-h-[620px]"
+          style={
+            !isFullscreen && canvasPanelHeight
+              ? { maxHeight: `${canvasPanelHeight}px` }
+              : undefined
+          }
+          className={`xl:col-span-4 bg-slate-900/30 p-3.5 space-y-3 overflow-y-auto ${isFullscreen ? "h-full" : "max-h-[600px]"
             }`}
         >
           <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
