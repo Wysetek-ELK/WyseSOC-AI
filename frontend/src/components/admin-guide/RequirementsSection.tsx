@@ -220,7 +220,7 @@ export function RequirementsSection() {
               className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] text-slate-200 hover:bg-slate-800 disabled:opacity-60"
             >
               <RefreshCw className={`h-3 w-3 ${checkingLive ? "animate-spin" : ""}`} />
-              <span>Check Read-Only Status</span>
+              <span>{checkingLive ? "Checking..." : "Check Read-Only Status"}</span>
             </button>
           </div>
         </div>
@@ -232,9 +232,13 @@ export function RequirementsSection() {
             <div>
               <div className="font-semibold text-slate-200 flex items-center gap-2">
                 <span>Optional Read-Only Environment Status</span>
-                {liveStatus?.available && (
-                  <span className="text-[10px] font-mono text-emerald-400">
-                    Checked {liveStatus.checkedAt}
+                {liveStatus && (
+                  <span
+                    className={`text-[10px] font-mono ${
+                      liveStatus.available ? "text-emerald-400" : "text-amber-400"
+                    }`}
+                  >
+                    Last checked {liveStatus.checkedAt}
                   </span>
                 )}
               </div>

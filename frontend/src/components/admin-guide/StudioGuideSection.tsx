@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Cpu,
@@ -32,15 +32,37 @@ import { GlossaryTerm } from "./GlossaryTerm";
 interface StudioGuideSectionProps {
   onJumpToGlossary?: (termId: string) => void;
   highlightedGateId?: string | null;
+  jumpNonce?: number;
 }
 
 export function StudioGuideSection({
   onJumpToGlossary,
   highlightedGateId,
+  jumpNonce = 0,
 }: StudioGuideSectionProps) {
   const [selectedStageIdx, setSelectedStageIdx] = useState<number>(0);
   const [gateFilter, setGateFilter] = useState<"ALL" | "STRUCTURAL" | "EMPIRICAL">("ALL");
   const [expandedGateId, setExpandedGateId] = useState<string | null>(highlightedGateId || "G5");
+  const [prevGateJump, setPrevGateJump] = useState<string>(
+    `${highlightedGateId || ""}:${jumpNonce}`
+  );
+  const currentGateJump = `${highlightedGateId || ""}:${jumpNonce}`;
+  if (currentGateJump !== prevGateJump) {
+    setPrevGateJump(currentGateJump);
+    if (highlightedGateId) {
+      setExpandedGateId(highlightedGateId);
+      setGateFilter("ALL");
+    }
+  }
+
+  useEffect(() => {
+    if (highlightedGateId && jumpNonce > 0) {
+      const el = document.getElementById(`gate-card-${highlightedGateId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [highlightedGateId, jumpNonce]);
   const [expandedPolicySection, setExpandedPolicySection] = useState<number>(1);
   const [showAllArchetypes, setShowAllArchetypes] = useState<boolean>(false);
 
@@ -406,6 +428,7 @@ export function StudioGuideSection({
             return (
               <div
                 key={gate.gateId}
+                id={`gate-card-${gate.gateId}`}
                 className={`rounded-lg border transition-colors ${
                   gate.category === "EMPIRICAL"
                     ? "border-amber-800/60 bg-amber-950/10"

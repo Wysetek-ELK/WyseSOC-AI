@@ -215,6 +215,7 @@ interface WorkflowFlowDiagramProps {
   edges: WorkflowEdgeSpec[];
   swimlanes: SwimlaneBoxSpec[];
   initialStepId?: string;
+  jumpNonce?: number;
 }
 
 export function WorkflowFlowDiagram({
@@ -224,9 +225,11 @@ export function WorkflowFlowDiagram({
   edges,
   swimlanes,
   initialStepId,
+  jumpNonce = 0,
 }: WorkflowFlowDiagramProps) {
   const markerPrefix = useId().replace(/:/g, "");
   const viewportRef = useRef<HTMLDivElement>(null);
+  const scrubberRef = useRef<HTMLDivElement>(null);
 
   const initialIdx = useMemo(() => {
     if (!initialStepId) return 0;
@@ -236,6 +239,20 @@ export function WorkflowFlowDiagram({
 
   const [activeIndex, setActiveIndex] = useState<number>(initialIdx);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [prevJumpTarget, setPrevJumpTarget] = useState<string>(
+    `${initialStepId || ""}:${jumpNonce}`
+  );
+  const currentJumpTarget = `${initialStepId || ""}:${jumpNonce}`;
+  if (currentJumpTarget !== prevJumpTarget) {
+    setPrevJumpTarget(currentJumpTarget);
+    if (initialStepId) {
+      const targetIdx = steps.findIndex((s) => s.id === initialStepId);
+      if (targetIdx >= 0) {
+        setActiveIndex(targetIdx);
+        setIsPlaying(false);
+      }
+    }
+  }
   const [speed, setSpeed] = useState<SpeedOption>(1);
   const osReducedMotion = usePrefersReducedMotion();
   const [manualReducedMotion, setManualReducedMotion] = useState<boolean | null>(null);
@@ -305,6 +322,18 @@ export function WorkflowFlowDiagram({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isFullscreen]);
+
+  useEffect(() => {
+    const strip = scrubberRef.current;
+    if (!strip) return;
+    const btn = strip.querySelector<HTMLButtonElement>(`[data-scrubber-idx="${activeIndex}"]`);
+    if (!btn) return;
+    const targetLeft = btn.offsetLeft - strip.clientWidth / 2 + btn.clientWidth / 2;
+    strip.scrollTo({
+      left: Math.max(0, targetLeft),
+      behavior: reducedMotion ? "auto" : "smooth",
+    });
+  }, [activeIndex, reducedMotion]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -380,7 +409,8 @@ export function WorkflowFlowDiagram({
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest("[data-flow-node]")) return;
+    const target = e.target as HTMLElement | null;
+    if (target?.closest("button, a, [data-flow-node], [data-no-pan]")) return;
     const cur = manualTransform || fittedTransform;
     dragStateRef.current = {
       dragging: true,
@@ -439,11 +469,10 @@ export function WorkflowFlowDiagram({
 
   return (
     <div
-      className={`${reducedMotion ? "guide-reduced-motion" : ""} ${
-        isFullscreen
+      className={`${reducedMotion ? "guide-reduced-motion" : ""} ${isFullscreen
           ? "fixed inset-0 z-50 bg-slate-950 p-3 sm:p-4 flex flex-col overflow-hidden"
           : "rounded-xl border border-slate-800 bg-slate-950/90 overflow-hidden"
-      }`}
+        }`}
     >
       {/* Toolbar Header */}
       <div className="border-b border-slate-800 bg-slate-900/70 px-3 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
@@ -451,7 +480,7 @@ export function WorkflowFlowDiagram({
           <div className="flex items-center gap-2">
             <Network className="h-4 w-4 text-cyan-400 shrink-0" />
             <h2 className="text-sm font-bold text-slate-100">{title}</h2>
-            <span className="rounded-full bg-cyan-950/80 border border-cyan-800/60 px-2 py-0.5 text-[10px] font-mono text-cyan-300">
+            <span className="shrink-0 whitespace-nowrap rounded-full bg-cyan-950/80 border border-cyan-800/60 px-2 py-0.5 text-[10px] font-mono text-cyan-300">
               Step {activeIndex + 1} / {steps.length}
             </span>
           </div>
@@ -463,11 +492,10 @@ export function WorkflowFlowDiagram({
           <button
             type="button"
             onClick={() => setIsPlaying((p) => !p)}
-            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold border transition-colors ${
-              isPlaying
+            className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold border transition-colors ${isPlaying
                 ? "bg-amber-950/70 text-amber-300 border-amber-700/70 hover:bg-amber-900/70"
                 : "bg-cyan-600/20 text-cyan-300 border-cyan-500/50 hover:bg-cyan-600/30"
-            }`}
+              }`}
             aria-label={isPlaying ? "Pause workflow animation" : "Play workflow animation"}
           >
             {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
@@ -514,11 +542,10 @@ export function WorkflowFlowDiagram({
                 key={opt}
                 type="button"
                 onClick={() => setSpeed(opt)}
-                className={`px-1.5 py-0.5 rounded transition-colors ${
-                  speed === opt
+                className={`px-1.5 py-0.5 rounded transition-colors ${speed === opt
                     ? "bg-cyan-600/30 text-cyan-300 font-bold"
                     : "text-slate-400 hover:text-slate-200"
-                }`}
+                  }`}
                 aria-label={`Animation speed ${opt}x`}
               >
                 {opt}x
@@ -529,11 +556,10 @@ export function WorkflowFlowDiagram({
           <button
             type="button"
             onClick={() => setManualReducedMotion(!reducedMotion)}
-            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${
-              reducedMotion
+            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${reducedMotion
                 ? "bg-emerald-950/70 text-emerald-300 border-emerald-700/70"
                 : "bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200"
-            }`}
+              }`}
             title="Toggle accessible reduced-motion mode"
             aria-pressed={reducedMotion}
           >
@@ -544,11 +570,10 @@ export function WorkflowFlowDiagram({
           <button
             type="button"
             onClick={() => setMobileListMode((m) => !m)}
-            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${
-              mobileListMode
+            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${mobileListMode
                 ? "bg-cyan-950/70 text-cyan-300 border-cyan-700/70"
                 : "bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200"
-            }`}
+              }`}
             title="Switch between Interactive Graph and Accessible Step List"
           >
             <ListChecks className="h-3.5 w-3.5" />
@@ -580,24 +605,27 @@ export function WorkflowFlowDiagram({
       </div>
 
       {/* Step Scrubber Strip */}
-      <div className="border-b border-slate-800/80 bg-slate-950 px-3 py-1.5 flex items-center gap-1 overflow-x-auto">
+      <div
+        ref={scrubberRef}
+        className="border-b border-slate-800/80 bg-slate-950 px-3 py-1.5 flex items-center gap-1 overflow-x-auto"
+      >
         {steps.map((s, idx) => {
           const active = idx === activeIndex;
           return (
             <button
               key={s.id}
               type="button"
+              data-scrubber-idx={idx}
               onClick={() => {
                 setActiveIndex(idx);
                 setIsPlaying(false);
               }}
-              className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-mono transition-colors border ${
-                active
+              className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-mono transition-colors border ${active
                   ? "bg-cyan-950/90 text-cyan-300 border-cyan-500/60 font-bold"
                   : idx < activeIndex
-                  ? "bg-slate-900 text-slate-300 border-slate-700"
-                  : "bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300"
-              }`}
+                    ? "bg-slate-900 text-slate-300 border-slate-700"
+                    : "bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300"
+                }`}
             >
               {s.stepNumber}. {s.shortLabel}
             </button>
@@ -607,18 +635,16 @@ export function WorkflowFlowDiagram({
 
       {/* Main Split: Interactive Diagram + Step Inspector */}
       <div
-        className={`grid grid-cols-1 xl:grid-cols-12 ${
-          isFullscreen ? "flex-1 min-h-0" : ""
-        }`}
+        className={`grid grid-cols-1 xl:grid-cols-12 ${isFullscreen ? "flex-1 min-h-0" : ""
+          }`}
       >
         {/* Left / Top: Interactive Pan/Zoom SVG Diagram OR Accessible Step List */}
         <div
-          className={`xl:col-span-8 relative border-b xl:border-b-0 xl:border-r border-slate-800 ${
-            isFullscreen ? "h-full min-h-[380px]" : "h-[480px] sm:h-[560px] lg:h-[620px]"
-          }`}
+          className={`xl:col-span-8 flex flex-col border-b xl:border-b-0 xl:border-r border-slate-800 ${isFullscreen ? "h-full min-h-[380px]" : "h-[520px] sm:h-[600px] lg:h-[640px]"
+            }`}
         >
           {mobileListMode ? (
-            <div className="h-full overflow-y-auto p-3 space-y-2 bg-slate-950">
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-slate-950">
               {steps.map((s, idx) => {
                 const active = idx === activeIndex;
                 return (
@@ -629,11 +655,10 @@ export function WorkflowFlowDiagram({
                       setActiveIndex(idx);
                       setIsPlaying(false);
                     }}
-                    className={`w-full text-left rounded-lg border p-3 transition-colors ${
-                      active
+                    className={`w-full text-left rounded-lg border p-3 transition-colors ${active
                         ? "border-cyan-500/70 bg-cyan-950/25"
                         : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
-                    }`}
+                      }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                       <span className="text-xs font-bold text-slate-100 break-words">
@@ -647,29 +672,31 @@ export function WorkflowFlowDiagram({
               })}
             </div>
           ) : (
-            <div
-              ref={viewportRef}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              onWheel={handleWheel}
-              className="relative w-full h-full overflow-hidden bg-slate-950 cursor-grab active:cursor-grabbing select-none"
-              style={{
-                backgroundImage: "radial-gradient(#1e293b 1px, transparent 1px)",
-                backgroundSize: "18px 18px",
-              }}
-            >
-              {/* Transformed Pan/Zoom Plane */}
+            <>
               <div
+                ref={viewportRef}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                onWheel={handleWheel}
+                className="relative flex-1 min-h-0 w-full overflow-hidden bg-slate-950 cursor-grab active:cursor-grabbing select-none"
                 style={{
-                  width: canvasBounds.width,
-                  height: canvasBounds.height,
-                  transform: `translate(${activeTransform.panX}px, ${activeTransform.panY}px) scale(${activeTransform.zoom})`,
-                  transformOrigin: "0 0",
+                  backgroundImage: "radial-gradient(#1e293b 1px, transparent 1px)",
+                  backgroundSize: "18px 18px",
                 }}
-                className="relative will-change-transform"
               >
+                {/* Transformed Pan/Zoom Plane */}
+                <div
+                  data-flow-plane="true"
+                  style={{
+                    width: canvasBounds.width,
+                    height: canvasBounds.height,
+                    transform: `translate(${activeTransform.panX}px, ${activeTransform.panY}px) scale(${activeTransform.zoom})`,
+                    transformOrigin: "0 0",
+                  }}
+                  className="relative will-change-transform"
+                >
                 {/* Layer 1: Swimlane Group Backdrops */}
                 {swimlanes.map((lane) => {
                   const isCyan = lane.accent === "cyan";
@@ -682,19 +709,17 @@ export function WorkflowFlowDiagram({
                         width: lane.width,
                         height: lane.height,
                       }}
-                      className={`pointer-events-none absolute rounded-xl border border-dashed ${
-                        isCyan
+                      className={`pointer-events-none absolute rounded-xl border border-dashed ${isCyan
                           ? "border-cyan-500/30 bg-cyan-950/10"
                           : "border-emerald-500/30 bg-emerald-950/10"
-                      } p-3 flex flex-col justify-between`}
+                        } p-3 flex flex-col justify-between`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span
-                          className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                            isCyan
+                          className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${isCyan
                               ? "bg-cyan-950/80 text-cyan-300 border-cyan-800/60"
                               : "bg-emerald-950/80 text-emerald-300 border-emerald-800/60"
-                          }`}
+                            }`}
                         >
                           {lane.title}
                         </span>
@@ -747,13 +772,13 @@ export function WorkflowFlowDiagram({
                     const strokeColor = isActiveEdge
                       ? style.stroke
                       : isBridge
-                      ? "rgba(129, 140, 248, 0.55)"
-                      : "rgba(100, 116, 139, 0.45)";
+                        ? "rgba(129, 140, 248, 0.55)"
+                        : "rgba(100, 116, 139, 0.45)";
                     const markerId = isActiveEdge
                       ? `${markerPrefix}-arrow-${accent}`
                       : isBridge
-                      ? `${markerPrefix}-arrow-indigo`
-                      : `${markerPrefix}-arrow-muted`;
+                        ? `${markerPrefix}-arrow-indigo`
+                        : `${markerPrefix}-arrow-muted`;
 
                     return (
                       <g key={edge.id}>
@@ -786,13 +811,12 @@ export function WorkflowFlowDiagram({
                         top: labelY,
                         transform: "translate(-50%, -50%)",
                       }}
-                      className={`pointer-events-none absolute z-10 rounded px-1.5 py-0.5 text-[9px] font-mono border backdrop-blur-sm whitespace-nowrap ${
-                        isActiveEdge
+                      className={`pointer-events-none absolute z-10 rounded px-1.5 py-0.5 text-[9px] font-mono border backdrop-blur-sm whitespace-nowrap ${isActiveEdge
                           ? "bg-slate-950/95 text-cyan-200 border-cyan-500/60 shadow-md"
                           : edge.isBridge
-                          ? "bg-indigo-950/90 text-indigo-200 border-indigo-700/60"
-                          : "bg-slate-950/85 text-slate-400 border-slate-800"
-                      }`}
+                            ? "bg-indigo-950/90 text-indigo-200 border-indigo-700/60"
+                            : "bg-slate-950/85 text-slate-400 border-slate-800"
+                        }`}
                     >
                       {edge.label}
                     </div>
@@ -818,13 +842,12 @@ export function WorkflowFlowDiagram({
                         top: step.position.y,
                         width: NODE_WIDTH,
                       }}
-                      className={`flow-step-node group absolute z-20 rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
-                        isActive
+                      className={`flow-step-node group absolute z-20 rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${isActive
                           ? `bg-slate-900 ${style.activeBorder} scale-[1.03]`
                           : isVisited
-                          ? `bg-slate-950/95 ${style.border} opacity-95 hover:border-slate-500`
-                          : "bg-slate-950/90 border-slate-800 hover:border-slate-600"
-                      }`}
+                            ? `bg-slate-950/95 ${style.border} opacity-95 hover:border-slate-500`
+                            : "bg-slate-950/90 border-slate-800 hover:border-slate-600"
+                        }`}
                     >
                       <div className="flex items-center justify-between gap-1.5 mb-1">
                         <span
@@ -833,9 +856,8 @@ export function WorkflowFlowDiagram({
                           <span>#{step.stepNumber}</span>
                           {isActive && (
                             <span
-                              className={`h-1.5 w-1.5 rounded-full ${style.dot} ${
-                                reducedMotion ? "" : "animate-pulse"
-                              }`}
+                              className={`h-1.5 w-1.5 rounded-full ${style.dot} ${reducedMotion ? "" : "animate-pulse"
+                                }`}
                             />
                           )}
                         </span>
@@ -854,13 +876,12 @@ export function WorkflowFlowDiagram({
                       {step.outcomeBadge && (
                         <div className="mt-1.5">
                           <span
-                            className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-mono font-bold border ${
-                              step.outcomeBadge === "TRUE_POSITIVE"
+                            className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-mono font-bold border ${step.outcomeBadge === "TRUE_POSITIVE"
                                 ? "bg-rose-950/80 text-rose-300 border-rose-700/70"
                                 : step.outcomeBadge === "FALSE_POSITIVE"
-                                ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/70"
-                                : "bg-amber-950/80 text-amber-300 border-amber-700/70"
-                            }`}
+                                  ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/70"
+                                  : "bg-amber-950/80 text-amber-300 border-amber-700/70"
+                              }`}
                           >
                             {step.outcomeBadge}
                           </span>
@@ -870,66 +891,80 @@ export function WorkflowFlowDiagram({
                   );
                 })}
               </div>
-
-              {/* Floating Zoom/Pan Controls */}
-              <div className="absolute bottom-3 left-3 z-30 flex flex-col rounded-lg border border-slate-800 bg-slate-950/90 overflow-hidden shadow-lg">
-                <button
-                  type="button"
-                  onClick={() => handleZoomBy(1.18)}
-                  className="p-1.5 text-slate-300 hover:bg-slate-800 hover:text-cyan-300 border-b border-slate-800"
-                  title="Zoom In"
-                  aria-label="Zoom In"
-                >
-                  <ZoomIn className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleZoomBy(0.85)}
-                  className="p-1.5 text-slate-300 hover:bg-slate-800 hover:text-cyan-300 border-b border-slate-800"
-                  title="Zoom Out"
-                  aria-label="Zoom Out"
-                >
-                  <ZoomOut className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleFitView}
-                  className="p-1.5 text-slate-300 hover:bg-slate-800 hover:text-cyan-300"
-                  title="Fit to Screen"
-                  aria-label="Fit to Screen"
-                >
-                  <Scan className="h-3.5 w-3.5" />
-                </button>
               </div>
 
-              {/* Floating Legend */}
-              <div className="pointer-events-none absolute bottom-3 right-3 z-30 hidden sm:flex flex-wrap items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/90 px-2.5 py-1.5 text-[10px] font-mono text-slate-400 backdrop-blur-sm">
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-cyan-400" />
-                  Governance Plane
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                  Runtime Plane
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-indigo-400" />
-                  Cross-Plane Bridge
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-amber-400" />
-                  Safety / Abstention
-                </span>
+              {/* Dedicated Non-Overlapping Zoom, Pan Hint & Color Legend HUD Bar (Outside viewportRef so clicks never trigger pan capture) */}
+              <div
+                data-no-pan="true"
+                className="shrink-0 border-t border-slate-800 bg-slate-950/95 px-2.5 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono"
+              >
+                <div className="flex items-center gap-1.5">
+                  <div className="inline-flex items-center rounded-md border border-slate-800 bg-slate-900 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => handleZoomBy(1.18)}
+                      className="p-1.5 text-slate-300 hover:bg-slate-800 hover:text-cyan-300 border-r border-slate-800 transition-colors"
+                      title="Zoom In"
+                      aria-label="Zoom In"
+                    >
+                      <ZoomIn className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleZoomBy(0.85)}
+                      className="p-1.5 text-slate-300 hover:bg-slate-800 hover:text-cyan-300 border-r border-slate-800 transition-colors"
+                      title="Zoom Out"
+                      aria-label="Zoom Out"
+                    >
+                      <ZoomOut className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleFitView}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-slate-300 hover:bg-slate-800 hover:text-cyan-300 transition-colors"
+                      title="Fit to Screen"
+                      aria-label="Fit to Screen"
+                    >
+                      <Scan className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Fit</span>
+                    </button>
+                  </div>
+                  <span className="rounded border border-slate-800 bg-slate-900/80 px-1.5 py-0.5 text-cyan-300 tabular-nums">
+                    {Math.round(activeTransform.zoom * 100)}%
+                  </span>
+                  <span className="hidden md:inline text-slate-500">
+                    Drag to pan · Ctrl+Wheel to zoom
+                  </span>
+                </div>
+
+                {/* Color Legend */}
+                <div className="hidden sm:flex flex-wrap items-center gap-2.5 text-slate-400">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-cyan-400" />
+                    Governance Plane
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                    Runtime Plane
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-indigo-400" />
+                    Cross-Plane Bridge
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-amber-400" />
+                    Safety / Abstention
+                  </span>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
         {/* Right / Bottom: 6-Part Component Step Inspector */}
         <div
-          className={`xl:col-span-4 bg-slate-900/30 p-3.5 space-y-3 overflow-y-auto ${
-            isFullscreen ? "h-full" : "max-h-[620px]"
-          }`}
+          className={`xl:col-span-4 bg-slate-900/30 p-3.5 space-y-3 overflow-y-auto ${isFullscreen ? "h-full" : "max-h-[620px]"
+            }`}
         >
           <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
             <div>

@@ -23,11 +23,13 @@ import {
 interface GlossaryTroubleshootingSectionProps {
   highlightedGlossaryId?: string | null;
   highlightedScenarioId?: string | null;
+  jumpNonce?: number;
 }
 
 export function GlossaryTroubleshootingSection({
   highlightedGlossaryId,
   highlightedScenarioId,
+  jumpNonce = 0,
 }: GlossaryTroubleshootingSectionProps) {
   const [expandedScenarioIds, setExpandedScenarioIds] = useState<Record<string, boolean>>(() => ({
     "ts-high-quality-g8-insufficient": true,
@@ -37,14 +39,35 @@ export function GlossaryTroubleshootingSection({
   const [glossaryQuery, setGlossaryQuery] = useState<string>("");
   const [glossaryCategory, setGlossaryCategory] = useState<string>("ALL");
 
+  const [prevJumpTarget, setPrevJumpTarget] = useState<string>(
+    `${highlightedGlossaryId || ""}:${highlightedScenarioId || ""}:${jumpNonce}`
+  );
+  const currentJumpTarget = `${highlightedGlossaryId || ""}:${highlightedScenarioId || ""}:${jumpNonce}`;
+  if (currentJumpTarget !== prevJumpTarget) {
+    setPrevJumpTarget(currentJumpTarget);
+    if (highlightedScenarioId) {
+      setScenarioCategory("ALL");
+      setExpandedScenarioIds((prev) => ({ ...prev, [highlightedScenarioId]: true }));
+    }
+    if (highlightedGlossaryId) {
+      setGlossaryQuery("");
+      setGlossaryCategory("ALL");
+    }
+  }
+
   useEffect(() => {
     if (highlightedGlossaryId) {
       const el = document.getElementById(`glossary-${highlightedGlossaryId}`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
+    } else if (highlightedScenarioId) {
+      const el = document.getElementById(`scenario-${highlightedScenarioId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     }
-  }, [highlightedGlossaryId]);
+  }, [highlightedGlossaryId, highlightedScenarioId, jumpNonce]);
 
   const toggleScenario = (id: string) => {
     setExpandedScenarioIds((prev) => {

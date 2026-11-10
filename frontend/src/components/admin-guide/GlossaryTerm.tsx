@@ -11,8 +11,10 @@ interface GlossaryTermProps {
 }
 
 export function GlossaryTerm({ termId, children, onJumpToGlossary }: GlossaryTermProps) {
-  const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState(false);
   const containerRef = useRef<HTMLSpanElement>(null);
+  const open = hovered || pinned;
 
   const entry = GLOSSARY_ENTRIES.find((g) => g.id === termId);
 
@@ -20,11 +22,15 @@ export function GlossaryTerm({ termId, children, onJumpToGlossary }: GlossaryTer
     if (!open) return;
     const handleOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
+        setPinned(false);
+        setHovered(false);
       }
     };
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setPinned(false);
+        setHovered(false);
+      }
     };
     document.addEventListener("mousedown", handleOutside);
     document.addEventListener("keydown", handleEsc);
@@ -38,13 +44,25 @@ export function GlossaryTerm({ termId, children, onJumpToGlossary }: GlossaryTer
     return <span>{children || termId}</span>;
   }
 
+  const handleTriggerClick = () => {
+    if (pinned) {
+      setPinned(false);
+      setHovered(false);
+    } else {
+      setPinned(true);
+    }
+  };
+
   return (
-    <span ref={containerRef} className="relative inline-block">
+    <span
+      ref={containerRef}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="relative inline-block"
+    >
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onClick={handleTriggerClick}
         className="inline-flex items-center gap-0.5 border-b border-dotted border-cyan-400/70 text-cyan-300 hover:text-cyan-200 font-medium cursor-help focus:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400 rounded-xs"
         aria-expanded={open}
         aria-label={`Glossary definition for ${entry.term}`}
@@ -64,7 +82,8 @@ export function GlossaryTerm({ termId, children, onJumpToGlossary }: GlossaryTer
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setOpen(false);
+                setPinned(false);
+                setHovered(false);
               }}
               className="text-slate-400 hover:text-slate-200 p-0.5"
               aria-label="Close definition"
@@ -83,7 +102,8 @@ export function GlossaryTerm({ termId, children, onJumpToGlossary }: GlossaryTer
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setOpen(false);
+                setPinned(false);
+                setHovered(false);
                 onJumpToGlossary(entry.id);
               }}
               className="mt-1.5 text-[10px] font-semibold text-cyan-400 hover:text-cyan-300 underline"

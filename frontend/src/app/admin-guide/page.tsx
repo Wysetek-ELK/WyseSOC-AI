@@ -79,11 +79,19 @@ function AdminGuideContent() {
     : "guided-tour";
 
   const [activeMode, setActiveMode] = useState<GuideMode>(validMode);
+  const [prevModeParam, setPrevModeParam] = useState<GuideMode>(validMode);
+  if (validMode !== prevModeParam) {
+    setPrevModeParam(validMode);
+    setActiveMode(validMode);
+  }
+
   const [helpQuery, setHelpQuery] = useState<string>("");
   const [highlightedGlossaryId, setHighlightedGlossaryId] = useState<string | null>(null);
   const [highlightedScenarioId, setHighlightedScenarioId] = useState<string | null>(null);
   const [highlightedGateId, setHighlightedGateId] = useState<string | null>(null);
   const [architectureInitialStep, setArchitectureInitialStep] = useState<string | undefined>(undefined);
+  const [decisionInitialStep, setDecisionInitialStep] = useState<string | undefined>(undefined);
+  const [jumpNonce, setJumpNonce] = useState<number>(0);
 
   const searchIndex: SearchHit[] = useMemo(() => {
     const hits: SearchHit[] = [];
@@ -106,6 +114,7 @@ function AdminGuideContent() {
         category: "AI Verdict Decision Engine",
         snippet: st.summary,
         mode: "decision-engine",
+        stepId: st.id,
       });
     });
 
@@ -186,11 +195,19 @@ function AdminGuideContent() {
     setHighlightedGlossaryId(hit.glossaryId || null);
     setHighlightedScenarioId(hit.scenarioId || null);
     setHighlightedGateId(hit.gateId || null);
-    if (hit.stepId) setArchitectureInitialStep(hit.stepId);
+    if (hit.mode === "architecture" && hit.stepId) {
+      setArchitectureInitialStep(hit.stepId);
+    }
+    if (hit.mode === "decision-engine" && hit.stepId) {
+      setDecisionInitialStep(hit.stepId);
+    }
+    setJumpNonce((n) => n + 1);
   };
 
   const handleJumpToGlossary = (termId: string) => {
     setHighlightedGlossaryId(termId);
+    setHighlightedScenarioId(null);
+    setJumpNonce((n) => n + 1);
     setActiveMode("troubleshooting");
   };
 
@@ -222,6 +239,9 @@ function AdminGuideContent() {
               type="text"
               value={helpQuery}
               onChange={(e) => setHelpQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setHelpQuery("");
+              }}
               placeholder="Search help topics, G1–G8, 165233, NETWORK_SCAN, glossary..."
               aria-label="Search AI Verdict Admin Guide topics"
               className="w-full rounded-lg border border-slate-700 bg-slate-900/90 py-1.5 pl-9 pr-8 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
@@ -323,6 +343,7 @@ function AdminGuideContent() {
             edges={ARCHITECTURE_EDGES}
             swimlanes={ARCHITECTURE_SWIMLANES}
             initialStepId={architectureInitialStep}
+            jumpNonce={jumpNonce}
           />
 
           {/* Cross-Lane Integration Bridges Summary */}
@@ -396,11 +417,16 @@ function AdminGuideContent() {
         <StudioGuideSection
           onJumpToGlossary={handleJumpToGlossary}
           highlightedGateId={highlightedGateId}
+          jumpNonce={jumpNonce}
         />
       )}
 
       {activeMode === "decision-engine" && (
-        <DecisionEngineSection onJumpToGlossary={handleJumpToGlossary} />
+        <DecisionEngineSection
+          onJumpToGlossary={handleJumpToGlossary}
+          initialStepId={decisionInitialStep}
+          jumpNonce={jumpNonce}
+        />
       )}
 
       {activeMode === "incident-walkthrough" && (
@@ -413,6 +439,7 @@ function AdminGuideContent() {
         <GlossaryTroubleshootingSection
           highlightedGlossaryId={highlightedGlossaryId}
           highlightedScenarioId={highlightedScenarioId}
+          jumpNonce={jumpNonce}
         />
       )}
     </div>

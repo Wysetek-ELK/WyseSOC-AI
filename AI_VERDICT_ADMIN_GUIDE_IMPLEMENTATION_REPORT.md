@@ -56,18 +56,27 @@
 | **TypeScript Type Check** | `cd frontend && npx tsc --noEmit` | **PASSED** | Zero compiler or type errors. |
 | **ESLint Check** | `cd frontend && npm run lint -- ...` | **PASSED** | Zero errors, zero warnings across all Admin Guide, data, test, and Sidebar files. |
 | **Production Build** | `cd frontend && npm run build` | **PASSED (30/30 routes)** | Next.js 16.4.5 Turbopack production build succeeded cleanly, emitting `/admin-guide`. |
-| **Headless Browser UI & Responsive Validation** | Python Playwright (`npx next start -p 3107`) | **PASSED (13/13 checks)** | Verified `/admin-guide` rendering, Sidebar link under `PLATFORM CONTROL`, 17-node + 2-swimlane interactive flow graph, Play/Pause/Next/Speed/Reduced-Motion/Fullscreen (`Escape`) controls, node click inspector, AIS 2.0 & G1–G8, Decision Engine flow, Incident `165233` playback, 11 setup domains, global help search & troubleshooting expansion, and 390×844 mobile layout (`Step List` view) with 0 page errors. |
+| **Headless Browser Button & Layout Audit** | Python Playwright (`npx next start -H 127.0.0.1 -p 3108`) | **PASSED (12/12 suites, 0 page errors)** | Verified every button & interaction across all 7 tabs: Guided Tour controls & pillar jumps; Architecture & Decision diagram Play/Pause/Prev/Next/Restart/Speeds (`0.5x–2x`), `Zoom In` / `Zoom Out` / `Fit` + zoom `%` indicator (moved outside pan pointer-capture viewport), scrubber auto-scroll, non-overlapping bottom HUD/Legend, Reduced Motion, Step List toggle, and Fullscreen; AIS 2.0 8 stages, archetype toggle, 9 policy sections, gate filters & accordions; `GlossaryTerm` hover + click pinning & deep jump; Incident `165233` player; Admin Setup filters & `Check Read-Only Status` timestamp feedback; same-tab global search jumps (`stepId`, `gateId`, `glossaryId`, `scenarioId`); and `390×844` mobile responsiveness. |
 
 ---
 
-## 4. Deployment & Release Governance Status
+## 4. Button, Pointer-Capture & Overlap Fixes Applied
+
+1. **Diagram Zoom/Out/Fit Controls Fixed (`WorkflowFlowDiagram.tsx`):** Moved Zoom In, Zoom Out, Fit to Screen, live zoom percentage indicator, and Legend controls outside `viewportRef`'s `setPointerCapture` handler into a dedicated non-overlapping bottom HUD strip, and excluded interactive elements (`button, a, [data-flow-node], [data-no-pan]`) in `handlePointerDown`.
+2. **Eliminated Bottom Node / Legend Overlap (`WorkflowFlowDiagram.tsx`):** Moving the color legend from an absolute overlay into the dedicated canvas HUD strip ensures bottom-row nodes (such as Architecture `#16 Verified Feedback`, `#17 Calibration & Drift`, and Decision `FALSE_POSITIVE` / `REQUIRES_ANALYST_ATTENTION`) remain unobstructed in Fit view.
+3. **Glossary Tooltip Pinning Fixed (`GlossaryTerm.tsx`):** Separated hover and click-pinned state on the outer wrapper so clicking a hovered glossary term pins the tooltip open instead of immediately toggling it closed, keeping `"Close"` and `"View in Full Glossary →"` reachable.
+4. **Same-Tab Search Jumps, URL Mode Sync & Status Feedback (`admin-guide/page.tsx`, `StudioGuideSection.tsx`, `GlossaryTroubleshootingSection.tsx`, `RequirementsSection.tsx`):** Added `jumpNonce`-triggered synchronization so global search hits jump immediately to steps/gates/scenarios even when the target tab is already open, synced `?mode=` query changes, and displayed `Last checked` timestamps on every `"Check Read-Only Status"` execution.
+
+---
+
+## 5. Deployment & Release Governance Status
 
 - All automated builds, unit tests, backend regression checks, ESLint checks, and Playwright UI validations were executed after the final code edit.
 - Release execution follows the **RepoDeploy Governor** two-stage human approval workflow (`Gate 1: GitHub Repository Update` → security scan & verified push → `Gate 2: Remote Dry-Run Deployment` → SSH checkout & health verification).
 
 ---
 
-## 5. Remaining Limitations & Operational Notes
+## 6. Remaining Limitations & Operational Notes
 
 1. **Read-Only Status Probes Depend on Active Backend & Session:** When viewing `/admin-guide` without a logged-in session or without the FastAPI backend running on port `8000`, the optional read-only environment status summary falls back gracefully to static reference documentation mode rather than fabricating health checks.
 2. **Illustrative Incident `165233` Placeholders:** Because raw packet/flow attributes and scanner authorization tickets for historical Incident `165233` are not present in static documentation, those specific sub-fields are intentionally shown as `[ILLUSTRATIVE PLACEHOLDER]` entries rather than invented telemetry.

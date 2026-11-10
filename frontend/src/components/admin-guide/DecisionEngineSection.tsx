@@ -28,9 +28,15 @@ import { GlossaryTerm } from "./GlossaryTerm";
 
 interface DecisionEngineSectionProps {
   onJumpToGlossary?: (termId: string) => void;
+  initialStepId?: string;
+  jumpNonce?: number;
 }
 
-export function DecisionEngineSection({ onJumpToGlossary }: DecisionEngineSectionProps) {
+export function DecisionEngineSection({
+  onJumpToGlossary,
+  initialStepId,
+  jumpNonce = 0,
+}: DecisionEngineSectionProps) {
   return (
     <div className="space-y-5">
       {/* Separate Animated Decision Workflow */}
@@ -40,6 +46,8 @@ export function DecisionEngineSection({ onJumpToGlossary }: DecisionEngineSectio
         steps={DECISION_STEPS}
         edges={DECISION_EDGES}
         swimlanes={DECISION_SWIMLANES}
+        initialStepId={initialStepId}
+        jumpNonce={jumpNonce}
       />
 
       {/* Explicit Calibration vs Raw LLM Confidence Guardrail Callout */}
