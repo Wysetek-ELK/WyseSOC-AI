@@ -48,3 +48,22 @@ async def test_metrics_prometheus_and_json(client: AsyncClient):
     json_data = resp_json.json()
     assert "ai_verdict_incidents_total" in json_data
     assert "ai_verdict_db_latency_seconds" in json_data
+
+
+@pytest.mark.asyncio
+async def test_health_endpoint_bounded_when_llm_hangs(client: AsyncClient, monkeypatch):
+    """Ensure /api/health returns promptly (<2.5s) even when Server 2 LLM probe hangs."""
+    import asyncio
+    import time
+
+    async def _slow_probe(*args, **kwargs):
+        await asyncio.sleep(5.0)
+        return True
+
+    monkeypatch.setattr("app.services.ai_verdict_service.AIVerdictService.is_local_llm_available", _slow_probe)
+    t0 = time.monotonic()
+    resp = await client.get("/api/health")
+    elapsed = time.monotonic() - t0
+    assert resp.status_code == 200
+    assert elapsed < 3.0, f"/api/health took {elapsed:.2f}s (exceeds bounded probe budget)"
+    assert resp.json()["components"]["local_llm"]["status"] == "offline"

@@ -116,6 +116,7 @@ async def lifespan(app: FastAPI):
             )
             empty_incident_ids = empty_evts_q.scalars().all()
             if empty_incident_ids:
+                backfilled_incidents = 0
                 for db_id in empty_incident_ids:
                     inc_res = await session.execute(select(Incident).where(Incident.id == db_id))
                     inc = inc_res.scalar_one_or_none()
@@ -141,8 +142,10 @@ async def lifespan(app: FastAPI):
                                 attributes=attrs,
                             )
                         )
-                await session.commit()
-                print(f"[Startup Migration] Backfilled raw security events for {len(empty_incident_ids)} incidents.")
+                    backfilled_incidents += 1
+                if backfilled_incidents > 0:
+                    await session.commit()
+                    print(f"[Startup Migration] Backfilled raw security events for {backfilled_incidents} incidents.")
         except Exception as exc:
             await session.rollback()
             print(f"[Startup Migration Warning] Raw events backfill skipped: {exc}")

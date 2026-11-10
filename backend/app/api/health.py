@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, Response, Query, Request
@@ -38,9 +39,13 @@ async def health_check(
     if not db_health.get("connected"):
         overall_status = "unhealthy"
 
-    # 2. Redis / Celery Broker Health Check
-    redis_ok = is_redis_available()
-    queue_depth = get_queue_depth("live_triage")
+    # 2. Redis / Celery Broker Health Check (skip blocking socket connect when disabled)
+    if settings.USE_ASYNC_CELERY:
+        redis_ok = is_redis_available()
+        queue_depth = get_queue_depth("live_triage")
+    else:
+        redis_ok = False
+        queue_depth = 0
     components["redis_celery"] = {
         "status": "healthy" if redis_ok else ("disabled" if not settings.USE_ASYNC_CELERY else "unreachable"),
         "reachable": redis_ok,
@@ -51,8 +56,11 @@ async def health_check(
         if overall_status == "healthy":
             overall_status = "degraded"
 
-    # 3. Local LLM Server 2 & Circuit Breaker Health Check
-    llm_online = await AIVerdictService.is_local_llm_available()
+    # 3. Local LLM Server 2 & Circuit Breaker Health Check (bounded <= 2s so /api/health never times out)
+    try:
+        llm_online = await asyncio.wait_for(AIVerdictService.is_local_llm_available(), timeout=2.0)
+    except Exception:
+        llm_online = False
     gpu_telemetry = gpu_workload_manager.get_telemetry()
     cb_state = gpu_telemetry.get("circuit_breaker", {}).get("state", "CLOSED")
     components["local_llm"] = {

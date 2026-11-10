@@ -2,7 +2,7 @@
   "empirical_exit": 0,
   "registry_exit": 0,
   "pytest_exit": 0,
-  "pytest_summary": "273 passed, 5337 warnings in 360.58s (0:06:00)",
+  "pytest_summary": "274 passed, 5338 warnings in 259.13s (0:04:19)",
   "frontend_summary": "FRONTEND_EXIT_CODES: tsc=0 admin_guide=0 build=0",
   "logs": [
     "docs/phase8/evidence/execution-logs/stage1_env_audit.json",

@@ -202,7 +202,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
         ]
         
         last_error = None
-        probe_timeout = httpx.Timeout(connect=4.0, read=6.0, write=5.0, pool=4.0)
+        probe_timeout = httpx.Timeout(connect=1.5, read=2.5, write=2.0, pool=1.5)
         for endpoint in health_endpoints:
             try:
                 async with httpx.AsyncClient(timeout=probe_timeout) as client:
@@ -229,6 +229,10 @@ class OpenAICompatibleProvider(BaseModelProvider):
                             message=f"Endpoint returned HTTP {res.status_code}",
                             details={"status_code": res.status_code},
                         )
+            except (httpx.ConnectTimeout, httpx.ConnectError) as e:
+                # Host/port is unreachable; avoid repeating full connect timeout on sibling URL
+                last_error = e
+                break
             except Exception as e:
                 last_error = e
                 continue

@@ -5,7 +5,7 @@
 Phase 8 executed a disciplined end-to-end validation of the **AI Verdict (`AIS 2.1 + Audit Remediation v2.2.1`)** platform across infrastructure discovery, Alembic schema evolution, PostgreSQL SQL compatibility, multi-process worker coordination, local TCP HTTP OpenAI-compatible wire contracts, complete incident-to-verdict tracing, isolated empirical corpus replay, G1–G8 policy governance, real Chromium browser E2E testing, and centralized registry reconciliation.
 
 - **Why `PHASE_8_BLOCKED` is reported honestly:** Four external dependencies required for full production hardware sign-off — **Server 2 local GPU vLLM inference (`:8000`)**, **external PostgreSQL daemon (`:5432`)**, **external Redis/Celery broker (`:6379`)**, and **customer FortiSIEM Supervisor (`:443`)** — were confirmed unreachable from the local sandbox environment ([`stage1_env_audit.json`](./evidence/execution-logs/stage1_env_audit.json)). No simulated outcomes were substituted as live hardware evidence.
-- **What IS proven end-to-end:** Every software component, database contract, worker locking primitive, safety guardrail, leakage boundary, empirical statistics engine, quality gate, and Next.js Chromium workflow was exercised and verified with real execution logs, real process isolation, and real browser DOM rendering—uncovering and resolving **9 real defects (`P8-DEF-01` through `P8-DEF-09`)**, including 4 P0 correctness/security/concurrency bugs (`P8-DEF-01`, `P8-DEF-05`, `P8-DEF-06`, `P8-DEF-08`) and 1 uncaught React Dashboard crash (`P8-DEF-09`).
+- **What IS proven end-to-end:** Every software component, database contract, worker locking primitive, safety guardrail, leakage boundary, empirical statistics engine, quality gate, and Next.js Chromium workflow was exercised and verified with real execution logs, real process isolation, and real browser DOM rendering—uncovering and resolving **10 real defects (`P8-DEF-01` through `P8-DEF-10`)**, including 4 P0 correctness/security/concurrency bugs (`P8-DEF-01`, `P8-DEF-05`, `P8-DEF-06`, `P8-DEF-08`), 1 uncaught React Dashboard crash (`P8-DEF-09`), and 1 deployment `/api/health` timeout (`P8-DEF-10`).
 
 ## 2. Key Technical Outcomes
 
@@ -27,5 +27,5 @@ Reconciled against [`docs/feature_registry.json`](../feature_registry.json) and 
 
 - Raw verification execution logs are stored in [`evidence/execution-logs/`](./evidence/execution-logs/) (`backend_full_pytest.txt`, `frontend_verification.txt`, `empirical_replay.txt`, `registry_validation.txt`, `stage1_env_audit.json`).
 - Structured metrics and test results are stored in [`evidence/metrics/`](./evidence/metrics/) and [`evidence/test-results/`](./evidence/test-results/).
-- No changes were deployed to production (`a68d41f` baseline remains untouched on remote server).
+- Remote Governor Gate 2 deployment attempt on `335fe18e` verified live PostgreSQL `asyncpg` compatibility fixes (`P8-DEF-02`, `P8-DEF-03`) in remote logs before automatic rollback on `/api/health` `curl exit 28` triggered and verified the `P8-DEF-10` fix locally.
 
