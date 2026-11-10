@@ -4,9 +4,14 @@ from app.schemas.incident import ModelFacingIncidentPayload, ModelFacingEvent
 # FORBIDDEN KEYS: Any field related to ground truth, historical closure, analyst verdict, or post-investigation metadata
 FORBIDDEN_GROUND_TRUTH_KEYS = frozenset({
     "resolution",
+    "incidentresolution",
     "clearedreason",
     "cleared_reason",
+    "incidentclearedreason",
     "comments",
+    "incidentcomments",
+    "closure_comments",
+    "closurecomments",
     "cleareduser",
     "cleared_user",
     "cmsclearuser",
@@ -17,6 +22,10 @@ FORBIDDEN_GROUND_TRUTH_KEYS = frozenset({
     "resolved_at",
     "historical_resolution",
     "is_ml_generated",
+    "analyst_verdict",
+    "analystverdict",
+    "analyst_notes",
+    "analystnotes",
     "mttr",  # Mean Time To Resolution (post-closure calculation)
 })
 

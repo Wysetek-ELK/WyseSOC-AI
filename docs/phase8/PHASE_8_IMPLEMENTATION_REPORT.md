@@ -1,0 +1,26 @@
+# Phase 8 Implementation & Remediation Report
+
+## 1. Scope & Engineering Approach
+
+Phase 8 audited and tested the AI Verdict (`AIS 2.1 + Audit Remediation v2.2.1`) stack from database migrations and multi-process worker coordination through LLM HTTP transport, 9-section policy compilation, G1–G8 quality gates, historical replay, FortiSIEM sync, and headless Chromium UI rendering. Existing validated architecture (`EvidenceContractService`, `PolicyCompilerService`, `IndependentVerdictValidator`, `VerdictTrustworthinessEngine`, `VerifiedSemanticRetrievalService`) was preserved and extended only where empirical Phase 8 testing uncovered real defects.
+
+## 2. Remediations Implemented Across Backend, Database & Frontend
+
+| Defect ID | Severity | Files Modified / Created | Root Cause & Fix Summary |
+|---|---|---|---|
+| **P8-DEF-01** | **P0** | [`distributed_lock.py`](../../backend/app/models/distributed_lock.py), [`distributed_lock.py`](../../backend/app/services/distributed_lock.py), [`007_distributed_locks.py`](../../backend/alembic/versions/007_distributed_locks.py), [`ai_verdict_service.py`](../../backend/app/services/ai_verdict_service.py), [`fortisiem_service.py`](../../backend/app/services/fortisiem_service.py) | Replaced process-local `asyncio.Lock` weakness with DB-backed atomic lease UPSERT (`distributed_locks`) + optional Redis `SET NX PX`; reloaded `Incident` (`populate_existing=True`) inside lock; added `only_if_pending=True` on batch/reconcile triage. |
+| **P8-DEF-02** | **P1** | [`system_monitor_service.py`](../../backend/app/services/system_monitor_service.py), [`chat.py`](../../backend/app/api/chat.py#L213) | Coerced ISO timestamps to naive UTC `datetime` for `DateTime` columns (`asyncpg` compatibility); prevented non-prod `create_all` fallback when `APP_ENV=production`. |
+| **P8-DEF-03** | **P1** | [`main.py`](../../backend/app/main.py) | Replaced PostgreSQL-invalid `IncidentEvent.attributes == {}` (`json = json`) with `cast(..., Text)` comparison and added `await session.rollback()` on startup backfill errors. |
+| **P8-DEF-04** | **P1** | [`policy_simulation_service.py`](../../backend/app/services/policy_simulation_service.py) | Fixed crash calling nonexistent `HistoricalGroundTruthValidator.adjudicate_ground_truth_label` (corrected to `adjudicate_label`); preserved `CalibrationEvaluator` unbalanced-class checks; eagerly loaded `Incident.events`. |
+| **P8-DEF-05** | **P0** | [`historical_ground_truth_validator.py`](../../backend/app/services/historical_ground_truth_validator.py), [`model_payload_allowlist.py`](../../backend/app/services/model_payload_allowlist.py) | Replaced shallow lowercase answer stripping with recursive `_deep_strip_leakage()` matching case/punctuation-normalized nested keys (`clearedReason`, `clearedUser`, `comments`, etc.), dropping replay leakage from `19/26` to `0/26`. |
+| **P8-DEF-06** | **P0** | [`policy_quality.py`](../../backend/app/schemas/policy_quality.py), [`policy_simulation_service.py`](../../backend/app/services/policy_simulation_service.py), [`policy_quality_validator.py`](../../backend/app/services/policy_quality_validator.py) | Added `SimulationStatus.INCONCLUSIVE`; prevented G8 from awarding `15/15 PASSED` when historical replay has `0%` decision coverage (`decision_coverage == 0` -> G8 `WARNING`, `0.0/15`). |
+| **P8-DEF-07** | **P2** | [`agent-intelligence-studio/page.tsx`](../../frontend/src/app/agent-intelligence-studio/page.tsx) | Fixed confusion-matrix `fp` drilldown filter omitting `r.ground_truth` check and misclassifying unverified rows as false positives. |
+| **P8-DEF-08** | **P0** | [`evidence_preflight_validator.py`](../../backend/app/services/evidence_preflight_validator.py) | Fixed `evidence_completeness` denominator mixing `CONDITIONAL`/`OPTIONAL`/`UNVERIFIED` enrichment and `detection.*` rule metadata with mandatory `CORE` incident telemetry (which previously diluted `NETWORK_EXFILTRATION` completeness to `0.333 < 0.6` and caused all valid TP/FP verdicts to abstain). |
+| **P8-DEF-09** | **P1** | [`verdict-intelligence/page.tsx`](../../frontend/src/app/verdict-intelligence/page.tsx#L563-L611) | Replaced `?.lower_bound !== null` (true when `undefined`, throwing client-side `TypeError` crash on Dashboard B when CI bounds are absent) with `!= null` nullish guards across precision, recall, specificity, and balanced accuracy cards. |
+
+## 3. New Phase 8 Test Suites & Validation Runners
+
+- [`backend/tests/test_phase8_integration.py`](../../backend/tests/test_phase8_integration.py): 7 integration tests covering Alembic `007` roundtrip, PostgreSQL dialect parity, real multi-process OS locking, local TCP HTTP OpenAI-compatible fault injection, Stage 4 12-scenario verdict trace matrix, calibration stats gating, and FortiSIEM pagination/ZIP extraction.
+- [`backend/tests/e2e_browser/test_phase8_ui_e2e.py`](../../backend/tests/e2e_browser/test_phase8_ui_e2e.py): Headless Chromium Playwright E2E suite exercising a compiled Next.js server against an isolated Alembic-migrated FastAPI backend across 9 end-to-end UI workflows.
+- [`scripts/run_phase8_empirical_validation.py`](../../scripts/run_phase8_empirical_validation.py): Isolated empirical replay and G1–G8 policy audit runner cloning `backend/ai_verdict.db` to temporary storage without modifying production data.
+

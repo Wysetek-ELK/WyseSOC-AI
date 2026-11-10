@@ -106,32 +106,59 @@ class VerdictTriageAgent:
         username: str = "system",
         model_provider_type: Optional[str] = None,
         allow_simulated_fallback: bool = False,
+        only_if_pending: bool = False,
     ) -> Dict[str, Any]:
         """
         Evaluates a single incident with the LLM.
-        Auto-provisions detection rules if unmapped, formats allowlisted model telemetry,
+        Coordinates across intra-process coroutines and cross-process DB/Redis locks,
+        auto-provisions detection rules if unmapped, formats allowlisted model telemetry,
         and saves the structured verdict to the database.
         """
-        # 1. Resolve incident object cleanly with eager-loaded relationships
-        clean_target_id = incident_id_or_obj if isinstance(incident_id_or_obj, str) else str(getattr(incident_id_or_obj, "id", getattr(incident_id_or_obj, "incident_id", "")))
-        stmt = (
-            select(Incident)
-            .where((Incident.id == clean_target_id) | (Incident.incident_id == clean_target_id))
-            .options(selectinload(Incident.rule), selectinload(Incident.events))
-        )
-        res = await self.db.execute(stmt)
-        incident = res.scalar_one_or_none()
-        if not incident:
-            raise ValueError(f"Incident '{clean_target_id}' not found.")
+        from app.services.distributed_lock import DistributedLockManager
 
-        inc_lock = self._get_incident_lock(str(incident.incident_id or incident.id))
+        clean_target_id = incident_id_or_obj if isinstance(incident_id_or_obj, str) else str(getattr(incident_id_or_obj, "incident_id", None) or getattr(incident_id_or_obj, "id", ""))
+        canonical_key = clean_target_id
+        if not isinstance(incident_id_or_obj, str) and getattr(incident_id_or_obj, "incident_id", None):
+            canonical_key = str(incident_id_or_obj.incident_id)
+
+        pre_stmt = select(Incident.incident_id, Incident.id).where(
+            (Incident.id == clean_target_id) | (Incident.incident_id == clean_target_id)
+        )
+        pre_res = await self.db.execute(pre_stmt)
+        pre_row = pre_res.first()
+        if not pre_row:
+            raise ValueError(f"Incident '{clean_target_id}' not found.")
+        canonical_key = str(pre_row[0] or pre_row[1] or clean_target_id)
+
+        inc_lock = self._get_incident_lock(canonical_key)
         async with inc_lock:
-            return await self._evaluate_incident_locked(
-                incident=incident,
-                username=username,
-                model_provider_type=model_provider_type,
-                allow_simulated_fallback=allow_simulated_fallback,
-            )
+            async with DistributedLockManager.acquire(
+                self.db,
+                lock_key=f"incident_triage:{canonical_key}",
+                ttl_seconds=120,
+                acquire_timeout_seconds=30.0,
+            ):
+                # Reload authoritative DB state inside locks to prevent stale snapshots or duplicate triage
+                stmt = (
+                    select(Incident)
+                    .where((Incident.id == clean_target_id) | (Incident.incident_id == clean_target_id))
+                    .options(selectinload(Incident.rule), selectinload(Incident.events))
+                    .execution_options(populate_existing=True)
+                )
+                res = await self.db.execute(stmt)
+                incident = res.scalar_one_or_none()
+                if not incident:
+                    raise ValueError(f"Incident '{clean_target_id}' not found.")
+
+                if only_if_pending and isinstance(incident.ai_verdict, dict):
+                    return incident.ai_verdict
+
+                return await self._evaluate_incident_locked(
+                    incident=incident,
+                    username=username,
+                    model_provider_type=model_provider_type,
+                    allow_simulated_fallback=allow_simulated_fallback,
+                )
 
     async def _evaluate_incident_locked(
         self,
@@ -901,7 +928,12 @@ class VerdictTriageAgent:
                     break
 
             try:
-                v = await self.evaluate_incident(iid, username=username, allow_simulated_fallback=allow_mock)
+                v = await self.evaluate_incident(
+                    iid,
+                    username=username,
+                    allow_simulated_fallback=allow_mock,
+                    only_if_pending=only_pending,
+                )
                 await self.db.commit()
                 results.append(v)
                 successful += 1
@@ -1009,7 +1041,12 @@ class VerdictTriageAgent:
                     break
 
             try:
-                await self.evaluate_incident(iid, username=username, allow_simulated_fallback=allow_mock)
+                await self.evaluate_incident(
+                    iid,
+                    username=username,
+                    allow_simulated_fallback=allow_mock,
+                    only_if_pending=not include_reevaluation_eligible,
+                )
                 await self.db.commit()
                 processed_count += 1
                 if pause_between_s > 0:

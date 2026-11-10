@@ -99,16 +99,19 @@ async def lifespan(app: FastAPI):
                 await session.commit()
                 print(f"[Startup Migration] Backfilled occurrence timestamps for {len(unfilled_incidents)} incidents.")
         except Exception as exc:
+            await session.rollback()
             print(f"[Startup Migration Warning] Timestamp backfill skipped: {exc}")
 
         # Self-healing migration: Backfill IncidentEvents with missing attributes or raw_log
         try:
             from app.models.incident import Incident, IncidentEvent
             from app.services.ingestion_service import extract_event_data
-            from sqlalchemy import delete
+            from sqlalchemy import delete, cast, Text
             empty_evts_q = await session.execute(
                 select(IncidentEvent.incident_id).where(
-                    (IncidentEvent.raw_log == "") | (IncidentEvent.attributes == {})
+                    (IncidentEvent.raw_log == "")
+                    | IncidentEvent.attributes.is_(None)
+                    | (cast(IncidentEvent.attributes, Text).in_(["{}", "null", ""]))
                 ).distinct()
             )
             empty_incident_ids = empty_evts_q.scalars().all()
@@ -141,6 +144,7 @@ async def lifespan(app: FastAPI):
                 await session.commit()
                 print(f"[Startup Migration] Backfilled raw security events for {len(empty_incident_ids)} incidents.")
         except Exception as exc:
+            await session.rollback()
             print(f"[Startup Migration Warning] Raw events backfill skipped: {exc}")
 
         # Self-healing migration: Backfill TokenUsageRecord from historical incidents with ai_verdict
@@ -182,6 +186,7 @@ async def lifespan(app: FastAPI):
                     await session.commit()
                     print(f"[Startup Migration] Backfilled {backfilled_tokens} token usage records on Server 1.")
         except Exception as exc:
+            await session.rollback()
             print(f"[Startup Migration Warning] Token usage backfill skipped: {exc}")
 
     # Startup background continuous FortiSIEM poller supervisor and resume if enabled

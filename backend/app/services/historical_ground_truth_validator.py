@@ -18,6 +18,7 @@ Data Leakage Prevention:
 import copy
 import hashlib
 import logging
+import re
 from typing import Dict, Any, List, Optional, Tuple
 from app.schemas.verdict_intelligence import (
     GroundTruthLabel,
@@ -35,47 +36,46 @@ class HistoricalGroundTruthValidator:
     that model inference inputs are strictly blinded to outcome labels.
     """
 
+    _NORMALIZED_LEAKAGE_KEYS = frozenset({
+        "groundtruth", "historicalgroundtruth", "aiverdict",
+        "resolution", "clearedreason", "cleareduser", "cmsclearuser",
+        "clearedtime", "resolvedat", "comments", "closurecomments",
+        "analystverdict", "analystnotes", "closecode", "resolutionsummary",
+        "adjudicatedverdict", "feedback", "analystfeedback",
+        "ticketstatus", "statusname", "historicalresolution", "ismllgenerated",
+        "ismlgenerated", "mttr", "incidentclearedreason", "incidentcomments",
+        "incidentresolution",
+    })
+
+    @classmethod
+    def _normalize_key(cls, key: Any) -> str:
+        return re.sub(r"[^a-z0-9]", "", str(key or "").lower())
+
+    @classmethod
+    def _deep_strip_leakage(cls, obj: Any) -> Any:
+        if isinstance(obj, dict):
+            cleaned: Dict[str, Any] = {}
+            for k, v in obj.items():
+                nk = cls._normalize_key(k)
+                if nk in cls._NORMALIZED_LEAKAGE_KEYS or "cleared" in nk or "groundtruth" in nk or "analystverdict" in nk:
+                    continue
+                cleaned[k] = cls._deep_strip_leakage(v)
+            return cleaned
+        if isinstance(obj, list):
+            return [cls._deep_strip_leakage(item) for item in obj]
+        return obj
+
     @classmethod
     def sanitize_incident_for_inference(cls, incident_payload: Dict[str, Any]) -> Dict[str, Any]:
         """
         CRITICAL DATA LEAKAGE PREVENTION:
         Produces a sanitized incident dictionary for model consumption.
-        Completely strips resolution notes, analyst comments, closure verdicts,
-        historical ground truth, and feedback hints.
+        Recursively strips resolution notes, analyst comments, camelCase/snake_case
+        FortiSIEM closure fields, historical ground truth, and feedback hints at all depths.
         """
         sanitized = copy.deepcopy(incident_payload)
-
-        # 1. Strip dedicated ground truth block
-        sanitized.pop("ground_truth", None)
-        sanitized.pop("historical_ground_truth", None)
-        sanitized.pop("ai_verdict", None)
-
-        # 2. Strip resolution and closure fields
-        leakage_keys = [
-            "resolution", "cleared_reason", "cleared_user", "comments",
-            "analyst_verdict", "analyst_notes", "close_code", "closure_comments",
-            "resolution_summary", "adjudicated_verdict", "feedback", "analyst_feedback",
-            "ticket_status", "status_name"
-        ]
-        for lk in leakage_keys:
-            sanitized.pop(lk, None)
-
-        # 3. Strip from raw_payload if present
-        if isinstance(sanitized.get("raw_payload"), dict):
-            for lk in leakage_keys:
-                sanitized["raw_payload"].pop(lk, None)
-
-        # 4. Strip from nested events
-        if isinstance(sanitized.get("events"), list):
-            for evt in sanitized["events"]:
-                if isinstance(evt, dict):
-                    for lk in leakage_keys:
-                        evt.pop(lk, None)
-                    if isinstance(evt.get("attributes"), dict):
-                        for lk in leakage_keys:
-                            evt["attributes"].pop(lk, None)
-
-        return sanitized
+        result = cls._deep_strip_leakage(sanitized)
+        return result if isinstance(result, dict) else {}
 
     @classmethod
     def adjudicate_label(

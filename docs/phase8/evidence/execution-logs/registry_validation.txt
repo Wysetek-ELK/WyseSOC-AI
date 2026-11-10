@@ -1,0 +1,1 @@
+﻿OK: Registry verified (37 features, 19 modules, Impl=100.0%, Verif=90.9%).

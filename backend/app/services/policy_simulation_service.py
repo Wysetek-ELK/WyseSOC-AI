@@ -16,6 +16,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, desc
+from sqlalchemy.orm import selectinload
 
 from app.models.rule import Rule
 from app.models.prompt import PromptVersion, RulePrompt
@@ -106,8 +107,11 @@ class PolicySimulationService:
                     if measured_acc is not None and float(measured_acc) <= 1.0
                     else (float(measured_acc) if measured_acc is not None else None)
                 )
-                is_cal = bool(calib.get("is_calibrated", False)) or (
-                    gt_cases >= 30 and acc_pct is not None and acc_pct >= 70.0
+                has_calib_report = isinstance(calib, dict) and ("is_calibrated" in calib)
+                is_cal = (
+                    bool(calib.get("is_calibrated", False))
+                    if has_calib_report
+                    else (gt_cases >= 30 and acc_pct is not None and acc_pct >= 70.0)
                 )
                 cal_status = (
                     "CALIBRATED"
@@ -136,7 +140,7 @@ class PolicySimulationService:
             gt_res = await self.db.execute(gt_q)
             verified_count = 0
             for _, gt in gt_res.all():
-                adj = HistoricalGroundTruthValidator.adjudicate_ground_truth_label(
+                adj, _, _ = HistoricalGroundTruthValidator.adjudicate_label(
                     raw_resolution=gt.resolution,
                     analyst_comments=gt.comments,
                     is_ml_generated=gt.is_ml_generated,
@@ -244,6 +248,7 @@ class PolicySimulationService:
         scanned_q = (
             select(Incident, HistoricalGroundTruth)
             .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
+            .options(selectinload(Incident.events))
             .order_by(desc(Incident.created_at))
             .limit(sample_limit)
         )
@@ -256,6 +261,7 @@ class PolicySimulationService:
             matched_q = (
                 select(Incident, HistoricalGroundTruth)
                 .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
+                .options(selectinload(Incident.events))
                 .where(Incident.rule_id.in_(rule_ids))
                 .order_by(desc(Incident.created_at))
                 .limit(sample_limit)
@@ -480,16 +486,25 @@ class PolicySimulationService:
                 exclusions_detail.append(ex_rec)
                 stage_details["excluded"].append(ex_rec)
 
-            # Build incident payload
+            # Build incident payload (enriched with normalized evidence while keeping zero ground-truth leakage)
+            from app.services.evidence_normalization_service import EvidenceNormalizationService
+            norm_res = EvidenceNormalizationService.normalize_incident_evidence(
+                incident=inc,
+                events=getattr(inc, "events", None) or [],
+            )
             inc_dict = {
                 "id": str(inc.id),
                 "incident_id": str(inc.incident_id or inc.id or "INC-UNKNOWN")[:64],
                 "rule_id": str(inc.rule_id or rule_id or "RULE-UNKNOWN")[:128],
+                "title": inc.title or "",
+                "description": inc.description or "",
                 "source_ip": inc.source_ip or "",
+                "reporting_device": inc.reporting_device or "",
                 "event_type": inc.event_type or "",
                 "severity": inc.severity or "MEDIUM",
                 "category": inc.category or "",
                 "raw_payload": raw_payload,
+                "canonical_evidence": [r.model_dump() for r in norm_res.records],
                 "first_seen_epoch": inc.first_seen_epoch,
                 "last_seen_epoch": inc.last_seen_epoch,
             }
@@ -998,10 +1013,19 @@ class PolicySimulationService:
             sim_status = SimulationStatus.INSUFFICIENT_DATA.value
         elif empirical_validation_status == "EVALUATED_FAILED" or reg_detected:
             sim_status = SimulationStatus.EVALUATED_FAILED.value
+        elif empirical_validation_status == "INCONCLUSIVE":
+            sim_status = SimulationStatus.INCONCLUSIVE.value
 
-        status_str = "PASSED" if sim_status == SimulationStatus.EVALUATED_PASSED.value else ("INSUFFICIENT_DATA" if sim_status == SimulationStatus.INSUFFICIENT_DATA.value else "FAILED")
+        if sim_status == SimulationStatus.EVALUATED_PASSED.value:
+            status_str = "PASSED"
+        elif sim_status == SimulationStatus.INSUFFICIENT_DATA.value:
+            status_str = "INSUFFICIENT_DATA"
+        elif sim_status == SimulationStatus.INCONCLUSIVE.value:
+            status_str = "INCONCLUSIVE"
+        else:
+            status_str = "FAILED"
 
-        # 4. Truthful messaging: resolve the 24 evaluated vs INSUFFICIENT_DATA mismatch
+        # 4. Truthful messaging: resolve the 24 evaluated vs INSUFFICIENT_DATA / INCONCLUSIVE mismatch
         if sim_status == SimulationStatus.INSUFFICIENT_DATA.value:
             if run.total_cases >= self.MIN_HISTORICAL_SAMPLES and eligible_gt_cases < self.MIN_HISTORICAL_SAMPLES:
                 msg = f"Evaluated {run.total_cases} historical incidents. Empirical accuracy based on {eligible_gt_cases} eligible analyst-labeled incidents ({run.total_cases - eligible_gt_cases} excluded; minimum {self.MIN_HISTORICAL_SAMPLES} required)."
@@ -1009,6 +1033,8 @@ class PolicySimulationService:
                 msg = f"Insufficient historical incidents (N={run.total_cases} < {self.MIN_HISTORICAL_SAMPLES}). Empirical evaluation requires at least {self.MIN_HISTORICAL_SAMPLES} samples."
         elif reg_detected:
             msg = f"REGRESSION DETECTED: Policy candidate introduced critical regressions against approved baseline."
+        elif sim_status == SimulationStatus.INCONCLUSIVE.value:
+            msg = f"Simulation INCONCLUSIVE on {run.total_cases} historical incidents ({eligible_gt_cases} verified cases; 0% decisive coverage or inconclusive accuracy)."
         else:
             msg = reg_summary.get("summary_message") if baseline_run_id else f"Simulation PASSED on {run.total_cases} historical incidents ({eligible_gt_cases} verified ground-truth cases)."
 

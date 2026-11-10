@@ -1,0 +1,64 @@
+{
+  "runner": "pytest backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+  "browser": "chromium-headless",
+  "total_steps": 9,
+  "passed_steps": 9,
+  "console_errors_count": 0,
+  "page_errors_count": 0,
+  "screenshots_captured": [
+    "01_login_error.png",
+    "02_mission_control.png",
+    "03_ais_quality_gates.png",
+    "04_ais_simulation_lab.png",
+    "05_ais_incomplete_g1_blocked.png",
+    "06_triage_workbench_tp_gt_isolated.png",
+    "07_triage_workbench_guard_unclaimed.png",
+    "08_triage_offline_fail_closed.png",
+    "09_verdict_intelligence_simulation_and_calibration.png",
+    "10_human_review_queue_persisted.png"
+  ],
+  "trace_zip": "docs/phase8/evidence/traces/playwright_e2e_trace.zip",
+  "steps": [
+    {
+      "step": "1_invalid_login_rejected",
+      "status": "PASSED"
+    },
+    {
+      "step": "2_valid_login_and_session",
+      "status": "PASSED"
+    },
+    {
+      "step": "3_agent_intelligence_studio_and_rbac",
+      "status": "PASSED",
+      "rbac": {
+        "viewerStatus": 403,
+        "adminStatus": 400
+      }
+    },
+    {
+      "step": "4_triage_workbench_tp_and_gt_isolation",
+      "status": "PASSED"
+    },
+    {
+      "step": "5_triage_workbench_guard_0_claims",
+      "status": "PASSED"
+    },
+    {
+      "step": "6_triage_offline_fail_closed",
+      "status": "PASSED"
+    },
+    {
+      "step": "7_triage_404_error_handling",
+      "status": "PASSED"
+    },
+    {
+      "step": "8_verdict_intelligence_parity_and_sim_toggle",
+      "status": "PASSED",
+      "api_total_evaluated": 2
+    },
+    {
+      "step": "9_human_review_queue_persistence",
+      "status": "PASSED"
+    }
+  ]
+}

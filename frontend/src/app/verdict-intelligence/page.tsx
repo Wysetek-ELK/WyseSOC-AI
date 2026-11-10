@@ -564,12 +564,12 @@ function VerdictIntelligenceContent() {
                     <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800">
                       <span className="text-xs text-slate-400 font-medium">TP Precision</span>
                       <div className="text-xl font-bold text-white mt-1">
-                        {runDetails.run.metrics.precision !== null ? `${Math.round(runDetails.run.metrics.precision * 100)}%` : "N/A"}
+                        {runDetails.run.metrics.precision != null ? `${Math.round(runDetails.run.metrics.precision * 100)}%` : "N/A"}
                       </div>
-                      {runDetails.run.metrics.precision_ci?.lower_bound !== null && (
+                      {runDetails.run.metrics.precision_ci?.lower_bound != null && (
                         <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                           95% CI: [{Math.round(runDetails.run.metrics.precision_ci.lower_bound * 100)}%–
-                          {Math.round(runDetails.run.metrics.precision_ci.upper_bound * 100)}%]
+                          {Math.round((runDetails.run.metrics.precision_ci.upper_bound ?? 0) * 100)}%]
                         </div>
                       )}
                     </div>
@@ -577,12 +577,12 @@ function VerdictIntelligenceContent() {
                     <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800">
                       <span className="text-xs text-slate-400 font-medium">TP Recall (Sensitivity)</span>
                       <div className="text-xl font-bold text-white mt-1">
-                        {runDetails.run.metrics.recall !== null ? `${Math.round(runDetails.run.metrics.recall * 100)}%` : "N/A"}
+                        {runDetails.run.metrics.recall != null ? `${Math.round(runDetails.run.metrics.recall * 100)}%` : "N/A"}
                       </div>
-                      {runDetails.run.metrics.recall_ci?.lower_bound !== null && (
+                      {runDetails.run.metrics.recall_ci?.lower_bound != null && (
                         <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                           95% CI: [{Math.round(runDetails.run.metrics.recall_ci.lower_bound * 100)}%–
-                          {Math.round(runDetails.run.metrics.recall_ci.upper_bound * 100)}%]
+                          {Math.round((runDetails.run.metrics.recall_ci.upper_bound ?? 0) * 100)}%]
                         </div>
                       )}
                     </div>
@@ -590,12 +590,12 @@ function VerdictIntelligenceContent() {
                     <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800">
                       <span className="text-xs text-slate-400 font-medium">FP Specificity</span>
                       <div className="text-xl font-bold text-white mt-1">
-                        {runDetails.run.metrics.specificity !== null ? `${Math.round(runDetails.run.metrics.specificity * 100)}%` : "N/A"}
+                        {runDetails.run.metrics.specificity != null ? `${Math.round(runDetails.run.metrics.specificity * 100)}%` : "N/A"}
                       </div>
-                      {runDetails.run.metrics.specificity_ci?.lower_bound !== null && (
+                      {runDetails.run.metrics.specificity_ci?.lower_bound != null && (
                         <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                           95% CI: [{Math.round(runDetails.run.metrics.specificity_ci.lower_bound * 100)}%–
-                          {Math.round(runDetails.run.metrics.specificity_ci.upper_bound * 100)}%]
+                          {Math.round((runDetails.run.metrics.specificity_ci.upper_bound ?? 0) * 100)}%]
                         </div>
                       )}
                     </div>
@@ -603,7 +603,7 @@ function VerdictIntelligenceContent() {
                     <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800">
                       <span className="text-xs text-slate-400 font-medium">Balanced Accuracy</span>
                       <div className="text-xl font-bold text-white mt-1">
-                        {runDetails.run.metrics.balanced_accuracy !== null
+                        {runDetails.run.metrics.balanced_accuracy != null
                           ? `${Math.round(runDetails.run.metrics.balanced_accuracy * 100)}%`
                           : "N/A"}
                       </div>

@@ -210,7 +210,7 @@ async def _record_chat_token_usage(
             latency_ms=int(latency_ms),
             is_simulated=False,
             executed_by_user=username,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.utcnow(),
             details={
                 "role": "SOC AI Chatbot",
                 "attached_incident": bool(attached_incident_data),

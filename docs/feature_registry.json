@@ -1,20 +1,20 @@
 {
   "metadata": {
     "project": "AI Verdict \u2014 Enterprise Agentic SOC Intelligence Platform",
-    "updated_at": "2026-11-10T19:55:00+05:30",
-    "git_commit": "0148142",
+    "updated_at": "2026-11-10T22:01:28+05:30",
+    "git_commit": "a68d41f+phase8",
     "architecture_version": "AIS 2.1 + Audit Remediation v2.2.1",
     "weighting_rule": "Unweighted criteria ratio per feature (satisfied_impl / applicable_impl; verified_acc / applicable_acc); NOT_APPLICABLE criteria excluded from denominator with explicit justification. Module and overall percentages sum raw criteria across features."
   },
   "summary": {
     "total_features": 37,
     "total_modules": 19,
-    "satisfied_impl_criteria": 65,
+    "satisfied_impl_criteria": 66,
     "applicable_impl_criteria": 66,
-    "overall_completion_pct": 98.5,
-    "verified_acc_criteria": 57,
+    "overall_completion_pct": 100.0,
+    "verified_acc_criteria": 60,
     "applicable_acc_criteria": 66,
-    "overall_verification_pct": 86.4
+    "overall_verification_pct": 90.9
   },
   "features": [
     {
@@ -274,10 +274,13 @@
       "test_files": [
         "backend/tests/test_dry_run_replay.py",
         "backend/tests/test_audit_remediations.py",
-        "backend/tests/test_verdict_intelligence_validation.py"
+        "backend/tests/test_verdict_intelligence_validation.py",
+        "scripts/run_phase8_empirical_validation.py"
       ],
       "evidence_files": [
-        "backend/app/services/policy_simulation_service.py"
+        "backend/app/services/policy_simulation_service.py",
+        "docs/phase8/evidence/metrics/stage6_quality_gates.json",
+        "docs/phase8/PHASE_8_QUALITY_GATES_REPORT.md"
       ],
       "evidence_notes": [
         "Honors candidate policy_version_id, records policy_digest, queries real historical counts (no fabricated 85%), and supports OPENAI_COMPATIBLE vs SIMULATED modes; OPENAI_COMPATIBLE simulation branch unverified against live Server 2."
@@ -399,23 +402,28 @@
       ],
       "backend_files": [
         "backend/app/services/ai_verdict_service.py",
-        "backend/app/api/prompts.py"
+        "backend/app/api/prompts.py",
+        "backend/app/models/distributed_lock.py",
+        "backend/app/services/distributed_lock.py",
+        "backend/alembic/versions/007_distributed_locks.py"
       ],
       "test_files": [
         "backend/tests/test_audit_remediations.py",
-        "backend/tests/test_llm_offline_backlog.py"
+        "backend/tests/test_llm_offline_backlog.py",
+        "backend/tests/test_phase8_integration.py"
       ],
       "evidence_files": [
-        "backend/app/services/ai_verdict_service.py"
+        "backend/app/services/ai_verdict_service.py",
+        "docs/phase8/PHASE_8_INFRASTRUCTURE_VALIDATION.md"
       ],
       "evidence_notes": [
-        "Event-loop-scoped asyncio locks serialize per-incident triage; Investigation notes upsert idempotently; bounded reevaluation picks up POLICY_NOT_APPROVED / EVIDENCE_MISSING incidents up to 3 attempts."
+        "DB-backed DistributedLockManager atomic lease UPSERT + optional Redis SET NX PX serializes OS worker processes; Investigation notes upsert idempotently; bounded reevaluation picks up POLICY_NOT_APPROVED / EVIDENCE_MISSING up to 3 attempts."
       ],
-      "remaining_gap": "In-memory per-process lock does not coordinate across separate OS worker processes without Redis distributed lock.",
+      "remaining_gap": "None (cross-process OS locking and idempotency verified in test_phase8_integration.py).",
       "acceptance_criteria": [
         {
           "id": "VTA-02-C1",
-          "description": "Idempotent note updates and per-incident concurrency protection in worker process",
+          "description": "Idempotent note updates and cross-process DB/Redis distributed locking across OS workers",
           "implementation_state": "SATISFIED",
           "verification_state": "VERIFIED"
         },
@@ -803,11 +811,13 @@
       "test_files": [
         "backend/tests/test_ingestion.py",
         "backend/tests/test_zip_guard.py",
-        "backend/tests/test_fortisiem_pull.py"
+        "backend/tests/test_fortisiem_pull.py",
+        "backend/tests/test_phase8_integration.py"
       ],
       "evidence_files": [
         "backend/app/services/ingestion_service.py",
-        "backend/app/utils/zip_guard.py"
+        "backend/app/utils/zip_guard.py",
+        "docs/phase8/PHASE_8_FORTISIEM_INTEGRATION.md"
       ],
       "evidence_notes": [
         "File/zip ingestion, slip/ratio limits, and fixture FortiSIEM sync tested; live FortiSIEM appliance REST endpoint unreachable in dry-run sandbox."
@@ -890,10 +900,12 @@
       "test_files": [
         "backend/tests/test_model_provider.py",
         "backend/tests/test_llm_config.py",
-        "backend/tests/test_llm_multiworker_sync.py"
+        "backend/tests/test_llm_multiworker_sync.py",
+        "backend/tests/test_phase8_integration.py"
       ],
       "evidence_files": [
-        "backend/app/services/model_provider/openai_compatible.py"
+        "backend/app/services/model_provider/openai_compatible.py",
+        "docs/phase8/PHASE_8_LIVE_LLM_VALIDATION.md"
       ],
       "evidence_notes": [
         "Client instructs and extracts supporting_claims/contradictory_evidence and repairs truncated JSON; live vLLM GPU server unreachable from local dev sandbox."
@@ -1106,9 +1118,9 @@
       "feature_id": "FEU-01",
       "module": "Frontend UI & Navigation",
       "feature_name": "AI Triage Workbench & Canonical Evidence Transparency",
-      "implementation_status": "PARTIAL",
+      "implementation_status": "IMPLEMENTED_VERIFIED",
       "completion_pct": 100.0,
-      "verification_pct": 50.0,
+      "verification_pct": 100.0,
       "frontend_files": [
         "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
         "frontend/src/app/ai-triage-workbench/page.tsx",
@@ -1119,15 +1131,18 @@
         "backend/app/schemas/incident.py"
       ],
       "test_files": [
-        "backend/tests/test_audit_remediations.py"
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
       ],
       "evidence_files": [
-        "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "docs/phase8/evidence/test-results/playwright_e2e_summary.json",
+        "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md"
       ],
       "evidence_notes": [
-        "Removed hardcoded GPU Live banner, fixed 0/0 claim green 100% display, and aligned Canonical Evidence fields (evidence_type, source_field) with backend API; tsc compiles cleanly."
+        "Verified authoritative verdict badge, deterministic guard banner, 0/0 claim ratio, canonical evidence tab, blind review toggle, GT isolation, offline fail-closed UI, and 404 handling in headless Chromium Playwright E2E."
       ],
-      "remaining_gap": "Interactive React component DOM/browser rendering tests (Playwright/React Testing Library) not configured beyond admin-guide tests and tsc.",
+      "remaining_gap": "None.",
       "acceptance_criteria": [
         {
           "id": "FEU-01-C1",
@@ -1139,7 +1154,7 @@
           "id": "FEU-01-C2",
           "description": "Automated headless browser UI rendering assertions on workbench page",
           "implementation_state": "SATISFIED",
-          "verification_state": "NOT_TESTED"
+          "verification_state": "VERIFIED"
         }
       ]
     },
@@ -1147,9 +1162,9 @@
       "feature_id": "FEU-02",
       "module": "Frontend UI & Navigation",
       "feature_name": "Verdict Intelligence Dashboard, Sidebar Navigation & Admin Guide",
-      "implementation_status": "PARTIAL",
+      "implementation_status": "IMPLEMENTED_VERIFIED",
       "completion_pct": 100.0,
-      "verification_pct": 66.7,
+      "verification_pct": 100.0,
       "frontend_files": [
         "frontend/src/app/verdict-intelligence/page.tsx",
         "frontend/src/components/layout/Sidebar.tsx",
@@ -1160,16 +1175,19 @@
         "backend/app/api/verdict_intelligence.py"
       ],
       "test_files": [
-        "frontend/tests/admin-guide.test.mjs"
+        "frontend/tests/admin-guide.test.mjs",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
       ],
       "evidence_files": [
         "frontend/src/app/verdict-intelligence/page.tsx",
-        "frontend/tests/admin-guide.test.mjs"
+        "frontend/tests/admin-guide.test.mjs",
+        "docs/phase8/evidence/test-results/playwright_e2e_summary.json",
+        "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md"
       ],
       "evidence_notes": [
-        "Admin guide 7/7 assertions pass; Verdict Intelligence exposes explicit simulation opt-in toggle & SIMULATED pill; full browser Playwright suite unconfigured."
+        "Admin guide 7/7 assertions pass; fixed Dashboard B missing-CI nullish crash (P8-DEF-09); verified DOM-to-API parity, simulation toggle default OFF, NOT_CALIBRATED badge, and AIS G1-G8 browser workflows via Playwright Chromium E2E."
       ],
-      "remaining_gap": "No Playwright browser coverage for multi-tab Verdict Intelligence / Simulation Lab navigation.",
+      "remaining_gap": "None.",
       "acceptance_criteria": [
         {
           "id": "FEU-02-C1",
@@ -1187,7 +1205,7 @@
           "id": "FEU-02-C3",
           "description": "End-to-end Playwright browser tests for Verdict Intelligence tabs",
           "implementation_state": "SATISFIED",
-          "verification_state": "NOT_TESTED"
+          "verification_state": "VERIFIED"
         }
       ]
     },
@@ -1231,7 +1249,7 @@
     {
       "feature_id": "DBM-01",
       "module": "Database Models & Migrations",
-      "feature_name": "SQLAlchemy ORM Schema & Alembic Version Chain (001\u2013006)",
+      "feature_name": "SQLAlchemy ORM Schema & Alembic Version Chain (001\u2013007)",
       "implementation_status": "PARTIAL",
       "completion_pct": 100.0,
       "verification_pct": 50.0,
@@ -1240,23 +1258,28 @@
         "backend/app/models/__init__.py",
         "backend/app/database.py",
         "backend/alembic/versions/005_agent_intelligence_studio_v2.py",
-        "backend/alembic/versions/006_verdict_intelligence_validation.py"
+        "backend/alembic/versions/006_verdict_intelligence_validation.py",
+        "backend/app/models/distributed_lock.py",
+        "backend/alembic/versions/007_distributed_locks.py"
       ],
       "test_files": [
         "backend/tests/test_database_migrations.py",
-        "backend/tests/test_postgresql_and_pooling.py"
+        "backend/tests/test_postgresql_and_pooling.py",
+        "backend/tests/test_phase8_integration.py"
       ],
       "evidence_files": [
-        "backend/alembic/versions/006_verdict_intelligence_validation.py"
+        "backend/alembic/versions/006_verdict_intelligence_validation.py",
+        "backend/alembic/versions/007_distributed_locks.py",
+        "docs/phase8/PHASE_8_INFRASTRUCTURE_VALIDATION.md"
       ],
       "evidence_notes": [
-        "All ORM models and Alembic 001-006 migrations tested in SQLite/pytest; live PostgreSQL production server upgrade not executed in local sandbox."
+        "All ORM models and Alembic 001-007 migrations (including upgrade/downgrade roundtrip and PostgreSQL dialect SQL compile checks) verified; live external PostgreSQL server upgrade remains untested locally."
       ],
       "remaining_gap": "Live PostgreSQL database alembic upgrade head and sqlite-to-postgres migration script not exercised against live Postgres host in sandbox.",
       "acceptance_criteria": [
         {
           "id": "DBM-01-C1",
-          "description": "ORM schema consistency, Alembic scripts 001-006 & pooling config tests pass",
+          "description": "ORM schema consistency, Alembic scripts 001-007 & PostgreSQL dialect safety tests pass",
           "implementation_state": "SATISFIED",
           "verification_state": "VERIFIED"
         },
@@ -1359,10 +1382,12 @@
         "backend/app/api/system_monitor.py"
       ],
       "test_files": [
-        "backend/tests/test_system_monitor.py"
+        "backend/tests/test_system_monitor.py",
+        "backend/tests/test_phase8_integration.py"
       ],
       "evidence_files": [
-        "backend/app/services/system_monitor_service.py"
+        "backend/app/services/system_monitor_service.py",
+        "docs/phase8/PHASE_8_LIVE_LLM_VALIDATION.md"
       ],
       "evidence_notes": [
         "Honest OFFLINE/DEGRADED reporting with null GPU metrics when Server 2 unreachable verified in test_system_monitor.py."
@@ -1422,23 +1447,26 @@
       "feature_id": "TST-02",
       "module": "Automated Testing & End-to-End Validation",
       "feature_name": "Frontend TypeScript Compilation & UI Verification",
-      "implementation_status": "PARTIAL",
-      "completion_pct": 66.7,
-      "verification_pct": 66.7,
+      "implementation_status": "IMPLEMENTED_VERIFIED",
+      "completion_pct": 100.0,
+      "verification_pct": 100.0,
       "frontend_files": [
         "frontend/package.json"
       ],
       "backend_files": [],
       "test_files": [
-        "frontend/tests/admin-guide.test.mjs"
+        "frontend/tests/admin-guide.test.mjs",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
       ],
       "evidence_files": [
-        "frontend/tests/admin-guide.test.mjs"
+        "frontend/tests/admin-guide.test.mjs",
+        "docs/phase8/evidence/test-results/playwright_e2e_summary.json",
+        "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md"
       ],
       "evidence_notes": [
-        "npx tsc --noEmit and npm run test:admin-guide (7/7 assertions) executed cleanly."
+        "npx tsc --noEmit, npm run test:admin-guide (7/7 assertions), Next.js production build, and Playwright Chromium E2E suite (9/9 workflows, 0 console/page errors) all verified passing."
       ],
-      "remaining_gap": "Playwright/Cypress browser E2E suite for frontend pages is not implemented in repository.",
+      "remaining_gap": "None.",
       "acceptance_criteria": [
         {
           "id": "TST-02-C1",
@@ -1455,8 +1483,8 @@
         {
           "id": "TST-02-C3",
           "description": "Automated headless browser UI E2E suite",
-          "implementation_state": "UNSATISFIED",
-          "verification_state": "NOT_TESTED"
+          "implementation_state": "SATISFIED",
+          "verification_state": "VERIFIED"
         }
       ]
     },
@@ -1480,10 +1508,23 @@
         "docs/audits/VERDICT_TRUSTWORTHINESS_AUDIT.md",
         "docs/testing/END_TO_END_VALIDATION_REPORT.md",
         "docs/testing/POLICY_QUALITY_GATE_REPORT.md",
-        "docs/REMAINING_WORK.md"
+        "docs/REMAINING_WORK.md",
+        "docs/phase8/README.md",
+        "docs/phase8/PHASE_8_IMPLEMENTATION_REPORT.md",
+        "docs/phase8/PHASE_8_EXECUTION_MATRIX.md",
+        "docs/phase8/PHASE_8_INFRASTRUCTURE_VALIDATION.md",
+        "docs/phase8/PHASE_8_LIVE_LLM_VALIDATION.md",
+        "docs/phase8/PHASE_8_VERDICT_ACCURACY_REPORT.md",
+        "docs/phase8/PHASE_8_HISTORICAL_REPLAY_REPORT.md",
+        "docs/phase8/PHASE_8_QUALITY_GATES_REPORT.md",
+        "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md",
+        "docs/phase8/PHASE_8_FORTISIEM_INTEGRATION.md",
+        "docs/phase8/PHASE_8_DEFECT_REGISTER.md",
+        "docs/phase8/PHASE_8_REMAINING_WORK.md",
+        "docs/phase8/PHASE_8_FINAL_REPORT.md"
       ],
       "evidence_notes": [
-        "All 9 Phase 5/6 authoritative technical documents authored, timestamped, commit-bound, and cross-referenced."
+        "All Phase 5/6 architecture/audit docs and all 13 centralized Phase 8 verification deliverables under docs/phase8/ authored, path-checked, and cross-referenced."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1512,7 +1553,8 @@
       "evidence_files": [
         "docs/feature_registry.json",
         "docs/FEATURE_IMPLEMENTATION_STATUS.md",
-        "scripts/validate_feature_registry.py"
+        "scripts/validate_feature_registry.py",
+        "docs/phase8/PHASE_8_FINAL_REPORT.md"
       ],
       "evidence_notes": [
         "Automated script + pytest enforcement verify unique IDs, valid repo paths, mathematical percentage rollups, and JSON-to-Markdown parity."

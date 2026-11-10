@@ -9,9 +9,9 @@ from app.services.migration_service import (
 
 @pytest.mark.asyncio
 async def test_get_head_revision_matches_current():
-    """Verifies that the Alembic head revision matches the latest AIS 2.1 migration."""
+    """Verifies that the Alembic head revision matches the latest AIS 2.1 + Phase 8 migration."""
     head = get_head_revision()
-    assert head == "006_verdict_intelligence_validation"
+    assert head == "007_distributed_locks"
 
 
 @pytest.mark.asyncio

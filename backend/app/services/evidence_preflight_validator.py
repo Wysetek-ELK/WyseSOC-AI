@@ -50,31 +50,55 @@ class EvidencePreflightValidator:
             )
 
         # 2. Check Required Evidence Availability
+        # Separate event-level mandatory CORE requirements from optional/conditional
+        # enrichment and rule-level metadata (`detection.*`), which do not live in
+        # normalized incident telemetry. Mixing them into the denominator previously
+        # diluted CORE completeness below 0.6 and caused valid alerts to abstain.
+        telemetry_reqs = [
+            req for req in contract.required_evidence
+            if not str(req.field).startswith("detection.")
+        ]
+        core_reqs = [
+            req for req in telemetry_reqs
+            if (
+                getattr(req, "requirement_level", "CORE") == "CORE"
+                or bool(getattr(req, "critical", False))
+                or bool(getattr(req, "required_for_tp", False))
+                or bool(getattr(req, "required_for_fp", False))
+            )
+            and getattr(req, "requirement_level", "CORE") != "UNVERIFIED"
+        ] or telemetry_reqs
+
+        def _is_field_present(field_name: str) -> bool:
+            if field_name in available_fields:
+                return True
+            if field_name == "process.name" and ("process.file_name" in available_fields or "process.file_path" in available_fields):
+                return True
+            if field_name == "network.destination_ip" and "dns.domain" in available_fields:
+                return True
+            return False
+
         missing_fields: List[str] = []
+        core_missing: List[str] = []
         critical_missing: List[str] = []
-        satisfied_count = 0
+        satisfied_core_count = 0
 
-        for req in contract.required_evidence:
-            # Check if this exact field is present in available telemetry
-            is_present = False
-            if req.field in available_fields:
-                is_present = True
+        core_field_names = {r.field for r in core_reqs}
+        for req in core_reqs:
+            if _is_field_present(req.field):
+                satisfied_core_count += 1
             else:
-                # Check for semantic field alias (e.g. process.name vs process.file_name)
-                if req.field == "process.name" and ("process.file_name" in available_fields or "process.file_path" in available_fields):
-                    is_present = True
-                elif req.field == "network.destination_ip" and "dns.domain" in available_fields:
-                    is_present = True
-
-            if is_present:
-                satisfied_count += 1
-            else:
+                core_missing.append(req.field)
                 missing_fields.append(req.field)
                 if req.critical:
                     critical_missing.append(req.field)
 
-        total_reqs = len(contract.required_evidence)
-        completeness = (satisfied_count / total_reqs) if total_reqs > 0 else 1.0
+        for req in telemetry_reqs:
+            if req.field not in core_field_names and not _is_field_present(req.field):
+                missing_fields.append(req.field)
+
+        total_reqs = len(core_reqs)
+        completeness = (satisfied_core_count / total_reqs) if total_reqs > 0 else 1.0
 
         # 3. Check for obvious contradictions in telemetry (e.g. conflicting internal IPs claiming external connection)
         detected_contradictions: List[str] = []
@@ -97,18 +121,18 @@ class EvidencePreflightValidator:
             must_abstain = False  # Allow LLM to examine, but validator will guard
             action = "PROCEED_WITH_CONTRADICTION_FLAG"
             reason = f"TELEMETRY_CONTRADICTIONS_DETECTED: {'; '.join(detected_contradictions)}"
-        elif missing_fields:
+        elif core_missing:
             status = "PARTIAL"
             can_proceed = True
             must_abstain = False
             action = "PROCEED_TO_INFERENCE"
-            reason = f"PARTIAL_TELEMETRY: Non-critical evidence fields missing: {', '.join(missing_fields)}"
+            reason = f"PARTIAL_TELEMETRY: Non-critical core evidence fields missing: {', '.join(core_missing)}"
         else:
             status = "COMPLETE"
             can_proceed = True
             must_abstain = False
             action = "PROCEED_TO_INFERENCE"
-            reason = "COMPLETE_TELEMETRY: All required evidence fields present and verified."
+            reason = "COMPLETE_TELEMETRY: All required core evidence fields present and verified."
 
         return PreflightValidationResult(
             incident_id=incident_id,
@@ -118,7 +142,7 @@ class EvidencePreflightValidator:
             contract_status=contract.status,
             preflight_status=status,
             required_evidence_count=total_reqs,
-            available_required_count=satisfied_count,
+            available_required_count=satisfied_core_count,
             evidence_completeness=round(completeness, 3),
             missing_evidence_fields=missing_fields,
             critical_missing_fields=critical_missing,

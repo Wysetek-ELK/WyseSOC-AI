@@ -469,7 +469,10 @@ export default function AgentIntelligenceStudioPage() {
       fp: {
         title: "False Positives (Benign Flagged as Attack)",
         desc: "Benign activity incorrectly classified as True Positive (Over-alerting).",
-        filter: (r: any) => r.effective_verdict === "TRUE_POSITIVE" && (r.ground_truth === "VERIFIED_FP" || r.is_critical_error === false),
+        filter: (r: any) =>
+          r.effective_verdict === "TRUE_POSITIVE" &&
+          (r.ground_truth === "VERIFIED_FP" ||
+            (Boolean(r.ground_truth) && r.is_correct === false && r.is_critical_error === false)),
       },
       fn: {
         title: "False Negatives (Critical Missed Attacks)",

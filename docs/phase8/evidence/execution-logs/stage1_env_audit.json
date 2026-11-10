@@ -1,0 +1,33 @@
+{
+  "git_branch": "feat/verdict-intelligence-validation-v2.1",
+  "git_head": "a68d41f6f9a75b173ae1d8406acc4992134b5b3a",
+  "python_version": "3.13.13",
+  "node_version": "v22.12.0",
+  "binaries": {
+    "psql": false,
+    "pg_isready": false,
+    "redis-server": false,
+    "redis-cli": false,
+    "celery": true,
+    "alembic": true
+  },
+  "local_ports": {
+    "5432": "UNREACHABLE (TimeoutError)",
+    "6379": "UNREACHABLE (TimeoutError)"
+  },
+  "remote_endpoints": {
+    "server2_llm_tcp": "UNREACHABLE (TimeoutError)",
+    "fortisiem_tcp_443": "UNREACHABLE (gaierror)"
+  },
+  "settings_sanitized": {
+    "APP_ENV": "development",
+    "DATABASE_URL_dialect": "sqlite+aiosqlite",
+    "LOCAL_LLM_BASE_URL": "http://<REDACTED_HOST>:8000/v1",
+    "LOCAL_LLM_MODEL_NAME": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "LOCAL_LLM_ALLOW_MOCK_FALLBACK": true,
+    "FORTISIEM_HOST_configured": true,
+    "FORTISIEM_MOCK_FALLBACK": true,
+    "FORTISIEM_VERIFY_SSL": false,
+    "USE_ASYNC_CELERY": false
+  }
+}

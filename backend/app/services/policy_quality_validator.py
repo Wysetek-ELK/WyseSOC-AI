@@ -714,6 +714,22 @@ class PolicyQualityValidator:
             details = f"Simulation status: INSUFFICIENT_DATA (evaluated cases: {sample_count}, verified ground-truth cases: {eligible_count} < 5)."
             return 0.0, GateStatus.WARNING, sim_status, blockers, warns, details
 
+        emp_status = str(simulation_results.get("empirical_validation_status") or "").upper()
+        overall_acc = simulation_results.get("overall_accuracy")
+        cov = simulation_results.get("decision_coverage")
+        if (
+            sim_status_raw == "INCONCLUSIVE"
+            or emp_status == "INCONCLUSIVE"
+            or (cov is not None and float(cov) <= 0.0 and overall_acc is None)
+        ):
+            sim_status = SimulationStatus.INCONCLUSIVE
+            warns.append(
+                f"G8_INCONCLUSIVE_SIMULATION: Historical simulation produced 0% decisive coverage "
+                f"or inconclusive empirical accuracy (evaluated={sample_count}, eligible={eligible_count}); empirical points withheld."
+            )
+            details = f"Simulation status: INCONCLUSIVE (evaluated cases: {sample_count}, verified ground-truth cases: {eligible_count}, coverage={cov})."
+            return 0.0, GateStatus.WARNING, sim_status, blockers, warns, details
+
         sim_status = SimulationStatus.EVALUATED_PASSED
         score = 15.0
         details = f"Simulation PASSED on {sample_count} historical incidents ({eligible_count} verified ground-truth cases). Zero critical regressions."

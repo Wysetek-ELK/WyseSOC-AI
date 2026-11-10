@@ -13,6 +13,7 @@ from app.models.system_metric import SystemServerSample
 from app.models.token_usage import TokenUsageRecord
 from app.models.telemetry_timeline import TelemetryTimelineRecord
 from app.models.task_queue import QueuedTask
+from app.models.distributed_lock import DistributedLock
 from app.models.rule_intelligence import RuleIntelligenceSnapshot
 from app.models.policy_quality import PolicyQualityAssessmentRecord
 from app.models.policy_drift import PolicyDriftEvent
@@ -48,6 +49,7 @@ __all__ = [
     "TokenUsageRecord",
     "TelemetryTimelineRecord",
     "QueuedTask",
+    "DistributedLock",
     "RuleIntelligenceSnapshot",
     "PolicyQualityAssessmentRecord",
     "PolicyDriftEvent",

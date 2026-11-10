@@ -1596,7 +1596,12 @@ class FortiSIEMService:
                 sync_batch = incidents_to_evaluate[:2]
                 for iid in sync_batch:
                     try:
-                        await ai_service.evaluate_incident(iid, username=username, allow_simulated_fallback=allow_mock)
+                        await ai_service.evaluate_incident(
+                            iid,
+                            username=username,
+                            allow_simulated_fallback=allow_mock,
+                            only_if_pending=True,
+                        )
                         ai_verdicts_generated += 1
                     except Exception as eval_exc:
                         print(f"[FortiSIEM Auto-Triage Error] Failed evaluating incident {iid}: {eval_exc}")
@@ -1654,7 +1659,12 @@ class FortiSIEMService:
                         print(f"[Background AI Worker] Local LLM went offline. Halting remaining {len(incident_ids)} incidents until online.")
                         break
                     try:
-                        await ai_service.evaluate_incident(iid, username=username, allow_simulated_fallback=allow_mock)
+                        await ai_service.evaluate_incident(
+                            iid,
+                            username=username,
+                            allow_simulated_fallback=allow_mock,
+                            only_if_pending=True,
+                        )
                         await session.commit()
                         await asyncio.sleep(0.15)
                     except Exception as exc:

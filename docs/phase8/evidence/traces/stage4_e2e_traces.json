@@ -1,0 +1,163 @@
+{
+  "scenarios": [
+    {
+      "scenario_id": "S01_VERIFIED_MALICIOUS_TP_AND_S13_GT_ISOLATION",
+      "incident_id": "P8-S4-01",
+      "proposed_verdict": "TRUE_POSITIVE",
+      "authoritative_verdict": "TRUE_POSITIVE",
+      "confidence": 92.0,
+      "trust_score": 6,
+      "calibration_status": "NOT_CALIBRATED",
+      "validation_status": "VALIDATED",
+      "trust_records_count": 1,
+      "sufficiency_records_count": 1,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S02_VERIFIED_AUTHORIZED_FP",
+      "incident_id": "P8-S4-02",
+      "proposed_verdict": "FALSE_POSITIVE",
+      "authoritative_verdict": "FALSE_POSITIVE",
+      "confidence": 89.0,
+      "trust_score": 6,
+      "calibration_status": "NOT_CALIBRATED",
+      "validation_status": "VALIDATED",
+      "trust_records_count": 1,
+      "sufficiency_records_count": 1,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S03_MISSING_MANDATORY_EVIDENCE",
+      "incident_id": "P8-S4-03",
+      "proposed_verdict": "REQUIRES_ATTENTION",
+      "authoritative_verdict": "REQUIRES_ATTENTION",
+      "confidence": 0.0,
+      "trust_score": null,
+      "calibration_status": null,
+      "validation_status": "INSUFFICIENT",
+      "trust_records_count": 0,
+      "sufficiency_records_count": 0,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S04_CONTRADICTORY_EVIDENCE",
+      "incident_id": "P8-S4-04",
+      "proposed_verdict": "TRUE_POSITIVE",
+      "authoritative_verdict": "REQUIRES_ATTENTION",
+      "confidence": 0.0,
+      "trust_score": 6,
+      "calibration_status": "NOT_CALIBRATED",
+      "validation_status": "REJECTED",
+      "trust_records_count": 1,
+      "sufficiency_records_count": 1,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S05_HALLUCINATED_CLAIMS",
+      "incident_id": "P8-S4-05",
+      "proposed_verdict": "TRUE_POSITIVE",
+      "authoritative_verdict": "REQUIRES_ATTENTION",
+      "confidence": 0.0,
+      "trust_score": 4,
+      "calibration_status": "NOT_CALIBRATED",
+      "validation_status": "REJECTED",
+      "trust_records_count": 1,
+      "sufficiency_records_count": 1,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S06_EMPTY_CLAIMS_BYPASS_BLOCKED",
+      "incident_id": "P8-S4-06",
+      "proposed_verdict": "FALSE_POSITIVE",
+      "authoritative_verdict": "REQUIRES_ATTENTION",
+      "confidence": 0.0,
+      "trust_score": 4,
+      "calibration_status": "NOT_CALIBRATED",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_records_count": 1,
+      "sufficiency_records_count": 1,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S07_MISSING_OR_DRAFT_POLICY",
+      "incident_id": "P8-S4-07",
+      "proposed_verdict": "REQUIRES_ATTENTION",
+      "authoritative_verdict": "REQUIRES_ATTENTION",
+      "confidence": 0.0,
+      "trust_score": null,
+      "calibration_status": null,
+      "validation_status": "POLICY_NOT_APPROVED",
+      "trust_records_count": 0,
+      "sufficiency_records_count": 0,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S08_CONTEXT_OVERFLOW_ABSTENTION",
+      "incident_id": "P8-S4-08",
+      "proposed_verdict": "REQUIRES_ATTENTION",
+      "authoritative_verdict": "REQUIRES_ATTENTION",
+      "confidence": 0.0,
+      "trust_score": null,
+      "calibration_status": "NOT_CALIBRATED",
+      "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+      "trust_records_count": 0,
+      "sufficiency_records_count": 0,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S09_MALFORMED_MODEL_OUTPUT_ABSTENTION",
+      "incident_id": "P8-S4-09",
+      "proposed_verdict": "REQUIRES_ATTENTION",
+      "authoritative_verdict": "REQUIRES_ATTENTION",
+      "confidence": 0.0,
+      "trust_score": 4,
+      "calibration_status": "NOT_CALIBRATED",
+      "validation_status": "VALIDATED",
+      "trust_records_count": 1,
+      "sufficiency_records_count": 1,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S10_LOCAL_LLM_UNAVAILABLE_FAIL_SAFE",
+      "incident_id": "P8-S4-10",
+      "proposed_verdict": null,
+      "authoritative_verdict": "FAIL_CLOSED_NO_FAKE_VERDICT",
+      "confidence": null,
+      "trust_score": null,
+      "calibration_status": null,
+      "validation_status": "LLM_UNAVAILABLE",
+      "trust_records_count": 0,
+      "sufficiency_records_count": 0,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S11_RECOVERABLE_ABSTENTION_REEVALUATED",
+      "incident_id": "P8-S4-07",
+      "proposed_verdict": "TRUE_POSITIVE",
+      "authoritative_verdict": "TRUE_POSITIVE",
+      "confidence": 91.0,
+      "trust_score": 6,
+      "calibration_status": "NOT_CALIBRATED",
+      "validation_status": "VALIDATED",
+      "reevaluation_attempts": 2,
+      "gt_leaked": false
+    },
+    {
+      "scenario_id": "S12_BOUNDED_RETRY_CAP",
+      "incident_id": "P8-S4-12",
+      "proposed_verdict": null,
+      "authoritative_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "POLICY_NOT_APPROVED",
+      "reevaluation_attempts": 3,
+      "batch_summary": {
+        "success": true,
+        "is_llm_online": true,
+        "processed": 1,
+        "failed": 0,
+        "pending_remaining": 1,
+        "message": "Processed 1 pending incidents one by one (1 remaining)."
+      },
+      "gt_leaked": false
+    }
+  ]
+}

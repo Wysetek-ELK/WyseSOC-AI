@@ -2,7 +2,7 @@ import os
 import time
 import shutil
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional
 import httpx
 from sqlalchemy import select, delete, desc, func
@@ -277,6 +277,26 @@ class InferenceHealthMonitor:
             "system_health": "OPTIMAL" if (s1["status"] == "ONLINE" and s2["status"] == "ONLINE") else "ATTENTION_REQUIRED",
         }
 
+    @staticmethod
+    def _coerce_naive_utc_datetime(ts_value: Any) -> datetime:
+        """Converts ISO timestamps or aware datetimes into naive UTC datetime for DateTime columns."""
+        if isinstance(ts_value, datetime):
+            if ts_value.tzinfo is not None:
+                return ts_value.astimezone(timezone.utc).replace(tzinfo=None)
+            return ts_value
+        if isinstance(ts_value, str) and ts_value.strip():
+            cleaned = ts_value.strip()
+            if cleaned.endswith("Z"):
+                cleaned = cleaned[:-1] + "+00:00"
+            try:
+                parsed = datetime.fromisoformat(cleaned)
+                if parsed.tzinfo is not None:
+                    return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+                return parsed
+            except ValueError:
+                pass
+        return datetime.utcnow()
+
     async def _maybe_record_snapshot(self, samples: List[Dict[str, Any]]):
         """Record sample if last sample in DB is older than 45 seconds."""
         try:
@@ -292,7 +312,7 @@ class InferenceHealthMonitor:
                 record = SystemServerSample(
                     server_id=s["server_id"],
                     server_name=s["server_name"],
-                    timestamp=s["timestamp"],
+                    timestamp=self._coerce_naive_utc_datetime(s.get("timestamp")),
                     status=s["status"],
                     cpu_percent=s["cpu_percent"],
                     memory_percent=s["memory_percent"],
@@ -325,10 +345,12 @@ class InferenceHealthMonitor:
             logger.warning(f"Failed to record system metrics snapshot: {e}")
             try:
                 await self.db.rollback()
-                from app.database import Base, async_engine
-                import app.models
-                async with async_engine.begin() as conn:
-                    await conn.run_sync(Base.metadata.create_all)
+                is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+                if not is_prod:
+                    from app.database import Base, async_engine
+                    import app.models
+                    async with async_engine.begin() as conn:
+                        await conn.run_sync(Base.metadata.create_all)
             except Exception:
                 pass
 
@@ -479,10 +501,12 @@ class InferenceHealthMonitor:
             except Exception:
                 pass
             try:
-                from app.database import Base, async_engine
-                import app.models
-                async with async_engine.begin() as conn:
-                    await conn.run_sync(Base.metadata.create_all)
+                is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+                if not is_prod:
+                    from app.database import Base, async_engine
+                    import app.models
+                    async with async_engine.begin() as conn:
+                        await conn.run_sync(Base.metadata.create_all)
             except Exception:
                 pass
 
