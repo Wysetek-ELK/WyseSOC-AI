@@ -205,28 +205,37 @@ async def process_pending_verdicts(
 async def start_scheduler(
     req: FortiSIEMSchedulerControlRequest = FortiSIEMSchedulerControlRequest(),
     current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Starts continuous FortiSIEM incident polling (default: every 180 seconds / 3 minutes).
     Automatically runs AI verdict evaluations on all newly ingested alerts.
+    Persists continuously across restarts and worker lifecycles until explicitly stopped.
     """
     settings.FORTISIEM_AUTO_POLL_ENABLED = True
     status = fortisiem_scheduler.start(
         interval_seconds=req.interval_seconds or 180,
         auto_ai_verdict=req.auto_ai_verdict if req.auto_ai_verdict is not None else True,
     )
+    ai_service = AIVerdictService(db)
+    status["is_llm_online"] = await ai_service.is_local_llm_available()
+    status["pending_ai_verdicts_count"] = await ai_service.get_pending_incident_count()
     return FortiSIEMSchedulerStatusResponse(**status)
 
 
 @router.post("/scheduler/stop", response_model=FortiSIEMSchedulerStatusResponse)
 async def stop_scheduler(
     current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Halts the continuous background poller.
     """
     settings.FORTISIEM_AUTO_POLL_ENABLED = False
     status = fortisiem_scheduler.stop()
+    ai_service = AIVerdictService(db)
+    status["is_llm_online"] = await ai_service.is_local_llm_available()
+    status["pending_ai_verdicts_count"] = await ai_service.get_pending_incident_count()
     return FortiSIEMSchedulerStatusResponse(**status)
 
 

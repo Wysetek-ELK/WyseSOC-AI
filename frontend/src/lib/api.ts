@@ -1776,6 +1776,26 @@ export const api = {
     }
     return { blob, filename };
   },
+
+  // =================== SOC AI CHATBOT (LOCAL LLM SERVER 2) ===================
+  async getChatStatus(): Promise<ChatStatusResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/chat/status`);
+    if (!res.ok) throw new Error("Failed to check Server 2 Chatbot status");
+    return res.json();
+  },
+
+  async sendChatMessage(req: ChatRequest): Promise<ChatResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/chat/message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Chatbot Server 2 inference failed" }));
+      throw new Error(err.detail || "Failed to get response from Server 2 Local LLM");
+    }
+    return res.json();
+  },
 };
 
 export interface DryRunConfig {
@@ -2180,6 +2200,44 @@ export interface RegressionComparisonReport {
   regressed_cases: CaseRegressionDetail[];
   improved_cases: CaseRegressionDetail[];
   summary_message: string;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp?: string;
+}
+
+export interface ChatRequest {
+  messages: ChatMessage[];
+  incident_id?: string;
+  temperature?: number;
+  max_tokens?: number;
+  system_prompt?: string;
+}
+
+export interface ChatResponse {
+  message: ChatMessage;
+  model: string;
+  latency_ms: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  attached_incident_id?: string;
+  server_url: string;
+  is_simulated: boolean;
+}
+
+export interface ChatStatusResponse {
+  is_online: boolean;
+  host: string;
+  port: number;
+  protocol: string;
+  base_url: string;
+  model_name: string;
+  available_models: string[];
+  latency_ms?: number | null;
+  status_message: string;
 }
 
 

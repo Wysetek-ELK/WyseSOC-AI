@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Server,
+  MessageSquareCode,
 } from "lucide-react";
 
 interface NavItem {
@@ -58,6 +59,13 @@ const NAV_GROUPS: NavGroup[] = [
         title: "Human Review Queue",
         href: "/human-review-queue",
         icon: UserCheck,
+      },
+      {
+        title: "SOC AI Chatbot",
+        href: "/soc-chatbot",
+        icon: MessageSquareCode,
+        badge: "LLM",
+        badgeColor: "bg-indigo-950 text-indigo-300 border border-indigo-800",
       },
     ],
   },

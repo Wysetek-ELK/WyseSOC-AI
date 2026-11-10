@@ -59,6 +59,21 @@ export default function TelemetryHubPage() {
   const [isOperatingScheduler, setIsOperatingScheduler] = useState(false);
   const [isProcessingPending, setIsProcessingPending] = useState(false);
   const [schedulerMsg, setSchedulerMsg] = useState<string | null>(null);
+  const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!schedulerStatus?.next_sync_time || !schedulerStatus?.is_running) {
+      setCountdownSeconds(null);
+      return;
+    }
+    const tick = () => {
+      const diffMs = new Date(schedulerStatus.next_sync_time!).getTime() - Date.now();
+      setCountdownSeconds(Math.max(0, Math.round(diffMs / 1000)));
+    };
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [schedulerStatus?.next_sync_time, schedulerStatus?.is_running]);
 
   // Global Telemetry Timeline State on Server 1
   const [globalTimeline, setGlobalTimeline] = useState<any[]>([]);
@@ -337,6 +352,37 @@ export default function TelemetryHubPage() {
           </div>
         </div>
 
+        {/* Live Continuous Polling Timer & Last Sync Metadata */}
+        {schedulerStatus?.is_running && (
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded bg-emerald-950/20 border border-emerald-900/50 text-[11px] font-mono">
+            <span className="flex items-center gap-1.5 text-emerald-300">
+              <Clock className="w-3.5 h-3.5 text-emerald-400" />
+              Continuous Mode Active · Next sync:{" "}
+              <strong className="text-cyan-300">
+                {countdownSeconds !== null
+                  ? countdownSeconds >= 60
+                    ? `${Math.floor(countdownSeconds / 60)}m ${countdownSeconds % 60}s`
+                    : `${countdownSeconds}s`
+                  : "Scheduled..."}
+              </strong>
+            </span>
+            {schedulerStatus.last_sync_time && (
+              <span className="text-slate-400">
+                Last Synced: {new Date(schedulerStatus.last_sync_time).toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+        )}
+
+        {schedulerStatus?.last_error && schedulerStatus?.is_running && (
+          <div className="px-3 py-1.5 rounded bg-amber-950/40 border border-amber-800/60 text-[11px] text-amber-300 flex items-center justify-between gap-2">
+            <span className="truncate">
+              <strong>Last Cycle Warning:</strong> {schedulerStatus.last_error}
+            </span>
+            <span className="text-[10px] text-amber-400 shrink-0 font-mono">Auto-retrying next cycle</span>
+          </div>
+        )}
+
         {/* Action Controls */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -365,11 +411,10 @@ export default function TelemetryHubPage() {
               type="button"
               onClick={handleToggleScheduler}
               disabled={isOperatingScheduler}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-bold text-white transition-colors shadow-sm ${
-                schedulerStatus?.is_running
+              className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-bold text-white transition-colors shadow-sm ${schedulerStatus?.is_running
                   ? "bg-amber-600 hover:bg-amber-500"
                   : "bg-emerald-600 hover:bg-emerald-500"
-              }`}
+                }`}
             >
               {isOperatingScheduler ? (
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -760,11 +805,10 @@ export default function TelemetryHubPage() {
                     <td className="py-1.5 px-2 text-slate-400">{job.file_type}</td>
                     <td className="py-1.5 px-2">
                       <span
-                        className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                          job.status === "COMPLETED"
+                        className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${job.status === "COMPLETED"
                             ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
                             : "bg-amber-950 text-amber-300 border border-amber-800"
-                        }`}
+                          }`}
                       >
                         {job.status}
                       </span>

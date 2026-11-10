@@ -26,6 +26,7 @@ from app.api import (
     llm_config,
     health,
     verdict_intelligence,
+    chat,
 )
 from app.models.user import User
 from app.utils.security import get_password_hash
@@ -183,8 +184,9 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             print(f"[Startup Migration Warning] Token usage backfill skipped: {exc}")
 
-    # Startup background continuous FortiSIEM poller if enabled
-    if getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False):
+    # Startup background continuous FortiSIEM poller supervisor and resume if enabled
+    fortisiem_scheduler.start_supervisor()
+    if getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False) or fortisiem_scheduler.is_running:
         fortisiem_scheduler.start(
             interval_seconds=getattr(settings, "FORTISIEM_POLL_INTERVAL_SECONDS", 180),
             auto_ai_verdict=getattr(settings, "FORTISIEM_AUTO_AI_VERDICT", True),
@@ -192,8 +194,8 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown
-    fortisiem_scheduler.stop()
+    # Shutdown: gracefully terminate local worker tasks without clearing persistent continuous state
+    fortisiem_scheduler.shutdown_worker()
     await async_engine.dispose()
 
 
@@ -231,6 +233,7 @@ app.include_router(system_monitor.router, prefix=settings.API_V1_STR)
 app.include_router(tokens.router, prefix=settings.API_V1_STR)
 app.include_router(telemetry.router, prefix=settings.API_V1_STR)
 app.include_router(llm_config.router, prefix=settings.API_V1_STR)
+app.include_router(chat.router, prefix=settings.API_V1_STR)
 app.include_router(verdict_intelligence.router, prefix=settings.API_V1_STR)
 app.include_router(verdict_intelligence.router, prefix="/api/v1")
 app.include_router(health.router)

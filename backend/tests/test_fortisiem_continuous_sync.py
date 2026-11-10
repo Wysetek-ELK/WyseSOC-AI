@@ -179,3 +179,56 @@ async def test_scheduler_lifecycle(client: AsyncClient, admin_token: str):
     assert stop_res.status_code == 200
     stop_data = stop_res.json()
     assert stop_data["is_running"] is False
+
+
+@pytest.mark.asyncio
+async def test_scheduler_persistence_and_multi_worker_continuity(tmp_path):
+    """
+    Verifies that once continuous sync is enabled:
+    1. Another worker instance sees the exact same running state (`is_running=True`).
+    2. Graceful process shutdown (`shutdown_worker`) does NOT stop/disable continuous sync.
+    3. A new worker starting up detects persisted `is_enabled=True` and claims leadership cleanly.
+    4. Transient cycle errors are logged without disabling the continuous poller.
+    5. Only explicit `stop()` halts continuous sync.
+    """
+    import asyncio
+    from app.services.fortisiem_scheduler import SentinelIngestWorker
+
+    state_file = str(tmp_path / "scheduler_state.json")
+    worker1 = SentinelIngestWorker(state_file_path=state_file)
+    worker2 = SentinelIngestWorker(state_file_path=state_file)
+
+    try:
+        # 1. Start on worker1
+        st1 = worker1.start(interval_seconds=180, auto_ai_verdict=True)
+        assert st1["is_running"] is True
+        assert st1["interval_seconds"] == 180
+
+        # 2. Worker2 (another uvicorn worker process) queries status -> sees exact same active state
+        st2 = worker2.get_status()
+        assert st2["is_running"] is True
+        assert st2["interval_seconds"] == 180
+
+        # 3. Record transient cycle error -> must NOT stop continuous sync
+        worker1._record_cycle_error("Simulated FortiSIEM timeout")
+        st_err = worker2.get_status()
+        assert st_err["is_running"] is True
+        assert st_err["last_status"] == "ERROR"
+        assert "Simulated FortiSIEM timeout" in (st_err["last_error"] or "")
+
+        # 4. Shutdown worker1 (e.g. worker reload / restart)
+        worker1.shutdown_worker()
+        await asyncio.sleep(0.05)
+
+        # State must STILL be enabled!
+        assert worker2.is_running is True
+        assert worker2._try_claim_or_renew_leadership() is True
+
+        # 5. Explicit stop halts continuous sync across all workers
+        stop_st = worker2.stop()
+        assert stop_st["is_running"] is False
+        assert stop_st["last_status"] == "STOPPED"
+        assert worker1.get_status()["is_running"] is False
+    finally:
+        worker1.shutdown_worker()
+        worker2.shutdown_worker()
