@@ -1,25 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  ReactFlow,
-  ReactFlowProvider,
-  Controls,
-  Background,
-  BackgroundVariant,
-  Handle,
-  Position,
-  getSmoothStepPath,
-  EdgeLabelRenderer,
-  useReactFlow,
-  MarkerType,
-  type Node,
-  type Edge,
-  type NodeProps,
-  type EdgeProps,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
 import {
   Play,
   Pause,
@@ -29,6 +11,8 @@ import {
   Maximize2,
   Minimize2,
   Scan,
+  ZoomIn,
+  ZoomOut,
   EyeOff,
   ExternalLink,
   AlertTriangle,
@@ -50,6 +34,7 @@ import type {
 import { usePrefersReducedMotion } from "./usePrefersReducedMotion";
 
 type SpeedOption = 0.5 | 1 | 1.5 | 2;
+type HandleSide = "left" | "right" | "top" | "bottom";
 
 const SPEED_INTERVAL_MS: Record<SpeedOption, number> = {
   0.5: 3200,
@@ -58,30 +43,9 @@ const SPEED_INTERVAL_MS: Record<SpeedOption, number> = {
   2: 850,
 };
 
-interface LaneNodeData extends Record<string, unknown> {
-  title: string;
-  subtitle: string;
-  accent: "cyan" | "emerald";
-  width: number;
-  height: number;
-}
-
-interface StepNodeData extends Record<string, unknown> {
-  step: WorkflowStepSpec;
-  isActive: boolean;
-  isVisited: boolean;
-  reducedMotion: boolean;
-  onSelect: (stepId: string) => void;
-}
-
-interface PacketEdgeData extends Record<string, unknown> {
-  label?: string;
-  isBridge?: boolean;
-  isActiveEdge: boolean;
-  reducedMotion: boolean;
-  accent: NodeAccent;
-  speed: SpeedOption;
-}
+const NODE_WIDTH = 205;
+const NODE_HEIGHT = 82;
+const NODE_OUTCOME_HEIGHT = 96;
 
 const ACCENT_STYLES: Record<
   NodeAccent,
@@ -152,197 +116,99 @@ const ACCENT_STYLES: Record<
   },
 };
 
-function LaneBackdropNode({ data }: NodeProps<Node<LaneNodeData>>) {
-  const isCyan = data.accent === "cyan";
-  return (
-    <div
-      style={{ width: data.width, height: data.height }}
-      className={`pointer-events-none rounded-xl border border-dashed ${
-        isCyan
-          ? "border-cyan-500/30 bg-cyan-950/10"
-          : "border-emerald-500/30 bg-emerald-950/10"
-      } p-3 flex flex-col justify-between`}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span
-          className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-            isCyan
-              ? "bg-cyan-950/80 text-cyan-300 border-cyan-800/60"
-              : "bg-emerald-950/80 text-emerald-300 border-emerald-800/60"
-          }`}
-        >
-          {data.title}
-        </span>
-        <span className="text-[10px] text-slate-400 font-medium">{data.subtitle}</span>
-      </div>
-    </div>
-  );
+function parseSide(handleId: string | undefined, fallback: HandleSide): HandleSide {
+  if (!handleId) return fallback;
+  if (handleId.startsWith("left")) return "left";
+  if (handleId.startsWith("right")) return "right";
+  if (handleId.startsWith("top")) return "top";
+  if (handleId.startsWith("bottom")) return "bottom";
+  return fallback;
 }
 
-function WorkflowStepNode({ data }: NodeProps<Node<StepNodeData>>) {
-  const { step, isActive, isVisited, reducedMotion, onSelect } = data;
-  const style = ACCENT_STYLES[step.accent];
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onSelect(step.id)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect(step.id);
-        }
-      }}
-      aria-label={`Step ${step.stepNumber}: ${step.title}`}
-      aria-pressed={isActive}
-      className={`group relative w-[205px] rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
-        isActive
-          ? `bg-slate-900 ${style.activeBorder} scale-[1.03]`
-          : isVisited
-          ? `bg-slate-950/95 ${style.border} opacity-95 hover:border-slate-500`
-          : "bg-slate-950/90 border-slate-800 hover:border-slate-600"
-      }`}
-    >
-      {/* Hidden multi-side handles so directional edges never cross through node bodies */}
-      <Handle id="left-in" type="target" position={Position.Left} className="!w-1.5 !h-1.5 !bg-slate-600 !border-slate-900" />
-      <Handle id="right-in" type="target" position={Position.Right} className="!w-1.5 !h-1.5 !bg-slate-600 !border-slate-900" />
-      <Handle id="top-in" type="target" position={Position.Top} className="!w-1.5 !h-1.5 !bg-slate-600 !border-slate-900" />
-      <Handle id="bottom-in" type="target" position={Position.Bottom} className="!w-1.5 !h-1.5 !bg-slate-600 !border-slate-900" />
-
-      <Handle id="right-out" type="source" position={Position.Right} className="!w-1.5 !h-1.5 !bg-cyan-500/80 !border-slate-900" />
-      <Handle id="left-out" type="source" position={Position.Left} className="!w-1.5 !h-1.5 !bg-cyan-500/80 !border-slate-900" />
-      <Handle id="bottom-out" type="source" position={Position.Bottom} className="!w-1.5 !h-1.5 !bg-cyan-500/80 !border-slate-900" />
-      <Handle id="top-out" type="source" position={Position.Top} className="!w-1.5 !h-1.5 !bg-cyan-500/80 !border-slate-900" />
-
-      <div className="flex items-center justify-between gap-1.5 mb-1">
-        <span
-          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono font-bold border ${style.badgeBg}`}
-        >
-          <span>#{step.stepNumber}</span>
-          {isActive && (
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${style.dot} ${
-                reducedMotion ? "" : "animate-pulse"
-              }`}
-            />
-          )}
-        </span>
-        <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 truncate">
-          {step.laneLabel}
-        </span>
-      </div>
-
-      <div className="text-xs font-bold text-slate-100 leading-tight group-hover:text-cyan-200 transition-colors">
-        {step.shortLabel}
-      </div>
-      <div className="mt-0.5 text-[10px] text-slate-400 font-mono truncate">
-        {step.componentName}
-      </div>
-
-      {step.outcomeBadge && (
-        <div className="mt-1.5">
-          <span
-            className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-mono font-bold border ${
-              step.outcomeBadge === "TRUE_POSITIVE"
-                ? "bg-rose-950/80 text-rose-300 border-rose-700/70"
-                : step.outcomeBadge === "FALSE_POSITIVE"
-                ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/70"
-                : "bg-amber-950/80 text-amber-300 border-amber-700/70"
-            }`}
-          >
-            {step.outcomeBadge}
-          </span>
-        </div>
-      )}
-    </div>
-  );
+function getHandleAnchor(
+  step: WorkflowStepSpec,
+  side: HandleSide
+): { x: number; y: number } {
+  const h = step.outcomeBadge ? NODE_OUTCOME_HEIGHT : NODE_HEIGHT;
+  switch (side) {
+    case "left":
+      return { x: step.position.x, y: step.position.y + h / 2 };
+    case "right":
+      return { x: step.position.x + NODE_WIDTH, y: step.position.y + h / 2 };
+    case "top":
+      return { x: step.position.x + NODE_WIDTH / 2, y: step.position.y };
+    case "bottom":
+      return { x: step.position.x + NODE_WIDTH / 2, y: step.position.y + h };
+  }
 }
 
-function AnimatedPacketEdge({
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  markerEnd,
-  data,
-}: EdgeProps<Edge<PacketEdgeData>>) {
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 12,
-  });
+function buildOrthogonalPath(
+  sx: number,
+  sy: number,
+  sSide: HandleSide,
+  tx: number,
+  ty: number,
+  tSide: HandleSide
+): { pathD: string; labelX: number; labelY: number } {
+  const stub = 22;
+  const dx = sSide === "left" ? -stub : sSide === "right" ? stub : 0;
+  const dy = sSide === "top" ? -stub : sSide === "bottom" ? stub : 0;
+  const tdx = tSide === "left" ? -stub : tSide === "right" ? stub : 0;
+  const tdy = tSide === "top" ? -stub : tSide === "bottom" ? stub : 0;
 
-  const accent = data?.accent || "cyan";
-  const style = ACCENT_STYLES[accent];
-  const isActive = Boolean(data?.isActiveEdge);
-  const isBridge = Boolean(data?.isBridge);
-  const reducedMotion = Boolean(data?.reducedMotion);
-  const speed = data?.speed || 1;
-  const packetDur = `${(1.4 / speed).toFixed(2)}s`;
+  const p1x = sx + dx;
+  const p1y = sy + dy;
+  const p2x = tx + tdx;
+  const p2y = ty + tdy;
 
-  const strokeColor = isActive
-    ? style.stroke
-    : isBridge
-    ? "rgba(129, 140, 248, 0.55)"
-    : "rgba(100, 116, 139, 0.45)";
+  const pts: Array<[number, number]> = [[sx, sy], [p1x, p1y]];
 
-  return (
-    <>
-      <path
-        id={id}
-        d={edgePath}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth={isActive ? 2.6 : isBridge ? 1.8 : 1.5}
-        strokeDasharray={isBridge && !isActive ? "5 5" : undefined}
-        className={isActive && !reducedMotion ? "flow-edge-animated" : undefined}
-        markerEnd={markerEnd}
-      />
-      {isActive && !reducedMotion && (
-        <circle r={4} fill={style.packet} className="pointer-events-none">
-          <animateMotion dur={packetDur} repeatCount="indefinite" path={edgePath} />
-        </circle>
-      )}
-      {data?.label && (
-        <EdgeLabelRenderer>
-          <div
-            style={{
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            }}
-            className={`pointer-events-none absolute rounded px-1.5 py-0.5 text-[9px] font-mono border backdrop-blur-sm ${
-              isActive
-                ? "bg-slate-950/95 text-cyan-200 border-cyan-500/60 shadow-md"
-                : isBridge
-                ? "bg-indigo-950/90 text-indigo-200 border-indigo-700/60"
-                : "bg-slate-950/85 text-slate-400 border-slate-800"
-            }`}
-          >
-            {data.label}
-          </div>
-        </EdgeLabelRenderer>
-      )}
-    </>
-  );
+  const sVert = sSide === "top" || sSide === "bottom";
+  const tVert = tSide === "top" || tSide === "bottom";
+
+  if (sVert && tVert) {
+    if (sSide === "bottom" && tSide === "bottom") {
+      const belowY = Math.max(sy, ty) + 34;
+      pts.push([p1x, belowY], [p2x, belowY]);
+    } else if (Math.abs(p1x - p2x) >= 2) {
+      const midY = (p1y + p2y) / 2;
+      pts.push([p1x, midY], [p2x, midY]);
+    }
+  } else if (!sVert && !tVert) {
+    if (Math.abs(p1y - p2y) >= 2) {
+      const midX = (p1x + p2x) / 2;
+      pts.push([midX, p1y], [midX, p2y]);
+    }
+  } else if (sVert && !tVert) {
+    pts.push([p1x, p2y]);
+  } else {
+    pts.push([p2x, p1y]);
+  }
+
+  pts.push([p2x, p2y], [tx, ty]);
+
+  const clean: Array<[number, number]> = [];
+  for (const pt of pts) {
+    const prev = clean[clean.length - 1];
+    if (!prev || Math.abs(prev[0] - pt[0]) > 0.5 || Math.abs(prev[1] - pt[1]) > 0.5) {
+      clean.push(pt);
+    }
+  }
+
+  const pathD = clean
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`)
+    .join(" ");
+
+  const midIdx = Math.floor(clean.length / 2);
+  const a = clean[Math.max(0, midIdx - 1)];
+  const b = clean[midIdx] || a;
+  const labelX = (a[0] + b[0]) / 2;
+  const labelY = (a[1] + b[1]) / 2;
+
+  return { pathD, labelX, labelY };
 }
 
-const NODE_TYPES = {
-  laneBackdrop: LaneBackdropNode,
-  workflowStep: WorkflowStepNode,
-};
-
-const EDGE_TYPES = {
-  animatedPacket: AnimatedPacketEdge,
-};
-
-interface WorkflowFlowInnerProps {
+interface WorkflowFlowDiagramProps {
   title: string;
   subtitle: string;
   steps: WorkflowStepSpec[];
@@ -351,15 +217,16 @@ interface WorkflowFlowInnerProps {
   initialStepId?: string;
 }
 
-function WorkflowFlowInner({
+export function WorkflowFlowDiagram({
   title,
   subtitle,
   steps,
   edges,
   swimlanes,
   initialStepId,
-}: WorkflowFlowInnerProps) {
-  const { fitView } = useReactFlow();
+}: WorkflowFlowDiagramProps) {
+  const markerPrefix = useId().replace(/:/g, "");
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   const initialIdx = useMemo(() => {
     if (!initialStepId) return 0;
@@ -376,7 +243,60 @@ function WorkflowFlowInner({
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [mobileListMode, setMobileListMode] = useState<boolean>(false);
 
-  // Keyboard Escape exits fullscreen
+  const canvasBounds = useMemo(() => {
+    const maxLaneX = swimlanes.reduce((m, l) => Math.max(m, l.position.x + l.width), 0);
+    const maxLaneY = swimlanes.reduce((m, l) => Math.max(m, l.position.y + l.height), 0);
+    const maxStepX = steps.reduce((m, s) => Math.max(m, s.position.x + NODE_WIDTH), 0);
+    const maxStepY = steps.reduce((m, s) => Math.max(m, s.position.y + NODE_OUTCOME_HEIGHT), 0);
+    return {
+      width: Math.max(maxLaneX, maxStepX) + 24,
+      height: Math.max(maxLaneY, maxStepY) + 40,
+    };
+  }, [swimlanes, steps]);
+
+  const [viewportSize, setViewportSize] = useState<{ w: number; h: number }>({
+    w: 920,
+    h: 560,
+  });
+  const [manualTransform, setManualTransform] = useState<{
+    zoom: number;
+    panX: number;
+    panY: number;
+  } | null>(null);
+
+  const dragStateRef = useRef<{
+    dragging: boolean;
+    startX: number;
+    startY: number;
+    origPanX: number;
+    origPanY: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const obs = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (rect && rect.width > 50 && rect.height > 50) {
+        setViewportSize({ w: rect.width, h: rect.height });
+      }
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [mobileListMode, isFullscreen]);
+
+  const fittedTransform = useMemo(() => {
+    const pad = 28;
+    const scaleX = (viewportSize.w - pad) / canvasBounds.width;
+    const scaleY = (viewportSize.h - pad) / canvasBounds.height;
+    const zoom = Math.max(0.35, Math.min(scaleX, scaleY, 1.05));
+    const panX = (viewportSize.w - canvasBounds.width * zoom) / 2;
+    const panY = (viewportSize.h - canvasBounds.height * zoom) / 2;
+    return { zoom, panX, panY };
+  }, [viewportSize, canvasBounds]);
+
+  const activeTransform = manualTransform || fittedTransform;
+
   useEffect(() => {
     if (!isFullscreen) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -386,15 +306,6 @@ function WorkflowFlowInner({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isFullscreen]);
 
-  // Fit view when fullscreen toggles
-  useEffect(() => {
-    const t = setTimeout(() => {
-      fitView({ padding: 0.12, duration: reducedMotion ? 0 : 250 });
-    }, 80);
-    return () => clearTimeout(t);
-  }, [isFullscreen, fitView, reducedMotion]);
-
-  // Playback timer
   useEffect(() => {
     if (!isPlaying) return;
     const timer = setInterval(() => {
@@ -404,6 +315,43 @@ function WorkflowFlowInner({
   }, [isPlaying, speed, steps.length]);
 
   const activeStep = steps[activeIndex] || steps[0];
+
+  const stepMap = useMemo(() => {
+    const map = new Map<string, WorkflowStepSpec>();
+    for (const s of steps) map.set(s.id, s);
+    return map;
+  }, [steps]);
+
+  const computedEdges = useMemo(() => {
+    return edges
+      .map((edge) => {
+        const src = stepMap.get(edge.source);
+        const dst = stepMap.get(edge.target);
+        if (!src || !dst) return null;
+        const sSide = parseSide(edge.sourceHandle, "right");
+        const tSide = parseSide(edge.targetHandle, "left");
+        const a = getHandleAnchor(src, sSide);
+        const b = getHandleAnchor(dst, tSide);
+        const { pathD, labelX, labelY } = buildOrthogonalPath(
+          a.x,
+          a.y,
+          sSide,
+          b.x,
+          b.y,
+          tSide
+        );
+        const isActiveEdge =
+          edge.source === activeStep.id || edge.target === activeStep.id;
+        return {
+          edge,
+          pathD,
+          labelX,
+          labelY,
+          isActiveEdge,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+  }, [edges, stepMap, activeStep.id]);
 
   const handleSelectStepById = useCallback(
     (stepId: string) => {
@@ -415,6 +363,62 @@ function WorkflowFlowInner({
     },
     [steps]
   );
+
+  const handleFitView = () => setManualTransform(null);
+
+  const handleZoomBy = (factor: number) => {
+    const cur = manualTransform || fittedTransform;
+    const nextZoom = Math.max(0.35, Math.min(1.85, cur.zoom * factor));
+    const cx = viewportSize.w / 2;
+    const cy = viewportSize.h / 2;
+    const ratio = nextZoom / cur.zoom;
+    setManualTransform({
+      zoom: nextZoom,
+      panX: cx - (cx - cur.panX) * ratio,
+      panY: cy - (cy - cur.panY) * ratio,
+    });
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("[data-flow-node]")) return;
+    const cur = manualTransform || fittedTransform;
+    dragStateRef.current = {
+      dragging: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      origPanX: cur.panX,
+      origPanY: cur.panY,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = dragStateRef.current;
+    if (!d?.dragging) return;
+    const cur = manualTransform || fittedTransform;
+    setManualTransform({
+      zoom: cur.zoom,
+      panX: d.origPanX + (e.clientX - d.startX),
+      panY: d.origPanY + (e.clientY - d.startY),
+    });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStateRef.current) {
+      dragStateRef.current = null;
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore if not captured
+      }
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    handleZoomBy(e.deltaY < 0 ? 1.12 : 0.89);
+  };
 
   const handleRestart = () => {
     setActiveIndex(0);
@@ -431,86 +435,11 @@ function WorkflowFlowInner({
     setActiveIndex((prev) => (prev + 1) % steps.length);
   };
 
-  const handleFitView = () => {
-    fitView({ padding: 0.12, duration: reducedMotion ? 0 : 280 });
-  };
-
-  const flowNodes: Node[] = useMemo(() => {
-    const laneNodes: Node<LaneNodeData>[] = swimlanes.map((lane) => ({
-      id: lane.id,
-      type: "laneBackdrop",
-      position: lane.position,
-      draggable: false,
-      selectable: false,
-      focusable: false,
-      zIndex: 0,
-      data: {
-        title: lane.title,
-        subtitle: lane.subtitle,
-        accent: lane.accent,
-        width: lane.width,
-        height: lane.height,
-      },
-    }));
-
-    const stepNodes: Node<StepNodeData>[] = steps.map((step, idx) => ({
-      id: step.id,
-      type: "workflowStep",
-      position: step.position,
-      draggable: false,
-      zIndex: 10,
-      data: {
-        step,
-        isActive: idx === activeIndex,
-        isVisited: idx < activeIndex,
-        reducedMotion,
-        onSelect: handleSelectStepById,
-      },
-    }));
-
-    return [...laneNodes, ...stepNodes];
-  }, [swimlanes, steps, activeIndex, reducedMotion, handleSelectStepById]);
-
-  const flowEdges: Edge<PacketEdgeData>[] = useMemo(() => {
-    return edges.map((edge) => {
-      const isConnectedToActive =
-        edge.source === activeStep.id || edge.target === activeStep.id;
-      const accent = edge.accent || "cyan";
-      return {
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle,
-        type: "animatedPacket",
-        zIndex: isConnectedToActive ? 20 : 5,
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          width: 15,
-          height: 15,
-          color: isConnectedToActive
-            ? ACCENT_STYLES[accent].stroke
-            : edge.isBridge
-            ? "#818cf8"
-            : "#64748b",
-        },
-        data: {
-          label: edge.label,
-          isBridge: edge.isBridge,
-          isActiveEdge: isConnectedToActive,
-          reducedMotion,
-          accent,
-          speed,
-        },
-      };
-    });
-  }, [edges, activeStep.id, reducedMotion, speed]);
+  const packetDur = `${(1.4 / speed).toFixed(2)}s`;
 
   return (
     <div
-      className={`${
-        reducedMotion ? "guide-reduced-motion" : ""
-      } ${
+      className={`${reducedMotion ? "guide-reduced-motion" : ""} ${
         isFullscreen
           ? "fixed inset-0 z-50 bg-slate-950 p-3 sm:p-4 flex flex-col overflow-hidden"
           : "rounded-xl border border-slate-800 bg-slate-950/90 overflow-hidden"
@@ -676,13 +605,13 @@ function WorkflowFlowInner({
         })}
       </div>
 
-      {/* Main Split: Diagram + Step Inspector */}
+      {/* Main Split: Interactive Diagram + Step Inspector */}
       <div
         className={`grid grid-cols-1 xl:grid-cols-12 ${
           isFullscreen ? "flex-1 min-h-0" : ""
         }`}
       >
-        {/* Left / Top: Interactive React Flow Canvas OR Accessible Step List */}
+        {/* Left / Top: Interactive Pan/Zoom SVG Diagram OR Accessible Step List */}
         <div
           className={`xl:col-span-8 relative border-b xl:border-b-0 xl:border-r border-slate-800 ${
             isFullscreen ? "h-full min-h-[380px]" : "h-[480px] sm:h-[560px] lg:h-[620px]"
@@ -718,32 +647,263 @@ function WorkflowFlowInner({
               })}
             </div>
           ) : (
-            <div className="ai-verdict-flow w-full h-full bg-slate-950">
-              <ReactFlow
-                nodes={flowNodes}
-                edges={flowEdges}
-                nodeTypes={NODE_TYPES}
-                edgeTypes={EDGE_TYPES}
-                fitView
-                fitViewOptions={{ padding: 0.12 }}
-                minZoom={0.35}
-                maxZoom={1.75}
-                nodesDraggable={false}
-                nodesConnectable={false}
-                elementsSelectable={true}
-                proOptions={{ hideAttribution: true }}
+            <div
+              ref={viewportRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              onWheel={handleWheel}
+              className="relative w-full h-full overflow-hidden bg-slate-950 cursor-grab active:cursor-grabbing select-none"
+              style={{
+                backgroundImage: "radial-gradient(#1e293b 1px, transparent 1px)",
+                backgroundSize: "18px 18px",
+              }}
+            >
+              {/* Transformed Pan/Zoom Plane */}
+              <div
+                style={{
+                  width: canvasBounds.width,
+                  height: canvasBounds.height,
+                  transform: `translate(${activeTransform.panX}px, ${activeTransform.panY}px) scale(${activeTransform.zoom})`,
+                  transformOrigin: "0 0",
+                }}
+                className="relative will-change-transform"
               >
-                <Background
-                  variant={BackgroundVariant.Dots}
-                  gap={18}
-                  size={1}
-                  color="#1e293b"
-                />
-                <Controls showInteractive={false} />
-              </ReactFlow>
+                {/* Layer 1: Swimlane Group Backdrops */}
+                {swimlanes.map((lane) => {
+                  const isCyan = lane.accent === "cyan";
+                  return (
+                    <div
+                      key={lane.id}
+                      style={{
+                        left: lane.position.x,
+                        top: lane.position.y,
+                        width: lane.width,
+                        height: lane.height,
+                      }}
+                      className={`pointer-events-none absolute rounded-xl border border-dashed ${
+                        isCyan
+                          ? "border-cyan-500/30 bg-cyan-950/10"
+                          : "border-emerald-500/30 bg-emerald-950/10"
+                      } p-3 flex flex-col justify-between`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span
+                          className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                            isCyan
+                              ? "bg-cyan-950/80 text-cyan-300 border-cyan-800/60"
+                              : "bg-emerald-950/80 text-emerald-300 border-emerald-800/60"
+                          }`}
+                        >
+                          {lane.title}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {lane.subtitle}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Layer 2: SVG Directional Connections & Animated Packets */}
+                <svg
+                  width={canvasBounds.width}
+                  height={canvasBounds.height}
+                  className="pointer-events-none absolute inset-0 overflow-visible"
+                >
+                  <defs>
+                    {(Object.keys(ACCENT_STYLES) as NodeAccent[]).map((acc) => (
+                      <marker
+                        key={acc}
+                        id={`${markerPrefix}-arrow-${acc}`}
+                        viewBox="0 0 10 10"
+                        refX="8.5"
+                        refY="5"
+                        markerWidth="6"
+                        markerHeight="6"
+                        orient="auto"
+                      >
+                        <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill={ACCENT_STYLES[acc].stroke} />
+                      </marker>
+                    ))}
+                    <marker
+                      id={`${markerPrefix}-arrow-muted`}
+                      viewBox="0 0 10 10"
+                      refX="8.5"
+                      refY="5"
+                      markerWidth="6"
+                      markerHeight="6"
+                      orient="auto"
+                    >
+                      <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#64748b" />
+                    </marker>
+                  </defs>
+
+                  {computedEdges.map(({ edge, pathD, isActiveEdge }) => {
+                    const accent = edge.accent || "cyan";
+                    const style = ACCENT_STYLES[accent];
+                    const isBridge = Boolean(edge.isBridge);
+                    const strokeColor = isActiveEdge
+                      ? style.stroke
+                      : isBridge
+                      ? "rgba(129, 140, 248, 0.55)"
+                      : "rgba(100, 116, 139, 0.45)";
+                    const markerId = isActiveEdge
+                      ? `${markerPrefix}-arrow-${accent}`
+                      : isBridge
+                      ? `${markerPrefix}-arrow-indigo`
+                      : `${markerPrefix}-arrow-muted`;
+
+                    return (
+                      <g key={edge.id}>
+                        <path
+                          d={pathD}
+                          fill="none"
+                          stroke={strokeColor}
+                          strokeWidth={isActiveEdge ? 2.6 : isBridge ? 1.8 : 1.5}
+                          strokeDasharray={isBridge && !isActiveEdge ? "5 5" : undefined}
+                          className={isActiveEdge && !reducedMotion ? "flow-edge-animated" : undefined}
+                          markerEnd={`url(#${markerId})`}
+                        />
+                        {isActiveEdge && !reducedMotion && (
+                          <circle r={4} fill={style.packet}>
+                            <animateMotion dur={packetDur} repeatCount="indefinite" path={pathD} />
+                          </circle>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+
+                {/* Layer 3: Edge Pill Labels */}
+                {computedEdges.map(({ edge, labelX, labelY, isActiveEdge }) =>
+                  edge.label ? (
+                    <div
+                      key={`${edge.id}-label`}
+                      style={{
+                        left: labelX,
+                        top: labelY,
+                        transform: "translate(-50%, -50%)",
+                      }}
+                      className={`pointer-events-none absolute z-10 rounded px-1.5 py-0.5 text-[9px] font-mono border backdrop-blur-sm whitespace-nowrap ${
+                        isActiveEdge
+                          ? "bg-slate-950/95 text-cyan-200 border-cyan-500/60 shadow-md"
+                          : edge.isBridge
+                          ? "bg-indigo-950/90 text-indigo-200 border-indigo-700/60"
+                          : "bg-slate-950/85 text-slate-400 border-slate-800"
+                      }`}
+                    >
+                      {edge.label}
+                    </div>
+                  ) : null
+                )}
+
+                {/* Layer 4: Clickable Workflow Step Nodes */}
+                {steps.map((step, idx) => {
+                  const isActive = idx === activeIndex;
+                  const isVisited = idx < activeIndex;
+                  const style = ACCENT_STYLES[step.accent];
+
+                  return (
+                    <button
+                      key={step.id}
+                      type="button"
+                      data-flow-node="true"
+                      onClick={() => handleSelectStepById(step.id)}
+                      aria-label={`Step ${step.stepNumber}: ${step.title}`}
+                      aria-pressed={isActive}
+                      style={{
+                        left: step.position.x,
+                        top: step.position.y,
+                        width: NODE_WIDTH,
+                      }}
+                      className={`flow-step-node group absolute z-20 rounded-lg border px-2.5 py-2 text-left transition-all cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
+                        isActive
+                          ? `bg-slate-900 ${style.activeBorder} scale-[1.03]`
+                          : isVisited
+                          ? `bg-slate-950/95 ${style.border} opacity-95 hover:border-slate-500`
+                          : "bg-slate-950/90 border-slate-800 hover:border-slate-600"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1.5 mb-1">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-mono font-bold border ${style.badgeBg}`}
+                        >
+                          <span>#{step.stepNumber}</span>
+                          {isActive && (
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${style.dot} ${
+                                reducedMotion ? "" : "animate-pulse"
+                              }`}
+                            />
+                          )}
+                        </span>
+                        <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 truncate">
+                          {step.laneLabel}
+                        </span>
+                      </div>
+
+                      <div className="text-xs font-bold text-slate-100 leading-tight group-hover:text-cyan-200 transition-colors">
+                        {step.shortLabel}
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-slate-400 font-mono truncate">
+                        {step.componentName}
+                      </div>
+
+                      {step.outcomeBadge && (
+                        <div className="mt-1.5">
+                          <span
+                            className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-mono font-bold border ${
+                              step.outcomeBadge === "TRUE_POSITIVE"
+                                ? "bg-rose-950/80 text-rose-300 border-rose-700/70"
+                                : step.outcomeBadge === "FALSE_POSITIVE"
+                                ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/70"
+                                : "bg-amber-950/80 text-amber-300 border-amber-700/70"
+                            }`}
+                          >
+                            {step.outcomeBadge}
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Floating Zoom/Pan Controls */}
+              <div className="absolute bottom-3 left-3 z-30 flex flex-col rounded-lg border border-slate-800 bg-slate-950/90 overflow-hidden shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => handleZoomBy(1.18)}
+                  className="p-1.5 text-slate-300 hover:bg-slate-800 hover:text-cyan-300 border-b border-slate-800"
+                  title="Zoom In"
+                  aria-label="Zoom In"
+                >
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleZoomBy(0.85)}
+                  className="p-1.5 text-slate-300 hover:bg-slate-800 hover:text-cyan-300 border-b border-slate-800"
+                  title="Zoom Out"
+                  aria-label="Zoom Out"
+                >
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFitView}
+                  className="p-1.5 text-slate-300 hover:bg-slate-800 hover:text-cyan-300"
+                  title="Fit to Screen"
+                  aria-label="Fit to Screen"
+                >
+                  <Scan className="h-3.5 w-3.5" />
+                </button>
+              </div>
 
               {/* Floating Legend */}
-              <div className="pointer-events-none absolute bottom-3 right-3 hidden sm:flex flex-wrap items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/90 px-2.5 py-1.5 text-[10px] font-mono text-slate-400 backdrop-blur-sm">
+              <div className="pointer-events-none absolute bottom-3 right-3 z-30 hidden sm:flex flex-wrap items-center gap-2 rounded-lg border border-slate-800 bg-slate-950/90 px-2.5 py-1.5 text-[10px] font-mono text-slate-400 backdrop-blur-sm">
                 <span className="inline-flex items-center gap-1">
                   <span className="h-2 w-2 rounded-full bg-cyan-400" />
                   Governance Plane
@@ -883,13 +1043,5 @@ function WorkflowFlowInner({
         </div>
       </div>
     </div>
-  );
-}
-
-export function WorkflowFlowDiagram(props: WorkflowFlowInnerProps) {
-  return (
-    <ReactFlowProvider>
-      <WorkflowFlowInner {...props} />
-    </ReactFlowProvider>
   );
 }
