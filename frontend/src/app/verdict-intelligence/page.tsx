@@ -45,6 +45,7 @@ import {
 import PilotControlAndDashboard from "@/components/pilot/PilotControlAndDashboard";
 import HistoricalEligibilityPanel from "@/components/pilot/HistoricalEligibilityPanel";
 import { useApp } from "@/context/AppContext";
+import { VerdictumLogo } from "@/components/brand/VerdictumLogo";
 
 function VerdictIntelligenceContent() {
   const { user, isLoading: authLoading } = useApp();
@@ -223,8 +224,8 @@ function VerdictIntelligenceContent() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-400">
-              <ShieldCheck className="w-5 h-5" />
+            <div className="p-1.5 bg-sky-500/10 border border-sky-500/25 rounded-lg">
+              <VerdictumLogo size={26} showWordmark={false} />
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -905,9 +906,13 @@ function VerdictIntelligenceContent() {
           {selectedAssessment ? (
             <div className="space-y-6">
               {/* Top Summary Card */}
-              <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
+              <div className="relative overflow-hidden p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div aria-hidden="true" className="pointer-events-none absolute right-4 bottom-2 opacity-[0.06]">
+                  <VerdictumLogo size={64} showWordmark={false} />
+                </div>
+                <div className="relative">
                   <div className="flex items-center gap-2">
+                    <VerdictumLogo size={20} showWordmark={false} />
                     <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">
                       Incident: {selectedAssessment.incident_id}
                     </span>

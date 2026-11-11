@@ -30,6 +30,7 @@ import {
 import { api, IncidentListItem, IncidentAiVerdictResponse } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import { formatExecutionProvenanceBadge } from "@/lib/provenance";
+import { VerdictumLogo } from "@/components/brand/VerdictumLogo";
 
 function AITriageWorkbenchContent() {
   const router = useRouter();
@@ -573,6 +574,7 @@ function AITriageWorkbenchContent() {
             <div className="flex items-start justify-between border-b border-slate-800 pb-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
+                  <VerdictumLogo size={20} showWordmark={false} />
                   <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded">
                     <Sparkles className="h-3.5 w-3.5" />
                     Server 2 AI Verdict

@@ -33,6 +33,7 @@ import { api, IncidentDetail, IncidentAiVerdictResponse } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import { HistoricalTelemetryTimeline } from "@/components/telemetry/HistoricalTelemetryTimeline";
 import { formatExecutionProvenanceBadge } from "@/lib/provenance";
+import { VerdictumLogo } from "@/components/brand/VerdictumLogo";
 
 export default function AITriageWorkbenchDetailPage({
   params,
@@ -298,10 +299,14 @@ export default function AITriageWorkbenchDetailPage({
       )}
 
       {aiVerdict && (
-        <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-3.5 shadow-lg">
+        <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-3.5 shadow-lg">
+          <div aria-hidden="true" className="pointer-events-none absolute right-3 top-2 opacity-[0.07]">
+            <VerdictumLogo size={64} showWordmark={false} />
+          </div>
           {/* Header Row */}
-          <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2.5 gap-2">
+          <div className="relative flex flex-wrap items-center justify-between border-b border-slate-800 pb-2.5 gap-2">
             <div className="flex items-center gap-2 flex-wrap">
+              <VerdictumLogo size={20} showWordmark={false} />
               <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded">
                 <Sparkles className="h-3.5 w-3.5" />
                 Verdict Triage Agent

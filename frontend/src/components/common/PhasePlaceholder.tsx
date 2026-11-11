@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Lock, Clock, ArrowRight, ShieldCheck, Cpu, FlaskConical } from "lucide-react";
+import { Lock, Clock, FlaskConical } from "lucide-react";
+import { VerdictumLogo } from "@/components/brand/VerdictumLogo";
 
 interface PhasePlaceholderProps {
   title: string;
@@ -92,7 +93,10 @@ export function PhasePlaceholder({
         {/* Footer Guarantee */}
         <div className="mt-3 flex items-center justify-between text-[10px] text-slate-500 font-mono">
           <span>Zero LLM dependencies active during Phase 1 foundation.</span>
-          <span>AI Verdict Protocol v1.0</span>
+          <span className="inline-flex items-center gap-1.5">
+            <VerdictumLogo size={16} showWordmark={false} />
+            <span>Verdictum AI Protocol v1.0</span>
+          </span>
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { VerdictumLogo } from "@/components/brand/VerdictumLogo";
 
 export function Header() {
   const router = useRouter();
@@ -40,18 +41,29 @@ export function Header() {
   const displayRole = user?.role ? user.role : isLoading ? "SYNCING" : "UNAUTHENTICATED";
 
   return (
-    <header className="flex h-10 items-center justify-between theme-glass-header px-3">
-      {/* Global Search Bar */}
-      <form onSubmit={handleSearch} className="relative w-72 sm:w-80 md:w-96 max-w-md">
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Global Triage Search: Incident ID, Rule, Source IP, Device, File..."
-          className="w-full rounded-md border border-slate-800 bg-slate-950/80 py-1 pl-8 pr-3 text-xs text-slate-200 placeholder-slate-500 transition-colors focus:border-cyan-500/80 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-        />
-      </form>
+    <header className="flex h-10 items-center justify-between gap-2 theme-glass-header px-3">
+      {/* Brand Micro-Seal & Global Search Bar */}
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <div
+          className="hidden lg:flex items-center gap-1.5 pr-2.5 border-r border-slate-800/80 shrink-0"
+          title="Verdictum AI — Agentic Triage Platform"
+        >
+          <VerdictumLogo size={20} showWordmark={false} />
+          <span className="text-[10px] font-mono font-bold tracking-[0.14em] text-sky-300 uppercase">
+            Verdictum <span className="text-cyan-400">AI</span>
+          </span>
+        </div>
+        <form onSubmit={handleSearch} className="relative w-72 sm:w-80 md:w-96 max-w-md min-w-0">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Global Triage Search: Incident ID, Rule, Source IP, Device, File..."
+            className="w-full rounded-md border border-slate-800 bg-slate-950/80 py-1 pl-8 pr-3 text-xs text-slate-200 placeholder-slate-500 transition-colors focus:border-cyan-500/80 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+          />
+        </form>
+      </div>
 
       {/* Right Controls */}
       <div className="flex items-center gap-2 sm:gap-2.5">
@@ -122,7 +134,7 @@ export function Header() {
           <button
             onClick={logout}
             className="p-1 rounded-md theme-secondary-btn text-slate-400 hover:text-rose-400 hover:border-rose-900/60 transition-colors"
-            title="Sign out of AI Verdict"
+            title="Sign out of Verdictum AI"
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>
