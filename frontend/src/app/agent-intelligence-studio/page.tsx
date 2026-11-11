@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FileCode,
   FileCode2,
@@ -51,6 +51,12 @@ import {
   PolicyDriftEventItem,
   PolicySimulationResult,
 } from "@/lib/api";
+import {
+  buildQualityGatesExportFile,
+  getQualityExportFormatLabel,
+  triggerBlobDownload,
+  type QualityExportFormat,
+} from "@/lib/qualityExport";
 
 export default function AgentIntelligenceStudioPage() {
   // Navigation / View mode
@@ -140,6 +146,8 @@ export default function AgentIntelligenceStudioPage() {
   const [downloadingExport, setDownloadingExport] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showStudioExportMenu, setShowStudioExportMenu] = useState(false);
+  const [showQualityExportMenu, setShowQualityExportMenu] = useState(false);
+  const qualityExportMenuRef = useRef<HTMLDivElement | null>(null);
 
   const handleExportAll = async (format: "json" | "markdown" = "json") => {
     setDownloadingExport(true);
@@ -147,14 +155,7 @@ export default function AgentIntelligenceStudioPage() {
     setShowExportMenu(false);
     try {
       const { blob, filename } = await api.exportRulePrompts(format);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      triggerBlobDownload(blob, filename);
       setFeedback({
         type: "success",
         text: `Successfully exported rule-wise prompts and configuration (${format.toUpperCase()}).`,
@@ -173,14 +174,7 @@ export default function AgentIntelligenceStudioPage() {
     setShowStudioExportMenu(false);
     try {
       const { blob, filename } = await api.exportSingleRulePrompt(ruleId, format);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      triggerBlobDownload(blob, filename);
       setFeedback({
         type: "success",
         text: `Downloaded rule prompt configuration (${format.toUpperCase()}).`,
@@ -189,6 +183,42 @@ export default function AgentIntelligenceStudioPage() {
       setFeedback({ type: "error", text: `Download failed: ${err.message}` });
     } finally {
       setDownloadingExport(false);
+    }
+  };
+
+  const handleExportQualityGates = (format: QualityExportFormat = "json") => {
+    if (!qualityAssessment) return;
+    setShowQualityExportMenu(false);
+    setFeedback(null);
+    try {
+      const activeRule = rules.find((r) => r.id === selectedRuleId);
+      const activeVersion = rulePrompt?.versions.find((v) => v.id === selectedVersionId);
+      const { content, mimeType, filename } = buildQualityGatesExportFile(
+        qualityAssessment,
+        format,
+        {
+          ruleName: rulePrompt?.rule_name || activeRule?.name,
+          ruleIdentifier:
+            activeRule?.rule_id || qualityAssessment.rule_identifier || selectedRuleId,
+          severity: activeRule?.severity,
+          eventType: rulePrompt?.rule_event_type || activeRule?.event_type,
+          versionNumber:
+            activeVersion?.version_number ?? qualityAssessment.policy_version_number,
+          versionStatus: activeVersion?.status,
+        }
+      );
+      const blob = new Blob([content], { type: mimeType });
+      triggerBlobDownload(blob, filename);
+      setFeedback({
+        type: "success",
+        text: `Downloaded Quality Gates (G1–G8) output (${getQualityExportFormatLabel(format)}).`,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setFeedback({
+        type: "error",
+        text: `Quality Gates export failed: ${message}`,
+      });
     }
   };
 
@@ -347,13 +377,37 @@ export default function AgentIntelligenceStudioPage() {
   // Close drilldown modal on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && drilldownModal?.isOpen) {
-        setDrilldownModal(null);
+      if (e.key === "Escape") {
+        if (drilldownModal?.isOpen) {
+          setDrilldownModal(null);
+        }
+        if (showQualityExportMenu) {
+          setShowQualityExportMenu(false);
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [drilldownModal]);
+  }, [drilldownModal, showQualityExportMenu]);
+
+  useEffect(() => {
+    setShowQualityExportMenu(false);
+  }, [studioTab, selectedRuleId, selectedVersionId]);
+
+  // Close Quality Gates export dropdown when clicking outside
+  useEffect(() => {
+    if (!showQualityExportMenu) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (
+        qualityExportMenuRef.current &&
+        !qualityExportMenuRef.current.contains(e.target as Node)
+      ) {
+        setShowQualityExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [showQualityExportMenu]);
 
   // Open modal for Funnel Cards (1. Scanned, 2. Rule-Matched, 3. Analyst-Labeled, 4. Eligible, 5. Excluded, 6. Evaluated)
   const openFunnelCardModal = (cardType: "scanned" | "rule_matched" | "analyst_labeled" | "eligible" | "excluded" | "evaluated") => {
@@ -2110,7 +2164,7 @@ export default function AgentIntelligenceStudioPage() {
             {studioTab === "quality" && (
               <div className="space-y-3">
                 <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
                         <Award className="w-4 h-4 text-cyan-400" />
@@ -2120,15 +2174,77 @@ export default function AgentIntelligenceStudioPage() {
                         Deterministic static analysis of policy integrity, relevance, evidence feasibility, and escalation safety.
                       </p>
                     </div>
-                    <button
-                      onClick={() => fetchQualityValidation(selectedRuleId, selectedVersionId)}
-                      disabled={loadingQuality || isViewer}
-                      title={isViewer ? "Requires SOC Analyst or Administrator role" : "Re-run and persist validation"}
-                      className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 flex items-center gap-1.5"
-                    >
-                      <RefreshCw className={`w-3 h-3 text-cyan-400 ${loadingQuality ? "animate-spin" : ""}`} />
-                      Revalidate
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="relative" ref={qualityExportMenuRef}>
+                        <div className="inline-flex rounded-md shadow-sm">
+                          <button
+                            type="button"
+                            onClick={() => handleExportQualityGates("json")}
+                            disabled={!qualityAssessment || loadingQuality}
+                            title={
+                              !qualityAssessment
+                                ? "No quality assessment available to download"
+                                : "Download Quality Gates (G1–G8) output as JSON"
+                            }
+                            className="px-2.5 py-1 text-xs rounded-l theme-secondary-btn disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center gap-1.5 transition-colors"
+                          >
+                            <Download className="w-3 h-3 text-cyan-400" />
+                            Download Output
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowQualityExportMenu((prev) => !prev)}
+                            disabled={!qualityAssessment || loadingQuality}
+                            aria-label="Choose Quality Gates export format"
+                            aria-expanded={showQualityExportMenu}
+                            title="Choose download format (JSON, Markdown, CSV)"
+                            className="px-1.5 py-1 text-xs rounded-r theme-secondary-btn border-l-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ChevronDown className="w-3 h-3 text-cyan-400" />
+                          </button>
+                        </div>
+
+                        {showQualityExportMenu && qualityAssessment && (
+                          <div className="absolute right-0 mt-1 w-48 rounded-md border border-slate-800 bg-slate-950 py-1 shadow-xl z-20 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => handleExportQualityGates("json")}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                            >
+                              <span>Download JSON</span>
+                              <span className="text-[10px] text-slate-500 font-mono">.json</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleExportQualityGates("markdown")}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                            >
+                              <span>Download Markdown</span>
+                              <span className="text-[10px] text-slate-500 font-mono">.md</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleExportQualityGates("csv")}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                            >
+                              <span>Download CSV</span>
+                              <span className="text-[10px] text-slate-500 font-mono">.csv</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => fetchQualityValidation(selectedRuleId, selectedVersionId)}
+                        disabled={loadingQuality || isViewer}
+                        title={isViewer ? "Requires SOC Analyst or Administrator role" : "Re-run and persist validation"}
+                        className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 flex items-center gap-1.5"
+                      >
+                        <RefreshCw className={`w-3 h-3 text-cyan-400 ${loadingQuality ? "animate-spin" : ""}`} />
+                        Revalidate
+                      </button>
+                    </div>
                   </div>
                 </div>
 
