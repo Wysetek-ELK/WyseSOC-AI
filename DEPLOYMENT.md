@@ -1,4 +1,4 @@
-# AI Verdict — Server 1 Native Deployment Guide
+# Verdictum AI — Server 1 Native Deployment Guide
 
 ## 1. Operating System & Server Prerequisites
 
@@ -64,7 +64,7 @@ sudo -u aiverdict ./venv/bin/pip install -r requirements.txt
 
 # Configure backend environment variables
 cat <<EOF | sudo -u aiverdict tee /opt/ai-verdict/backend/.env
-PROJECT_NAME="AI Verdict"
+PROJECT_NAME="Verdictum AI"
 VERSION="1.0.0"
 SECRET_KEY="$(openssl rand -hex 32)"
 DATABASE_URL="postgresql+asyncpg://aiverdict_user:YourSecureDbPassword@127.0.0.1:5432/ai_verdict"

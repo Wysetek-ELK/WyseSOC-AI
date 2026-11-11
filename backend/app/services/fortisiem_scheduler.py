@@ -21,7 +21,7 @@ class SentinelIngestWorker:
     Continuous background sync poller and telemetry ingestion worker.
     Executes an initial comprehensive pull of incidents,
     followed by automated incremental polling every N seconds (default: 180s / 3 mins).
-    Idempotently ingests incoming telemetry and automatically triggers AI Verdicts via LLM.
+    Idempotently ingests incoming telemetry and automatically triggers Verdictum AI evaluations via LLM.
 
     Resilience & Multi-Worker Architecture:
     - Durable state persistence in `scheduler_state.json` (and settings) so continuous

@@ -3,7 +3,7 @@ import type { SwimlaneBoxSpec, WorkflowEdgeSpec, WorkflowStepSpec } from "./type
 export const DECISION_SWIMLANES: SwimlaneBoxSpec[] = [
   {
     id: "lane-decision-pipeline",
-    title: "AI VERDICT DECISION ENGINE PIPELINE",
+    title: "VERDICTUM AI DECISION ENGINE PIPELINE",
     subtitle: "Zero-Bias Extraction → Approved Policy & Contract Enforcement → Local LLM Reasoning → Deterministic Guardrails & Trust Scoring",
     accent: "cyan",
     position: { x: 16, y: 16 },

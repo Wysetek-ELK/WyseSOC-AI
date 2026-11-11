@@ -1,5 +1,5 @@
 [Unit]
-Description=AI Verdict FastAPI Backend Application Service
+Description=Verdictum AI FastAPI Backend Application Service
 After=network.target postgresql.service redis-server.service
 Wants=postgresql.service redis-server.service
 

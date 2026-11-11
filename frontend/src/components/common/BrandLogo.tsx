@@ -11,7 +11,7 @@ interface BrandLogoProps {
 }
 
 /**
- * Renders the Verdictum AI / AI Verdict emblem at crisp resolution
+ * Renders the Verdictum AI emblem at crisp resolution
  * with transparent edges suited for both Obsidian Glass and Classic Slate themes.
  */
 export function BrandLogo({

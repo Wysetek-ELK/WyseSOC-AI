@@ -92,7 +92,7 @@ def create_backup(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="AI Verdict Production Backup Tool")
+    parser = argparse.ArgumentParser(description="Verdictum AI Production Backup Tool")
     parser.add_argument("--db-path", default="backend/ai_verdict.db", help="Path to database")
     parser.add_argument("--output-dir", default="backups", help="Target backup directory")
     args = parser.parse_args()

@@ -39,7 +39,7 @@ export default function LoginPage() {
             priority
             className="mb-2 drop-shadow-[0_6px_22px_rgba(245,158,11,0.38)]"
           />
-          <h1 className="text-lg font-bold tracking-tight text-sky-300">AI VERDICT</h1>
+          <h1 className="text-lg font-bold tracking-tight text-sky-300">VERDICTUM AI</h1>
           <p className="text-[11px] text-cyan-400 font-mono mt-0.5 tracking-wider uppercase">
             Agentic SOC Intelligence Platform
           </p>

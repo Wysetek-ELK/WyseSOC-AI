@@ -1,4 +1,4 @@
-// API Client for AI Verdict Frontend
+// API Client for Verdictum AI Frontend
 
 const API_BASE = "/api";
 

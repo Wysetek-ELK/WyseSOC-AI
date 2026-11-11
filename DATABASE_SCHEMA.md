@@ -1,4 +1,4 @@
-# AI Verdict — Database Schema Specification
+# Verdictum AI — Database Schema Specification
 
 ## 1. Schema Entity Relationship Diagram
 

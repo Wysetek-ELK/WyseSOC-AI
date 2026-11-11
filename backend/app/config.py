@@ -37,8 +37,8 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-    APP_NAME: str = "AI Verdict"
-    PROJECT_NAME: str = "AI Verdict"
+    APP_NAME: str = "Verdictum AI"
+    PROJECT_NAME: str = "Verdictum AI"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
     APP_ENV: str = os.getenv("APP_ENV", "development")

@@ -1,4 +1,4 @@
-# AI Verdict — Master Phase Progress Tracker
+# Verdictum AI — Master Phase Progress Tracker
 
 ## Phase Status Summary
 

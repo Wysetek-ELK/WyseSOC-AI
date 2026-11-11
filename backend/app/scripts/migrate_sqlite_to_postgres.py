@@ -1,7 +1,7 @@
 """
 SQLite to PostgreSQL Data Migration Tool (P4-REQ-03)
 =====================================================
-Operator-controlled, backup-first migration tool to transfer all AI Verdict
+Operator-controlled, backup-first migration tool to transfer all Verdictum AI
 operational, historical, audit, and configuration data from SQLite to PostgreSQL.
 
 Features:
@@ -259,7 +259,7 @@ def run_migration(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="AI Verdict SQLite to PostgreSQL Migration Tool (P4-REQ-03)")
+    parser = argparse.ArgumentParser(description="Verdictum AI SQLite to PostgreSQL Migration Tool (P4-REQ-03)")
     parser.add_argument("--sqlite-path", default="backend/ai_verdict.db", help="Path to SQLite database")
     parser.add_argument("--pg-url", required=True, help="PostgreSQL connection URL (e.g. postgresql://<username>:<password>@<hostname>:<port>/<dbname>)")
     parser.add_argument("--backup-dir", default="backups", help="Directory to store pre-migration backup")

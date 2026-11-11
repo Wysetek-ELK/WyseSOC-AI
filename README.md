@@ -1,4 +1,4 @@
-# AI Verdict — Enterprise SOC Incident Analysis & Evidence-Grounded AI Platform
+# Verdictum AI — Enterprise SOC Incident Analysis & Evidence-Grounded AI Platform
 
 [![Phase](https://img.shields.io/badge/Phase-4%3A%20Production%20Hardening-emerald.svg)](#current-status)
 [![Backend](https://img.shields.io/badge/Backend-FastAPI%20%2F%20SQLAlchemy%202.x-009688.svg)](https://fastapi.tiangolo.com)
@@ -7,7 +7,7 @@
 [![Queue](https://img.shields.io/badge/Task%20Queue-Celery%20%2F%20Redis%207-CC0000.svg)](https://docs.celeryq.dev)
 [![Tests](https://img.shields.io/badge/Tests-166%20Passed%20(100%25)-brightgreen.svg)](#verification)
 
-**AI Verdict** is an enterprise-grade Security Operations Center (SOC) incident investigation, evidence grounding, and AI verdict platform designed for high-throughput enterprise environments processing up to 10,000+ daily SIEM incidents across 2,000+ detection rules.
+**Verdictum AI** is an enterprise-grade Security Operations Center (SOC) incident investigation, evidence grounding, and AI verdict platform designed for high-throughput enterprise environments processing up to 10,000+ daily SIEM incidents across 2,000+ detection rules.
 
 ---
 
@@ -71,7 +71,7 @@ source venv/bin/activate  # Or `venv\Scripts\activate` on Windows
 pip install -r requirements.txt
 
 # Run migrations and seed default administrator + real fixtures
-python -m app.cli create-admin --username admin --email admin@ai-verdict.internal --password "AdminPassword123!"
+python -m app.cli create-admin --username admin --email admin@verdictum-ai.internal --password "AdminPassword123!"
 python -m app.cli import-data ../fixtures/Incident\ json.zip
 
 # Start backend server

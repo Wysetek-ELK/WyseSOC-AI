@@ -1417,7 +1417,7 @@ class FortiSIEMService:
         Discovers and pulls incidents in batch from FortiSIEM without requiring individual Incident IDs.
         Queries the live FortiSIEM REST API by time range, or falls back to offline fixture archive.
         Ingests incidents into PostgreSQL, registers investigations, tracks high-water mark,
-        and optionally auto-triggers AI Verdict evaluations via LLM.
+        and optionally auto-triggers Verdictum AI evaluations via LLM.
         """
         discovered_incidents: List[Dict[str, Any]] = []
         source_mode = "LIVE"

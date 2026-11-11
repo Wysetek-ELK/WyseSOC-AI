@@ -1,5 +1,5 @@
 [Unit]
-Description=AI Verdict Celery Beat Scheduler Service
+Description=Verdictum AI Celery Beat Scheduler Service
 After=network.target postgresql.service redis-server.service ai-verdict-worker.service
 Wants=postgresql.service redis-server.service
 

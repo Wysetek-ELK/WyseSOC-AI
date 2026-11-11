@@ -236,7 +236,7 @@ class CalibrationEvaluationService:
             notes = (
                 f"INSUFFICIENT_SAMPLE_SIZE: Only {sample_size} independently verified ground-truth cases "
                 f"are available for rule '{rule_name}' (minimum required: {cls.MIN_CALIBRATION_SAMPLES}). "
-                "Per Phase 3 AI Verdict governance policies, confidence calibration is WITHHELD. "
+                "Per Phase 3 Verdictum AI governance policies, confidence calibration is WITHHELD. "
                 "Model confidence must be interpreted as raw, uncalibrated heuristic scores."
             )
         else:

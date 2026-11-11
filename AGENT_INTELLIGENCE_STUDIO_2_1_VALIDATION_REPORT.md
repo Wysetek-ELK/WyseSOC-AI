@@ -1,5 +1,5 @@
 # AGENT INTELLIGENCE STUDIO 2.1 — VALIDATION AND DEPLOYMENT REPORT
-## AI Verdict — Verdict Trustworthiness, Evidence Confidence & Empirical Accuracy Validation
+## Verdictum AI — Verdict Trustworthiness, Evidence Confidence & Empirical Accuracy Validation
 
 **Document Version:** 1.0.0  
 **Date:** November 2026  

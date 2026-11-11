@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AI Verdict — Integration Readiness Runner (Phase 9 Stage 10).
+Verdictum AI — Integration Readiness Runner (Phase 9 Stage 10).
 
 Explicitly separated execution modes:
   - OFFLINE_CONTRACT_TESTS     : Local wire-contract & schema/config validation without external hosts
@@ -215,7 +215,7 @@ async def run_staging_probes(mode: str) -> Dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="AI Verdict Phase 9 Integration Readiness Runner")
+    parser = argparse.ArgumentParser(description="Verdictum AI Phase 9 Integration Readiness Runner")
     parser.add_argument("--mode", choices=VALID_MODES, default="OFFLINE_CONTRACT_TESTS")
     parser.add_argument("--output", default="", help="Optional path to write JSON report")
     args = parser.parse_args()

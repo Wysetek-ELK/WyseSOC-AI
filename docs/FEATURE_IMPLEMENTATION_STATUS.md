@@ -1,4 +1,4 @@
-# AI Verdict — Centralized Feature Implementation & Verification Registry
+# Verdictum AI — Centralized Feature Implementation & Verification Registry
 
 - **Generated / Reconciled From:** [`docs/feature_registry.json`](file:///C:/Users/amit/OneDrive/Documents/SOC-AI-Agent/docs/feature_registry.json)
 - **Last Updated:** 2026-11-11T14:00:00+05:30

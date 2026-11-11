@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Deterministic validator and Markdown generator/reconciler for the AI Verdict
+Deterministic validator and Markdown generator/reconciler for the Verdictum AI
 Centralized Feature Implementation Registry (docs/feature_registry.json ->
 docs/FEATURE_IMPLEMENTATION_STATUS.md).
 
@@ -227,7 +227,7 @@ def render_markdown(registry: Dict[str, Any], summary: Dict[str, Any]) -> str:
     """Renders docs/FEATURE_IMPLEMENTATION_STATUS.md deterministically from docs/feature_registry.json."""
     meta = registry.get("metadata", {})
     lines = [
-        "# AI Verdict — Centralized Feature Implementation & Verification Registry",
+        "# Verdictum AI — Centralized Feature Implementation & Verification Registry",
         "",
         f"- **Generated / Reconciled From:** [`docs/feature_registry.json`](file:///{REPO_ROOT.as_posix()}/docs/feature_registry.json)",
         f"- **Last Updated:** {meta.get('updated_at', 'N/A')}",
@@ -299,7 +299,7 @@ def render_markdown(registry: Dict[str, Any], summary: Dict[str, Any]) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate AI Verdict feature registry and Markdown sync.")
+    parser = argparse.ArgumentParser(description="Validate Verdictum AI feature registry and Markdown sync.")
     parser.add_argument("--sync", action="store_true", help="Regenerate docs/FEATURE_IMPLEMENTATION_STATUS.md from JSON.")
     args = parser.parse_args()
 

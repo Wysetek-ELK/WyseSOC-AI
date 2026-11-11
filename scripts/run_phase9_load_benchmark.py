@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AI Verdict — Reproducible Performance & Scale Benchmark (Phase 9 Stage 11).
+Verdictum AI — Reproducible Performance & Scale Benchmark (Phase 9 Stage 11).
 
 Simulates target production scale:
   - 2,000+ detection rules (rule lookup, policy resolution, prompt summary queries)

@@ -38,10 +38,10 @@ export function GuidedTourSection({ onNavigateMode }: GuidedTourSectionProps) {
               GUIDED ADMINISTRATOR TOUR · READ-ONLY DOCUMENTATION &amp; ARCHITECTURE
             </div>
             <h2 className="text-base sm:text-lg font-bold text-slate-100">
-              How AI Verdict Governs Agentic SOC Triage from FortiSIEM Ingestion to Verified Accuracy
+              How Verdictum AI Governs Agentic SOC Triage from FortiSIEM Ingestion to Verified Accuracy
             </h2>
             <p className="text-xs text-slate-300 leading-relaxed">
-              AI Verdict separates <strong className="text-cyan-300">Policy Governance (Agent Intelligence Studio 2.0)</strong> from{" "}
+              Verdictum AI separates <strong className="text-cyan-300">Policy Governance (Agent Intelligence Studio 2.0)</strong> from{" "}
               <strong className="text-emerald-300">Runtime Investigation (Verdict Triage Agent)</strong>. No LLM prompt runs in production without an Administrator-approved 9-section policy, a machine-verifiable Evidence Contract, deterministic safety guardrails, and honest empirical validation.
             </p>
           </div>

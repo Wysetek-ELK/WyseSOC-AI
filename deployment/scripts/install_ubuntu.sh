@@ -20,7 +20,7 @@ INITIAL_ADMIN_EMAIL="${INITIAL_ADMIN_EMAIL:-admin@example.com}"
 INITIAL_ADMIN_PASSWORD="${INITIAL_ADMIN_PASSWORD:-}"
 
 echo "=========================================================="
-echo " AI Verdict Server 1 Native Installation (Idempotent)"
+echo " Verdictum AI Server 1 Native Installation (Idempotent)"
 echo " APP_DIR=$APP_DIR | APP_USER=$APP_USER"
 echo "=========================================================="
 
@@ -121,7 +121,7 @@ echo "[7/9] Building Frontend Next.js Application..."
 cd "$APP_DIR/frontend"
 if [ ! -f "$APP_DIR/frontend/.env.production" ]; then
   cat <<EOF > "$APP_DIR/frontend/.env.production"
-NEXT_PUBLIC_APP_NAME="AI Verdict"
+NEXT_PUBLIC_APP_NAME="Verdictum AI"
 EOF
   chown "$APP_USER:$APP_USER" "$APP_DIR/frontend/.env.production"
 fi
@@ -158,6 +158,6 @@ ufw allow 443/tcp comment "HTTPS Reverse Proxy" > /dev/null || true
 echo "y" | ufw enable > /dev/null 2>&1 || true
 
 echo "=========================================================="
-echo " AI Verdict Server 1 Native Setup Complete"
+echo " Verdictum AI Server 1 Native Setup Complete"
 echo " Run: bash $APP_DIR/deployment/scripts/verify_server1.sh"
 echo "=========================================================="

@@ -183,7 +183,7 @@ async def get_prometheus_metrics(
 
     # Prometheus Text Format
     lines = [
-        "# HELP ai_verdict_incidents_total Total security incidents evaluated by AI Verdict engine",
+        "# HELP ai_verdict_incidents_total Total security incidents evaluated by Verdictum AI engine",
         "# TYPE ai_verdict_incidents_total counter",
         f'ai_verdict_incidents_total{{verdict="true_positive"}} {tp_count}',
         f'ai_verdict_incidents_total{{verdict="false_positive"}} {fp_count}',

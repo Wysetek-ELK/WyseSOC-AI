@@ -1,8 +1,8 @@
-# AI Verdict Admin Guide — Implementation & Verification Report
+# Verdictum AI Admin Guide — Implementation & Verification Report
 
 **Date:** November 10, 2026  
 **Target Branch:** `feat/verdict-intelligence-validation-v2.1`  
-**Scope:** Frontend-only interactive documentation, architecture visualization, and administrator onboarding module (`AI Verdict Admin Guide`).  
+**Scope:** Frontend-only interactive documentation, architecture visualization, and administrator onboarding module (`Verdictum AI Admin Guide`).  
 **Business Logic Impact:** Zero changes made to backend verdict, policy-generation, simulation, or validation services.
 
 ---
@@ -10,14 +10,14 @@
 ## 1. Summary of Implemented Components & Files
 
 ### Sidebar & Routing
-- **[`Sidebar.tsx`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/components/layout/Sidebar.tsx)**: Added **Platform Control → AI Verdict Admin Guide** linking to `/admin-guide` with the `BookOpenCheck` icon from `lucide-react`.
+- **[`Sidebar.tsx`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/components/layout/Sidebar.tsx)**: Added **Platform Control → Verdictum AI Admin Guide** linking to `/admin-guide` with the `BookOpenCheck` icon from `lucide-react`.
 - **[`page.tsx`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/app/admin-guide/page.tsx)**: Dedicated App Router page (`AdminGuidePage` + `AdminGuideContent`) featuring a dark cybersecurity command-center header, searchable global help bar across all guide topics, URL query mode selection (`?mode=...`), read-only safety indicator, and 7 interactive tabs/modes.
 - **[`globals.css`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/app/globals.css)**: Added lightweight CSS directional dash animation (`flowDash` / `.flow-edge-animated`) and `prefers-reduced-motion` / `.guide-reduced-motion` animation overrides.
 - **[`package.json`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/package.json)**: Added `test:admin-guide` script while keeping zero extra external npm runtime dependencies so remote builds succeed without new package downloads.
 
 ### Modular Data Definitions (`frontend/src/data/admin-guide/`)
 - **[`types.ts`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/data/admin-guide/types.ts)**: TypeScript contracts for workflow steps, edges, swimlanes, Quality Gates G1–G8, 9 policy sections, Incident `165233` steps, setup requirements, glossary entries, troubleshooting scenarios, and guided tour stops.
-- **[`architectureFlowData.ts`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/data/admin-guide/architectureFlowData.ts)**: Defines all 17 stages of the end-to-end AI Verdict pipeline separated into two swimlanes (**Policy Creation & Governance Flow** and **Runtime Incident Investigation & Continuous Learning Flow**) plus 4 explicit cross-plane integration bridges (`Telemetry Hub → Verdict Triage Agent`, `Approved Policy Registry → Verdict Triage Agent`, `Evidence Contract → Evidence Evaluation`, `Calibration / Regression Monitoring → Intelligent Policy Generator`).
+- **[`architectureFlowData.ts`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/data/admin-guide/architectureFlowData.ts)**: Defines all 17 stages of the end-to-end Verdictum AI pipeline separated into two swimlanes (**Policy Creation & Governance Flow** and **Runtime Incident Investigation & Continuous Learning Flow**) plus 4 explicit cross-plane integration bridges (`Telemetry Hub → Verdict Triage Agent`, `Approved Policy Registry → Verdict Triage Agent`, `Evidence Contract → Evidence Evaluation`, `Calibration / Regression Monitoring → Intelligent Policy Generator`).
 - **[`decisionFlowData.ts`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/data/admin-guide/decisionFlowData.ts)**: Defines the 12-node Decision Engine flow (`New Incident → Rule Match → Approved Policy Lookup → Evidence Extraction → Evidence Contract Validation → Local LLM Investigation → Deterministic Safety Checks → Verdict Trustworthiness Calculation → Final Decision`) branching into `TRUE_POSITIVE`, `FALSE_POSITIVE`, and `REQUIRES_ANALYST_ATTENTION` (including early preflight abstention routing).
 - **[`studioGuideData.ts`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/data/admin-guide/studioGuideData.ts)**: Documents the 8 AIS 2.0 lifecycle stages, `DetectionArchetypeRegistry` (`NETWORK_SCAN` spotlight and 18 `ArchetypeId` taxonomy entries), 9-section policy specification, Quality Gates G1–G8 (structural 85-pt vs empirical 15-pt split, pass/warn/blocker conditions, remediation), 6-stage historical simulation funnel, V1 vs V2 Heavy TCP Host Scan remediation matrix, 4 Evidence Sufficiency dimensions, 5 Verdict Trustworthiness dimensions, 1–10 score bands, and Deterministic Guardrails G1–G7.
 - **[`incidentExampleData.ts`](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/data/admin-guide/incidentExampleData.ts)**: Defines the 6-step illustrative walkthrough for **Incident ID `165233`** (`Heavy TCP Host Scan`, SIEM Resolution `False Positive`, Historical AI Decision `REQUIRES_ANALYST_ATTENTION`, Observed Trustworthiness Score `3/10`, Gate G8 `INSUFFICIENT_DATA`) using `[ILLUSTRATIVE PLACEHOLDER]` annotations where raw telemetry or scanner authorization records are unavailable.

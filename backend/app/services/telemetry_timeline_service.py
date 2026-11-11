@@ -169,7 +169,7 @@ class TelemetryTimelineService:
             },
         })
 
-        # 6. Milestone: AI Verdict Triage Agent Evaluation
+        # 6. Milestone: Verdictum AI Triage Agent Evaluation
         if incident.ai_verdict:
             av = incident.ai_verdict
             eval_dt = av.get("evaluated_at")

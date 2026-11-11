@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# AI VERDICT — SERVER 1 POST-INSTALL & READINESS VERIFICATION SCRIPT
+# VERDICTUM AI — SERVER 1 POST-INSTALL & READINESS VERIFICATION SCRIPT
 # ==============================================================================
 set -euo pipefail
 
@@ -8,7 +8,7 @@ APP_DIR="${APP_DIR:-/opt/ai-verdict}"
 BACKEND_URL="${BACKEND_URL:-http://127.0.0.1:8000}"
 FRONTEND_URL="${FRONTEND_URL:-http://127.0.0.1:3000}"
 
-echo "Verifying Server 1 AI Verdict stack..."
+echo "Verifying Server 1 Verdictum AI stack..."
 
 echo "[1/6] Checking systemd units..."
 for svc in postgresql redis-server ai-verdict-backend ai-verdict-worker ai-verdict-scheduler ai-verdict-frontend nginx; do

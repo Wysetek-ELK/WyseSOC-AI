@@ -1,5 +1,5 @@
 [Unit]
-Description=AI Verdict Next.js Frontend Service
+Description=Verdictum AI Next.js Frontend Service
 After=network.target ai-verdict-backend.service
 Wants=ai-verdict-backend.service
 

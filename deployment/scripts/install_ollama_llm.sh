@@ -45,7 +45,7 @@ ollama pull "$MODEL"
 if [ -n "$SERVER_1_IP" ]; then
   echo "[4/4] Configuring UFW for Server 1 IP ($SERVER_1_IP)..."
   ufw allow 22/tcp || true
-  ufw allow from "$SERVER_1_IP" to any port 11434 proto tcp comment "AI Verdict Server 1 API"
+  ufw allow from "$SERVER_1_IP" to any port 11434 proto tcp comment "Verdictum AI Server 1 API"
   echo "y" | ufw enable || true
 fi
 

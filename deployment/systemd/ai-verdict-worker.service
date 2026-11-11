@@ -1,5 +1,5 @@
 [Unit]
-Description=AI Verdict Celery Distributed Task Worker Service
+Description=Verdictum AI Celery Distributed Task Worker Service
 After=network.target postgresql.service redis-server.service
 Wants=postgresql.service redis-server.service
 

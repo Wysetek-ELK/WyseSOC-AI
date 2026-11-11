@@ -1,8 +1,8 @@
-# AI Verdict — System Architecture Specification
+# Verdictum AI — System Architecture Specification
 
 ## 1. Architectural Philosophy & Governance
 
-AI Verdict is designed under a two-server enterprise topology:
+Verdictum AI is designed under a two-server enterprise topology:
 - **Server 1 — Application Server**: Hosts the Next.js frontend, Python FastAPI backend, PostgreSQL relational database, and secure ingestion pipelines.
 - **Server 2 — Inference Server (Future)**: Hosts the local LLM running on dedicated GPU infrastructure (AWS `g4dn.2xlarge`) served via a private OpenAI-compatible API.
 

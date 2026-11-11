@@ -355,7 +355,7 @@ export const GUIDED_TOUR_STOPS: GuidedTourStop[] = [
   {
     stopNumber: 3,
     id: "tour-decision-engine",
-    title: "3. AI Verdict Decision Engine, Evidence Confidence & Trustworthiness",
+    title: "3. Verdictum AI Decision Engine, Evidence Confidence & Trustworthiness",
     subtitle: "Why abstention is a first-class safety control",
     targetMode: "decision-engine",
     estimatedMinutes: "3 min",
@@ -410,7 +410,7 @@ export const GUIDED_TOUR_STOPS: GuidedTourStop[] = [
     keyTakeaways: [
       "Understand why N/A replaces 0% when denominators are zero.",
       "Diagnose V1 vs V2 policy differences using SHA-256 digests and gate blockers.",
-      "Navigate directly to any operational workspace in AI Verdict.",
+      "Navigate directly to any operational workspace in Verdictum AI.",
     ],
     narrative:
       "Search platform terminology, expand diagnostic troubleshooting scenarios, and jump straight to live admin workspaces.",

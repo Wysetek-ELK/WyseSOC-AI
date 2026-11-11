@@ -34,11 +34,11 @@ import {
   TROUBLESHOOTING_SCENARIOS,
 } from "../src/data/admin-guide/glossaryAndTroubleshootingData.ts";
 
-test("Sidebar contains Platform Control -> AI Verdict Admin Guide route", () => {
+test("Sidebar contains Platform Control -> Verdictum AI Admin Guide route", () => {
   const sidebarPath = path.resolve("src/components/layout/Sidebar.tsx");
   const sidebarContent = fs.readFileSync(sidebarPath, "utf-8");
   assert.match(sidebarContent, /PLATFORM CONTROL/);
-  assert.match(sidebarContent, /AI Verdict Admin Guide/);
+  assert.match(sidebarContent, /Verdictum AI Admin Guide/);
   assert.match(sidebarContent, /\/admin-guide/);
 });
 
@@ -90,7 +90,7 @@ test("End-to-End Architecture flow includes all 17 stages, two lanes, bridges, a
   }
 });
 
-test("AI Verdict Decision Engine flow includes 9 pipeline steps and all 3 verdict outcomes", () => {
+test("Verdictum AI Decision Engine flow includes 9 pipeline steps and all 3 verdict outcomes", () => {
   assert.equal(DECISION_SWIMLANES.length, 2);
   assert.equal(DECISION_STEPS.length, 12);
 

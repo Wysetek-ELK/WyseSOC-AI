@@ -88,7 +88,7 @@ def restore_backup(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="AI Verdict Production Restore Tool")
+    parser = argparse.ArgumentParser(description="Verdictum AI Production Restore Tool")
     parser.add_argument("--backup-dir", required=True, help="Path to backup directory containing manifest.json")
     parser.add_argument("--target-db", default="backend/ai_verdict.db", help="Target path to restore database")
     parser.add_argument("--dry-run", action="store_true", help="Validate checksums without overwriting database")

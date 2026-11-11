@@ -71,7 +71,7 @@ async def import_data(file_path: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="AI Verdict Management CLI")
+    parser = argparse.ArgumentParser(description="Verdictum AI Management CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # create-admin

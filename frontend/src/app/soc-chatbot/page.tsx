@@ -531,7 +531,7 @@ export default function SocChatbotPage() {
             </div>
             <div className="max-w-lg space-y-1.5">
               <h2 className="text-base font-bold text-slate-100">
-                Ask AI Verdict Copilot on Server 2
+                Ask Verdictum AI Copilot on Server 2
               </h2>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Analyze suspicious payloads, query FortiSIEM detection rule logic, investigate attached incidents, or map telemetry to MITRE ATT&amp;CK directly using your private Server 2 Local LLM.

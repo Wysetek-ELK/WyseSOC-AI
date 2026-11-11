@@ -111,7 +111,7 @@ function AdminGuideContent() {
       hits.push({
         id: `dec-${st.id}`,
         title: `Decision Step ${st.stepNumber}: ${st.title}`,
-        category: "AI Verdict Decision Engine",
+        category: "Verdictum AI Decision Engine",
         snippet: st.summary,
         mode: "decision-engine",
         stepId: st.id,
@@ -220,7 +220,7 @@ function AdminGuideContent() {
             <div className="flex flex-wrap items-center gap-2">
               <BrandLogo size={26} />
               <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-100">
-                AI Verdict Admin Guide
+                Verdictum AI Admin Guide
               </h1>
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-700/60 bg-emerald-950/60 px-2 py-0.5 text-[10px] font-mono text-emerald-300">
                 <Lock className="h-2.5 w-2.5" />
@@ -243,7 +243,7 @@ function AdminGuideContent() {
                 if (e.key === "Escape") setHelpQuery("");
               }}
               placeholder="Search help topics, G1–G8, 165233, NETWORK_SCAN, glossary..."
-              aria-label="Search AI Verdict Admin Guide topics"
+              aria-label="Search Verdictum AI Admin Guide topics"
               className="w-full rounded-lg border border-slate-700 bg-slate-900/90 py-1.5 pl-9 pr-8 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
             />
             {helpQuery && (
@@ -337,7 +337,7 @@ function AdminGuideContent() {
       {activeMode === "architecture" && (
         <div className="space-y-4">
           <WorkflowFlowDiagram
-            title="End-to-End AI Verdict Workflow (Governance Plane ↔ Runtime Investigation Plane)"
+            title="End-to-End Verdictum AI Workflow (Governance Plane ↔ Runtime Investigation Plane)"
             subtitle="17-stage interactive pipeline separating AIS 2.0 Policy Creation & Governance from Runtime Triage, Guardrails, and Calibration Monitoring"
             steps={ARCHITECTURE_STEPS}
             edges={ARCHITECTURE_EDGES}
@@ -451,7 +451,7 @@ export default function AdminGuidePage() {
     <Suspense
       fallback={
         <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 text-xs text-slate-400">
-          Loading AI Verdict Admin Guide...
+          Loading Verdictum AI Admin Guide...
         </div>
       }
     >

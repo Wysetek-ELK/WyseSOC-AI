@@ -218,7 +218,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="AI Verdict: Agentic SOC Intelligence Platform — Evidence-Driven Security Intelligence",
+    description="Verdictum AI: Agentic SOC Intelligence Platform — Evidence-Driven Security Intelligence",
     lifespan=lifespan,
 )
 

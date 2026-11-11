@@ -122,7 +122,7 @@ export function Header() {
           <button
             onClick={logout}
             className="p-1 rounded-md theme-secondary-btn text-slate-400 hover:text-rose-400 hover:border-rose-900/60 transition-colors"
-            title="Sign out of AI Verdict"
+            title="Sign out of Verdictum AI"
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>

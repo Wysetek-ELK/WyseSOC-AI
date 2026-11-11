@@ -32,7 +32,7 @@ logger = logging.getLogger("ai_verdict.chat")
 
 router = APIRouter(prefix="/chat", tags=["SOC AI Chatbot (Local LLM Server 2)"])
 
-DEFAULT_SOC_SYSTEM_PROMPT = """You are AI Verdict SOC Copilot, an advanced agentic cybersecurity assistant powered directly by the on-premise Local LLM running on Server 2.
+DEFAULT_SOC_SYSTEM_PROMPT = """You are Verdictum AI SOC Copilot, an advanced agentic cybersecurity assistant powered directly by the on-premise Local LLM running on Server 2.
 
 Your mission is to assist SOC Tier 1/2/3 Analysts, Incident Responders, and Threat Hunters with:
 - Security Alert Triage & Attack Vector Reconstruction

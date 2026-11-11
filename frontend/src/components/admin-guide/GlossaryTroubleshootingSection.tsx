@@ -314,7 +314,7 @@ export function GlossaryTroubleshootingSection({
         <div>
           <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
             <Compass className="h-4 w-4 text-cyan-400" />
-            Direct Navigation to Existing AI Verdict Workspaces
+            Direct Navigation to Existing Verdictum AI Workspaces
           </h3>
           <p className="text-[11px] text-slate-400 mt-0.5">
             Jump directly to live operational, intelligence, simulation, or platform control views.

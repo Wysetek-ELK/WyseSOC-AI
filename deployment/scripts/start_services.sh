@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# AI VERDICT — START SERVICES (SYSTEMD & NGINX)
+# VERDICTUM AI — START SERVICES (SYSTEMD & NGINX)
 # ==============================================================================
 
 set -euo pipefail
 
-echo "Starting AI Verdict Services..."
+echo "Starting Verdictum AI Services..."
 sudo systemctl start postgresql
 sudo systemctl start redis-server
 sudo systemctl start ai-verdict-backend

@@ -125,7 +125,7 @@ const NAV_GROUPS: NavGroup[] = [
         icon: ShieldCheck,
       },
       {
-        title: "AI Verdict Admin Guide",
+        title: "Verdictum AI Admin Guide",
         href: "/admin-guide",
         icon: BookOpenCheck,
       },
@@ -225,13 +225,13 @@ export function Sidebar() {
           className={`flex items-center ${
             collapsed ? "justify-center shrink-0" : "gap-2 overflow-hidden min-w-0"
           }`}
-          title="AI Verdict — Agentic SOC Intelligence"
+          title="Verdictum AI — Agentic SOC Intelligence"
         >
           <BrandLogo size={collapsed ? 28 : 26} priority />
           {!collapsed && (
             <div className="flex flex-col min-w-0">
               <span className="font-bold text-xs tracking-wider text-sky-300 uppercase leading-tight">
-                AI Verdict
+                Verdictum AI
               </span>
               <span className="text-[8.5px] text-cyan-400 font-mono tracking-tight leading-none">
                 Agentic SOC Intelligence

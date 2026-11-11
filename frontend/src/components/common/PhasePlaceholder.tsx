@@ -95,7 +95,7 @@ export function PhasePlaceholder({
           <span>Zero LLM dependencies active during Phase 1 foundation.</span>
           <span className="inline-flex items-center gap-1.5">
             <BrandLogo size={16} />
-            AI Verdict Protocol v1.0
+            Verdictum AI Protocol v1.0
           </span>
         </div>
       </div>

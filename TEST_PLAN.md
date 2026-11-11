@@ -1,4 +1,4 @@
-# AI Verdict — Master Test Plan & Verification Report
+# Verdictum AI — Master Test Plan & Verification Report
 
 ## 1. Test Suite Summary
 

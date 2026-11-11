@@ -21,7 +21,7 @@ VLLM_API_KEY="${VLLM_API_KEY:-}"
 SERVER_1_IP="${1:-${SERVER_1_IP:-}}"
 
 echo "===================================================================="
-echo " AI Verdict Server 2 (Local LLM) Native Setup"
+echo " Verdictum AI Server 2 (Local LLM) Native Setup"
 echo " Model=$MODEL_NAME | Quantization=$QUANTIZATION | Dtype=$DTYPE"
 echo " MaxModelLen=$MAX_MODEL_LEN | MaxNumSeqs=$MAX_NUM_SEQS | Port=$PORT"
 echo "===================================================================="
@@ -86,7 +86,7 @@ fi
 
 cat <<EOF > /etc/systemd/system/vllm-server.service
 [Unit]
-Description=vLLM OpenAI-Compatible Inference Server (AI Verdict Server 2)
+Description=vLLM OpenAI-Compatible Inference Server (Verdictum AI Server 2)
 After=network.target nvidia-persistenced.service
 Wants=network-online.target
 
@@ -135,7 +135,7 @@ EOF
 
 ufw allow 22/tcp comment "SSH Management" > /dev/null || true
 if [ -n "$SERVER_1_IP" ]; then
-  ufw allow from "$SERVER_1_IP" to any port "$PORT" proto tcp comment "AI Verdict Server 1 API"
+  ufw allow from "$SERVER_1_IP" to any port "$PORT" proto tcp comment "Verdictum AI Server 1 API"
 fi
 echo "y" | ufw enable > /dev/null 2>&1 || true
 

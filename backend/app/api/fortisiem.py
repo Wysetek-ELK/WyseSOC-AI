@@ -147,7 +147,7 @@ async def pull_all_incidents(
     """
     Pulls all incidents from FortiSIEM in batch without requiring any Incident IDs.
     Queries the live FortiSIEM REST API by time range, or falls back to offline fixture archive.
-    Automatically generates AI Verdicts for newly ingested alerts using the LLM provider.
+    Automatically generates Verdictum AI evaluations for newly ingested alerts using the LLM provider.
     """
     service = FortiSIEMService(db)
     try:
@@ -314,7 +314,7 @@ async def evaluate_batch_ai_verdicts(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Evaluates pending or selected incidents in batch with the LLM AI Verdict engine.
+    Evaluates pending or selected incidents in batch with the LLM Verdictum AI engine.
     """
     service = AIVerdictService(db)
     result = await service.evaluate_batch(

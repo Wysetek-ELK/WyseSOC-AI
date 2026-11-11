@@ -41,7 +41,7 @@ export function DecisionEngineSection({
     <div className="space-y-5">
       {/* Separate Animated Decision Workflow */}
       <WorkflowFlowDiagram
-        title="AI Verdict Decision Engine — Animated Runtime Decision Flow"
+        title="Verdictum AI Decision Engine — Animated Runtime Decision Flow"
         subtitle="New Incident → Rule Match → Approved Policy → Evidence Validation → Local LLM → Deterministic Guardrails → Trustworthiness Score → Three-State Verdict"
         steps={DECISION_STEPS}
         edges={DECISION_EDGES}

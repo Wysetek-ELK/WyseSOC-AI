@@ -30,7 +30,7 @@ class FortiSIEMBatchPullRequest(BaseModel):
     time_from: Optional[int] = Field(None, description="Start timestamp in epoch milliseconds (defaults to past 90 days or epoch 0)")
     time_to: Optional[int] = Field(None, description="End timestamp in epoch milliseconds (defaults to now)")
     max_count: int = Field(200, ge=1, le=1000, description="Maximum number of incidents to pull in this batch")
-    auto_triage_llm: bool = Field(True, description="Whether to automatically run AI Verdict analysis on ingested incidents")
+    auto_triage_llm: bool = Field(True, description="Whether to automatically run Verdictum AI analysis on ingested incidents")
     force_refresh: bool = Field(False, description="Whether to re-import and re-evaluate cached incidents")
 
 
