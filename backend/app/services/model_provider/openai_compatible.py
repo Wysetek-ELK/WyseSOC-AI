@@ -181,14 +181,14 @@ class OpenAICompatibleProvider(BaseModelProvider):
         api_key: Optional[str] = None,
         model_name: str = "qwen3-8b-instruct",
         timeout_seconds: float = 60.0,
-        max_tokens: int = 350,
+        max_tokens: int = 512,
         temperature: float = 0.1,
     ):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key or "EMPTY"
         self.model_name = model_name
-        self.timeout_seconds = max(float(timeout_seconds), 60.0)
-        self.max_tokens = min(int(max_tokens), 350) if max_tokens else 350
+        self.timeout_seconds = max(0.1, float(timeout_seconds))
+        self.max_tokens = max(64, min(int(max_tokens), 4096)) if max_tokens else 512
         self.temperature = temperature
 
     async def get_health(self) -> ProviderHealthResponse:
@@ -306,7 +306,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_content},
             ],
-            "max_tokens": min(self.max_tokens, 350),
+            "max_tokens": self.max_tokens,
             "temperature": self.temperature,
         }
 

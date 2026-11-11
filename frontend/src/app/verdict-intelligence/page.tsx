@@ -31,6 +31,7 @@ import {
   FileText,
   HelpCircle,
   Zap,
+  Database,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -41,8 +42,13 @@ import {
   VerdictTrustAssessmentResult,
   RegressionComparisonReport,
 } from "@/lib/api";
+import PilotControlAndDashboard from "@/components/pilot/PilotControlAndDashboard";
+import HistoricalEligibilityPanel from "@/components/pilot/HistoricalEligibilityPanel";
+import { useApp } from "@/context/AppContext";
 
 function VerdictIntelligenceContent() {
+  const { user, isLoading: authLoading } = useApp();
+  const isViewer = user?.role === "Read-Only Viewer";
   const searchParams = useSearchParams();
   const ruleParam = searchParams.get("rule_id") || "";
   const initialTab = searchParams.get("tab") || (ruleParam ? "rules" : "overview");
@@ -81,8 +87,13 @@ function VerdictIntelligenceContent() {
   const [newRunSampleLimit, setNewRunSampleLimit] = useState<number>(50);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (isViewer) {
+      setLoading(false);
+      return;
+    }
     loadDashboardData();
-  }, []);
+  }, [authLoading, isViewer]);
 
   async function loadDashboardData() {
     setLoading(true);
@@ -331,6 +342,8 @@ function VerdictIntelligenceContent() {
           { id: "rules", label: "Dashboard C: Rule-Wise Trustworthiness", icon: Layers },
           { id: "explain", label: "Dashboard D: Incident Verdict Drill-Down", icon: FileText },
           { id: "simulation", label: "Dashboard E: Replay & Regression Comparison", icon: Sliders },
+          { id: "pilot", label: "Dashboard F: SOC Pilot Control", icon: ShieldCheck },
+          { id: "eligibility", label: "Dashboard G: Historical Data Eligibility", icon: Database },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -623,35 +636,58 @@ function VerdictIntelligenceContent() {
                   </div>
 
                   {/* Selective Classification Details */}
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 grid grid-cols-3 gap-4 mt-2">
-                    <div>
-                      <span className="text-xs text-slate-400">Automatic Decision Coverage</span>
-                      <div className="text-lg font-bold text-emerald-400 mt-0.5">
-                        {runDetails.run.metrics.automatic_decision_coverage != null
-                          ? `${Math.round(runDetails.run.metrics.automatic_decision_coverage * 100)}%`
-                          : "N/A"}
-                      </div>
-                      <p className="text-[11px] text-slate-500">Decided without human intervention (Verified GT denominator)</p>
-                    </div>
+                  {(() => {
+                    const m = runDetails.run.metrics || {};
+                    const hasConfusion =
+                      m.true_positives !== undefined ||
+                      m.false_positives !== undefined ||
+                      m.true_negatives !== undefined ||
+                      m.false_negatives !== undefined;
+                    const dec =
+                      (m.true_positives || 0) +
+                      (m.false_positives || 0) +
+                      (m.false_negatives || 0) +
+                      (m.true_negatives || 0);
+                    const coverageVal = m.automatic_decision_coverage;
+                    const coverageValid =
+                      coverageVal != null &&
+                      hasConfusion &&
+                      !(dec === 0 && coverageVal > 0);
+                    const escalationVal = m.analyst_attention_rate;
+                    const escalationValid =
+                      escalationVal != null && hasConfusion;
+                    return (
+                      <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 grid grid-cols-3 gap-4 mt-2">
+                        <div>
+                          <span className="text-xs text-slate-400">Automatic Decision Coverage</span>
+                          <div className="text-lg font-bold text-emerald-400 mt-0.5">
+                            {coverageValid ? `${Math.round(coverageVal * 100)}%` : "N/A"}
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            {coverageValid
+                              ? "Decided without human intervention (Verified GT denominator)"
+                              : "Insufficient verified decisive denominator (N/A)"}
+                          </p>
+                        </div>
 
-                    <div>
-                      <span className="text-xs text-slate-400">Analyst Escalation Rate</span>
-                      <div className="text-lg font-bold text-amber-400 mt-0.5">
-                        {runDetails.run.metrics.analyst_attention_rate != null
-                          ? `${Math.round(runDetails.run.metrics.analyst_attention_rate * 100)}%`
-                          : "N/A"}
-                      </div>
-                      <p className="text-[11px] text-slate-500">Safely abstained on uncertain telemetry (not 0% error)</p>
-                    </div>
+                        <div>
+                          <span className="text-xs text-slate-400">Analyst Escalation Rate</span>
+                          <div className="text-lg font-bold text-amber-400 mt-0.5">
+                            {escalationValid ? `${Math.round(escalationVal * 100)}%` : "N/A"}
+                          </div>
+                          <p className="text-[11px] text-slate-500">Safely abstained on uncertain telemetry (not 0% error)</p>
+                        </div>
 
-                    <div>
-                      <span className="text-xs text-slate-400">Critical False Negatives</span>
-                      <div className="text-lg font-bold text-red-400 mt-0.5">
-                        {runDetails.run.metrics.critical_false_negatives || 0}
+                        <div>
+                          <span className="text-xs text-slate-400">Critical False Negatives</span>
+                          <div className="text-lg font-bold text-red-400 mt-0.5">
+                            {m.critical_false_negatives || 0}
+                          </div>
+                          <p className="text-[11px] text-slate-500">Missed malicious incidents</p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-slate-500">Missed malicious incidents</p>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -893,17 +929,29 @@ function VerdictIntelligenceContent() {
                   {/* Trust Score Gauge */}
                   <div className="text-right">
                     <span className="text-xs text-slate-400 block font-medium">Verdict Trust Score</span>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span
-                        className={`text-2xl font-mono font-bold px-3 py-0.5 rounded-lg border ${
-                          (selectedAssessment.trust_score || 0) >= 7
-                            ? "bg-emerald-950 text-emerald-400 border-emerald-800"
-                            : "bg-amber-950 text-amber-400 border-amber-800"
-                        }`}
-                      >
-                        {selectedAssessment.trust_score !== null ? `${selectedAssessment.trust_score}/10` : "NOT_SCORABLE"}
-                      </span>
-                    </div>
+                    {(() => {
+                      const isCal = Boolean(selectedAssessment.is_calibrated);
+                      const raw = selectedAssessment.trust_score;
+                      const eff = raw != null ? (isCal ? raw : Math.min(6, raw)) : null;
+                      const hist = (selectedAssessment as any).historical_trust_score ?? (raw != null && !isCal && raw > 6 ? raw : null);
+                      return (
+                        <div className="flex flex-col items-end gap-1 mt-0.5">
+                          <span
+                            className={`text-2xl font-mono font-bold px-3 py-0.5 rounded-lg border ${
+                              (eff || 0) >= 7
+                                ? "bg-emerald-950 text-emerald-400 border-emerald-800"
+                                : "bg-amber-950 text-amber-400 border-amber-800"
+                            }`}
+                          >
+                            {eff !== null ? `${eff}/10` : "NOT_SCORABLE"}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {isCal ? "Calibrated" : "Uncalibrated (<=6 Cap)"}
+                            {hist !== null && eff !== null && hist !== eff ? ` • Historical stored: ${hist}/10` : ""}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Effective Verdict Badge */}
@@ -1282,6 +1330,21 @@ function VerdictIntelligenceContent() {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* DASHBOARD F: CONTROLLED SOC PILOT & MONITORING                            */}
+      {/* ========================================================================= */}
+      {activeTab === "pilot" && (
+        <PilotControlAndDashboard
+          onError={(m) => setError(m)}
+          onSuccess={(m) => setSuccessMsg(m)}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* DASHBOARD G: HISTORICAL DATA ELIGIBILITY REPORT                           */}
+      {/* ========================================================================= */}
+      {activeTab === "eligibility" && <HistoricalEligibilityPanel />}
     </div>
   );
 }

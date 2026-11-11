@@ -506,17 +506,31 @@ export default function AITriageWorkbenchDetailPage({
                 }`}>
                   {aiVerdict.validation_status || "UNVERIFIED"}
                 </span>
-                {aiVerdict.trust_score !== undefined && aiVerdict.trust_score !== null && (
-                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
-                    aiVerdict.trust_score >= 7
-                      ? "bg-emerald-950/60 text-emerald-300 border-emerald-800/70"
-                      : aiVerdict.trust_score >= 4
-                      ? "bg-amber-950/60 text-amber-300 border-amber-800/70"
-                      : "bg-rose-950/60 text-rose-300 border-rose-800/70"
-                  }`}>
-                    Trust: {aiVerdict.trust_score}/10 ({aiVerdict.is_calibrated ? "Calibrated" : "Uncalibrated Ordinal"})
-                  </span>
-                )}
+                {aiVerdict.trust_score !== undefined && aiVerdict.trust_score !== null && (() => {
+                  const isCalibrated = Boolean(aiVerdict.is_calibrated);
+                  const rawScore = Number(aiVerdict.trust_score);
+                  const capApplied = Boolean((aiVerdict as { trust_cap_applied?: boolean }).trust_cap_applied) || (!isCalibrated && rawScore > 6);
+                  const effectiveScore = isCalibrated ? rawScore : Math.min(6, rawScore);
+                  const historicalScore = (aiVerdict as { historical_trust_score?: number | null }).historical_trust_score ?? (capApplied ? rawScore : null);
+                  return (
+                    <span className="inline-flex items-center gap-1.5 flex-wrap">
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                        effectiveScore >= 7
+                          ? "bg-emerald-950/60 text-emerald-300 border-emerald-800/70"
+                          : effectiveScore >= 4
+                          ? "bg-amber-950/60 text-amber-300 border-amber-800/70"
+                          : "bg-rose-950/60 text-rose-300 border-rose-800/70"
+                      }`}>
+                        Trust: {effectiveScore}/10 ({isCalibrated ? "Calibrated" : capApplied ? "Uncalibrated Cap" : "Uncalibrated Ordinal"})
+                      </span>
+                      {historicalScore !== null && historicalScore !== undefined && historicalScore !== effectiveScore && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border bg-slate-900 text-slate-400 border-slate-700" title="Preserved legacy stored score prior to uncalibrated <= 6/10 cap">
+                          Historical stored: {historicalScore}/10 (pre-cap)
+                        </span>
+                      )}
+                    </span>
+                  );
+                })()}
               </div>
               {aiVerdict.final_disposition && (
                 <span className="text-[9px] text-slate-400 font-mono block mt-1 truncate" title={aiVerdict.final_disposition}>

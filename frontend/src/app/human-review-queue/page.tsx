@@ -24,8 +24,12 @@ import {
   Info,
 } from "lucide-react";
 import { api, InvestigationListItem, InvestigationDetail, User } from "@/lib/api";
+import { useApp } from "@/context/AppContext";
 
 export default function HumanReviewQueuePage() {
+  const { user } = useApp();
+  const canMutate = user?.role === "Administrator" || user?.role === "SOC Analyst";
+
   const [items, setItems] = useState<InvestigationListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -49,6 +53,7 @@ export default function HumanReviewQueuePage() {
   const [evidenceRationale, setEvidenceRationale] = useState("");
 
   const [verdictChoice, setVerdictChoice] = useState<string>("TRUE_POSITIVE");
+  const [actionType, setActionType] = useState<"ACCEPTED" | "OVERRIDDEN" | "DISPUTED" | "REQUESTED_EVIDENCE">("ACCEPTED");
   const [verdictReason, setVerdictReason] = useState("");
   const [analystNotes, setAnalystNotes] = useState("");
   const [insufficientReason, setInsufficientReason] = useState("");
@@ -82,8 +87,10 @@ export default function HumanReviewQueuePage() {
   }, [page, statusFilter, verdictFilter, disputedFilter]);
 
   useEffect(() => {
-    api.getUsers().then(setUsers).catch(() => { });
-  }, []);
+    if (user?.role === "Administrator") {
+      api.getUsers().then(setUsers).catch(() => { });
+    }
+  }, [user?.role]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +104,8 @@ export default function HumanReviewQueuePage() {
     try {
       const detail = await api.getInvestigation(id);
       setSelectedInvestigation(detail);
-      setVerdictChoice(detail.analyst_verdict || "TRUE_POSITIVE");
+      setVerdictChoice(detail.analyst_verdict || detail.ai_assurance?.validated_verdict || "TRUE_POSITIVE");
+      setActionType((detail.ai_assurance?.analyst_feedback_action as any) || "ACCEPTED");
       setVerdictReason(detail.verdict_reason || "");
       setAnalystNotes(detail.analyst_notes || "");
       setInsufficientReason(detail.insufficient_evidence_reason || "");
@@ -201,6 +209,7 @@ export default function HumanReviewQueuePage() {
         is_disputed: isDisputed,
         is_independently_verified: isVerified,
         status: "REVIEWED",
+        action_type: actionType,
       });
       const updated = await api.getInvestigation(selectedInvestigation.id);
       setSelectedInvestigation(updated);
@@ -451,7 +460,16 @@ export default function HumanReviewQueuePage() {
                       )}
                     </td>
                     <td className="py-1.5 px-2.5">
-                      {getVerdictBadge(item.analyst_verdict)}
+                      <div className="space-y-0.5">
+                        {getVerdictBadge(item.analyst_verdict)}
+                        {item.ai_validated_verdict && (
+                          <div className="text-[10px] font-mono text-indigo-300">
+                            AI: {item.ai_validated_verdict}
+                            {item.ai_trust_score != null ? ` (${item.ai_trust_score}/10)` : ""}
+                            {item.pilot_mode ? ` • ${item.pilot_mode}` : ""}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="py-1.5 px-2.5 text-center">
                       <div className="inline-flex gap-2 text-slate-400 text-[11px]">
@@ -586,6 +604,98 @@ export default function HumanReviewQueuePage() {
                 </Link>
               </div>
             </div>
+
+            {/* Stage 4: AI Verdict Assurance & Provenance */}
+            {selectedInvestigation.ai_assurance && (() => {
+              const a = selectedInvestigation.ai_assurance;
+              return (
+                <div className="p-3 rounded-lg border border-indigo-900/60 bg-indigo-950/15 space-y-2.5 text-xs" data-testid="drawer-ai-assurance">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-900/40 pb-1.5">
+                    <h3 className="font-bold text-indigo-300 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                      AI Verdict Assurance &amp; Provenance
+                    </h3>
+                    <div className="flex items-center gap-1.5 flex-wrap font-mono text-[10px]">
+                      {a.pilot_mode && (
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                          Pilot: {a.pilot_mode}
+                        </span>
+                      )}
+                      {a.policy_version_number != null && (
+                        <span className="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-700">
+                          Policy: v{a.policy_version_number}
+                        </span>
+                      )}
+                      <span className={`px-1.5 py-0.5 rounded border ${a.is_simulated ? "bg-amber-950 text-amber-300 border-amber-800" : "bg-emerald-950 text-emerald-300 border-emerald-800"}`}>
+                        {a.is_simulated ? "SIMULATED" : "LIVE"} • {a.model_identifier || "Unknown"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                      <span className="text-[9px] uppercase text-slate-500 block">Proposed LLM Verdict</span>
+                      <span className="font-mono font-semibold text-slate-200">{a.proposed_verdict || "NONE"}</span>
+                    </div>
+                    <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                      <span className="text-[9px] uppercase text-slate-500 block">Final Validated</span>
+                      <span className="font-mono font-bold text-cyan-300">{a.validated_verdict || "REQUIRES_ATTENTION"}</span>
+                    </div>
+                    <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                      <span className="text-[9px] uppercase text-slate-500 block">Validation Status</span>
+                      <span className="font-mono text-slate-200">{a.validation_status || "UNVALIDATED"}</span>
+                    </div>
+                    <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                      <span className="text-[9px] uppercase text-slate-500 block">Trustworthiness</span>
+                      <span className="font-mono text-amber-300">
+                        {a.trust_score != null ? `${a.trust_score}/10` : "NOT_SCORABLE"}
+                        {a.historical_trust_score != null && a.historical_trust_score !== a.trust_score ? ` (Hist: ${a.historical_trust_score}/10)` : ""}
+                      </span>
+                      <span className="block text-[9px] text-slate-500">{a.calibration_status}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 text-[11px] text-slate-400">
+                    <span>Rule: <strong className="text-slate-200 font-mono">{a.rule_id || selectedInvestigation.rule_name || "N/A"}</strong></span>
+                    <span>Historical Support: <strong className="text-slate-200">{a.historical_sample_count} samples ({a.historical_validation_status})</strong></span>
+                    <span>Supervisor Verified: <strong className={a.supervisor_verified ? "text-emerald-300" : "text-amber-300"}>{a.supervisor_verified ? "YES (RAG-Eligible)" : "PENDING_SUPERVISOR"}</strong></span>
+                  </div>
+
+                  {a.abstention_reason && (
+                    <div className="p-2 rounded bg-amber-950/40 border border-amber-800/60 text-amber-200 text-[11px]">
+                      <strong>Abstention Reason:</strong> {a.abstention_reason}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                    <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                      <span className="text-emerald-400 font-semibold block mb-1">Supporting ({a.supporting_evidence.length})</span>
+                      {a.supporting_evidence.length === 0 ? <span className="text-slate-500">None</span> : (
+                        <ul className="list-disc list-inside text-slate-300 space-y-0.5">
+                          {a.supporting_evidence.slice(0, 3).map((s, idx) => <li key={idx} className="truncate">{s}</li>)}
+                        </ul>
+                      )}
+                    </div>
+                    <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                      <span className="text-rose-400 font-semibold block mb-1">Contradictory ({a.contradictory_evidence.length})</span>
+                      {a.contradictory_evidence.length === 0 ? <span className="text-slate-500">None detected</span> : (
+                        <ul className="list-disc list-inside text-rose-200 space-y-0.5">
+                          {a.contradictory_evidence.slice(0, 3).map((s, idx) => <li key={idx} className="truncate">{s}</li>)}
+                        </ul>
+                      )}
+                    </div>
+                    <div className="p-2 rounded bg-slate-950 border border-slate-800">
+                      <span className="text-amber-400 font-semibold block mb-1">Missing ({a.missing_evidence.length})</span>
+                      {a.missing_evidence.length === 0 ? <span className="text-slate-500">None reported</span> : (
+                        <ul className="list-disc list-inside text-amber-200 space-y-0.5">
+                          {a.missing_evidence.slice(0, 3).map((s, idx) => <li key={idx} className="truncate">{s}</li>)}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Section 1: Investigation Q&A */}
             <div className="space-y-2">
@@ -795,6 +905,28 @@ export default function HumanReviewQueuePage() {
 
               {/* Verdict Selection */}
               <div>
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">Analyst Review Action (Preserves AI Recommendation)</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-2.5">
+                  {(["ACCEPTED", "OVERRIDDEN", "DISPUTED", "REQUESTED_EVIDENCE"] as const).map((act) => (
+                    <button
+                      key={act}
+                      type="button"
+                      disabled={!canMutate}
+                      onClick={() => {
+                        setActionType(act);
+                        if (act === "DISPUTED") setIsDisputed(true);
+                      }}
+                      className={`py-1 px-2 text-[10px] font-mono rounded border transition-colors disabled:opacity-40 ${
+                        actionType === act
+                          ? "bg-indigo-950 text-indigo-200 border-indigo-600"
+                          : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800"
+                      }`}
+                    >
+                      {act}
+                    </button>
+                  ))}
+                </div>
+
                 <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">Verdict Outcome</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   <button
@@ -901,9 +1033,14 @@ export default function HumanReviewQueuePage() {
 
               {/* Submit Button */}
               <div className="pt-1">
+                {!canMutate && (
+                  <div className="mb-2 text-[10px] text-amber-300 font-mono">
+                    Read-Only Viewer: investigation edits and verdict submissions are disabled.
+                  </div>
+                )}
                 <button
                   type="submit"
-                  disabled={submittingVerdict}
+                  disabled={!canMutate || submittingVerdict}
                   className="w-full py-1.5 bg-sky-700 hover:bg-sky-600 disabled:opacity-50 text-white rounded text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
                 >
                   {submittingVerdict ? (

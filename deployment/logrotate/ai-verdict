@@ -1,0 +1,10 @@
+/var/log/ai-verdict/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}
+

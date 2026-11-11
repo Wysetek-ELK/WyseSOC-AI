@@ -137,8 +137,8 @@ class EmpiricalAccuracyEvaluator:
                     fp += 1  # False alarm: benign classified as attack
 
         auto_decision_count = tp + tn + fp + fn
-        auto_coverage = (auto_decision_count / verified_gt_count) if verified_gt_count > 0 else 0.0
-        attention_rate = (analyst_attention / verified_gt_count) if verified_gt_count > 0 else 0.0
+        auto_coverage = round(auto_decision_count / verified_gt_count, 4) if verified_gt_count > 0 else None
+        attention_rate = round(analyst_attention / verified_gt_count, 4) if verified_gt_count > 0 else None
 
         # Precision (PPV): TP / (TP + FP)
         precision = (tp / (tp + fp)) if (tp + fp) > 0 else None
@@ -203,9 +203,9 @@ class EmpiricalAccuracyEvaluator:
             true_negatives=tn,
             false_negatives=fn,
             analyst_attention_count=analyst_attention,
-            analyst_attention_rate=round(attention_rate, 4),
+            analyst_attention_rate=attention_rate,
             automatic_decision_count=auto_decision_count,
-            automatic_decision_coverage=round(auto_coverage, 4),
+            automatic_decision_coverage=auto_coverage,
             precision=round(precision, 4) if precision is not None else None,
             precision_ci=precision_ci,
             recall=round(recall, 4) if recall is not None else None,

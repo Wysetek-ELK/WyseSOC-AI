@@ -9,7 +9,11 @@ from app.models.incident import Incident
 from app.models.rule import Rule
 from app.models.user import User
 from app.models.learning import LearningRecord
+from app.models.pilot import PilotEvaluationRecord
+from app.models.verdict_intelligence import VerdictTrustAssessmentRecord
+from app.services.verdict_trustworthiness_engine import VerdictTrustworthinessEngine
 from app.schemas.investigation import (
+    AIAssuranceSummary,
     InvestigationListItem,
     InvestigationDetailResponse,
     InvestigationQuestionResponse,
@@ -118,6 +122,7 @@ class ReviewOrchestrator:
             inc = inv.incident
             rule = inc.rule if inc else None
             user = inv.assigned_user
+            norm_av = VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict) if inc else None
 
             items.append(
                 InvestigationListItem(
@@ -137,6 +142,9 @@ class ReviewOrchestrator:
                     is_independently_verified=inv.is_independently_verified,
                     question_count=len(inv.questions),
                     evidence_count=len(inv.evidence_items),
+                    ai_validated_verdict=norm_av.get("verdict") if isinstance(norm_av, dict) else None,
+                    ai_trust_score=norm_av.get("trust_score") if isinstance(norm_av, dict) else None,
+                    pilot_mode=norm_av.get("pilot_mode") if isinstance(norm_av, dict) else None,
                     created_at=inv.created_at,
                     updated_at=inv.updated_at,
                 )
@@ -275,11 +283,94 @@ class ReviewOrchestrator:
         await self.db.refresh(ev)
         return ev
 
+    async def build_ai_assurance(self, inv: Investigation) -> Optional[AIAssuranceSummary]:
+        """Builds read-only AI verdict assurance & pilot provenance snapshot for Human Review Queue."""
+        inc = inv.incident
+        if not inc:
+            return None
+        rule = inc.rule
+        norm_av = VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict) or {}
+
+        pe_res = await self.db.execute(
+            select(PilotEvaluationRecord)
+            .where(PilotEvaluationRecord.incident_id == inc.incident_id)
+            .order_by(desc(PilotEvaluationRecord.created_at))
+            .limit(1)
+        )
+        pe = pe_res.scalar_one_or_none()
+
+        trust_res = await self.db.execute(
+            select(VerdictTrustAssessmentRecord)
+            .where(VerdictTrustAssessmentRecord.incident_id == inc.incident_id)
+            .order_by(desc(VerdictTrustAssessmentRecord.evaluated_at))
+            .limit(1)
+        )
+        trec = trust_res.scalar_one_or_none()
+
+        if not norm_av and not pe and not trec:
+            return AIAssuranceSummary(
+                incident_summary=inc.description or inc.title or "",
+                rule_id=rule.rule_id if rule else inc.rule_id,
+                rule_name=rule.name if rule else inc.event_type,
+            )
+
+        is_cal = bool(
+            pe.is_calibrated if pe is not None
+            else (trec.is_calibrated if trec is not None else norm_av.get("is_calibrated", False))
+        )
+        raw_t = (
+            pe.trust_score if pe is not None
+            else (trec.trust_score if trec is not None else norm_av.get("trust_score"))
+        )
+        eff_t, hist_t, cap_applied, _ = VerdictTrustworthinessEngine.cap_uncalibrated_trust_score(
+            raw_t, is_calibrated=is_cal
+        )
+        hist_t = hist_t or norm_av.get("historical_trust_score")
+        cap_applied = cap_applied or bool(norm_av.get("trust_cap_applied", False))
+
+        return AIAssuranceSummary(
+            incident_summary=inc.description or inc.title or "",
+            rule_id=rule.rule_id if rule else (pe.rule_id if pe else inc.rule_id),
+            rule_name=rule.name if rule else inc.event_type,
+            policy_version_number=(
+                (pe.policy_version_number if pe else None)
+                or (trec.applicable_policy_version if trec else None)
+                or norm_av.get("policy_version_number")
+            ),
+            policy_digest=(pe.policy_digest if pe else None) or norm_av.get("compilation_digest"),
+            proposed_verdict=(pe.proposed_verdict if pe else None) or (trec.suggested_verdict if trec else None) or norm_av.get("proposed_verdict"),
+            validated_verdict=(pe.validated_verdict if pe else None) or (trec.effective_verdict if trec else None) or norm_av.get("verdict"),
+            validation_status=(pe.validation_status if pe else None) or norm_av.get("validation_status"),
+            abstention_reason=(pe.abstention_reason if pe else None) or (trec.escalation_reason if trec else None) or norm_av.get("abstention_reason"),
+            supporting_evidence=list((pe.supporting_evidence if pe else None) or (trec.supporting_evidence if trec else None) or norm_av.get("supporting_evidence") or []),
+            contradictory_evidence=list((pe.contradictory_evidence if pe else None) or (trec.contradictory_evidence if trec else None) or norm_av.get("detected_contradictions") or []),
+            missing_evidence=list((pe.missing_evidence if pe else None) or (trec.missing_evidence if trec else None) or norm_av.get("missing_evidence") or []),
+            trust_score=eff_t,
+            historical_trust_score=hist_t,
+            trust_cap_applied=cap_applied,
+            is_calibrated=is_cal,
+            calibration_status="CALIBRATED" if is_cal else "NOT_CALIBRATED",
+            historical_sample_count=int(norm_av.get("historical_sample_count") or 0),
+            historical_validation_status=str(
+                (trec.historical_validation_status if trec else None)
+                or norm_av.get("historical_validation_status")
+                or "UNCALIBRATED"
+            ),
+            model_identifier=(pe.model_identifier if pe else None) or (trec.model_identifier if trec else None) or norm_av.get("model_identifier"),
+            is_simulated=bool(pe.is_simulated if pe is not None else (trec.is_simulated if trec is not None else norm_av.get("is_simulated", False))),
+            pilot_evaluation_id=pe.id if pe else None,
+            pilot_mode=(pe.execution_mode if pe else None) or norm_av.get("pilot_mode"),
+            evaluated_at=(pe.created_at.isoformat() if pe else None) or norm_av.get("evaluated_at"),
+            analyst_feedback_action=pe.analyst_feedback_action if pe else None,
+            supervisor_verified=bool(pe.supervisor_verified) if pe else False,
+        )
+
     async def submit_verdict(
         self,
         investigation_id: str,
         verdict_data: AnalystVerdictSubmit,
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
+        username: Optional[str] = None,
     ) -> Investigation:
         inv = await self.get_by_id(investigation_id)
         if not inv:
@@ -352,6 +443,34 @@ class ReviewOrchestrator:
                     lr.answered_questions = qa_data
                     lr.verification_status = "PENDING_REVIEW"
                     lr.feedback_timestamp = datetime.utcnow()
+
+        # Sync analyst decision to latest PilotEvaluationRecord without overwriting AI verdict
+        if inv.incident:
+            pe_res = await self.db.execute(
+                select(PilotEvaluationRecord)
+                .where(PilotEvaluationRecord.incident_id == inv.incident.incident_id)
+                .order_by(desc(PilotEvaluationRecord.created_at))
+                .limit(1)
+            )
+            pe_rec = pe_res.scalar_one_or_none()
+            if pe_rec:
+                explicit_action = (getattr(verdict_data, "action_type", None) or "").upper().strip()
+                if explicit_action in ("ACCEPTED", "OVERRIDDEN", "DISPUTED", "REQUESTED_EVIDENCE"):
+                    action = explicit_action
+                elif inv.is_disputed:
+                    action = "DISPUTED"
+                elif pe_rec.validated_verdict == verdict_norm:
+                    action = "ACCEPTED"
+                else:
+                    action = "OVERRIDDEN"
+                pe_rec.analyst_feedback_action = action
+                pe_rec.analyst_decision = verdict_norm
+                pe_rec.analyst_override_reason = verdict_data.verdict_reason or verdict_data.analyst_notes
+                pe_rec.analyst_user = username or user_id or "analyst"
+                pe_rec.analyst_decided_at = datetime.utcnow()
+                pe_rec.supervisor_verified = False
+                pe_rec.updated_at = datetime.utcnow()
+                self.db.add(pe_rec)
 
         await self.db.commit()
         await self.db.refresh(inv)

@@ -1,30 +1,36 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# AI VERDICT — UBUNTU SERVER LTS AUTOMATED INSTALLATION SCRIPT
-# Architecture: Server 1 (Application Server)
+# AI VERDICT — UBUNTU SERVER LTS IDEMPOTENT NATIVE INSTALLATION SCRIPT
+# Architecture: Server 1 (Application Server — Native Linux, No Docker)
 # Target OS: Ubuntu 22.04 / 24.04 LTS
 # ==============================================================================
 
 set -euo pipefail
 
+APP_DIR="${APP_DIR:-/opt/ai-verdict}"
+APP_USER="${APP_USER:-aiverdict}"
+DB_NAME="${DB_NAME:-ai_verdict}"
+DB_USER="${DB_USER:-aiverdict_user}"
+BACKEND_PORT="${BACKEND_PORT:-8000}"
+FRONTEND_PORT="${FRONTEND_PORT:-3000}"
+LOCAL_LLM_BASE_URL="${LOCAL_LLM_BASE_URL:-http://REPLACE_WITH_SERVER2_PRIVATE_HOST:8000/v1}"
+LOCAL_LLM_MODEL_NAME="${LOCAL_LLM_MODEL_NAME:-Qwen/Qwen2.5-7B-Instruct-AWQ}"
+INITIAL_ADMIN_USER="${INITIAL_ADMIN_USER:-admin}"
+INITIAL_ADMIN_EMAIL="${INITIAL_ADMIN_EMAIL:-admin@example.com}"
+INITIAL_ADMIN_PASSWORD="${INITIAL_ADMIN_PASSWORD:-}"
+
 echo "=========================================================="
-echo " Starting AI Verdict Server 1 Native Installation"
+echo " AI Verdict Server 1 Native Installation (Idempotent)"
+echo " APP_DIR=$APP_DIR | APP_USER=$APP_USER"
 echo "=========================================================="
 
-# Check root privileges
 if [ "$EUID" -ne 0 ]; then
   echo "Error: Please run as root or with sudo"
   exit 1
 fi
 
-APP_DIR="/opt/ai-verdict"
-APP_USER="aiverdict"
-DB_NAME="ai_verdict"
-DB_USER="aiverdict_user"
-DB_PASS=$(openssl rand -hex 16)
-SECRET_KEY=$(openssl rand -hex 32)
-
-echo "[1/8] Updating apt packages and installing system tools..."
+echo "[1/9] Installing system dependencies (PostgreSQL, Redis, Nginx, Python, Build Tools)..."
+export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -y \
   build-essential \
@@ -40,109 +46,117 @@ apt-get install -y \
   python3-pip \
   python3-venv \
   python3-dev \
+  logrotate \
   ufw
 
-echo "[2/8] Installing Node.js 22 LTS..."
+echo "[2/9] Checking Node.js 22 LTS..."
 if ! command -v node &> /dev/null; then
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y nodejs
 fi
-echo "Node version: $(node --version)"
-echo "NPM version: $(npm --version)"
+echo "Node version: $(node --version) | NPM version: $(npm --version)"
 
-echo "[3/8] Creating service user '$APP_USER'..."
+echo "[3/9] Ensuring service user '$APP_USER' and log directories..."
 if ! id "$APP_USER" &>/dev/null; then
   useradd -r -s /bin/bash -d "$APP_DIR" "$APP_USER"
 fi
-
-mkdir -p "$APP_DIR"
-mkdir -p /var/log/ai-verdict
+mkdir -p "$APP_DIR" /var/log/ai-verdict
 chown -R "$APP_USER:$APP_USER" /var/log/ai-verdict
 
-echo "[4/8] Configuring PostgreSQL Database '$DB_NAME' & Redis..."
-systemctl start postgresql
-systemctl enable postgresql
-systemctl start redis-server
-systemctl enable redis-server
+echo "[4/9] Ensuring PostgreSQL & Redis services are running..."
+systemctl enable --now postgresql
+systemctl enable --now redis-server
 
-sudo -u postgres psql -c "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER';" | grep -q 1 || \
-sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASS';"
+ENV_FILE="$APP_DIR/backend/.env"
+if [ -f "$ENV_FILE" ]; then
+  echo "[INFO] Existing $ENV_FILE found — preserving secrets and credentials (idempotent mode)."
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+else
+  gen_db_pass="${DB_PASS:-$(openssl rand -hex 16)}"
+  gen_jwt_tok="${APP_JWT_SIGNER:-$(openssl rand -hex 32)}"
+  gen_audit_hmac="${AUDIT_SIGNING_KEY:-$(openssl rand -hex 32)}"
 
-sudo -u postgres psql -c "SELECT 1 FROM pg_database WHERE datname='$DB_NAME';" | grep -q 1 || \
-sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
+  sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER';" | grep -q 1 || \
+    sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$gen_db_pass';"
+  sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME';" | grep -q 1 || \
+    sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
+  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
 
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+  cp "$APP_DIR/deployment/env.production.example" "$ENV_FILE"
+  sed -i \
+    -e "s|REPLACE_WITH_OPENSSL_RAND_HEX_32_MINIMUM_32_CHARACTERS|${gen_jwt_tok}|g" \
+    -e "s|REPLACE_WITH_OPENSSL_RAND_HEX_32_FOR_HMAC_AUDIT_SIGNATURES|${gen_audit_hmac}|g" \
+    -e "s|aiverdict_user:REPLACE_WITH_DB_PASSWORD@127.0.0.1:5432/ai_verdict|${DB_USER}:${gen_db_pass}@127.0.0.1:5432/${DB_NAME}|g" \
+    -e "s|http://REPLACE_WITH_SERVER2_PRIVATE_HOST:8000/v1|${LOCAL_LLM_BASE_URL}|g" \
+    -e "s|Qwen/Qwen2.5-7B-Instruct-AWQ|${LOCAL_LLM_MODEL_NAME}|g" \
+    "$ENV_FILE"
+  chown "$APP_USER:$APP_USER" "$ENV_FILE"
+  chmod 600 "$ENV_FILE"
+fi
 
-echo "[5/8] Setting up Backend Python Virtual Environment..."
+echo "[5/9] Installing Backend Python Virtual Environment..."
 cd "$APP_DIR/backend"
-sudo -u "$APP_USER" python3 -m venv venv
+if [ ! -d "$APP_DIR/backend/venv" ]; then
+  sudo -u "$APP_USER" python3 -m venv venv
+fi
 sudo -u "$APP_USER" ./venv/bin/pip install --upgrade pip setuptools wheel
 sudo -u "$APP_USER" ./venv/bin/pip install -r requirements.txt
 
-# Create .env for backend
-AUDIT_KEY=$(openssl rand -hex 32)
-cat <<EOF > "$APP_DIR/backend/.env"
-APP_ENV="production"
-PROJECT_NAME="AI Verdict"
-VERSION="1.0.0"
-SECRET_KEY="$SECRET_KEY"
-AUDIT_SIGNING_KEY="$AUDIT_KEY"
-DATABASE_URL="postgresql+asyncpg://$DB_USER:$DB_PASS@127.0.0.1:5432/$DB_NAME"
-SYNC_DATABASE_URL="postgresql+psycopg2://$DB_USER:$DB_PASS@127.0.0.1:5432/$DB_NAME"
-DB_POOL_SIZE="20"
-DB_MAX_OVERFLOW="10"
-AUTO_MIGRATE_ON_STARTUP="false"
-REDIS_URL="redis://127.0.0.1:6379/0"
-CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
-CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
-USE_ASYNC_CELERY="true"
-COOKIE_SECURE="true"
-COOKIE_SAMESITE="lax"
-EOF
-chown "$APP_USER:$APP_USER" "$APP_DIR/backend/.env"
-chmod 600 "$APP_DIR/backend/.env"
-
-echo "[6/8] Running Database Migrations & Initial Setup..."
+echo "[6/9] Running Alembic Migrations..."
 sudo -u "$APP_USER" ./venv/bin/alembic upgrade head
-sudo -u "$APP_USER" ./venv/bin/python -m app.cli create-admin \
-  --username "admin" \
-  --email "admin@ai-verdict.internal" \
-  --password "AdminPassword123!" \
-  --full-name "System Administrator"
+if [ -n "$INITIAL_ADMIN_PASSWORD" ]; then
+  sudo -u "$APP_USER" ./venv/bin/python -m app.cli create-admin \
+    --username "$INITIAL_ADMIN_USER" \
+    --email "$INITIAL_ADMIN_EMAIL" \
+    --password "$INITIAL_ADMIN_PASSWORD" \
+    --full-name "System Administrator" || true
+else
+  echo "[NOTICE] INITIAL_ADMIN_PASSWORD not supplied; skipping create-admin (run app.cli create-admin manually)."
+fi
 
-echo "[7/8] Building Frontend Next.js Application..."
+echo "[7/9] Building Frontend Next.js Application..."
 cd "$APP_DIR/frontend"
-cat <<EOF > "$APP_DIR/frontend/.env.production"
+if [ ! -f "$APP_DIR/frontend/.env.production" ]; then
+  cat <<EOF > "$APP_DIR/frontend/.env.production"
 NEXT_PUBLIC_APP_NAME="AI Verdict"
 EOF
-sudo -u "$APP_USER" npm install
+  chown "$APP_USER:$APP_USER" "$APP_DIR/frontend/.env.production"
+fi
+sudo -u "$APP_USER" npm ci --no-audit --no-fund || sudo -u "$APP_USER" npm install
 sudo -u "$APP_USER" npm run build
 
-echo "[8/8] Installing systemd services and Nginx configuration..."
+echo "[8/9] Installing systemd units, logrotate, and Nginx..."
 cp "$APP_DIR/deployment/systemd/ai-verdict-backend.service" /etc/systemd/system/
 cp "$APP_DIR/deployment/systemd/ai-verdict-worker.service" /etc/systemd/system/
 cp "$APP_DIR/deployment/systemd/ai-verdict-frontend.service" /etc/systemd/system/
+if [ -f "$APP_DIR/deployment/systemd/ai-verdict-scheduler.service" ]; then
+  cp "$APP_DIR/deployment/systemd/ai-verdict-scheduler.service" /etc/systemd/system/
+fi
+if [ -f "$APP_DIR/deployment/logrotate/ai-verdict" ]; then
+  cp "$APP_DIR/deployment/logrotate/ai-verdict" /etc/logrotate.d/ai-verdict
+fi
 
 systemctl daemon-reload
-systemctl enable ai-verdict-backend
-systemctl enable ai-verdict-worker
-systemctl enable ai-verdict-frontend
+systemctl enable ai-verdict-backend ai-verdict-worker ai-verdict-frontend
 systemctl restart ai-verdict-backend
 systemctl restart ai-verdict-worker
 systemctl restart ai-verdict-frontend
 
-# Nginx config
 cp "$APP_DIR/deployment/nginx/ai-verdict.conf" /etc/nginx/sites-available/ai-verdict.conf
-ln -sf /etc/nginx/sites-available/ai-verdict.conf /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/ai-verdict.conf /etc/nginx/sites-enabled/ai-verdict.conf
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl restart nginx
 
-echo "=========================================================="
-echo " AI Verdict Installation Complete!"
-echo " Backend Status: $(systemctl is-active ai-verdict-backend)"
-echo " Worker Status:  $(systemctl is-active ai-verdict-worker)"
-echo " Frontend Status: $(systemctl is-active ai-verdict-frontend)"
-echo " Database User: $DB_USER"
-echo " Initial Admin: admin / AdminPassword123!"
-echo "=========================================================="
+echo "[9/9] Configuring conservative firewall (SSH + HTTP/HTTPS only)..."
+ufw allow 22/tcp comment "SSH" > /dev/null || true
+ufw allow 80/tcp comment "HTTP Redirect" > /dev/null || true
+ufw allow 443/tcp comment "HTTPS Reverse Proxy" > /dev/null || true
+echo "y" | ufw enable > /dev/null 2>&1 || true
 
+echo "=========================================================="
+echo " AI Verdict Server 1 Native Setup Complete"
+echo " Run: bash $APP_DIR/deployment/scripts/verify_server1.sh"
+echo "=========================================================="

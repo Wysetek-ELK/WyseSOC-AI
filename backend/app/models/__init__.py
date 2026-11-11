@@ -25,6 +25,7 @@ from app.models.verdict_intelligence import (
     HistoricalEvaluationRunRecord,
     HistoricalEvaluationResultRecord,
 )
+from app.models.pilot import PilotConfiguration, PilotConfigHistory, PilotEvaluationRecord
 
 __all__ = [
     "Base",
@@ -59,4 +60,7 @@ __all__ = [
     "GroundTruthValidationRecord",
     "HistoricalEvaluationRunRecord",
     "HistoricalEvaluationResultRecord",
+    "PilotConfiguration",
+    "PilotConfigHistory",
+    "PilotEvaluationRecord",
 ]

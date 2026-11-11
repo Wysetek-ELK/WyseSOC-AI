@@ -1,0 +1,31 @@
+{
+  "pilot_default_mode": "DISABLED",
+  "safety_guarantees": {
+    "allow_external_writeback": false,
+    "allow_auto_incident_closure": false,
+    "live_simulated_fallback_allowed": false,
+    "self_verification_allowed": false
+  },
+  "supported_modes": [
+    "DISABLED",
+    "SHADOW",
+    "ANALYST_ASSISTED"
+  ],
+  "alembic_revision": "008_soc_pilot",
+  "verified_capabilities": [
+    "Versioned PilotConfiguration + immutable PilotConfigHistory + rollback",
+    "HMAC-signed AuditLog entries for config, lifecycle, feedback, and supervisor verification",
+    "Rule, archetype, severity, and ingestion_source scope filtering",
+    "Rolling 1h and 24h evaluation budgets",
+    "Per-(pilot_id, mode, incident_id) idempotency + DistributedLockManager coordination",
+    "SHADOW isolation leaving Incident.ai_verdict and Investigation untouched",
+    "SERVER2_OFFLINE fail-closed handling + consecutive error auto-pause circuit guard",
+    "Separated Analyst feedback (ACCEPTED/OVERRIDDEN/DISPUTED/REQUESTED_EVIDENCE) + independent Supervisor verification",
+    "Bifurcated live vs simulated token metrics and honest NOT_CALCULABLE / None denominators"
+  ],
+  "verified_by_tests": [
+    "backend/tests/test_phase9_audit_and_pilot.py",
+    "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+  ]
+}
+

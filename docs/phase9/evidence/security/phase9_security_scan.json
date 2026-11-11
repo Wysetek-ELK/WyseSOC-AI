@@ -1,0 +1,38 @@
+{
+  "gitleaks": "FINDINGS: ",
+  "secret_patterns": [],
+  "ip_scan_phase9": [],
+  "ast_cwe_checks": {
+    "backend/app/models/pilot.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    },
+    "backend/app/schemas/pilot.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    },
+    "backend/app/services/pilot_service.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    },
+    "backend/app/services/historical_eligibility_service.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    },
+    "backend/app/api/pilot.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    }
+  },
+  "frontend_security_checks": {
+    "frontend/src/components/pilot/PilotControlAndDashboard.tsx": {
+      "uses_dangerouslySetInnerHTML": false,
+      "uses_eval": false
+    },
+    "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx": {
+      "uses_dangerouslySetInnerHTML": false,
+      "uses_eval": false
+    }
+  },
+  "passed": true
+}

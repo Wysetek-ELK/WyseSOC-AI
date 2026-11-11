@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.incident import Incident, IncidentEvent, HistoricalGroundTruth
 from app.models.rule import Rule
+from app.services.verdict_trustworthiness_engine import VerdictTrustworthinessEngine
 from app.schemas.incident import (
     IncidentListItemResponse,
     IncidentDetailResponse,
@@ -164,7 +165,7 @@ class IncidentService:
                     cleared_reason=cleared_reason,
                     cleared_user=cleared_user,
                     cleared_time_epoch=cleared_time_epoch,
-                    ai_verdict=inc.ai_verdict,
+                    ai_verdict=VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict),
                     event_count=len(inc.events),
                     created_at=inc.created_at,
                 )
@@ -284,7 +285,7 @@ class IncidentService:
             raw_payload=sanitized_raw_payload,
             events=events_resp,
             ground_truth=gt_resp,
-            ai_verdict=inc.ai_verdict,
+            ai_verdict=VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict),
             created_at=inc.created_at,
             updated_at=inc.updated_at,
         )

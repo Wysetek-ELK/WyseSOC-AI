@@ -16,9 +16,9 @@
 | Metric | Value | Calculation Basis |
 |---|---|---|
 | **Registered Modules** | 19 | Covers all 19 core architectural domains |
-| **Registered Features** | 37 | Unique feature IDs with measurable criteria |
-| **Overall Implementation Completion** | **100.0%** | 67 / 67 applicable implementation criteria satisfied |
-| **Overall Independent Verification** | **91.0%** | 61 / 67 applicable acceptance criteria verified |
+| **Registered Features** | 44 | Unique feature IDs with measurable criteria |
+| **Overall Implementation Completion** | **100.0%** | 78 / 78 applicable implementation criteria satisfied |
+| **Overall Independent Verification** | **88.5%** | 69 / 78 applicable acceptance criteria verified |
 
 ---
 
@@ -29,21 +29,21 @@
 | Agent Intelligence Studio 2.0 | 2 | 5/5 | **100.0%** | 5/5 | **100.0%** |
 | Rule Management & Policy Generation | 2 | 6/6 | **100.0%** | 6/6 | **100.0%** |
 | Policy Quality Gates & Simulation | 3 | 7/7 | **100.0%** | 6/7 | **85.7%** |
-| Verdict Triage Agent | 3 | 6/6 | **100.0%** | 6/6 | **100.0%** |
+| Verdict Triage Agent | 4 | 8/8 | **100.0%** | 8/8 | **100.0%** |
 | Evidence Normalization & Contracts | 2 | 3/3 | **100.0%** | 3/3 | **100.0%** |
 | Independent Verdict Validation | 2 | 4/4 | **100.0%** | 4/4 | **100.0%** |
 | Verdict Trustworthiness & Confidence | 2 | 3/3 | **100.0%** | 3/3 | **100.0%** |
-| Historical Ground Truth & Empirical Accuracy | 2 | 3/3 | **100.0%** | 3/3 | **100.0%** |
+| Historical Ground Truth & Empirical Accuracy | 3 | 4/4 | **100.0%** | 4/4 | **100.0%** |
 | FortiSIEM Integration & Incident Ingestion | 2 | 4/4 | **100.0%** | 3/4 | **75.0%** |
 | Local LLM / Server 2 Integration | 2 | 3/3 | **100.0%** | 2/3 | **66.7%** |
-| Background Workers & Reconciliation | 2 | 3/3 | **100.0%** | 2/3 | **66.7%** |
-| Analyst Investigation & Review | 2 | 2/2 | **100.0%** | 2/2 | **100.0%** |
+| Background Workers & Reconciliation | 3 | 5/5 | **100.0%** | 3/5 | **60.0%** |
+| Analyst Investigation & Review | 3 | 3/3 | **100.0%** | 3/3 | **100.0%** |
 | Frontend UI & Navigation | 2 | 5/5 | **100.0%** | 5/5 | **100.0%** |
-| Backend APIs & Services | 1 | 1/1 | **100.0%** | 1/1 | **100.0%** |
+| Backend APIs & Services | 2 | 3/3 | **100.0%** | 2/3 | **66.7%** |
 | Database Models & Migrations | 1 | 2/2 | **100.0%** | 1/2 | **50.0%** |
 | Authentication, Authorization & Audit Logs | 1 | 1/1 | **100.0%** | 1/1 | **100.0%** |
-| Monitoring & Operational Reliability | 2 | 3/3 | **100.0%** | 2/3 | **66.7%** |
-| Automated Testing & End-to-End Validation | 2 | 4/4 | **100.0%** | 4/4 | **100.0%** |
+| Monitoring & Operational Reliability | 3 | 4/4 | **100.0%** | 3/4 | **75.0%** |
+| Automated Testing & End-to-End Validation | 3 | 6/6 | **100.0%** | 5/6 | **83.3%** |
 | Documentation & Governance | 2 | 2/2 | **100.0%** | 2/2 | **100.0%** |
 
 ---
@@ -89,6 +89,13 @@
 | `TST-02` | Automated Testing & End-to-End Validation | Frontend TypeScript Compilation & UI Verification | **IMPLEMENTED_VERIFIED** | 100.0% | 100.0% | `frontend/package.json` | N/A | `frontend/tests/admin-guide.test.mjs`, `backend/tests/e2e_browser/test_phase8_ui_e2e.py`, `backend/tests/e2e_browser/test_phase8_1_ui_e2e.py`, `backend/tests/e2e_browser/test_phase8_2_ui_e2e.py` | npx tsc --noEmit, admin-guide tests (7/7), Next.js production build (30 routes), and Playwright Chromium E2E suites (Phase 8, 8.1, & 8.2, 0 console/page errors) all verified passing. | None. |
 | `DOC-01` | Documentation & Governance | Permanent Architecture, Audit, Validation & Quality Gate Documentation | **IMPLEMENTED_VERIFIED** | 100.0% | 100.0% | N/A | N/A | `backend/tests/test_feature_registry.py` | Phase 5/6 architecture docs, Phase 8 & 8.1 docs (preserved unchanged), and complete 18-report Phase 8.2 suite under docs/phase8.2/ authored and path-checked. | None. |
 | `DOC-02` | Documentation & Governance | Centralized Feature Registry & Automated Consistency Check | **IMPLEMENTED_VERIFIED** | 100.0% | 100.0% | N/A | `scripts/validate_feature_registry.py` | `backend/tests/test_feature_registry.py` | Automated script + pytest enforcement verify unique IDs, valid repo paths, mathematical percentage rollups, and JSON-to-Markdown parity. | None. |
+| `PIL-01` | Verdict Triage Agent | Controlled SOC Pilot Configuration, Safety Governance & Versioning | **IMPLEMENTED_VERIFIED** | 100.0% | 100.0% | `frontend/src/components/pilot/PilotControlAndDashboard.tsx`, `frontend/src/app/governance-access/page.tsx` | `backend/app/models/pilot.py`, `backend/app/schemas/pilot.py`, `backend/app/services/pilot_service.py`, `backend/app/api/pilot.py`, `backend/alembic/versions/008_soc_pilot.py` | `backend/tests/test_phase9_audit_and_pilot.py`, `backend/tests/e2e_browser/test_phase9_ui_e2e.py` | Defaults to DISABLED mode, versions every change in pilot_config_history + HMAC audit_logs, supports safe disable/rollback, and rejects external SIEM writeback or auto-closure (HTTP 422). | None. |
+| `PIL-02` | Background Workers & Reconciliation | Pilot Execution Orchestrator, Budget Controls & Circuit Guard | **PARTIAL** | 100.0% | 50.0% | `frontend/src/components/pilot/PilotControlAndDashboard.tsx` | `backend/app/services/pilot_service.py`, `backend/app/services/fortisiem_service.py`, `backend/app/services/ai_verdict_service.py` | `backend/tests/test_phase9_audit_and_pilot.py`, `backend/tests/e2e_browser/test_phase9_ui_e2e.py` | Rule/archetype/severity/source eligibility, rolling hourly/daily budgets, idempotency, distributed locking, SHADOW isolation, LIVE no-mock enforcement, and consecutive-error auto-pause verified offline. | Production SHADOW and ANALYST_ASSISTED pilot execution against live Server 2 GPU and live FortiSIEM feed has not run yet. |
+| `PIL-03` | Analyst Investigation & Review | Verdict Assurance Drawer, Non-Overwriting Override & Supervisor Gate | **IMPLEMENTED_VERIFIED** | 100.0% | 100.0% | `frontend/src/app/human-review-queue/page.tsx` | `backend/app/schemas/investigation.py`, `backend/app/services/investigation_service.py`, `backend/app/api/investigations.py` | `backend/tests/test_phase9_audit_and_pilot.py`, `backend/tests/e2e_browser/test_phase9_ui_e2e.py` | Exposes policy version, proposed vs validated verdict, evidence lists, trust score & calibration status; preserves original AI recommendation on override and enforces independent supervisor verification. | None. |
+| `PIL-04` | Monitoring & Operational Reliability | SOC Pilot Operational, Reliability & Empirical Accuracy Dashboard + Metric Fixes | **IMPLEMENTED_VERIFIED** | 100.0% | 100.0% | `frontend/src/components/pilot/PilotControlAndDashboard.tsx`, `frontend/src/app/verdict-intelligence/page.tsx`, `frontend/src/app/ai-triage-workbench/[id]/page.tsx`, `frontend/src/app/page.tsx` | `backend/app/api/verdict_intelligence.py`, `backend/app/services/verdict_trustworthiness_engine.py`, `backend/app/services/empirical_accuracy_evaluator.py`, `backend/app/services/incident_service.py` | `backend/tests/test_phase9_audit_and_pilot.py`, `backend/tests/e2e_browser/test_phase9_ui_e2e.py`, `backend/tests/e2e_browser/test_phase8_1_ui_e2e.py`, `backend/tests/e2e_browser/test_phase8_2_ui_e2e.py` | Fixes Issue 1 (stale 50% decision coverage on zero/missing decisive denominator) and Issue 2 (uncalibrated <=6/10 trust cap with preserved historical provenance); separates live vs simulated tokens in Pilot Dashboard. | None. |
+| `HGT-03` | Historical Ground Truth & Empirical Accuracy | Historical Corpus Eligibility Report & Time-Aware / Partition Replay | **IMPLEMENTED_VERIFIED** | 100.0% | 100.0% | `frontend/src/components/pilot/HistoricalEligibilityPanel.tsx` | `backend/app/services/historical_eligibility_service.py`, `backend/app/services/policy_simulation_service.py`, `backend/app/api/verdict_intelligence.py` | `backend/tests/test_phase9_audit_and_pilot.py`, `backend/tests/e2e_browser/test_phase9_ui_e2e.py` | Generates JSON/CSV G8 & calibration eligibility reports excluding synthetic, ML-generated, disputed, missing-evidence, and duplicate cases, plus after_epoch/before_epoch/split_partition replay filtering. | None. |
+| `DEP-01` | Backend APIs & Services | Dual-Server Native Linux Deployment Packages & Staged Integration Suite | **PARTIAL** | 100.0% | 50.0% | N/A | `deployment/env.production.example`, `deployment/scripts/install_ubuntu.sh`, `deployment/scripts/verify_server1.sh`, `deployment/scripts/rollback_server1.sh`, `deployment/scripts/install_llm_server.sh`, `deployment/scripts/setup_server2_gpu.sh`, `deployment/scripts/smoke_test_server2.py`, `deployment/systemd/ai-verdict-scheduler.service`, `deployment/logrotate/ai-verdict`, `scripts/run_integration_suite.py` | `backend/tests/test_phase9_audit_and_pilot.py` | 10/10 shell scripts passed bash -n, 4/4 systemd INIs validated, zero hardcoded secrets/IPs, offline contract suite PASSED (32 tests), and smoke_test_server2.py validated against local HTTP mock. | Live Ubuntu Server 1 and Server 2 deployment and staging service verification not yet executed. |
+| `PRF-01` | Automated Testing & End-to-End Validation | Synthetic 2,000-Rule Scale Benchmark & Phase 9 Browser/Backend Suites | **PARTIAL** | 100.0% | 50.0% | N/A | `scripts/run_phase9_load_benchmark.py` | `backend/tests/test_phase9_audit_and_pilot.py`, `backend/tests/e2e_browser/test_phase9_ui_e2e.py` | Synthetic SQLite/CPU benchmark across 2,000 rules and 500 incidents completed with 0.0 error rate; 293 backend tests and 4 Chromium browser E2E suites passed offline. | Live Server 2 vLLM GPU tokens/sec benchmark under production concurrency not yet executed. |
 
 ---
 

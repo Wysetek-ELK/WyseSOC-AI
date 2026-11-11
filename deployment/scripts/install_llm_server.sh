@@ -1,140 +1,88 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# AI VERDICT — LOCAL LLM SERVER AUTOMATED INSTALLATION & CONFIGURATION SCRIPT
-# Architecture : Server 2 (GPU Inference Node)
-# Target Cloud : AWS EC2 g4dn.2xlarge (1x NVIDIA T4 GPU, 16GB VRAM, 8 vCPUs, 32GB RAM)
-# Target OS    : Ubuntu 22.04 LTS / Ubuntu 24.04 LTS
-# Serving Stack: vLLM (OpenAI-Compatible Engine) + Qwen2.5-7B-Instruct-AWQ
+# AI VERDICT — LOCAL LLM SERVER 2 INSTALLATION & COMPATIBILITY SCRIPT
+# Architecture : Server 2 (GPU Inference Node — Native Linux, No Docker)
+# Serving Stack: vLLM OpenAI-Compatible Endpoint (/v1/chat/completions)
 # ==============================================================================
 
 set -euo pipefail
 
-# --- Configuration Defaults ---
-SERVER_DIR="/opt/llm-server"
-SERVICE_USER="llmuser"
-DEFAULT_MODEL="Qwen/Qwen2.5-7B-Instruct-AWQ"
-MODEL_NAME="${MODEL_NAME:-$DEFAULT_MODEL}"
-PORT="8000"
-MAX_MODEL_LEN="4096"
-GPU_MEM_UTIL="0.90"
-SERVER_1_IP="${1:-}"  # Optional: Pass Server 1 private IP as first argument for UFW
+SERVER_DIR="${SERVER_DIR:-/opt/llm-server}"
+SERVICE_USER="${SERVICE_USER:-llmuser}"
+MODEL_NAME="${MODEL_NAME:-Qwen/Qwen2.5-7B-Instruct-AWQ}"
+QUANTIZATION="${QUANTIZATION:-awq}"
+DTYPE="${DTYPE:-float16}"
+HOST="${HOST:-0.0.0.0}"
+PORT="${PORT:-8000}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-4096}"
+MAX_NUM_SEQS="${MAX_NUM_SEQS:-8}"
+GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.90}"
+VLLM_API_KEY="${VLLM_API_KEY:-}"
+SERVER_1_IP="${1:-${SERVER_1_IP:-}}"
 
 echo "===================================================================="
-echo " Starting AI Verdict Local LLM Server Setup (AWS g4dn.2xlarge / T4)"
-echo " Model: ${MODEL_NAME}"
-echo " Port : ${PORT}"
+echo " AI Verdict Server 2 (Local LLM) Native Setup"
+echo " Model=$MODEL_NAME | Quantization=$QUANTIZATION | Dtype=$DTYPE"
+echo " MaxModelLen=$MAX_MODEL_LEN | MaxNumSeqs=$MAX_NUM_SEQS | Port=$PORT"
 echo "===================================================================="
 
-# Check root privileges
 if [ "$EUID" -ne 0 ]; then
-  echo "[ERROR] Please run this script as root or with sudo:"
-  echo "  sudo bash install_llm_server.sh [SERVER_1_PRIVATE_IP]"
+  echo "[ERROR] Please run as root or with sudo: sudo bash install_llm_server.sh <SERVER_1_PRIVATE_IP>"
   exit 1
 fi
 
-# Detect OS
-if [ -f /etc/os-release ]; then
-  . /etc/os-release
-  echo "[INFO] Detected OS: $NAME $VERSION_ID"
-  if [[ "$ID" != "ubuntu" && "$ID_LIKE" != *"ubuntu"* && "$ID_LIKE" != *"debian"* ]]; then
-    echo "[WARNING] This script is optimized for Ubuntu LTS. Proceeding anyway..."
-  fi
-fi
-
-# ------------------------------------------------------------------------------
-# 1. System Package Updates & Prereqs
-# ------------------------------------------------------------------------------
-echo ""
-echo "[1/7] Updating system packages and installing prerequisites..."
+echo "[1/8] Installing system prerequisites..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y \
-  build-essential \
-  curl \
-  wget \
-  git \
-  jq \
-  ufw \
-  python3 \
-  python3-pip \
-  python3-venv \
-  python3-dev
+apt-get install -y build-essential curl wget git jq ufw logrotate python3 python3-pip python3-venv python3-dev
 
-# ------------------------------------------------------------------------------
-# 2. NVIDIA Driver & CUDA Setup
-# ------------------------------------------------------------------------------
-echo ""
-echo "[2/7] Checking NVIDIA GPU drivers and CUDA support..."
-if ! command -v nvidia-smi &> /dev/null; then
-  echo "[INFO] nvidia-smi not detected. Installing recommended headless NVIDIA drivers..."
-  apt-get install -y linux-headers-$(uname -r)
-  
-  # Install standard datacenter/server driver for AWS G4dn (Turing T4)
-  apt-get install -y nvidia-driver-535-server nvidia-utils-535-server || \
-  apt-get install -y nvidia-driver-535 nvidia-utils-535
-
-  echo "[NOTICE] NVIDIA drivers installed. Note that if this is a fresh instance,"
-  echo "         a system reboot may be required before the driver activates."
+echo "[2/8] Checking NVIDIA GPU driver, VRAM, and compute capability..."
+if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
+  GPU_INFO="$(nvidia-smi --query-gpu=name,driver_version,memory.total,compute_cap --format=csv,noheader | head -n 1)"
+  echo "[INFO] Detected GPU: $GPU_INFO"
+  VRAM_MIB="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -n 1 | tr -d ' ')"
+  if [ -n "$VRAM_MIB" ] && [ "$VRAM_MIB" -lt 14000 ]; then
+    echo "[WARNING] Detected GPU VRAM=${VRAM_MIB} MiB (< 14000 MiB). Verify '${MODEL_NAME}' fits before starting."
+  fi
 else
-  echo "[INFO] NVIDIA driver already active:"
-  nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader || true
+  echo "[NOTICE] nvidia-smi not active; installing headless NVIDIA driver package..."
+  apt-get install -y "linux-headers-$(uname -r)" || true
+  apt-get install -y nvidia-driver-535-server nvidia-utils-535-server || \
+    apt-get install -y nvidia-driver-535 nvidia-utils-535 || true
+  echo "[WARNING] Reboot required before GPU inference can start if driver was just installed."
 fi
 
-# ------------------------------------------------------------------------------
-# 3. Create Dedicated Service User & Directories
-# ------------------------------------------------------------------------------
-echo ""
-echo "[3/7] Setting up dedicated service user and directories..."
+echo "[3/8] Creating dedicated user and directories..."
 if ! id "$SERVICE_USER" &>/dev/null; then
   useradd -r -s /bin/bash -d "$SERVER_DIR" "$SERVICE_USER"
-  echo "[INFO] Created system user '$SERVICE_USER'"
 fi
+mkdir -p "$SERVER_DIR" "$SERVER_DIR/hf_cache" /var/log/llm-server
+chown -R "$SERVICE_USER:$SERVICE_USER" "$SERVER_DIR" /var/log/llm-server
 
-mkdir -p "$SERVER_DIR"
-mkdir -p "$SERVER_DIR/hf_cache"
-mkdir -p /var/log/llm-server
-
-chown -R "$SERVICE_USER:$SERVICE_USER" "$SERVER_DIR"
-chown -R "$SERVICE_USER:$SERVICE_USER" /var/log/llm-server
-
-# ------------------------------------------------------------------------------
-# 4. Python Virtual Environment & vLLM Installation
-# ------------------------------------------------------------------------------
-echo ""
-echo "[4/7] Installing vLLM inference engine in virtual environment..."
+echo "[4/8] Creating/updating Python venv & installing vLLM..."
 VENV_DIR="$SERVER_DIR/venv"
 if [ ! -d "$VENV_DIR" ]; then
   python3 -m venv "$VENV_DIR"
+  chown -R "$SERVICE_USER:$SERVICE_USER" "$VENV_DIR"
 fi
-
-# Upgrade pip and install vLLM
 sudo -u "$SERVICE_USER" "$VENV_DIR/bin/pip" install --upgrade pip setuptools wheel
-sudo -u "$SERVICE_USER" "$VENV_DIR/bin/pip" install \
-  "vllm>=0.6.0" \
-  "huggingface_hub[cli]" \
-  "torch"
+sudo -u "$SERVICE_USER" "$VENV_DIR/bin/pip" install "vllm>=0.6.0" "huggingface_hub[cli]" "torch"
 
-echo "[INFO] vLLM installation complete:"
-sudo -u "$SERVICE_USER" "$VENV_DIR/bin/pip" show vllm | grep -E "Name|Version" || true
-
-# ------------------------------------------------------------------------------
-# 5. Pre-Cache / Download Model Weights
-# ------------------------------------------------------------------------------
-echo ""
-echo "[5/7] Pre-caching model weights for '${MODEL_NAME}'..."
-echo "      (AWQ 4-bit weights are ~5.5GB; downloads directly to cache)..."
-
+echo "[5/8] Pre-caching model weights for '${MODEL_NAME}'..."
 sudo -u "$SERVICE_USER" HF_HOME="$SERVER_DIR/hf_cache" "$VENV_DIR/bin/huggingface-cli" download \
-  "$MODEL_NAME" \
-  --cache-dir "$SERVER_DIR/hf_cache" || {
-    echo "[WARNING] Could not pre-download model with huggingface-cli. vLLM will download at startup."
+  "$MODEL_NAME" --cache-dir "$SERVER_DIR/hf_cache" || {
+    echo "[WARNING] Model pre-download skipped or failed; vLLM will download on first start."
 }
 
-# ------------------------------------------------------------------------------
-# 6. Create & Enable Systemd Service
-# ------------------------------------------------------------------------------
-echo ""
-echo "[6/7] Creating systemd service unit '/etc/systemd/system/vllm-server.service'..."
+echo "[6/8] Writing /etc/systemd/system/vllm-server.service..."
+QUANT_ARG=""
+if [ -n "$QUANTIZATION" ] && [ "$QUANTIZATION" != "none" ]; then
+  QUANT_ARG="--quantization ${QUANTIZATION}"
+fi
+KEY_ARG=""
+if [ -n "$VLLM_API_KEY" ]; then
+  KEY_ARG="--api-key ${VLLM_API_KEY}"
+fi
 
 cat <<EOF > /etc/systemd/system/vllm-server.service
 [Unit]
@@ -149,22 +97,22 @@ Group=${SERVICE_USER}
 WorkingDirectory=${SERVER_DIR}
 Environment="HF_HOME=${SERVER_DIR}/hf_cache"
 Environment="CUDA_VISIBLE_DEVICES=0"
-Environment="NCCL_DEBUG=INFO"
 Environment="PYTHONUNBUFFERED=1"
 ExecStart=${VENV_DIR}/bin/vllm serve ${MODEL_NAME} \\
-    --host 0.0.0.0 \\
+    --host ${HOST} \\
     --port ${PORT} \\
     --max-model-len ${MAX_MODEL_LEN} \\
+    --max-num-seqs ${MAX_NUM_SEQS} \\
     --gpu-memory-utilization ${GPU_MEM_UTIL} \\
-    --dtype float16 \\
+    --dtype ${DTYPE} \\
+    ${QUANT_ARG} \\
+    ${KEY_ARG} \\
     --trust-remote-code \\
     --disable-log-requests
-
 Restart=always
 RestartSec=10
 LimitNOFILE=65535
 TimeoutStartSec=600
-
 StandardOutput=append:/var/log/llm-server/vllm.log
 StandardError=append:/var/log/llm-server/vllm_error.log
 
@@ -172,60 +120,29 @@ StandardError=append:/var/log/llm-server/vllm_error.log
 WantedBy=multi-user.target
 EOF
 
-systemctl daemon-reload
-systemctl enable vllm-server.service
+echo "[7/8] Configuring logrotate and firewall..."
+cat <<EOF > /etc/logrotate.d/vllm-server
+/var/log/llm-server/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}
+EOF
 
-if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
-  echo "[INFO] Starting vllm-server.service..."
-  systemctl restart vllm-server.service
-else
-  echo "[WARNING] GPU driver not active yet. Please reboot the server: 'sudo reboot'"
-  echo "          vLLM will start automatically on boot once the driver is initialized."
-fi
-
-# ------------------------------------------------------------------------------
-# 7. Network Firewall (UFW) Hardening
-# ------------------------------------------------------------------------------
-echo ""
-echo "[7/7] Configuring network firewall rules..."
-# Allow SSH
 ufw allow 22/tcp comment "SSH Management" > /dev/null || true
-
 if [ -n "$SERVER_1_IP" ]; then
-  echo "[INFO] Whitelisting Server 1 IP ($SERVER_1_IP) for Port ${PORT}..."
   ufw allow from "$SERVER_1_IP" to any port "$PORT" proto tcp comment "AI Verdict Server 1 API"
-  echo "[INFO] Firewall rule added: Only $SERVER_1_IP can connect to port $PORT."
-else
-  echo "[NOTICE] No Server 1 IP passed as argument."
-  echo "         Remember to restrict Port ${PORT} in your AWS Security Group to Server 1's Private IP!"
 fi
-
-# Enable UFW if not already active
 echo "y" | ufw enable > /dev/null 2>&1 || true
 
-# ------------------------------------------------------------------------------
-# Verification & Summary
-# ------------------------------------------------------------------------------
-echo ""
-echo "===================================================================="
-echo " Installation Complete!"
-echo "===================================================================="
-echo " Service Name   : vllm-server.service"
-echo " Model          : ${MODEL_NAME}"
-echo " Port           : ${PORT} (OpenAI Compatible: /v1/chat/completions)"
-echo " Log Files      : /var/log/llm-server/vllm.log"
-echo ""
-echo " Management Commands:"
-echo "   sudo systemctl status vllm-server"
-echo "   sudo journalctl -u vllm-server -f"
-echo "   tail -f /var/log/llm-server/vllm.log"
-echo ""
-echo " Verification Test (Run once service is active):"
-echo "   curl http://127.0.0.1:${PORT}/v1/models"
-echo ""
-echo " Sample Inference Test:"
-echo "   curl -X POST http://127.0.0.1:${PORT}/v1/chat/completions \\"
-echo "     -H 'Content-Type: application/json' \\"
-echo "     -d '{\"model\": \"${MODEL_NAME}\", \"messages\": [{\"role\": \"user\", \"content\": \"Ping. Respond with Pong.\"}]}'"
-echo "===================================================================="
-
+echo "[8/8] Enabling systemd service..."
+systemctl daemon-reload
+systemctl enable vllm-server.service
+if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
+  systemctl restart vllm-server.service
+fi
+echo "Server 2 setup complete. Validate with: python3 smoke_test_server2.py --base-url http://127.0.0.1:${PORT}/v1 --model ${MODEL_NAME}"

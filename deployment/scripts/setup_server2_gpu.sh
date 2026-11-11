@@ -9,7 +9,7 @@ SERVER_1_IP="${1:-}"
 
 if [ -z "$SERVER_1_IP" ]; then
     echo "Usage: sudo bash setup_server2_gpu.sh <SERVER_1_PRIVATE_IP>"
-    echo "Example: sudo bash setup_server2_gpu.sh 10.10.20.4"
+    echo "Example: sudo bash setup_server2_gpu.sh <SERVER_1_PRIVATE_IP>"
     exit 1
 fi
 

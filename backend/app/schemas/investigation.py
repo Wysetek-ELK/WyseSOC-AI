@@ -61,6 +61,36 @@ class AnalystVerdictSubmit(BaseModel):
     is_disputed: bool = False
     is_independently_verified: bool = False
     status: Optional[str] = "REVIEWED"
+    action_type: Optional[str] = Field(None, max_length=32)  # ACCEPTED | OVERRIDDEN | DISPUTED | REQUESTED_EVIDENCE
+
+
+class AIAssuranceSummary(BaseModel):
+    incident_summary: str = ""
+    rule_id: Optional[str] = None
+    rule_name: Optional[str] = None
+    policy_version_number: Optional[int] = None
+    policy_digest: Optional[str] = None
+    proposed_verdict: Optional[str] = None
+    validated_verdict: Optional[str] = None
+    validation_status: Optional[str] = None
+    abstention_reason: Optional[str] = None
+    supporting_evidence: List[str] = Field(default_factory=list)
+    contradictory_evidence: List[str] = Field(default_factory=list)
+    missing_evidence: List[str] = Field(default_factory=list)
+    trust_score: Optional[int] = None
+    historical_trust_score: Optional[int] = None
+    trust_cap_applied: bool = False
+    is_calibrated: bool = False
+    calibration_status: str = "NOT_CALIBRATED"
+    historical_sample_count: int = 0
+    historical_validation_status: str = "UNCALIBRATED"
+    model_identifier: Optional[str] = None
+    is_simulated: bool = False
+    pilot_evaluation_id: Optional[str] = None
+    pilot_mode: Optional[str] = None
+    evaluated_at: Optional[str] = None
+    analyst_feedback_action: Optional[str] = None
+    supervisor_verified: bool = False
 
 
 class InvestigationListItem(BaseModel):
@@ -80,6 +110,9 @@ class InvestigationListItem(BaseModel):
     is_independently_verified: bool
     question_count: int = 0
     evidence_count: int = 0
+    ai_validated_verdict: Optional[str] = None
+    ai_trust_score: Optional[int] = None
+    pilot_mode: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -115,6 +148,7 @@ class InvestigationDetailResponse(BaseModel):
     # Sub-collections
     questions: List[InvestigationQuestionResponse] = []
     evidence_items: List[InvestigationEvidenceResponse] = []
+    ai_assurance: Optional[AIAssuranceSummary] = None
 
     class Config:
         from_attributes = True

@@ -1,0 +1,42 @@
+{
+  "timestamp_utc": "2026-11-11T06:30:09.977639Z",
+  "benchmark_mode": "SYNTHETIC_LOCAL_THROUGHPUT_ONLY",
+  "gpu_inference_notice": "Local SQLite/CPU benchmark only; does NOT measure real Server 2 GPU token/s throughput.",
+  "environment": {
+    "python": "3.13.13",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "cpu_count": 12,
+    "memory_start_mb": 72.76,
+    "memory_end_mb": 97.59,
+    "memory_delta_mb": 24.83
+  },
+  "workload": {
+    "rules_seeded": 2000,
+    "incidents_seeded": 500,
+    "target_daily_rate_incidents_per_min": 6.94
+  },
+  "results": {
+    "rule_and_policy_seed_seconds": 1.127,
+    "rule_lookup_200_samples_ms": {
+      "p50": 4.517,
+      "p95": 5.573,
+      "p99": 6.451
+    },
+    "incident_ingest_throughput_per_sec": 3038.4,
+    "evidence_normalization_200_samples_ms": {
+      "p50": 0.18,
+      "p95": 0.32,
+      "p99": 0.504
+    },
+    "pilot_eligibility_200_checks_per_sec": 6573.3,
+    "api_pagination_50_rows_ms": {
+      "p50": 41.332,
+      "p95": 65.899,
+      "p99": 65.899
+    },
+    "historical_eligibility_2000_rules_seconds": 3.703,
+    "historical_eligible_found": 200,
+    "audit_log_500_inserts_per_sec": 8704.4,
+    "error_rate": 0.0
+  }
+}

@@ -47,6 +47,9 @@ export interface IncidentAiVerdictResponse {
   final_disposition?: string;
   abstention_reason?: string | null;
   trust_score?: number | null;
+  historical_trust_score?: number | null;
+  trust_cap_applied?: boolean;
+  trust_cap_reason?: string | null;
   trust_status?: string;
   evidence_completeness?: number;
   grounding_ratio?: number;
@@ -407,6 +410,35 @@ export interface FortiSIEMRulePullResponse {
   message: string;
 }
 
+export interface AIAssuranceSummary {
+  incident_summary: string;
+  rule_id?: string | null;
+  rule_name?: string | null;
+  policy_version_number?: number | null;
+  policy_digest?: string | null;
+  proposed_verdict?: string | null;
+  validated_verdict?: string | null;
+  validation_status?: string | null;
+  abstention_reason?: string | null;
+  supporting_evidence: string[];
+  contradictory_evidence: string[];
+  missing_evidence: string[];
+  trust_score?: number | null;
+  historical_trust_score?: number | null;
+  trust_cap_applied?: boolean;
+  is_calibrated: boolean;
+  calibration_status: string;
+  historical_sample_count: number;
+  historical_validation_status: string;
+  model_identifier?: string | null;
+  is_simulated: boolean;
+  pilot_evaluation_id?: string | null;
+  pilot_mode?: string | null;
+  evaluated_at?: string | null;
+  analyst_feedback_action?: string | null;
+  supervisor_verified: boolean;
+}
+
 export interface InvestigationListItem {
   id: string;
   incident_id: string;
@@ -424,6 +456,9 @@ export interface InvestigationListItem {
   is_independently_verified: boolean;
   question_count: number;
   evidence_count: number;
+  ai_validated_verdict?: string | null;
+  ai_trust_score?: number | null;
+  pilot_mode?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -452,6 +487,7 @@ export interface InvestigationDetail {
   reporting_device?: string;
   questions: InvestigationQuestion[];
   evidence_items: InvestigationEvidence[];
+  ai_assurance?: AIAssuranceSummary | null;
 }
 
 export interface PromptVersion {
@@ -1385,6 +1421,7 @@ export const api = {
     is_disputed: boolean;
     is_independently_verified: boolean;
     status?: string;
+    action_type?: string;
   }) {
     const res = await fetchWithAuth(`${API_BASE}/investigations/${id}/verdict`, {
       method: "POST",
@@ -1942,6 +1979,166 @@ export const api = {
       clearTimeout(timer);
     }
   },
+
+  // =================== PHASE 9: CONTROLLED SOC PILOT & ELIGIBILITY ===================
+  async getPilotConfig(): Promise<PilotConfig> {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/config`);
+    if (!res.ok) throw new Error("Failed to load pilot configuration");
+    return res.json();
+  },
+
+  async updatePilotConfig(payload: Record<string, any>): Promise<PilotConfig> {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/config`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to update pilot configuration" }));
+      throw new Error(typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail));
+    }
+    return res.json();
+  },
+
+  async activatePilot(mode: "SHADOW" | "ANALYST_ASSISTED" | "DISABLED", change_reason: string): Promise<PilotConfig> {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/activate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, change_reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to activate pilot" }));
+      throw new Error(err.detail || "Failed to activate pilot");
+    }
+    return res.json();
+  },
+
+  async pausePilot(reason: string): Promise<PilotConfig> {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/pause`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to pause pilot" }));
+      throw new Error(err.detail || "Failed to pause pilot");
+    }
+    return res.json();
+  },
+
+  async resumePilot(reason: string): Promise<PilotConfig> {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/resume`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to resume pilot" }));
+      throw new Error(err.detail || "Failed to resume pilot");
+    }
+    return res.json();
+  },
+
+  async disablePilot(reason: string): Promise<PilotConfig> {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/disable`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to disable pilot" }));
+      throw new Error(err.detail || "Failed to disable pilot");
+    }
+    return res.json();
+  },
+
+  async rollbackPilot(target_version: number, reason: string): Promise<PilotConfig> {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/rollback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target_version, reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to roll back pilot" }));
+      throw new Error(err.detail || "Failed to roll back pilot");
+    }
+    return res.json();
+  },
+
+  async getPilotMetrics(): Promise<PilotMetricsResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/metrics`);
+    if (!res.ok) throw new Error("Failed to load pilot metrics");
+    return res.json();
+  },
+
+  async getPilotHistory(): Promise<PilotConfigHistoryItem[]> {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/history`);
+    if (!res.ok) throw new Error("Failed to load pilot history");
+    return res.json();
+  },
+
+  async getPilotAuditLogs(): Promise<{ items: any[]; total: number }> {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/audit`);
+    if (!res.ok) throw new Error("Failed to load pilot audit logs");
+    return res.json();
+  },
+
+  async getPilotEvaluations(mode?: string, includeSimulated: boolean = true): Promise<PilotEvaluationItem[]> {
+    const q = new URLSearchParams();
+    if (mode) q.set("mode", mode);
+    q.set("include_simulated", String(includeSimulated));
+    const res = await fetchWithAuth(`${API_BASE}/pilot/evaluations?${q.toString()}`);
+    if (!res.ok) throw new Error("Failed to load pilot evaluations");
+    return res.json();
+  },
+
+  async runPilotBatch(payload: { incident_ids?: string[]; max_batch?: number; source_type?: "LIVE" | "HISTORICAL"; allow_simulated?: boolean }) {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/run-batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to run pilot batch" }));
+      throw new Error(err.detail || "Failed to run pilot batch");
+    }
+    return res.json();
+  },
+
+  async submitPilotFeedback(evaluationId: string, payload: { action: string; analyst_decision: string; reason: string }) {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/evaluations/${encodeURIComponent(evaluationId)}/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to submit pilot feedback" }));
+      throw new Error(err.detail || "Failed to submit pilot feedback");
+    }
+    return res.json();
+  },
+
+  async supervisorVerifyPilotFeedback(evaluationId: string, payload: { approved: boolean; notes?: string }) {
+    const res = await fetchWithAuth(`${API_BASE}/pilot/evaluations/${encodeURIComponent(evaluationId)}/supervisor-verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to verify pilot feedback" }));
+      throw new Error(err.detail || "Failed to verify pilot feedback");
+    }
+    return res.json();
+  },
+
+  async getHistoricalEligibilityReport(ruleId?: string): Promise<HistoricalEligibilityReport> {
+    const url = ruleId
+      ? `${API_BASE}/verdict-intelligence/eligibility-report?rule_id=${encodeURIComponent(ruleId)}`
+      : `${API_BASE}/verdict-intelligence/eligibility-report`;
+    const res = await fetchWithAuth(url);
+    if (!res.ok) throw new Error("Failed to load historical eligibility report");
+    return res.json();
+  },
 };
 
 export interface DryRunConfig {
@@ -2263,6 +2460,9 @@ export interface VerdictTrustAssessmentResult {
   suggested_verdict: string;
   effective_verdict: "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ANALYST_ATTENTION";
   trust_score?: number | null;
+  historical_trust_score?: number | null;
+  trust_cap_applied?: boolean;
+  trust_cap_reason?: string | null;
   raw_trust_score: number;
   evidence_sufficiency_score: number;
   evidence_status: "SUFFICIENT" | "INSUFFICIENT" | "CONFLICTING" | "UNCALIBRATED";
@@ -2385,6 +2585,192 @@ export interface ChatStatusResponse {
   latency_ms?: number | null;
   status_message: string;
 }
+
+export interface PilotConfig {
+  id: string;
+  pilot_name: string;
+  description: string;
+  version_number: number;
+  mode: "DISABLED" | "SHADOW" | "ANALYST_ASSISTED";
+  is_paused: boolean;
+  selected_rule_ids: string[];
+  selected_archetypes: string[];
+  included_severities: string[];
+  ingestion_source: "ALL" | "LIVE" | "HISTORICAL";
+  daily_evaluation_budget: number;
+  hourly_evaluation_budget: number;
+  max_concurrent_inference: number;
+  request_timeout_seconds: number;
+  require_analyst_review: boolean;
+  require_approved_policy: boolean;
+  allow_external_writeback: boolean;
+  allow_auto_incident_closure: boolean;
+  error_handling_policy: string;
+  consecutive_error_pause_threshold: number;
+  reporting_schedule: string;
+  created_by: string;
+  updated_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PilotConfigHistoryItem {
+  id: string;
+  pilot_id: string;
+  version_number: number;
+  action: string;
+  mode: string;
+  is_paused: boolean;
+  config_snapshot: Record<string, any>;
+  change_reason: string;
+  changed_by: string;
+  changed_at: string;
+}
+
+export interface PilotEvaluationItem {
+  id: string;
+  pilot_id: string;
+  pilot_version: number;
+  incident_id: string;
+  incident_db_id?: string | null;
+  rule_id: string;
+  archetype: string;
+  severity: string;
+  execution_mode: string;
+  source_type: string;
+  eligibility_status: string;
+  proposed_verdict?: string | null;
+  validated_verdict?: string | null;
+  validation_status?: string | null;
+  abstention_reason?: string | null;
+  trust_score?: number | null;
+  historical_trust_score?: number | null;
+  raw_trust_score?: number | null;
+  is_calibrated: boolean;
+  evidence_completeness?: number | null;
+  grounding_ratio?: number | null;
+  supporting_evidence: string[];
+  contradictory_evidence: string[];
+  missing_evidence: string[];
+  policy_version_id?: string | null;
+  policy_version_number?: number | null;
+  policy_digest?: string | null;
+  model_identifier: string;
+  is_simulated: boolean;
+  latency_ms: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  evidence_snapshot_hash?: string | null;
+  error_message?: string | null;
+  analyst_feedback_action?: string | null;
+  analyst_decision?: string | null;
+  analyst_override_reason?: string | null;
+  analyst_user?: string | null;
+  analyst_decided_at?: string | null;
+  supervisor_verified: boolean;
+  supervisor_user?: string | null;
+  supervisor_verified_at?: string | null;
+  created_at: string;
+}
+
+export interface PilotMetricsResponse {
+  pilot: PilotConfig;
+  population_notice: string;
+  operational: {
+    total_incidents_received: number;
+    eligible_pilot_incidents: number;
+    incidents_evaluated: number;
+    simulated_evaluations_excluded_count: number;
+    pending_incidents: number;
+    tp_recommendations: number;
+    fp_recommendations: number;
+    requires_attention: number;
+    inference_failures: number;
+    avg_latency_ms?: number | null;
+    p50_latency_ms?: number | null;
+    p95_latency_ms?: number | null;
+    token_consumption_live: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+    token_consumption_simulated_isolated: { total_tokens: number };
+    hourly_budget_used: number;
+    hourly_budget_limit: number;
+    daily_budget_used: number;
+    daily_budget_limit: number;
+    queue_backlog: number;
+    provider_available: boolean;
+    circuit_breaker_state: string;
+  };
+  reliability: {
+    sample_size: number;
+    guardrail_acceptance_rate?: number | null;
+    unsupported_claim_rate?: number | null;
+    contradiction_rate?: number | null;
+    evidence_completeness_avg?: number | null;
+    abstention_rate?: number | null;
+    analyst_reviewed_count: number;
+    analyst_disagreement_rate?: number | null;
+    policy_failure_distribution: Record<string, number>;
+  };
+  empirical_accuracy: {
+    verified_tp_cases: number;
+    verified_fp_cases: number;
+    verified_total_cases: number;
+    tp_precision?: number | null;
+    tp_recall?: number | null;
+    fp_specificity?: number | null;
+    balanced_accuracy?: number | null;
+    selective_accuracy?: number | null;
+    decision_coverage?: number | null;
+    false_negatives: number;
+    metric_status: string;
+    balanced_accuracy_reason: string;
+    calibration_status: string;
+    is_calibrated: boolean;
+    trust_scale_label: string;
+  };
+}
+
+export interface HistoricalEligibilityReport {
+  generated_at: string;
+  rule_filter?: string | null;
+  integrity_notice: string;
+  summary: {
+    available_incident_count: number;
+    verified_tp_count: number;
+    verified_fp_count: number;
+    disputed_count: number;
+    insufficient_evidence_count: number;
+    unverified_or_ml_count: number;
+    synthetic_count: number;
+    duplicate_group_count: number;
+    eligible_independent_count: number;
+    g8_eligibility: string;
+    calibration_eligibility: string;
+    holdout_partitions: Record<string, number>;
+    time_window: { earliest_epoch?: number | null; latest_epoch?: number | null };
+    missing_evidence_fields: Array<{ field: string; missing_count: number }>;
+  };
+  rules: Array<{
+    rule_uuid: string;
+    rule_id: string;
+    rule_name: string;
+    available_incident_count: number;
+    verified_tp_count: number;
+    verified_fp_count: number;
+    disputed_count: number;
+    insufficient_evidence_count: number;
+    unverified_or_ml_count: number;
+    synthetic_count: number;
+    duplicate_group_count: number;
+    duplicate_excluded_count: number;
+    eligible_independent_count: number;
+    missing_evidence_fields: Array<{ field: string; missing_count: number }>;
+    g8_eligibility: string;
+    calibration_eligibility: string;
+    holdout_partitions: Record<string, number>;
+  }>;
+}
+
 
 
 

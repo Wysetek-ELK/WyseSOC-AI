@@ -1,0 +1,17 @@
+AI Verdict Phase 9 Verification Log Index
+Generated: 2026-11-11
+Workspace: SOC-AI-Agent
+
+Evidence artifacts:
+- Code audit & DB snapshot: docs/phase9/evidence/code-audit/phase9_repo_snapshot.json
+- Issue 1 & Issue 2 DB audit: docs/phase9/evidence/metrics/issue1_issue2_db_audit.json
+- Pilot governance contract: docs/phase9/evidence/pilot/pilot_contract_evidence.json
+- Offline integration contracts: docs/phase9/evidence/deployment/offline_contract_tests.json
+- Staging probe check (blocked/honest): docs/phase9/evidence/deployment/staging_integration_probes.json
+- Deployment static syntax & INI check: docs/phase9/evidence/deployment/deployment_static_validation.json
+- Security, secret, IP & AST scan: docs/phase9/evidence/security/phase9_security_scan.json
+- Synthetic 2000-rule benchmark: docs/phase9/evidence/performance/phase9_load_benchmark.json
+- Phase 9 Chromium E2E summary: docs/phase9/evidence/frontend/phase9_browser_e2e_report.json
+- Phase 8/8.1/8.2 Chromium regression log: docs/phase9/evidence/test-results/phase9_browser_regression_report.txt
+- Backend full suite log: docs/phase9/evidence/backend/pytest_backend_full_report.txt
+

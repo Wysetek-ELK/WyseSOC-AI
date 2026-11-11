@@ -126,6 +126,7 @@ class VerdictTriageAgent:
         model_provider_type: Optional[str] = None,
         allow_simulated_fallback: bool = False,
         only_if_pending: bool = False,
+        pilot_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Evaluates a single incident with the LLM.
@@ -170,7 +171,7 @@ class VerdictTriageAgent:
                 if not incident:
                     raise ValueError(f"Incident '{clean_target_id}' not found.")
 
-                if only_if_pending and isinstance(incident.ai_verdict, dict):
+                if only_if_pending and not pilot_context and isinstance(incident.ai_verdict, dict):
                     return incident.ai_verdict
 
                 return await self._evaluate_incident_locked(
@@ -180,6 +181,7 @@ class VerdictTriageAgent:
                     allow_simulated_fallback=allow_simulated_fallback,
                     lock_key=lock_key,
                     lock_owner_id=lock_owner_id,
+                    pilot_context=pilot_context,
                 )
 
     async def _evaluate_incident_locked(
@@ -190,8 +192,12 @@ class VerdictTriageAgent:
         allow_simulated_fallback: bool = False,
         lock_key: Optional[str] = None,
         lock_owner_id: Optional[str] = None,
+        pilot_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Protected single-incident evaluation execution under per-incident concurrency lock."""
+        is_shadow_pilot = bool(pilot_context and str(pilot_context.get("mode", "")).upper() == "SHADOW")
+        if pilot_context and str(pilot_context.get("source_type", "")).upper() == "LIVE":
+            allow_simulated_fallback = False
         prev_attempts = 0
         if isinstance(incident.ai_verdict, dict):
             prev_attempts = int(incident.ai_verdict.get("reevaluation_attempts", 0) or 0)
@@ -244,7 +250,7 @@ class VerdictTriageAgent:
 
         # 4. Resolve evaluation mode & Model Availability Guard (REQ-02 / AV-004)
         is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
-        if is_prod:
+        if is_prod or (pilot_context and str(pilot_context.get("source_type", "")).upper() == "LIVE"):
             allow_mock = False
         else:
             allow_mock = allow_simulated_fallback or getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
@@ -313,18 +319,19 @@ class VerdictTriageAgent:
                     "evaluated_by_user": username,
                 }
                 await self._assert_lock_held(self.db, lock_key, lock_owner_id)
-                incident.ai_verdict = verdict_data
-                self.db.add(incident)
+                if not is_shadow_pilot:
+                    incident.ai_verdict = verdict_data
+                    self.db.add(incident)
 
-                # Sync with Investigation record if present (idempotent upsert)
-                inv_q = await self.db.execute(
-                    select(Investigation).where(Investigation.incident_id == incident.id)
-                )
-                inv = inv_q.scalars().first()
-                if inv and not inv.analyst_verdict:
-                    note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
-                    self._upsert_ai_verdict_note(inv, note_entry)
-                    self.db.add(inv)
+                    # Sync with Investigation record if present (idempotent upsert)
+                    inv_q = await self.db.execute(
+                        select(Investigation).where(Investigation.incident_id == incident.id)
+                    )
+                    inv = inv_q.scalars().first()
+                    if inv and not inv.analyst_verdict:
+                        note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
+                        self._upsert_ai_verdict_note(inv, note_entry)
+                        self.db.add(inv)
 
                 audit = AuditLog(
                     user_id="SYSTEM" if username in ("system", "scheduler") else username,
@@ -397,17 +404,18 @@ class VerdictTriageAgent:
                 "evaluated_by_user": username,
             }
             await self._assert_lock_held(self.db, lock_key, lock_owner_id)
-            incident.ai_verdict = verdict_data
-            self.db.add(incident)
+            if not is_shadow_pilot:
+                incident.ai_verdict = verdict_data
+                self.db.add(incident)
 
-            inv_q = await self.db.execute(
-                select(Investigation).where(Investigation.incident_id == incident.id)
-            )
-            inv = inv_q.scalars().first()
-            if inv and not inv.analyst_verdict:
-                note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
-                self._upsert_ai_verdict_note(inv, note_entry)
-                self.db.add(inv)
+                inv_q = await self.db.execute(
+                    select(Investigation).where(Investigation.incident_id == incident.id)
+                )
+                inv = inv_q.scalars().first()
+                if inv and not inv.analyst_verdict:
+                    note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
+                    self._upsert_ai_verdict_note(inv, note_entry)
+                    self.db.add(inv)
 
             audit = AuditLog(
                 user_id="SYSTEM" if username in ("system", "scheduler") else username,
@@ -454,6 +462,8 @@ class VerdictTriageAgent:
             compiled_policy=compiled_policy,
             incident_payload=payload_dict,
             rag_block=rag_result.formatted_rag_block,
+            max_context_tokens=int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096),
+            max_completion_tokens=int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512) or 512),
         )
 
         # Context Overflow Gate: If mandatory core exceeds context window, abstain safely
@@ -500,8 +510,9 @@ class VerdictTriageAgent:
                 "evaluated_by_user": username,
             }
             await self._assert_lock_held(self.db, lock_key, lock_owner_id)
-            incident.ai_verdict = verdict_data
-            self.db.add(incident)
+            if not is_shadow_pilot:
+                incident.ai_verdict = verdict_data
+                self.db.add(incident)
             await self.db.commit()
             return verdict_data
 
@@ -838,6 +849,7 @@ class VerdictTriageAgent:
             "compiler_version": compiled_policy.compiler_version,
             "compilation_digest": compiled_policy.compilation_digest,
             "policy_sections_count": len(compiled_policy.sections),
+            "policy_version_id": getattr(active_v, "id", None),
             "policy_version_number": compiled_policy.version_number,
             "policy_status": compiled_policy.policy_status,
             "trust_score": trust_res.trust_score,
@@ -863,11 +875,15 @@ class VerdictTriageAgent:
             "severity": incident.severity,
             "evaluated_at": datetime.utcnow().isoformat(),
             "evaluated_by_user": username,
+            "pilot_mode": pilot_context.get("mode") if pilot_context else None,
+            "pilot_id": pilot_context.get("pilot_id") if pilot_context else None,
+            "pilot_version": pilot_context.get("pilot_version") if pilot_context else None,
         }
 
-        # 7. Persist AI verdict to incident
-        incident.ai_verdict = verdict_data
-        self.db.add(incident)
+        # 7. Persist AI verdict to incident (unless SHADOW pilot mode keeps authoritative incident clean)
+        if not is_shadow_pilot:
+            incident.ai_verdict = verdict_data
+            self.db.add(incident)
 
         # 7b. Persist bifurcated TokenUsageRecord on Server 1 for analytics (records authoritative outcome)
         from app.models.token_usage import TokenUsageRecord
@@ -926,15 +942,16 @@ class VerdictTriageAgent:
         )
         self.db.add(timeline_entry)
 
-        # 8. Sync with Investigation queue using authoritative validated verdict (idempotent)
-        inv_q = await self.db.execute(
-            select(Investigation).where(Investigation.incident_id == incident.id)
-        )
-        inv = inv_q.scalars().first()
-        if inv and not inv.analyst_verdict:
-            note_entry = f"[AI Verdict ({final_auth_verdict} - {int(final_confidence_display)}%)]: {verdict_data['reason']}"
-            self._upsert_ai_verdict_note(inv, note_entry)
-            self.db.add(inv)
+        # 8. Sync with Investigation queue using authoritative validated verdict (idempotent; skipped in SHADOW pilot mode)
+        if not is_shadow_pilot:
+            inv_q = await self.db.execute(
+                select(Investigation).where(Investigation.incident_id == incident.id)
+            )
+            inv = inv_q.scalars().first()
+            if inv and not inv.analyst_verdict:
+                note_entry = f"[AI Verdict ({final_auth_verdict} - {int(final_confidence_display)}%)]: {verdict_data['reason']}"
+                self._upsert_ai_verdict_note(inv, note_entry)
+                self.db.add(inv)
 
         # 9. Audit log with authoritative outcome and model proposal provenance
         audit = AuditLog(

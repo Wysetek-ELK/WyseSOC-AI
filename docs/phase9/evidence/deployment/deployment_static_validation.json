@@ -1,0 +1,57 @@
+{
+  "shell_syntax": {
+    "deployment/scripts/backup_db.sh": "PASSED",
+    "deployment/scripts/deploy_server1.sh": "PASSED",
+    "deployment/scripts/install_llm_server.sh": "PASSED",
+    "deployment/scripts/install_ollama_llm.sh": "PASSED",
+    "deployment/scripts/install_ubuntu.sh": "PASSED",
+    "deployment/scripts/rollback_server1.sh": "PASSED",
+    "deployment/scripts/setup_server2_gpu.sh": "PASSED",
+    "deployment/scripts/start_services.sh": "PASSED",
+    "deployment/scripts/stop_services.sh": "PASSED",
+    "deployment/scripts/verify_server1.sh": "PASSED"
+  },
+  "systemd_ini": {
+    "deployment/systemd/ai-verdict-backend.service": {
+      "sections": [
+        "Unit",
+        "Service",
+        "Install"
+      ],
+      "status": "PASSED"
+    },
+    "deployment/systemd/ai-verdict-frontend.service": {
+      "sections": [
+        "Unit",
+        "Service",
+        "Install"
+      ],
+      "status": "PASSED"
+    },
+    "deployment/systemd/ai-verdict-scheduler.service": {
+      "sections": [
+        "Unit",
+        "Service",
+        "Install"
+      ],
+      "status": "PASSED"
+    },
+    "deployment/systemd/ai-verdict-worker.service": {
+      "sections": [
+        "Unit",
+        "Service",
+        "Install"
+      ],
+      "status": "PASSED"
+    }
+  },
+  "env_check": {
+    "has_local_llm_budget": true,
+    "has_local_llm_max_tokens": true,
+    "has_placeholder_secrets": false
+  },
+  "secret_ip_scan": [
+    "backend/app/services/independent_verdict_validator.py:102: 10.x.x.x (baseline loopback guard)",
+    "frontend/src/app/agent-memory/page.tsx:235: 10.x.x.x (baseline UI placeholder)"
+  ]
+}

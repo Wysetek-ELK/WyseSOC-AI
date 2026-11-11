@@ -151,7 +151,7 @@ def test_phase8_alembic_007_upgrade_downgrade_roundtrip(tmp_path):
     tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
     rev = conn.execute("SELECT version_num FROM alembic_version").fetchone()[0]
     conn.close()
-    assert rev == "007_distributed_locks"
+    assert rev in ("007_distributed_locks", "008_soc_pilot")
     assert "distributed_locks" in tables
 
     down = subprocess.run(

@@ -86,14 +86,30 @@ export default function GovernanceAccessPage() {
   return (
     <div className="space-y-3.5 max-w-5xl mx-auto">
       {/* Page Header */}
-      <div>
-        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-cyan-400" />
-          Governance &amp; Access
-        </h1>
-        <p className="text-xs text-slate-400 mt-0.5">
-          User provisioning, role-based access control (RBAC), and immutable security audit controls
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-cyan-400" />
+            Governance &amp; Access
+          </h1>
+          <p className="text-xs text-slate-400 mt-0.5">
+            User provisioning, role-based access control (RBAC), and immutable security audit controls
+          </p>
+        </div>
+        <a
+          href="/verdict-intelligence?tab=pilot"
+          className="inline-flex items-center gap-1.5 rounded-md border border-indigo-800 bg-indigo-950/60 px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-900/60"
+        >
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Open SOC Pilot Governance &amp; Audit
+        </a>
+      </div>
+
+      {/* Role Enforcement Matrix Summary */}
+      <div className="rounded-lg border border-slate-800 bg-slate-950/80 p-3 text-[11px] text-slate-300 flex flex-wrap gap-4">
+        <span><strong className="text-rose-300">Administrator:</strong> Manage users, activate/pause/disable/rollback SOC Pilot, perform independent supervisor verification.</span>
+        <span><strong className="text-cyan-300">SOC Analyst:</strong> Inspect investigations, submit analyst verdicts &amp; feedback, run controlled pilot batches.</span>
+        <span><strong className="text-slate-400">Read-Only Viewer:</strong> Read-only access across dashboards and pilot metrics; all mutations blocked.</span>
       </div>
 
       {/* Tabs */}

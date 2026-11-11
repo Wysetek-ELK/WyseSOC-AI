@@ -53,7 +53,7 @@ class EvidenceContractService:
     def get_contract_for_rule(
         cls,
         rule: Optional[Rule],
-        prompt_version: Optional[PromptVersion],
+        prompt_version: Optional[PromptVersion] = None,
     ) -> RuleEvidenceContract:
         """
         Builds or resolves the machine-verifiable evidence contract for a rule.

@@ -1,0 +1,32 @@
+[Unit]
+Description=AI Verdict Celery Beat Scheduler Service
+After=network.target postgresql.service redis.service ai-verdict-worker.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=aiverdict
+Group=aiverdict
+WorkingDirectory=/opt/ai-verdict/backend
+EnvironmentFile=/opt/ai-verdict/backend/.env
+ExecStart=/opt/ai-verdict/backend/venv/bin/celery -A app.workers.celery_app beat --loglevel=INFO --pidfile=/tmp/ai-verdict-celerybeat.pid --schedule=/opt/ai-verdict/backend/celerybeat-schedule
+Restart=always
+RestartSec=10s
+
+# Linux Security Hardening Sandbox
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/ai-verdict /opt/ai-verdict/backend /tmp
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictNamespaces=true
+
+StandardOutput=append:/var/log/ai-verdict/scheduler.log
+StandardError=append:/var/log/ai-verdict/scheduler-error.log
+
+[Install]
+WantedBy=multi-user.target
+

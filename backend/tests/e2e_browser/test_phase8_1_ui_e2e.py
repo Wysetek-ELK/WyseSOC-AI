@@ -518,7 +518,8 @@ def test_phase8_1_stage10_browser_e2e(e2e_p81_servers):
             main = page.get_by_role("main")
             page.goto(f"{base_url}/ai-triage-workbench/P81-UI-INC-TP", wait_until="domcontentloaded")
             expect(main.get_by_text("TRUE POSITIVE").first).to_be_visible(timeout=15000)
-            expect(main.get_by_text("Trust: 8/10")).to_be_visible()
+            expect(main.get_by_text("Trust: 6/10 (Uncalibrated Cap)")).to_be_visible()
+            expect(main.get_by_text("Historical stored: 8/10 (pre-cap)")).to_be_visible()
             main.get_by_role("button", name="Evidence Integrity Guardrail").click()
             expect(main.get_by_text("Evidence Integrity Guardrail").first).to_be_visible()
             # Enable Blind Review mode so analyst UI hides SIEM Resolution & GT across full page

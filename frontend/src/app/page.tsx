@@ -20,11 +20,12 @@ import {
   Shield,
   Bot,
 } from "lucide-react";
-import { api, DashboardMetrics } from "@/lib/api";
+import { api, DashboardMetrics, PilotMetricsResponse } from "@/lib/api";
 import { ServerInfrastructureMonitor } from "@/components/system/ServerInfrastructureMonitor";
 
 export default function AgentMissionControlPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [pilotMetrics, setPilotMetrics] = useState<PilotMetricsResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
@@ -51,8 +52,12 @@ export default function AgentMissionControlPage() {
     if (showSpinner) setIsLoading(true);
     setError(null);
     try {
-      const data = await api.getDashboardMetrics();
+      const [data, pilotRes] = await Promise.all([
+        api.getDashboardMetrics(),
+        api.getPilotMetrics().catch(() => null),
+      ]);
       setMetrics(data);
+      setPilotMetrics(pilotRes);
       setLastRefreshed(new Date());
     } catch (err: any) {
       setError(err.message || "Failed to load dashboard metrics");
@@ -198,6 +203,45 @@ export default function AgentMissionControlPage() {
           <button onClick={() => loadData(true)} className="underline hover:text-rose-200">
             Retry
           </button>
+        </div>
+      )}
+
+      {/* Controlled SOC Pilot Status Banner */}
+      {pilotMetrics && (
+        <div className="rounded-lg border border-slate-800 bg-slate-950/90 px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs" data-testid="mission-control-pilot-banner">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+              <Shield className="h-3.5 w-3.5 text-indigo-400" />
+              SOC Pilot:
+            </span>
+            <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold border ${
+              pilotMetrics.pilot.mode === "ANALYST_ASSISTED"
+                ? "bg-emerald-950/70 text-emerald-300 border-emerald-700"
+                : pilotMetrics.pilot.mode === "SHADOW"
+                ? "bg-indigo-950/70 text-indigo-300 border-indigo-700"
+                : "bg-slate-900 text-slate-400 border-slate-700"
+            }`}>
+              {pilotMetrics.pilot.mode}
+            </span>
+            {pilotMetrics.pilot.is_paused && (
+              <span className="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700 text-[10px] font-mono">
+                PAUSED
+              </span>
+            )}
+            <span className="text-slate-400 font-mono text-[11px]">
+              Evaluated: <strong className="text-white">{pilotMetrics.operational.incidents_evaluated}</strong> • Backlog:{" "}
+              <strong className="text-slate-200">{pilotMetrics.operational.queue_backlog}</strong> • Server 2:{" "}
+              <strong className={pilotMetrics.operational.provider_available ? "text-emerald-300" : "text-rose-300"}>
+                {pilotMetrics.operational.provider_available ? "ONLINE" : "OFFLINE"}
+              </strong>
+            </span>
+          </div>
+          <Link
+            href="/verdict-intelligence?tab=pilot"
+            className="text-[11px] font-medium text-indigo-300 hover:text-indigo-200 flex items-center gap-1"
+          >
+            Pilot Console &amp; Metrics <ArrowUpRight className="h-3 w-3" />
+          </Link>
         </div>
       )}
 

@@ -221,14 +221,22 @@ async def get_incident_trust(
         "total_raw_score": float(rec.raw_trust_score or 0.0),
     }
 
+    eff_trust, hist_trust, cap_applied, cap_reason = VerdictTrustworthinessEngine.cap_uncalibrated_trust_score(
+        trust_score=rec.trust_score,
+        is_calibrated=bool(rec.is_calibrated),
+    )
+
     return VerdictTrustAssessmentResult(
         incident_id=rec.incident_id,
         rule_id=rec.rule_id,
         archetype=rec.archetype,
         suggested_verdict=rec.suggested_verdict,
         effective_verdict=rec.effective_verdict,
-        trust_score=rec.trust_score,
-        trust_status="CALCULATED" if rec.trust_score is not None else "NOT_CALCULABLE",
+        trust_score=eff_trust,
+        historical_trust_score=hist_trust,
+        trust_cap_applied=cap_applied,
+        trust_cap_reason=cap_reason,
+        trust_status="CALCULATED" if eff_trust is not None else "NOT_CALCULABLE",
         raw_trust_score=rec.raw_trust_score,
         evidence_sufficiency_score=rec.evidence_sufficiency_score,
         evidence_status=rec.evidence_status,
@@ -272,6 +280,9 @@ async def start_historical_evaluation(
         baseline_run_id=req.baseline_run_id,
         sample_limit=req.sample_limit or 50,
         provider_type=req.provider_type,
+        split_partition=req.split_partition,
+        after_epoch=req.after_epoch,
+        before_epoch=req.before_epoch,
     )
     return {
         "run_id": run_record.id,
@@ -288,37 +299,65 @@ async def start_historical_evaluation(
 
 
 def _sanitize_run_metrics(run: HistoricalEvaluationRunRecord) -> Optional[Dict[str, Any]]:
-    """Enforces zero-denominator and missing-class honesty on stored run metrics."""
+    """Enforces zero-denominator, decision coverage, and missing-class honesty on stored run metrics."""
     if run.metrics is None:
         return None
     m = dict(run.metrics)
     if "verified_ground_truth_cases" not in m:
         m["verified_ground_truth_cases"] = int(run.verified_ground_truth_cases or 0)
+    has_confusion_keys = any(
+        k in m for k in ("true_positives", "false_positives", "true_negatives", "false_negatives")
+    )
     tp = int(m.get("true_positives") or 0)
     fp = int(m.get("false_positives") or 0)
     tn = int(m.get("true_negatives") or 0)
     fn = int(m.get("false_negatives") or 0)
     decisive = tp + fp + tn + fn
     verified_n = int(m.get("verified_ground_truth_cases") or 0)
-    if verified_n == 0 or decisive == 0:
+    if verified_n == 0:
         m["overall_accuracy"] = None
         m["precision"] = None
         m["recall"] = None
         m["specificity"] = None
         m["balanced_accuracy"] = None
         m["f1_score"] = None
+        m["automatic_decision_count"] = 0
+        m["automatic_decision_coverage"] = None
+        m["analyst_attention_rate"] = None
         m["metric_status"] = "NOT_CALCULABLE"
-        m["balanced_accuracy_reason"] = (
-            "NOT_CALCULABLE: Zero verified ground-truth cases (N=0)."
-            if verified_n == 0
-            else "NOT_CALCULABLE: Zero decisive automated verdicts (TP+FP+TN+FN = 0)."
-        )
-    elif m.get("recall") is None or m.get("specificity") is None or (tp + fn) == 0 or (tn + fp) == 0:
+        m["balanced_accuracy_reason"] = "NOT_CALCULABLE: Zero verified ground-truth cases (N=0)."
+    elif decisive == 0:
+        m["overall_accuracy"] = None
+        m["precision"] = None
+        m["recall"] = None
+        m["specificity"] = None
         m["balanced_accuracy"] = None
-        m["metric_status"] = "PARTIAL"
-        m["balanced_accuracy_reason"] = "NOT_CALCULABLE: Requires both non-zero TP (TP+FN > 0) and FP (TN+FP > 0) denominators."
+        m["f1_score"] = None
+        m["automatic_decision_count"] = 0
+        if has_confusion_keys:
+            m["automatic_decision_coverage"] = 0.0
+            if "analyst_attention_count" in m:
+                att_cnt = int(m.get("analyst_attention_count") or 0)
+                m["analyst_attention_rate"] = round(min(1.0, att_cnt / verified_n), 4)
+            else:
+                m["analyst_attention_rate"] = 1.0
+        else:
+            m["automatic_decision_coverage"] = None
+            m["analyst_attention_rate"] = None
+        m["metric_status"] = "NOT_CALCULABLE"
+        m["balanced_accuracy_reason"] = "NOT_CALCULABLE: Zero decisive automated verdicts (TP+FP+TN+FN = 0)."
     else:
-        m.setdefault("metric_status", "CALCULATED")
+        m["automatic_decision_count"] = decisive
+        m["automatic_decision_coverage"] = round(min(1.0, decisive / verified_n), 4)
+        if "analyst_attention_count" in m:
+            att_cnt = int(m.get("analyst_attention_count") or 0)
+            m["analyst_attention_rate"] = round(min(1.0, att_cnt / verified_n), 4)
+        if m.get("recall") is None or m.get("specificity") is None or (tp + fn) == 0 or (tn + fp) == 0:
+            m["balanced_accuracy"] = None
+            m["metric_status"] = "PARTIAL"
+            m["balanced_accuracy_reason"] = "NOT_CALCULABLE: Requires both non-zero TP (TP+FN > 0) and FP (TN+FP > 0) denominators."
+        else:
+            m.setdefault("metric_status", "CALCULATED")
     return m
 
 
@@ -403,7 +442,12 @@ async def get_evaluation_run_details(
                 "suggested_verdict": r.suggested_verdict,
                 "effective_verdict": r.effective_verdict,
                 "ground_truth_label": r.ground_truth_label,
-                "trust_score": r.trust_score,
+                "trust_score": VerdictTrustworthinessEngine.cap_uncalibrated_trust_score(
+                    r.trust_score, is_calibrated=bool((run.calibration_metrics or {}).get("is_calibrated", False))
+                )[0],
+                "historical_trust_score": VerdictTrustworthinessEngine.cap_uncalibrated_trust_score(
+                    r.trust_score, is_calibrated=bool((run.calibration_metrics or {}).get("is_calibrated", False))
+                )[1],
                 "raw_trust_score": r.raw_trust_score,
                 "evidence_sufficiency_score": r.evidence_sufficiency_score,
                 "evidence_status": r.evidence_status,
@@ -460,17 +504,22 @@ async def get_verdict_trust_overview(
     fp_count = sum(1 for a in assessments if a.effective_verdict == "FALSE_POSITIVE")
     attention_count = sum(1 for a in assessments if a.effective_verdict == "REQUIRES_ANALYST_ATTENTION")
 
-    # Trust Score Distribution 1 to 10
+    # Trust Score Distribution 1 to 10 (enforcing current uncalibrated <= 6/10 cap on ordinal scores)
     score_dist = {str(i): 0 for i in range(1, 11)}
+    eff_scores: List[int] = []
     for a in assessments:
-        if a.trust_score and 1 <= a.trust_score <= 10:
-            score_dist[str(a.trust_score)] += 1
+        eff_s, _, _, _ = VerdictTrustworthinessEngine.cap_uncalibrated_trust_score(
+            a.trust_score, is_calibrated=bool(a.is_calibrated)
+        )
+        if eff_s is not None and 1 <= eff_s <= 10:
+            score_dist[str(eff_s)] += 1
+            eff_scores.append(eff_s)
 
-    low_trust_count = sum(1 for a in assessments if a.trust_score and a.trust_score < 7)
+    low_trust_count = sum(1 for s in eff_scores if s < 7)
     missing_evidence_count = sum(1 for a in assessments if a.missing_evidence)
     conflicting_count = sum(1 for a in assessments if a.evidence_status == "CONFLICTING")
 
-    avg_trust = (sum(a.raw_trust_score for a in assessments) / total_evaluated) if total_evaluated > 0 else None
+    avg_trust = (sum(eff_scores) / len(eff_scores)) if eff_scores else None
     avg_sufficiency = (sum(a.evidence_sufficiency_score for a in assessments) / total_evaluated) if total_evaluated > 0 else None
 
     return {
@@ -478,7 +527,7 @@ async def get_verdict_trust_overview(
         "true_positive_recommendations": tp_count,
         "false_positive_recommendations": fp_count,
         "analyst_attention_decisions": attention_count,
-        "average_trust_score": round(avg_trust / 10.0, 1) if avg_trust is not None else None,
+        "average_trust_score": round(avg_trust, 1) if avg_trust is not None else None,
         "average_sufficiency_score": round(avg_sufficiency, 1) if avg_sufficiency is not None else None,
         "trust_score_distribution": score_dist,
         "low_trust_verdicts_count": low_trust_count,
@@ -520,7 +569,13 @@ async def get_rule_wise_trustworthiness(
         r_assess = assess_by_rule.get(r.id, []) or assess_by_rule.get(r.rule_id, [])
         inc_count = len(r_assess)
         if inc_count > 0:
-            avg_trust = round(sum(a.raw_trust_score for a in r_assess) / inc_count / 10.0, 1)
+            eff_rule_scores = [
+                s
+                for a in r_assess
+                for s in [VerdictTrustworthinessEngine.cap_uncalibrated_trust_score(a.trust_score, bool(a.is_calibrated))[0]]
+                if s is not None
+            ]
+            avg_trust = round(sum(eff_rule_scores) / len(eff_rule_scores), 1) if eff_rule_scores else None
             avg_suff = round(sum(a.evidence_sufficiency_score for a in r_assess) / inc_count, 1)
             abstain_count = sum(1 for a in r_assess if a.effective_verdict == "REQUIRES_ANALYST_ATTENTION")
             abstain_rate = round((abstain_count / inc_count) * 100.0, 1)
@@ -560,6 +615,30 @@ async def get_rule_wise_trustworthiness(
         })
 
     return items
+
+
+@router.get("/eligibility-report")
+async def get_historical_eligibility_report(
+    rule_id: Optional[str] = Query(None),
+    format: str = Query("json", pattern="^(json|csv)$"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Reusable historical ground-truth & G8/calibration readiness report (Phase 9 Stage 7).
+    Accessible to all authenticated roles (read-only).
+    """
+    from app.services.historical_eligibility_service import HistoricalEligibilityService
+
+    svc = HistoricalEligibilityService(db)
+    report = await svc.generate_report(rule_id=rule_id)
+    if format == "csv":
+        return Response(
+            content=svc.to_csv(report),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=historical_eligibility_report.csv"},
+        )
+    return report
 
 
 # --------------------------------------------------------------------------
@@ -619,7 +698,7 @@ async def export_evaluation_report(
                 "id": run.id if run else "aggregate",
                 "run_name": run.run_name if run else "Aggregate Results",
                 "validation_state": run.validation_state if run else "N/A",
-                "metrics": run.metrics if run else {},
+                "metrics": _sanitize_run_metrics(run) if run else {},
                 "selective_metrics": run.selective_metrics if run else [],
                 "calibration_metrics": run.calibration_metrics if run else {},
             },

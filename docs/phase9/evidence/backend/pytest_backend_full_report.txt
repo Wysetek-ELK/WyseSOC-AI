@@ -1,0 +1,1067 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.13, pytest-9.0.1, pluggy-1.6.0 -- C:\Users\amit\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend
+plugins: anyio-4.9.0, langsmith-0.7.22, asyncio-1.4.0, mock-3.15.1, respx-0.23.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 293 items
+
+tests/test_agent_intelligence_studio_v2.py::test_req01_rule_intelligence_authoritative_vs_observed PASSED [  0%]
+tests/test_agent_intelligence_studio_v2.py::test_req02_detection_archetype_classification_and_contradictions PASSED [  0%]
+tests/test_agent_intelligence_studio_v2.py::test_req03_evidence_requirement_mapper PASSED [  1%]
+tests/test_agent_intelligence_studio_v2.py::test_req04_policy_generation_and_soc_baseline_v2 PASSED [  1%]
+tests/test_agent_intelligence_studio_v2.py::test_req05_policy_quality_validator_8_gates PASSED [  1%]
+tests/test_agent_intelligence_studio_v2.py::test_req06_policy_quality_scoring_index PASSED [  2%]
+tests/test_agent_intelligence_studio_v2.py::test_req07_historical_simulation_and_insufficient_data PASSED [  2%]
+tests/test_agent_intelligence_studio_v2.py::test_req08_approval_governance_and_contract_activation PASSED [  2%]
+tests/test_agent_intelligence_studio_v2.py::test_req09_bulk_policy_quality_audit PASSED [  3%]
+tests/test_agent_intelligence_studio_v2.py::test_req10_continuous_policy_monitoring_and_drift PASSED [  3%]
+tests/test_agent_intelligence_studio_v2.py::test_reference_case_large_outbound_transfer_full_lifecycle PASSED [  3%]
+tests/test_agentic_nomenclature.py::test_naming_refactor_identity_and_aliases PASSED [  4%]
+tests/test_agentic_nomenclature.py::test_evidence_integrity_guardrail PASSED [  4%]
+tests/test_agentic_nomenclature.py::test_reconcile_pending_triage_method_exists PASSED [  4%]
+tests/test_api_endpoints.py::test_dashboard_metrics_empty PASSED         [  5%]
+tests/test_api_endpoints.py::test_api_full_workflow PASSED               [  5%]
+tests/test_async_simulation.py::test_dry_run_job_progress_and_cancellation PASSED [  5%]
+tests/test_audit_remediations.py::test_empty_claim_bypass_blocked_for_tp_and_fp PASSED [  6%]
+tests/test_audit_remediations.py::test_v3_and_p2_claim_schemas_ground_and_reject_low_signal_tokens PASSED [  6%]
+tests/test_audit_remediations.py::test_normalization_disambiguates_duplicate_payload_fields_and_fortisiem_aliases PASSED [  6%]
+tests/test_audit_remediations.py::test_live_triage_persists_trust_and_logs_authoritative_verdict PASSED [  7%]
+tests/test_audit_remediations.py::test_policy_approval_enables_bounded_reevaluation_and_trust_records PASSED [  7%]
+tests/test_audit_remediations.py::test_api_trust_blocks_unpermitted_simulation_and_uses_real_stats PASSED [  7%]
+tests/test_audit_remediations.py::test_quality_gates_g5_baseline_dilution_g7_blockers_and_g8_stale_digest PASSED [  8%]
+tests/test_audit_remediations.py::test_approve_version_blocks_regression_and_model_payload_exposes_canonical_evidence PASSED [  8%]
+tests/test_audit_remediations.py::test_celery_run_dry_run_job_task_imports_valid_service PASSED [  8%]
+tests/test_audit_remediations.py::test_overruled_llm_proposal_logs_authoritative_verdict_across_downstream_tables PASSED [  9%]
+tests/test_audit_remediations.py::test_policy_simulation_honors_candidate_version_and_pull_rule_stays_draft PASSED [  9%]
+tests/test_auth.py::test_password_hashing PASSED                         [  9%]
+tests/test_auth.py::test_token_creation_and_decoding PASSED              [ 10%]
+tests/test_auth.py::test_login_success_and_cookie PASSED                 [ 10%]
+tests/test_auth.py::test_login_failure PASSED                            [ 10%]
+tests/test_auth.py::test_get_current_user_me PASSED                      [ 11%]
+tests/test_auth.py::test_rbac_admin_route_forbidden_for_analyst PASSED   [ 11%]
+tests/test_auth.py::test_rbac_admin_route_allowed_for_admin PASSED       [ 11%]
+tests/test_backup_restore.py::test_backup_and_restore_workflow PASSED    [ 12%]
+tests/test_backup_restore.py::test_audit_hmac_signature_and_tamper_detection PASSED [ 12%]
+tests/test_calibration_and_evaluation.py::test_deterministic_dataset_partitioning PASSED [ 12%]
+tests/test_calibration_and_evaluation.py::test_honest_metrics_calculation_and_withholding PASSED [ 13%]
+tests/test_calibration_and_evaluation.py::test_rule_calibration_report_service PASSED [ 13%]
+tests/test_calibration_and_evaluation.py::test_calibration_api_endpoint PASSED [ 13%]
+tests/test_celery_queues.py::test_celery_configuration_and_queues PASSED [ 14%]
+tests/test_celery_queues.py::test_task_state_machine_transitions PASSED  [ 14%]
+tests/test_database_migrations.py::test_get_head_revision_matches_current PASSED [ 15%]
+tests/test_database_migrations.py::test_production_startup_blocks_unmigrated_db PASSED [ 15%]
+tests/test_database_migrations.py::test_development_startup_allows_clean_initialization PASSED [ 15%]
+tests/test_dry_run_replay.py::test_dataset_splitting_strategies PASSED   [ 16%]
+tests/test_dry_run_replay.py::test_dry_run_job_execution_api PASSED      [ 16%]
+tests/test_evaluation_metrics.py::test_safe_divide_edge_cases PASSED     [ 16%]
+tests/test_evaluation_metrics.py::test_evaluation_metrics_calculation PASSED [ 17%]
+tests/test_evidence_contracts.py::test_approved_prompt_yields_approved_contract PASSED [ 17%]
+tests/test_evidence_contracts.py::test_draft_prompt_yields_unverified_contract PASSED [ 17%]
+tests/test_evidence_contracts.py::test_missing_prompt_yields_unverified_contract PASSED [ 18%]
+tests/test_evidence_contracts.py::test_archetype_process_execution PASSED [ 18%]
+tests/test_evidence_contracts.py::test_archetype_network_connection PASSED [ 18%]
+tests/test_evidence_contracts.py::test_archetype_file_malware PASSED     [ 19%]
+tests/test_evidence_contracts.py::test_archetype_authentication PASSED   [ 19%]
+tests/test_evidence_contracts.py::test_archetype_generic_fallback PASSED [ 19%]
+tests/test_evidence_contracts.py::test_contract_contradiction_rules PASSED [ 20%]
+tests/test_evidence_grounding.py::test_scenario_11_valid_evidence_id_match PASSED [ 20%]
+tests/test_evidence_grounding.py::test_scenario_12_nonexistent_evidence_id PASSED [ 20%]
+tests/test_evidence_grounding.py::test_scenario_13_evidence_id_from_other_incident PASSED [ 21%]
+tests/test_evidence_grounding.py::test_scenario_14_evidence_value_mismatch PASSED [ 21%]
+tests/test_evidence_grounding.py::test_scenario_15_hallucinated_process_name PASSED [ 21%]
+tests/test_evidence_grounding.py::test_scenario_16_hallucinated_sha256_hash PASSED [ 22%]
+tests/test_evidence_grounding.py::test_scenario_17_hallucinated_external_ip PASSED [ 22%]
+tests/test_evidence_grounding.py::test_scenario_18_hallucinated_parent_child_relationship PASSED [ 22%]
+tests/test_evidence_grounding.py::test_scenario_19_empty_claims PASSED   [ 23%]
+tests/test_evidence_grounding.py::test_scenario_20_malformed_claims_handling PASSED [ 23%]
+tests/test_evidence_normalization.py::test_scenario_01_valid_process_execution PASSED [ 23%]
+tests/test_evidence_normalization.py::test_scenario_02_missing_command_line PASSED [ 24%]
+tests/test_evidence_normalization.py::test_scenario_03_missing_parent_process PASSED [ 24%]
+tests/test_evidence_normalization.py::test_scenario_04_null_user_context PASSED [ 24%]
+tests/test_evidence_normalization.py::test_scenario_05_missing_dest_ip_in_network_event PASSED [ 25%]
+tests/test_evidence_normalization.py::test_scenario_06_invalid_timestamp PASSED [ 25%]
+tests/test_evidence_normalization.py::test_scenario_07_malformed_raw_payload PASSED [ 25%]
+tests/test_evidence_normalization.py::test_scenario_08_duplicate_raw_events PASSED [ 26%]
+tests/test_evidence_normalization.py::test_scenario_09_multiple_correlated_events PASSED [ 26%]
+tests/test_evidence_normalization.py::test_scenario_10_preservation_of_raw_payload PASSED [ 26%]
+tests/test_evidence_normalization.py::test_scenario_ground_truth_isolation PASSED [ 27%]
+tests/test_evidence_preflight.py::test_preflight_complete_evidence PASSED [ 27%]
+tests/test_evidence_preflight.py::test_preflight_partial_evidence PASSED [ 27%]
+tests/test_evidence_preflight.py::test_preflight_critical_missing_blocks_inference PASSED [ 28%]
+tests/test_evidence_preflight.py::test_preflight_unverified_contract_blocks PASSED [ 28%]
+tests/test_evidence_preflight.py::test_preflight_contradictory_loopback PASSED [ 29%]
+tests/test_evidence_preflight.py::test_preflight_semantic_field_alias PASSED [ 29%]
+tests/test_feature_registry.py::test_centralized_feature_registry_and_markdown_sync PASSED [ 29%]
+tests/test_fortisiem_continuous_sync.py::test_pull_all_incidents_without_id PASSED [ 30%]
+tests/test_fortisiem_continuous_sync.py::test_pull_all_caching_idempotency PASSED [ 30%]
+tests/test_fortisiem_continuous_sync.py::test_ai_verdict_service_direct PASSED [ 30%]
+tests/test_fortisiem_continuous_sync.py::test_batch_ai_verdict_endpoint PASSED [ 31%]
+tests/test_fortisiem_continuous_sync.py::test_scheduler_lifecycle PASSED [ 31%]
+tests/test_fortisiem_continuous_sync.py::test_scheduler_persistence_and_multi_worker_continuity PASSED [ 31%]
+tests/test_fortisiem_pull.py::test_fortisiem_status PASSED               [ 32%]
+tests/test_fortisiem_pull.py::test_fortisiem_pull_valid_incident PASSED  [ 32%]
+tests/test_fortisiem_pull.py::test_fortisiem_pull_cache_and_force_refresh PASSED [ 32%]
+tests/test_fortisiem_pull.py::test_fortisiem_pull_nonexistent_incident PASSED [ 33%]
+tests/test_fortisiem_pull.py::test_fortisiem_pull_rbac PASSED            [ 33%]
+tests/test_fortisiem_pull.py::test_fortisiem_pull_live_mocked PASSED     [ 33%]
+tests/test_fortisiem_pull.py::test_fortisiem_pull_live_404_falls_back_to_fixtures PASSED [ 34%]
+tests/test_fortisiem_pull.py::test_fortisiem_config_and_rbac PASSED      [ 34%]
+tests/test_fortisiem_pull.py::test_fortisiem_test_connection PASSED      [ 34%]
+tests/test_fortisiem_pull.py::test_fortisiem_sync_rules PASSED           [ 35%]
+tests/test_fortisiem_pull.py::test_fortisiem_cache_miss_auto_registers_rule PASSED [ 35%]
+tests/test_fortisiem_pull.py::test_fortisiem_pull_rule_endpoint PASSED   [ 35%]
+tests/test_fortisiem_pull.py::test_fortisiem_live_rule_enrichment_on_incident_cache_miss PASSED [ 36%]
+tests/test_fortisiem_pull.py::test_fortisiem_pull_manually_cleared_resolution PASSED [ 36%]
+tests/test_fortisiem_pull.py::test_fortisiem_sync_ground_truth_for_existing_open_incident PASSED [ 36%]
+tests/test_fortisiem_pull.py::test_fortisiem_sync_all_resolutions_endpoint PASSED [ 37%]
+tests/test_gpu_circuit_breaker.py::test_circuit_breaker_trips_to_open_after_threshold PASSED [ 37%]
+tests/test_gpu_circuit_breaker.py::test_circuit_breaker_recovery_cycle PASSED [ 37%]
+tests/test_gpu_circuit_breaker.py::test_gpu_workload_manager_bounded_concurrency PASSED [ 38%]
+tests/test_ground_truth_isolation.py::test_ground_truth_isolation_zero_leakage PASSED [ 38%]
+tests/test_independent_verdict_validator.py::test_scenario_21_verified_tp_accepted PASSED [ 38%]
+tests/test_independent_verdict_validator.py::test_scenario_22_verified_fp_accepted PASSED [ 39%]
+tests/test_independent_verdict_validator.py::test_scenario_23_overconfident_tp_missing_telemetry_rejected PASSED [ 39%]
+tests/test_independent_verdict_validator.py::test_scenario_24_overconfident_fp_missing_telemetry_rejected PASSED [ 39%]
+tests/test_independent_verdict_validator.py::test_scenario_25_tp_with_hallucinated_ip_rejected PASSED [ 40%]
+tests/test_independent_verdict_validator.py::test_scenario_28_unapproved_contract_forces_attention PASSED [ 40%]
+tests/test_independent_verdict_validator.py::test_scenario_30_output_integrity_invalid_verdict_coerced PASSED [ 40%]
+tests/test_independent_verdict_validator.py::test_scenario_31_replay_validation_deterministic PASSED [ 41%]
+tests/test_independent_verdict_validator.py::test_scenario_32_tampered_evidence_changes_replay PASSED [ 41%]
+tests/test_ingestion.py::test_real_zip_ingestion PASSED                  [ 41%]
+tests/test_ingestion.py::test_duplicate_handling PASSED                  [ 42%]
+tests/test_ingestion.py::test_extract_incident_timestamps_fortisiem_formats PASSED [ 42%]
+tests/test_ingestion.py::test_list_incidents_latest_on_top PASSED        [ 43%]
+tests/test_ingestion.py::test_fortisiem_raw_events_ingestion_and_self_healing PASSED [ 43%]
+tests/test_investigations.py::test_investigation_queue_and_assignment PASSED [ 43%]
+tests/test_investigations.py::test_analyst_verdict_and_ground_truth_isolation PASSED [ 44%]
+tests/test_investigations.py::test_requires_attention_with_insufficient_evidence PASSED [ 44%]
+tests/test_learning.py::test_learning_knowledge_base_and_similar_cases PASSED [ 44%]
+tests/test_live_simulation_parity.py::test_live_simulation_prompt_section_parity PASSED [ 45%]
+tests/test_llm_config.py::test_parse_llm_url_formats PASSED              [ 45%]
+tests/test_llm_config.py::test_get_llm_config_api PASSED                 [ 45%]
+tests/test_llm_config.py::test_update_llm_config_api PASSED              [ 46%]
+tests/test_llm_config.py::test_update_llm_config_requires_admin PASSED   [ 46%]
+tests/test_llm_config.py::test_test_llm_connection_success PASSED        [ 46%]
+tests/test_llm_config.py::test_test_llm_connection_failure PASSED        [ 47%]
+tests/test_llm_multiworker_sync.py::test_multiworker_llm_config_sync_in_production_mode PASSED [ 47%]
+tests/test_llm_multiworker_sync.py::test_server_2_monitor_auth_and_health_fallback PASSED [ 47%]
+tests/test_llm_multiworker_sync.py::test_sentinel_worker_backlog_drain_without_25s_timeout PASSED [ 48%]
+tests/test_llm_multiworker_sync.py::test_process_pending_verdicts_background_endpoint PASSED [ 48%]
+tests/test_llm_offline_backlog.py::test_ingestion_when_llm_offline_defers_verdicts PASSED [ 48%]
+tests/test_llm_offline_backlog.py::test_single_incident_eval_when_offline_returns_503 PASSED [ 49%]
+tests/test_llm_offline_backlog.py::test_process_pending_incidents_when_llm_comes_online PASSED [ 49%]
+tests/test_model_provider.py::test_disabled_model_provider PASSED        [ 49%]
+tests/test_model_provider.py::test_simulated_model_provider PASSED       [ 50%]
+tests/test_model_provider.py::test_simulated_model_provider_abstains_on_empty_evidence PASSED [ 50%]
+tests/test_model_provider.py::test_factory_provider_resolution PASSED    [ 50%]
+tests/test_model_provider.py::test_robust_parse_model_verdict_json PASSED [ 51%]
+tests/test_phase1_security_controls.py::test_req01_insecure_secret_key_rejection_in_prod PASSED [ 51%]
+tests/test_phase1_security_controls.py::test_req01_fortisiem_password_never_persisted_to_env PASSED [ 51%]
+tests/test_phase1_security_controls.py::test_req02_production_strictly_rejects_mock_fallback PASSED [ 52%]
+tests/test_phase1_security_controls.py::test_req03_unapproved_prompt_draft_abstained_in_live_triage PASSED [ 52%]
+tests/test_phase1_security_controls.py::test_req04_sanitize_blind_review_payload_recursive PASSED [ 52%]
+tests/test_phase1_security_controls.py::test_req04_blind_review_endpoint_ground_truth_isolation PASSED [ 53%]
+tests/test_phase1_security_controls.py::test_req05_learning_record_verification_gate PASSED [ 53%]
+tests/test_phase1_security_controls.py::test_req05_seed_historical_forbidden_in_production PASSED [ 53%]
+tests/test_phase1_security_controls.py::test_req06_honest_monitoring_when_prometheus_offline PASSED [ 54%]
+tests/test_phase1_security_controls.py::test_req07_server1_ip_resolution_no_external_egress PASSED [ 54%]
+tests/test_phase1_security_controls.py::test_req08_rules_sync_fortisiem_route_alias PASSED [ 54%]
+tests/test_phase1_security_controls.py::test_req08_dev_endpoint_isolation_in_production PASSED [ 55%]
+tests/test_phase2_integration.py::test_live_verdict_evaluation_with_grounded_evidence PASSED [ 55%]
+tests/test_phase2_integration.py::test_live_verdict_evaluation_missing_telemetry_abstention PASSED [ 55%]
+tests/test_phase2_integration.py::test_live_verdict_unapproved_prompt_forces_attention PASSED [ 56%]
+tests/test_phase2_integration.py::test_model_facing_payload_includes_canonical_evidence PASSED [ 56%]
+tests/test_phase2_integration.py::test_simulated_provider_populates_canonical_claims PASSED [ 56%]
+tests/test_phase2_integration.py::test_replay_endpoint_end_to_end PASSED [ 57%]
+tests/test_phase3_integration.py::test_phase3_full_end_to_end_investigation PASSED [ 57%]
+tests/test_phase4_integration.py::test_phase4_full_stack_integration PASSED [ 58%]
+tests/test_phase8_1_validation.py::test_p8_1_def_001_distributed_lock_lease_loss_aborts_stale_commit PASSED [ 58%]
+tests/test_phase8_1_validation.py::test_p8_1_def_002_003_invalid_model_output_and_contradiction_trust_bounds PASSED [ 58%]
+tests/test_phase8_1_validation.py::test_p8_1_def_004_quality_gates_three_tier_eligibility_separation PASSED [ 59%]
+tests/test_phase8_1_validation.py::test_stage11_security_rbac_injection_gt_leakage_and_siem_write_safety PASSED [ 59%]
+tests/test_phase8_2_validation.py::test_p8_2_def_001_002_synthetic_missing_and_duplicate_cluster_exclusion PASSED [ 59%]
+tests/test_phase8_2_validation.py::test_p8_2_def_001_seeded_corpus_audit_on_cloned_db PASSED [ 60%]
+tests/test_phase8_2_validation.py::test_p8_2_def_003_004_zero_denominator_and_class_balance_metrics PASSED [ 60%]
+tests/test_phase8_2_validation.py::test_p8_2_def_005_validate_quality_rbac_and_readonly_preview PASSED [ 60%]
+tests/test_phase8_2_validation.py::test_p8_2_def_006_health_redaction_trust_parity_and_recovery PASSED [ 61%]
+tests/test_phase8_2_validation.py::test_stage_e_controlled_wire_scenarios PASSED [ 61%]
+tests/test_phase8_integration.py::test_phase8_alembic_007_upgrade_downgrade_roundtrip PASSED [ 61%]
+tests/test_phase8_integration.py::test_phase8_postgresql_dialect_safety_and_monitor_writes PASSED [ 62%]
+tests/test_phase8_integration.py::test_phase8_multiprocess_distributed_lock_and_idempotent_triage PASSED [ 62%]
+tests/test_phase8_integration.py::test_phase8_llm_http_contract_fault_injection PASSED [ 62%]
+tests/test_phase8_integration.py::test_phase8_stage4_complete_13_scenario_matrix_and_trace_export PASSED [ 63%]
+tests/test_phase8_integration.py::test_phase8_calibration_stats_and_unbalanced_gating PASSED [ 63%]
+tests/test_phase8_integration.py::test_phase8_fortisiem_pagination_enrichment_recovery_and_zip PASSED [ 63%]
+tests/test_phase9_audit_and_pilot.py::test_issue1_decision_coverage_legacy_and_zero_denominator_sanitized PASSED [ 64%]
+tests/test_phase9_audit_and_pilot.py::test_issue2_uncalibrated_trust_capped_with_historical_provenance PASSED [ 64%]
+tests/test_phase9_audit_and_pilot.py::test_pilot_default_disabled_safety_blocks_and_rbac PASSED [ 64%]
+tests/test_phase9_audit_and_pilot.py::test_pilot_shadow_isolation_idempotency_budgets_and_rollback PASSED [ 65%]
+tests/test_phase9_audit_and_pilot.py::test_live_source_blocks_mock_fallback_and_auto_pauses PASSED [ 65%]
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate PASSED [ 65%]
+tests/test_phase9_audit_and_pilot.py::test_historical_eligibility_report_and_chronological_replay PASSED [ 66%]
+tests/test_phase9_audit_and_pilot.py::test_openai_compatible_provider_honors_configurable_timeout_and_max_tokens PASSED [ 66%]
+tests/test_phase9_audit_and_pilot.py::test_smoke_test_server2_live_mock_and_unreachable_honesty PASSED [ 66%]
+tests/test_phase9_audit_and_pilot.py::test_alembic_008_soc_pilot_upgrade_and_downgrade PASSED [ 67%]
+tests/test_policy_compiler.py::test_nine_section_deterministic_compilation PASSED [ 67%]
+tests/test_policy_compiler.py::test_live_mode_rejects_unapproved_draft PASSED [ 67%]
+tests/test_policy_compiler.py::test_simulation_mode_allows_draft_compilation PASSED [ 68%]
+tests/test_policy_compiler.py::test_compilation_digest_uniqueness_and_determinism PASSED [ 68%]
+tests/test_policy_remediation_and_ground_truth.py::test_gate_2_unclassified_telemetry_receives_warning_and_penalized_score PASSED [ 68%]
+tests/test_policy_remediation_and_ground_truth.py::test_gate_5_blocks_hardcoded_confidence_and_blanket_benign_assumptions PASSED [ 69%]
+tests/test_policy_remediation_and_ground_truth.py::test_gate_7_flags_missing_security_event_type PASSED [ 69%]
+tests/test_policy_remediation_and_ground_truth.py::test_recommendations_cover_all_failed_and_warning_gates PASSED [ 69%]
+tests/test_policy_remediation_and_ground_truth.py::test_heavy_tcp_scan_before_after_remediation PASSED [ 70%]
+tests/test_policy_remediation_and_ground_truth.py::test_authoritative_rule_import_and_g1_scoring PASSED [ 70%]
+tests/test_policy_remediation_and_ground_truth.py::test_strict_rule_filtering_and_rule_mismatch_exclusion PASSED [ 70%]
+tests/test_policy_remediation_and_ground_truth.py::test_ground_truth_adjudication_excludes_ml_and_closures_alone PASSED [ 71%]
+tests/test_policy_remediation_and_ground_truth.py::test_six_stage_eligibility_funnel_and_exclusions PASSED [ 71%]
+tests/test_postgresql_and_pooling.py::test_check_db_health_live_query PASSED [ 72%]
+tests/test_postgresql_and_pooling.py::test_atomic_transaction_commit PASSED [ 72%]
+tests/test_postgresql_and_pooling.py::test_atomic_transaction_rollback PASSED [ 72%]
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning PASSED [ 73%]
+tests/test_rule_maturity.py::test_rule_maturity_lifecycle_and_candidate_detection PASSED [ 73%]
+tests/test_rule_maturity.py::test_admin_approval_gate_and_rbac PASSED    [ 73%]
+tests/test_rule_parser.py::test_parse_crowdstrike_rule PASSED            [ 74%]
+tests/test_rule_parser.py::test_parse_prisma_rule PASSED                 [ 74%]
+tests/test_soc_chatbot.py::test_chat_status_online_and_offline PASSED    [ 74%]
+tests/test_soc_chatbot.py::test_chat_message_with_incident_context_and_token_logging PASSED [ 75%]
+tests/test_soc_chatbot.py::test_chat_message_offline_returns_503 PASSED  [ 75%]
+tests/test_soc_chatbot.py::test_chat_message_uses_extended_read_timeout_and_returns_504_detail PASSED [ 75%]
+tests/test_soc_chatbot.py::test_chat_stream_emits_sse_deltas_and_logs_tokens PASSED [ 76%]
+tests/test_structured_output_and_injection.py::test_prompt_injection_neutralized_by_deterministic_validator PASSED [ 76%]
+tests/test_system_health_observability.py::test_health_check_endpoint PASSED [ 76%]
+tests/test_system_health_observability.py::test_metrics_prometheus_and_json PASSED [ 77%]
+tests/test_system_health_observability.py::test_health_endpoint_bounded_when_llm_hangs PASSED [ 77%]
+tests/test_system_monitor.py::test_system_servers_live_and_history PASSED [ 77%]
+tests/test_telemetry_timeline_and_tokens.py::test_token_analytics_service_bifurcation PASSED [ 78%]
+tests/test_telemetry_timeline_and_tokens.py::test_token_analytics_api_endpoint PASSED [ 78%]
+tests/test_telemetry_timeline_and_tokens.py::test_incident_historical_telemetry_timeline_on_server_1 PASSED [ 78%]
+tests/test_telemetry_timeline_and_tokens.py::test_global_telemetry_timeline_api PASSED [ 79%]
+tests/test_token_budgeting.py::test_token_budgeting_priority_trimming PASSED [ 79%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_verdict_trustworthiness_not_calculable_on_empty_telemetry PASSED [ 79%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_verdict_trustworthiness_calculated_with_telemetry PASSED [ 80%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_calibration_evaluator_insufficient_samples PASSED [ 80%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_calibration_evaluator_unbalanced_class_representation PASSED [ 80%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_calibration_evaluator_sufficient_and_balanced PASSED [ 81%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_empirical_accuracy_undefined_metrics_return_none PASSED [ 81%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_incident_eligibility_funnel_and_exclusion_reasons PASSED [ 81%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_gate_8_blocks_when_insufficient_ground_truth PASSED [ 82%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_gate_8_fails_when_critical_regressions_detected PASSED [ 82%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_gate_8_passes_when_sufficient_ground_truth_and_no_regression PASSED [ 82%]
+tests/test_verdict_intelligence_enhancements_v2.py::test_gate_5_rejects_broad_benign_assumptions PASSED [ 83%]
+tests/test_verdict_intelligence_validation.py::test_evidence_sufficiency_missing_mandatory_blocks_verdict PASSED [ 83%]
+tests/test_verdict_intelligence_validation.py::test_evidence_sufficiency_complete_mandatory_and_optional PASSED [ 83%]
+tests/test_verdict_intelligence_validation.py::test_evidence_sufficiency_missing_optional_only PASSED [ 84%]
+tests/test_verdict_intelligence_validation.py::test_evidence_sufficiency_freshness_degradation PASSED [ 84%]
+tests/test_verdict_intelligence_validation.py::test_claim_verification_grounded_claims PASSED [ 84%]
+tests/test_verdict_intelligence_validation.py::test_claim_verification_unsupported_threshold_assertion PASSED [ 85%]
+tests/test_verdict_intelligence_validation.py::test_claim_verification_directional_contradiction PASSED [ 85%]
+tests/test_verdict_intelligence_validation.py::test_claim_verification_fabricated_entity PASSED [ 86%]
+tests/test_verdict_intelligence_validation.py::test_guardrails_tp_without_evidence_demoted PASSED [ 86%]
+tests/test_verdict_intelligence_validation.py::test_guardrails_fp_without_affirmative_authorization PASSED [ 86%]
+tests/test_verdict_intelligence_validation.py::test_guardrails_contradiction_forces_analyst_attention PASSED [ 87%]
+tests/test_verdict_intelligence_validation.py::test_trustworthiness_uncalibrated_rule_capped_at_6 PASSED [ 87%]
+tests/test_verdict_intelligence_validation.py::test_trustworthiness_score_10_exceptional_prerequisites PASSED [ 87%]
+tests/test_verdict_intelligence_validation.py::test_trustworthiness_llm_confidence_cannot_override_low_evidence PASSED [ 88%]
+tests/test_verdict_intelligence_validation.py::test_historical_ground_truth_sanitization_prevents_leakage PASSED [ 88%]
+tests/test_verdict_intelligence_validation.py::test_historical_ground_truth_adjudication PASSED [ 88%]
+tests/test_verdict_intelligence_validation.py::test_deterministic_partitioning_consistency PASSED [ 89%]
+tests/test_verdict_intelligence_validation.py::test_empirical_accuracy_wilson_confidence_intervals PASSED [ 89%]
+tests/test_verdict_intelligence_validation.py::test_calibration_evaluator_insufficient_sample_size PASSED [ 89%]
+tests/test_verdict_intelligence_validation.py::test_calibration_evaluator_sufficient_sample_size PASSED [ 90%]
+tests/test_verdict_intelligence_validation.py::test_policy_simulation_insufficient_data PASSED [ 90%]
+tests/test_verdict_intelligence_validation.py::test_policy_simulation_regression_detection PASSED [ 90%]
+tests/test_verdict_intelligence_validation.py::test_case_01_fully_documented_exfiltration_high_trust_tp PASSED [ 91%]
+tests/test_verdict_intelligence_validation.py::test_case_02_missing_destination_ip_insufficient_evidence PASSED [ 91%]
+tests/test_verdict_intelligence_validation.py::test_case_03_inverted_traffic_direction_inbound_traffic PASSED [ 91%]
+tests/test_verdict_intelligence_validation.py::test_case_04_approved_cloud_backup_legitimate_fp PASSED [ 92%]
+tests/test_verdict_intelligence_validation.py::test_case_05_fabricated_threshold_claim_speculative_llm PASSED [ 92%]
+tests/test_verdict_intelligence_validation.py::test_case_06_uncalibrated_rule_less_than_30_incidents PASSED [ 92%]
+tests/test_verdict_intelligence_validation.py::test_case_07_contradictory_netflow_vs_firewall PASSED [ 93%]
+tests/test_verdict_intelligence_validation.py::test_case_08_replay_regression_detection PASSED [ 93%]
+tests/test_verdict_intelligence_validation.py::test_cross_archetype_process_execution PASSED [ 93%]
+tests/test_verdict_intelligence_validation.py::test_cross_archetype_authentication PASSED [ 94%]
+tests/test_verdict_intelligence_validation.py::test_cross_archetype_cloud_audit PASSED [ 94%]
+tests/test_verdict_intelligence_validation.py::test_api_evaluate_incident_endpoint PASSED [ 94%]
+tests/test_verdict_intelligence_validation.py::test_api_metrics_endpoint PASSED [ 95%]
+tests/test_verdict_intelligence_validation.py::test_api_export_endpoint PASSED [ 95%]
+tests/test_verdict_intelligence_validation.py::test_api_evaluate_simulation_endpoint PASSED [ 95%]
+tests/test_verdict_intelligence_validation.py::test_cs_suspicious_activity_true_positive PASSED [ 96%]
+tests/test_verdict_intelligence_validation.py::test_cs_suspicious_activity_false_positive_authorized_maintenance PASSED [ 96%]
+tests/test_verdict_intelligence_validation.py::test_cs_suspicious_activity_missing_mandatory_command_line PASSED [ 96%]
+tests/test_verdict_intelligence_validation.py::test_cs_suspicious_activity_contradictory_execution_evidence PASSED [ 97%]
+tests/test_verdict_intelligence_validation.py::test_cs_suspicious_activity_hallucinated_hash_and_foreign_ip PASSED [ 97%]
+tests/test_verdict_intelligence_validation.py::test_cs_suspicious_activity_simulation_regression PASSED [ 97%]
+tests/test_verified_semantic_rag.py::test_verified_rag_governance_gates PASSED [ 98%]
+tests/test_verified_semantic_rag.py::test_verified_rag_safe_fallback_when_empty PASSED [ 98%]
+tests/test_zip_guard.py::test_valid_zip_extraction PASSED                [ 98%]
+tests/test_zip_guard.py::test_path_traversal_zip_slip_rejected PASSED    [ 99%]
+tests/test_zip_guard.py::test_normalized_path_traversal_rejected PASSED  [ 99%]
+tests/test_zip_guard.py::test_corrupted_zip_handled PASSED               [100%]
+
+============================== warnings summary ===============================
+..\..\..\..\AppData\Local\Programs\Python\Python313\Lib\site-packages\pydantic\_internal\_config.py:323: 12 warnings
+  C:\Users\amit\AppData\Local\Programs\Python\Python313\Lib\site-packages\pydantic\_internal\_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/test_agent_intelligence_studio_v2.py: 79 warnings
+tests/test_audit_remediations.py: 25 warnings
+tests/test_evidence_contracts.py: 18 warnings
+tests/test_fortisiem_continuous_sync.py: 28 warnings
+tests/test_fortisiem_pull.py: 55 warnings
+tests/test_ingestion.py: 10 warnings
+tests/test_llm_offline_backlog.py: 21 warnings
+tests/test_phase1_security_controls.py: 10 warnings
+tests/test_phase2_integration.py: 6 warnings
+tests/test_phase3_integration.py: 2 warnings
+tests/test_phase4_integration.py: 7 warnings
+tests/test_phase8_1_validation.py: 20 warnings
+tests/test_phase8_2_validation.py: 33 warnings
+tests/test_phase8_integration.py: 32 warnings
+tests/test_phase9_audit_and_pilot.py: 10 warnings
+tests/test_policy_remediation_and_ground_truth.py: 18 warnings
+tests/test_prompt_studio.py: 17 warnings
+tests/test_telemetry_timeline_and_tokens.py: 7 warnings
+tests/test_verdict_intelligence_enhancements_v2.py: 2 warnings
+  C:\Users\amit\AppData\Local\Programs\Python\Python313\Lib\site-packages\pydantic\main.py:253: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+tests/test_agent_intelligence_studio_v2.py: 10 warnings
+tests/test_audit_remediations.py: 6 warnings
+tests/test_fortisiem_continuous_sync.py: 4 warnings
+tests/test_fortisiem_pull.py: 11 warnings
+tests/test_ingestion.py: 2 warnings
+tests/test_llm_offline_backlog.py: 3 warnings
+tests/test_phase1_security_controls.py: 2 warnings
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_1_validation.py: 2 warnings
+tests/test_phase8_2_validation.py: 3 warnings
+tests/test_phase8_integration.py: 2 warnings
+tests/test_policy_remediation_and_ground_truth.py: 7 warnings
+tests/test_prompt_studio.py: 5 warnings
+tests/test_telemetry_timeline_and_tokens.py: 1 warning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\policy_quality_validator.py:338: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    evaluated_at=datetime.utcnow(),
+
+tests/test_agent_intelligence_studio_v2.py: 1 warning
+tests/test_audit_remediations.py: 1 warning
+tests/test_phase8_2_validation.py: 3 warnings
+tests/test_phase9_audit_and_pilot.py: 1 warning
+tests/test_policy_remediation_and_ground_truth.py: 2 warnings
+tests/test_verdict_intelligence_enhancements_v2.py: 1 warning
+tests/test_verdict_intelligence_validation.py: 5 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\policy_simulation_service.py:268: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "evaluated_at": datetime.utcnow().isoformat(),
+
+tests/test_agent_intelligence_studio_v2.py: 1 warning
+tests/test_audit_remediations.py: 1 warning
+tests/test_phase8_2_validation.py: 3 warnings
+tests/test_phase9_audit_and_pilot.py: 1 warning
+tests/test_policy_remediation_and_ground_truth.py: 2 warnings
+tests/test_verdict_intelligence_enhancements_v2.py: 1 warning
+tests/test_verdict_intelligence_validation.py: 5 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\policy_simulation_service.py:270: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    started_at=datetime.utcnow(),
+
+tests/test_agent_intelligence_studio_v2.py::test_req07_historical_simulation_and_insufficient_data
+tests/test_verdict_intelligence_validation.py::test_policy_simulation_insufficient_data
+tests/test_verdict_intelligence_validation.py::test_api_evaluate_simulation_endpoint
+tests/test_verdict_intelligence_validation.py::test_api_evaluate_simulation_endpoint
+tests/test_verdict_intelligence_validation.py::test_api_evaluate_simulation_endpoint
+tests/test_verdict_intelligence_validation.py::test_cs_suspicious_activity_simulation_regression
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\policy_simulation_service.py:329: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    run_record.completed_at = datetime.utcnow()
+
+tests/test_agent_intelligence_studio_v2.py: 1 warning
+tests/test_phase8_2_validation.py: 2 warnings
+tests/test_policy_remediation_and_ground_truth.py: 1 warning
+tests/test_verdict_intelligence_enhancements_v2.py: 1 warning
+tests/test_verdict_intelligence_validation.py: 5 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\policy_simulation_service.py:1245: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "evaluated_at": datetime.utcnow().isoformat(),
+
+tests/test_agent_intelligence_studio_v2.py: 47 warnings
+tests/test_api_endpoints.py: 309 warnings
+tests/test_async_simulation.py: 18 warnings
+tests/test_audit_remediations.py: 81 warnings
+tests/test_auth.py: 12 warnings
+tests/test_calibration_and_evaluation.py: 26 warnings
+tests/test_dry_run_replay.py: 115 warnings
+tests/test_evaluation_metrics.py: 26 warnings
+tests/test_fortisiem_continuous_sync.py: 307 warnings
+tests/test_fortisiem_pull.py: 260 warnings
+tests/test_ingestion.py: 643 warnings
+tests/test_investigations.py: 1002 warnings
+tests/test_learning.py: 327 warnings
+tests/test_llm_config.py: 10 warnings
+tests/test_llm_multiworker_sync.py: 2 warnings
+tests/test_llm_offline_backlog.py: 209 warnings
+tests/test_phase1_security_controls.py: 47 warnings
+tests/test_phase2_integration.py: 38 warnings
+tests/test_phase3_integration.py: 13 warnings
+tests/test_phase4_integration.py: 12 warnings
+tests/test_phase8_1_validation.py: 76 warnings
+tests/test_phase8_2_validation.py: 134 warnings
+tests/test_phase8_integration.py: 160 warnings
+tests/test_phase9_audit_and_pilot.py: 143 warnings
+tests/test_policy_remediation_and_ground_truth.py: 49 warnings
+tests/test_postgresql_and_pooling.py: 2 warnings
+tests/test_prompt_studio.py: 314 warnings
+tests/test_rule_maturity.py: 44 warnings
+tests/test_soc_chatbot.py: 12 warnings
+tests/test_system_monitor.py: 2 warnings
+tests/test_telemetry_timeline_and_tokens.py: 45 warnings
+tests/test_verdict_intelligence_enhancements_v2.py: 19 warnings
+tests/test_verdict_intelligence_validation.py: 51 warnings
+tests/test_verified_semantic_rag.py: 18 warnings
+  C:\Users\amit\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\sql\schema.py:3624: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+tests/test_agent_intelligence_studio_v2.py: 2 warnings
+tests/test_audit_remediations.py: 1 warning
+tests/test_fortisiem_continuous_sync.py: 4 warnings
+tests/test_fortisiem_pull.py: 11 warnings
+tests/test_ingestion.py: 2 warnings
+tests/test_llm_offline_backlog.py: 3 warnings
+tests/test_phase1_security_controls.py: 2 warnings
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_integration.py: 2 warnings
+tests/test_prompt_studio.py: 1 warning
+tests/test_telemetry_timeline_and_tokens.py: 1 warning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:491: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/test_agent_intelligence_studio_v2.py: 2 warnings
+tests/test_audit_remediations.py: 1 warning
+tests/test_fortisiem_continuous_sync.py: 4 warnings
+tests/test_fortisiem_pull.py: 11 warnings
+tests/test_ingestion.py: 2 warnings
+tests/test_llm_offline_backlog.py: 3 warnings
+tests/test_phase1_security_controls.py: 2 warnings
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_integration.py: 2 warnings
+tests/test_prompt_studio.py: 1 warning
+tests/test_telemetry_timeline_and_tokens.py: 1 warning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:492: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    updated_at=datetime.utcnow(),
+
+tests/test_agent_intelligence_studio_v2.py::test_req09_bulk_policy_quality_audit
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\bulk_quality_audit_service.py:52: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    started_at=datetime.utcnow(),
+
+tests/test_agent_intelligence_studio_v2.py::test_req09_bulk_policy_quality_audit
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\bulk_quality_audit_service.py:173: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "timestamp": datetime.utcnow().isoformat(),
+
+tests/test_agent_intelligence_studio_v2.py::test_req09_bulk_policy_quality_audit
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\bulk_quality_audit_service.py:176: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    job.completed_at = datetime.utcnow()
+
+tests/test_agent_intelligence_studio_v2.py::test_reference_case_large_outbound_transfer_full_lifecycle
+tests/test_agent_intelligence_studio_v2.py::test_reference_case_large_outbound_transfer_full_lifecycle
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:504: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    snap.updated_at = datetime.utcnow()
+
+tests/test_agent_intelligence_studio_v2.py: 5 warnings
+tests/test_backup_restore.py: 1 warning
+tests/test_dry_run_replay.py: 2 warnings
+tests/test_investigations.py: 3 warnings
+tests/test_learning.py: 1 warning
+tests/test_phase1_security_controls.py: 2 warnings
+tests/test_phase8_1_validation.py: 2 warnings
+tests/test_phase8_2_validation.py: 2 warnings
+tests/test_phase9_audit_and_pilot.py: 9 warnings
+tests/test_prompt_studio.py: 4 warnings
+tests/test_rule_maturity.py: 1 warning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\audit_service.py:51: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_agent_intelligence_studio_v2.py::test_reference_case_large_outbound_transfer_full_lifecycle
+tests/test_audit_remediations.py::test_policy_approval_enables_bounded_reevaluation_and_trust_records
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:358: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    evaluated_at=datetime.utcnow(),
+
+tests/test_agent_intelligence_studio_v2.py::test_reference_case_large_outbound_transfer_full_lifecycle
+tests/test_audit_remediations.py::test_policy_approval_enables_bounded_reevaluation_and_trust_records
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:374: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    target_version.approved_at = datetime.utcnow()
+
+tests/test_agent_intelligence_studio_v2.py::test_reference_case_large_outbound_transfer_full_lifecycle
+tests/test_audit_remediations.py::test_policy_approval_enables_bounded_reevaluation_and_trust_records
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:379: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    rule_prompt.updated_at = datetime.utcnow()
+
+tests/test_api_endpoints.py::test_api_full_workflow
+tests/test_ingestion.py::test_real_zip_ingestion
+tests/test_ingestion.py::test_duplicate_handling
+tests/test_ingestion.py::test_duplicate_handling
+tests/test_investigations.py::test_investigation_queue_and_assignment
+tests/test_investigations.py::test_analyst_verdict_and_ground_truth_isolation
+tests/test_investigations.py::test_requires_attention_with_insufficient_evidence
+tests/test_learning.py::test_learning_knowledge_base_and_similar_cases
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ingestion_service.py:372: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    job.completed_at = datetime.utcnow()
+
+tests/test_async_simulation.py: 1 warning
+tests/test_audit_remediations.py: 5 warnings
+tests/test_dry_run_replay.py: 1 warning
+tests/test_fortisiem_continuous_sync.py: 4 warnings
+tests/test_live_simulation_parity.py: 2 warnings
+tests/test_llm_offline_backlog.py: 3 warnings
+tests/test_phase2_integration.py: 3 warnings
+tests/test_phase3_integration.py: 1 warning
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_1_validation.py: 7 warnings
+tests/test_phase8_2_validation.py: 10 warnings
+tests/test_phase8_integration.py: 10 warnings
+tests/test_phase9_audit_and_pilot.py: 2 warnings
+tests/test_policy_compiler.py: 6 warnings
+tests/test_policy_remediation_and_ground_truth.py: 1 warning
+tests/test_telemetry_timeline_and_tokens.py: 1 warning
+tests/test_token_budgeting.py: 1 warning
+tests/test_verdict_intelligence_enhancements_v2.py: 1 warning
+tests/test_verdict_intelligence_validation.py: 3 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\policy_compiler_service.py:320: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    compiled_at=datetime.utcnow().isoformat(),
+
+tests/test_async_simulation.py::test_dry_run_job_progress_and_cancellation
+tests/test_dry_run_replay.py::test_dry_run_job_execution_api
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\dry_run_service.py:168: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    started_at=datetime.utcnow(),
+
+tests/test_async_simulation.py: 5 warnings
+tests/test_dry_run_replay.py: 6 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\dry_run_service.py:253: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp=datetime.utcnow(),
+
+tests/test_async_simulation.py::test_dry_run_job_progress_and_cancellation
+tests/test_dry_run_replay.py::test_dry_run_job_execution_api
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\dry_run_service.py:285: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    job.completed_at = datetime.utcnow()
+
+tests/test_audit_remediations.py: 6 warnings
+tests/test_fortisiem_continuous_sync.py: 6 warnings
+tests/test_llm_offline_backlog.py: 4 warnings
+tests/test_phase1_security_controls.py: 2 warnings
+tests/test_phase2_integration.py: 3 warnings
+tests/test_phase3_integration.py: 1 warning
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_1_validation.py: 8 warnings
+tests/test_phase8_2_validation.py: 11 warnings
+tests/test_phase8_integration.py: 13 warnings
+tests/test_phase9_audit_and_pilot.py: 8 warnings
+tests/test_telemetry_timeline_and_tokens.py: 1 warning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\distributed_lock.py:129: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_audit_remediations.py: 6 warnings
+tests/test_phase2_integration.py: 3 warnings
+tests/test_phase3_integration.py: 1 warning
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_1_validation.py: 7 warnings
+tests/test_phase8_2_validation.py: 34 warnings
+tests/test_phase8_integration.py: 8 warnings
+tests/test_phase9_audit_and_pilot.py: 3 warnings
+tests/test_policy_remediation_and_ground_truth.py: 7 warnings
+tests/test_verdict_intelligence_enhancements_v2.py: 8 warnings
+tests/test_verdict_intelligence_validation.py: 26 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\evidence_sufficiency_engine.py:308: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    evaluated_at=datetime.utcnow(),
+
+tests/test_audit_remediations.py: 6 warnings
+tests/test_phase2_integration.py: 3 warnings
+tests/test_phase3_integration.py: 1 warning
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_1_validation.py: 7 warnings
+tests/test_phase8_2_validation.py: 33 warnings
+tests/test_phase8_integration.py: 8 warnings
+tests/test_phase9_audit_and_pilot.py: 3 warnings
+tests/test_policy_remediation_and_ground_truth.py: 7 warnings
+tests/test_verdict_intelligence_enhancements_v2.py: 8 warnings
+tests/test_verdict_intelligence_validation.py: 9 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\verdict_trustworthiness_engine.py:303: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    evaluated_at=datetime.utcnow(),
+
+tests/test_audit_remediations.py: 6 warnings
+tests/test_fortisiem_continuous_sync.py: 5 warnings
+tests/test_llm_offline_backlog.py: 3 warnings
+tests/test_phase1_security_controls.py: 1 warning
+tests/test_phase2_integration.py: 3 warnings
+tests/test_phase3_integration.py: 1 warning
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_1_validation.py: 8 warnings
+tests/test_phase8_2_validation.py: 9 warnings
+tests/test_phase8_integration.py: 11 warnings
+tests/test_phase9_audit_and_pilot.py: 2 warnings
+tests/test_telemetry_timeline_and_tokens.py: 1 warning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\distributed_lock.py:236: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_audit_remediations.py: 4 warnings
+tests/test_phase2_integration.py: 3 warnings
+tests/test_phase3_integration.py: 1 warning
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_1_validation.py: 6 warnings
+tests/test_phase8_2_validation.py: 9 warnings
+tests/test_phase8_integration.py: 8 warnings
+tests/test_phase9_audit_and_pilot.py: 2 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ai_verdict_service.py:783: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    evaluated_at=datetime.utcnow(),
+
+tests/test_audit_remediations.py: 4 warnings
+tests/test_phase2_integration.py: 3 warnings
+tests/test_phase3_integration.py: 1 warning
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_1_validation.py: 6 warnings
+tests/test_phase8_2_validation.py: 9 warnings
+tests/test_phase8_integration.py: 8 warnings
+tests/test_phase9_audit_and_pilot.py: 2 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ai_verdict_service.py:809: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    evaluated_at=datetime.utcnow(),
+
+tests/test_audit_remediations.py: 4 warnings
+tests/test_phase2_integration.py: 3 warnings
+tests/test_phase3_integration.py: 1 warning
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_1_validation.py: 6 warnings
+tests/test_phase8_2_validation.py: 9 warnings
+tests/test_phase8_integration.py: 8 warnings
+tests/test_phase9_audit_and_pilot.py: 2 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ai_verdict_service.py:876: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "evaluated_at": datetime.utcnow().isoformat(),
+
+tests/test_audit_remediations.py: 4 warnings
+tests/test_phase2_integration.py: 3 warnings
+tests/test_phase3_integration.py: 1 warning
+tests/test_phase4_integration.py: 1 warning
+tests/test_phase8_1_validation.py: 6 warnings
+tests/test_phase8_2_validation.py: 9 warnings
+tests/test_phase8_integration.py: 8 warnings
+tests/test_phase9_audit_and_pilot.py: 2 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ai_verdict_service.py:902: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp=datetime.utcnow(),
+
+tests/test_audit_remediations.py: 4 warnings
+tests/test_fortisiem_continuous_sync.py: 1 warning
+tests/test_phase8_1_validation.py: 1 warning
+tests/test_phase8_2_validation.py: 9 warnings
+tests/test_phase8_integration.py: 10 warnings
+tests/test_phase9_audit_and_pilot.py: 1 warning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ai_verdict_service.py:74: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    inv.updated_at = datetime.utcnow()
+
+tests/test_audit_remediations.py::test_policy_approval_enables_bounded_reevaluation_and_trust_records
+tests/test_audit_remediations.py::test_overruled_llm_proposal_logs_authoritative_verdict_across_downstream_tables
+tests/test_fortisiem_continuous_sync.py::test_ai_verdict_service_direct
+tests/test_phase1_security_controls.py::test_req03_unapproved_prompt_draft_abstained_in_live_triage
+tests/test_phase8_integration.py::test_phase8_stage4_complete_13_scenario_matrix_and_trace_export
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ai_verdict_service.py:318: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "evaluated_at": datetime.utcnow().isoformat(),
+
+tests/test_audit_remediations.py::test_api_trust_blocks_unpermitted_simulation_and_uses_real_stats
+tests/test_verdict_intelligence_validation.py::test_api_evaluate_incident_endpoint
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\api\verdict_intelligence.py:160: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    evaluated_at=datetime.utcnow(),
+
+tests/test_audit_remediations.py::test_api_trust_blocks_unpermitted_simulation_and_uses_real_stats
+tests/test_verdict_intelligence_validation.py::test_api_evaluate_incident_endpoint
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\api\verdict_intelligence.py:187: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    evaluated_at=datetime.utcnow(),
+
+tests/test_audit_remediations.py: 1 warning
+tests/test_phase8_2_validation.py: 24 warnings
+tests/test_phase9_audit_and_pilot.py: 1 warning
+tests/test_policy_remediation_and_ground_truth.py: 7 warnings
+tests/test_verdict_intelligence_enhancements_v2.py: 6 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\policy_simulation_service.py:692: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/test_audit_remediations.py::test_policy_simulation_honors_candidate_version_and_pull_rule_stays_draft
+tests/test_phase8_2_validation.py::test_p8_2_def_001_002_synthetic_missing_and_duplicate_cluster_exclusion
+tests/test_phase8_2_validation.py::test_p8_2_def_001_seeded_corpus_audit_on_cloned_db
+tests/test_phase8_2_validation.py::test_p8_2_def_001_seeded_corpus_audit_on_cloned_db
+tests/test_phase9_audit_and_pilot.py::test_historical_eligibility_report_and_chronological_replay
+tests/test_policy_remediation_and_ground_truth.py::test_strict_rule_filtering_and_rule_mismatch_exclusion
+tests/test_policy_remediation_and_ground_truth.py::test_six_stage_eligibility_funnel_and_exclusions
+tests/test_verdict_intelligence_enhancements_v2.py::test_incident_eligibility_funnel_and_exclusion_reasons
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\policy_simulation_service.py:784: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    run_record.completed_at = datetime.utcnow()
+
+tests/test_backup_restore.py::test_backup_and_restore_workflow
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\scripts\backup.py:36: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+
+tests/test_backup_restore.py::test_backup_and_restore_workflow
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\scripts\backup.py:43: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "timestamp": datetime.utcnow().isoformat() + "Z",
+
+tests/test_celery_queues.py::test_task_state_machine_transitions
+tests/test_celery_queues.py::test_task_state_machine_transitions
+tests/test_celery_queues.py::test_task_state_machine_transitions
+tests/test_phase4_integration.py::test_phase4_full_stack_integration
+tests/test_phase4_integration.py::test_phase4_full_stack_integration
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\workers\tasks.py:41: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_database_migrations.py::test_get_head_revision_matches_current
+tests/test_database_migrations.py::test_production_startup_blocks_unmigrated_db
+tests/test_database_migrations.py::test_development_startup_allows_clean_initialization
+tests/test_database_migrations.py::test_development_startup_allows_clean_initialization
+  C:\Users\amit\AppData\Local\Programs\Python\Python313\Lib\site-packages\alembic\config.py:604: DeprecationWarning: No path_separator found in configuration; falling back to legacy splitting on spaces, commas, and colons for prepend_sys_path.  Consider adding path_separator=os to Alembic config.
+    util.warn_deprecated(
+
+tests/test_database_migrations.py::test_get_head_revision_matches_current
+tests/test_database_migrations.py::test_production_startup_blocks_unmigrated_db
+tests/test_database_migrations.py::test_development_startup_allows_clean_initialization
+tests/test_database_migrations.py::test_development_startup_allows_clean_initialization
+  C:\Users\amit\AppData\Local\Programs\Python\Python313\Lib\site-packages\alembic\config.py:572: DeprecationWarning: No path_separator found in configuration; falling back to legacy splitting on spaces/commas for version_locations.  Consider adding path_separator=os to Alembic config.
+    util.warn_deprecated(
+
+tests/test_dry_run_replay.py::test_dry_run_job_execution_api
+tests/test_rule_maturity.py::test_rule_maturity_lifecycle_and_candidate_detection
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\maturity_service.py:150: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    eval_record.latest_test_date = datetime.utcnow()
+
+tests/test_dry_run_replay.py::test_dry_run_job_execution_api
+tests/test_rule_maturity.py::test_rule_maturity_lifecycle_and_candidate_detection
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\maturity_service.py:151: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    eval_record.updated_at = datetime.utcnow()
+
+tests/test_evaluation_metrics.py::test_evaluation_metrics_calculation
+tests/test_evaluation_metrics.py::test_evaluation_metrics_calculation
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\evaluation_service.py:177: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    generated_at=datetime.utcnow(),
+
+tests/test_evaluation_metrics.py::test_evaluation_metrics_calculation
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\api\evaluations.py:180: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    "metrics": metrics.dict(),
+
+tests/test_fortisiem_continuous_sync.py: 4 warnings
+tests/test_fortisiem_pull.py: 7 warnings
+tests/test_ingestion.py: 2 warnings
+tests/test_llm_offline_backlog.py: 3 warnings
+tests/test_phase8_integration.py: 1 warning
+tests/test_telemetry_timeline_and_tokens.py: 1 warning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ingestion_service.py:769: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "auto_registered_at": datetime.utcnow().isoformat(),
+
+tests/test_fortisiem_continuous_sync.py: 10 warnings
+tests/test_fortisiem_pull.py: 9 warnings
+tests/test_ingestion.py: 4 warnings
+tests/test_llm_offline_backlog.py: 7 warnings
+tests/test_phase8_integration.py: 3 warnings
+tests/test_telemetry_timeline_and_tokens.py: 1 warning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ingestion_service.py:439: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    job.completed_at = datetime.utcnow()
+
+tests/test_fortisiem_continuous_sync.py::test_pull_all_incidents_without_id
+tests/test_fortisiem_continuous_sync.py::test_pull_all_incidents_without_id
+tests/test_fortisiem_continuous_sync.py::test_batch_ai_verdict_endpoint
+tests/test_fortisiem_continuous_sync.py::test_batch_ai_verdict_endpoint
+tests/test_llm_offline_backlog.py::test_process_pending_incidents_when_llm_comes_online
+tests/test_llm_offline_backlog.py::test_process_pending_incidents_when_llm_comes_online
+tests/test_llm_offline_backlog.py::test_process_pending_incidents_when_llm_comes_online
+tests/test_phase8_integration.py::test_phase8_stage4_complete_13_scenario_matrix_and_trace_export
+tests/test_telemetry_timeline_and_tokens.py::test_incident_historical_telemetry_timeline_on_server_1
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ai_verdict_service.py:509: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "evaluated_at": datetime.utcnow().isoformat(),
+
+tests/test_fortisiem_pull.py::test_fortisiem_pull_live_mocked
+tests/test_fortisiem_pull.py::test_fortisiem_cache_miss_auto_registers_rule
+tests/test_fortisiem_pull.py::test_fortisiem_live_rule_enrichment_on_incident_cache_miss
+tests/test_fortisiem_pull.py::test_fortisiem_pull_manually_cleared_resolution
+tests/test_fortisiem_pull.py::test_fortisiem_sync_ground_truth_for_existing_open_incident
+tests/test_phase8_integration.py::test_phase8_fortisiem_pagination_enrichment_recovery_and_zip
+tests/test_phase8_integration.py::test_phase8_fortisiem_pagination_enrichment_recovery_and_zip
+tests/test_phase8_integration.py::test_phase8_fortisiem_pagination_enrichment_recovery_and_zip
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ingestion_service.py:668: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    epoch_ms=created_at_epoch or int(datetime.utcnow().timestamp() * 1000),
+
+tests/test_fortisiem_pull.py::test_fortisiem_sync_rules
+tests/test_fortisiem_pull.py::test_fortisiem_sync_rules
+tests/test_phase1_security_controls.py::test_req08_rules_sync_fortisiem_route_alias
+tests/test_phase1_security_controls.py::test_req08_rules_sync_fortisiem_route_alias
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\fortisiem_service.py:219: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "synced_at": datetime.utcnow().isoformat(),
+
+tests/test_fortisiem_pull.py::test_fortisiem_pull_rule_endpoint
+tests/test_fortisiem_pull.py::test_fortisiem_live_rule_enrichment_on_incident_cache_miss
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\fortisiem_service.py:361: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "synced_at": datetime.utcnow().isoformat(),
+
+tests/test_fortisiem_pull.py::test_fortisiem_sync_ground_truth_for_existing_open_incident
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\fortisiem_service.py:1212: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    gt.updated_at = datetime.utcnow()
+
+tests/test_investigations.py::test_investigation_queue_and_assignment
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\investigation_service.py:197: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    inv.updated_at = datetime.utcnow()
+
+tests/test_investigations.py::test_investigation_queue_and_assignment
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\investigation_service.py:233: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    inv.updated_at = datetime.utcnow()
+
+tests/test_investigations.py::test_investigation_queue_and_assignment
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\api\investigations.py:218: PydanticDeprecatedSince20: The `from_orm` method is deprecated; set `model_config['from_attributes']=True` and use `model_validate` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    return InvestigationQuestionResponse.from_orm(q)
+
+tests/test_investigations.py::test_investigation_queue_and_assignment
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\investigation_service.py:248: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    q.answered_at = datetime.utcnow()
+
+tests/test_investigations.py::test_investigation_queue_and_assignment
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\investigation_service.py:253: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    inv.updated_at = datetime.utcnow()
+
+tests/test_investigations.py::test_investigation_queue_and_assignment
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\api\investigations.py:233: PydanticDeprecatedSince20: The `from_orm` method is deprecated; set `model_config['from_attributes']=True` and use `model_validate` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    return InvestigationQuestionResponse.from_orm(q)
+
+tests/test_investigations.py::test_investigation_queue_and_assignment
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\investigation_service.py:281: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    inv.updated_at = datetime.utcnow()
+
+tests/test_investigations.py::test_investigation_queue_and_assignment
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\api\investigations.py:255: PydanticDeprecatedSince20: The `from_orm` method is deprecated; set `model_config['from_attributes']=True` and use `model_validate` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    return InvestigationEvidenceResponse.from_orm(ev)
+
+tests/test_investigations.py::test_analyst_verdict_and_ground_truth_isolation
+tests/test_investigations.py::test_requires_attention_with_insufficient_evidence
+tests/test_phase1_security_controls.py::test_req05_learning_record_verification_gate
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\investigation_service.py:391: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    inv.updated_at = datetime.utcnow()
+
+tests/test_investigations.py::test_analyst_verdict_and_ground_truth_isolation
+tests/test_phase1_security_controls.py::test_req05_learning_record_verification_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\investigation_service.py:433: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    feedback_timestamp=datetime.utcnow(),
+
+tests/test_learning.py: 20 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\learning_service.py:403: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    feedback_timestamp=datetime.utcnow(),
+
+tests/test_llm_multiworker_sync.py::test_server_2_monitor_auth_and_health_fallback
+tests/test_phase1_security_controls.py::test_req06_honest_monitoring_when_prometheus_offline
+tests/test_phase8_integration.py::test_phase8_llm_http_contract_fault_injection
+tests/test_system_monitor.py::test_system_servers_live_and_history
+tests/test_system_monitor.py::test_system_servers_live_and_history
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\system_monitor_service.py:129: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_phase3_integration.py::test_phase3_full_end_to_end_investigation
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_phase3_integration.py:73: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow() - timedelta(days=10),
+
+tests/test_phase3_integration.py::test_phase3_full_end_to_end_investigation
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_phase3_integration.py:85: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    feedback_timestamp=datetime.utcnow() - timedelta(days=9),
+
+tests/test_phase3_integration.py::test_phase3_full_end_to_end_investigation
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_phase3_integration.py:100: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/test_phase8_1_validation.py::test_p8_1_def_001_distributed_lock_lease_loss_aborts_stale_commit
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_phase8_1_validation.py:184: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    lock_row.expires_at = datetime.utcnow() + timedelta(minutes=2)
+
+tests/test_phase8_1_validation.py::test_p8_1_def_004_quality_gates_three_tier_eligibility_separation
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_phase8_1_validation.py:469: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    started_at=datetime.utcnow(),
+
+tests/test_phase8_1_validation.py::test_p8_1_def_004_quality_gates_three_tier_eligibility_separation
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_phase8_1_validation.py:470: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    completed_at=datetime.utcnow(),
+
+tests/test_phase8_2_validation.py::test_p8_2_def_006_health_redaction_trust_parity_and_recovery
+tests/test_phase9_audit_and_pilot.py::test_issue2_uncalibrated_trust_capped_with_historical_provenance
+tests/test_verdict_intelligence_validation.py::test_cs_suspicious_activity_true_positive
+tests/test_verdict_intelligence_validation.py::test_cs_suspicious_activity_false_positive_authorized_maintenance
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\verdict_trustworthiness_engine.py:420: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    evaluated_at=datetime.utcnow(),
+
+tests/test_phase8_integration.py::test_phase8_postgresql_dialect_safety_and_monitor_writes
+tests/test_system_monitor.py::test_system_servers_live_and_history
+tests/test_system_monitor.py::test_system_servers_live_and_history
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\system_monitor_service.py:33: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_phase8_integration.py::test_phase8_postgresql_dialect_safety_and_monitor_writes
+tests/test_system_monitor.py::test_system_servers_live_and_history
+tests/test_system_monitor.py::test_system_servers_live_and_history
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\system_monitor_service.py:307: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_phase8_integration.py::test_phase8_postgresql_dialect_safety_and_monitor_writes
+tests/test_system_monitor.py::test_system_servers_live_and_history
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\system_monitor_service.py:412: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_phase8_integration.py::test_phase8_multiprocess_distributed_lock_and_idempotent_triage
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_phase8_integration.py:266: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    acquired_at=datetime.utcnow() - timedelta(minutes=10),
+
+tests/test_phase8_integration.py::test_phase8_multiprocess_distributed_lock_and_idempotent_triage
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_phase8_integration.py:267: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expires_at=datetime.utcnow() - timedelta(minutes=5),
+
+tests/test_phase8_integration.py::test_phase8_stage4_complete_13_scenario_matrix_and_trace_export
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\ai_verdict_service.py:403: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "evaluated_at": datetime.utcnow().isoformat(),
+
+tests/test_phase8_integration.py::test_phase8_calibration_stats_and_unbalanced_gating
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_phase8_integration.py:979: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    started_at=datetime.utcnow(),
+
+tests/test_phase8_integration.py::test_phase8_calibration_stats_and_unbalanced_gating
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_phase8_integration.py:980: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    completed_at=datetime.utcnow(),
+
+tests/test_phase9_audit_and_pilot.py::test_pilot_shadow_isolation_idempotency_budgets_and_rollback
+tests/test_phase9_audit_and_pilot.py::test_pilot_shadow_isolation_idempotency_budgets_and_rollback
+tests/test_phase9_audit_and_pilot.py::test_live_source_blocks_mock_fallback_and_auto_pauses
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\pilot_service.py:197: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    cfg.updated_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_pilot_shadow_isolation_idempotency_budgets_and_rollback
+tests/test_phase9_audit_and_pilot.py::test_pilot_shadow_isolation_idempotency_budgets_and_rollback
+tests/test_phase9_audit_and_pilot.py::test_pilot_shadow_isolation_idempotency_budgets_and_rollback
+tests/test_phase9_audit_and_pilot.py::test_pilot_shadow_isolation_idempotency_budgets_and_rollback
+tests/test_phase9_audit_and_pilot.py::test_live_source_blocks_mock_fallback_and_auto_pauses
+tests/test_phase9_audit_and_pilot.py::test_live_source_blocks_mock_fallback_and_auto_pauses
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\pilot_service.py:329: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_pilot_shadow_isolation_idempotency_budgets_and_rollback
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\pilot_service.py:559: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    rec.updated_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_pilot_shadow_isolation_idempotency_budgets_and_rollback
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\pilot_service.py:305: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    cfg.updated_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_live_source_blocks_mock_fallback_and_auto_pauses
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\pilot_service.py:667: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    live_cfg.updated_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\pilot_service.py:213: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    cfg.updated_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\investigation_service.py:470: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    pe_rec.analyst_decided_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\investigation_service.py:472: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    pe_rec.updated_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\pilot_service.py:791: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    rec.supervisor_verified_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\pilot_service.py:793: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    rec.updated_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\pilot_service.py:752: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    rec.analyst_decided_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_analyst_assisted_assurance_override_and_supervisor_gate
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\pilot_service.py:754: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    rec.updated_at = datetime.utcnow()
+
+tests/test_phase9_audit_and_pilot.py::test_historical_eligibility_report_and_chronological_replay
+tests/test_phase9_audit_and_pilot.py::test_historical_eligibility_report_and_chronological_replay
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\historical_eligibility_service.py:283: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "generated_at": datetime.utcnow().isoformat() + "Z",
+
+tests/test_policy_remediation_and_ground_truth.py::test_authoritative_rule_import_and_g1_scoring
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\fortisiem_service.py:426: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "synced_at": datetime.utcnow().isoformat(),
+
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:449: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    approved_at=datetime.utcnow(),
+
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:461: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    rule_prompt.updated_at = datetime.utcnow()
+
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:641: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:649: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "exported_at": datetime.utcnow().isoformat(),
+
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:569: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    f"- **Generated At:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}",
+
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:665: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+
+tests/test_prompt_studio.py::test_prompt_template_generation_and_versioning
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\prompt_studio_service.py:674: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "exported_at": datetime.utcnow().isoformat(),
+
+tests/test_rule_maturity.py::test_admin_approval_gate_and_rbac
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\maturity_service.py:193: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    eval_record.approved_at = datetime.utcnow()
+
+tests/test_rule_maturity.py::test_admin_approval_gate_and_rbac
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\maturity_service.py:198: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    eval_record.updated_at = datetime.utcnow()
+
+tests/test_soc_chatbot.py::test_chat_message_with_incident_context_and_token_logging
+tests/test_soc_chatbot.py::test_chat_stream_emits_sse_deltas_and_logs_tokens
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\api\chat.py:213: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp=datetime.utcnow(),
+
+tests/test_system_monitor.py::test_system_servers_live_and_history
+tests/test_system_monitor.py::test_system_servers_live_and_history
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\system_monitor_service.py:274: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "timestamp": datetime.utcnow().isoformat() + "Z",
+
+tests/test_system_monitor.py::test_system_servers_live_and_history
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\system_monitor_service.py:480: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    cutoff = datetime.utcnow() - delta
+
+tests/test_telemetry_timeline_and_tokens.py::test_token_analytics_service_bifurcation
+tests/test_telemetry_timeline_and_tokens.py::test_token_analytics_service_bifurcation
+tests/test_telemetry_timeline_and_tokens.py::test_token_analytics_api_endpoint
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\token_analytics_service.py:51: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp=datetime.utcnow(),
+
+tests/test_telemetry_timeline_and_tokens.py::test_token_analytics_service_bifurcation
+tests/test_telemetry_timeline_and_tokens.py::test_token_analytics_api_endpoint
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\token_analytics_service.py:68: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    cutoff = datetime.utcnow() - timedelta(days=window_days)
+
+tests/test_telemetry_timeline_and_tokens.py: 58 warnings
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\app\services\telemetry_timeline_service.py:33: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+    return datetime.utcfromtimestamp(ms / 1000.0).isoformat() + "Z"
+
+tests/test_verified_semantic_rag.py::test_verified_rag_safe_fallback_when_empty
+  C:\Users\amit\OneDrive\Documents\SOC-AI-Agent\backend\tests\test_verified_semantic_rag.py:187: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============== 293 passed, 6072 warnings in 310.19s (0:05:10) ================

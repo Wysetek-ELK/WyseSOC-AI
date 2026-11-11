@@ -334,6 +334,7 @@ def test_phase8_2_stage_d_and_j_browser_e2e(e2e_p82_servers):
         expect(main.get_by_text("NOT_CALCULABLE: Zero decisive").first).to_be_visible()
         expect(main.get_by_text("Decisive = 0").first).to_be_visible()
         expect(main).not_to_contain_text("100%")
+        expect(main).not_to_contain_text("50%")
         page.screenshot(path=str(SCREENSHOTS_DIR / "01_vi_zero_denominator_not_calculable.png"), full_page=True)
         steps.append({"step": "1_vi_zero_denominator_not_calculable", "status": "PASSED"})
 
@@ -347,7 +348,8 @@ def test_phase8_2_stage_d_and_j_browser_e2e(e2e_p82_servers):
         # 4. AI Triage Workbench historical live vs simulated badges (never misleading GPU Live when offline)
         page.goto(f"{base_url}/ai-triage-workbench/P82-UI-INC-TP", wait_until="domcontentloaded")
         expect(main.get_by_text("Historical Live Record (S2 Offline Now)").first).to_be_visible(timeout=15000)
-        expect(main.get_by_text("Trust: 8/10 (Uncalibrated Ordinal)").first).to_be_visible()
+        expect(main.get_by_text("Trust: 6/10 (Uncalibrated Cap)").first).to_be_visible()
+        expect(main.get_by_text("Historical stored: 8/10 (pre-cap)").first).to_be_visible()
         page.screenshot(path=str(SCREENSHOTS_DIR / "03_workbench_historical_live_s2_offline.png"), full_page=True)
 
         page.goto(f"{base_url}/ai-triage-workbench/P82-UI-INC-SIM", wait_until="domcontentloaded")

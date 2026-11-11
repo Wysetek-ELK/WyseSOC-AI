@@ -41,6 +41,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshUser = async () => {
+    if (
+      typeof window !== "undefined" &&
+      window.location.pathname === "/login" &&
+      !localStorage.getItem("ai_verdict_token")
+    ) {
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const u = await api.getMe();

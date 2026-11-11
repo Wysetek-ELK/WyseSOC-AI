@@ -218,6 +218,9 @@ class VerdictTrustAssessmentResult(BaseModel):
     suggested_verdict: str  # Original LLM recommendation
     effective_verdict: UserVisibleVerdict  # Guardrail-adjusted: TRUE_POSITIVE, FALSE_POSITIVE, REQUIRES_ANALYST_ATTENTION
     trust_score: Optional[int] = Field(None, ge=1, le=10, description="1-10 ordinal scale or None if NOT_SCORABLE")
+    historical_trust_score: Optional[int] = Field(None, ge=1, le=10, description="Original legacy trust score preserved for provenance when capped")
+    trust_cap_applied: bool = Field(False, description="True when uncalibrated legacy score was normalized to <= 6/10")
+    trust_cap_reason: Optional[str] = Field(None, description="Explanation when historical trust score was capped under uncalibrated rules")
     trust_status: str = Field("CALCULATED", description="CALCULATED or NOT_CALCULABLE")
     calculation_version: str = Field("v2.2.0", description="Trustworthiness evaluation calculation engine version")
     raw_trust_score: float = Field(..., ge=0.0, le=100.0)
@@ -351,9 +354,9 @@ class EmpiricalAccuracyMetrics(BaseModel):
 
     # Abstention metrics
     analyst_attention_count: int
-    analyst_attention_rate: float  # abstentions / verified_ground_truth_cases
+    analyst_attention_rate: Optional[float] = None  # abstentions / verified_ground_truth_cases (None when N=0)
     automatic_decision_count: int
-    automatic_decision_coverage: float  # automatic / verified_ground_truth_cases
+    automatic_decision_coverage: Optional[float] = None  # automatic / verified_ground_truth_cases (None when N=0)
 
     # Proportions & Wilson 95% CIs
     precision: Optional[float] = None
@@ -485,3 +488,5 @@ class HistoricalEvaluationRunRequest(BaseModel):
     baseline_run_id: Optional[str] = None
     provider_type: str = "SIMULATED"  # SIMULATED, OPENAI_COMPATIBLE
     split_partition: Optional[DatasetPartition] = None
+    after_epoch: Optional[int] = None
+    before_epoch: Optional[int] = None

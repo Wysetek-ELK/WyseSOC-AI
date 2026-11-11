@@ -1583,38 +1583,53 @@ class FortiSIEMService:
         # Ensure all incidents have an investigation row
         await investigation_svc.ensure_all_incidents_have_investigations()
 
-        # 4. Auto-Triage via LLM Verdict Engine
+        # 4. Auto-Triage via LLM Verdict Engine (or Controlled SOC Pilot if active)
         ai_verdicts_generated = 0
         if auto_triage_llm and incidents_to_evaluate:
-            ai_service = AIVerdictService(self.db)
-            is_llm_online = await ai_service.is_local_llm_available()
-            is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
-            allow_mock = False if is_prod else getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
-
-            if is_llm_online or allow_mock:
-                # Evaluate up to 2 synchronously to provide immediate verified verdict in response
-                sync_batch = incidents_to_evaluate[:2]
-                for iid in sync_batch:
-                    try:
-                        await ai_service.evaluate_incident(
-                            iid,
-                            username=username,
-                            allow_simulated_fallback=allow_mock,
-                            only_if_pending=True,
+            from app.services.pilot_service import PilotService
+            pilot_svc = PilotService(self.db)
+            pilot_cfg = await pilot_svc.get_or_create_config()
+            if pilot_cfg.mode != "DISABLED":
+                if not pilot_cfg.is_paused:
+                    for iid in incidents_to_evaluate[:5]:
+                        p_res = await pilot_svc.evaluate_incident_for_pilot(
+                            incident_id=iid,
+                            source_type="LIVE",
+                            actor=username,
+                            allow_simulated=False,
                         )
-                        ai_verdicts_generated += 1
-                    except Exception as eval_exc:
-                        print(f"[FortiSIEM Auto-Triage Error] Failed evaluating incident {iid}: {eval_exc}")
-
-                # Dispatch remaining to background worker so HTTP response returns immediately without 504 timeout
-                remaining = incidents_to_evaluate[2:]
-                if remaining:
-                    asyncio.create_task(self._evaluate_incidents_background(remaining, username))
+                        if p_res.get("status") in ("EVALUATED", "ABSTAINED"):
+                            ai_verdicts_generated += 1
             else:
-                print(
-                    f"[FortiSIEM Ingestion] Local LLM (Server 2) is offline. "
-                    f"{len(incidents_to_evaluate)} newly ingested incidents saved and queued for evaluation once Local LLM is online."
-                )
+                ai_service = AIVerdictService(self.db)
+                is_llm_online = await ai_service.is_local_llm_available()
+                is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+                allow_mock = False if is_prod else getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
+
+                if is_llm_online or allow_mock:
+                    # Evaluate up to 2 synchronously to provide immediate verified verdict in response
+                    sync_batch = incidents_to_evaluate[:2]
+                    for iid in sync_batch:
+                        try:
+                            await ai_service.evaluate_incident(
+                                iid,
+                                username=username,
+                                allow_simulated_fallback=allow_mock,
+                                only_if_pending=True,
+                            )
+                            ai_verdicts_generated += 1
+                        except Exception as eval_exc:
+                            print(f"[FortiSIEM Auto-Triage Error] Failed evaluating incident {iid}: {eval_exc}")
+
+                    # Dispatch remaining to background worker so HTTP response returns immediately without 504 timeout
+                    remaining = incidents_to_evaluate[2:]
+                    if remaining:
+                        asyncio.create_task(self._evaluate_incidents_background(remaining, username))
+                else:
+                    print(
+                        f"[FortiSIEM Ingestion] Local LLM (Server 2) is offline. "
+                        f"{len(incidents_to_evaluate)} newly ingested incidents saved and queued for evaluation once Local LLM is online."
+                    )
 
         checkpoint = highest_timestamp if highest_timestamp > 0 else int(time.time() * 1000)
 

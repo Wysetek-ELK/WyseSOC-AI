@@ -83,6 +83,8 @@ class Settings(BaseSettings):
     LOCAL_LLM_MODEL_NAME: str = os.getenv("LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ")
     LOCAL_LLM_API_KEY: str = os.getenv("LOCAL_LLM_API_KEY", "EMPTY")
     LOCAL_LLM_TIMEOUT: float = float(os.getenv("LOCAL_LLM_TIMEOUT", "60.0"))
+    LOCAL_LLM_CONTEXT_BUDGET: int = int(os.getenv("LOCAL_LLM_CONTEXT_BUDGET", "4096"))
+    LOCAL_LLM_MAX_TOKENS: int = int(os.getenv("LOCAL_LLM_MAX_TOKENS", "512"))
     LOCAL_LLM_ALLOW_MOCK_FALLBACK: bool = False
 
     # Server 1 Networking

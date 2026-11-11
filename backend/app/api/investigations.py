@@ -74,6 +74,7 @@ async def get_investigation(
     inc = inv.incident
     rule = inc.rule if inc else None
     user = inv.assigned_user
+    ai_assurance = await service.build_ai_assurance(inv)
 
     return InvestigationDetailResponse(
         id=inv.id,
@@ -99,6 +100,7 @@ async def get_investigation(
         reporting_device=inc.reporting_device if inc else None,
         questions=[InvestigationQuestionResponse.from_orm(q) for q in inv.questions],
         evidence_items=[InvestigationEvidenceResponse.from_orm(e) for e in inv.evidence_items],
+        ai_assurance=ai_assurance,
     )
 
 
@@ -116,6 +118,7 @@ async def get_investigation_by_incident(
     inc = inv.incident
     rule = inc.rule if inc else None
     user = inv.assigned_user
+    ai_assurance = await service.build_ai_assurance(inv)
 
     return InvestigationDetailResponse(
         id=inv.id,
@@ -141,6 +144,7 @@ async def get_investigation_by_incident(
         reporting_device=inc.reporting_device if inc else None,
         questions=[InvestigationQuestionResponse.from_orm(q) for q in inv.questions],
         evidence_items=[InvestigationEvidenceResponse.from_orm(e) for e in inv.evidence_items],
+        ai_assurance=ai_assurance,
     )
 
 
@@ -260,7 +264,7 @@ async def submit_investigation_verdict(
 ):
     service = InvestigationService(db)
     try:
-        inv = await service.submit_verdict(id, req, current_user.id)
+        inv = await service.submit_verdict(id, req, current_user.id, username=current_user.username)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

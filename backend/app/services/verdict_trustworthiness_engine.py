@@ -172,7 +172,7 @@ class VerdictTrustworthinessEngine:
         effective_calibrated = (
             bool(is_calibrated)
             if is_calibrated is not None
-            else bool(historical_sample_count >= 30 and (acc_pct is None or acc_pct >= 70.0))
+            else bool(historical_sample_count >= 30 and acc_pct is not None and acc_pct >= 70.0)
         )
         if effective_calibrated:
             hist_pts = acc_ratio * 15.0
@@ -353,7 +353,7 @@ class VerdictTrustworthinessEngine:
         calibrated = (
             bool(is_calibrated)
             if is_calibrated is not None
-            else bool(historical_sample_size >= 30 and (acc_pct is None or acc_pct >= 70.0))
+            else bool(historical_sample_size >= 30 and acc_pct is not None and acc_pct >= 70.0)
         )
 
         if calibrated:
@@ -421,5 +421,59 @@ class VerdictTrustworthinessEngine:
             evidence_sufficiency=suff,
             claim_verification=claim_res,
         )
+
+    @classmethod
+    def cap_uncalibrated_trust_score(
+        cls,
+        trust_score: Optional[int],
+        is_calibrated: bool = False,
+        historical_sample_count: Optional[int] = None,
+    ) -> Tuple[Optional[int], Optional[int], bool, Optional[str]]:
+        """
+        Normalizes historical or stored trust scores against current uncalibrated cap (<= 6/10)
+        while preserving original recorded score as provenance.
+        Returns: (effective_trust_score, historical_trust_score, cap_applied, cap_reason).
+        """
+        if trust_score is None:
+            return None, None, False, None
+        raw_val = int(trust_score)
+        uncalibrated = (not bool(is_calibrated)) or (
+            historical_sample_count is not None and int(historical_sample_count) < 30
+        )
+        if uncalibrated and raw_val > 6:
+            return (
+                6,
+                raw_val,
+                True,
+                f"Uncalibrated ordinal trust capped at 6/10 under current policy (historical stored value: {raw_val}/10).",
+            )
+        return raw_val, None, False, None
+
+    @classmethod
+    def normalize_ai_verdict_dict(cls, ai_verdict: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """
+        Returns a shallow-safe normalized copy of an Incident.ai_verdict payload without mutating
+        the underlying DB record, preventing misleading >6/10 display on uncalibrated records.
+        """
+        if not isinstance(ai_verdict, dict):
+            return ai_verdict
+        out = dict(ai_verdict)
+        t_score = out.get("trust_score")
+        if t_score is not None:
+            is_cal = bool(out.get("is_calibrated", False))
+            hist_n = out.get("historical_sample_count")
+            eff, hist_orig, capped, reason = cls.cap_uncalibrated_trust_score(
+                trust_score=int(t_score),
+                is_calibrated=is_cal,
+                historical_sample_count=int(hist_n) if hist_n is not None else None,
+            )
+            if capped:
+                out.setdefault("historical_trust_score", hist_orig)
+                out["trust_score"] = eff
+                out["trust_cap_applied"] = True
+                out["trust_cap_reason"] = reason
+            else:
+                out.setdefault("trust_cap_applied", False)
+        return out
 
     calculate_trust_score = compute_trust_score

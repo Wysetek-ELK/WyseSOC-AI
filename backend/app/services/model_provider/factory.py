@@ -29,6 +29,7 @@ def get_model_provider(
             api_key=api_key or settings.LOCAL_LLM_API_KEY,
             model_name=model_name or settings.LOCAL_LLM_MODEL_NAME,
             timeout_seconds=settings.LOCAL_LLM_TIMEOUT,
+            max_tokens=getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512),
         )
     elif ptype == "DISABLED":
         return DisabledModelProvider()

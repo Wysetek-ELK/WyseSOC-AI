@@ -7,14 +7,14 @@
     "weighting_rule": "Unweighted criteria ratio per feature (satisfied_impl / applicable_impl; verified_acc / applicable_acc); NOT_APPLICABLE criteria excluded from denominator with explicit justification. Module and overall percentages sum raw criteria across features."
   },
   "summary": {
-    "total_features": 37,
+    "total_features": 44,
     "total_modules": 19,
-    "satisfied_impl_criteria": 67,
-    "applicable_impl_criteria": 67,
+    "satisfied_impl_criteria": 78,
+    "applicable_impl_criteria": 78,
     "overall_completion_pct": 100.0,
-    "verified_acc_criteria": 61,
-    "applicable_acc_criteria": 67,
-    "overall_verification_pct": 91.0
+    "verified_acc_criteria": 69,
+    "applicable_acc_criteria": 78,
+    "overall_verification_pct": 88.5
   },
   "features": [
     {
@@ -673,7 +673,9 @@
         "backend/app/services/verdict_trustworthiness_engine.py",
         "backend/app/api/verdict_intelligence.py",
         "docs/phase8.1/evidence/verdicts/stage5_verdict_disposition_traces.json",
-        "docs/phase8.2/PHASE_8_2_EMPIRICAL_ACCURACY.md"
+        "docs/phase8.2/PHASE_8_2_EMPIRICAL_ACCURACY.md",
+        "docs/phase9/PHASE_9_DEVELOPMENT_AUDIT.md",
+        "docs/phase9/PHASE_9_FINAL_CODE_REMEDIATION.md"
       ],
       "evidence_notes": [
         "Real DB-backed trust assessments, NOT_CALCULABLE handling, contradiction/ungrounded trust cap <=3, invalid model output trust cap <=2 (P8.1-DEF-003), and compute_trust_score is_calibrated=False parity (P8.2-DEF-006) verified."
@@ -754,7 +756,8 @@
         "backend/app/services/historical_ground_truth_validator.py",
         "docs/phase8.2/PHASE_8_2_GROUND_TRUTH_AUDIT.md",
         "docs/phase8.2/PHASE_8_2_HISTORICAL_DISCREPANCIES.md",
-        "docs/phase8.2/evidence/historical-data/stage_c_corpus_inventory.json"
+        "docs/phase8.2/evidence/historical-data/stage_c_corpus_inventory.json",
+        "docs/phase9/PHASE_9_HISTORICAL_EVALUATION.md"
       ],
       "evidence_notes": [
         "Strips cleared/resolution keys recursively before inference (0 leakage hits); rejects ML labels, synthetic 0-event debug fixtures (P8.2-DEF-001), and near-duplicate clusters (P8.2-DEF-002); flags containment-only FP notes."
@@ -1603,7 +1606,9 @@
         "docs/phase8.2/PHASE_8_2_EXECUTION_MATRIX.md",
         "docs/phase8.2/PHASE_8_2_FEATURE_STATUS.md",
         "docs/phase8.2/PHASE_8_2_REMAINING_WORK.md",
-        "docs/phase8.2/PHASE_8_2_FINAL_REPORT.md"
+        "docs/phase8.2/PHASE_8_2_FINAL_REPORT.md",
+        "docs/phase9/README.md",
+        "docs/phase9/PHASE_9_FINAL_REPORT.md"
       ],
       "evidence_notes": [
         "Phase 5/6 architecture docs, Phase 8 & 8.1 docs (preserved unchanged), and complete 18-report Phase 8.2 suite under docs/phase8.2/ authored and path-checked."
@@ -1640,7 +1645,8 @@
         "docs/phase8.1/PHASE_8_1_FEATURE_STATUS.md",
         "docs/phase8.1/PHASE_8_1_FINAL_REPORT.md",
         "docs/phase8.2/PHASE_8_2_FEATURE_STATUS.md",
-        "docs/phase8.2/PHASE_8_2_FINAL_REPORT.md"
+        "docs/phase8.2/PHASE_8_2_FINAL_REPORT.md",
+        "docs/phase9/PHASE_9_FEATURE_STATUS.md"
       ],
       "evidence_notes": [
         "Automated script + pytest enforcement verify unique IDs, valid repo paths, mathematical percentage rollups, and JSON-to-Markdown parity."
@@ -1654,6 +1660,296 @@
           "verification_state": "VERIFIED"
         }
       ]
+    },
+    {
+      "feature_id": "PIL-01",
+      "module": "Verdict Triage Agent",
+      "feature_name": "Controlled SOC Pilot Configuration, Safety Governance & Versioning",
+      "implementation_status": "IMPLEMENTED_VERIFIED",
+      "completion_pct": 100.0,
+      "verification_pct": 100.0,
+      "frontend_files": [
+        "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
+        "frontend/src/app/governance-access/page.tsx"
+      ],
+      "backend_files": [
+        "backend/app/models/pilot.py",
+        "backend/app/schemas/pilot.py",
+        "backend/app/services/pilot_service.py",
+        "backend/app/api/pilot.py",
+        "backend/alembic/versions/008_soc_pilot.py"
+      ],
+      "test_files": [
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "evidence_files": [
+        "docs/phase9/PHASE_9_SOC_PILOT_DESIGN.md",
+        "docs/phase9/evidence/pilot/pilot_contract_evidence.json"
+      ],
+      "evidence_notes": [
+        "Defaults to DISABLED mode, versions every change in pilot_config_history + HMAC audit_logs, supports safe disable/rollback, and rejects external SIEM writeback or auto-closure (HTTP 422)."
+      ],
+      "remaining_gap": "None.",
+      "acceptance_criteria": [
+        {
+          "id": "PIL-01-C1",
+          "description": "Default DISABLED mode, version history & rollback, and schema-enforced block on external writeback / auto-closure",
+          "implementation_state": "SATISFIED",
+          "verification_state": "VERIFIED"
+        },
+        {
+          "id": "PIL-01-C2",
+          "description": "Strict 3-role RBAC across /api/pilot/* and disabled UI controls for non-authorized roles",
+          "implementation_state": "SATISFIED",
+          "verification_state": "VERIFIED"
+        }
+      ]
+    },
+    {
+      "feature_id": "PIL-02",
+      "module": "Background Workers & Reconciliation",
+      "feature_name": "Pilot Execution Orchestrator, Budget Controls & Circuit Guard",
+      "implementation_status": "PARTIAL",
+      "completion_pct": 100.0,
+      "verification_pct": 50.0,
+      "frontend_files": [
+        "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+      ],
+      "backend_files": [
+        "backend/app/services/pilot_service.py",
+        "backend/app/services/fortisiem_service.py",
+        "backend/app/services/ai_verdict_service.py"
+      ],
+      "test_files": [
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "evidence_files": [
+        "docs/phase9/PHASE_9_PILOT_WORKFLOW.md",
+        "docs/phase9/PHASE_9_REMAINING_WORK.md"
+      ],
+      "evidence_notes": [
+        "Rule/archetype/severity/source eligibility, rolling hourly/daily budgets, idempotency, distributed locking, SHADOW isolation, LIVE no-mock enforcement, and consecutive-error auto-pause verified offline."
+      ],
+      "remaining_gap": "Production SHADOW and ANALYST_ASSISTED pilot execution against live Server 2 GPU and live FortiSIEM feed has not run yet.",
+      "acceptance_criteria": [
+        {
+          "id": "PIL-02-C1",
+          "description": "Eligibility filters, rolling budgets, SHADOW isolation, LIVE no-mock enforcement, and consecutive-error auto-pause",
+          "implementation_state": "SATISFIED",
+          "verification_state": "VERIFIED"
+        },
+        {
+          "id": "PIL-02-C2",
+          "description": "End-to-end controlled SOC pilot run in staging/production against live Server 2 GPU & FortiSIEM",
+          "implementation_state": "SATISFIED",
+          "verification_state": "NOT_TESTED"
+        }
+      ]
+    },
+    {
+      "feature_id": "PIL-03",
+      "module": "Analyst Investigation & Review",
+      "feature_name": "Verdict Assurance Drawer, Non-Overwriting Override & Supervisor Gate",
+      "implementation_status": "IMPLEMENTED_VERIFIED",
+      "completion_pct": 100.0,
+      "verification_pct": 100.0,
+      "frontend_files": [
+        "frontend/src/app/human-review-queue/page.tsx"
+      ],
+      "backend_files": [
+        "backend/app/schemas/investigation.py",
+        "backend/app/services/investigation_service.py",
+        "backend/app/api/investigations.py"
+      ],
+      "test_files": [
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "evidence_files": [
+        "docs/phase9/PHASE_9_VERDICT_ASSURANCE.md",
+        "docs/phase9/evidence/screenshots/02_human_review_ai_assurance.png"
+      ],
+      "evidence_notes": [
+        "Exposes policy version, proposed vs validated verdict, evidence lists, trust score & calibration status; preserves original AI recommendation on override and enforces independent supervisor verification."
+      ],
+      "remaining_gap": "None.",
+      "acceptance_criteria": [
+        {
+          "id": "PIL-03-C1",
+          "description": "Human Review Queue AI Assurance drawer, non-destructive override actions, and self-verification block",
+          "implementation_state": "SATISFIED",
+          "verification_state": "VERIFIED"
+        }
+      ]
+    },
+    {
+      "feature_id": "PIL-04",
+      "module": "Monitoring & Operational Reliability",
+      "feature_name": "SOC Pilot Operational, Reliability & Empirical Accuracy Dashboard + Metric Fixes",
+      "implementation_status": "IMPLEMENTED_VERIFIED",
+      "completion_pct": 100.0,
+      "verification_pct": 100.0,
+      "frontend_files": [
+        "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
+        "frontend/src/app/verdict-intelligence/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/page.tsx"
+      ],
+      "backend_files": [
+        "backend/app/api/verdict_intelligence.py",
+        "backend/app/services/verdict_trustworthiness_engine.py",
+        "backend/app/services/empirical_accuracy_evaluator.py",
+        "backend/app/services/incident_service.py"
+      ],
+      "test_files": [
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py"
+      ],
+      "evidence_files": [
+        "docs/phase9/PHASE_9_FINAL_CODE_REMEDIATION.md",
+        "docs/phase9/evidence/metrics/issue1_issue2_db_audit.json"
+      ],
+      "evidence_notes": [
+        "Fixes Issue 1 (stale 50% decision coverage on zero/missing decisive denominator) and Issue 2 (uncalibrated <=6/10 trust cap with preserved historical provenance); separates live vs simulated tokens in Pilot Dashboard."
+      ],
+      "remaining_gap": "None.",
+      "acceptance_criteria": [
+        {
+          "id": "PIL-04-C1",
+          "description": "Dashboard F live/simulated token separation, Issue 1 zero-denominator N/A fix, and Issue 2 uncalibrated trust cap",
+          "implementation_state": "SATISFIED",
+          "verification_state": "VERIFIED"
+        }
+      ]
+    },
+    {
+      "feature_id": "HGT-03",
+      "module": "Historical Ground Truth & Empirical Accuracy",
+      "feature_name": "Historical Corpus Eligibility Report & Time-Aware / Partition Replay",
+      "implementation_status": "IMPLEMENTED_VERIFIED",
+      "completion_pct": 100.0,
+      "verification_pct": 100.0,
+      "frontend_files": [
+        "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx"
+      ],
+      "backend_files": [
+        "backend/app/services/historical_eligibility_service.py",
+        "backend/app/services/policy_simulation_service.py",
+        "backend/app/api/verdict_intelligence.py"
+      ],
+      "test_files": [
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "evidence_files": [
+        "docs/phase9/PHASE_9_HISTORICAL_EVALUATION.md",
+        "docs/phase9/evidence/screenshots/04_historical_eligibility_report.png"
+      ],
+      "evidence_notes": [
+        "Generates JSON/CSV G8 & calibration eligibility reports excluding synthetic, ML-generated, disputed, missing-evidence, and duplicate cases, plus after_epoch/before_epoch/split_partition replay filtering."
+      ],
+      "remaining_gap": "None.",
+      "acceptance_criteria": [
+        {
+          "id": "HGT-03-C1",
+          "description": "HistoricalEligibilityService JSON/CSV export, Dashboard G UI, and epoch/partition replay filtering",
+          "implementation_state": "SATISFIED",
+          "verification_state": "VERIFIED"
+        }
+      ]
+    },
+    {
+      "feature_id": "DEP-01",
+      "module": "Backend APIs & Services",
+      "feature_name": "Dual-Server Native Linux Deployment Packages & Staged Integration Suite",
+      "implementation_status": "PARTIAL",
+      "completion_pct": 100.0,
+      "verification_pct": 50.0,
+      "frontend_files": [],
+      "backend_files": [
+        "deployment/env.production.example",
+        "deployment/scripts/install_ubuntu.sh",
+        "deployment/scripts/verify_server1.sh",
+        "deployment/scripts/rollback_server1.sh",
+        "deployment/scripts/install_llm_server.sh",
+        "deployment/scripts/setup_server2_gpu.sh",
+        "deployment/scripts/smoke_test_server2.py",
+        "deployment/systemd/ai-verdict-scheduler.service",
+        "deployment/logrotate/ai-verdict",
+        "scripts/run_integration_suite.py"
+      ],
+      "test_files": [
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "evidence_files": [
+        "docs/phase9/PHASE_9_DEPLOYMENT_READINESS.md",
+        "docs/phase9/evidence/deployment/deployment_static_validation.json",
+        "docs/phase9/evidence/deployment/offline_contract_tests.json",
+        "docs/phase9/evidence/deployment/staging_integration_probes.json"
+      ],
+      "evidence_notes": [
+        "10/10 shell scripts passed bash -n, 4/4 systemd INIs validated, zero hardcoded secrets/IPs, offline contract suite PASSED (32 tests), and smoke_test_server2.py validated against local HTTP mock."
+      ],
+      "remaining_gap": "Live Ubuntu Server 1 and Server 2 deployment and staging service verification not yet executed.",
+      "acceptance_criteria": [
+        {
+          "id": "DEP-01-C1",
+          "description": "Install/verify/rollback scripts, systemd/logrotate configs, clean env template, smoke test, and offline contract suite",
+          "implementation_state": "SATISFIED",
+          "verification_state": "VERIFIED"
+        },
+        {
+          "id": "DEP-01-C2",
+          "description": "Live Server 1 & Server 2 Ubuntu deployment and STAGING_INTEGRATION_TESTS pass",
+          "implementation_state": "SATISFIED",
+          "verification_state": "NOT_TESTED"
+        }
+      ]
+    },
+    {
+      "feature_id": "PRF-01",
+      "module": "Automated Testing & End-to-End Validation",
+      "feature_name": "Synthetic 2,000-Rule Scale Benchmark & Phase 9 Browser/Backend Suites",
+      "implementation_status": "PARTIAL",
+      "completion_pct": 100.0,
+      "verification_pct": 50.0,
+      "frontend_files": [],
+      "backend_files": [
+        "scripts/run_phase9_load_benchmark.py"
+      ],
+      "test_files": [
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "evidence_files": [
+        "docs/phase9/PHASE_9_PERFORMANCE_VALIDATION.md",
+        "docs/phase9/evidence/performance/phase9_load_benchmark.json",
+        "docs/phase9/evidence/frontend/phase9_browser_e2e_report.json"
+      ],
+      "evidence_notes": [
+        "Synthetic SQLite/CPU benchmark across 2,000 rules and 500 incidents completed with 0.0 error rate; 293 backend tests and 4 Chromium browser E2E suites passed offline."
+      ],
+      "remaining_gap": "Live Server 2 vLLM GPU tokens/sec benchmark under production concurrency not yet executed.",
+      "acceptance_criteria": [
+        {
+          "id": "PRF-01-C1",
+          "description": "Synthetic 2,000-rule / 500-incident CPU/ORM benchmark and Phase 9 backend + Chromium E2E test suites",
+          "implementation_state": "SATISFIED",
+          "verification_state": "VERIFIED"
+        },
+        {
+          "id": "PRF-01-C2",
+          "description": "Real Server 2 GPU throughput benchmark under production SOC workload",
+          "implementation_state": "SATISFIED",
+          "verification_state": "NOT_TESTED"
+        }
+      ]
     }
-  ]
+  ],
+  "last_updated": "2026-11-11",
+  "phase_baseline": "Phase 9 Closure & Controlled SOC Pilot Readiness"
 }

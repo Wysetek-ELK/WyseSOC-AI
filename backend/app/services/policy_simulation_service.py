@@ -8,6 +8,7 @@ Integrates the dry-run intelligence validation pipeline:
 5. Compares candidate policy against baseline with paired regression detection
 """
 
+import hashlib
 import math
 import uuid
 import json
@@ -195,6 +196,9 @@ class PolicySimulationService:
         baseline_run_id: Optional[str] = None,
         sample_limit: int = 50,
         provider_type: str = "SIMULATED",
+        split_partition: Optional[str] = None,
+        after_epoch: Optional[int] = None,
+        before_epoch: Optional[int] = None,
     ) -> HistoricalEvaluationRunRecord:
         """
         Executes full dry-run intelligence evaluation over historical incidents.
@@ -258,6 +262,9 @@ class PolicySimulationService:
                 "sample_limit": sample_limit,
                 "policy_version_id": policy_version_id,
                 "policy_digest": policy_digest,
+                "split_partition": split_partition.value if hasattr(split_partition, "value") else split_partition,
+                "after_epoch": after_epoch,
+                "before_epoch": before_epoch,
                 "evaluated_at": datetime.utcnow().isoformat(),
             },
             started_at=datetime.utcnow(),
@@ -291,14 +298,27 @@ class PolicySimulationService:
             matched_res = await self.db.execute(matched_q)
             matched_rows = matched_res.all()
 
-        # Build scanned pool (maintaining deterministic order and uniqueness)
+        # Build scanned pool (maintaining deterministic order, uniqueness, time-aware window, and partition filter)
         seen_ids = set()
         rows = []
+        target_partition = (
+            split_partition.value if hasattr(split_partition, "value") else (str(split_partition).upper() if split_partition else None)
+        )
         for r in matched_rows + scanned_rows:
             inc_obj = r[0]
-            if inc_obj.id not in seen_ids:
-                seen_ids.add(inc_obj.id)
-                rows.append(r)
+            if inc_obj.id in seen_ids:
+                continue
+            inc_epoch = inc_obj.first_seen_epoch or inc_obj.created_at_epoch
+            if after_epoch is not None and (inc_epoch is None or inc_epoch < after_epoch):
+                continue
+            if before_epoch is not None and (inc_epoch is None or inc_epoch > before_epoch):
+                continue
+            if target_partition:
+                inc_part = HistoricalGroundTruthValidator.assign_partition(str(inc_obj.incident_id or inc_obj.id)).value
+                if inc_part != target_partition:
+                    continue
+            seen_ids.add(inc_obj.id)
+            rows.append(r)
 
         total_cases = len(rows)
         run_record.total_cases = total_cases
@@ -659,6 +679,14 @@ class PolicySimulationService:
                     "contradictions": trust_res.contradictory_evidence,
                     "missing": trust_res.missing_evidence,
                     "exclusion_reason": exclusion_reason,
+                    "policy_version_id": policy_version_id,
+                    "policy_digest": policy_digest,
+                    "model_identifier": trust_res.model_identifier,
+                    "is_simulated": trust_res.is_simulated,
+                    "partition": HistoricalGroundTruthValidator.assign_partition(inc_id_str).value,
+                    "evidence_snapshot_hash": hashlib.sha256(
+                        json.dumps(sanitized_inc.get("canonical_evidence") or [], sort_keys=True, default=str).encode("utf-8")
+                    ).hexdigest(),
                 },
                 escalation_reason=str(trust_res.escalation_reason)[:256] if trust_res.escalation_reason else None,
                 created_at=datetime.utcnow(),
