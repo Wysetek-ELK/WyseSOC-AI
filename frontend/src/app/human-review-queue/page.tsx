@@ -26,7 +26,6 @@ import {
 import { api, InvestigationListItem, InvestigationDetail, User } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import { formatExecutionProvenanceBadge } from "@/lib/provenance";
-import { VerdictumLogo } from "@/components/brand/VerdictumLogo";
 
 export default function HumanReviewQueuePage() {
   const { user } = useApp();
@@ -614,7 +613,6 @@ export default function HumanReviewQueuePage() {
                 <div className="p-3 rounded-lg border border-indigo-900/60 bg-indigo-950/15 space-y-2.5 text-xs" data-testid="drawer-ai-assurance">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-900/40 pb-1.5">
                     <h3 className="font-bold text-indigo-300 flex items-center gap-1.5">
-                      <VerdictumLogo size={18} showWordmark={false} />
                       <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
                       AI Verdict Assurance &amp; Provenance
                     </h3>

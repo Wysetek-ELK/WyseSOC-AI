@@ -18,7 +18,6 @@ import {
   SlidersHorizontal,
   Settings,
   Terminal,
-  MessageSquareCode,
   Cpu,
   Clock,
   Activity,
@@ -29,6 +28,7 @@ import {
   ChatStatusResponse,
   IncidentListItem,
 } from "@/lib/api";
+import { BrandLogo } from "@/components/common/BrandLogo";
 
 interface RichChatMessage extends ChatMessage {
   id: string;
@@ -358,9 +358,9 @@ export default function SocChatbotPage() {
     <div className="flex flex-col h-[calc(100vh-3.75rem)] w-full space-y-2">
       {/* Top Header & Server 2 Status */}
       <div className="rounded-xl border border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/30 p-3.5 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-indigo-950/70 border border-indigo-800/80 text-indigo-300 shadow-inner">
-            <MessageSquareCode className="w-5 h-5" />
+        <div className="flex items-start gap-2.5">
+          <div className="p-1 rounded-lg bg-slate-950/70 border border-slate-800/80">
+            <BrandLogo size={30} />
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">

@@ -4,7 +4,6 @@ import React, { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  BookOpenCheck,
   Compass,
   Network,
   Cpu,
@@ -43,6 +42,7 @@ import { DecisionEngineSection } from "@/components/admin-guide/DecisionEngineSe
 import { IncidentWalkthroughSection } from "@/components/admin-guide/IncidentWalkthroughSection";
 import { RequirementsSection } from "@/components/admin-guide/RequirementsSection";
 import { GlossaryTroubleshootingSection } from "@/components/admin-guide/GlossaryTroubleshootingSection";
+import { BrandLogo } from "@/components/common/BrandLogo";
 
 interface SearchHit {
   id: string;
@@ -218,7 +218,7 @@ function AdminGuideContent() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <BookOpenCheck className="h-5 w-5 text-cyan-400 shrink-0" />
+              <BrandLogo size={26} />
               <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-100">
                 AI Verdict Admin Guide
               </h1>

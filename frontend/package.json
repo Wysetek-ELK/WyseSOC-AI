@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "type-check": "tsc --noEmit",
     "test:admin-guide": "node --experimental-strip-types --test tests/admin-guide.test.mjs"
   },
   "dependencies": {

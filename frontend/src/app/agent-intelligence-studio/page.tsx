@@ -51,7 +51,6 @@ import {
   PolicyDriftEventItem,
   PolicySimulationResult,
 } from "@/lib/api";
-import { VerdictumLogo } from "@/components/brand/VerdictumLogo";
 
 export default function AgentIntelligenceStudioPage() {
   // Navigation / View mode
@@ -898,11 +897,7 @@ export default function AgentIntelligenceStudioPage() {
               </div>
 
               {showExportMenu && (
-                <div className="absolute right-0 mt-1 w-52 rounded-md border border-slate-800 bg-slate-950 py-1 shadow-xl z-20 text-xs">
-                  <div className="px-3 py-1 border-b border-slate-800/80 flex items-center gap-1.5 text-[10px] font-mono text-slate-400 uppercase">
-                    <VerdictumLogo size={14} showWordmark={false} />
-                    <span>Verdictum Policy Export</span>
-                  </div>
+                <div className="absolute right-0 mt-1 w-48 rounded-md border border-slate-800 bg-slate-950 py-1 shadow-xl z-20 text-xs">
                   <button
                     type="button"
                     onClick={() => handleExportAll("json")}
@@ -3371,12 +3366,9 @@ export default function AgentIntelligenceStudioPage() {
       {showApprovalModal && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-950 border border-slate-800 rounded-lg max-w-md w-full p-4 space-y-3 shadow-2xl">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-emerald-400">
-                <CheckCircle2 className="w-4 h-4" />
-                <h3 className="text-sm font-bold text-slate-100">Approve Policy for Production</h3>
-              </div>
-              <VerdictumLogo size={20} showWordmark={false} />
+            <div className="flex items-center gap-2 text-emerald-400">
+              <CheckCircle2 className="w-4 h-4" />
+              <h3 className="text-sm font-bold text-slate-100">Approve Policy for Production</h3>
             </div>
             <p className="text-xs text-slate-400">
               Approving Version {selectedVersion?.version_number} will set it as the production baseline for <strong>{rulePrompt?.rule_name}</strong> and synchronize the machine-verifiable Evidence Contract.

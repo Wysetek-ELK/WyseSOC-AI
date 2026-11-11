@@ -14,7 +14,6 @@ import {
   RefreshCw,
   Clock,
   Layers,
-  Activity,
   FileCheck2,
   Sparkles,
   Shield,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 import { api, DashboardMetrics, PilotMetricsResponse } from "@/lib/api";
 import { ServerInfrastructureMonitor } from "@/components/system/ServerInfrastructureMonitor";
+import { BrandLogo } from "@/components/common/BrandLogo";
 
 export default function AgentMissionControlPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -156,7 +156,7 @@ export default function AgentMissionControlPage() {
       <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 flex items-center gap-2">
-            <Activity className="h-4 w-4 text-cyan-400" />
+            <BrandLogo size={24} />
             Agent Mission Control
           </h1>
           <p className="text-[11px] text-slate-400 mt-0.5">

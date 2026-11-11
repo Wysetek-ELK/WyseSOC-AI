@@ -4,16 +4,8 @@ import { AppProvider } from "@/context/AppContext";
 import { Shell } from "@/components/layout/Shell";
 
 export const metadata: Metadata = {
-  title: "VERDICTUM AI | Agentic Triage & SOC Intelligence",
-  description:
-    "Evidence-Driven Security Intelligence · Verdictum AI Agentic Triage, Policy Governance, and Verification.",
-  icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
-    ],
-    shortcut: ["/favicon.svg"],
-  },
+  title: "AI Verdict — Agentic SOC Intelligence Platform",
+  description: "Evidence-Driven Security Intelligence · Enterprise AI Verdict Triage, Policy Governance, and Verification.",
 };
 
 export default function RootLayout({

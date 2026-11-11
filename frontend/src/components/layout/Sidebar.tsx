@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { api } from "@/lib/api";
 import { formatServer2HealthSummary } from "@/lib/provenance";
-import { VerdictumLogo } from "@/components/brand/VerdictumLogo";
 import {
   LayoutDashboard,
   AlertTriangle,
@@ -24,6 +23,7 @@ import {
   MessageSquareCode,
   BookOpenCheck,
 } from "lucide-react";
+import { BrandLogo } from "@/components/common/BrandLogo";
 
 interface NavItem {
   title: string;
@@ -213,17 +213,23 @@ export function Sidebar() {
         }`}
     >
       {/* Brand Header */}
-      <div className="flex h-10 items-center justify-between px-2 border-b border-slate-800/80">
-        <Link
-          href="/agent-mission-control"
-          className="flex items-center overflow-hidden min-w-0 transition-all duration-200"
-          title="Verdictum AI — Agentic Triage Platform"
-        >
-          <VerdictumLogo size="sm" showWordmark={!collapsed} />
+      <div className="flex h-10 items-center justify-between px-2.5 border-b border-slate-800/80">
+        <Link href="/agent-mission-control" className="flex items-center gap-2 overflow-hidden">
+          <BrandLogo size={26} priority />
+          {!collapsed && (
+            <div className="flex flex-col">
+              <span className="font-bold text-xs tracking-wider text-sky-300 uppercase leading-tight">
+                AI Verdict
+              </span>
+              <span className="text-[8.5px] text-cyan-400 font-mono tracking-tight leading-none">
+                Agentic SOC Intelligence
+              </span>
+            </div>
+          )}
         </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors shrink-0"
+          className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
