@@ -12,6 +12,7 @@ from app.models.rule import Rule
 from app.models.import_job import ImportJob
 from app.models.audit import AuditLog
 from app.services.rule_parser import RuleParser
+from app.services.historical_ground_truth_validator import HistoricalGroundTruthValidator
 from app.utils.zip_guard import ZipGuard, ZipSecurityException
 
 
@@ -633,13 +634,12 @@ class IngestionService:
             incident.status_code = 2
             incident.status_name = "Manually Cleared" if cleared_user or "manually" in str(raw_status or "").lower() else "Closed"
 
-        is_ml_generated = (
-            "machine learning" in comments.lower() or
-            "machine learning" in resolution.lower() or
-            "ml" in comments.lower() or
-            "resolution set by machine learning" in comments.lower() or
-            "automated" in comments.lower() or
-            "auto cleared" in str(raw_status or "").lower()
+        is_ml_generated = HistoricalGroundTruthValidator.detect_automated_or_ml_text(
+            comments=comments,
+            resolution=resolution,
+            cleared_reason=cleared_reason,
+            cleared_user=cleared_user,
+            raw_status=str(raw_status or ""),
         )
 
         ground_truth = HistoricalGroundTruth(

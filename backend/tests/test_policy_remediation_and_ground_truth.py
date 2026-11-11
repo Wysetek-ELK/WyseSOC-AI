@@ -397,13 +397,15 @@ async def test_strict_rule_filtering_and_rule_mismatch_exclusion(db_session: Asy
     )
 
     funnel = run_record.metrics["funnel"]
-    assert funnel["total_scanned"] >= 3
+    # AIS 2.1 (AIS-F01): Target rule has 0 incidents -> rule-scoped query retrieves 0 (never scans unrelated global 50)
+    assert funnel["available"] == 0
+    assert funnel["retrieved"] == 0
+    assert funnel["total_scanned"] == 0
     assert funnel["rule_matched"] == 0
     assert funnel["evaluated"] == 0
+    assert funnel["scored"] == 0
     assert funnel["eligible"] == 0
-    assert funnel["exclusion_reasons"]["RULE_MISMATCH"] >= 3
     assert run_record.validation_state == "INSUFFICIENT_DATA"
-    assert any(ex["reason"] == "RULE_MISMATCH" for ex in funnel["exclusions_detail"])
 
 
 @pytest.mark.asyncio
@@ -570,7 +572,8 @@ async def test_six_stage_eligibility_funnel_and_exclusions(db_session: AsyncSess
     assert funnel["analyst_labeled"] == 6  # 6 incidents had resolution in SIEM
     assert funnel["eligible"] == 4         # Exactly 4 eligible cases (2 human TP + 2 human FP)
     assert funnel["excluded"] == 3         # 2 ML + 1 unclosed
-    assert funnel["evaluated"] == 7        # All 7 scanned
+    assert funnel["evaluated"] == 4        # AIS 2.1 (AIS-F04): Strictly excludes ineligible rows from G8 inference & scoring
+    assert funnel["scored"] == 4
 
     reasons = funnel["exclusion_reasons"]
     assert reasons["HEURISTIC_OR_ML_LABEL"] == 2
@@ -587,7 +590,7 @@ async def test_six_stage_eligibility_funnel_and_exclusions(db_session: AsyncSess
     assert len(stage_details["analyst_labeled"]) == 6
     assert len(stage_details["eligible"]) == 4
     assert len(stage_details["excluded"]) == 3
-    assert len(stage_details["evaluated"]) == 7
+    assert len(stage_details["evaluated"]) == 4
 
     # Sample sufficiency: 4 < 5 -> INSUFFICIENT_DATA
     assert summary["simulation_status"] == SimulationStatus.INSUFFICIENT_DATA.value

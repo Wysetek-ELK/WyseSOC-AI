@@ -625,20 +625,44 @@ export interface PolicySimulationResult {
     evaluated?: Array<any>;
   };
   funnel?: {
+    available?: number;
+    retrieved?: number;
     total_scanned: number;
     rule_matched: number;
+    labeled?: number;
     analyst_labeled: number;
+    verified?: number;
     eligible: number;
     excluded: number;
+    inferred?: number;
     evaluated: number;
+    scored?: number;
+    exploratory_replay_count?: number;
     exclusion_reasons: Record<string, number>;
   };
+  available_count?: number;
+  retrieved_count?: number;
+  verified_count?: number;
+  inferred_count?: number;
+  scored_count?: number;
+  exploratory_replay_count?: number;
+  provider_type?: string;
+  is_simulated?: boolean;
+  execution_provenance?: string;
+  model_identifier?: string | null;
+  certifying_empirical_eligible?: boolean;
+  token_usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
   min_samples_required: number;
   message: string;
   critical_regressions: number;
   regression_detected: boolean;
   regression_status: "PASS" | "REGRESSION_DETECTED" | "INSUFFICIENT_DATA" | "NOT_ASSESSED";
-  empirical_validation_status: "EVALUATED_PASSED" | "EVALUATED_FAILED" | "INSUFFICIENT_DATA" | "INCONCLUSIVE";
+  empirical_validation_status:
+    | "EVALUATED_PASSED"
+    | "EVALUATED_FAILED"
+    | "INSUFFICIENT_DATA"
+    | "INCONCLUSIVE"
+    | "SIMULATED_ONLY_NOT_CERTIFYING";
   abstention_rate?: number | null;
   balanced_accuracy?: number | null;
   precision?: number | null;
@@ -1582,8 +1606,30 @@ export const api = {
     return res.json();
   },
 
-  async evaluatePolicySimulation(ruleId: string, versionId?: string): Promise<PolicySimulationResult> {
-    const url = versionId ? `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation?version_id=${versionId}` : `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation`;
+  async evaluatePolicySimulation(
+    ruleId: string,
+    versionId?: string,
+    options?: {
+      provider_type?: "OPENAI_COMPATIBLE" | "SIMULATED";
+      sample_limit?: number;
+      include_unlabeled_replay?: boolean;
+      async_execution?: boolean;
+    }
+  ): Promise<PolicySimulationResult> {
+    const params = new URLSearchParams();
+    if (versionId) params.set("version_id", versionId);
+    if (options?.provider_type) params.set("provider_type", options.provider_type);
+    if (options?.sample_limit !== undefined) params.set("sample_limit", String(options.sample_limit));
+    if (options?.include_unlabeled_replay !== undefined) {
+      params.set("include_unlabeled_replay", String(options.include_unlabeled_replay));
+    }
+    if (options?.async_execution !== undefined) {
+      params.set("async_execution", String(options.async_execution));
+    }
+    const qs = params.toString();
+    const url = qs
+      ? `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation?${qs}`
+      : `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation`;
     const res = await fetchWithAuth(url, { method: "POST" });
     if (!res.ok) {
       let msg = "Failed to evaluate policy simulation";

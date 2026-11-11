@@ -4,8 +4,14 @@ from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 from app.models.rule import Rule
 from app.models.prompt import PromptVersion, RulePrompt
+from app.models.rule_intelligence import RuleIntelligenceSnapshot
 from app.schemas.evidence_contract import RuleEvidenceContract, EvidenceFieldRequirement
-from app.schemas.rule_intelligence import DetectionSemantics, ArchetypeId, SemanticsDefinitionStatus
+from app.schemas.rule_intelligence import (
+    DetectionSemantics,
+    ArchetypeId,
+    SemanticsDefinitionStatus,
+    SourceProvenance,
+)
 from app.services.rule_intelligence_analyzer import RuleIntelligenceAnalyzer
 from app.services.detection_archetype_registry import DetectionArchetypeRegistry
 from app.services.evidence_requirement_mapper import EvidenceRequirementMapper
@@ -44,7 +50,29 @@ class EvidenceContractService:
             if rp and rp.versions:
                 active_ver = next((v for v in rp.versions if v.id == rp.active_version_id), None) or (rp.versions[0] if rp.versions else None)
 
-            return self.get_contract_for_rule(rule, active_ver)
+            # Honor persisted RuleIntelligenceSnapshot when full semantics_payload is stored
+            semantics: Optional[DetectionSemantics] = None
+            snap_res = await self.db.execute(
+                select(RuleIntelligenceSnapshot).where(RuleIntelligenceSnapshot.rule_id == rule.id)
+            )
+            snap = snap_res.scalar_one_or_none()
+            if snap and snap.semantics_payload:
+                try:
+                    semantics = DetectionSemantics.model_validate(snap.semantics_payload)
+                    if snap.threshold is not None:
+                        semantics.threshold = snap.threshold
+                    if snap.threshold_unit:
+                        semantics.threshold_unit = snap.threshold_unit
+                    if snap.aggregation_window:
+                        semantics.aggregation_window = snap.aggregation_window
+                    if snap.definition_status:
+                        semantics.definition_status = SemanticsDefinitionStatus(snap.definition_status)
+                    if snap.source_provenance:
+                        semantics.source_provenance = SourceProvenance(snap.source_provenance)
+                except Exception:
+                    semantics = None
+
+            return self.get_contract_for_rule(rule, active_ver, semantics=semantics)
         except Exception as exc:
             logger.warning(f"Error fetching active contract for rule {rule_id}: {exc}")
             return None
@@ -54,6 +82,7 @@ class EvidenceContractService:
         cls,
         rule: Optional[Rule],
         prompt_version: Optional[PromptVersion] = None,
+        semantics: Optional[DetectionSemantics] = None,
     ) -> RuleEvidenceContract:
         """
         Builds or resolves the machine-verifiable evidence contract for a rule.
@@ -78,16 +107,16 @@ class EvidenceContractService:
             else:
                 contract_status = "UNVERIFIED"
 
-        # 2. Extract structured detection semantics using RuleIntelligenceAnalyzer
+        # 2. Extract structured detection semantics using provided snapshot or RuleIntelligenceAnalyzer
         if rule:
-            semantics = RuleIntelligenceAnalyzer.analyze_rule(rule)
-            classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
+            resolved_semantics = semantics or RuleIntelligenceAnalyzer.analyze_rule(rule)
+            classification = DetectionArchetypeRegistry.classify_rule(resolved_semantics, rule)
             archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
             
             # Map candidate contract using EvidenceRequirementMapper
             contract = EvidenceRequirementMapper.map_evidence_contract(
                 rule=rule,
-                semantics=semantics,
+                semantics=resolved_semantics,
                 archetype_def=archetype_def,
                 prompt_version=prompt_version,
             )

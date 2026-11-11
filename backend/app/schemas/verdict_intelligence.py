@@ -304,15 +304,22 @@ class IncidentExclusionRecord(BaseModel):
 
 
 class IncidentEligibilityFunnel(BaseModel):
+    available: int = 0
+    retrieved: int = 0
     total_scanned: int = 0
     rule_matched: int = 0
+    labeled: int = 0
     analyst_labeled: int = 0
+    verified: int = 0
     eligible: int = 0
     independent_group_count: int = 0
     excluded: int = 0
     duplicate_excluded_count: int = 0
     synthetic_excluded_count: int = 0
+    inferred: int = 0
     evaluated: int = 0
+    scored: int = 0
+    exploratory_replay_count: int = 0
     exclusion_reasons: Dict[str, int] = Field(default_factory=dict)
     exclusions_detail: List[IncidentExclusionRecord] = Field(default_factory=list)
     stage_details: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)
@@ -491,3 +498,5 @@ class HistoricalEvaluationRunRequest(BaseModel):
     split_partition: Optional[DatasetPartition] = None
     after_epoch: Optional[int] = None
     before_epoch: Optional[int] = None
+    include_unlabeled_replay: bool = False
+    async_execution: bool = False

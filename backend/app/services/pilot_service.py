@@ -422,11 +422,10 @@ class PilotService:
             raise ValueError(f"Incident '{incident_id}' not found.")
 
         rule = inc.rule
+        from app.services.policy_governance import resolve_canonical_rule
+
         if not rule and inc.event_type:
-            r_res = await self.db.execute(
-                select(Rule).where((Rule.event_type == inc.event_type) | (Rule.rule_id == inc.event_type))
-            )
-            rule = r_res.scalars().first()
+            rule = await resolve_canonical_rule(self.db, inc.event_type)
 
         archetype = "UNKNOWN"
         if rule:
@@ -487,6 +486,11 @@ class PilotService:
         inc_sev = str(inc.severity or "MEDIUM")
         rule_id_str = str(rule.rule_id if rule else (inc.rule_id or inc.event_type))
         req_timeout = float(cfg.request_timeout_seconds)
+        requires_autonomous = bool(
+            cfg.allow_auto_incident_closure
+            or cfg.allow_external_writeback
+            or str(pilot_mode).upper() in ("AUTONOMOUS", "FULL_AUTO", "AUTO_RESPONSE")
+        )
 
         from app.services.ai_verdict_service import LocalLLMUnavailableError, VerdictTriageAgent
 
@@ -498,6 +502,8 @@ class PilotService:
                     incident_id_or_obj=inc_id,
                     username=actor,
                     allow_simulated_fallback=allow_simulated,
+                    execution_context=("AUTONOMOUS" if requires_autonomous else "ANALYST_ASSISTED"),
+                    require_autonomous_certification=requires_autonomous,
                     pilot_context={
                         "pilot_id": pilot_id,
                         "pilot_version": pilot_version,
@@ -512,6 +518,7 @@ class PilotService:
                 eff_verdict = str(verdict_data.get("verdict") or "REQUIRES_ATTENTION")
                 elig_status = "ABSTAINED" if eff_verdict == "REQUIRES_ATTENTION" and val_status in (
                     "POLICY_NOT_APPROVED",
+                    "POLICY_NOT_EMPIRICALLY_CERTIFIED",
                     "INSUFFICIENT_EVIDENCE",
                     "CONTEXT_WINDOW_EXCEEDED",
                     "GUARDRAIL_ABSTAINED",
@@ -605,11 +612,15 @@ class PilotService:
                     "execution_mode": rec.execution_mode,
                     "proposed_verdict": rec.proposed_verdict,
                     "validated_verdict": rec.validated_verdict,
+                    "validation_status": val_status,
                     "trust_score": rec.trust_score,
                     "is_simulated": rec.is_simulated,
                     "execution_provenance": eval_prov["execution_provenance"],
                     "configured_provider": eval_prov["configured_provider"],
                     "test_environment": eval_prov["test_environment"],
+                    "policy_governance_mode": verdict_data.get("policy_governance_mode"),
+                    "autonomous_operation_eligible": bool(verdict_data.get("autonomous_operation_eligible", False)),
+                    "autonomous_action_blocked": bool(verdict_data.get("autonomous_action_blocked", True)),
                 }
 
             except LocalLLMUnavailableError as llm_err:

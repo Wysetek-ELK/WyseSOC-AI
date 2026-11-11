@@ -1,0 +1,68 @@
+# Agent Intelligence Studio 2.1 — P0 & P1 Remediation Implementation Report
+
+**Environment & Evidence Boundary Notice**
+- **Implemented Code:** Verified directly in local workspace source files and AST/Git diffs on `c:\Users\amit\OneDrive\Documents\SOC-AI-Agent`.
+- **Locally Tested Behavior:** Verified after the final code edit against async SQLite (`:memory:` / local dev DB), mocked OpenAI-compatible HTTP endpoints (`ThreadingHTTPServer`), Next.js 16.4.5 build/browser Playwright suites, and Node test runner.
+- **Remotely Unverified Behavior (`NOT VERIFIED`):** Live production/staging PostgreSQL Server 1 (2,900+ historical incidents, 34 SIEM rules, `PH_RULE_HEAVY_TCP_HOST_SCAN`), Server 2 GPU vLLM endpoint, Redis/Celery distributed worker daemon execution, and live FortiSIEM Supervisor API ingestion/writeback were **NOT VERIFIED** in this environment because those external services are unreachable locally.
+
+---
+
+## 1. Executive Summary
+
+AIS 2.1 remediates all confirmed P0 and P1 findings (`AIS-F01`, `AIS-F02`, `AIS-F03`, `AIS-F04`, `AIS-F09`) plus their direct dependencies in canonical rule resolution (`AIS-F08`) and `NETWORK_SCAN` parser/port telemetry normalization (`AIS-F10` core parser/contract prerequisites) identified in the AIS 2.0 read-only audit (`docs/AIS/`):
+
+| Audit ID | Priority | Defect Summary | Implemented Remediation | Status |
+| :--- | :-: | :--- | :--- | :--- |
+| **`AIS-F03`** | **P0** | Policies with `G8 = INSUFFICIENT_DATA` or simulated runs could enter live autonomous triage | Introduced three-tier certification (`assess_policy_runtime_certification` in `policy_governance.py`): distinguishes structural approval (`G1–G7 + APPROVED`), empirical certification (`G8 = EVALUATED_PASSED` with non-simulated LLM on exact SHA-256 `policy_digest`), and autonomous operation eligibility. Enforced Fail-Closed block (`BLOCKED_UNCERTIFIED_FOR_AUTONOMOUS_ACTION`) in `verdict_pipeline.py`, `ai_verdict_service.py`, and `pilot_service.py` while keeping analyst-assisted advisory mode functional with `ADVISORY_ONLY_NOT_EMPIRICALLY_CERTIFIED` notices. | Implemented & Locally Tested |
+| **`AIS-F01`** (+ `AIS-F08`) | **P1** | `50 + 2 = 52` global incident sweep polluting rule simulation and silently truncating >50 cohorts | Removed global `scanned_q` top-50 sweep from `PolicySimulationService._fetch_scoped_incidents_paginated`; implemented cursor/offset paginated rule-scoped SQL retrieval (`build_rule_incident_sql_filter`) paired with row-level `verify_incident_matches_rule`; isolated sibling `PH_RULE_*` rules (`PH_RULE_HEAVY_TCP_HOST_SCAN` vs `_ON_FIXED_PORT`); allowed unlinked incidents only on unambiguous single-rule `event_type` ownership; expanded telemetry funnel (`available`, `retrieved`, `rule_matched`, `labeled`, `verified`, `excluded`, `inferred`, `scored`, `exploratory_replay_count`) with per-incident exclusion details. | Implemented & Locally Tested |
+| **`AIS-F04`** | **P1** | Substring `"ml" in comments.lower()` falsely excluded human ground truth (`normal`, `html`, etc.) and automated closures/disputes leaked inconsistently | Replaced naive substring checks across `historical_ground_truth_validator.py`, `ingestion_service.py`, and `fortisiem_service.py` with `detect_automated_or_ml_text` using word-boundary `(?<![a-z0-9])ml(?![a-z0-9])` and automated actor allowlist; removed `cleared_user` bypass from `is_containment_only_fp_note`; added unified `adjudicate_incident_ground_truth` enforcing `Investigation.is_disputed`, requiring `Investigation.is_independently_verified` over bare closure fields, and preserving original SIEM columns unchanged. | Implemented & Locally Tested |
+| **`AIS-F02` & `AIS-F09`** | **P1** | Mock `_simulate_model_output` hardcoded and allowed to pass G8; simulation bypassed live pipeline guards | Extracted shared `run_shared_verdict_pipeline` (`verdict_pipeline.py`) used by both `VerdictTriageAgent` and `PolicySimulationService`; exposed explicit `OPENAI_COMPATIBLE` vs `SIMULATED` selection across API (`prompts.py`, `verdict_intelligence.py`), Celery queue `simulation_replay` (`workers/tasks.py`), and AIS Studio UI; blocked `SIMULATED`/`MOCK` providers from earning G8 empirical pass in `PolicyQualityValidator._evaluate_gate_8_simulation`, `get_rule_calibration_stats`, and `evaluate_candidate_policy`; excluded ineligible incidents from G8 inference and isolated optional `include_unlabeled_replay` results from G8 accuracy. | Implemented & Locally Tested |
+| **`AIS-F10` deps** | **P2 dep** | `PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT` typo, `"Pattern Conditions"` dropped, missing `Destination Port` normalization | Fixed archetype typo in `detection_archetype_registry.py`; captured `"Pattern Conditions"` in `rule_parser.py`; added port/protocol aliases and nested `rawEvents` extraction in `evidence_normalization_service.py` + `evidence_sufficiency_engine.py`; resolved persisted `RuleIntelligenceSnapshot.semantics_payload` cleanly via `get_rule_semantics_and_contract`. | Implemented & Locally Tested |
+
+---
+
+## 2. Detailed Architecture & Implementation Breakdown
+
+### 2.1 Canonical Rule Identity, Governance & Certification (`policy_governance.py`)
+
+- **`resolve_canonical_rule(db, rule_identifier_or_id)`**: Resolves a rule by `Rule.id`, exact `Rule.rule_id`, unambiguous single-row `Rule.event_type`, or normalized `Rule.name`. Ambiguous `event_type` collisions (where >1 distinct canonical rule shares an event type) refuse unsafe cross-merging.
+- **`build_rule_incident_context` & `build_rule_incident_sql_filter`**: Collects exact canonical UUIDs, logical `rule_id`, and unambiguous `event_type` values only when owned by a single `Rule` record (`unambiguous_event_type`), preventing cross-contamination between `PH_RULE_HEAVY_TCP_HOST_SCAN` and `PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT`.
+- **`verify_incident_matches_rule(incident, ctx)`**: Performs secondary row-level verification inspecting `Incident.rule_id`, `Incident.event_type`, and embedded `raw_payload` markers (`rule_id`, `ruleId`, `ruleUuid`, `PH_RULE_*`), emitting explicit mismatch codes (`RULE_MISMATCH`, `AMBIGUOUS_EVENT_TYPE`, `UNLINKED_RULE_MISMATCH`).
+- **`get_rule_semantics_and_contract`**: Shared resolver for Live Triage, Prompt Studio, and Historical Simulation. Reconstructs `DetectionSemantics` from populated `RuleIntelligenceSnapshot.semantics_payload` when authoritative, while preserving exact HEAD compatibility for synthetic fixtures that have empty `semantics_payload` (`for_quality_validation=False` runtime vs `for_quality_validation=True` G1–G8 checks).
+- **`assess_policy_runtime_certification`**: Computes deterministic SHA-256 `policy_digest` matching `PolicyQualityValidator.compute_policy_digest` and verifies whether the active `PromptVersion` has:
+  1. `structural_approval`: `status == "APPROVED"` and non-failing structural validation.
+  2. `empirical_validation`: latest `COMPLETED` `HistoricalEvaluationRunRecord` for the rule and exact active `policy_version_id` with `validation_state == "EVALUATED_PASSED"`, verified sample count `>= 5`, **matching active `policy_digest`**, and **zero simulated/mock execution provenance** (`_is_simulated_run_config(...) == False` and `not any(result.claims_summary["is_simulated"])`).
+  3. `autonomous_operation_eligible`: `True` **only** when both structural approval and non-simulated, exact-digest empirical validation succeed.
+
+### 2.2 Paginated Rule-Scoped Retrieval & Ground-Truth Adjudication
+
+- **`PolicySimulationService._fetch_scoped_incidents_paginated`**: Uses SQL `count` for `available` plus deterministic 100-row offset pagination (`order_by(desc(Incident.created_at), Incident.id.asc())`), supporting arbitrary cohorts beyond 50 (`sample_limit=500` default on `/evaluate-simulation` and `/dry-run/evaluate`, configurable or unbounded).
+- **8-Stage Eligibility Funnel (`IncidentEligibilityFunnel` + `PolicySimulationService`)**:
+  - Tracks exact integer counts (`available`, `retrieved`, `rule_matched` / `total_scanned`, `labeled`, `verified` / `eligible`, `excluded`, `inferred` / `evaluated`, `scored`, `exploratory_replay_count`) and structured per-incident exclusion details (`RULE_MISMATCH`, `UNLINKED_RULE_MISMATCH`, `AMBIGUOUS_EVENT_TYPE`, `DISPUTED_LABEL`, `HEURISTIC_OR_ML_LABEL`, `UNLABELED_OR_CLOSURE_ONLY`, `SYNTHETIC_FIXTURE_EXCLUDED`, `MISSING_EVIDENCE`, `DUPLICATE_CLUSTER_EXCLUDED`).
+  - Strictly enforces `if exclusion_reason: continue` so excluded incidents are never sent to model inference and never scored.
+  - Optional `include_unlabeled_replay=True` executes shared pipeline replay on unverified/unlabeled rule-matched incidents for analyst preview while tagging `is_exploratory=True` / `ground_truth_label="UNLABELED_EXPLORATORY"` and excluding them from G8 empirical numerator/denominator calculations.
+- **Ground-Truth Safety (`AIS-F04`)**:
+  - `HistoricalGroundTruthValidator.detect_automated_or_ml_text` uses `re.compile(r"(?<![a-z0-9])ml(?![a-z0-9])", re.IGNORECASE)` plus automated phrases (`"resolution set by machine learning"`, `"auto-cleared"`, `"ml-generated"`, etc.) and automated actor accounts (`system`, `auto`, `fortisiem`, `siem`, `ml`, `ai`, `bot`, `scheduler`, `cron`).
+  - Both `ingestion_service.py` and `fortisiem_service.py` call `detect_automated_or_ml_text` on ingestion/extraction, eliminating false exclusions of human notes containing `"normal"`, `"html"`, `"xml"`, `"yaml"`, `"similar"`, or `"email"`.
+  - `adjudicate_incident_ground_truth` checks `Investigation.is_disputed` first (`DISPUTED_LABEL`), marks automated/ML closures without `Investigation.is_independently_verified=True` as `HEURISTIC_OR_ML_LABEL`, refuses bare closure strings (`CLOSED`, `MANUALLY CLEARED`, `RESOLVED`, `CLEARED`), and preserves original `HistoricalGroundTruth` SIEM columns untouched.
+
+### 2.3 Real LLM Simulation, Async Queue & Governance Enforcement
+
+- **Shared Verdict Pipeline (`verdict_pipeline.py`)**: Unifies Live Triage and Simulation across sanitization (`HistoricalGroundTruthValidator.sanitize_incident_for_inference`), canonical normalization, runtime governance gate, shared rule semantics/contract, `EvidencePreflightValidator`, `PolicyCompilerService`, `VerifiedSemanticRetrievalService` (RAG with temporal cutoff & self-exclusion), `TokenBudgetService`, `get_model_provider(OPENAI_COMPATIBLE | SIMULATED)` + GPU circuit breaker (`gpu_workload_manager`) on real providers, `TokenUsageRecord` (`LIVE_TRIAGE` / `POLICY_SIMULATION`), `ModelClaimExtractor`, `IndependentVerdictValidator`, and `VerdictTrustworthinessEngine`.
+- **Non-Mutation Guarantee**: Simulation instantiates `run_shared_verdict_pipeline(..., is_simulation=True, pilot_context={"source_type": "SIMULATION", "mode": "SIMULATION"})` and writes **only** `HistoricalEvaluationRunRecord`, `HistoricalEvaluationResultRecord`, `TokenUsageRecord(process_type="POLICY_SIMULATION")`, and `AuditLog`. Zero writes touch `Incident.ai_verdict`, `Incident.status_*`, `Investigation`, or `HistoricalGroundTruth`.
+- **Mock-Cannot-Pass-G8 Enforcement**: `PolicyQualityValidator._evaluate_gate_8_simulation` returns `0.0` / `SimulationStatus.NOT_EVALUATED` / `GateStatus.WARNING` (`G8_SIMULATED_PROVIDER_NOT_CERTIFYING`) whenever `is_simulated=True` or provider/provenance matches `SIMULATED`/`MOCK`/`HEURISTIC`. Likewise, `PolicySimulationService.evaluate_candidate_policy` caps status to `"SIMULATED_ONLY"` / `"SIMULATED_ONLY_NOT_CERTIFYING"`, and `get_rule_calibration_stats` ignores simulated runs.
+- **Async Worker Queue**: `celery_app.py` registers `app.workers.tasks.run_policy_simulation_task` on queue `simulation_replay`, invoked via `dispatch_policy_simulation` from `/evaluate-simulation` and `/dry-run/evaluate` when `async_execution=True` (`CELERY_ASYNC` when Celery/Redis is active, `IN_PROCESS_ASYNC` fallback otherwise).
+
+---
+
+## 3. Environment Verification Boundary
+
+| Verification Layer | Status | Scope / Notes |
+| :--- | :-: | :--- |
+| Backend Unit, Governance & Simulation Parity Suites (`pytest -q`) | **PASSED (Locally Verified)** | `314 passed` in `431.38s`, zero failures/skips after the final code edit (using async SQLite + loopback OpenAI-compatible `ThreadingHTTPServer` mocks). |
+| AIS 2.1 Specific Acceptance & Policy Remediation Suites | **PASSED (Locally Verified)** | All `10` tests in `test_ais_2_1_remediation.py` + `9` tests in `test_policy_remediation_and_ground_truth.py` + `4` targeted Phase 8.2/9/9.1 wire & E2E tests (`23 passed in 99.78s`). |
+| Frontend Build, TypeScript, Unit Tests & Feature Registry | **PASSED (Locally Verified)** | `npx tsc --noEmit` (exit 0), `npm run build` (`32/32` routes built cleanly), `tests/quality-export.test.mjs` + `tests/admin-guide.test.mjs` (`15/15 passed`), `validate_feature_registry.py` (`44 features, 19 modules`). |
+| Live PostgreSQL Server 1 (2,900+ incidents, 34 SIEM rules) | **`NOT VERIFIED`** | Remote DB unreachable from local workstation; legacy row backfill in live PostgreSQL not executed. |
+| Live Server 2 vLLM / Qwen GPU Inference (`OPENAI_COMPATIBLE`) | **`NOT VERIFIED`** | Local tests use loopback `ThreadingHTTPServer` OpenAI mock; live GPU throughput/prompt quality on `PH_RULE_HEAVY_TCP_HOST_SCAN` not tested remotely. |
+| Live Redis + Celery Worker Daemon (`simulation_replay`) | **`NOT VERIFIED`** | Local environment has `USE_ASYNC_CELERY=false` / no live Redis broker; Celery task routing is verified via code inspection, in-process fallback execution, and monkeypatched dispatch behavior only. |
+| Live FortiSIEM Supervisor Poll & Ticket Writeback | **`NOT VERIFIED`** | Remote FortiSIEM API not exercised locally. |

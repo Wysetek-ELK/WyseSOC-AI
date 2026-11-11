@@ -24,6 +24,10 @@ from app.services.detection_archetype_registry import DetectionArchetypeRegistry
 from app.services.evidence_requirement_mapper import EvidenceRequirementMapper
 from app.services.policy_generation_service import PolicyGenerationService, ENTERPRISE_SOC_BASELINE_V2
 from app.services.policy_quality_validator import PolicyQualityValidator
+from app.services.policy_governance import (
+    resolve_canonical_rule,
+    get_rule_semantics_and_contract,
+)
 
 logger = logging.getLogger("ai_verdict.prompt_studio")
 
@@ -41,8 +45,7 @@ class AgentPolicyEngine:
         self.db = db
 
     async def get_or_create_rule_prompt(self, rule_id: str) -> RulePrompt:
-        rule_res = await self.db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
-        rule = rule_res.scalars().first()
+        rule = await resolve_canonical_rule(self.db, rule_id)
         resolved_rule_id = rule.id if rule else rule_id
 
         query = select(RulePrompt).where(RulePrompt.rule_id == resolved_rule_id).options(
@@ -96,8 +99,7 @@ class AgentPolicyEngine:
         Synthesizes a detection-aware, evidence-grounded rule prompt draft via PolicyGenerationService.
         This is explicitly tagged as a TEMPLATE-GENERATED DRAFT (NOT AI-generated).
         """
-        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
-        rule = rule_res.scalars().first()
+        rule = await resolve_canonical_rule(self.db, rule_id)
         if not rule:
             raise ValueError(f"Rule with id {rule_id} not found")
 
@@ -186,8 +188,7 @@ class AgentPolicyEngine:
         user_id: Optional[str] = None
     ) -> PromptVersion:
         rule_prompt = await self.get_or_create_rule_prompt(rule_id)
-        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
-        rule = rule_res.scalars().first()
+        rule = await resolve_canonical_rule(self.db, rule_id)
 
         ver_res = await self.db.execute(select(PromptVersion).where(PromptVersion.prompt_id == rule_prompt.id))
         existing_versions = ver_res.scalars().all()
@@ -253,8 +254,7 @@ class AgentPolicyEngine:
         Binds cryptographic digests of policy, contract, and rule.
         """
         rule_prompt = await self.get_or_create_rule_prompt(rule_id)
-        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
-        rule = rule_res.scalars().first()
+        rule = await resolve_canonical_rule(self.db, rule_id)
         if not rule:
             raise ValueError(f"SIEM Rule {rule_id} not found")
 
@@ -307,6 +307,8 @@ class AgentPolicyEngine:
                 r_sum = getattr(latest_sim_run, "regression_summary", {}) or {}
                 cfg_snap = getattr(latest_sim_run, "config_snapshot", {}) or {}
                 eligible_gt = m_dict.get("verified_ground_truth_cases", getattr(latest_sim_run, "verified_ground_truth_cases", 0))
+                provider_t = str(cfg_snap.get("provider_type") or ("SIMULATED" if cfg_snap.get("is_simulated") else "UNKNOWN")).upper()
+                is_sim = bool(cfg_snap.get("is_simulated")) or provider_t == "SIMULATED"
                 sim_results = {
                     "sample_count": getattr(latest_sim_run, "total_cases", 0),
                     "eligible_ground_truth_count": eligible_gt,
@@ -315,6 +317,9 @@ class AgentPolicyEngine:
                     "regression_status": r_sum.get("regression_status") or ("NOT_ASSESSED" if not latest_sim_run.baseline_run_id else latest_sim_run.validation_state),
                     "critical_regressions": 1 if latest_sim_run.status == "FAILED" or m_dict.get("critical_false_negatives", 0) > 0 or latest_sim_run.validation_state == "REGRESSION_DETECTED" else 0,
                     "policy_digest": cfg_snap.get("policy_digest"),
+                    "provider_type": provider_t,
+                    "is_simulated": is_sim,
+                    "execution_provenance": cfg_snap.get("execution_provenance"),
                 }
         except Exception as sim_exc:
             logger.warning(f"Simulation lookup warning during approve_version: {sim_exc}")
@@ -399,18 +404,11 @@ class AgentPolicyEngine:
             raise ValueError(f"Target version {target_version_id} not found")
 
         # Validate rollback candidate safety against current rule/contract before activating
-        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
-        rule = rule_res.scalars().first()
+        rule = await resolve_canonical_rule(self.db, rule_id)
         rollback_quality_score = source_version.quality_score
         if rule:
-            semantics = RuleIntelligenceAnalyzer.analyze_rule(rule)
-            classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
-            archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
-            contract = EvidenceRequirementMapper.map_evidence_contract(
-                rule=rule,
-                semantics=semantics,
-                archetype_def=archetype_def,
-                prompt_version=source_version,
+            semantics, contract, _ = await get_rule_semantics_and_contract(
+                self.db, rule, prompt_version=source_version, for_quality_validation=True
             )
             quality_res = PolicyQualityValidator.validate_policy_quality(
                 rule=rule,
@@ -654,8 +652,7 @@ class AgentPolicyEngine:
         return json.dumps(export_data, indent=2), "application/json", f"agent_intelligence_studio_rules_prompts_{timestamp}.json"
 
     async def export_single_rule_prompt(self, rule_id: str, format: str = "json") -> Tuple[str, str, str]:
-        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
-        rule = rule_res.scalars().first()
+        rule = await resolve_canonical_rule(self.db, rule_id)
         if not rule:
             raise ValueError(f"Rule with id {rule_id} not found")
 
@@ -688,8 +685,7 @@ class AgentPolicyEngine:
         from app.schemas.compiled_policy import CompilationExecutionMode
         from app.services.policy_compiler_service import PolicyCompilerService
 
-        rule_res = await self.db.execute(select(Rule).where(Rule.id == rule_id))
-        rule = rule_res.scalars().first()
+        rule = await resolve_canonical_rule(self.db, rule_id)
         if not rule:
             raise ValueError(f"Rule with id {rule_id} not found")
 

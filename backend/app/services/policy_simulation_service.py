@@ -17,12 +17,14 @@ from datetime import datetime
 from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc
+from sqlalchemy import select, and_, or_, desc, func
 from sqlalchemy.orm import selectinload
 
 from app.models.rule import Rule
 from app.models.prompt import PromptVersion, RulePrompt
 from app.models.incident import Incident, HistoricalGroundTruth
+from app.models.investigation import Investigation
+from app.models.token_usage import TokenUsageRecord
 from app.models.verdict_intelligence import (
     VerdictTrustAssessmentRecord,
     EvidenceSufficiencyAssessmentRecord,
@@ -48,6 +50,20 @@ from app.services.historical_ground_truth_validator import HistoricalGroundTruth
 from app.services.empirical_accuracy_evaluator import EmpiricalAccuracyEvaluator
 from app.services.calibration_evaluator import CalibrationEvaluator
 from app.services.evidence_contract_service import EvidenceContractService
+from app.services.policy_governance import (
+    SIMULATED_PROVIDER_TOKENS,
+    RuleMatchContext,
+    build_rule_incident_context,
+    build_rule_incident_sql_filter,
+    get_rule_semantics_and_contract,
+    resolve_canonical_rule,
+    verify_incident_matches_rule,
+)
+from app.services.verdict_pipeline import (
+    PipelineLLMUnavailableError,
+    build_sanitized_model_payload,
+    run_shared_verdict_pipeline,
+)
 
 logger = logging.getLogger("ai_verdict.policy_simulation")
 
@@ -61,11 +77,20 @@ class PolicySimulationService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    @staticmethod
+    def _is_simulated_run(run_rec: HistoricalEvaluationRunRecord) -> bool:
+        cfg = getattr(run_rec, "config_snapshot", None) or {}
+        if cfg.get("is_simulated") is True:
+            return True
+        ptype = str(cfg.get("provider_type") or "").upper().strip()
+        prov = str(cfg.get("execution_provenance") or "").upper().strip()
+        return bool(ptype in SIMULATED_PROVIDER_TOKENS or prov in SIMULATED_PROVIDER_TOKENS)
+
     async def get_rule_calibration_stats(self, rule_id: Optional[str]) -> Dict[str, Any]:
         """
         Queries real empirical validation sample count and measured accuracy from
-        persisted HistoricalGroundTruth and completed HistoricalEvaluationRunRecord data.
-        Never fabricates sample counts or accuracy percentages.
+        persisted HistoricalGroundTruth and completed NON-SIMULATED HistoricalEvaluationRunRecord data.
+        Never fabricates sample counts or accuracy percentages or counts simulated runs as calibrated.
         """
         if not rule_id:
             return {
@@ -75,28 +100,24 @@ class PolicySimulationService:
                 "calibration_status": "UNCALIBRATED",
             }
 
-        rule_ids = {rule_id}
-        try:
-            r_res = await self.db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
-            r_obj = r_res.scalars().first()
-            if r_obj:
-                rule_ids.update({r_obj.id, r_obj.rule_id})
-        except Exception:
-            pass
+        matched_rule = await resolve_canonical_rule(self.db, rule_id)
+        rule_ctx = await build_rule_incident_context(self.db, matched_rule, fallback_rule_id=rule_id)
+        rule_ids = list(rule_ctx.matched_rule_ids or [rule_id])
 
-        # 1. Check latest completed empirical evaluation run for this rule
+        # 1. Check latest completed NON-SIMULATED empirical evaluation run for this rule
         try:
             run_q = (
                 select(HistoricalEvaluationRunRecord)
                 .where(
-                    HistoricalEvaluationRunRecord.rule_id.in_(list(rule_ids)),
+                    HistoricalEvaluationRunRecord.rule_id.in_(rule_ids),
                     HistoricalEvaluationRunRecord.status == "COMPLETED",
                 )
                 .order_by(desc(HistoricalEvaluationRunRecord.completed_at))
-                .limit(1)
+                .limit(10)
             )
             run_res = await self.db.execute(run_q)
-            latest_run = run_res.scalars().first()
+            candidate_runs = run_res.scalars().all()
+            latest_run = next((r for r in candidate_runs if not self._is_simulated_run(r)), None)
             if latest_run and (latest_run.verified_ground_truth_cases or 0) > 0:
                 gt_cases = int(latest_run.verified_ground_truth_cases or 0)
                 metrics = latest_run.metrics or {}
@@ -129,21 +150,31 @@ class PolicySimulationService:
         except Exception as e:
             logger.warning(f"Failed querying completed evaluation runs for rule {rule_id}: {e}")
 
-        # 2. Fallback: count real verified non-ML, non-synthetic, non-duplicate HistoricalGroundTruth records
+        # 2. Fallback: count real verified non-ML, non-disputed, non-synthetic HistoricalGroundTruth records
         try:
+            rule_filter = build_rule_incident_sql_filter(rule_ctx)
             gt_q = (
                 select(Incident, HistoricalGroundTruth)
-                .join(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
+                .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
                 .options(selectinload(Incident.events))
-                .where(
-                    Incident.rule_id.in_(list(rule_ids)),
-                    HistoricalGroundTruth.is_ml_generated == False,
-                )
+                .where(rule_filter)
             )
             gt_res = await self.db.execute(gt_q)
+            inc_rows = gt_res.all()
+            inc_db_ids = [inc_obj.id for inc_obj, _ in inc_rows]
+            inv_map: Dict[str, Investigation] = {}
+            if inc_db_ids:
+                inv_res = await self.db.execute(
+                    select(Investigation).where(Investigation.incident_id.in_(inc_db_ids))
+                )
+                inv_map = {inv.incident_id: inv for inv in inv_res.scalars().all()}
+
             verified_count = 0
             seen_clusters = set()
-            for inc_obj, gt in gt_res.all():
+            for inc_obj, gt in inc_rows:
+                matched, _ = verify_incident_matches_rule(inc_obj, rule_ctx)
+                if not matched:
+                    continue
                 rp = inc_obj.raw_payload
                 if isinstance(rp, str):
                     try:
@@ -157,19 +188,20 @@ class PolicySimulationService:
                 miss_reason, _ = HistoricalGroundTruthValidator.is_missing_evidence(inc_obj, rp)
                 if miss_reason:
                     continue
-                adj, _, _ = HistoricalGroundTruthValidator.adjudicate_label(
-                    raw_resolution=gt.resolution,
-                    analyst_comments=gt.comments,
-                    is_ml_generated=gt.is_ml_generated,
-                    cleared_reason=getattr(gt, "cleared_reason", None),
-                    cleared_user=getattr(gt, "cleared_user", None),
+                adj, ex_code, _, _, _ = HistoricalGroundTruthValidator.adjudicate_incident_ground_truth(
+                    ground_truth=gt,
+                    investigation=inv_map.get(inc_obj.id),
+                    incident=inc_obj,
                 )
-                if adj in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
-                    cluster_key = HistoricalGroundTruthValidator.compute_duplicate_cluster_key(inc_obj, gt, adj.value)
-                    if cluster_key:
-                        if cluster_key in seen_clusters:
-                            continue
-                        seen_clusters.add(cluster_key)
+                if ex_code is None and adj in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
+                    if gt is not None:
+                        cluster_key = HistoricalGroundTruthValidator.compute_duplicate_cluster_key(
+                            inc_obj, gt, adj.value
+                        )
+                        if cluster_key:
+                            if cluster_key in seen_clusters:
+                                continue
+                            seen_clusters.add(cluster_key)
                     verified_count += 1
 
             return {
@@ -188,6 +220,82 @@ class PolicySimulationService:
             "calibration_status": "UNCALIBRATED",
         }
 
+    async def _fetch_scoped_incidents_paginated(
+        self,
+        *,
+        rule_ctx: RuleMatchContext,
+        has_rule_filter: bool,
+        sample_limit: Optional[int],
+        after_epoch: Optional[int],
+        before_epoch: Optional[int],
+        split_partition: Optional[str],
+    ) -> Tuple[int, List[Tuple[Incident, Optional[HistoricalGroundTruth]]]]:
+        """
+        Deterministically paginate rule-scoped incidents (without global top-50 pollution)
+        supporting >50 matching records cleanly.
+        """
+        base_filter = build_rule_incident_sql_filter(rule_ctx) if has_rule_filter else None
+
+        count_q = select(func.count(Incident.id))
+        if base_filter is not None:
+            count_q = count_q.where(base_filter)
+        available_count = int((await self.db.execute(count_q)).scalar() or 0)
+
+        target_partition = (
+            split_partition.value
+            if hasattr(split_partition, "value")
+            else (str(split_partition).upper() if split_partition else None)
+        )
+
+        collected: List[Tuple[Incident, Optional[HistoricalGroundTruth]]] = []
+        seen_ids = set()
+        page_size = 100
+        offset = 0
+
+        while True:
+            page_q = (
+                select(Incident, HistoricalGroundTruth)
+                .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
+                .options(selectinload(Incident.events))
+                .order_by(desc(Incident.created_at), Incident.id.asc())
+                .offset(offset)
+                .limit(page_size)
+            )
+            if base_filter is not None:
+                page_q = page_q.where(base_filter)
+
+            batch = (await self.db.execute(page_q)).all()
+            if not batch:
+                break
+
+            for row in batch:
+                inc_obj = row[0]
+                if inc_obj.id in seen_ids:
+                    continue
+                seen_ids.add(inc_obj.id)
+
+                inc_epoch = inc_obj.first_seen_epoch or inc_obj.created_at_epoch
+                if after_epoch is not None and (inc_epoch is None or inc_epoch < after_epoch):
+                    continue
+                if before_epoch is not None and (inc_epoch is None or inc_epoch > before_epoch):
+                    continue
+                if target_partition:
+                    inc_part = HistoricalGroundTruthValidator.assign_partition(
+                        str(inc_obj.incident_id or inc_obj.id)
+                    ).value
+                    if inc_part != target_partition:
+                        continue
+
+                collected.append(row)
+                if sample_limit is not None and len(collected) >= sample_limit:
+                    return available_count, collected
+
+            if len(batch) < page_size:
+                break
+            offset += page_size
+
+        return available_count, collected
+
     async def run_dry_run_intelligence_evaluation(
         self,
         run_name: str,
@@ -195,148 +303,150 @@ class PolicySimulationService:
         archetype: Optional[str] = None,
         policy_version_id: Optional[str] = None,
         baseline_run_id: Optional[str] = None,
-        sample_limit: int = 50,
+        sample_limit: Optional[int] = 500,
         provider_type: str = "SIMULATED",
         split_partition: Optional[str] = None,
         after_epoch: Optional[int] = None,
         before_epoch: Optional[int] = None,
+        include_unlabeled_replay: bool = False,
+        existing_run_id: Optional[str] = None,
     ) -> HistoricalEvaluationRunRecord:
         """
-        Executes full dry-run intelligence evaluation over historical incidents.
-        Computes Trust Scores, empirical accuracy, calibration, and regression against baseline.
+        Executes empirical historical evaluation using canonical rule isolation, paginated
+        retrieval, human-provenance ground truth gating, and the shared live-parity pipeline.
+        Never mutates live Incident.ai_verdict, Investigation, or SIEM state.
         """
-        # Resolve rule IDs (both internal UUID and rule_identifier) to match incidents robustly
-        rule_ids = [rule_id] if rule_id else []
-        matched_rule: Optional[Rule] = None
-        if rule_id:
-            try:
-                rule_res = await self.db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
-                matched_rule = rule_res.scalars().first()
-                if matched_rule:
-                    rule_ids = list({rule_id, matched_rule.id, matched_rule.rule_id})
-            except Exception as e:
-                logger.warning(f"Failed to resolve rule identifiers for {rule_id}: {e}")
+        provider_upper = str(provider_type or "SIMULATED").upper().strip()
+        is_simulated_run = provider_upper in SIMULATED_PROVIDER_TOKENS
 
-        # Resolve candidate PromptVersion & compile policy if policy_version_id supplied
+        matched_rule = await resolve_canonical_rule(self.db, rule_id) if rule_id else None
+        rule_ctx = await build_rule_incident_context(self.db, matched_rule, fallback_rule_id=rule_id)
+
         candidate_pv: Optional[PromptVersion] = None
-        compiled_policy = None
         policy_digest: Optional[str] = None
         if policy_version_id:
             try:
-                pv_res = await self.db.execute(select(PromptVersion).where(PromptVersion.id == policy_version_id))
+                pv_res = await self.db.execute(
+                    select(PromptVersion).where(PromptVersion.id == policy_version_id)
+                )
                 candidate_pv = pv_res.scalar_one_or_none()
             except Exception as e:
                 logger.warning(f"Failed loading candidate PromptVersion {policy_version_id}: {e}")
 
+        from app.services.policy_quality_validator import PolicyQualityValidator
         if candidate_pv:
-            try:
-                from app.services.policy_compiler_service import PolicyCompilerService
-                from app.schemas.compiled_policy import CompilationExecutionMode
-                from app.services.policy_quality_validator import PolicyQualityValidator
-                compiled_policy = PolicyCompilerService.compile_policy(
-                    rule=matched_rule,
-                    prompt_version=candidate_pv,
-                    execution_mode=CompilationExecutionMode.SIMULATION,
-                    raise_on_unapproved=False,
-                )
-                policy_digest = PolicyQualityValidator.compute_policy_digest(candidate_pv)
-            except Exception as e:
-                logger.warning(f"Failed compiling candidate policy version {policy_version_id}: {e}")
+            policy_digest = PolicyQualityValidator.compute_policy_digest(candidate_pv)
 
-        run_record = HistoricalEvaluationRunRecord(
-            id=str(uuid.uuid4()),
-            run_name=run_name,
-            rule_id=rule_id,
-            archetype=archetype,
-            dataset_id="historical-adjudicated-v1",
-            dataset_hash=str(uuid.uuid4())[:16],
-            policy_version_id=policy_version_id,
-            baseline_run_id=baseline_run_id,
-            status="RUNNING",
-            validation_state=EvaluationValidationState.INCONCLUSIVE.value,
-            metrics={},
-            selective_metrics=[],
-            calibration_metrics={},
-            regression_summary={},
-            config_snapshot={
-                "provider_type": provider_type,
-                "sample_limit": sample_limit,
-                "policy_version_id": policy_version_id,
-                "policy_digest": policy_digest,
-                "split_partition": split_partition.value if hasattr(split_partition, "value") else split_partition,
-                "after_epoch": after_epoch,
-                "before_epoch": before_epoch,
-                "evaluated_at": utc_now().isoformat(),
-            },
-            started_at=utc_now(),
-        )
-        self.db.add(run_record)
+        # Resolve shared semantics & evidence contract (honoring RuleIntelligenceSnapshot)
+        semantics = None
+        contract = None
+        contract_digest = None
+        rule_digest = None
+        if matched_rule:
+            try:
+                semantics, contract, _ = await get_rule_semantics_and_contract(
+                    self.db, matched_rule, prompt_version=candidate_pv
+                )
+                contract_digest = PolicyQualityValidator.compute_contract_digest(contract)
+                rule_digest = PolicyQualityValidator.compute_rule_digest(matched_rule, semantics)
+            except Exception as e:
+                logger.warning(f"Failed resolving shared contract for rule {rule_id}: {e}")
+
+        config_snap: Dict[str, Any] = {
+            "provider_type": provider_upper,
+            "is_simulated": is_simulated_run,
+            "execution_provenance": "SIMULATED" if is_simulated_run else "REAL_LOCAL_LLM",
+            "model_identifier": None,
+            "sample_limit": sample_limit,
+            "policy_version_id": policy_version_id,
+            "policy_digest": policy_digest,
+            "contract_digest": contract_digest,
+            "rule_digest": rule_digest,
+            "canonical_rule_id": matched_rule.id if matched_rule else None,
+            "canonical_rule_identifier": matched_rule.rule_id if matched_rule else rule_id,
+            "unambiguous_event_type": rule_ctx.unambiguous_event_type,
+            "sibling_rules_with_same_event_type": rule_ctx.sibling_rules_with_same_event_type,
+            "include_unlabeled_replay": bool(include_unlabeled_replay),
+            "split_partition": split_partition.value if hasattr(split_partition, "value") else split_partition,
+            "after_epoch": after_epoch,
+            "before_epoch": before_epoch,
+            "certifying_empirical_eligible": False,
+            "evaluated_at": utc_now().isoformat(),
+        }
+
+        run_record: Optional[HistoricalEvaluationRunRecord] = None
+        if existing_run_id:
+            ex_res = await self.db.execute(
+                select(HistoricalEvaluationRunRecord).where(
+                    HistoricalEvaluationRunRecord.id == existing_run_id
+                )
+            )
+            run_record = ex_res.scalar_one_or_none()
+
+        if run_record is None:
+            run_record = HistoricalEvaluationRunRecord(
+                id=existing_run_id or str(uuid.uuid4()),
+                run_name=run_name,
+                rule_id=(matched_rule.id if matched_rule else rule_id),
+                archetype=archetype or (semantics.primary_behavior if semantics else None),
+                dataset_id="historical-adjudicated-v2.1",
+                dataset_hash=str(uuid.uuid4())[:16],
+                policy_version_id=policy_version_id,
+                baseline_run_id=baseline_run_id,
+                status="RUNNING",
+                validation_state=EvaluationValidationState.INCONCLUSIVE.value,
+                metrics={},
+                selective_metrics=[],
+                calibration_metrics={},
+                regression_summary={},
+                config_snapshot=config_snap,
+                started_at=utc_now(),
+            )
+            self.db.add(run_record)
+        else:
+            run_record.status = "RUNNING"
+            run_record.config_snapshot = {**(run_record.config_snapshot or {}), **config_snap}
+            self.db.add(run_record)
         await self.db.flush()
 
-        # 1. Fetch eligible historical incidents with ground truth
-        # Scan candidate historical incidents from dataset
-        scanned_q = (
-            select(Incident, HistoricalGroundTruth)
-            .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
-            .options(selectinload(Incident.events))
-            .order_by(desc(Incident.created_at))
-            .limit(sample_limit)
+        # 1. Canonical Rule-Scoped Paginated Historical Retrieval
+        available_count, rows = await self._fetch_scoped_incidents_paginated(
+            rule_ctx=rule_ctx,
+            has_rule_filter=bool(rule_id),
+            sample_limit=sample_limit,
+            after_epoch=after_epoch,
+            before_epoch=before_epoch,
+            split_partition=split_partition,
         )
-        scanned_res = await self.db.execute(scanned_q)
-        scanned_rows = scanned_res.all()
+        retrieved_count = len(rows)
+        run_record.total_cases = retrieved_count
 
-        # If rule_ids provided, ensure rule-matched incidents are specifically retrieved
-        matched_rows = []
-        if rule_ids:
-            matched_q = (
-                select(Incident, HistoricalGroundTruth)
-                .outerjoin(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
-                .options(selectinload(Incident.events))
-                .where(Incident.rule_id.in_(rule_ids))
-                .order_by(desc(Incident.created_at))
-                .limit(sample_limit)
-            )
-            matched_res = await self.db.execute(matched_q)
-            matched_rows = matched_res.all()
-
-        # Build scanned pool (maintaining deterministic order, uniqueness, time-aware window, and partition filter)
-        seen_ids = set()
-        rows = []
-        target_partition = (
-            split_partition.value if hasattr(split_partition, "value") else (str(split_partition).upper() if split_partition else None)
-        )
-        for r in matched_rows + scanned_rows:
-            inc_obj = r[0]
-            if inc_obj.id in seen_ids:
-                continue
-            inc_epoch = inc_obj.first_seen_epoch or inc_obj.created_at_epoch
-            if after_epoch is not None and (inc_epoch is None or inc_epoch < after_epoch):
-                continue
-            if before_epoch is not None and (inc_epoch is None or inc_epoch > before_epoch):
-                continue
-            if target_partition:
-                inc_part = HistoricalGroundTruthValidator.assign_partition(str(inc_obj.incident_id or inc_obj.id)).value
-                if inc_part != target_partition:
-                    continue
-            seen_ids.add(inc_obj.id)
-            rows.append(r)
-
-        total_cases = len(rows)
-        run_record.total_cases = total_cases
-
-        if total_cases == 0:
+        if retrieved_count == 0:
             run_record.status = "COMPLETED"
             run_record.validation_state = EvaluationValidationState.INSUFFICIENT_DATA.value
             run_record.completed_at = utc_now()
+            run_record.evaluated_cases = 0
+            run_record.verified_ground_truth_cases = 0
             run_record.metrics = {
-                "message": f"Zero historical incidents found in dataset. Empirical evaluation requires at least {self.MIN_HISTORICAL_SAMPLES} samples.",
+                "message": (
+                    f"Zero historical incidents match rule '{rule_id or 'ALL'}' "
+                    f"(0 available). Empirical validation requires at least {self.MIN_HISTORICAL_SAMPLES} verified cases."
+                ),
                 "funnel": {
+                    "available": available_count,
+                    "retrieved": 0,
                     "total_scanned": 0,
                     "rule_matched": 0,
+                    "labeled": 0,
                     "analyst_labeled": 0,
+                    "verified": 0,
                     "eligible": 0,
+                    "independent_group_count": 0,
                     "excluded": 0,
+                    "inferred": 0,
                     "evaluated": 0,
+                    "scored": 0,
+                    "exploratory_replay_count": 0,
                     "exclusion_reasons": {"INSUFFICIENT_SAMPLE_SIZE": 0},
                     "exclusions_detail": [],
                 },
@@ -346,48 +456,39 @@ class PolicySimulationService:
             await self.db.commit()
             return run_record
 
-        # Resolve real historical calibration stats for this rule (never fabricate 85% or count excluded rows)
-        hist_stats = await self.get_rule_calibration_stats(rule_id)
-        hist_sample_count = int(hist_stats.get("sample_count", 0))
-        hist_accuracy = hist_stats.get("accuracy")
-        hist_is_calibrated = bool(hist_stats.get("is_calibrated", False))
-
-        # Resolve Evidence Contract (using candidate version when supplied)
-        contract = None
-        if candidate_pv and matched_rule:
-            try:
-                from app.services.rule_intelligence_analyzer import RuleIntelligenceAnalyzer
-                from app.services.detection_archetype_registry import DetectionArchetypeRegistry
-                from app.services.evidence_requirement_mapper import EvidenceRequirementMapper
-                sem = RuleIntelligenceAnalyzer.analyze_rule(matched_rule)
-                cls_res = DetectionArchetypeRegistry.classify_rule(sem, matched_rule)
-                arch_def = DetectionArchetypeRegistry.get_archetype_definition(cls_res.primary_archetype)
-                contract = EvidenceRequirementMapper.map_evidence_contract(
-                    rule=matched_rule,
-                    semantics=sem,
-                    archetype_def=arch_def,
-                    prompt_version=candidate_pv,
+        # Load Investigations for retrieved incidents to evaluate disputed & human verification flags
+        inc_db_ids = [r[0].id for r in rows]
+        inv_map: Dict[str, Investigation] = {}
+        if inc_db_ids:
+            for i in range(0, len(inc_db_ids), 200):
+                chunk_ids = inc_db_ids[i : i + 200]
+                inv_res = await self.db.execute(
+                    select(Investigation).where(Investigation.incident_id.in_(chunk_ids))
                 )
-            except Exception as e:
-                logger.warning(f"Candidate contract mapping warning for rule {rule_id}: {e}")
+                for inv in inv_res.scalars().all():
+                    inv_map[inv.incident_id] = inv
 
-        if not contract and rule_id:
-            try:
-                contract_srv = EvidenceContractService(self.db)
-                contract = await contract_srv.get_active_contract_for_rule(rule_id)
-            except Exception as e:
-                logger.warning(f"Failed to fetch contract for rule {rule_id}: {e}")
+        hist_stats = await self.get_rule_calibration_stats(matched_rule.id if matched_rule else rule_id)
 
         eval_items: List[Dict[str, Any]] = []
+        exploratory_items: List[Dict[str, Any]] = []
         analyst_labeled_count = 0
         eligible_count = 0
         excluded_count = 0
         duplicate_excluded_count = 0
         synthetic_excluded_count = 0
         rule_matched_count = 0
+        exploratory_replay_count = 0
+        inferred_count = 0
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
+        total_tokens_sum = 0
+        observed_models: List[str] = []
+
         exclusion_reasons: Dict[str, int] = {
             "RULE_MISMATCH": 0,
             "MISSING_ANALYST_LABEL": 0,
+            "DISPUTED_LABEL": 0,
             "AMBIGUOUS_LABEL": 0,
             "CORRUPT_OR_EMPTY_PAYLOAD": 0,
             "MISSING_EVIDENCE": 0,
@@ -403,6 +504,7 @@ class PolicySimulationService:
             "eligible": [],
             "excluded": [],
             "evaluated": [],
+            "exploratory_replay": [],
         }
 
         def _parse_payload(inc_obj: Incident) -> Dict[str, Any]:
@@ -416,26 +518,31 @@ class PolicySimulationService:
                 rp = {}
             return rp
 
-        # Deterministic pre-pass to select primary representative per duplicate closure cluster
+        # Deterministic cluster pre-pass across verified, non-disputed, non-ML rule-matched incidents
         cluster_candidates: Dict[str, Tuple[int, str]] = {}
         for inc_c, gt_c in rows:
-            if rule_ids and (inc_c.rule_id not in rule_ids):
-                continue
+            if rule_id:
+                ok_match, _ = verify_incident_matches_rule(inc_c, rule_ctx)
+                if not ok_match:
+                    continue
             rp_c = _parse_payload(inc_c)
             if HistoricalGroundTruthValidator.is_synthetic_fixture(inc_c, rp_c, gt_c):
                 continue
             miss_c, _ = HistoricalGroundTruthValidator.is_missing_evidence(inc_c, rp_c)
-            if miss_c or not gt_c or not gt_c.resolution:
+            if miss_c:
                 continue
-            adj_c, _, _ = HistoricalGroundTruthValidator.adjudicate_label(
-                raw_resolution=gt_c.resolution,
-                analyst_comments=gt_c.comments,
-                is_ml_generated=gt_c.is_ml_generated,
-                cleared_reason=getattr(gt_c, "cleared_reason", None),
-                cleared_user=getattr(gt_c, "cleared_user", None),
+            adj_c, ex_c, _, _, _ = HistoricalGroundTruthValidator.adjudicate_incident_ground_truth(
+                ground_truth=gt_c,
+                investigation=inv_map.get(inc_c.id),
+                incident=inc_c,
             )
-            if adj_c in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
-                ckey = HistoricalGroundTruthValidator.compute_duplicate_cluster_key(inc_c, gt_c, adj_c.value)
+            if ex_c is None and gt_c is not None and adj_c in (
+                GroundTruthLabel.VERIFIED_TP,
+                GroundTruthLabel.VERIFIED_FP,
+            ):
+                ckey = HistoricalGroundTruthValidator.compute_duplicate_cluster_key(
+                    inc_c, gt_c, adj_c.value
+                )
                 if ckey:
                     ev_score = len(getattr(inc_c, "events", None) or []) + len(rp_c.get("rawEvents") or [])
                     cid_str = str(inc_c.incident_id or inc_c.id)
@@ -446,35 +553,34 @@ class PolicySimulationService:
         for inc, gt in rows:
             inc_id_str = str(inc.incident_id or inc.id)
             inc_rule_str = str(inc.rule_id or "")
+            inv = inv_map.get(inc.id)
 
-            # Enforce strict rule-specific historical incident filtering
-            is_rule_match = True
-            if rule_ids and (inc.rule_id not in rule_ids):
-                is_rule_match = False
-
-            if not is_rule_match:
-                exclusion_reason = "RULE_MISMATCH"
-                target_desc = rule_id or "target rule"
-                exclusion_detail = f"Incident belongs to rule '{inc.rule_id}', not target evaluation rule '{target_desc}'."
-                exclusion_reasons["RULE_MISMATCH"] += 1
-                excluded_count += 1
-                ex_rec = {
-                    "incident_id": inc_id_str,
-                    "rule_id": inc_rule_str,
-                    "reason": exclusion_reason,
-                    "detail": exclusion_detail,
-                }
-                exclusions_detail.append(ex_rec)
-                stage_details["excluded"].append(ex_rec)
-                stage_details["scanned"].append({
-                    "incident_id": inc_id_str,
-                    "rule_id": inc_rule_str,
-                    "status": "EXCLUDED",
-                    "reason": exclusion_reason,
-                    "detail": exclusion_detail,
-                })
-                # Strictly exclude non-matching rule incidents from policy evaluation
-                continue
+            if rule_id:
+                is_match, mismatch_code = verify_incident_matches_rule(inc, rule_ctx)
+                if not is_match:
+                    reason_code = mismatch_code or "RULE_MISMATCH"
+                    exclusion_detail = (
+                        f"Incident '{inc_id_str}' (rule_id='{inc_rule_str}', event_type='{inc.event_type}') "
+                        f"does not canonically match target rule '{rule_id}'."
+                    )
+                    exclusion_reasons[reason_code] = exclusion_reasons.get(reason_code, 0) + 1
+                    excluded_count += 1
+                    ex_rec = {
+                        "incident_id": inc_id_str,
+                        "rule_id": inc_rule_str,
+                        "reason": reason_code,
+                        "detail": exclusion_detail,
+                    }
+                    exclusions_detail.append(ex_rec)
+                    stage_details["excluded"].append(ex_rec)
+                    stage_details["scanned"].append({
+                        "incident_id": inc_id_str,
+                        "rule_id": inc_rule_str,
+                        "status": "EXCLUDED",
+                        "reason": reason_code,
+                        "detail": exclusion_detail,
+                    })
+                    continue
 
             rule_matched_count += 1
             stage_details["scanned"].append({
@@ -482,19 +588,23 @@ class PolicySimulationService:
                 "rule_id": inc_rule_str,
                 "status": "RULE_MATCHED",
                 "reason": None,
-                "detail": f"Matched target rule '{rule_id or inc_rule_str}'",
+                "detail": f"Matched canonical rule '{rule_ctx.canonical_rule_identifier or inc_rule_str}'",
             })
+            has_any_label = bool(
+                (gt and gt.resolution)
+                or (inv and inv.analyst_verdict)
+                or (inv and inv.is_disputed)
+            )
             stage_details["rule_matched"].append({
                 "incident_id": inc_id_str,
                 "rule_id": inc_rule_str,
-                "has_analyst_label": bool(gt and gt.resolution),
-                "resolution": str(gt.resolution) if gt and gt.resolution else None,
+                "has_analyst_label": has_any_label,
+                "resolution": str(gt.resolution) if gt and gt.resolution else (inv.analyst_verdict if inv else None),
             })
 
             raw_payload = _parse_payload(inc)
-
-            # Ground truth adjudication and exclusion tracking
             gt_label = None
+            provenance_source = "NONE"
             exclusion_reason = None
             exclusion_detail = None
 
@@ -510,74 +620,72 @@ class PolicySimulationService:
                 exclusion_reason = missing_code
                 exclusion_detail = missing_detail
                 exclusion_reasons[missing_code] = exclusion_reasons.get(missing_code, 0) + 1
-            elif not gt or not gt.resolution:
-                exclusion_reason = "MISSING_ANALYST_LABEL"
-                exclusion_detail = "Incident has not been closed or labeled by an analyst."
-                exclusion_reasons["MISSING_ANALYST_LABEL"] += 1
             else:
-                analyst_labeled_count += 1
-                stage_details["analyst_labeled"].append({
-                    "incident_id": inc_id_str,
-                    "rule_id": inc_rule_str,
-                    "resolution": str(gt.resolution),
-                    "comments": str(gt.comments or ""),
-                    "is_ml_generated": bool(gt.is_ml_generated),
-                })
-                is_automated_res = HistoricalGroundTruthValidator._is_automated_resolution_text(
-                    is_ml_generated=bool(gt.is_ml_generated),
-                    comments=str(gt.comments or ""),
-                    cleared_reason=str(getattr(gt, "cleared_reason", "") or ""),
-                    cleared_user=str(getattr(gt, "cleared_user", "") or ""),
-                )
-                if is_automated_res:
-                    exclusion_reason = "HEURISTIC_OR_ML_LABEL"
-                    exclusion_detail = "Resolution was generated by previous ML model or automated rule without human verification."
-                    exclusion_reasons["HEURISTIC_OR_ML_LABEL"] += 1
-                else:
-                    adj_label, rel, rat = HistoricalGroundTruthValidator.adjudicate_label(
-                        raw_resolution=gt.resolution,
-                        analyst_comments=gt.comments,
-                        is_ml_generated=gt.is_ml_generated,
-                        cleared_reason=getattr(gt, "cleared_reason", None),
-                        cleared_user=getattr(gt, "cleared_user", None),
+                if has_any_label:
+                    analyst_labeled_count += 1
+                    stage_details["analyst_labeled"].append({
+                        "incident_id": inc_id_str,
+                        "rule_id": inc_rule_str,
+                        "resolution": str(gt.resolution) if gt and gt.resolution else str(getattr(inv, "analyst_verdict", "") or ""),
+                        "comments": str(gt.comments or "") if gt else "",
+                        "is_ml_generated": bool(getattr(gt, "is_ml_generated", False)),
+                        "is_disputed": bool(getattr(inv, "is_disputed", False)),
+                        "is_independently_verified": bool(getattr(inv, "is_independently_verified", False)),
+                    })
+
+                adj_label, adj_ex_code, adj_detail, _, provenance_source = (
+                    HistoricalGroundTruthValidator.adjudicate_incident_ground_truth(
+                        ground_truth=gt,
+                        investigation=inv,
+                        incident=inc,
                     )
-                    if adj_label in (GroundTruthLabel.UNKNOWN, GroundTruthLabel.UNVERIFIED):
-                        exclusion_reason = "AMBIGUOUS_LABEL"
-                        exclusion_detail = f"Analyst resolution '{gt.resolution}' is unverified or inconclusive."
-                        exclusion_reasons["AMBIGUOUS_LABEL"] += 1
-                    elif adj_label == GroundTruthLabel.CONFLICTING:
-                        exclusion_reason = "AMBIGUOUS_LABEL"
-                        exclusion_detail = "Conflicting analyst assessments logged."
-                        exclusion_reasons["AMBIGUOUS_LABEL"] += 1
-                    elif adj_label in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
-                        ckey = HistoricalGroundTruthValidator.compute_duplicate_cluster_key(inc, gt, adj_label.value)
-                        if ckey and cluster_candidates.get(ckey, (0, ""))[1] != inc_id_str:
-                            exclusion_reason = "DUPLICATE_CLUSTER_EXCLUDED"
-                            exclusion_detail = (
-                                f"Duplicate batch-closure cluster '{ckey}' represented by primary incident "
-                                f"'{cluster_candidates[ckey][1]}' to prevent sample-size inflation."
-                            )
-                            exclusion_reasons["DUPLICATE_CLUSTER_EXCLUDED"] += 1
-                            duplicate_excluded_count += 1
-                        else:
-                            eligible_count += 1
-                            gt_label = adj_label.value
-                            weak_fp_note = HistoricalGroundTruthValidator.is_containment_only_fp_note(
+                )
+                if adj_ex_code is not None:
+                    mapped_code = "MISSING_ANALYST_LABEL" if adj_ex_code == "UNLABELED" else adj_ex_code
+                    exclusion_reason = mapped_code
+                    exclusion_detail = adj_detail
+                    exclusion_reasons[mapped_code] = exclusion_reasons.get(mapped_code, 0) + 1
+                elif adj_label in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
+                    ckey = (
+                        HistoricalGroundTruthValidator.compute_duplicate_cluster_key(
+                            inc, gt, adj_label.value
+                        )
+                        if gt is not None
+                        else None
+                    )
+                    if ckey and cluster_candidates.get(ckey, (0, ""))[1] != inc_id_str:
+                        exclusion_reason = "DUPLICATE_CLUSTER_EXCLUDED"
+                        exclusion_detail = (
+                            f"Duplicate batch-closure cluster '{ckey}' represented by primary incident "
+                            f"'{cluster_candidates[ckey][1]}' to prevent sample-size inflation."
+                        )
+                        exclusion_reasons["DUPLICATE_CLUSTER_EXCLUDED"] += 1
+                        duplicate_excluded_count += 1
+                    else:
+                        eligible_count += 1
+                        gt_label = adj_label.value
+                        weak_fp_note = (
+                            HistoricalGroundTruthValidator.is_containment_only_fp_note(
                                 raw_resolution=gt.resolution,
                                 cleared_reason=getattr(gt, "cleared_reason", None),
                                 analyst_comments=gt.comments,
                                 cleared_user=getattr(gt, "cleared_user", None),
                             )
-                            stage_details["eligible"].append({
-                                "incident_id": inc_id_str,
-                                "rule_id": inc_rule_str,
-                                "ground_truth": gt_label,
-                                "resolution": str(gt.resolution),
-                                "comments": str(gt.comments or getattr(gt, "cleared_reason", "") or ""),
-                                "cluster_key": ckey,
-                                "weak_containment_fp_note": weak_fp_note,
-                            })
+                            if gt is not None and provenance_source != "INDEPENDENT_HUMAN_INVESTIGATION"
+                            else False
+                        )
+                        stage_details["eligible"].append({
+                            "incident_id": inc_id_str,
+                            "rule_id": inc_rule_str,
+                            "ground_truth": gt_label,
+                            "provenance": provenance_source,
+                            "resolution": str(gt.resolution) if gt and gt.resolution else str(getattr(inv, "analyst_verdict", "")),
+                            "comments": str((gt.comments if gt else "") or getattr(inv, "verdict_reason", "") or ""),
+                            "cluster_key": ckey,
+                            "weak_containment_fp_note": weak_fp_note,
+                        })
 
+            is_exploratory_only = False
             if exclusion_reason:
                 excluded_count += 1
                 ex_rec = {
@@ -588,138 +696,197 @@ class PolicySimulationService:
                 }
                 exclusions_detail.append(ex_rec)
                 stage_details["excluded"].append(ex_rec)
+                if include_unlabeled_replay and exclusion_reason == "MISSING_ANALYST_LABEL":
+                    is_exploratory_only = True
+                else:
+                    # Strictly exclude ineligible incidents from G8 inference and empirical scoring
+                    continue
 
-            # Build incident payload (enriched with normalized evidence while keeping zero ground-truth leakage)
-            from app.services.evidence_normalization_service import EvidenceNormalizationService
-            norm_res = EvidenceNormalizationService.normalize_incident_evidence(
-                incident=inc,
-                events=getattr(inc, "events", None) or [],
-            )
-            inc_dict = {
-                "id": str(inc.id),
-                "incident_id": str(inc.incident_id or inc.id or "INC-UNKNOWN")[:64],
-                "rule_id": str(inc.rule_id or rule_id or "RULE-UNKNOWN")[:128],
-                "title": inc.title or "",
-                "description": inc.description or "",
-                "source_ip": inc.source_ip or "",
-                "reporting_device": inc.reporting_device or "",
-                "event_type": inc.event_type or "",
-                "severity": inc.severity or "MEDIUM",
-                "category": inc.category or "",
-                "raw_payload": raw_payload,
-                "canonical_evidence": [r.model_dump() for r in norm_res.records],
-                "first_seen_epoch": inc.first_seen_epoch,
-                "last_seen_epoch": inc.last_seen_epoch,
-            }
-
-            # Blind review sanitization: strip answers from model input
-            sanitized_inc = HistoricalGroundTruthValidator.sanitize_incident_for_inference(inc_dict)
-
-            # Generate model proposal honoring configured provider_type and candidate PromptVersion
-            if str(provider_type).upper() == "OPENAI_COMPATIBLE":
-                from app.services.model_provider.factory import get_model_provider
-                llm_provider = get_model_provider("OPENAI_COMPATIBLE")
-                system_prompt = compiled_policy.compiled_system_prompt if compiled_policy else (
-                    getattr(candidate_pv, "rule_specific_prompt", "") or "Analyze security telemetry conservatively."
+            # Run the unified live-parity evaluation pipeline (never mutates live Incident/Investigation)
+            try:
+                pipe_res = await run_shared_verdict_pipeline(
+                    db=self.db,
+                    incident=inc,
+                    rule=matched_rule,
+                    prompt_version=candidate_pv,
+                    active_approved_version=candidate_pv,
+                    model_provider_type=provider_upper,
+                    allow_simulated_fallback=False,
+                    is_simulation=True,
+                    is_prod=False,
+                    execution_context="SIMULATION",
+                    require_autonomous_certification=False,
+                    username="simulation_engine",
+                    historical_stats=hist_stats,
+                    simulated_output_fn=self._simulate_model_output if is_simulated_run else None,
                 )
-                rule_spec = {
-                    "id": matched_rule.id if matched_rule else (rule_id or "RULE-SIM"),
-                    "name": matched_rule.name if matched_rule else (rule_id or "Simulation Rule"),
-                    "severity": matched_rule.severity if matched_rule else "MEDIUM",
+            except PipelineLLMUnavailableError as llm_err:
+                run_record.status = "FAILED"
+                run_record.validation_state = EvaluationValidationState.INCONCLUSIVE.value
+                run_record.completed_at = utc_now()
+                run_record.metrics = {
+                    "error": str(llm_err),
+                    "message": f"Real LLM simulation failed on incident '{inc_id_str}': {llm_err}",
                 }
-                model_res = await llm_provider.analyze_incident(
-                    incident_payload=sanitized_inc,
-                    rule_spec=rule_spec,
-                    prompt_text=system_prompt,
-                    prompt_version_number=getattr(candidate_pv, "version_number", 1) if candidate_pv else 1,
-                )
-                sim_output = model_res.model_dump() if hasattr(model_res, "model_dump") else model_res.dict()
-            else:
-                sim_output = self._simulate_model_output(sanitized_inc, contract, prompt_version=candidate_pv)
+                await self.db.commit()
+                raise RuntimeError(f"Real LLM simulation unavailable: {llm_err}") from llm_err
 
-            # Evaluate Verdict Trustworthiness using real rule-level historical stats
-            trust_res = VerdictTrustworthinessEngine.evaluate_verdict_trust(
-                incident_payload=sanitized_inc,
-                model_output=sim_output,
-                contract=contract,
-                archetype_id=archetype or (getattr(contract, "detection_archetype", None) if contract else None),
-                historical_sample_count=hist_sample_count,
-                historical_accuracy=hist_accuracy,
-                is_calibrated=hist_is_calibrated,
+            inferred_count += 1
+            total_prompt_tokens += pipe_res.prompt_tokens
+            total_completion_tokens += pipe_res.completion_tokens
+            total_tokens_sum += pipe_res.total_tokens
+
+            model_ident = str(
+                pipe_res.verdict_data.get("model_identifier")
+                or ("simulated-v2.2-policy-aware" if is_simulated_run else "OPENAI_COMPATIBLE")
+            )
+            if model_ident and model_ident not in observed_models:
+                observed_models.append(model_ident)
+
+            self.db.add(
+                TokenUsageRecord(
+                    process_type="POLICY_SIMULATION",
+                    process_id=run_record.id,
+                    incident_id=inc_id_str,
+                    rule_id=str(rule_ctx.canonical_rule_identifier or inc_rule_str or inc.event_type),
+                    model_identifier=model_ident,
+                    prompt_tokens=pipe_res.prompt_tokens,
+                    completion_tokens=pipe_res.completion_tokens,
+                    total_tokens=pipe_res.total_tokens,
+                    latency_ms=int(pipe_res.verdict_data.get("latency_ms") or 0),
+                    is_simulated=bool(pipe_res.verdict_data.get("is_simulated", is_simulated_run)),
+                    executed_by_user="simulation_engine",
+                    timestamp=utc_now(),
+                    details={
+                        "run_id": run_record.id,
+                        "provider_type": pipe_res.provider_type_used,
+                        "execution_provenance": pipe_res.verdict_prov.get("execution_provenance"),
+                        "is_exploratory": is_exploratory_only,
+                    },
+                )
             )
 
-            # Correctness evaluation
+            eff_verdict = pipe_res.effective_verdict
             is_correct = None
             is_critical_error = False
-            if gt_label in (GroundTruthLabel.VERIFIED_TP.value, GroundTruthLabel.VERIFIED_FP.value):
-                if trust_res.effective_verdict.value == UserVisibleVerdict.TRUE_POSITIVE.value:
-                    is_correct = (gt_label == GroundTruthLabel.VERIFIED_TP.value)
-                elif trust_res.effective_verdict.value == UserVisibleVerdict.FALSE_POSITIVE.value:
-                    is_correct = (gt_label == GroundTruthLabel.VERIFIED_FP.value)
+            if not is_exploratory_only and gt_label in (
+                GroundTruthLabel.VERIFIED_TP.value,
+                GroundTruthLabel.VERIFIED_FP.value,
+            ):
+                if eff_verdict == UserVisibleVerdict.TRUE_POSITIVE.value:
+                    is_correct = gt_label == GroundTruthLabel.VERIFIED_TP.value
+                elif eff_verdict == UserVisibleVerdict.FALSE_POSITIVE.value:
+                    is_correct = gt_label == GroundTruthLabel.VERIFIED_FP.value
                     if gt_label == GroundTruthLabel.VERIFIED_TP.value:
-                        is_critical_error = True  # Missed TP
+                        is_critical_error = True
 
-            # Record per-incident result
+            norm_records_dump = pipe_res.verdict_data.get("supporting_claims") or []
+            ev_snap_hash = hashlib.sha256(
+                json.dumps(
+                    [r.model_dump() for r in pipe_res.norm_result.records]
+                    if pipe_res.norm_result
+                    else norm_records_dump,
+                    sort_keys=True,
+                    default=str,
+                ).encode("utf-8")
+            ).hexdigest()
+
             result_record = HistoricalEvaluationResultRecord(
                 id=str(uuid.uuid4()),
                 run_id=run_record.id,
-                incident_id=str(inc.incident_id or inc.id or "INC-UNKNOWN")[:64],
+                incident_id=inc_id_str[:64],
                 rule_id=str(inc.rule_id or rule_id or "RULE-UNKNOWN")[:128],
-                suggested_verdict=str(trust_res.suggested_verdict or "REQUIRES_ATTENTION")[:32],
-                effective_verdict=str(trust_res.effective_verdict.value)[:32],
-                ground_truth_label=str(gt_label)[:32] if gt_label else None,
-                trust_score=trust_res.trust_score,
-                raw_trust_score=trust_res.raw_trust_score,
-                evidence_sufficiency_score=trust_res.evidence_sufficiency_score,
-                evidence_status=str(trust_res.evidence_status.value)[:32],
+                suggested_verdict=str(pipe_res.proposed_verdict or "REQUIRES_ATTENTION")[:32],
+                effective_verdict=str(eff_verdict)[:32],
+                ground_truth_label=("UNLABELED_EXPLORATORY" if is_exploratory_only else str(gt_label)[:32]),
+                trust_score=int(pipe_res.trust_score),
+                raw_trust_score=int(pipe_res.raw_trust_score),
+                evidence_sufficiency_score=float(
+                    pipe_res.verdict_data.get("evidence_sufficiency_score") or 0.0
+                ),
+                evidence_status=str(pipe_res.evidence_status)[:32],
                 is_correct=is_correct,
-                is_abstained=(trust_res.effective_verdict == UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION),
+                is_abstained=bool(pipe_res.is_abstained),
                 is_critical_error=is_critical_error,
                 claims_summary={
-                    "supporting_evidence": trust_res.supporting_evidence,
-                    "contradictions": trust_res.contradictory_evidence,
-                    "missing": trust_res.missing_evidence,
+                    "supporting_evidence": pipe_res.verdict_data.get("supporting_evidence", []),
+                    "contradictions": pipe_res.verdict_data.get("detected_contradictions", []),
+                    "missing": pipe_res.verdict_data.get("missing_evidence", []),
                     "exclusion_reason": exclusion_reason,
+                    "is_exploratory": is_exploratory_only,
+                    "ground_truth_provenance": provenance_source,
                     "policy_version_id": policy_version_id,
                     "policy_digest": policy_digest,
-                    "model_identifier": trust_res.model_identifier,
-                    "is_simulated": trust_res.is_simulated,
+                    "provider_type": pipe_res.provider_type_used,
+                    "execution_provenance": pipe_res.verdict_prov.get("execution_provenance"),
+                    "model_identifier": model_ident,
+                    "is_simulated": bool(pipe_res.verdict_data.get("is_simulated", is_simulated_run)),
+                    "prompt_tokens": pipe_res.prompt_tokens,
+                    "completion_tokens": pipe_res.completion_tokens,
+                    "total_tokens": pipe_res.total_tokens,
+                    "evidence_trace": pipe_res.evidence_trace,
                     "partition": HistoricalGroundTruthValidator.assign_partition(inc_id_str).value,
-                    "evidence_snapshot_hash": hashlib.sha256(
-                        json.dumps(sanitized_inc.get("canonical_evidence") or [], sort_keys=True, default=str).encode("utf-8")
-                    ).hexdigest(),
+                    "evidence_snapshot_hash": ev_snap_hash,
                 },
-                escalation_reason=str(trust_res.escalation_reason)[:256] if trust_res.escalation_reason else None,
+                escalation_reason=str(pipe_res.escalation_reason)[:256]
+                if pipe_res.escalation_reason
+                else None,
                 created_at=utc_now(),
             )
             self.db.add(result_record)
 
+            if is_exploratory_only:
+                exploratory_replay_count += 1
+                exploratory_items.append({
+                    "incident_id": inc_id_str,
+                    "rule_id": inc.rule_id,
+                    "suggested_verdict": pipe_res.proposed_verdict,
+                    "effective_verdict": eff_verdict,
+                    "trust_score": pipe_res.trust_score,
+                    "evidence_status": pipe_res.evidence_status,
+                    "validation_status": pipe_res.verdict_data.get("validation_status"),
+                    "is_exploratory": True,
+                })
+                continue
+
             eval_items.append({
-                "incident_id": inc.incident_id,
+                "incident_id": inc_id_str,
                 "rule_id": inc.rule_id,
-                "suggested_verdict": trust_res.suggested_verdict,
-                "effective_verdict": trust_res.effective_verdict.value,
+                "suggested_verdict": pipe_res.proposed_verdict,
+                "effective_verdict": eff_verdict,
                 "ground_truth_label": gt_label,
-                "trust_score": trust_res.trust_score,
-                "raw_trust_score": trust_res.raw_trust_score,
-                "evidence_status": trust_res.evidence_status.value,
+                "ground_truth_provenance": provenance_source,
+                "trust_score": pipe_res.trust_score,
+                "raw_trust_score": pipe_res.raw_trust_score,
+                "evidence_status": pipe_res.evidence_status,
                 "is_correct": is_correct,
-                "escalation_reason": trust_res.escalation_reason,
+                "escalation_reason": pipe_res.escalation_reason,
+                "provider_type": pipe_res.provider_type_used,
+                "model_identifier": model_ident,
+                "evidence_trace": pipe_res.evidence_trace,
             })
 
         stage_details["evaluated"] = eval_items
+        stage_details["exploratory_replay"] = exploratory_items
 
-        # 3. Calculate Empirical Accuracy & Uncertainty Metrics with Funnel
+        # 3. Calculate Empirical Accuracy & Uncertainty Metrics Strictly on Verified Eligible Items
         funnel_model = IncidentEligibilityFunnel(
-            total_scanned=total_cases,
+            available=available_count,
+            retrieved=retrieved_count,
+            total_scanned=retrieved_count,
             rule_matched=rule_matched_count,
+            labeled=analyst_labeled_count,
             analyst_labeled=analyst_labeled_count,
+            verified=eligible_count,
             eligible=eligible_count,
             independent_group_count=eligible_count,
             excluded=excluded_count,
             duplicate_excluded_count=duplicate_excluded_count,
             synthetic_excluded_count=synthetic_excluded_count,
+            inferred=inferred_count,
             evaluated=len(eval_items),
+            scored=len(eval_items),
+            exploratory_replay_count=exploratory_replay_count,
             exclusion_reasons=exclusion_reasons,
             exclusions_detail=[IncidentExclusionRecord(**ex) for ex in exclusions_detail[:500]],
             stage_details=stage_details,
@@ -730,36 +897,50 @@ class PolicySimulationService:
         metrics_dict["stage_details"] = stage_details
 
         if rule_matched_count < self.MIN_HISTORICAL_SAMPLES or eligible_count < self.MIN_HISTORICAL_SAMPLES:
-            run_record.validation_state = EvaluationValidationState.INSUFFICIENT_DATA.value
-            target_desc = rule_id or "target rule"
-            if rule_matched_count == 0:
-                metrics_dict["message"] = (
-                    f"Zero historical incidents in the evaluation dataset match rule '{target_desc}' "
-                    f"(0/{total_cases} scanned). Insufficient verified ground-truth cases (N=0 < {self.MIN_HISTORICAL_SAMPLES})."
-                )
-            else:
-                metrics_dict["message"] = (
-                    f"Evaluated {len(eval_items)} historical incidents ({rule_matched_count} rule-matched from {total_cases} scanned). "
-                    f"Insufficient verified ground-truth cases (N_eligible = {eligible_count} < {self.MIN_HISTORICAL_SAMPLES}) for empirical accuracy validation."
-                )
+            metrics_dict["message"] = (
+                f"Retrieved {retrieved_count} matching historical incidents ({rule_matched_count} rule-matched, "
+                f"{eligible_count} verified ground-truth cases < {self.MIN_HISTORICAL_SAMPLES} required)."
+            )
+        elif is_simulated_run:
+            metrics_dict["message"] = (
+                f"Dry-run SIMULATED evaluation scored {len(eval_items)} verified cases ({excluded_count} excluded). "
+                "SIMULATED outputs do not certify empirical G8."
+            )
         else:
             metrics_dict["message"] = (
-                f"Evaluated {len(eval_items)} historical incidents ({eligible_count} verified ground-truth cases, {excluded_count} excluded)."
+                f"Empirical evaluation scored {len(eval_items)} verified cases via {provider_upper} ({excluded_count} excluded)."
             )
 
         run_record.metrics = metrics_dict
         run_record.evaluated_cases = len(eval_items)
         run_record.verified_ground_truth_cases = metrics.verified_ground_truth_cases
+        run_record.config_snapshot = {
+            **(run_record.config_snapshot or {}),
+            "model_identifier": observed_models[0] if observed_models else (
+                "simulated-v2.2-policy-aware" if is_simulated_run else None
+            ),
+            "observed_models": observed_models,
+            "total_prompt_tokens": total_prompt_tokens,
+            "total_completion_tokens": total_completion_tokens,
+            "total_tokens": total_tokens_sum,
+            "inferred_count": inferred_count,
+            "scored_count": len(eval_items),
+            "exploratory_replay_count": exploratory_replay_count,
+        }
 
-        # 4. Generate Risk-Coverage Curve
+        # 4. Generate Risk-Coverage Curve (never computed on exploratory/excluded items)
         risk_coverage = EmpiricalAccuracyEvaluator.generate_risk_coverage_curve(eval_items)
         run_record.selective_metrics = [rc.model_dump() for rc in risk_coverage]
 
         # 5. Evaluate Calibration
         calib_report = CalibrationEvaluator.evaluate_calibration(eval_items)
-        run_record.calibration_metrics = calib_report.model_dump()
+        calib_dict = calib_report.model_dump()
+        if is_simulated_run:
+            calib_dict["is_calibrated"] = False
+            calib_dict["status"] = "SIMULATED_NOT_CALIBRATED"
+        run_record.calibration_metrics = calib_dict
 
-        # 6. Baseline Regression Comparison if baseline_run_id supplied
+        # 6. Determine Authoritative Empirical Validation State
         if baseline_run_id:
             reg_report = await self.compare_runs(baseline_run_id=baseline_run_id, candidate_run_id=run_record.id)
             run_record.regression_summary = reg_report.model_dump()
@@ -767,17 +948,24 @@ class PolicySimulationService:
                 run_record.validation_state = EvaluationValidationState.REGRESSION_DETECTED.value
             elif eligible_count < self.MIN_HISTORICAL_SAMPLES:
                 run_record.validation_state = EvaluationValidationState.INSUFFICIENT_DATA.value
+            elif is_simulated_run:
+                run_record.validation_state = EvaluationValidationState.INCONCLUSIVE.value
             elif reg_report.validation_state in (EvaluationValidationState.VALIDATED, EvaluationValidationState.PASS):
                 run_record.validation_state = EvaluationValidationState.VALIDATED.value
+                run_record.config_snapshot = {**(run_record.config_snapshot or {}), "certifying_empirical_eligible": True}
             else:
                 run_record.validation_state = reg_report.validation_state.value
         else:
             if eligible_count < self.MIN_HISTORICAL_SAMPLES:
                 run_record.validation_state = EvaluationValidationState.INSUFFICIENT_DATA.value
-            elif metrics.overall_accuracy is not None and metrics.overall_accuracy >= 0.80 and metrics.critical_false_negatives == 0:
-                run_record.validation_state = EvaluationValidationState.VALIDATED.value
             elif metrics.critical_false_negatives > 0:
                 run_record.validation_state = EvaluationValidationState.REGRESSION_DETECTED.value
+            elif is_simulated_run:
+                run_record.validation_state = EvaluationValidationState.INCONCLUSIVE.value
+                run_record.config_snapshot = {**(run_record.config_snapshot or {}), "dry_run_validation_state": "SIMULATED_NON_CERTIFYING"}
+            elif metrics.overall_accuracy is not None and metrics.overall_accuracy >= 0.80 and metrics.critical_false_negatives == 0:
+                run_record.validation_state = EvaluationValidationState.VALIDATED.value
+                run_record.config_snapshot = {**(run_record.config_snapshot or {}), "certifying_empirical_eligible": True}
             else:
                 run_record.validation_state = EvaluationValidationState.INCONCLUSIVE.value
 
@@ -1044,22 +1232,34 @@ class PolicySimulationService:
                 "is_simulated": True,
             }
 
-    # REQ-07 Legacy compatibility method for AIS 2.0 Gate G8
+    # REQ-07 Compatibility & AIS 2.1 Governed Simulation Evaluator
     async def evaluate_candidate_policy(
         self,
         rule_id: str,
         candidate_version: Optional[PromptVersion] = None,
         baseline_version: Optional[PromptVersion] = None,
+        provider_type: str = "SIMULATED",
+        sample_limit: Optional[int] = 500,
+        include_unlabeled_replay: bool = False,
+        existing_run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Maintains 100% backward compatibility with AIS 2.0 G8 approval check,
-        while strictly reporting truthful empirical accuracy, eligibility funnels,
-        and version-aware regression comparisons.
+        Executes empirical policy simulation on rule-matched historical incidents.
+        Separates SIMULATED dry-runs (non-certifying for Gate G8) from real
+        OPENAI_COMPATIBLE empirical evaluations, reporting the full 8-stage funnel.
         """
         version_num = getattr(candidate_version, "version_number", 1) if candidate_version else 1
         pv_id = str(getattr(candidate_version, "id", "")) if candidate_version else None
+        provider_upper = str(provider_type or "SIMULATED").upper().strip()
 
-        # Look up baseline run if baseline_version is provided and distinct from candidate
+        matched_rule = await resolve_canonical_rule(self.db, rule_id)
+        scope_rule_ids = (
+            list(dict.fromkeys([x for x in (rule_id, matched_rule.id, matched_rule.rule_id) if x]))
+            if matched_rule
+            else [rule_id]
+        )
+
+        # Look up baseline run ONLY if baseline_version is provided, distinct, and compatible
         baseline_run_id = None
         cand_id_str = str(getattr(candidate_version, "id", "")) if candidate_version else ""
         if baseline_version and getattr(baseline_version, "id", None) and str(baseline_version.id) != cand_id_str:
@@ -1068,46 +1268,43 @@ class PolicySimulationService:
                     select(HistoricalEvaluationRunRecord)
                     .where(
                         HistoricalEvaluationRunRecord.policy_version_id == str(baseline_version.id),
-                        HistoricalEvaluationRunRecord.rule_id == rule_id,
+                        HistoricalEvaluationRunRecord.rule_id.in_(scope_rule_ids),
                         HistoricalEvaluationRunRecord.status == "COMPLETED",
                     )
                     .order_by(desc(HistoricalEvaluationRunRecord.completed_at))
-                    .limit(1)
+                    .limit(10)
                 )
                 base_run_res = await self.db.execute(base_run_q)
-                base_run = base_run_res.scalars().first()
-                if base_run and base_run.total_cases >= self.MIN_HISTORICAL_SAMPLES:
-                    baseline_run_id = base_run.id
+                base_candidates = base_run_res.scalars().all()
+                for base_run in base_candidates:
+                    if provider_upper == "OPENAI_COMPATIBLE" and self._is_simulated_run(base_run):
+                        continue
+                    if (base_run.verified_ground_truth_cases or base_run.total_cases or 0) >= self.MIN_HISTORICAL_SAMPLES:
+                        baseline_run_id = base_run.id
+                        break
             except Exception as e:
                 logger.warning(f"Failed to lookup baseline run: {e}")
 
         run = await self.run_dry_run_intelligence_evaluation(
-            run_name=f"G8 Regression Gate Check (v{version_num})",
+            run_name=f"G8 Empirical Gate Evaluation (v{version_num}, {provider_upper})",
             rule_id=rule_id,
             policy_version_id=pv_id,
             baseline_run_id=baseline_run_id,
-            sample_limit=50,
+            sample_limit=sample_limit,
+            provider_type=provider_upper,
+            include_unlabeled_replay=include_unlabeled_replay,
+            existing_run_id=existing_run_id,
         )
 
         metrics = run.metrics or {}
+        cfg_snap = run.config_snapshot or {}
         reg_summary = run.regression_summary or {}
         funnel_data = metrics.get("funnel") or {}
-        eligible_gt_cases = metrics.get("verified_ground_truth_cases", 0)
+        eligible_gt_cases = int(metrics.get("verified_ground_truth_cases") or 0)
+        rule_matched_cases = int(funnel_data.get("rule_matched", run.total_cases) or 0)
+        is_simulated_run = self._is_simulated_run(run) or (provider_upper in SIMULATED_PROVIDER_TOKENS)
 
-        # 1. Distinct Empirical Validation Status (requires minimum 5 verified ground truth cases)
-        if eligible_gt_cases < self.MIN_HISTORICAL_SAMPLES:
-            empirical_validation_status = "INSUFFICIENT_DATA"
-        elif int(metrics.get("critical_false_negatives") or 0) > 0:
-            empirical_validation_status = "EVALUATED_FAILED"
-        elif (
-            (metrics.get("overall_accuracy") is not None and float(metrics["overall_accuracy"]) >= 0.80)
-            or (metrics.get("balanced_accuracy") is not None and float(metrics["balanced_accuracy"]) >= 0.80)
-        ):
-            empirical_validation_status = "EVALUATED_PASSED"
-        else:
-            empirical_validation_status = "INCONCLUSIVE"
-
-        # 2. Distinct Regression Status (NOT_ASSESSED if no baseline run exists)
+        # 1. Determine Baseline Regression Status
         if not baseline_run_id:
             regression_status = "NOT_ASSESSED"
             reg_detected = False
@@ -1125,36 +1322,52 @@ class PolicySimulationService:
             )
             reg_detected = bool(regression_status == "REGRESSION_DETECTED")
 
-        # 3. Overall Simulation Status
-        sim_status = SimulationStatus.EVALUATED_PASSED.value
-        if empirical_validation_status == "INSUFFICIENT_DATA" or run.total_cases < self.MIN_HISTORICAL_SAMPLES:
+        # 2. Strict Empirical Validation Status (SIMULATED never passes G8)
+        if eligible_gt_cases < self.MIN_HISTORICAL_SAMPLES or rule_matched_cases < self.MIN_HISTORICAL_SAMPLES:
+            empirical_validation_status = "INSUFFICIENT_DATA"
             sim_status = SimulationStatus.INSUFFICIENT_DATA.value
-        elif empirical_validation_status == "EVALUATED_FAILED" or reg_detected:
-            sim_status = SimulationStatus.EVALUATED_FAILED.value
-        elif empirical_validation_status == "INCONCLUSIVE":
-            sim_status = SimulationStatus.INCONCLUSIVE.value
-
-        if sim_status == SimulationStatus.EVALUATED_PASSED.value:
-            status_str = "PASSED"
-        elif sim_status == SimulationStatus.INSUFFICIENT_DATA.value:
             status_str = "INSUFFICIENT_DATA"
-        elif sim_status == SimulationStatus.INCONCLUSIVE.value:
-            status_str = "INCONCLUSIVE"
-        else:
+        elif int(metrics.get("critical_false_negatives") or 0) > 0 or reg_detected:
+            empirical_validation_status = "EVALUATED_FAILED"
+            sim_status = SimulationStatus.EVALUATED_FAILED.value
             status_str = "FAILED"
+        elif is_simulated_run:
+            empirical_validation_status = "SIMULATED_ONLY_NOT_CERTIFYING"
+            sim_status = SimulationStatus.NOT_EVALUATED.value
+            status_str = "SIMULATED_ONLY"
+        elif (
+            (metrics.get("overall_accuracy") is not None and float(metrics["overall_accuracy"]) >= 0.80)
+            or (metrics.get("balanced_accuracy") is not None and float(metrics["balanced_accuracy"]) >= 0.80)
+        ):
+            empirical_validation_status = "EVALUATED_PASSED"
+            sim_status = SimulationStatus.EVALUATED_PASSED.value
+            status_str = "PASSED"
+        else:
+            empirical_validation_status = "INCONCLUSIVE"
+            sim_status = SimulationStatus.INCONCLUSIVE.value
+            status_str = "INCONCLUSIVE"
 
-        # 4. Truthful messaging: resolve the 24 evaluated vs INSUFFICIENT_DATA / INCONCLUSIVE mismatch
+        # 3. Truthful message with provider provenance
         if sim_status == SimulationStatus.INSUFFICIENT_DATA.value:
-            if run.total_cases >= self.MIN_HISTORICAL_SAMPLES and eligible_gt_cases < self.MIN_HISTORICAL_SAMPLES:
-                msg = f"Evaluated {run.total_cases} historical incidents. Empirical accuracy based on {eligible_gt_cases} eligible analyst-labeled incidents ({run.total_cases - eligible_gt_cases} excluded; minimum {self.MIN_HISTORICAL_SAMPLES} required)."
-            else:
-                msg = f"Insufficient historical incidents (N={run.total_cases} < {self.MIN_HISTORICAL_SAMPLES}). Empirical evaluation requires at least {self.MIN_HISTORICAL_SAMPLES} samples."
-        elif reg_detected:
-            msg = f"REGRESSION DETECTED: Policy candidate introduced critical regressions against approved baseline."
+            msg = (
+                f"Retrieved {funnel_data.get('retrieved', run.total_cases)} rule-matched historical incidents; "
+                f"empirical validation has {eligible_gt_cases} verified ground-truth cases "
+                f"({funnel_data.get('excluded', 0)} excluded; minimum {self.MIN_HISTORICAL_SAMPLES} required)."
+            )
+        elif reg_detected or sim_status == SimulationStatus.EVALUATED_FAILED.value:
+            msg = "FAILED: Historical simulation detected critical regressions or unacceptable critical false negatives."
+        elif is_simulated_run:
+            msg = (
+                f"Dry-run SIMULATED evaluation completed on {eligible_gt_cases} verified ground-truth cases. "
+                "SIMULATED outputs are non-certifying for empirical Gate G8; execute with OPENAI_COMPATIBLE to certify."
+            )
         elif sim_status == SimulationStatus.INCONCLUSIVE.value:
             msg = f"Simulation INCONCLUSIVE on {run.total_cases} historical incidents ({eligible_gt_cases} verified cases; 0% decisive coverage or inconclusive accuracy)."
         else:
-            msg = reg_summary.get("summary_message") if baseline_run_id else f"Simulation PASSED on {run.total_cases} historical incidents ({eligible_gt_cases} verified ground-truth cases)."
+            msg = reg_summary.get("summary_message") if baseline_run_id else (
+                f"Empirical simulation PASSED with real provider '{cfg_snap.get('provider_type')}' "
+                f"on {eligible_gt_cases} verified ground-truth cases."
+            )
 
         def _to_optional_float(v: Any) -> Optional[float]:
             if v is None:
@@ -1168,7 +1381,7 @@ class PolicySimulationService:
         res_q = (
             select(HistoricalEvaluationResultRecord)
             .where(HistoricalEvaluationResultRecord.run_id == run.id)
-            .limit(50)
+            .limit(100)
         )
         res_exec = await self.db.execute(res_q)
         eval_results_db = res_exec.scalars().all()
@@ -1186,6 +1399,11 @@ class PolicySimulationService:
                 "is_abstained": r.is_abstained,
                 "is_critical_error": r.is_critical_error,
                 "escalation_reason": r.escalation_reason,
+                "is_exploratory": bool((r.claims_summary or {}).get("is_exploratory", False)),
+                "provider_type": (r.claims_summary or {}).get("provider_type", cfg_snap.get("provider_type")),
+                "model_identifier": (r.claims_summary or {}).get("model_identifier", cfg_snap.get("model_identifier")),
+                "execution_provenance": (r.claims_summary or {}).get("execution_provenance", cfg_snap.get("execution_provenance")),
+                "evidence_trace": (r.claims_summary or {}).get("evidence_trace"),
             }
             for r in eval_results_db
         ]
@@ -1193,14 +1411,26 @@ class PolicySimulationService:
         return {
             "status": status_str,
             "simulation_status": sim_status,
+            "empirical_validation_status": empirical_validation_status,
+            "certifying_empirical_eligible": (not is_simulated_run and sim_status == SimulationStatus.EVALUATED_PASSED.value),
+            "provider_type": cfg_snap.get("provider_type", provider_upper),
+            "is_simulated": is_simulated_run,
+            "execution_provenance": cfg_snap.get("execution_provenance", "SIMULATED" if is_simulated_run else "REAL_LOCAL_LLM"),
+            "model_identifier": cfg_snap.get("model_identifier"),
             "sample_count": run.total_cases,
-            "evaluated_cases": run.evaluated_cases or run.total_cases,
+            "available_count": funnel_data.get("available", run.total_cases),
+            "retrieved_count": funnel_data.get("retrieved", run.total_cases),
+            "evaluated_cases": run.evaluated_cases or 0,
+            "inferred_count": funnel_data.get("inferred", run.evaluated_cases or 0),
+            "scored_count": funnel_data.get("scored", run.evaluated_cases or 0),
+            "exploratory_replay_count": funnel_data.get("exploratory_replay_count", 0),
             "total_scanned": funnel_data.get("total_scanned", run.total_cases),
-            "rule_matched": funnel_data.get("rule_matched", run.total_cases),
+            "rule_matched": rule_matched_cases,
             "analyst_labeled": funnel_data.get("analyst_labeled", eligible_gt_cases),
+            "verified_count": funnel_data.get("verified", eligible_gt_cases),
             "eligible_ground_truth_count": eligible_gt_cases,
             "verified_ground_truth_cases": eligible_gt_cases,
-            "excluded_count": funnel_data.get("excluded", max(0, run.total_cases - eligible_gt_cases)),
+            "excluded_count": funnel_data.get("excluded", max(0, rule_matched_cases - eligible_gt_cases)),
             "exclusion_reasons": funnel_data.get("exclusion_reasons", {}),
             "exclusions_detail": funnel_data.get("exclusions_detail", []),
             "stage_details": funnel_data.get("stage_details") or metrics.get("stage_details") or {},
@@ -1210,7 +1440,6 @@ class PolicySimulationService:
             "critical_regressions": int(metrics.get("critical_false_negatives") or 0),
             "regression_detected": reg_detected,
             "regression_status": regression_status,
-            "empirical_validation_status": empirical_validation_status,
             "abstention_rate": _to_optional_float(metrics.get("analyst_attention_rate") if metrics.get("analyst_attention_rate") is not None else metrics.get("abstention_rate")),
             "balanced_accuracy": _to_optional_float(metrics.get("balanced_accuracy")),
             "precision": _to_optional_float(metrics.get("precision")),
@@ -1233,7 +1462,13 @@ class PolicySimulationService:
                 "unverified": int(metrics.get("unverified_cases", 0)),
             },
             "run_id": str(run.id),
-            "policy_digest": (run.config_snapshot or {}).get("policy_digest"),
+            "policy_version_id": pv_id,
+            "policy_digest": cfg_snap.get("policy_digest"),
+            "token_usage": {
+                "prompt_tokens": int(cfg_snap.get("total_prompt_tokens", 0)),
+                "completion_tokens": int(cfg_snap.get("total_completion_tokens", 0)),
+                "total_tokens": int(cfg_snap.get("total_tokens", 0)),
+            },
             "is_calibrated": bool(run.calibration_metrics.get("is_calibrated", False)),
             "calibration_status": run.calibration_metrics.get("status", "NOT_CALIBRATED"),
             "brier_score": _to_optional_float(run.calibration_metrics.get("brier_score")),

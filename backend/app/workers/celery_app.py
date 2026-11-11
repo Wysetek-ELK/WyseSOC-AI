@@ -44,6 +44,7 @@ try:
         },
         task_routes={
             "app.workers.tasks.triage_incident_task": {"queue": "live_triage"},
+            "app.workers.tasks.run_policy_simulation_task": {"queue": "simulation_replay"},
         },
     )
 except ImportError:

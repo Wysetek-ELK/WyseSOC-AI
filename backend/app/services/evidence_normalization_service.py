@@ -55,8 +55,16 @@ FIELD_MAPPINGS: Dict[str, Dict[str, str]] = {
     "destinationip": {"field": "network.destination_ip", "type": "NETWORK_CONNECTION"},
     "srcport": {"field": "network.source_port", "type": "NETWORK_CONNECTION"},
     "src_port": {"field": "network.source_port", "type": "NETWORK_CONNECTION"},
+    "source_port": {"field": "network.source_port", "type": "NETWORK_CONNECTION"},
+    "sourceport": {"field": "network.source_port", "type": "NETWORK_CONNECTION"},
+    "source port": {"field": "network.source_port", "type": "NETWORK_CONNECTION"},
     "destport": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
     "dest_port": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
+    "destinationport": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
+    "destination_port": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
+    "destination port": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
+    "dstport": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
+    "dst_port": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
     "proto": {"field": "network.protocol", "type": "NETWORK_CONNECTION"},
     "protocol": {"field": "network.protocol", "type": "NETWORK_CONNECTION"},
     "sentbytes64": {"field": "network.bytes_out", "type": "NETWORK_CONNECTION"},
@@ -235,18 +243,30 @@ class EvidenceNormalizationService:
             if isinstance(attrs, dict):
                 cls._extract_from_dict(attrs, evt_id, evt_time_str, add_record)
 
-        # 3. Raw Payload Extraction (if raw_payload has nested events not in incident.events)
+        # 3. Raw Payload Extraction (nested attributes, events, rawEvents, or top-level scalar fields)
         if incident.raw_payload and isinstance(incident.raw_payload, dict):
             raw = incident.raw_payload
-            raw_event = raw.get("event") or raw.get("events") or raw.get("attributes")
-            if isinstance(raw_event, dict):
-                cls._extract_from_dict(raw_event, "PAYLOAD", obs_time, add_record)
-            elif isinstance(raw_event, list):
-                for idx, item in enumerate(raw_event):
-                    if isinstance(item, dict):
-                        cls._extract_from_dict(item, f"PAYLOAD_{idx}", obs_time, add_record)
-            else:
+            extracted_nested = False
+            for container_key in ("attributes", "event", "events", "rawEvents"):
+                raw_sub = raw.get(container_key)
+                if isinstance(raw_sub, dict):
+                    cls._extract_from_dict(raw_sub, f"PAYLOAD_{container_key.upper()}", obs_time, add_record)
+                    extracted_nested = True
+                elif isinstance(raw_sub, list):
+                    for idx, item in enumerate(raw_sub):
+                        if isinstance(item, dict):
+                            cls._extract_from_dict(item, f"PAYLOAD_{container_key.upper()}_{idx}", obs_time, add_record)
+                            extracted_nested = True
+            if not extracted_nested:
                 cls._extract_from_dict(raw, "PAYLOAD", obs_time, add_record)
+            else:
+                # Also extract top-level scalar attributes outside nested event containers
+                top_scalars = {
+                    k: v for k, v in raw.items()
+                    if k not in ("attributes", "event", "events", "rawEvents") and not isinstance(v, (dict, list))
+                }
+                if top_scalars:
+                    cls._extract_from_dict(top_scalars, "PAYLOAD", obs_time, add_record)
 
         # Aggregate and categorize
         by_type: Dict[str, List[CanonicalEvidenceRecord]] = {}
@@ -300,7 +320,7 @@ class EvidenceNormalizationService:
                     )
                 else:
                     # Generic heuristic for unrecognized fields if high-signal
-                    if any(term in norm_k for term in ("ip", "host", "domain", "user", "file", "path", "hash", "proc")):
+                    if any(term in norm_k for term in ("ip", "port", "host", "domain", "user", "file", "path", "hash", "proc")):
                         add_fn(
                             source_field=f"telemetry.{norm_k}",
                             observed_value=val,

@@ -695,6 +695,25 @@ class PolicyQualityValidator:
             details = "Simulation status: NOT_EVALUATED (stale policy digest). Empirical performance unverified for current text."
             return 0.0, GateStatus.WARNING, sim_status, blockers, warns, details
 
+        # AIS 2.1 (AIS-F02 / AIS-F03): Simulated/mock provider outputs can NEVER pass empirical G8
+        sim_provider = str(simulation_results.get("provider_type") or "").upper().strip()
+        sim_prov = str(simulation_results.get("execution_provenance") or "").upper().strip()
+        is_sim_provider = bool(
+            simulation_results.get("is_simulated") is True
+            or sim_provider in ("SIMULATED", "MOCK", "HEURISTIC", "SIMULATED_FALLBACK", "MOCK_LLM")
+            or sim_prov in ("SIMULATED", "MOCK", "HEURISTIC", "SIMULATED_FALLBACK", "MOCK_LLM")
+        )
+        if is_sim_provider:
+            sim_status = SimulationStatus.NOT_EVALUATED
+            warns.append(
+                "G8_SIMULATED_PROVIDER_NOT_CERTIFYING: Simulated/mock simulation results cannot certify empirical G8 validation. Execute with a real OPENAI_COMPATIBLE LLM provider."
+            )
+            details = (
+                f"Simulation status: NOT_EVALUATED (provider={sim_provider or 'SIMULATED'}). "
+                "Mock/simulated evaluations never earn empirical G8 certification points."
+            )
+            return 0.0, GateStatus.WARNING, sim_status, blockers, warns, details
+
         sample_count = simulation_results.get("sample_count", 0)
         eligible_count = simulation_results.get("eligible_ground_truth_count", simulation_results.get("verified_ground_truth_cases", sample_count))
         sim_status_raw = str(simulation_results.get("simulation_status") or simulation_results.get("status") or "NOT_EVALUATED")

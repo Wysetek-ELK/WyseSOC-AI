@@ -111,6 +111,8 @@ class DetectionContextEngine:
 
         if "pattern_logic" in sections:
             data["pattern_logic"] = sections["pattern_logic"]
+        elif "pattern conditions" in sections:
+            data["pattern_logic"] = sections["pattern conditions"]
         elif "pattern" in sections:
             data["pattern_logic"] = sections["pattern"]
 

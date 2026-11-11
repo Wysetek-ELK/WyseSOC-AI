@@ -688,7 +688,8 @@ class DetectionArchetypeRegistry:
 
         # 2. Check for Network Scan / Reconnaissance
         elif (
-            "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT" in combo
+            "PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT" in combo
+            or "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT" in combo
             or "HOST_SCAN" in combo
             or "HOST SCAN" in combo
             or "PORT_SCAN" in combo

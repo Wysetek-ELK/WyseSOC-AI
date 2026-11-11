@@ -100,6 +100,7 @@ export default function AgentIntelligenceStudioPage() {
   // Policy Simulation State
   const [simulationResult, setSimulationResult] = useState<PolicySimulationResult | null>(null);
   const [loadingSimulation, setLoadingSimulation] = useState(false);
+  const [simulationProvider, setSimulationProvider] = useState<"OPENAI_COMPATIBLE" | "SIMULATED">("OPENAI_COMPATIBLE");
   const [showExclusions, setShowExclusions] = useState(false);
 
   // Funnel & Card Drilldown Pop-up Modal State
@@ -213,11 +214,10 @@ export default function AgentIntelligenceStudioPage() {
         type: "success",
         text: `Downloaded Quality Gates (G1–G8) output (${getQualityExportFormatLabel(format)}).`,
       });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+    } catch (err: any) {
       setFeedback({
         type: "error",
-        text: `Quality Gates export failed: ${message}`,
+        text: `Quality Gates export failed: ${err?.message || "Unknown error"}`,
       });
     }
   };
@@ -389,10 +389,6 @@ export default function AgentIntelligenceStudioPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [drilldownModal, showQualityExportMenu]);
-
-  useEffect(() => {
-    setShowQualityExportMenu(false);
-  }, [studioTab, selectedRuleId, selectedVersionId]);
 
   // Close Quality Gates export dropdown when clicking outside
   useEffect(() => {
@@ -688,13 +684,15 @@ export default function AgentIntelligenceStudioPage() {
     setLoadingSimulation(true);
     setFeedback(null);
     try {
-      const res = await api.evaluatePolicySimulation(selectedRuleId, selectedVersionId);
+      const res = await api.evaluatePolicySimulation(selectedRuleId, selectedVersionId, {
+        provider_type: simulationProvider,
+      });
       setSimulationResult(res);
       setStudioTab("simulation");
       const stat = res.status || res.simulation_status || "COMPLETED";
       setFeedback({
-        type: stat === "FAILED" || stat === "EVALUATED_FAILED" ? "warning" : "success",
-        text: `Simulation Lab completed: ${res.sample_count} historical incidents evaluated. Status: ${stat}`,
+        type: stat === "FAILED" || stat === "EVALUATED_FAILED" ? "warning" : stat === "SIMULATED_ONLY" ? "warning" : "success",
+        text: `Simulation Lab (${res.provider_type || simulationProvider}) completed: ${res.retrieved_count ?? res.sample_count} rule-matched incidents retrieved, ${res.scored_count ?? res.evaluated_cases ?? 0} verified scored. Status: ${stat}`,
       });
       // Synchronize G8 quality gate with fresh simulation results
       if (selectedVersionId) {
@@ -1049,7 +1047,7 @@ export default function AgentIntelligenceStudioPage() {
           <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
           <div className="text-[11px] leading-tight space-y-0.5">
             <div>
-              <strong className="text-cyan-300">Agent Intelligence Studio 2.0 Governance:</strong> SIEM detection rules are parsed via authoritative telemetry distinction. 
+              <strong className="text-cyan-300">Agent Intelligence Studio 2.0 Governance:</strong> SIEM detection rules are parsed via authoritative telemetry distinction.
               Policies are classified into 12 archetypes and validated through 8 mandatory quality gates (G1–G8). Drafts with missing definitions (e.g. unverified thresholds) remain provisional and cannot be approved.
             </div>
           </div>
@@ -1500,13 +1498,12 @@ export default function AgentIntelligenceStudioPage() {
                 return (
                   <span
                     key={idx}
-                    className={`h-2 flex-1 rounded-full transition-all ${
-                      active
-                        ? idx < 10
-                          ? "bg-sky-400 shadow-[0_0_8px_rgba(251,191,36,0.45)]"
-                          : "bg-cyan-500 shadow-[0_0_8px_rgba(249,115,22,0.45)]"
-                        : "bg-slate-800/80 border border-slate-700/50"
-                    }`}
+                    className={`h-2 flex-1 rounded-full transition-all ${active
+                      ? idx < 10
+                        ? "bg-sky-400 shadow-[0_0_8px_rgba(251,191,36,0.45)]"
+                        : "bg-cyan-500 shadow-[0_0_8px_rgba(249,115,22,0.45)]"
+                      : "bg-slate-800/80 border border-slate-700/50"
+                      }`}
                   />
                 );
               })}
@@ -1576,11 +1573,10 @@ export default function AgentIntelligenceStudioPage() {
                 type="button"
                 disabled={actionLoading || !selectedVersionId || !isApprovalEligible}
                 onClick={() => setShowApprovalModal(true)}
-                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition-colors ${
-                  isApprovalEligible
-                    ? "bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500/60"
-                    : "bg-slate-900/70 text-slate-500 cursor-not-allowed border border-slate-800"
-                }`}
+                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition-colors ${isApprovalEligible
+                  ? "bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500/60"
+                  : "bg-slate-900/70 text-slate-500 cursor-not-allowed border border-slate-800"
+                  }`}
                 title={
                   !isApprovalEligible
                     ? "Approval blocked by hard quality gate failures or incomplete rule specifications."
@@ -1615,7 +1611,7 @@ export default function AgentIntelligenceStudioPage() {
               Rule Definition Incomplete — Approval Gate 1 (G1) Blocked
             </div>
             <p className="text-[11px] text-amber-200/90 leading-relaxed">
-              Authoritative SIEM detection rule specifications are missing or unverified. Observed telemetry fields (such as byte counts) are not assumed to be detection thresholds. 
+              Authoritative SIEM detection rule specifications are missing or unverified. Observed telemetry fields (such as byte counts) are not assumed to be detection thresholds.
               The synthesized policy remains a <strong>provisional draft</strong> with explicit unresolved requirements. It cannot be approved for autonomous production use until authoritative criteria are supplied.
             </p>
           </div>
@@ -1624,13 +1620,12 @@ export default function AgentIntelligenceStudioPage() {
 
       {/* Feedback Alert */}
       {feedback && (
-        <div className={`p-2.5 rounded-md text-xs border ${
-          feedback.type === "success"
-            ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
-            : feedback.type === "warning"
+        <div className={`p-2.5 rounded-md text-xs border ${feedback.type === "success"
+          ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
+          : feedback.type === "warning"
             ? "bg-amber-950/60 border-amber-800 text-amber-300"
             : "bg-rose-950/60 border-rose-800 text-rose-300"
-        }`}>
+          }`}>
           {feedback.text}
         </div>
       )}
@@ -1639,11 +1634,10 @@ export default function AgentIntelligenceStudioPage() {
       <div className="flex flex-wrap border-b border-slate-800/90 space-x-1 text-xs">
         <button
           onClick={() => setStudioTab("editor")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-            studioTab === "editor"
-              ? "theme-tab-active"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "editor"
+            ? "theme-tab-active"
+            : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
         >
           <FileCode className="w-3.5 h-3.5" />
           Policy Editor (9 Sections)
@@ -1651,11 +1645,10 @@ export default function AgentIntelligenceStudioPage() {
 
         <button
           onClick={() => setStudioTab("quality")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-            studioTab === "quality"
-              ? "theme-tab-active"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "quality"
+            ? "theme-tab-active"
+            : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
         >
           <Award className="w-3.5 h-3.5" />
           Quality Gates (G1–G8)
@@ -1668,11 +1661,10 @@ export default function AgentIntelligenceStudioPage() {
 
         <button
           onClick={() => setStudioTab("intelligence")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-            studioTab === "intelligence"
-              ? "theme-tab-active"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "intelligence"
+            ? "theme-tab-active"
+            : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
         >
           <Cpu className="w-3.5 h-3.5" />
           SIEM Semantics &amp; Archetype
@@ -1680,11 +1672,10 @@ export default function AgentIntelligenceStudioPage() {
 
         <button
           onClick={() => setStudioTab("contract")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-            studioTab === "contract"
-              ? "theme-tab-active"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "contract"
+            ? "theme-tab-active"
+            : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
         >
           <Database className="w-3.5 h-3.5" />
           Evidence Contract
@@ -1692,11 +1683,10 @@ export default function AgentIntelligenceStudioPage() {
 
         <button
           onClick={() => setStudioTab("simulation")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-            studioTab === "simulation"
-              ? "theme-tab-active"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "simulation"
+            ? "theme-tab-active"
+            : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
         >
           <Activity className="w-3.5 h-3.5" />
           Simulation Lab
@@ -1704,11 +1694,10 @@ export default function AgentIntelligenceStudioPage() {
 
         <button
           onClick={() => setStudioTab("drift")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-            studioTab === "drift"
-              ? "theme-tab-active"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "drift"
+            ? "theme-tab-active"
+            : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
         >
           <GitBranch className="w-3.5 h-3.5" />
           Drift &amp; Monitoring
@@ -1764,11 +1753,10 @@ export default function AgentIntelligenceStudioPage() {
                       <div
                         key={ver.id}
                         onClick={() => handleSelectVersion(ver.id)}
-                        className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${
-                          isSelected
-                            ? "theme-version-selected"
-                            : "theme-glass-sunken hover:border-slate-700"
-                        }`}
+                        className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${isSelected
+                          ? "theme-version-selected"
+                          : "theme-glass-sunken hover:border-slate-700"
+                          }`}
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-slate-100 flex items-center gap-1.5 text-xs">
@@ -1779,13 +1767,12 @@ export default function AgentIntelligenceStudioPage() {
                               </span>
                             )}
                           </span>
-                          <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${
-                            ver.status === "APPROVED"
-                              ? "bg-emerald-950/90 text-emerald-400 border border-emerald-800/80"
-                              : ver.status === "DRAFT"
+                          <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${ver.status === "APPROVED"
+                            ? "bg-emerald-950/90 text-emerald-400 border border-emerald-800/80"
+                            : ver.status === "DRAFT"
                               ? "bg-amber-950/90 text-amber-300 border border-amber-700/80"
                               : "bg-slate-900 text-slate-400 border border-slate-800"
-                          }`}>
+                            }`}>
                             {ver.status}
                           </span>
                         </div>
@@ -2266,13 +2253,12 @@ export default function AgentIntelligenceStudioPage() {
                       </div>
                       <div>
                         <div className="text-[10px] text-slate-500 uppercase">Empirical (G8)</div>
-                        <div className={`text-sm font-bold font-mono mt-1 ${
-                          (qualityAssessment.empirical_validation_status === "EVALUATED_PASSED" || qualityAssessment.simulation_status === "EVALUATED_PASSED")
-                            ? "text-emerald-400"
-                            : (qualityAssessment.empirical_validation_status === "INSUFFICIENT_DATA" || qualityAssessment.simulation_status === "INSUFFICIENT_DATA")
+                        <div className={`text-sm font-bold font-mono mt-1 ${(qualityAssessment.empirical_validation_status === "EVALUATED_PASSED" || qualityAssessment.simulation_status === "EVALUATED_PASSED")
+                          ? "text-emerald-400"
+                          : (qualityAssessment.empirical_validation_status === "INSUFFICIENT_DATA" || qualityAssessment.simulation_status === "INSUFFICIENT_DATA")
                             ? "text-amber-400"
                             : "text-slate-400"
-                        }`}>
+                          }`}>
                           {qualityAssessment.empirical_validation_status || qualityAssessment.simulation_status || "NOT_EVALUATED"}
                         </div>
                       </div>
@@ -2337,13 +2323,12 @@ export default function AgentIntelligenceStudioPage() {
                         return (
                           <div
                             key={gate.gate_id}
-                            className={`p-3 rounded-lg border text-xs space-y-1.5 ${
-                              isPass
-                                ? "bg-slate-900/30 border-slate-800"
-                                : isWarn
+                            className={`p-3 rounded-lg border text-xs space-y-1.5 ${isPass
+                              ? "bg-slate-900/30 border-slate-800"
+                              : isWarn
                                 ? "bg-amber-950/20 border-amber-900/60"
                                 : "bg-rose-950/20 border-rose-900/60"
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-bold text-slate-200 flex items-center gap-1.5">
@@ -2650,14 +2635,25 @@ export default function AgentIntelligenceStudioPage() {
                         Dry-run replay against historical incidents to evaluate verdict trustworthiness, evidence confidence, empirical confusion matrix, and paired regression.
                       </p>
                     </div>
-                    <button
-                      onClick={handleRunSimulation}
-                      disabled={loadingSimulation}
-                      className="px-3 py-1.5 text-xs rounded border border-purple-800 bg-purple-950/70 hover:bg-purple-900/80 text-purple-200 font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 text-purple-400 ${loadingSimulation ? "animate-spin" : ""}`} />
-                      {loadingSimulation ? "Running Simulation..." : "Run Simulation"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={simulationProvider}
+                        onChange={(e) => setSimulationProvider(e.target.value as "OPENAI_COMPATIBLE" | "SIMULATED")}
+                        aria-label="Simulation Provider"
+                        className="px-2 py-1.5 text-xs rounded border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-purple-500"
+                      >
+                        <option value="OPENAI_COMPATIBLE">Real Local LLM (OPENAI_COMPATIBLE)</option>
+                        <option value="SIMULATED">Mock Simulator (Non-Certifying)</option>
+                      </select>
+                      <button
+                        onClick={handleRunSimulation}
+                        disabled={loadingSimulation}
+                        className="px-3 py-1.5 text-xs rounded border border-purple-800 bg-purple-950/70 hover:bg-purple-900/80 text-purple-200 font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 text-purple-400 ${loadingSimulation ? "animate-spin" : ""}`} />
+                        {loadingSimulation ? "Running Simulation..." : "Run Simulation"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -2670,16 +2666,15 @@ export default function AgentIntelligenceStudioPage() {
                 ) : simulationResult ? (
                   <div className="space-y-4 text-xs">
                     {/* Messaging Banner */}
-                    <div className={`p-3 rounded-lg border flex items-start gap-2.5 text-xs ${
-                      (simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED")
-                        ? "bg-emerald-950/30 border-emerald-900/60 text-emerald-200"
-                        : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA")
+                    <div className={`p-3 rounded-lg border flex items-start gap-2.5 text-xs ${(simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED")
+                      ? "bg-emerald-950/30 border-emerald-900/60 text-emerald-200"
+                      : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA" || simulationResult.status === "SIMULATED_ONLY" || simulationResult.is_simulated)
                         ? "bg-amber-950/30 border-amber-900/60 text-amber-200"
                         : "bg-rose-950/30 border-rose-900/60 text-rose-200"
-                    }`}>
+                      }`}>
                       {(simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED") ? (
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                      ) : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA") ? (
+                      ) : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA" || simulationResult.status === "SIMULATED_ONLY" || simulationResult.is_simulated) ? (
                         <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                       ) : (
                         <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
@@ -2689,7 +2684,10 @@ export default function AgentIntelligenceStudioPage() {
                           {simulationResult.message || "Simulation evaluation completed."}
                         </div>
                         <div className="text-[11px] opacity-80">
-                          Simulation Status: <span className="font-mono font-bold">{simulationResult.status || simulationResult.simulation_status}</span> | Empirical Validation: <span className="font-mono font-bold">{simulationResult.empirical_validation_status}</span> | Regression Check: <span className="font-mono font-bold">{simulationResult.regression_status}</span>
+                          Provider: <span className="font-mono font-bold">{simulationResult.provider_type || "SIMULATED"}</span>{simulationResult.model_identifier ? ` (${simulationResult.model_identifier})` : ""} | Simulation Status: <span className="font-mono font-bold">{simulationResult.status || simulationResult.simulation_status}</span> | Empirical Validation: <span className="font-mono font-bold">{simulationResult.empirical_validation_status}</span> | Regression Check: <span className="font-mono font-bold">{simulationResult.regression_status}</span>
+                        </div>
+                        <div className="text-[10px] font-mono opacity-75">
+                          Available: {simulationResult.available_count ?? simulationResult.total_scanned ?? 0} | Retrieved: {simulationResult.retrieved_count ?? simulationResult.sample_count ?? 0} | Rule-Matched: {simulationResult.rule_matched ?? 0} | Labeled: {simulationResult.analyst_labeled ?? 0} | Verified: {simulationResult.verified_count ?? simulationResult.eligible_ground_truth_count ?? 0} | Excluded: {simulationResult.excluded_count ?? 0} | Inferred: {simulationResult.inferred_count ?? simulationResult.evaluated_cases ?? 0} | Scored: {simulationResult.scored_count ?? simulationResult.evaluated_cases ?? 0}
                         </div>
                       </div>
                     </div>
@@ -2850,27 +2848,25 @@ export default function AgentIntelligenceStudioPage() {
                     <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                       <div>
                         <div className="text-[10px] text-slate-500 uppercase">Empirical Accuracy Status</div>
-                        <div className={`text-sm font-bold font-mono mt-1 ${
-                          simulationResult.empirical_validation_status === "EVALUATED_PASSED"
-                            ? "text-emerald-400"
-                            : simulationResult.empirical_validation_status === "INSUFFICIENT_DATA"
+                        <div className={`text-sm font-bold font-mono mt-1 ${simulationResult.empirical_validation_status === "EVALUATED_PASSED"
+                          ? "text-emerald-400"
+                          : simulationResult.empirical_validation_status === "INSUFFICIENT_DATA"
                             ? "text-amber-400"
                             : "text-rose-400"
-                        }`}>
+                          }`}>
                           {simulationResult.empirical_validation_status || "INSUFFICIENT_DATA"}
                         </div>
                       </div>
                       <div>
                         <div className="text-[10px] text-slate-500 uppercase">Version Regression Status</div>
-                        <div className={`text-sm font-bold font-mono mt-1 ${
-                          simulationResult.regression_status === "PASS"
-                            ? "text-emerald-400"
-                            : simulationResult.regression_status === "REGRESSION_DETECTED"
+                        <div className={`text-sm font-bold font-mono mt-1 ${simulationResult.regression_status === "PASS"
+                          ? "text-emerald-400"
+                          : simulationResult.regression_status === "REGRESSION_DETECTED"
                             ? "text-rose-400"
                             : simulationResult.regression_status === "INSUFFICIENT_DATA"
-                            ? "text-amber-400"
-                            : "text-slate-400"
-                        }`}>
+                              ? "text-amber-400"
+                              : "text-slate-400"
+                          }`}>
                           {simulationResult.regression_status || "NOT_ASSESSED"}
                         </div>
                       </div>
@@ -2996,8 +2992,8 @@ export default function AgentIntelligenceStudioPage() {
                         <div className="text-[10px] text-slate-500 uppercase">Balanced Accuracy</div>
                         <div className="text-base font-bold font-mono text-cyan-400 mt-0.5">
                           {simulationResult.balanced_accuracy != null &&
-                          simulationResult.recall != null &&
-                          simulationResult.specificity != null
+                            simulationResult.recall != null &&
+                            simulationResult.specificity != null
                             ? `${Math.round(simulationResult.balanced_accuracy * 100)}%`
                             : "NOT_CALCULABLE"}
                         </div>
@@ -3070,13 +3066,12 @@ export default function AgentIntelligenceStudioPage() {
                               <div className="space-y-0.5">
                                 <div className="flex items-center gap-2">
                                   <span className="font-mono font-bold text-slate-200">{r.incident_id}</span>
-                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono border ${
-                                    r.ground_truth === "VERIFIED_TP"
-                                      ? "bg-rose-950 text-rose-300 border-rose-800"
-                                      : r.ground_truth === "VERIFIED_FP"
+                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono border ${r.ground_truth === "VERIFIED_TP"
+                                    ? "bg-rose-950 text-rose-300 border-rose-800"
+                                    : r.ground_truth === "VERIFIED_FP"
                                       ? "bg-sky-950 text-sky-300 border-sky-800"
                                       : "bg-slate-900 text-slate-400 border-slate-800"
-                                  }`}>
+                                    }`}>
                                     GT: {r.ground_truth || "UNLABELED"}
                                   </span>
                                 </div>
@@ -3092,15 +3087,14 @@ export default function AgentIntelligenceStudioPage() {
                                   </span>
                                 </div>
                                 <div>
-                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold border ${
-                                    r.is_critical_error
-                                      ? "bg-red-950 text-red-300 border-red-800"
-                                      : r.is_abstained
+                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold border ${r.is_critical_error
+                                    ? "bg-red-950 text-red-300 border-red-800"
+                                    : r.is_abstained
                                       ? "bg-amber-950 text-amber-300 border-amber-800"
                                       : r.is_correct
-                                      ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                                      : "bg-slate-900 text-slate-400 border-slate-800"
-                                  }`}>
+                                        ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                        : "bg-slate-900 text-slate-400 border-slate-800"
+                                    }`}>
                                     {r.is_critical_error ? "MISSED TP (FN)" : r.is_abstained ? "ABSTAINED" : r.is_correct ? "CORRECT" : "WRONG"}
                                   </span>
                                 </div>
@@ -3166,11 +3160,10 @@ export default function AgentIntelligenceStudioPage() {
                     {driftEvents.map((ev) => (
                       <div
                         key={ev.id}
-                        className={`p-3 rounded-lg border text-xs space-y-1 ${
-                          ev.acknowledged
-                            ? "bg-slate-950/60 border-slate-800 text-slate-400"
-                            : "bg-rose-950/20 border-rose-900/60 text-rose-300"
-                        }`}
+                        className={`p-3 rounded-lg border text-xs space-y-1 ${ev.acknowledged
+                          ? "bg-slate-950/60 border-slate-800 text-slate-400"
+                          : "bg-rose-950/20 border-rose-900/60 text-rose-300"
+                          }`}
                       >
                         <div className="flex items-center justify-between font-bold">
                           <span className="flex items-center gap-1.5">
@@ -3310,11 +3303,10 @@ export default function AgentIntelligenceStudioPage() {
                       <button
                         type="button"
                         onClick={() => setDrilldownReasonFilter("ALL")}
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${
-                          drilldownReasonFilter === "ALL"
-                            ? "bg-purple-950 text-purple-300 border border-purple-800"
-                            : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800"
-                        }`}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${drilldownReasonFilter === "ALL"
+                          ? "bg-purple-950 text-purple-300 border border-purple-800"
+                          : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800"
+                          }`}
                       >
                         ALL ({drilldownModal.items?.length || 0})
                       </button>
@@ -3325,11 +3317,10 @@ export default function AgentIntelligenceStudioPage() {
                             key={rsn}
                             type="button"
                             onClick={() => setDrilldownReasonFilter(rsn)}
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${
-                              drilldownReasonFilter === rsn
-                                ? "bg-purple-950 text-purple-300 border border-purple-800"
-                                : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800"
-                            }`}
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${drilldownReasonFilter === rsn
+                              ? "bg-purple-950 text-purple-300 border border-purple-800"
+                              : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800"
+                              }`}
                           >
                             {rsn} ({count})
                           </button>

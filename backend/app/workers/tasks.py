@@ -217,12 +217,156 @@ if celery_app is not None:
             return loop.run_until_complete(_run())
         finally:
             loop.close()
+
+    @celery_app.task(bind=True)
+    def run_policy_simulation_task(
+        self,
+        run_id: str,
+        rule_id: str,
+        candidate_version_id: Optional[str] = None,
+        baseline_version_id: Optional[str] = None,
+        provider_type: str = "SIMULATED",
+        sample_limit: Optional[int] = 500,
+        include_unlabeled_replay: bool = False,
+    ):
+        """Celery worker task for asynchronous AIS policy simulation on simulation_replay queue."""
+        from app.models.prompt import PromptVersion
+        from app.services.policy_simulation_service import PolicySimulationService
+        from sqlalchemy import select
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            async def _run():
+                async with AsyncSessionLocal() as session:
+                    cand_ver = None
+                    base_ver = None
+                    if candidate_version_id:
+                        res = await session.execute(
+                            select(PromptVersion).where(PromptVersion.id == candidate_version_id)
+                        )
+                        cand_ver = res.scalar_one_or_none()
+                    if baseline_version_id:
+                        res_b = await session.execute(
+                            select(PromptVersion).where(PromptVersion.id == baseline_version_id)
+                        )
+                        base_ver = res_b.scalar_one_or_none()
+                    svc = PolicySimulationService(session)
+                    return await svc.evaluate_candidate_policy(
+                        rule_id=rule_id,
+                        candidate_version=cand_ver,
+                        baseline_version=base_ver,
+                        provider_type=provider_type,
+                        sample_limit=sample_limit,
+                        include_unlabeled_replay=include_unlabeled_replay,
+                        existing_run_id=run_id,
+                    )
+
+            return loop.run_until_complete(_run())
+        finally:
+            loop.close()
 else:
     def triage_incident_task(*args, **kwargs):
         raise RuntimeError("Celery is not available.")
 
     def run_dry_run_job_task(*args, **kwargs):
         raise RuntimeError("Celery is not available.")
+
+    def run_policy_simulation_task(*args, **kwargs):
+        raise RuntimeError("Celery is not available.")
+
+
+async def dispatch_policy_simulation(
+    *,
+    db: AsyncSession,
+    rule_id: str,
+    candidate_version: Any = None,
+    baseline_version: Any = None,
+    provider_type: str = "SIMULATED",
+    sample_limit: Optional[int] = 500,
+    include_unlabeled_replay: bool = False,
+    async_execution: bool = False,
+) -> Dict[str, Any]:
+    """
+    Dispatch AIS historical policy simulation either asynchronously on Celery's
+    `simulation_replay` queue (when async_execution=True and Redis/Celery are healthy)
+    or directly in-process via PolicySimulationService.
+    """
+    from app.models.verdict_intelligence import HistoricalEvaluationRunRecord
+    from app.services.policy_quality_validator import PolicyQualityValidator
+    from app.services.policy_simulation_service import PolicySimulationService
+    import uuid as _uuid
+
+    use_celery = (
+        bool(async_execution)
+        and settings.USE_ASYNC_CELERY
+        and is_redis_available()
+        and (celery_app is not None)
+    )
+    cand_id = str(getattr(candidate_version, "id", None) or "") or None
+    base_id = str(getattr(baseline_version, "id", None) or "") or None
+
+    if use_celery:
+        run_id = str(_uuid.uuid4())
+        policy_digest = (
+            PolicyQualityValidator.compute_policy_digest(candidate_version)
+            if candidate_version is not None
+            else None
+        )
+        queued_rec = HistoricalEvaluationRunRecord(
+            id=run_id,
+            run_name=f"Policy Candidate Simulation ({provider_type})",
+            rule_id=rule_id,
+            policy_version_id=cand_id,
+            status="QUEUED",
+            validation_state="INCONCLUSIVE",
+            config_snapshot={
+                "provider_type": str(provider_type or "SIMULATED").upper(),
+                "is_simulated": str(provider_type or "SIMULATED").upper() == "SIMULATED",
+                "sample_limit": sample_limit,
+                "policy_version_id": cand_id,
+                "policy_digest": policy_digest,
+                "include_unlabeled_replay": include_unlabeled_replay,
+                "queued_at": utc_now().isoformat(),
+            },
+        )
+        db.add(queued_rec)
+        await db.commit()
+        task = run_policy_simulation_task.apply_async(
+            args=[
+                run_id,
+                rule_id,
+                cand_id,
+                base_id,
+                str(provider_type or "SIMULATED").upper(),
+                sample_limit,
+                bool(include_unlabeled_replay),
+            ],
+            queue="simulation_replay",
+        )
+        return {
+            "dispatch_mode": "CELERY_ASYNC",
+            "task_id": task.id,
+            "run_id": run_id,
+            "status": "QUEUED",
+            "simulation_status": "NOT_EVALUATED",
+            "provider_type": str(provider_type or "SIMULATED").upper(),
+            "rule_id": rule_id,
+            "message": "Historical policy simulation queued on simulation_replay worker.",
+        }
+
+    svc = PolicySimulationService(db)
+    result = await svc.evaluate_candidate_policy(
+        rule_id=rule_id,
+        candidate_version=candidate_version,
+        baseline_version=baseline_version,
+        provider_type=str(provider_type or "SIMULATED").upper(),
+        sample_limit=sample_limit,
+        include_unlabeled_replay=bool(include_unlabeled_replay),
+    )
+    if isinstance(result, dict):
+        result.setdefault("dispatch_mode", "IN_PROCESS_ASYNC")
+    return result
 
 
 async def dispatch_incident_triage(

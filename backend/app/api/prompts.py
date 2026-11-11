@@ -14,7 +14,16 @@ from app.models.rule_intelligence import RuleIntelligenceSnapshot
 from app.models.policy_quality import PolicyQualityAssessmentRecord
 from app.models.policy_drift import PolicyDriftEvent
 from app.models.bulk_audit import BulkQualityAuditJobRecord
-from app.models.verdict_intelligence import HistoricalEvaluationRunRecord
+from app.models.verdict_intelligence import (
+    HistoricalEvaluationRunRecord,
+    HistoricalEvaluationResultRecord,
+)
+from app.services.policy_governance import (
+    SIMULATED_PROVIDER_TOKENS,
+    assess_policy_runtime_certification,
+    get_rule_semantics_and_contract,
+    resolve_canonical_rule,
+)
 from app.services.prompt_studio_service import PromptStudioService
 from app.services.audit_service import AuditService
 from app.services.rule_intelligence_analyzer import RuleIntelligenceAnalyzer
@@ -379,8 +388,7 @@ async def _compute_policy_quality_readonly(
     version_id: Optional[str] = None,
 ):
     """Evaluates policy G1-G8 quality without mutating database state."""
-    rule_res = await db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
-    rule = rule_res.scalars().first()
+    rule = await resolve_canonical_rule(db, rule_id)
     if not rule:
         raise HTTPException(status_code=404, detail=f"SIEM Rule {rule_id} not found")
 
@@ -399,16 +407,18 @@ async def _compute_policy_quality_readonly(
     if not target_ver:
         raise HTTPException(status_code=404, detail="Specified prompt version not found")
 
-    semantics, classification, archetype_def = await _analyze_with_snapshot(db, rule)
-    contract = EvidenceRequirementMapper.map_evidence_contract(rule, semantics, archetype_def, target_ver)
+    semantics, contract, _ = await get_rule_semantics_and_contract(
+        db, rule, prompt_version=target_ver, for_quality_validation=True
+    )
 
     latest_run_q = (
         select(HistoricalEvaluationRunRecord)
         .where(
             HistoricalEvaluationRunRecord.rule_id.in_([rule.id, rule.rule_id]),
             HistoricalEvaluationRunRecord.policy_version_id == str(target_ver.id),
+            HistoricalEvaluationRunRecord.status.in_(["COMPLETED", "FAILED"]),
         )
-        .order_by(desc(HistoricalEvaluationRunRecord.started_at))
+        .order_by(desc(HistoricalEvaluationRunRecord.completed_at), desc(HistoricalEvaluationRunRecord.started_at))
     )
     latest_run_res = await db.execute(latest_run_q)
     latest_run = latest_run_res.scalars().first()
@@ -430,6 +440,29 @@ async def _compute_policy_quality_readonly(
         brier_val = metrics_dict.get("brier_score")
         if brier_val is None:
             brier_val = getattr(latest_run, "brier_score", None)
+
+        provider_type = str(cfg_snapshot.get("provider_type") or "").upper().strip()
+        exec_prov = str(cfg_snapshot.get("execution_provenance") or "").upper().strip()
+        res_sim_q = await db.execute(
+            select(HistoricalEvaluationResultRecord.claims_summary)
+            .where(HistoricalEvaluationResultRecord.run_id == latest_run.id)
+            .limit(20)
+        )
+        res_sim_summaries = res_sim_q.scalars().all()
+        any_result_simulated = any(
+            bool((cs or {}).get("is_simulated")) for cs in res_sim_summaries if isinstance(cs, dict)
+        )
+        is_simulated_run = bool(
+            cfg_snapshot.get("is_simulated") is True
+            or provider_type in SIMULATED_PROVIDER_TOKENS
+            or exec_prov in SIMULATED_PROVIDER_TOKENS
+            or any_result_simulated
+            or (
+                not provider_type
+                and str(latest_run.validation_state or "").upper() != "EVALUATED_PASSED"
+            )
+        )
+
         sim_results = {
             "sample_count": getattr(latest_run, "total_cases", 0) or getattr(latest_run, "sample_size", 0),
             "eligible_ground_truth_count": eligible_gt,
@@ -438,9 +471,14 @@ async def _compute_policy_quality_readonly(
             "regression_status": reg_summary.get("regression_status") or ("NOT_ASSESSED" if not latest_run.baseline_run_id else latest_run.validation_state),
             "critical_regressions": 1 if latest_run.status == "FAILED" or metrics_dict.get("critical_false_negatives", 0) > 0 or latest_run.validation_state == "REGRESSION_DETECTED" else 0,
             "balanced_accuracy": ba_val,
+            "overall_accuracy": metrics_dict.get("overall_accuracy"),
+            "decision_coverage": metrics_dict.get("automatic_decision_coverage") if metrics_dict.get("automatic_decision_coverage") is not None else metrics_dict.get("decision_coverage"),
             "ece": ece_val,
             "brier_score": brier_val,
             "policy_digest": cfg_snapshot.get("policy_digest"),
+            "provider_type": provider_type or ("SIMULATED" if is_simulated_run else "OPENAI_COMPATIBLE"),
+            "execution_provenance": exec_prov or ("SIMULATED" if is_simulated_run else "REAL_LOCAL_LLM"),
+            "is_simulated": is_simulated_run,
             "metrics": metrics_dict,
         }
 
@@ -457,10 +495,17 @@ async def _compute_policy_quality_readonly(
         assessment.simulation_status == SimulationStatus.EVALUATED_PASSED
         and g8_gate is not None
         and g8_gate.status == GateStatus.PASSED
+        and not (sim_results and sim_results.get("is_simulated"))
     )
     assessment.structural_approval_eligible = structural_eligible
     assessment.empirical_validation_eligible = empirical_eligible
-    assessment.autonomous_operation_eligible = structural_eligible and empirical_eligible
+    assessment.autonomous_operation_eligible = (
+        structural_eligible and empirical_eligible and str(target_ver.status).upper() == "APPROVED"
+    )
+    if str(target_ver.status).upper() != "APPROVED":
+        # Note: in preview before approval, autonomous_operation_eligible can still reflect
+        # whether approving this candidate version would make it autonomous-ready (unless blocked)
+        assessment.autonomous_operation_eligible = structural_eligible and empirical_eligible
     return rule, target_ver, assessment
 
 
@@ -519,15 +564,21 @@ async def validate_policy_quality(
 async def evaluate_policy_simulation(
     rule_id: str,
     version_id: Optional[str] = Query(None),
+    provider_type: str = Query("SIMULATED"),
+    sample_limit: Optional[int] = Query(500),
+    include_unlabeled_replay: bool = Query(False),
+    async_execution: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_analyst),
 ):
     """
     REQ-07: Executes historical regression simulation on candidate policy.
-    Reports INSUFFICIENT_DATA if historical cases < 5.
+    Supports explicit provider_type (`OPENAI_COMPATIBLE` or `SIMULATED`), paginated
+    retrieval via sample_limit, optional isolated unlabeled replay, and Celery queueing.
     """
-    rule_res = await db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
-    rule = rule_res.scalars().first()
+    from app.workers.tasks import dispatch_policy_simulation
+
+    rule = await resolve_canonical_rule(db, rule_id)
     if not rule:
         raise HTTPException(status_code=404, detail=f"SIEM Rule {rule_id} not found")
 
@@ -548,12 +599,16 @@ async def evaluate_policy_simulation(
 
     baseline_ver = next((v for v in rule_prompt.versions if v.id == rule_prompt.active_version_id), None)
 
-    sim_svc = PolicySimulationService(db)
     try:
-        return await sim_svc.evaluate_candidate_policy(
+        return await dispatch_policy_simulation(
+            db=db,
             rule_id=rule.id,
             candidate_version=target_ver,
             baseline_version=baseline_ver,
+            provider_type=provider_type,
+            sample_limit=sample_limit,
+            include_unlabeled_replay=include_unlabeled_replay,
+            async_execution=async_execution,
         )
     except Exception as exc:
         logger.error(f"Error evaluating policy simulation for rule {rule_id}: {exc}", exc_info=True)

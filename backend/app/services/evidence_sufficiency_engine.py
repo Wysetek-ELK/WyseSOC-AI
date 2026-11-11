@@ -98,6 +98,11 @@ class EvidenceSufficiencyEngine:
                 if k not in field_provenance:
                     field_provenance[k] = "SIEM_ALERT_METADATA"
 
+        # 2b. Authoritative rule threshold from RuleIntelligenceSnapshot / verified SIEM rule metadata
+        if authoritative_threshold is not None:
+            available_fields.setdefault("detection.threshold", authoritative_threshold)
+            field_provenance.setdefault("detection.threshold", "AUTHORITATIVE_SIEM_DEFINITION")
+
         # 3. Harvest nested event attributes from incident events
         events = incident_payload.get("events") or []
         distinct_sources: Set[str] = set()
@@ -173,6 +178,10 @@ class EvidenceSufficiencyEngine:
                     return True
                 if clean_target in ("destination.ip", "destip", "destinationip") and clean_k in ("destination.ip", "destip", "destinationip", "destination_ip"):
                     return True
+                if clean_target in ("network.destination.port", "destination.port", "destinationport", "destport", "dstport", "dst.port", "dest.port") and clean_k in ("network.destination.port", "destination.port", "destinationport", "destport", "dstport", "dst.port", "dest.port", "destination_port", "dest_port", "dst_port"):
+                    return True
+                if clean_target in ("network.source.port", "source.port", "sourceport", "srcport", "src.port") and clean_k in ("network.source.port", "source.port", "sourceport", "srcport", "src.port", "source_port", "src_port"):
+                    return True
                 if clean_target in ("network.bytes.sent", "sentbytes64", "bytes.sent", "bytes_sent", "sentbytes") and clean_k in ("network.bytes.sent", "sentbytes64", "bytes.sent", "bytessent", "bytes_sent", "sentbytes"):
                     return True
                 if clean_target in ("process.command.line", "process.cmdline", "cmdline", "commandline", "command", "process.command_line") and clean_k in ("process.command.line", "process.cmdline", "cmdline", "commandline", "command", "process.command_line"):
@@ -186,6 +195,8 @@ class EvidenceSufficiencyEngine:
                 if clean_target in ("mitre.technique", "technique", "attacktechnique") and clean_k in ("mitre.technique", "technique", "attacktechnique", "attack_technique"):
                     return True
                 if clean_target in ("endpoint.process.blocked", "process.blocked", "processblocked") and clean_k in ("endpoint.process.blocked", "process.blocked", "processblocked", "process_blocked"):
+                    return True
+                if clean_target in ("security.event.type", "event.type", "eventtype") and clean_k in ("security.event.type", "event.type", "eventtype", "event_type"):
                     return True
             return False
 

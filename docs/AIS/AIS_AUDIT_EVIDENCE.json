@@ -1,0 +1,396 @@
+{
+  "audit_metadata": {
+    "audit_title": "Agent Intelligence Studio 2.0 Complete Logic & Configuration Audit",
+    "audit_mode": "READ_ONLY",
+    "audit_timestamp": "2026-11-11T18:15:00+05:30",
+    "git_commit_head": "9616971",
+    "target_rule": {
+      "logical_id": "PH_RULE_HEAVY_TCP_HOST_SCAN",
+      "uuid": "9839fa49-40ac-4676-abcc-4c5581ae9e09",
+      "archetype": "NETWORK_SCAN"
+    },
+    "environment_scope": {
+      "codebase_inspected": "CONFIRMED",
+      "local_sqlite_db_inspected": "CONFIRMED (backend/ai_verdict.db, read-only, 26 incidents, 4 rules; PH_RULE_HEAVY_TCP_HOST_SCAN absent locally)",
+      "remote_live_postgresql": "UNVERIFIED (not reachable from local workspace; 34 rules / 2,900+ incidents reside remotely)",
+      "remote_server2_vllm": "UNVERIFIED (endpoint configured in backend/.env; live connectivity not probed)",
+      "remote_fortisiem_supervisor": "UNVERIFIED (host configured in backend/.env; live REST responses not probed)"
+    }
+  },
+  "observed_local_sqlite_snapshot": {
+    "database_path": "backend/ai_verdict.db",
+    "alembic_version": "008_soc_pilot",
+    "root_empty_db_file_bytes": 0,
+    "table_counts": {
+      "rules": 4,
+      "incidents": 26,
+      "incident_events": 197,
+      "historical_ground_truth": 24,
+      "investigations": 26,
+      "historical_evaluation_runs": 9,
+      "historical_evaluation_results": 62,
+      "policy_quality_assessments": 0,
+      "rule_intelligence_snapshots": 0,
+      "rule_maturity_evaluations": 0,
+      "rule_prompts": 4,
+      "prompt_versions": 5,
+      "audit_logs": 57,
+      "token_usage_records": 6,
+      "dry_run_jobs": 0,
+      "dry_run_results": 0
+    },
+    "ground_truth_is_ml_generated_breakdown": {
+      "ml_generated_true_fp": 6,
+      "ml_generated_true_tp": 7,
+      "ml_generated_false_fp": 5,
+      "ml_generated_false_tp": 5,
+      "ml_generated_false_under_investigation": 1
+    },
+    "ml_flagged_examples_with_human_attribution": [
+      {
+        "incident_id": "132501348",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "status_name": "Manually Cleared",
+        "resolution": "True Positive",
+        "cleared_user": "Yash Mungekar",
+        "is_ml_generated": 1,
+        "comments_prefix": "Resolution set by Machine Learning"
+      },
+      {
+        "incident_id": "132461358",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "status_name": "Manually Cleared",
+        "resolution": "False Positive",
+        "cleared_user": "shivamw",
+        "cleared_reason": "hash value is clean",
+        "is_ml_generated": 1,
+        "comments_prefix": "Resolution set by Machine Learning"
+      }
+    ],
+    "evaluation_runs_summary": {
+      "total_runs": 9,
+      "provider_type_values": ["SIMULATED"],
+      "sample_limit_values": [50],
+      "tcp_scan_on_fixed_port_run_e95d8a8e": {
+        "rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT",
+        "validation_state": "INSUFFICIENT_DATA",
+        "total_cases": 26,
+        "evaluated_cases": 0,
+        "verified_ground_truth_cases": 0
+      }
+    }
+  },
+  "executed_safe_checks": [
+    {
+      "name": "feature_registry_validation",
+      "command": "python scripts/validate_feature_registry.py",
+      "exit_code": 0,
+      "result": "OK: Registry verified (44 features, 19 modules, Impl=100.0%, Verif=88.5%)."
+    },
+    {
+      "name": "frontend_unit_tests",
+      "command": "cd frontend; node --experimental-strip-types --test tests/quality-export.test.mjs tests/admin-guide.test.mjs",
+      "exit_code": 0,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "notes": "8 subtests passed in tests/admin-guide.test.mjs; 7 subtests passed in tests/quality-export.test.mjs"
+    },
+    {
+      "name": "backend_pytest_batch_1",
+      "command": "cd backend; python -m pytest tests/test_agent_intelligence_studio_v2.py tests/test_policy_remediation_and_ground_truth.py tests/test_verdict_intelligence_validation.py tests/test_verdict_intelligence_enhancements_v2.py tests/test_live_simulation_parity.py tests/test_ground_truth_isolation.py tests/test_evidence_contracts.py tests/test_rule_parser.py -q",
+      "exit_code": 0,
+      "passed": 87,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 25.63
+    },
+    {
+      "name": "backend_pytest_batch_2",
+      "command": "cd backend; python -m pytest tests/test_evidence_normalization.py tests/test_evidence_preflight.py tests/test_independent_verdict_validator.py tests/test_evidence_grounding.py tests/test_calibration_and_evaluation.py tests/test_evaluation_metrics.py tests/test_dry_run_replay.py tests/test_policy_compiler.py tests/test_prompt_studio.py tests/test_model_provider.py tests/test_token_budgeting.py tests/test_verified_semantic_rag.py -q --durations=5",
+      "exit_code": 0,
+      "passed": 57,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 29.50
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "AIS-F01",
+      "severity": "HIGH",
+      "confidence": "CONFIRMED",
+      "title": "AIS simulation retrieves 50 unfiltered global incidents alongside rule-matched incidents (50 + 2 = 52) and omits event_type fallback",
+      "observed_behavior": "AIS G8 simulation scanned 52 incidents (50 RULE_MISMATCH + 2 RULE_MATCHED) when evaluating PH_RULE_HEAVY_TCP_HOST_SCAN.",
+      "expected_behavior": "AIS rule simulation should retrieve exclusively incidents belonging to the target canonical rule (matching either FK rule_id or canonical event_type) without injecting unrelated rules or truncating >50-incident cohorts.",
+      "root_cause_or_hypothesis": "PolicySimulationService.evaluate_candidate_policy hardcodes sample_limit=50; run_dry_run_intelligence_evaluation executes an unfiltered global top-50 query (scanned_q) plus a rule-filtered query (matched_q using Incident.rule_id.in_(rule_ids) without event_type) and merges matched_rows + scanned_rows.",
+      "source_references": [
+        "backend/app/services/policy_simulation_service.py:PolicySimulationService.run_dry_run_intelligence_evaluation:198,213-216,278-324,452-477",
+        "backend/app/services/policy_simulation_service.py:PolicySimulationService.evaluate_candidate_policy:1084-1090",
+        "backend/app/api/verdict_intelligence.py:start_historical_evaluation:282"
+      ],
+      "db_or_runtime_evidence": "Local DB run e95d8a8e-b1d6-4178-95e3-136df7d32a09 for PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT (0 local incidents) scanned all 26 unrelated local incidents; run 645aa5c8 scanned 26 (6 matched + 20 RULE_MISMATCH).",
+      "recommended_remediation": "Remove global scanned_q when rule_id is supplied; filter matched_q on or_(Incident.rule_id.in_(rule_ids), Incident.event_type == matched_rule.event_type); raise/paginate retrieval limit cleanly prioritizing labeled closed cases.",
+      "verification_steps": [
+        "Run live PostgreSQL reconciliation SQL to verify exact target-rule vs global top-50 overlap.",
+        "Add unit test asserting total_scanned == rule_matched when rule_id is provided."
+      ]
+    },
+    {
+      "finding_id": "AIS-F02",
+      "severity": "HIGH",
+      "confidence": "CONFIRMED",
+      "title": "AIS G8 simulation defaults to mocked SIMULATED provider and never invokes live local LLM",
+      "observed_behavior": "Clicking Run Simulation in AIS executes heuristic _simulate_model_output with zero NETWORK_SCAN rules, proposing REQUIRES_ATTENTION (50%) on scan incidents without calling Qwen LLM.",
+      "expected_behavior": "Empirical validation (G8) should execute real inference against the configured local LLM (or block empirical G8 certification whenever provider_type is SIMULATED).",
+      "root_cause_or_hypothesis": "evaluate_candidate_policy omits provider_type in its call to run_dry_run_intelligence_evaluation (which defaults provider_type='SIMULATED'). _simulate_model_output only inspects sentBytes64, command_line, and backup/maintenance strings.",
+      "source_references": [
+        "backend/app/services/policy_simulation_service.py:PolicySimulationService.run_dry_run_intelligence_evaluation:199,619-638",
+        "backend/app/services/policy_simulation_service.py:PolicySimulationService._simulate_model_output:937-1045",
+        "backend/app/services/policy_simulation_service.py:PolicySimulationService.evaluate_candidate_policy:1084-1090",
+        "frontend/src/app/verdict-intelligence/page.tsx:handleLaunchEvaluation:159-163"
+      ],
+      "db_or_runtime_evidence": "All 9 historical_evaluation_runs in backend/ai_verdict.db record config_snapshot.provider_type = 'SIMULATED'.",
+      "recommended_remediation": "Expose provider selection in AIS G8 (defaulting to OPENAI_COMPATIBLE when Server 2 is online via async queue) and forbid is_simulated=True runs from earning G8 EVALUATED_PASSED (15/15).",
+      "verification_steps": [
+        "Execute controlled simulation with OPENAI_COMPATIBLE enabled against online LLM and inspect historical_evaluation_results.claims_summary.is_simulated=false and token_usage_records."
+      ]
+    },
+    {
+      "finding_id": "AIS-F03",
+      "severity": "CRITICAL",
+      "confidence": "CONFIRMED",
+      "title": "Structural approval activates policy into live SOC triage despite G8 INSUFFICIENT_DATA",
+      "observed_behavior": "PH_RULE_HEAVY_TCP_HOST_SCAN achieved status APPROVED (approval_eligible=true, empirical_validation_eligible=false), and live VerdictTriageAgent runs on any status='APPROVED' policy.",
+      "expected_behavior": "Policies lacking empirical G8 certification (autonomous_operation_eligible=false) must remain strictly advisory/shadow or gated from autonomous production decisions.",
+      "root_cause_or_hypothesis": "G8 INSUFFICIENT_DATA returns GateStatus.WARNING (non-blocking), PolicyQualityValidator sets approval_eligible = (len(blocking_issues) == 0), AgentPolicyEngine.approve_version gates only on approval_eligible, and VerdictTriageAgent checks only candidate.status == 'APPROVED'.",
+      "source_references": [
+        "backend/app/services/policy_quality_validator.py:PolicyQualityValidator.validate_policy_quality:252",
+        "backend/app/services/policy_quality_validator.py:PolicyQualityValidator._evaluate_gate_8_simulation:712-716",
+        "backend/app/api/prompts.py:_compute_policy_quality_readonly:454-464",
+        "backend/app/services/prompt_studio_service.py:AgentPolicyEngine.approve_version:333-384",
+        "backend/app/services/ai_verdict_service.py:VerdictTriageAgent.evaluate_incident:272-278"
+      ],
+      "db_or_runtime_evidence": "Confirmed in prompts.py:461-463 and quality-export.test.mjs:122-126 (approval_eligible=true, empirical_validation_eligible=false, autonomous_operation_eligible=false).",
+      "recommended_remediation": "Persist autonomous_operation_eligible on PromptVersion/PolicyQualityAssessmentRecord and enforce analyst-review/advisory cap in VerdictTriageAgent whenever G8 != EVALUATED_PASSED.",
+      "verification_steps": [
+        "Verify unit test confirms policies approved with G8=INSUFFICIENT_DATA cannot issue unchecked autonomous decisive verdicts."
+      ]
+    },
+    {
+      "finding_id": "AIS-F04",
+      "severity": "HIGH",
+      "confidence": "CONFIRMED",
+      "title": "Ground truth ML substring false-positives and boilerplate overriding human attribution",
+      "observed_behavior": "Valid analyst-cleared incidents are classified as is_ml_generated=True / HEURISTIC_OR_ML_LABEL if comments contain substring 'ml' or FortiSIEM retains 'Resolution set by Machine Learning'.",
+      "expected_behavior": "Only unverified automated/ML closures without subsequent human analyst adjudication should be excluded as HEURISTIC_OR_ML_LABEL.",
+      "root_cause_or_hypothesis": "ingestion_service.py:639 checks '\"ml\" in comments.lower()' (matching normal/html/xml/similar); fortisiem_service.py:1145 checks '\"ML\" in comments' (matching HTML/XML); _is_automated_resolution_text returns True on is_ml_generated without checking human cleared_user or cleared_reason overrides.",
+      "source_references": [
+        "backend/app/services/ingestion_service.py:_ingest_single_incident_dict:636-643",
+        "backend/app/services/fortisiem_service.py:FortiSIEMService.extract_ground_truth_data:1142-1147",
+        "backend/app/services/historical_ground_truth_validator.py:HistoricalGroundTruthValidator._is_automated_resolution_text:81-101"
+      ],
+      "db_or_runtime_evidence": "In backend/ai_verdict.db, 13 of 24 historical_ground_truth rows have is_ml_generated=1, including 132501348 (Manually Cleared, cleared_user='Yash Mungekar', comment contains both ML prefix and analyst narrative) and 132461358 (cleared_user='shivamw', cleared_reason='hash value is clean').",
+      "recommended_remediation": "Use word-boundary regex r'\\bml\\b' and recognize explicit human cleared_user / substantive human cleared_reason overrides as human-adjudicated ground truth.",
+      "verification_steps": [
+        "Query live PostgreSQL historical_ground_truth rows with is_ml_generated=true and cleared_user <> '' to quantify recoverable human cases."
+      ]
+    },
+    {
+      "finding_id": "AIS-F05",
+      "severity": "HIGH",
+      "confidence": "CONFIRMED",
+      "title": "G1-G8 weight denominator mismatch (85 vs 105) and impossibility of 91/105 with 95.3%",
+      "observed_behavior": "Quality summary shows Overall=81, Structural=95.3%, G8=0/15, while report mentions G1-G7 awarded points 91/105 despite code yielding 101/105.",
+      "expected_behavior": "Gate max_score sums across G1-G7 (85) + G8 (15) should equal Overall 100 without double-counting detection_semantics.",
+      "root_cause_or_hypothesis": "PolicyQualityValidator assigns max_score=20 to BOTH G1 and G2 while folding both into single 20-pt score_breakdown['detection_semantics'] (G1-G7 max_score sum = 105; structural_raw denom = 85; 81/85 = 95.3%). With structural_raw=81 and G2=20, sum(G1..G7) is algebraically 101/105 (verified in quality-export.test.mjs:24-116). The 91/105 figure likely reflects either omitting G7=10 during manual summation (16+20+20+10+10+15=91) or a legacy pre-9616971 snapshot (UNVERIFIED).",
+      "source_references": [
+        "backend/app/services/policy_quality_validator.py:PolicyQualityValidator.validate_policy_quality:47-52,90-248",
+        "frontend/tests/quality-export.test.mjs:makeSampleAssessment:24-116"
+      ],
+      "db_or_runtime_evidence": "Confirmed algebraically in PolicyQualityValidator and verified via passing node test quality-export.test.mjs.",
+      "recommended_remediation": "Allocate distinct non-overlapping weights (e.g., G1=10, G2=10, G3=20, G4=10, G5=10, G6=15, G7=10, G8=15; total=100).",
+      "verification_steps": [
+        "Inspect live exported quality_gates JSON from remote Studio UI to confirm exact G1..G7 per-gate scores."
+      ]
+    },
+    {
+      "finding_id": "AIS-F06",
+      "severity": "MEDIUM",
+      "confidence": "CONFIRMED",
+      "title": "Exported G1-G8 JSON always serializes validation_status as null",
+      "observed_behavior": "Quality Gates export payload contains assessment.validation_status: null.",
+      "expected_behavior": "Exported status field should reflect a populated validation state (or remove redundant null field in favor of empirical_validation_status).",
+      "root_cause_or_hypothesis": "PolicyQualityAssessmentResponse Pydantic schema omits validation_status and uses empirical_validation_status/simulation_status, whereas frontend/src/lib/qualityExport.ts:170 accesses assessment.validation_status || null.",
+      "source_references": [
+        "backend/app/schemas/policy_quality.py:PolicyQualityAssessmentResponse:34-78",
+        "frontend/src/lib/qualityExport.ts:buildQualityGatesExportPayload:170-175"
+      ],
+      "db_or_runtime_evidence": "Verified in quality-export.test.mjs and schema inspection.",
+      "recommended_remediation": "Map validation_status in qualityExport.ts from empirical_validation_status (or remove deprecated null field consistently across consumers).",
+      "verification_steps": [
+        "Update qualityExport.ts and assert non-null validation_status in quality-export.test.mjs."
+      ]
+    },
+    {
+      "finding_id": "AIS-F07",
+      "severity": "MEDIUM",
+      "confidence": "CONFIRMED",
+      "title": "AI Triage Workbench search merges distinct similarly named TCP scan rules (33 vs 2)",
+      "observed_behavior": "Searching 'Heavy TCP Host Scan' in AI Triage Workbench returns 33 incidents while AIS exact rule simulation matches 2.",
+      "expected_behavior": "Users should be warned that free-text search aggregates multiple canonical rules and have clear rule_id filtering badges to distinguish PH_RULE_HEAVY_TCP_HOST_SCAN from PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT.",
+      "root_cause_or_hypothesis": "IncidentService.list_incidents applies ILIKE '%term%' across 6 columns (incident_id, title, description, source_ip, reporting_device, event_type), combining multiple sibling scan rules.",
+      "source_references": [
+        "backend/app/services/incident_service.py:IncidentService.list_incidents:94-111"
+      ],
+      "db_or_runtime_evidence": "Confirmed in backend/app/services/incident_service.py; exact 33-row live distribution across rules is UNVERIFIED remotely.",
+      "recommended_remediation": "Display canonical rule_id badges on Workbench search results and add quick-filter chips by exact canonical rule.",
+      "verification_steps": [
+        "Run live Workbench ILIKE reconciliation SQL grouped by Rules.rule_id and Incident.event_type."
+      ]
+    },
+    {
+      "finding_id": "AIS-F08",
+      "severity": "MEDIUM",
+      "confidence": "CONFIRMED",
+      "title": "Inconsistent canonical rule UUID vs rule_id lookups, REST 500-incident rule discovery, and Pattern Conditions parser bug",
+      "observed_behavior": "Different modules resolve Rule rows inconsistently, REST rule sync only inspects newest 500 alerts, and RuleParser drops 'Pattern Conditions' headings.",
+      "expected_behavior": "All services should accept UUID, logical rule_id, and event_type consistently; authoritative rule parsing should preserve 'Pattern Conditions' text.",
+      "root_cause_or_hypothesis": "AgentPolicyEngine (6 methods) and RuleMaturityService query Rule.id == rule_id only; rules.list_rules ignores event_type unlike rules.get_rule_detail; sync_all_rules_from_siem relies on /pub/incident size=500; rule_parser.py:112-115 ignores sections['pattern conditions'].",
+      "source_references": [
+        "backend/app/services/prompt_studio_service.py:AgentPolicyEngine:44,99,189,256,402,657,691",
+        "backend/app/services/maturity_service.py:RuleMaturityService.get_or_create_evaluation:28",
+        "backend/app/api/rules.py:list_rules:30-38",
+        "backend/app/api/rules.py:get_rule_detail:211-214",
+        "backend/app/services/fortisiem_service.py:FortiSIEMService.sync_all_rules_from_siem:102-295",
+        "backend/app/services/rule_parser.py:DetectionContextEngine.parse_rule_text:46,64,112-115"
+      ],
+      "db_or_runtime_evidence": "Confirmed via code reading and test_rule_parser.py; live unlinked incident count UNVERIFIED.",
+      "recommended_remediation": "Standardize centralized rule resolution helper and include sections['pattern conditions'] in DetectionContextEngine.",
+      "verification_steps": [
+        "Add unit test parsing rule text containing 'Pattern Conditions' header and verify pattern_logic is populated."
+      ]
+    },
+    {
+      "finding_id": "AIS-F09",
+      "severity": "MEDIUM",
+      "confidence": "CONFIRMED",
+      "title": "AIS G8 diverges from Live Triage safeguards, ignores Investigation.is_disputed, and still runs inference on excluded rows",
+      "observed_behavior": "Even with OPENAI_COMPATIBLE, AIS G8 bypasses Preflight, RAG, TokenBudget, IndependentVerdictValidator, RuleIntelligenceSnapshot, Investigation.is_disputed, and evaluates excluded RULE_MATCHED incidents.",
+      "expected_behavior": "Simulation should run the identical compiled-policy + validation stack as live triage, respect disputed flags, and skip excluded rows before inference.",
+      "root_cause_or_hypothesis": "PolicySimulationService uses a bespoke loop without Preflight/RAG/Budget/IndependentVerdictValidator/Snapshot, never joins Investigation.is_disputed (unlike HistoricalEligibilityService:185), and lacks 'continue' after setting exclusion_reason at lines 581-590.",
+      "source_references": [
+        "backend/app/services/policy_simulation_service.py:PolicySimulationService.run_dry_run_intelligence_evaluation:581-649",
+        "backend/app/services/historical_eligibility_service.py:HistoricalEligibilityService.generate_eligibility_report:185",
+        "backend/app/services/ai_verdict_service.py:VerdictTriageAgent.evaluate_incident:362-770"
+      ],
+      "db_or_runtime_evidence": "Local DB run 645aa5c8 shows evaluated_cases=6 while verified_ground_truth_cases=2 (all 4 excluded DEBUG incidents still evaluated and stored in historical_evaluation_results).",
+      "recommended_remediation": "Consolidate shared evaluation pipeline for Live + Simulation, enforce disputed exclusion, and add 'continue' when exclusion_reason is set.",
+      "verification_steps": [
+        "Run test_live_simulation_parity.py and new test verifying excluded rows do not produce HistoricalEvaluationResultRecord evaluations."
+      ]
+    },
+    {
+      "finding_id": "AIS-F10",
+      "severity": "MEDIUM",
+      "confidence": "CONFIRMED",
+      "title": "NETWORK_SCAN telemetry normalization omits Destination Port aliases; Contract ignores Snapshot; Archetype typo",
+      "observed_behavior": "'Destination Port' / 'dstPort' / 'destinationPort' fields are omitted during canonical normalization; EvidenceContractService ignores RuleIntelligenceSnapshot.",
+      "expected_behavior": "All standard FortiSIEM destination port attribute variants should normalize to network.destination_port and contracts should incorporate snapshot-verified rule thresholds.",
+      "root_cause_or_hypothesis": "FIELD_MAPPINGS maps only 'destport'/'dest_port', fallback ignores 'port', EvidenceSufficiencyEngine._match_field has no port alias group, rawEvents is skipped when attributes/event exist, EvidenceContractService calls analyze_rule without snapshot, and detection_archetype_registry.py:691 has typo PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT.",
+      "source_references": [
+        "backend/app/services/evidence_normalization_service.py:FIELD_MAPPINGS:58-59,241-249,303",
+        "backend/app/services/evidence_sufficiency_engine.py:EvidenceSufficiencyEngine._match_field:165-190",
+        "backend/app/services/evidence_contract_service.py:EvidenceContractService.get_contract_for_rule:81-96",
+        "backend/app/services/detection_archetype_registry.py:DetectionArchetypeRegistry.classify_rule:119-124,691"
+      ],
+      "db_or_runtime_evidence": "Confirmed by inspection of normalization, sufficiency, contract, and archetype modules.",
+      "recommended_remediation": "Add destination port aliases across normalization/sufficiency, handle rawEvents deterministically, wire RuleIntelligenceSnapshot into EvidenceContractService, and fix line 691 typo.",
+      "verification_steps": [
+        "Unit test NETWORK_SCAN incident carrying 'Destination Port' and 'dstPort' attributes -> verify network.destination_port extracted and SUFFICIENT."
+      ]
+    },
+    {
+      "finding_id": "AIS-F11",
+      "severity": "MEDIUM",
+      "confidence": "CONFIRMED",
+      "title": "Fragmented simulation subsystems (AIS G8 vs Legacy Dry-Run Lab & Maturity) and hardcoded SIMULATED UI launch",
+      "observed_behavior": "Legacy /dry-run and RuleMaturityService maintain separate tables/approval logic unrelated to AIS G8, while Verdict Intelligence dashboard launch hardcodes provider_type='SIMULATED'.",
+      "expected_behavior": "Single canonical simulation & maturity engine with explicit execution provider control.",
+      "root_cause_or_hypothesis": "Parallel phase evolution left dry_run_service.py / maturity_service.py separate from policy_simulation_service.py; verdict-intelligence/page.tsx:162 hardcodes SIMULATED.",
+      "source_references": [
+        "backend/app/services/dry_run_service.py:ValidationEngine:22-220",
+        "backend/app/services/maturity_service.py:RuleMaturityService:16-204",
+        "frontend/src/app/verdict-intelligence/page.tsx:handleLaunchEvaluation:159-163"
+      ],
+      "db_or_runtime_evidence": "Local SQLite shows dry_run_jobs=0, dry_run_results=0, rule_maturity_evaluations=0 alongside historical_evaluation_runs=9, historical_evaluation_results=62.",
+      "recommended_remediation": "Deprecate or unify legacy DryRun / RuleMaturity tables into AIS G8 historical_evaluation_runs and expose provider_type selector.",
+      "verification_steps": [
+        "Confirm unified evaluation table reflects both Studio and Intelligence dashboard runs."
+      ]
+    },
+    {
+      "finding_id": "AIS-F12",
+      "severity": "MEDIUM",
+      "confidence": "CONFIRMED",
+      "title": "Local environment fallback configuration, synchronous simulation execution, and .env append hygiene",
+      "observed_behavior": "Local backend/.env enables LOCAL_LLM_ALLOW_MOCK_FALLBACK=true and FORTISIEM_MOCK_FALLBACK=true, omits DATABASE_URL/SECRET_KEY/AUDIT_SIGNING_KEY, contains repeated appended headers from llm_config_service, and G8 simulation runs synchronously on web workers.",
+      "expected_behavior": "Strict production config enforcement, clean idempotent .env updates, and Celery simulation_replay background execution for real LLM G8 batches.",
+      "root_cause_or_hypothesis": "backend/.env holds dev overrides; prompts.py:553 awaits evaluate_candidate_policy inline rather than dispatching to Celery queue simulation_replay; llm_config_service appends config sections.",
+      "source_references": [
+        "backend/.env:4,29-37,126-129",
+        "backend/app/config.py:Settings:47-54,81-138",
+        "backend/app/api/prompts.py:evaluate_policy_simulation:551-557",
+        "backend/app/workers/celery_app.py:celery_app:31-48"
+      ],
+      "db_or_runtime_evidence": "Direct inspection of backend/.env (129 lines, masked), config.py, and deployment/env.production.example.",
+      "recommended_remediation": "Enforce non-mock env flags in staging/prod, dispatch live-LLM G8 simulations to Celery simulation_replay worker, and update .env keys cleanly in place.",
+      "verification_steps": [
+        "Verify production /api/health reports healthy PostgreSQL, Redis, Celery, and Local LLM without mock fallback."
+      ]
+    },
+    {
+      "finding_id": "AIS-F13",
+      "severity": "INFO",
+      "confidence": "UNVERIFIED",
+      "title": "Remote PostgreSQL exact counts (34 rules / 2,900+ incidents / 33 vs 2 vs 1 breakdown) require live SQL execution",
+      "observed_behavior": "Reported remote production counts (34 rules, 2,900+ incidents, 33 Workbench hits, 2 matched / 1 GT qualified for PH_RULE_HEAVY_TCP_HOST_SCAN) differ from local dev SQLite (4 rules, 26 incidents).",
+      "expected_behavior": "Live production SQL counts should reconcile 100% with AIS G8 funnel diagnostics and Workbench search output.",
+      "root_cause_or_hypothesis": "Production PostgreSQL database, FortiSIEM Supervisor, and Server 2 vLLM are inaccessible from the local audit workspace.",
+      "source_references": [
+        "docs/AIS/AIS_INCIDENT_RETRIEVAL_AUDIT.md",
+        "docs/AIS/AIS_RULE_MAPPING_AUDIT.md",
+        "docs/AIS/AIS_GROUND_TRUTH_AUDIT.md"
+      ],
+      "db_or_runtime_evidence": "Confirmed absent from local backend/ai_verdict.db; requires remote read-only SQL verification.",
+      "recommended_remediation": "Execute the documented read-only SQL queries on live Server 1 PostgreSQL and attach results to close AIS-F13.",
+      "verification_steps": [
+        "Run the SQL diagnostics in AIS_INCIDENT_RETRIEVAL_AUDIT.md, AIS_RULE_MAPPING_AUDIT.md, and AIS_GROUND_TRUTH_AUDIT.md against production PostgreSQL."
+      ]
+    }
+  ],
+  "dependency_classification": [
+    { "dependency": "Database (Remote PostgreSQL)", "local_dev_state": "MISSING", "remote_prod_state": "NOT VERIFIABLE", "notes": "backend/.env omits DATABASE_URL -> SQLite fallback" },
+    { "dependency": "Database (Local SQLite ai_verdict.db)", "local_dev_state": "CONFIGURED", "remote_prod_state": "NOT VERIFIABLE", "notes": "26 incidents, 4 rules, alembic head 008_soc_pilot" },
+    { "dependency": "SIEM Rule Mappings & FortiSIEM Connector", "local_dev_state": "CONFIGURED", "remote_prod_state": "NOT VERIFIABLE", "notes": "FORTISIEM_MOCK_FALLBACK=true, VERIFY_SSL=false locally" },
+    { "dependency": "Historical Retrieval Limits", "local_dev_state": "INVALID", "remote_prod_state": "INVALID", "notes": "Hardcoded sample_limit=50 with unfiltered global scanned_q" },
+    { "dependency": "Ground-Truth Verification Policy", "local_dev_state": "INVALID", "remote_prod_state": "INVALID", "notes": "'ml' substring bug + ML override of cleared_user + omitted is_disputed in simulation" },
+    { "dependency": "Evidence Contract & Normalization Mappings", "local_dev_state": "INVALID", "remote_prod_state": "INVALID", "notes": "Omits Destination Port aliases; Contract ignores Snapshot" },
+    { "dependency": "Quality Gate Thresholds (G1-G8)", "local_dev_state": "INVALID", "remote_prod_state": "INVALID", "notes": "85 vs 105 denominator mismatch; structural approval enables live triage without G8" },
+    { "dependency": "Local LLM Endpoint & Model Settings", "local_dev_state": "CONFIGURED", "remote_prod_state": "NOT VERIFIABLE", "notes": "Qwen/Qwen2.5-7B-Instruct-AWQ configured; ALLOW_MOCK_FALLBACK=true locally" },
+    { "dependency": "Inference Timeout & Retry Settings", "local_dev_state": "CONFIGURED", "remote_prod_state": "NOT VERIFIABLE", "notes": "LOCAL_LLM_TIMEOUT=25.0 in .env; circuit breaker defaults active" },
+    { "dependency": "AIS G8 Simulation Execution Mode", "local_dev_state": "DISABLED", "remote_prod_state": "DISABLED", "notes": "Hardcoded default provider_type=SIMULATED in evaluate_candidate_policy" },
+    { "dependency": "Feature Flags (Auto Poll / Async Celery / Pilot)", "local_dev_state": "DISABLED", "remote_prod_state": "NOT VERIFIABLE", "notes": "Disabled in dev; production template enables Celery" },
+    { "dependency": "Background Workers & Job Queues", "local_dev_state": "DISABLED", "remote_prod_state": "NOT VERIFIABLE", "notes": "In-process locally; G8 does not enqueue simulation_replay" },
+    { "dependency": "API Routes", "local_dev_state": "CONFIGURED", "remote_prod_state": "NOT VERIFIABLE", "notes": "/api/* mounted; /api/v1 only on verdict_intelligence" },
+    { "dependency": "Permissions & Secrets", "local_dev_state": "MISSING", "remote_prod_state": "NOT VERIFIABLE", "notes": "SECRET_KEY & AUDIT_SIGNING_KEY omitted in local .env -> dev key" },
+    { "dependency": "Audit Logging & Result Persistence", "local_dev_state": "CONFIGURED", "remote_prod_state": "NOT VERIFIABLE", "notes": "Audit logs active; G8 skips TokenUsageRecord and PolicyQualityAssessmentRecord on validate-quality" }
+  ],
+  "live_verification_sql_queries": {
+    "reconcile_totals": "SELECT (SELECT COUNT(*) FROM rules) AS total_rules, (SELECT COUNT(*) FROM incidents) AS total_incidents, (SELECT COUNT(*) FROM historical_ground_truth) AS total_gt_rows;",
+    "reconcile_workbench_33": "SELECT COALESCE(r.rule_id, 'UNLINKED_RULE_FK') AS linked_canonical_rule, i.rule_id AS incident_rule_fk, i.event_type AS incident_event_type, COUNT(*) AS incident_count FROM incidents i LEFT JOIN rules r ON r.id = i.rule_id WHERE i.incident_id ILIKE '%Heavy TCP Host Scan%' OR i.title ILIKE '%Heavy TCP Host Scan%' OR i.description ILIKE '%Heavy TCP Host Scan%' OR i.source_ip ILIKE '%Heavy TCP Host Scan%' OR i.reporting_device ILIKE '%Heavy TCP Host Scan%' OR i.event_type ILIKE '%Heavy TCP Host Scan%' GROUP BY 1, 2, 3 ORDER BY incident_count DESC;",
+    "reconcile_target_rule_and_top50_overlap": "SELECT (SELECT COUNT(*) FROM incidents WHERE rule_id IN ('9839fa49-40ac-4676-abcc-4c5581ae9e09', 'PH_RULE_HEAVY_TCP_HOST_SCAN')) AS fk_matched_only, (SELECT COUNT(*) FROM incidents WHERE rule_id IN ('9839fa49-40ac-4676-abcc-4c5581ae9e09', 'PH_RULE_HEAVY_TCP_HOST_SCAN') OR event_type = 'PH_RULE_HEAVY_TCP_HOST_SCAN') AS fk_or_event_type_matched, (SELECT COUNT(*) FROM (SELECT rule_id, event_type FROM incidents ORDER BY created_at DESC LIMIT 50) t WHERE t.rule_id = '9839fa49-40ac-4676-abcc-4c5581ae9e09' OR t.event_type = 'PH_RULE_HEAVY_TCP_HOST_SCAN') AS overlap_in_global_top50;",
+    "reconcile_ground_truth_2_matched": "SELECT i.incident_id, i.rule_id, i.event_type, i.status_name, (SELECT COUNT(*) FROM incident_events ie WHERE ie.incident_id = i.id) AS event_count, gt.resolution, gt.is_ml_generated, gt.cleared_user, gt.cleared_reason, gt.cleared_time_epoch, gt.comments, inv.is_disputed FROM incidents i LEFT JOIN historical_ground_truth gt ON gt.incident_id = i.id LEFT JOIN investigations inv ON inv.incident_id = i.id WHERE i.rule_id IN ('9839fa49-40ac-4676-abcc-4c5581ae9e09', 'PH_RULE_HEAVY_TCP_HOST_SCAN') OR i.event_type = 'PH_RULE_HEAVY_TCP_HOST_SCAN' ORDER BY i.created_at DESC;"
+  }
+}
+

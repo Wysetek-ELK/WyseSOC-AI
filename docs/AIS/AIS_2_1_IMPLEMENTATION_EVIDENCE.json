@@ -1,0 +1,151 @@
+{
+  "release": "AIS 2.1 Critical Remediation (P0 & P1)",
+  "generated_at": "2026-11-11T19:33:00+05:30",
+  "workspace_root": "SOC-AI-Agent",
+  "scope_remediated": [
+    "AIS-F01",
+    "AIS-F02",
+    "AIS-F03",
+    "AIS-F04",
+    "AIS-F09",
+    "AIS-F08 (canonical rule resolution dependency)",
+    "AIS-F10 (parser, port normalization & snapshot contract dependencies)"
+  ],
+  "scope_deferred": [
+    "AIS-F05",
+    "AIS-F06",
+    "AIS-F07",
+    "AIS-F11",
+    "AIS-F12",
+    "AIS-F13"
+  ],
+  "environment_boundary": {
+    "local_tests_verified": true,
+    "remote_postgresql_verified": "NOT VERIFIED",
+    "remote_server2_vllm_verified": "NOT VERIFIED",
+    "remote_redis_celery_worker_verified": "NOT VERIFIED",
+    "remote_fortisiem_supervisor_verified": "NOT VERIFIED"
+  },
+  "files_changed": {
+    "new_code_and_test_files": [
+      {
+        "path": "backend/app/services/policy_governance.py",
+        "lines": 526,
+        "key_symbols": [
+          "resolve_canonical_rule",
+          "build_rule_incident_context",
+          "build_rule_incident_sql_filter",
+          "verify_incident_matches_rule",
+          "get_rule_semantics_and_contract",
+          "assess_policy_runtime_certification",
+          "PolicyRuntimeCertification"
+        ]
+      },
+      {
+        "path": "backend/app/services/verdict_pipeline.py",
+        "lines": 1001,
+        "key_symbols": [
+          "run_shared_verdict_pipeline",
+          "VerdictPipelineResult",
+          "build_sanitized_model_payload",
+          "_invoke_provider_with_guards",
+          "_governance_fields"
+        ]
+      },
+      {
+        "path": "backend/tests/test_ais_2_1_remediation.py",
+        "lines": 1148,
+        "test_functions": [
+          "test_1_rule_scoped_retrieval_returns_exact_two_not_52",
+          "test_2_similar_rule_names_never_cause_cross_rule_contamination",
+          "test_3_unlinked_unambiguous_event_type_included_ambiguous_isolated",
+          "test_4_paginated_retrieval_over_50_incidents",
+          "test_5_ml_word_boundary_and_human_provenance_safeguards",
+          "test_6_disputed_ambiguous_synthetic_excluded_from_g8_and_unlabeled_isolated",
+          "test_7_and_8_real_llm_simulation_provenance_vs_simulated_blocked_from_g8",
+          "test_9_simulation_and_live_share_verdict_safeguards_and_port_normalization",
+          "test_10_historical_replay_does_not_mutate_live_incident_state",
+          "test_11_uncertified_policy_blocked_from_autonomous_actions_advisory_allowed"
+        ]
+      }
+    ],
+    "modified_tracked_files": [
+      "backend/app/api/prompts.py",
+      "backend/app/api/verdict_intelligence.py",
+      "backend/app/schemas/verdict_intelligence.py",
+      "backend/app/services/ai_verdict_service.py",
+      "backend/app/services/detection_archetype_registry.py",
+      "backend/app/services/evidence_contract_service.py",
+      "backend/app/services/evidence_normalization_service.py",
+      "backend/app/services/evidence_sufficiency_engine.py",
+      "backend/app/services/fortisiem_service.py",
+      "backend/app/services/historical_ground_truth_validator.py",
+      "backend/app/services/ingestion_service.py",
+      "backend/app/services/pilot_service.py",
+      "backend/app/services/policy_quality_validator.py",
+      "backend/app/services/policy_simulation_service.py",
+      "backend/app/services/prompt_studio_service.py",
+      "backend/app/services/rule_parser.py",
+      "backend/app/workers/celery_app.py",
+      "backend/app/workers/tasks.py",
+      "backend/tests/test_policy_remediation_and_ground_truth.py",
+      "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "frontend/src/lib/api.ts"
+    ],
+    "reports_added": [
+      "docs/AIS/AIS_2_1_IMPLEMENTATION_REPORT.md",
+      "docs/AIS/AIS_2_1_FILES_CHANGED.md",
+      "docs/AIS/AIS_2_1_TEST_RESULTS.md",
+      "docs/AIS/AIS_2_1_SIMULATION_PARITY.md",
+      "docs/AIS/AIS_2_1_REMAINING_GAPS.md",
+      "docs/AIS/AIS_2_1_IMPLEMENTATION_EVIDENCE.json"
+    ]
+  },
+  "verification_runs_post_final_edit": {
+    "backend_full_suite": {
+      "command": "cd backend; python -m pytest -q",
+      "status": "PASSED",
+      "passed": 314,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 431.38
+    },
+    "targeted_ais_and_wire_e2e_suite": {
+      "command": "cd backend; python -m pytest tests/test_phase8_2_validation.py::test_stage_e_controlled_wire_scenarios tests/test_phase9_audit_and_pilot.py::test_pilot_shadow_isolation_idempotency_budgets_and_rollback tests/e2e_browser/test_phase9_ui_e2e.py tests/e2e_browser/test_phase9_1_ui_e2e.py tests/test_ais_2_1_remediation.py tests/test_policy_remediation_and_ground_truth.py -v",
+      "status": "PASSED",
+      "passed": 23,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 99.78
+    },
+    "frontend_unit_tests": {
+      "command": "cd frontend; node --experimental-strip-types --test tests/quality-export.test.mjs tests/admin-guide.test.mjs",
+      "status": "PASSED",
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    "frontend_typescript_check": {
+      "command": "cd frontend; npx tsc --noEmit",
+      "status": "PASSED",
+      "exit_code": 0
+    },
+    "frontend_production_build": {
+      "command": "cd frontend; npm run build",
+      "status": "PASSED",
+      "exit_code": 0,
+      "routes_built": 32
+    },
+    "feature_registry_check": {
+      "command": "python scripts/validate_feature_registry.py",
+      "status": "PASSED",
+      "features": 44,
+      "modules": 19
+    },
+    "security_diff_hygiene_scan": {
+      "status": "PASSED",
+      "non_test_ip_hits": 0,
+      "secret_hits": 0
+    }
+  }
+}

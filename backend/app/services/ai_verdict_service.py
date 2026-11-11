@@ -16,15 +16,11 @@ from app.models.audit import AuditLog
 from app.services.model_payload_allowlist import build_model_facing_payload
 from app.services.model_provider.factory import get_model_provider
 from app.services.prompt_studio_service import PromptStudioService, COMMON_SOC_BASELINE
-from app.services.evidence_normalization_service import EvidenceNormalizationService
-from app.services.evidence_contract_service import EvidenceContractService
-from app.services.evidence_preflight_validator import EvidencePreflightValidator
-from app.services.model_claim_extractor import ModelClaimExtractor
-from app.services.independent_verdict_validator import IndependentVerdictValidator
-from app.schemas.compiled_policy import CompilationExecutionMode
-from app.services.policy_compiler_service import PolicyCompilerService
-from app.services.verified_semantic_retrieval_service import VerifiedSemanticRetrievalService
-from app.services.token_budget_service import TokenBudgetService
+from app.services.policy_governance import resolve_canonical_rule
+from app.services.verdict_pipeline import (
+    PipelineLLMUnavailableError,
+    run_shared_verdict_pipeline,
+)
 from app.services.provenance import classify_execution_provenance
 
 
@@ -129,6 +125,8 @@ class VerdictTriageAgent:
         allow_simulated_fallback: bool = False,
         only_if_pending: bool = False,
         pilot_context: Optional[Dict[str, Any]] = None,
+        execution_context: str = "ANALYST_ASSISTED",
+        require_autonomous_certification: bool = False,
     ) -> Dict[str, Any]:
         """
         Evaluates a single incident with the LLM.
@@ -184,6 +182,8 @@ class VerdictTriageAgent:
                     lock_key=lock_key,
                     lock_owner_id=lock_owner_id,
                     pilot_context=pilot_context,
+                    execution_context=execution_context,
+                    require_autonomous_certification=require_autonomous_certification,
                 )
 
     async def _evaluate_incident_locked(
@@ -195,6 +195,8 @@ class VerdictTriageAgent:
         lock_key: Optional[str] = None,
         lock_owner_id: Optional[str] = None,
         pilot_context: Optional[Dict[str, Any]] = None,
+        execution_context: str = "ANALYST_ASSISTED",
+        require_autonomous_certification: bool = False,
     ) -> Dict[str, Any]:
         """Protected single-incident evaluation execution under per-incident concurrency lock."""
         is_shadow_pilot = bool(pilot_context and str(pilot_context.get("mode", "")).upper() == "SHADOW")
@@ -204,131 +206,120 @@ class VerdictTriageAgent:
         if isinstance(incident.ai_verdict, dict):
             prev_attempts = int(incident.ai_verdict.get("reevaluation_attempts", 0) or 0)
 
-        # 2. Auto-resolve Rule if incident is unmapped
+        # 2. Auto-resolve Rule canonically if incident is unmapped
         rule = incident.rule
         if not rule and incident.event_type:
-            r_q = await self.db.execute(
-                select(Rule).where((Rule.event_type == incident.event_type) | (Rule.rule_id == incident.event_type))
-            )
-            rule = r_q.scalars().first()
+            rule = await resolve_canonical_rule(self.db, incident.event_type)
 
             if not rule:
-                rule = Rule(
-                    rule_id=incident.event_type,
-                    name=incident.title if incident.title and incident.title != "No description provided by SIEM." else incident.event_type,
-                    event_type=incident.event_type,
-                    severity=incident.severity or "MEDIUM",
-                    description=f"Auto-mapped SIEM detection rule for {incident.event_type}",
-                    status="ACTIVE",
-                )
-                self.db.add(rule)
+                existing_sibs = (
+                    await self.db.execute(select(Rule.id).where(Rule.event_type == incident.event_type))
+                ).scalars().all()
+                if not existing_sibs:
+                    rule = Rule(
+                        rule_id=incident.event_type,
+                        name=incident.title if incident.title and incident.title != "No description provided by SIEM." else incident.event_type,
+                        event_type=incident.event_type,
+                        severity=incident.severity or "MEDIUM",
+                        description=f"Auto-mapped SIEM detection rule for {incident.event_type}",
+                        status="ACTIVE",
+                    )
+                    self.db.add(rule)
+                    await self.db.flush()
+
+            if rule:
+                incident.rule_id = rule.id
+                incident.rule = rule
+                self.db.add(incident)
                 await self.db.flush()
 
-            incident.rule_id = rule.id
-            incident.rule = rule
-            self.db.add(incident)
-            await self.db.flush()
+                # Link unmapped siblings ONLY when event_type is globally unique in rules
+                ev_count = len((await self.db.execute(select(Rule.id).where(Rule.event_type == incident.event_type))).scalars().all())
+                if ev_count == 1:
+                    await self.db.execute(
+                        update(Incident)
+                        .where(Incident.event_type == incident.event_type, Incident.rule_id.is_(None))
+                        .values(rule_id=rule.id)
+                    )
 
-            # Link any sibling unmapped incidents sharing this event_type
-            await self.db.execute(
-                update(Incident)
-                .where(Incident.event_type == incident.event_type, Incident.rule_id.is_(None))
-                .values(rule_id=rule.id)
-            )
+        # 3-6. Execute unified AIS 2.1 safeguards pipeline (Normalization -> Allowlist -> Governance
+        #      -> Preflight -> Compiler -> RAG -> TokenBudget -> LLM -> Claim Grounding -> Validator -> Trust)
+        from app.services.policy_simulation_service import PolicySimulationService
 
-        # 3. Canonical Evidence Normalization (P2-REQ-01)
-        norm_result = EvidenceNormalizationService.normalize_incident_evidence(
-            incident=incident,
-            events=incident.events or [],
-        )
-
-        # 3b. Build model-facing payload (strict allowlist - zero ground-truth leakage)
-        payload_dict = build_model_facing_payload(
-            incident=incident,
-            rule=rule,
-            events=incident.events or [],
-        )
-        payload_dict["canonical_evidence"] = [r.model_dump() for r in norm_result.records]
-
-        # 4. Resolve evaluation mode & Model Availability Guard (REQ-02 / AV-004)
         is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
-        if is_prod or (pilot_context and str(pilot_context.get("source_type", "")).upper() == "LIVE"):
-            allow_mock = False
-        else:
-            allow_mock = allow_simulated_fallback or getattr(settings, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)
-
-        if not allow_mock and not model_provider_type:
-            is_online = await self.is_local_llm_available()
-            if not is_online:
-                raise LocalLLMUnavailableError(
-                    "Local LLM (Server 2) is currently offline. AI verdict generation is deferred until Local LLM comes online."
-                )
-
-        # 4b. Resolve prompt text with Level-2 SOC criteria
         prompt_service = PromptStudioService(self.db)
-        prompt_text = COMMON_SOC_BASELINE
-        prompt_ver_num = 1
-
         active_v = None
+        candidate_v = None
         if rule:
             rp = await prompt_service.get_or_create_rule_prompt(rule.id)
             if rp and rp.active_version_id and rp.versions:
-                candidate = next((v for v in rp.versions if v.id == rp.active_version_id), None)
-                if candidate and candidate.status == "APPROVED":
-                    active_v = candidate
-        else:
-            rp = None
+                cand = next((v for v in rp.versions if v.id == rp.active_version_id), None)
+                if cand and cand.status == "APPROVED":
+                    active_v = cand
+            if rp and rp.versions:
+                candidate_v = rp.versions[0]
 
-        # REQ-03 (AV-001 & AV-002): Refuse to evaluate with unapproved prompt drafts or unmapped rule policy in live triage
-        if not active_v:
-            if not allow_simulated_fallback or is_prod:
-                deferral_detail = (
-                    "DETECTION_POLICY_PENDING_APPROVAL: No approved investigation policy exists for this detection rule. Triage deferred to human analyst."
-                    if rule
-                    else "DETECTION_POLICY_PENDING_APPROVAL: Incident has no matched approved detection rule policy. Triage deferred to human analyst."
-                )
-                verdict_data = {
-                    "incident_id": incident.incident_id,
-                    "proposed_verdict": "REQUIRES_ATTENTION",
-                    "verdict": "REQUIRES_ATTENTION",
-                    "confidence": 0.0,
-                    "raw_model_confidence": 0.0,
-                    "reason": deferral_detail,
-                    "supporting_evidence": [],
-                    "missing_evidence": ["Approved detection rule investigation policy (Studio approval required)"],
-                    "analyst_questions": ["Please review and approve the detection policy in Agent Intelligence Studio."],
-                    "latency_ms": 0,
-                    "model_identifier": "POLICY_GUARD",
-                    "prompt_tokens": 0,
-                    "completion_tokens": 0,
-                    "total_tokens": 0,
-                    "is_simulated": False,
-                    "execution_provenance": "POLICY_GUARD",
-                    "configured_provider": "POLICY_GUARD",
-                    "test_environment": classify_execution_provenance(model_identifier="POLICY_GUARD")["test_environment"],
-                    "validation_status": "POLICY_NOT_APPROVED",
-                    "validation_reason_codes": ["POLICY_NOT_APPROVED", "EVIDENCE_CONTRACT_UNVERIFIED"],
-                    "is_decisive_accepted": False,
-                    "proposal_validation_outcome": "POLICY_NOT_APPROVED",
-                    "final_disposition": "DEFERRED_PENDING_POLICY_APPROVAL",
-                    "abstention_reason": deferral_detail,
-                    "evidence_completeness": 0.0,
-                    "grounding_ratio": 0.0,
-                    "canonical_evidence_count": norm_result.total_evidence_count,
-                    "reevaluation_eligible": True,
-                    "deferral_reason": "POLICY_NOT_APPROVED",
-                    "reevaluation_attempts": prev_attempts + 1,
-                    "rule_name": rule.name if rule else incident.title,
-                    "severity": incident.severity,
-                    "evaluated_at": utc_now().isoformat(),
-                    "evaluated_by_user": username,
-                }
-                await self._assert_lock_held(self.db, lock_key, lock_owner_id)
+        hist_stats = await PolicySimulationService(self.db).get_rule_calibration_stats(
+            rule.id if rule else None
+        )
+
+        def _set_online_state(val: bool) -> None:
+            self.__class__._is_local_llm_online = val
+
+        try:
+            pipe_res = await run_shared_verdict_pipeline(
+                db=self.db,
+                incident=incident,
+                rule=rule,
+                prompt_version=candidate_v,
+                active_approved_version=active_v,
+                model_provider_type=model_provider_type,
+                allow_simulated_fallback=allow_simulated_fallback,
+                is_simulation=False,
+                is_prod=is_prod,
+                execution_context=execution_context,
+                require_autonomous_certification=require_autonomous_certification,
+                username=username,
+                pilot_context=pilot_context,
+                historical_stats=hist_stats,
+                prev_attempts=prev_attempts,
+                check_llm_available=self.is_local_llm_available,
+                set_llm_online=_set_online_state,
+                provider_factory=get_model_provider,
+            )
+        except PipelineLLMUnavailableError as llm_err:
+            raise LocalLLMUnavailableError(str(llm_err)) from llm_err
+
+        verdict_data = pipe_res.verdict_data
+        norm_result = pipe_res.norm_result
+
+        if pipe_res.early_exit:
+            await self._assert_lock_held(self.db, lock_key, lock_owner_id)
+            if pipe_res.early_exit_kind == "BLOCKED_UNCERTIFIED_FOR_AUTONOMOUS_ACTION":
                 if not is_shadow_pilot:
                     incident.ai_verdict = verdict_data
                     self.db.add(incident)
+                audit = AuditLog(
+                    user_id="SYSTEM" if username in ("system", "scheduler") else username,
+                    username=username,
+                    action="AI_VERDICT_AUTONOMOUS_BLOCKED",
+                    resource_type="INCIDENT",
+                    resource_id=incident.incident_id,
+                    details={
+                        "verdict": "REQUIRES_ATTENTION",
+                        "validation_status": verdict_data.get("validation_status"),
+                        "governance_reasons": verdict_data.get("governance_reasons"),
+                        "reason": verdict_data.get("reason"),
+                    },
+                )
+                self.db.add(audit)
+                await self.db.commit()
+                return verdict_data
 
-                    # Sync with Investigation record if present (idempotent upsert)
+            if not is_shadow_pilot:
+                incident.ai_verdict = verdict_data
+                self.db.add(incident)
+                if pipe_res.early_exit_kind in ("POLICY_NOT_APPROVED", "PREFLIGHT_ABSTENTION"):
                     inv_q = await self.db.execute(
                         select(Investigation).where(Investigation.incident_id == incident.id)
                     )
@@ -338,6 +329,7 @@ class VerdictTriageAgent:
                         self._upsert_ai_verdict_note(inv, note_entry)
                         self.db.add(inv)
 
+            if pipe_res.early_exit_kind in ("POLICY_NOT_APPROVED", "PREFLIGHT_ABSTENTION"):
                 audit = AuditLog(
                     user_id="SYSTEM" if username in ("system", "scheduler") else username,
                     username=username,
@@ -347,432 +339,41 @@ class VerdictTriageAgent:
                     details={
                         "verdict": "REQUIRES_ATTENTION",
                         "confidence": 0.0,
-                        "validation_status": "POLICY_NOT_APPROVED",
-                        "reason": verdict_data["reason"],
+                        "validation_status": verdict_data.get("validation_status"),
+                        "reason": verdict_data.get("reason"),
                     },
                 )
                 self.db.add(audit)
-                await self.db.commit()
-                return verdict_data
-            else:
-                # In simulation / test mode, allow testing with draft version if available
-                if rp and rp.versions:
-                    active_v = rp.versions[0]
-
-        # P2-REQ-02: Resolve Evidence Contract for the rule and active policy
-        contract = EvidenceContractService.get_contract_for_rule(rule, active_v)
-
-        # P2-REQ-03: Preflight Evidence Validation
-        preflight = EvidencePreflightValidator.validate_preflight(
-            incident_id=incident.incident_id,
-            contract=contract,
-            normalization_result=norm_result,
-            allow_simulation=allow_mock,
-        )
-
-        # Preflight Gate: If critical required telemetry is missing in live triage, abstain immediately
-        if preflight.must_abstain_immediately and (not allow_simulated_fallback or is_prod):
-            verdict_data = {
-                "incident_id": incident.incident_id,
-                "proposed_verdict": "REQUIRES_ATTENTION",
-                "verdict": "REQUIRES_ATTENTION",
-                "confidence": 0.0,
-                "raw_model_confidence": 0.0,
-                "reason": f"CRITICAL_TELEMETRY_MISSING: {preflight.reason}",
-                "supporting_evidence": [],
-                "missing_evidence": preflight.missing_evidence_fields,
-                "analyst_questions": [f"Review missing critical telemetry: {', '.join(preflight.critical_missing_fields)}"],
-                "latency_ms": 0,
-                "model_identifier": "PREFLIGHT_GUARD",
-                "prompt_tokens": 0,
-                "completion_tokens": 0,
-                "total_tokens": 0,
-                "is_simulated": False,
-                "execution_provenance": "PREFLIGHT_GUARD",
-                "configured_provider": "POLICY_GUARD",
-                "test_environment": classify_execution_provenance(model_identifier="PREFLIGHT_GUARD")["test_environment"],
-                "validation_status": preflight.preflight_status,
-                "validation_reason_codes": ["EVIDENCE_MISSING"] if preflight.critical_missing_fields else ["EVIDENCE_CONTRACT_UNVERIFIED"],
-                "is_decisive_accepted": False,
-                "proposal_validation_outcome": "PREFLIGHT_EVIDENCE_INSUFFICIENT",
-                "final_disposition": "SAFE_ANALYST_ESCALATION",
-                "abstention_reason": preflight.reason,
-                "evidence_completeness": preflight.evidence_completeness,
-                "grounding_ratio": 0.0,
-                "canonical_evidence_count": norm_result.total_evidence_count,
-                "contract_id": contract.contract_id,
-                "contract_version": contract.version_number,
-                "validator_version": IndependentVerdictValidator.VALIDATOR_VERSION,
-                "reevaluation_eligible": True,
-                "deferral_reason": preflight.preflight_status,
-                "reevaluation_attempts": prev_attempts + 1,
-                "rule_name": rule.name if rule else incident.title,
-                "severity": incident.severity,
-                "evaluated_at": utc_now().isoformat(),
-                "evaluated_by_user": username,
-            }
-            await self._assert_lock_held(self.db, lock_key, lock_owner_id)
-            if not is_shadow_pilot:
-                incident.ai_verdict = verdict_data
-                self.db.add(incident)
-
-                inv_q = await self.db.execute(
-                    select(Investigation).where(Investigation.incident_id == incident.id)
-                )
-                inv = inv_q.scalars().first()
-                if inv and not inv.analyst_verdict:
-                    note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
-                    self._upsert_ai_verdict_note(inv, note_entry)
-                    self.db.add(inv)
-
-            audit = AuditLog(
-                user_id="SYSTEM" if username in ("system", "scheduler") else username,
-                username=username,
-                action="AI_VERDICT_EVALUATE",
-                resource_type="INCIDENT",
-                resource_id=incident.incident_id,
-                details={
-                    "verdict": "REQUIRES_ATTENTION",
-                    "confidence": 0.0,
-                    "validation_status": preflight.preflight_status,
-                    "reason": verdict_data["reason"],
-                },
-            )
-            self.db.add(audit)
             await self.db.commit()
             return verdict_data
 
-        # P3-REQ-01: Compile Unified Nine-Section Policy
-        exec_mode = CompilationExecutionMode.LIVE if (is_prod or not allow_mock) else CompilationExecutionMode.SIMULATION
-        compiled_policy = PolicyCompilerService.compile_policy(
-            rule=rule,
-            prompt_version=active_v,
-            execution_mode=exec_mode,
-            raise_on_unapproved=False,
-        )
-        prompt_ver_num = compiled_policy.version_number or 1
+        verdict = pipe_res.verdict_obj
+        trust_res = pipe_res.trust_res
+        val_res = pipe_res.val_res
+        contract = pipe_res.contract
+        compiled_policy = pipe_res.compiled_policy
+        p_tokens = pipe_res.prompt_tokens
+        c_tokens = pipe_res.completion_tokens
+        t_tokens = pipe_res.total_tokens
+        token_usage_source = pipe_res.token_usage_source
+        final_auth_verdict = pipe_res.effective_verdict
+        final_confidence_display = verdict_data["confidence"]
+        final_validation_status = verdict_data["validation_status"]
+        verdict_prov = pipe_res.verdict_prov
 
-        # P3-REQ-03 & P3-REQ-04: Rule-Specific Verified Semantic RAG
-        rag_result = await VerifiedSemanticRetrievalService.retrieve_verified_precedents(
-            db=self.db,
-            incident=incident,
-            rule_id=rule.id if rule else "UNKNOWN_RULE",
-            max_precedents=2,
-        )
-
-        # P3-REQ-05: Evidence-Preserving Token Budgeting
-        payload_dict["evidence_contract"] = {
-            "contract_id": contract.contract_id,
-            "version": contract.version_number,
-            "required_fields": [r.field for r in contract.required_evidence],
-        }
-        budgeted = TokenBudgetService.budget_prompt(
-            compiled_policy=compiled_policy,
-            incident_payload=payload_dict,
-            rag_block=rag_result.formatted_rag_block,
-            max_context_tokens=int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096),
-            max_completion_tokens=int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512) or 512),
-        )
-
-        # Context Overflow Gate: If mandatory core exceeds context window, abstain safely
-        if not budgeted.can_proceed_to_inference:
-            verdict_data = {
-                "incident_id": incident.incident_id,
-                "proposed_verdict": "REQUIRES_ATTENTION",
-                "verdict": "REQUIRES_ATTENTION",
-                "confidence": 0.0,
-                "raw_model_confidence": 0.0,
-                "reason": budgeted.abstention_reason or "CONTEXT_WINDOW_EXCEEDED",
-                "supporting_evidence": [],
-                "missing_evidence": ["Reduced telemetry size (exceeds model context limit)"],
-                "analyst_questions": ["Please inspect raw incident logs directly in SIEM."],
-                "latency_ms": 0,
-                "model_identifier": "TOKEN_BUDGET_GUARD",
-                "prompt_tokens": budgeted.breakdown.total_prompt_tokens,
-                "completion_tokens": 0,
-                "total_tokens": budgeted.breakdown.total_prompt_tokens,
-                "is_simulated": False,
-                "execution_provenance": "TOKEN_BUDGET_GUARD",
-                "configured_provider": "POLICY_GUARD",
-                "test_environment": classify_execution_provenance(model_identifier="TOKEN_BUDGET_GUARD")["test_environment"],
-                "validation_status": "CONTEXT_WINDOW_EXCEEDED",
-                "validation_reason_codes": ["CONTEXT_WINDOW_EXCEEDED"],
-                "is_decisive_accepted": False,
-                "proposal_validation_outcome": "CONTEXT_BUDGET_EXCEEDED",
-                "final_disposition": "SAFE_ANALYST_ESCALATION",
-                "abstention_reason": budgeted.abstention_reason or "CONTEXT_WINDOW_EXCEEDED",
-                "evidence_completeness": preflight.evidence_completeness,
-                "grounding_ratio": 0.0,
-                "canonical_evidence_count": norm_result.total_evidence_count,
-                "contract_id": contract.contract_id,
-                "contract_version": contract.version_number,
-                "validator_version": IndependentVerdictValidator.VALIDATOR_VERSION,
-                "compiler_version": compiled_policy.compiler_version,
-                "compilation_digest": compiled_policy.compilation_digest,
-                "policy_sections_count": len(compiled_policy.sections),
-                "calibration_status": "NOT_CALIBRATED",
-                "is_calibrated": False,
-                "reevaluation_eligible": True,
-                "deferral_reason": "CONTEXT_WINDOW_EXCEEDED",
-                "reevaluation_attempts": prev_attempts + 1,
-                "rule_name": rule.name if rule else incident.title,
-                "severity": incident.severity,
-                "evaluated_at": utc_now().isoformat(),
-                "evaluated_by_user": username,
-            }
-            await self._assert_lock_held(self.db, lock_key, lock_owner_id)
-            if not is_shadow_pilot:
-                incident.ai_verdict = verdict_data
-                self.db.add(incident)
-            await self.db.commit()
-            return verdict_data
-
-        prompt_text = budgeted.budgeted_system_prompt
-        if budgeted.budgeted_rag_block:
-            prompt_text += f"\n\n{budgeted.budgeted_rag_block}"
-        payload_dict = budgeted.budgeted_incident_payload
-
-        rule_spec = {
-            "id": rule.id if rule else (incident.rule_id or "UNKNOWN"),
-            "name": rule.name if rule else incident.title,
-            "severity": rule.severity if rule else incident.severity,
-            "description": rule.description if rule else "",
-        }
-
-        # 5. Invoke Model Provider with strict offline enforcement (REQ-02 / AV-004)
-        if model_provider_type:
-            if is_prod and model_provider_type == "SIMULATED":
-                raise ValueError("Simulated model provider is strictly forbidden in production mode.")
-            chosen_provider_type = model_provider_type
-        else:
-            if allow_mock:
-                is_online = await self.is_local_llm_available()
-                chosen_provider_type = "OPENAI_COMPATIBLE" if is_online else "SIMULATED"
-            else:
-                chosen_provider_type = "OPENAI_COMPATIBLE"
-
-        provider = get_model_provider(chosen_provider_type)
-
-        use_gpu_manager = (chosen_provider_type == "OPENAI_COMPATIBLE")
-        if use_gpu_manager:
-            from app.services.gpu_manager import gpu_workload_manager, CircuitBreakerOpenException
-            try:
-                await gpu_workload_manager.acquire_inference_slot()
-            except CircuitBreakerOpenException as cb_exc:
-                if not allow_mock:
-                    raise LocalLLMUnavailableError(str(cb_exc))
-                chosen_provider_type = "SIMULATED"
-                provider = get_model_provider("SIMULATED")
-                use_gpu_manager = False
-
-        try:
-            verdict = await provider.analyze_incident(
-                incident_payload=payload_dict,
-                rule_spec=rule_spec,
-                prompt_text=prompt_text,
-                prompt_version_number=prompt_ver_num,
-            )
-            
-            # Check if OPENAI_COMPATIBLE provider suffered an actual connection failure or HTTP error
-            # NOTE: INVALID_SCHEMA / UNEXPECTED_VERDICT mean the LLM responded over HTTP 200 with malformed output
-            # and must NOT trip the circuit breaker or silently swap to mock simulation.
-            is_connection_error = getattr(verdict, "validation_status", "") in ("CONNECTION_ERROR", "HTTP_ERROR")
-            if use_gpu_manager:
-                if is_connection_error:
-                    await gpu_workload_manager.release_inference_slot(success=False, error_message=getattr(verdict, "reason", "connection failure"))
-                else:
-                    await gpu_workload_manager.release_inference_slot(success=True)
-                use_gpu_manager = False  # Released
-
-            if is_connection_error:
-                self.__class__._is_local_llm_online = False
-                if allow_mock:
-                    sim_provider = get_model_provider("SIMULATED")
-                    verdict = await sim_provider.analyze_incident(
-                        incident_payload=payload_dict,
-                        rule_spec=rule_spec,
-                        prompt_text=prompt_text,
-                        prompt_version_number=prompt_ver_num,
-                    )
-                else:
-                    raise LocalLLMUnavailableError(f"Local LLM connection error: {verdict.reason}")
-            else:
-                # Successfully received response from Server 2
-                self.__class__._is_local_llm_online = True
-        except Exception as exc:
-            if use_gpu_manager:
-                await gpu_workload_manager.release_inference_slot(success=False, error_message=str(exc))
-                use_gpu_manager = False
-            self.__class__._is_local_llm_online = False
-            if allow_mock and not isinstance(exc, LocalLLMUnavailableError):
-                sim_provider = get_model_provider("SIMULATED")
-                verdict = await sim_provider.analyze_incident(
-                    incident_payload=payload_dict,
-                    rule_spec=rule_spec,
-                    prompt_text=prompt_text,
-                    prompt_version_number=prompt_ver_num,
-                )
-            else:
-                if isinstance(exc, LocalLLMUnavailableError):
-                    raise exc
-                raise LocalLLMUnavailableError(f"Local LLM inference failed: {str(exc)}") from exc
-
-        p_tokens = getattr(verdict, "prompt_tokens", 0) or 0
-        c_tokens = getattr(verdict, "completion_tokens", 0) or 0
-        t_tokens = getattr(verdict, "total_tokens", 0) or (p_tokens + c_tokens)
-        token_usage_source = "API_USAGE"
-        if t_tokens == 0 and getattr(verdict, "validation_status", "VALID") in ("VALID", None) or getattr(verdict, "is_simulated", False):
-            if t_tokens == 0:
-                p_tokens = max(50, len(prompt_text) // 4)
-                c_tokens = max(20, len(verdict.reason) // 4)
-                t_tokens = p_tokens + c_tokens
-                token_usage_source = "ESTIMATED"
-        elif t_tokens == 0:
-            token_usage_source = "UNAVAILABLE"
-
-        # P2-REQ-04: Structured Claim Extraction and Grounding
-        raw_verdict_dict = verdict.model_dump() if hasattr(verdict, "model_dump") else (verdict.dict() if hasattr(verdict, "dict") else {
-            "verdict": verdict.verdict,
-            "confidence": verdict.confidence,
-            "reason": verdict.reason,
-            "supporting_evidence": verdict.supporting_evidence,
-            "supporting_claims": getattr(verdict, "supporting_claims", []),
-            "contradictory_evidence": getattr(verdict, "contradictory_evidence", []),
-            "validation_status": getattr(verdict, "validation_status", "VALID"),
-        })
-        claim_grounding = ModelClaimExtractor.extract_and_ground_claims(
-            incident_id=incident.incident_id,
-            raw_verdict_output=raw_verdict_dict,
-            normalization_result=norm_result,
-        )
-
-        # P2-REQ-05 & P2-REQ-06: Independent Deterministic Verdict Validation
-        val_res = IndependentVerdictValidator.validate_verdict(
-            incident_id=incident.incident_id,
-            proposed_verdict=verdict.verdict,
-            raw_model_confidence=verdict.confidence,
-            preflight=preflight,
-            claim_grounding=claim_grounding,
-            normalization_result=norm_result,
-            contract=contract,
-            allow_simulation=allow_mock,
-            compilation_digest=compiled_policy.compilation_digest,
-            model_reason=verdict.reason,
-            contradictory_evidence=getattr(verdict, "contradictory_evidence", None),
-        )
-
-        # AIS 2.1: Unified Verdict Trustworthiness & Real Empirical Calibration Lookup
-        from app.services.policy_simulation_service import PolicySimulationService
-        from app.services.verdict_trustworthiness_engine import VerdictTrustworthinessEngine
-        from app.models.verdict_intelligence import VerdictTrustAssessmentRecord, EvidenceSufficiencyAssessmentRecord
-        from app.models.rule_intelligence import RuleIntelligenceSnapshot
-        from app.schemas.verdict_intelligence import UserVisibleVerdict
-
-        hist_stats = await PolicySimulationService(self.db).get_rule_calibration_stats(rule.id if rule else None)
-        snap = None
-        if rule:
-            snap_res = await self.db.execute(select(RuleIntelligenceSnapshot).where(RuleIntelligenceSnapshot.rule_id == rule.id))
-            snap = snap_res.scalars().first()
-
-        auth_threshold = snap.threshold if snap else None
-        def_status = snap.definition_status if snap else (
-            (rule.parsed_metadata or {}).get("definition_status", "VERIFIED") if rule else "INCOMPLETE"
-        )
-
-        trust_payload = dict(payload_dict)
-        trust_payload["rule_id"] = rule.rule_id if rule else incident.event_type
-        trust_payload["prompt_version_number"] = compiled_policy.version_number
-        trust_payload["contract_version"] = contract.status
-        trust_res = VerdictTrustworthinessEngine.evaluate_verdict_trust(
-            incident_payload=trust_payload,
-            model_output=raw_verdict_dict,
-            contract=contract,
-            archetype_id=getattr(contract, "detection_archetype", None) or (snap.primary_archetype if snap else None),
-            authoritative_threshold=auth_threshold,
-            definition_status=def_status,
-            historical_sample_count=int(hist_stats.get("sample_count", 0)),
-            historical_accuracy=hist_stats.get("accuracy"),
-            is_calibrated=bool(hist_stats.get("is_calibrated", False)),
-        )
-
-        # Reconcile authoritative live verdict with AIS 2.1 hard safety guardrails
-        # (cold-start uncalibrated score <= 6 alone does not block contract-approved valid triage,
-        #  whereas missing mandatory telemetry, contradictions, ungrounded/empty claims, incomplete threshold,
-        #  or unsupported FP assumptions strictly enforce REQUIRES_ATTENTION).
-        final_auth_verdict = val_res.final_verdict
-        final_is_decisive = val_res.is_decisive_accepted
-        final_validation_status = val_res.validation_status
-        final_reason_codes = list(val_res.validation_reason_codes)
-        final_confidence_display = val_res.validated_confidence_display if val_res.validated_confidence_display is not None else verdict.confidence
-        final_action_directive = val_res.analyst_action_directive
-
-        raw_provider_status = str(getattr(verdict, "validation_status", "VALID") or "VALID").upper().strip()
-        if raw_provider_status in ("INVALID_SCHEMA", "UNEXPECTED_VERDICT", "INVALID_MODEL_OUTPUT", "PARSE_ERROR") or "MODEL_OUTPUT_INVALID" in final_reason_codes:
-            final_auth_verdict = "REQUIRES_ATTENTION"
-            final_is_decisive = False
-            final_validation_status = "INVALID_MODEL_OUTPUT"
-            final_confidence_display = 0.0
-            if "MODEL_OUTPUT_INVALID" not in final_reason_codes:
-                final_reason_codes.append("MODEL_OUTPUT_INVALID")
-            final_action_directive = (
-                "Model returned malformed or invalid structured output; safely abstained and routed to analyst review."
-            )
-
-        if final_validation_status == "INVALID_MODEL_OUTPUT":
-            proposal_validation_outcome = "INVALID_MODEL_OUTPUT"
-            final_disposition = "SAFE_ABSTENTION_AFTER_INVALID_OUTPUT"
-            abstention_reason = final_action_directive
-        elif final_is_decisive and final_auth_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
-            proposal_validation_outcome = "VALID_DECISIVE_PROPOSAL"
-            final_disposition = "ACCEPTED_DECISIVE_VERDICT"
-            abstention_reason = None
-        elif val_res.proposed_verdict != final_auth_verdict or final_validation_status in ("REJECTED", "INSUFFICIENT_EVIDENCE", "GUARDRAIL_ABSTAINED"):
-            proposal_validation_outcome = "REJECTED_BY_VALIDATOR"
-            final_disposition = "OVERRULED_TO_ANALYST_ATTENTION"
-            abstention_reason = final_action_directive or "; ".join(final_reason_codes)
-        else:
-            proposal_validation_outcome = "MODEL_ABSTENTION"
-            final_disposition = "SAFE_ANALYST_ESCALATION"
-            abstention_reason = final_action_directive or "Model recommended cautious analyst escalation."
-
-        if final_auth_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE") and trust_res.effective_verdict == UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION:
-            esc_lower = (trust_res.escalation_reason or "").lower()
-            is_hard_guardrail_block = bool(
-                trust_res.missing_evidence
-                or trust_res.contradictory_evidence
-                or (trust_res.claim_verification and (trust_res.claim_verification.has_unsupported_assertions or trust_res.claim_verification.has_contradictions or trust_res.claim_verification.grounded_claims == 0))
-                or "siem detection threshold" in esc_lower
-                or "threshold is unverified" in esc_lower
-                or "incomplete" in esc_lower
-                or "business authorization" in esc_lower
-                or "alert firing alone" in esc_lower
-            )
-            if is_hard_guardrail_block:
-                final_auth_verdict = "REQUIRES_ATTENTION"
-                final_is_decisive = False
-                final_validation_status = "GUARDRAIL_ABSTAINED"
-                final_confidence_display = 0.0
-                if "TRUST_GUARDRAIL_BLOCK" not in final_reason_codes:
-                    final_reason_codes.append("TRUST_GUARDRAIL_BLOCK")
-                if trust_res.escalation_reason:
-                    final_action_directive = trust_res.escalation_reason
-
-        if final_validation_status == "INVALID_MODEL_OUTPUT":
-            note_invalid = (
-                "INVALID_MODEL_OUTPUT: Malformed or unparseable model verdict forced safe abstention and minimal trust (<= 2/10)."
-            )
-            if note_invalid not in trust_res.confidence_limitations:
-                trust_res.confidence_limitations.append(note_invalid)
-            if trust_res.trust_score is not None:
-                trust_res.trust_score = min(2, trust_res.trust_score)
-        elif val_res.detected_contradictions or final_validation_status == "REJECTED" or "EVIDENCE_CONTRADICTION" in final_reason_codes:
-            if trust_res.trust_score is not None:
-                trust_res.trust_score = min(3, trust_res.trust_score)
+        if pilot_context:
+            verdict_data["pilot_mode"] = pilot_context.get("mode")
+            verdict_data["pilot_id"] = pilot_context.get("pilot_id")
+            verdict_data["pilot_version"] = pilot_context.get("pilot_version")
 
         # Verify distributed lock lease is still owned by this worker before staging any DB writes
         await self._assert_lock_held(self.db, lock_key, lock_owner_id)
 
         # Persist AIS 2.1 assessment records alongside live verdict
+        from app.models.verdict_intelligence import (
+            EvidenceSufficiencyAssessmentRecord,
+            VerdictTrustAssessmentRecord,
+        )
         if trust_res.evidence_sufficiency is not None:
             suff = trust_res.evidence_sufficiency
             self.db.add(EvidenceSufficiencyAssessmentRecord(
@@ -819,87 +420,6 @@ class VerdictTriageAgent:
             is_simulated=verdict.is_simulated,
             evaluated_at=utc_now(),
         ))
-
-        # 6. Format Structured Authoritative Verdict (P2-REQ-07, P3-REQ-01, P3-REQ-07)
-        verdict_prov = classify_execution_provenance(
-            is_simulated=bool(verdict.is_simulated),
-            model_identifier=verdict.model_identifier,
-            validation_status=final_validation_status,
-            source_type=(pilot_context.get("source_type") if pilot_context else "LIVE"),
-            base_url=settings.LOCAL_LLM_BASE_URL,
-        )
-        verdict_data = {
-            "incident_id": incident.incident_id,
-            "proposed_verdict": val_res.proposed_verdict,
-            "verdict": final_auth_verdict,
-            "confidence": final_confidence_display,
-            "raw_model_confidence": verdict.confidence,
-            "reason": verdict.reason if final_is_decisive else f"{final_action_directive} [Validation: {'; '.join(final_reason_codes)}]. Model rationale: {verdict.reason}",
-            "supporting_evidence": verdict.supporting_evidence,
-            "supporting_claims": [c.model_dump() if hasattr(c, "model_dump") else c.dict() for c in claim_grounding.claims],
-            "missing_evidence": val_res.missing_evidence_fields or verdict.missing_evidence,
-            "analyst_questions": verdict.analyst_questions,
-            "latency_ms": verdict.latency_ms,
-            "model_identifier": verdict.model_identifier,
-            "prompt_tokens": p_tokens,
-            "completion_tokens": c_tokens,
-            "total_tokens": t_tokens,
-            "token_usage_source": token_usage_source,
-            "is_simulated": verdict.is_simulated,
-            "execution_provenance": verdict_prov["execution_provenance"],
-            "configured_provider": verdict_prov["configured_provider"],
-            "test_environment": verdict_prov["test_environment"],
-            "validation_status": final_validation_status,
-            "validation_reason_codes": final_reason_codes,
-            "is_decisive_accepted": final_is_decisive,
-            "proposal_validation_outcome": proposal_validation_outcome,
-            "final_disposition": final_disposition,
-            "abstention_reason": abstention_reason,
-            "evidence_completeness": val_res.evidence_completeness,
-            "grounding_ratio": val_res.grounding_ratio,
-            "total_claims_count": val_res.total_claims_count,
-            "grounded_claims_count": val_res.grounded_claims_count,
-            "unsupported_claims_count": val_res.unsupported_claims_count,
-            "unsupported_claims": val_res.unsupported_claims,
-            "detected_contradictions": val_res.detected_contradictions,
-            "analyst_action_directive": final_action_directive,
-            "canonical_evidence_count": norm_result.total_evidence_count,
-            "contract_id": val_res.contract_id,
-            "contract_version": val_res.contract_version,
-            "validator_version": val_res.validator_version,
-            "compiler_version": compiled_policy.compiler_version,
-            "compilation_digest": compiled_policy.compilation_digest,
-            "policy_sections_count": len(compiled_policy.sections),
-            "policy_version_id": getattr(active_v, "id", None),
-            "policy_version_number": compiled_policy.version_number,
-            "policy_status": compiled_policy.policy_status,
-            "trust_score": trust_res.trust_score,
-            "trust_status": trust_res.trust_status,
-            "raw_trust_score": trust_res.raw_trust_score,
-            "evidence_sufficiency_score": trust_res.evidence_sufficiency_score,
-            "evidence_status": trust_res.evidence_status.value,
-            "score_dimensions": trust_res.score_dimensions.model_dump(),
-            "confidence_limitations": trust_res.confidence_limitations,
-            "calibration_status": "CALIBRATED" if trust_res.is_calibrated else "NOT_CALIBRATED",
-            "historical_validation_status": trust_res.historical_validation_status,
-            "is_calibrated": trust_res.is_calibrated,
-            "historical_sample_count": int(hist_stats.get("sample_count", 0)),
-            "reevaluation_eligible": bool(not final_is_decisive and ("EVIDENCE_MISSING" in final_reason_codes or "EVIDENCE_CONTRACT_UNVERIFIED" in final_reason_codes)),
-            "deferral_reason": ("EVIDENCE_MISSING" if not final_is_decisive and "EVIDENCE_MISSING" in final_reason_codes else None),
-            "reevaluation_attempts": prev_attempts + 1,
-            "rag_retrieval_status": rag_result.retrieval_status,
-            "retrieved_precedents_count": len(rag_result.precedents),
-            "retrieved_precedents": [p.model_dump() for p in rag_result.precedents],
-            "token_budget_breakdown": budgeted.breakdown.model_dump(),
-            "replay_signature": val_res.replay_signature,
-            "rule_name": rule.name if rule else incident.title,
-            "severity": incident.severity,
-            "evaluated_at": utc_now().isoformat(),
-            "evaluated_by_user": username,
-            "pilot_mode": pilot_context.get("mode") if pilot_context else None,
-            "pilot_id": pilot_context.get("pilot_id") if pilot_context else None,
-            "pilot_version": pilot_context.get("pilot_version") if pilot_context else None,
-        }
 
         # 7. Persist AI verdict to incident (unless SHADOW pilot mode keeps authoritative incident clean)
         if not is_shadow_pilot:

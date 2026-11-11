@@ -271,7 +271,29 @@ async def start_historical_evaluation(
 ):
     """
     Executes a historical dry-run intelligence evaluation run across adjudicated SIEM incidents.
+    Supports rule-scoped paginated retrieval, real OPENAI_COMPATIBLE or SIMULATED providers,
+    optional isolated unlabeled exploratory replay, and async Celery queuing.
     """
+    if req.async_execution:
+        from app.services.policy_governance import resolve_canonical_rule
+        from app.models.prompt import PromptVersion
+        from app.workers.tasks import dispatch_policy_simulation
+
+        cand_ver = None
+        if req.policy_version_id:
+            pv_res = await db.execute(select(PromptVersion).where(PromptVersion.id == req.policy_version_id))
+            cand_ver = pv_res.scalar_one_or_none()
+        resolved_rule = await resolve_canonical_rule(db, req.rule_id) if req.rule_id else None
+        return await dispatch_policy_simulation(
+            db=db,
+            rule_id=(resolved_rule.id if resolved_rule else (req.rule_id or "")),
+            candidate_version=cand_ver,
+            provider_type=req.provider_type,
+            sample_limit=req.sample_limit,
+            include_unlabeled_replay=req.include_unlabeled_replay,
+            async_execution=True,
+        )
+
     sim_srv = PolicySimulationService(db)
     run_record = await sim_srv.run_dry_run_intelligence_evaluation(
         run_name=req.run_name,
@@ -279,17 +301,20 @@ async def start_historical_evaluation(
         archetype=req.archetype,
         policy_version_id=req.policy_version_id,
         baseline_run_id=req.baseline_run_id,
-        sample_limit=req.sample_limit or 50,
+        sample_limit=req.sample_limit,
         provider_type=req.provider_type,
         split_partition=req.split_partition,
         after_epoch=req.after_epoch,
         before_epoch=req.before_epoch,
+        include_unlabeled_replay=req.include_unlabeled_replay,
     )
     return {
         "run_id": run_record.id,
         "run_name": run_record.run_name,
         "status": run_record.status,
         "validation_state": run_record.validation_state,
+        "provider_type": (run_record.config_snapshot or {}).get("provider_type", req.provider_type),
+        "is_simulated": (run_record.config_snapshot or {}).get("is_simulated", req.provider_type.upper() == "SIMULATED"),
         "total_cases": run_record.total_cases,
         "evaluated_cases": run_record.evaluated_cases,
         "metrics": run_record.metrics,

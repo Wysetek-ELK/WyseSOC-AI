@@ -1139,11 +1139,14 @@ class FortiSIEMService:
             status_code = 1
             status_name = "Open"
 
-        is_ml_generated = (
-            "Machine Learning" in comments or
-            "Machine Learning" in resolution or
-            "ML" in comments or
-            "Resolution set by Machine Learning" in comments
+        from app.services.historical_ground_truth_validator import HistoricalGroundTruthValidator
+
+        is_ml_generated = HistoricalGroundTruthValidator.detect_automated_or_ml_text(
+            comments=comments,
+            resolution=resolution,
+            cleared_reason=cleared_reason,
+            cleared_user=cleared_user,
+            raw_status=raw_status_str,
         )
 
         return {

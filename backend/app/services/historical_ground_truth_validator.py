@@ -77,6 +77,83 @@ class HistoricalGroundTruthValidator:
         result = cls._deep_strip_leakage(sanitized)
         return result if isinstance(result, dict) else {}
 
+    AUTOMATED_ACTOR_USERS = {
+        "system",
+        "auto",
+        "automation",
+        "automated",
+        "fortisiem",
+        "siem",
+        "ml",
+        "ai",
+        "bot",
+        "scheduler",
+        "cron",
+    }
+    _ML_TOKEN_RE = re.compile(r"(?<![a-z0-9])ml(?![a-z0-9])", re.IGNORECASE)
+    _AUTOMATED_TOKEN_RE = re.compile(
+        r"(?<![a-z0-9])(automated|auto[\s_-]*cleared|auto[\s_-]*closed|auto[\s_-]*resolved|bot)(?![a-z0-9])",
+        re.IGNORECASE,
+    )
+
+    @classmethod
+    def detect_automated_or_ml_text(
+        cls,
+        comments: str = "",
+        resolution: str = "",
+        cleared_reason: str = "",
+        cleared_user: str = "",
+        raw_status: str = "",
+        provenance: str = "",
+    ) -> bool:
+        """
+        Determines whether incident resolution metadata indicates automated/ML closure.
+        Uses strict token boundaries for `ml` so ordinary English words like
+        'normal', 'html', 'xml', 'yaml', 'similar', or 'email' never false-match.
+        """
+        actor = str(cleared_user or "").strip().lower()
+        if actor in cls.AUTOMATED_ACTOR_USERS:
+            return True
+        if str(provenance or "").upper().strip() in (
+            "AI_GENERATED",
+            "ML_GENERATED",
+            "SIMULATED",
+            "HEURISTIC",
+            "AUTOMATED_CLOSURE",
+        ):
+            return True
+
+        status_l = str(raw_status or "").lower()
+        if "auto cleared" in status_l or "auto-cleared" in status_l:
+            return True
+
+        combined = " ".join(
+            str(x or "")
+            for x in (comments, resolution, cleared_reason, cleared_user, provenance)
+        ).lower()
+        if any(
+            phrase in combined
+            for phrase in (
+                "machine learning",
+                "resolution set by machine learning",
+                "auto-cleared",
+                "auto cleared",
+                "auto-resolved",
+                "auto resolved",
+                "ai verdict",
+                "ai-generated",
+                "ai generated",
+                "simulated-heuristic",
+                "ml generated",
+                "ml-generated",
+                "ml_generated",
+            )
+        ):
+            return True
+        if cls._ML_TOKEN_RE.search(combined) or cls._AUTOMATED_TOKEN_RE.search(combined):
+            return True
+        return False
+
     @classmethod
     def _is_automated_resolution_text(
         cls,
@@ -85,19 +162,19 @@ class HistoricalGroundTruthValidator:
         cleared_reason: str = "",
         cleared_user: str = "",
         provenance: str = "",
+        resolution: str = "",
+        raw_status: str = "",
     ) -> bool:
-        combined = " ".join([comments, cleared_reason, cleared_user, provenance]).lower()
         return bool(
             is_ml_generated
-            or "machine learning" in combined
-            or "resolution set by machine learning" in combined
-            or "automated" in combined
-            or "auto-cleared" in combined
-            or "auto cleared" in combined
-            or "ai verdict" in combined
-            or "simulated-heuristic" in combined
-            or "ml generated" in combined
-            or str(provenance or "").upper().strip() in ("AI_GENERATED", "ML_GENERATED", "SIMULATED", "HEURISTIC")
+            or cls.detect_automated_or_ml_text(
+                comments=comments,
+                resolution=resolution,
+                cleared_reason=cleared_reason,
+                cleared_user=cleared_user,
+                raw_status=raw_status,
+                provenance=provenance,
+            )
         )
 
     @classmethod
@@ -160,7 +237,7 @@ class HistoricalGroundTruthValidator:
         note = " ".join([str(cleared_reason or ""), str(analyst_comments or "")]).lower().strip()
         benign_markers = ("legitimate", "benign", "authorized", "approved", "scheduled", "expected", "maintenance")
         containment_markers = ("kill process", "proccess is kiled", "process killed", "blocked", "quarantined")
-        return bool(any(m in note for m in containment_markers) and not any(b in note for b in benign_markers) and not str(cleared_user or "").strip())
+        return bool(any(m in note for m in containment_markers) and not any(b in note for b in benign_markers))
 
     @classmethod
     def compute_duplicate_cluster_key(
@@ -249,6 +326,133 @@ class HistoricalGroundTruthValidator:
             return GroundTruthLabel.CONFLICTING, 0.3, "Conflicting analyst assessments logged."
 
         return GroundTruthLabel.UNVERIFIED, 0.5, f"Unrecognized resolution string: '{raw_resolution}'."
+
+    @classmethod
+    def adjudicate_incident_ground_truth(
+        cls,
+        ground_truth: Optional[Any],
+        investigation: Optional[Any] = None,
+        incident: Optional[Any] = None,
+    ) -> Tuple[GroundTruthLabel, Optional[str], str, float, str]:
+        """
+        Unified incident-level ground-truth eligibility & provenance evaluator.
+        Distinguishes:
+          - Disputed labels (`Investigation.is_disputed` or conflicting verdicts) -> excluded (`DISPUTED_LABEL`)
+          - Independent human adjudication (`Investigation.is_independently_verified=True` & not disputed)
+          - Automated/ML closures (`HEURISTIC_OR_ML_LABEL`) — `cleared_user` / `cleared_reason` alone
+            never bypasses automated/ML detection without independent human verification provenance.
+          - Ambiguous/unverified closures -> excluded (`AMBIGUOUS_LABEL`)
+        Returns: `(label, exclusion_reason_code, detail, reliability, provenance_source)`
+        """
+        if investigation is not None and bool(getattr(investigation, "is_disputed", False)):
+            return (
+                GroundTruthLabel.CONFLICTING,
+                "DISPUTED_LABEL",
+                "Incident investigation is flagged as disputed and excluded from empirical scoring.",
+                0.0,
+                "INVESTIGATION_DISPUTED",
+            )
+
+        inv_verified = bool(
+            investigation is not None
+            and getattr(investigation, "is_independently_verified", False)
+            and not getattr(investigation, "is_disputed", False)
+        )
+        inv_verdict = str(getattr(investigation, "analyst_verdict", "") or "").upper().strip()
+        inv_reason = str(
+            getattr(investigation, "verdict_reason", "")
+            or getattr(investigation, "analyst_notes", "")
+            or ""
+        ).strip()
+
+        raw_res = str(getattr(ground_truth, "resolution", "") or "") if ground_truth else ""
+        gt_comments = str(getattr(ground_truth, "comments", "") or "") if ground_truth else ""
+        gt_reason = str(getattr(ground_truth, "cleared_reason", "") or "") if ground_truth else ""
+        gt_user = str(getattr(ground_truth, "cleared_user", "") or "") if ground_truth else ""
+        gt_is_ml = bool(getattr(ground_truth, "is_ml_generated", False)) if ground_truth else False
+        raw_status = str(getattr(incident, "status_name", "") or "") if incident else ""
+
+        if inv_verified and inv_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+            inv_label = (
+                GroundTruthLabel.VERIFIED_TP
+                if inv_verdict == "TRUE_POSITIVE"
+                else GroundTruthLabel.VERIFIED_FP
+            )
+            # Detect conflict if non-ML SIEM resolution explicitly asserts the opposite disposition
+            if ground_truth and raw_res and not gt_is_ml and not cls.detect_automated_or_ml_text(
+                comments=gt_comments,
+                resolution=raw_res,
+                cleared_reason=gt_reason,
+                cleared_user=gt_user,
+                raw_status=raw_status,
+            ):
+                siem_adj, _, _ = cls.adjudicate_label(
+                    raw_resolution=raw_res,
+                    analyst_comments=gt_comments,
+                    is_ml_generated=False,
+                    cleared_reason=gt_reason,
+                    cleared_user=gt_user,
+                )
+                if siem_adj in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP) and siem_adj != inv_label:
+                    return (
+                        GroundTruthLabel.CONFLICTING,
+                        "DISPUTED_LABEL",
+                        f"Independent investigation verdict ({inv_verdict}) conflicts with SIEM resolution ({raw_res}).",
+                        0.0,
+                        "CONFLICTING_HUMAN_AND_SIEM",
+                    )
+            detail = inv_reason or f"Independently verified human investigation verdict: {inv_verdict}."
+            return (
+                inv_label,
+                None,
+                detail,
+                1.0,
+                "INDEPENDENT_HUMAN_INVESTIGATION",
+            )
+
+        if not ground_truth or not raw_res.strip():
+            return (
+                GroundTruthLabel.UNKNOWN,
+                "UNLABELED",
+                "Incident has no analyst ground-truth resolution record.",
+                0.0,
+                "NONE",
+            )
+
+        if cls._is_automated_resolution_text(
+            is_ml_generated=gt_is_ml,
+            comments=gt_comments,
+            cleared_reason=gt_reason,
+            cleared_user=gt_user,
+            resolution=raw_res,
+            raw_status=raw_status,
+        ):
+            return (
+                GroundTruthLabel.UNVERIFIED,
+                "HEURISTIC_OR_ML_LABEL",
+                "Resolution was generated by previous ML model or automated rule without independent human verification provenance.",
+                0.5,
+                "AUTOMATED_OR_ML",
+            )
+
+        adj_label, rel, rat = cls.adjudicate_label(
+            raw_resolution=raw_res,
+            analyst_comments=gt_comments,
+            is_ml_generated=gt_is_ml,
+            cleared_reason=gt_reason,
+            cleared_user=gt_user,
+        )
+        if adj_label == GroundTruthLabel.CONFLICTING:
+            return adj_label, "DISPUTED_LABEL", rat, rel, "CONFLICTING_LABEL"
+        if adj_label not in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
+            return (
+                adj_label,
+                "AMBIGUOUS_LABEL",
+                f"Analyst resolution '{raw_res}' lacks verified TP/FP adjudication.",
+                rel,
+                "AMBIGUOUS_CLOSURE",
+            )
+        return adj_label, None, rat, rel, "HISTORICAL_SIEM_RESOLUTION"
 
     @classmethod
     def assign_partition(cls, incident_id: str, salt: str = "ais_v2_1_partition") -> DatasetPartition:
