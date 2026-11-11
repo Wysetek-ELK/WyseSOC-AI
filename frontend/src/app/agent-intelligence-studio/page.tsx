@@ -1348,9 +1348,9 @@ export default function AgentIntelligenceStudioPage() {
   const passedGatesCount = gateList.filter((g) => g.status === "PASSED").length;
 
   return (
-    <div className="space-y-3.5">
+    <div className="space-y-2.5">
       {/* Page Header with Back Navigation & Rule Switcher */}
-      <div className="p-3 sm:px-4 rounded-xl theme-glass-panel flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="p-2.5 sm:px-3 rounded-xl theme-glass-panel flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div className="flex items-center gap-2.5">
           <button
             type="button"
@@ -1398,14 +1398,14 @@ export default function AgentIntelligenceStudioPage() {
       </div>
 
       {/* AIS 2.0 Hero Policy Governance Banner: Score Meter & Action Stack */}
-      <div className="p-4 sm:p-5 rounded-2xl theme-hero-score-card flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 min-w-0">
+      <div className="p-3 sm:p-3.5 rounded-xl theme-hero-score-card flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 min-w-0">
           {/* Large Hero Quality Score Readout */}
           <div className="flex items-baseline gap-0.5 shrink-0">
-            <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-sky-400 tabular-nums drop-shadow-sm">
+            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-sky-400 tabular-nums drop-shadow-sm">
               {studioQualityScore !== null ? studioQualityScore : "—"}
             </span>
-            <span className="text-lg sm:text-xl font-bold text-slate-400">/100</span>
+            <span className="text-base sm:text-lg font-bold text-slate-400">/100</span>
           </div>
 
           {/* Eligibility Pill + Segmented Progress Meter + Structural Telemetry */}

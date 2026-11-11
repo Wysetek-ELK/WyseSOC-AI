@@ -25,7 +25,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="relative z-10 flex flex-1 flex-col overflow-hidden min-w-0">
         <Header />
-        <main className="flex-1 overflow-y-auto theme-main-canvas p-3 sm:p-4">
+        <main className="flex-1 overflow-y-auto theme-main-canvas p-2 sm:p-2.5">
           {children}
         </main>
       </div>

@@ -280,7 +280,7 @@ export default function AgentConfigurationPage() {
   const isAdmin = user?.role === "Administrator";
 
   return (
-    <div className="space-y-3.5 max-w-4xl mx-auto pb-6">
+    <div className="space-y-2.5 w-full pb-2">
       <div>
         <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
           <Settings className="h-4 w-4 text-cyan-400" />
@@ -805,8 +805,9 @@ export default function AgentConfigurationPage() {
           )}
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
         {/* 3. Investigation Controls */}
-        <div className="rounded-xl border border-slate-800 bg-slate-950 p-3.5 sm:p-4 space-y-3">
+        <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 space-y-2.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
             <Sliders className="h-3.5 w-3.5 text-cyan-400" />
             Analyst Investigation Safeguards
@@ -881,6 +882,7 @@ export default function AgentConfigurationPage() {
               <span className="text-slate-400">Disabled (Dry-run read-only phase)</span>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

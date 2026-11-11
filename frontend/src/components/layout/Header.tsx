@@ -40,7 +40,7 @@ export function Header() {
   const displayRole = user?.role ? user.role : isLoading ? "SYNCING" : "UNAUTHENTICATED";
 
   return (
-    <header className="flex h-12 items-center justify-between theme-glass-header px-3.5">
+    <header className="flex h-10 items-center justify-between theme-glass-header px-3">
       {/* Global Search Bar */}
       <form onSubmit={handleSearch} className="relative w-72 sm:w-80 md:w-96 max-w-md">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />

@@ -203,7 +203,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
       <div className="relative w-full overflow-hidden">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-48 sm:h-56 select-none"
+          className="w-full h-32 sm:h-36 select-none"
           preserveAspectRatio="none"
         >
           <defs>

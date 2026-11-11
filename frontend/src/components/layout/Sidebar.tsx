@@ -209,22 +209,22 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`relative z-10 flex flex-col theme-sidebar-shell text-slate-200 transition-all duration-200 select-none ${collapsed ? "w-14" : "w-60"
+      className={`relative z-10 flex flex-col theme-sidebar-shell text-slate-200 transition-all duration-200 select-none ${collapsed ? "w-12" : "w-56"
         }`}
     >
       {/* Brand Header */}
-      <div className="flex h-12 items-center justify-between px-3 border-b border-slate-800/80">
-        <Link href="/agent-mission-control" className="flex items-center gap-2.5 overflow-hidden">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-sky-500/15 text-sky-400 border border-sky-500/40 shadow-sm">
-            <ShieldAlert className="h-4 w-4" />
+      <div className="flex h-10 items-center justify-between px-2.5 border-b border-slate-800/80">
+        <Link href="/agent-mission-control" className="flex items-center gap-2 overflow-hidden">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-sky-500/15 text-sky-400 border border-sky-500/40 shadow-sm">
+            <ShieldAlert className="h-3.5 w-3.5" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-bold text-xs tracking-wider text-sky-300 uppercase">
+              <span className="font-bold text-xs tracking-wider text-sky-300 uppercase leading-tight">
                 AI Verdict
               </span>
-              <span className="text-[9px] text-cyan-400 font-mono tracking-tight leading-none">
-                Agentic SOC Intelligence Platform
+              <span className="text-[8.5px] text-cyan-400 font-mono tracking-tight leading-none">
+                Agentic SOC Intelligence
               </span>
             </div>
           )}
@@ -239,11 +239,11 @@ export function Sidebar() {
       </div>
 
       {/* Navigation Groups */}
-      <nav className="flex-1 overflow-y-auto p-2 space-y-3">
+      <nav className="flex-1 overflow-y-auto p-1.5 space-y-2">
         {NAV_GROUPS.map((group) => (
           <div key={group.groupTitle} className="space-y-0.5">
             {!collapsed && (
-              <div className="px-2 pt-1 pb-0.5 text-[9px] font-mono font-semibold uppercase tracking-wider text-slate-500">
+              <div className="px-2 pt-0.5 pb-0.5 text-[9px] font-mono font-semibold uppercase tracking-wider text-slate-500">
                 {group.groupTitle}
               </div>
             )}
@@ -255,7 +255,7 @@ export function Sidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${active
+                  className={`flex items-center gap-2 px-2 py-1 rounded-md text-[11.5px] font-medium transition-all ${active
                       ? "theme-nav-active"
                       : "text-slate-400 hover:text-slate-100 hover:bg-slate-900/60 border border-transparent"
                     }`}

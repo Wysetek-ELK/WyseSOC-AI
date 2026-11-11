@@ -274,7 +274,7 @@ export default function TelemetryHubPage() {
   };
 
   return (
-    <div className="space-y-3.5 max-w-5xl mx-auto">
+    <div className="space-y-2.5 w-full">
       {/* Page Header */}
       <div>
         <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 flex items-center gap-2">

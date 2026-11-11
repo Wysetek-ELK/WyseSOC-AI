@@ -84,7 +84,7 @@ export default function GovernanceAccessPage() {
   };
 
   return (
-    <div className="space-y-3.5 max-w-5xl mx-auto">
+    <div className="space-y-2.5 w-full">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>

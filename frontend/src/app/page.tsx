@@ -151,9 +151,9 @@ export default function AgentMissionControlPage() {
   };
 
   return (
-    <div className="space-y-3.5">
+    <div className="space-y-2">
       {/* Top Banner / Actions */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 flex items-center gap-2">
             <Activity className="h-4 w-4 text-cyan-400" />

@@ -355,7 +355,7 @@ export default function SocChatbotPage() {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] max-w-6xl mx-auto space-y-3">
+    <div className="flex flex-col h-[calc(100vh-3.75rem)] w-full space-y-2">
       {/* Top Header & Server 2 Status */}
       <div className="rounded-xl border border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/30 p-3.5 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-start gap-3">
