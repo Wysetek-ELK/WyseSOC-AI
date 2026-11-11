@@ -207,10 +207,10 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
           preserveAspectRatio="none"
         >
           <defs>
-            {/* Server 1 Gradient (Cyan) */}
+            {/* Server 1 Gradient */}
             <linearGradient id="s1Grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="var(--color-cyan-500, #06b6d4)" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="var(--color-cyan-500, #06b6d4)" stopOpacity="0.0" />
             </linearGradient>
 
             {/* Server 2 Gradient (Purple/Indigo) */}
@@ -231,7 +231,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
                   y1={y}
                   x2={width - paddingX}
                   y2={y}
-                  stroke="#334155"
+                  stroke="var(--color-slate-700, #334155)"
                   strokeDasharray="3 3"
                   strokeOpacity="0.4"
                 />
@@ -240,7 +240,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
                   y={y + 3}
                   textAnchor="end"
                   fontSize="9"
-                  fill="#64748b"
+                  fill="var(--color-slate-500, #64748b)"
                   fontFamily="monospace"
                 >
                   {labelVal}
@@ -250,12 +250,12 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
             );
           })}
 
-          {/* Series 1 Fill & Line (Cyan) */}
+          {/* Series 1 Fill & Line */}
           <path d={createArea(s1Points)} fill="url(#s1Grad)" />
           <path
             d={createPath(s1Points)}
             fill="none"
-            stroke="#06b6d4"
+            stroke="var(--color-cyan-500, #06b6d4)"
             strokeWidth="2"
             strokeLinecap="round"
           />
@@ -278,7 +278,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
                 y1={paddingY}
                 x2={s1Points[hoveredPointIdx].x}
                 y2={height - paddingY}
-                stroke="#94a3b8"
+                stroke="var(--color-slate-400, #94a3b8)"
                 strokeWidth="1"
                 strokeDasharray="2 2"
               />
@@ -286,8 +286,8 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
                 cx={s1Points[hoveredPointIdx].x}
                 cy={s1Points[hoveredPointIdx].y}
                 r="4"
-                fill="#06b6d4"
-                stroke="#0f172a"
+                fill="var(--color-cyan-500, #06b6d4)"
+                stroke="var(--color-slate-900, #0f172a)"
                 strokeWidth="2"
               />
               {s2Points[hoveredPointIdx] && (
@@ -296,7 +296,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
                   cy={s2Points[hoveredPointIdx].y}
                   r="4"
                   fill="#a855f7"
-                  stroke="#0f172a"
+                  stroke="var(--color-slate-900, #0f172a)"
                   strokeWidth="2"
                 />
               )}

@@ -931,7 +931,7 @@ export default function AgentIntelligenceStudioPage() {
 
         {/* Top Metrics Cards (AIS 2.0 Enhanced) */}
         <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
-          <div className="p-2.5 rounded-lg border border-slate-800 bg-slate-900/40">
+          <div className="p-2.5 rounded-xl theme-glass-card">
             <div className="text-[10px] uppercase font-semibold text-slate-400 flex items-center justify-between">
               Monitored Rules
               <FileCode className="w-3.5 h-3.5 text-slate-500" />
@@ -940,7 +940,7 @@ export default function AgentIntelligenceStudioPage() {
             <div className="text-[9px] text-slate-500 mt-0.5">Active SIEM rules</div>
           </div>
 
-          <div className="p-2.5 rounded-lg border border-emerald-900/50 bg-emerald-950/20">
+          <div className="p-2.5 rounded-xl theme-glass-card border-emerald-900/50">
             <div className="text-[10px] uppercase font-semibold text-emerald-400 flex items-center justify-between">
               Approved
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -951,7 +951,7 @@ export default function AgentIntelligenceStudioPage() {
             </div>
           </div>
 
-          <div className="p-2.5 rounded-lg border border-sky-900/50 bg-sky-950/20">
+          <div className="p-2.5 rounded-xl theme-glass-card border-sky-900/50">
             <div className="text-[10px] uppercase font-semibold text-sky-400 flex items-center justify-between">
               Template Drafts
               <Sparkles className="w-3.5 h-3.5 text-sky-400" />
@@ -960,7 +960,7 @@ export default function AgentIntelligenceStudioPage() {
             <div className="text-[9px] text-sky-500/80 mt-0.5">Drafts awaiting review</div>
           </div>
 
-          <div className="p-2.5 rounded-lg border border-cyan-900/50 bg-cyan-950/20">
+          <div className="p-2.5 rounded-xl theme-glass-card border-cyan-900/50">
             <div className="text-[10px] uppercase font-semibold text-cyan-400 flex items-center justify-between">
               Avg Quality Score
               <Award className="w-3.5 h-3.5 text-cyan-400" />
@@ -1340,15 +1340,22 @@ export default function AgentIntelligenceStudioPage() {
     ? Object.values(qualityAssessment.gate_results)
     : qualityAssessment?.gates || [];
 
+  const studioQualityScore = qualityAssessment?.quality_score ?? null;
+  const filledSegments =
+    studioQualityScore !== null
+      ? Math.max(0, Math.min(20, Math.round((studioQualityScore / 100) * 20)))
+      : 0;
+  const passedGatesCount = gateList.filter((g) => g.status === "PASSED").length;
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-3.5">
       {/* Page Header with Back Navigation & Rule Switcher */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-2.5">
+      <div className="p-3 sm:px-4 rounded-xl theme-glass-panel flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={handleBackToTable}
-            className="px-2.5 py-1 rounded-md border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+            className="px-2.5 py-1.5 rounded-lg theme-secondary-btn text-xs font-semibold flex items-center gap-1.5 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-cyan-400" />
             <Table className="w-3.5 h-3.5 text-slate-400" />
@@ -1356,11 +1363,11 @@ export default function AgentIntelligenceStudioPage() {
           </button>
 
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100">
                 Agent Intelligence Studio 2.0
               </h1>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-cyan-950/80 text-cyan-400 border border-cyan-800/60 font-mono">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-950/80 text-slate-300 border border-slate-700/80 font-mono uppercase tracking-wide">
                 {intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
               </span>
             </div>
@@ -1371,15 +1378,15 @@ export default function AgentIntelligenceStudioPage() {
         </div>
 
         {/* SIEM Rule Selector */}
-        <div className="flex items-center gap-2">
-          <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
             Select Rule:
           </label>
           <select
             value={selectedRuleId}
             onChange={(e) => handleSwitchRuleInStudio(e.target.value)}
             disabled={loadingRules}
-            className="px-2.5 py-1 text-xs rounded-md border border-slate-800 bg-slate-950 text-slate-200 font-medium focus:outline-none focus:border-cyan-500 min-w-[240px] max-w-[380px] truncate"
+            className="px-2.5 py-1.5 text-xs rounded-lg border border-cyan-500/40 bg-slate-950/90 text-slate-200 font-medium focus:outline-none focus:border-cyan-400 min-w-[240px] max-w-[380px] truncate w-full sm:w-auto"
           >
             {rules.map((r) => (
               <option key={r.id} value={r.id}>
@@ -1390,59 +1397,100 @@ export default function AgentIntelligenceStudioPage() {
         </div>
       </div>
 
-      {/* AIS 2.0 Policy Governance Bar: Quality Score & Approval Gate Status */}
-      <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          {/* Quality Score Indicator */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase font-bold text-slate-400">Quality Score:</span>
-            <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold border ${getScoreBadge(qualityAssessment?.quality_score)}`}>
-              {qualityAssessment ? `${qualityAssessment.quality_score}/100` : "—"}
+      {/* AIS 2.0 Hero Policy Governance Banner: Score Meter & Action Stack */}
+      <div className="p-4 sm:p-5 rounded-2xl theme-hero-score-card flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 min-w-0">
+          {/* Large Hero Quality Score Readout */}
+          <div className="flex items-baseline gap-0.5 shrink-0">
+            <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-sky-400 tabular-nums drop-shadow-sm">
+              {studioQualityScore !== null ? studioQualityScore : "—"}
             </span>
+            <span className="text-lg sm:text-xl font-bold text-slate-400">/100</span>
           </div>
 
-          {/* Validation Status Badge */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400">Status:</span>
-            {isApprovalEligible ? (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> APPROVAL ELIGIBLE
-              </span>
-            ) : selectedVersion?.status === "APPROVED" ? (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> ACTIVE PRODUCTION
-              </span>
-            ) : (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-950 text-rose-300 border border-rose-800 flex items-center gap-1">
-                <XCircle className="w-3 h-3" /> REWORK REQUIRED
-              </span>
-            )}
-          </div>
+          {/* Eligibility Pill + Segmented Progress Meter + Structural Telemetry */}
+          <div className="space-y-2 min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              {isApprovalEligible ? (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-950/80 text-sky-300 border border-sky-500/50 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" /> APPROVAL ELIGIBLE
+                </span>
+              ) : selectedVersion?.status === "APPROVED" ? (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/70 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ACTIVE PRODUCTION
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-700/70 flex items-center gap-1.5">
+                  <XCircle className="w-3.5 h-3.5 text-rose-400" /> REWORK REQUIRED
+                </span>
+              )}
 
-          {/* Definition Status */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400">Definition:</span>
-            {isIncompleteDefinition ? (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-950 text-amber-300 border border-amber-800 flex items-center gap-1" title="Authoritative threshold is missing. Draft remains provisional.">
-                <AlertCircle className="w-3 h-3 text-amber-400" /> INCOMPLETE
+              {isIncompleteDefinition ? (
+                <span
+                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/70 flex items-center gap-1"
+                  title="Authoritative threshold is missing. Draft remains provisional."
+                >
+                  <AlertCircle className="w-3 h-3 text-amber-400" /> DEFINITION: INCOMPLETE
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-700/60">
+                  DEFINITION: VERIFIED
+                </span>
+              )}
+            </div>
+
+            {/* 20-Segment Progress Bar */}
+            <div className="flex items-center gap-1 max-w-md" aria-hidden="true">
+              {Array.from({ length: 20 }).map((_, idx) => {
+                const active = idx < filledSegments;
+                return (
+                  <span
+                    key={idx}
+                    className={`h-2 flex-1 rounded-full transition-all ${
+                      active
+                        ? idx < 10
+                          ? "bg-sky-400 shadow-[0_0_8px_rgba(251,191,36,0.45)]"
+                          : "bg-cyan-500 shadow-[0_0_8px_rgba(249,115,22,0.45)]"
+                        : "bg-slate-800/80 border border-slate-700/50"
+                    }`}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="text-[11px] font-mono text-slate-300 flex flex-wrap items-center gap-2">
+              <span className="text-slate-400 uppercase">Quality Score:</span>
+              <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold border ${getScoreBadge(qualityAssessment?.quality_score)}`}>
+                {qualityAssessment ? `${qualityAssessment.quality_score}/100` : "Pending"}
               </span>
-            ) : (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                VERIFIED
+              <span className="text-slate-600">•</span>
+              <span>
+                GATES PASSED:{" "}
+                <strong className="text-slate-100">
+                  {gateList.length > 0 ? `${passedGatesCount}/${gateList.length}` : "—"}
+                </strong>
               </span>
-            )}
+              {selectedVersion && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-emerald-400 font-semibold">
+                    VERSION {selectedVersion.version_number} ({selectedVersion.status})
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Action Controls Stack */}
+        <div className="flex flex-col sm:flex-row lg:flex-col gap-1.5 lg:min-w-[220px] shrink-0">
           <button
             type="button"
             disabled={actionLoading || loadingPrompt}
             onClick={handleGenerateIntelligentDraft}
-            className="px-2.5 py-1 text-xs rounded border border-cyan-800/80 bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-200 font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+            className="px-3.5 py-1.5 text-xs rounded-lg theme-primary-btn font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
           >
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <Sparkles className="w-3.5 h-3.5" />
             Synthesize Intelligent Draft
           </button>
 
@@ -1451,9 +1499,9 @@ export default function AgentIntelligenceStudioPage() {
             disabled={loadingQuality || !selectedVersionId || isViewer}
             onClick={() => fetchQualityValidation(selectedRuleId, selectedVersionId)}
             title={isViewer ? "Requires SOC Analyst or Administrator role to persist validation scores" : "Persist validated quality score & audit log"}
-            className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 font-medium flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-1.5 text-xs rounded-lg theme-secondary-btn disabled:opacity-50 font-medium flex items-center justify-center gap-1.5 transition-colors"
           >
-            <Award className="w-3.5 h-3.5 text-cyan-400" />
+            <Award className="w-3.5 h-3.5 text-sky-400" />
             Validate Quality
           </button>
 
@@ -1461,44 +1509,46 @@ export default function AgentIntelligenceStudioPage() {
             type="button"
             disabled={loadingSimulation || !selectedVersionId}
             onClick={handleRunSimulation}
-            className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-1.5 text-xs rounded-lg theme-secondary-btn disabled:opacity-50 font-medium flex items-center justify-center gap-1.5 transition-colors"
           >
-            <Cpu className="w-3.5 h-3.5 text-purple-400" />
+            <Cpu className="w-3.5 h-3.5 text-cyan-400" />
             Run Simulation
           </button>
 
-          {/* Approve Button */}
-          {selectedVersion && selectedVersion.status !== "APPROVED" && (
-            <button
-              type="button"
-              disabled={actionLoading || !selectedVersionId || !isApprovalEligible}
-              onClick={() => setShowApprovalModal(true)}
-              className={`px-3 py-1 rounded text-xs font-bold flex items-center gap-1 shadow-sm transition-colors ${
-                isApprovalEligible
-                  ? "bg-emerald-700 hover:bg-emerald-600 text-white"
-                  : "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
-              }`}
-              title={
-                !isApprovalEligible
-                  ? "Approval blocked by hard quality gate failures or incomplete rule specifications."
-                  : "Approve policy for production active baseline"
-              }
-            >
-              <Check className="w-3.5 h-3.5" /> Approve &amp; Activate
-            </button>
-          )}
+          <div className="flex items-center gap-1.5 empty:hidden">
+            {/* Approve Button */}
+            {selectedVersion && selectedVersion.status !== "APPROVED" && (
+              <button
+                type="button"
+                disabled={actionLoading || !selectedVersionId || !isApprovalEligible}
+                onClick={() => setShowApprovalModal(true)}
+                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition-colors ${
+                  isApprovalEligible
+                    ? "bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500/60"
+                    : "bg-slate-900/70 text-slate-500 cursor-not-allowed border border-slate-800"
+                }`}
+                title={
+                  !isApprovalEligible
+                    ? "Approval blocked by hard quality gate failures or incomplete rule specifications."
+                    : "Approve policy for production active baseline"
+                }
+              >
+                <Check className="w-3.5 h-3.5" /> Approve &amp; Activate
+              </button>
+            )}
 
-          {/* Rollback Button */}
-          {!isSelectedActive && selectedVersion && (
-            <button
-              type="button"
-              disabled={actionLoading || !selectedVersionId}
-              onClick={handleRollback}
-              className="px-2.5 py-1 bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-800/70 rounded text-xs font-semibold flex items-center gap-1 transition-colors"
-            >
-              <RotateCcw className="w-3 h-3" /> Rollback to This
-            </button>
-          )}
+            {/* Rollback Button */}
+            {!isSelectedActive && selectedVersion && (
+              <button
+                type="button"
+                disabled={actionLoading || !selectedVersionId}
+                onClick={handleRollback}
+                className="flex-1 px-2.5 py-1.5 bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-800/70 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" /> Rollback to This
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1532,12 +1582,12 @@ export default function AgentIntelligenceStudioPage() {
       )}
 
       {/* Sub-Navigation Tabs */}
-      <div className="flex border-b border-slate-800 space-x-1 text-xs">
+      <div className="flex flex-wrap border-b border-slate-800/90 space-x-1 text-xs">
         <button
           onClick={() => setStudioTab("editor")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
             studioTab === "editor"
-              ? "border-cyan-400 text-cyan-300 bg-slate-900/40"
+              ? "theme-tab-active"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -1547,9 +1597,9 @@ export default function AgentIntelligenceStudioPage() {
 
         <button
           onClick={() => setStudioTab("quality")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
             studioTab === "quality"
-              ? "border-cyan-400 text-cyan-300 bg-slate-900/40"
+              ? "theme-tab-active"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -1564,9 +1614,9 @@ export default function AgentIntelligenceStudioPage() {
 
         <button
           onClick={() => setStudioTab("intelligence")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
             studioTab === "intelligence"
-              ? "border-cyan-400 text-cyan-300 bg-slate-900/40"
+              ? "theme-tab-active"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -1576,9 +1626,9 @@ export default function AgentIntelligenceStudioPage() {
 
         <button
           onClick={() => setStudioTab("contract")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
             studioTab === "contract"
-              ? "border-cyan-400 text-cyan-300 bg-slate-900/40"
+              ? "theme-tab-active"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -1588,9 +1638,9 @@ export default function AgentIntelligenceStudioPage() {
 
         <button
           onClick={() => setStudioTab("simulation")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
             studioTab === "simulation"
-              ? "border-cyan-400 text-cyan-300 bg-slate-900/40"
+              ? "theme-tab-active"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -1600,9 +1650,9 @@ export default function AgentIntelligenceStudioPage() {
 
         <button
           onClick={() => setStudioTab("drift")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
             studioTab === "drift"
-              ? "border-cyan-400 text-cyan-300 bg-slate-900/40"
+              ? "theme-tab-active"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -1636,18 +1686,18 @@ export default function AgentIntelligenceStudioPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 items-start">
           {/* Left Column: Version History Sidebar */}
           <div className="lg:col-span-1 space-y-3">
-            <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40 space-y-2">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <div className="p-3.5 rounded-xl theme-glass-panel space-y-2.5">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
                   <History className="w-3.5 h-3.5 text-sky-400" /> Version History
                 </span>
-                <span className="text-[10px] text-slate-500 font-mono">
+                <span className="text-[10px] text-slate-400 font-mono">
                   {rulePrompt.versions.length} versions
                 </span>
               </div>
 
               {/* Version List */}
-              <div className="space-y-1.5 max-h-[460px] overflow-y-auto pr-0.5">
+              <div className="space-y-2 max-h-[460px] overflow-y-auto pr-0.5">
                 {rulePrompt.versions.length === 0 ? (
                   <div className="p-3 text-center text-slate-500 text-xs italic">
                     No versions created yet.
@@ -1660,27 +1710,27 @@ export default function AgentIntelligenceStudioPage() {
                       <div
                         key={ver.id}
                         onClick={() => handleSelectVersion(ver.id)}
-                        className={`p-2 rounded-md border text-xs cursor-pointer transition-all ${
+                        className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${
                           isSelected
-                            ? "bg-slate-800 border-sky-500/80 shadow-sm"
-                            : "bg-slate-950/80 border-slate-800/80 hover:bg-slate-900"
+                            ? "theme-version-selected"
+                            : "theme-glass-sunken hover:border-slate-700"
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-100 flex items-center gap-1 text-[11px]">
+                          <span className="font-bold text-slate-100 flex items-center gap-1.5 text-xs">
                             v{ver.version_number}
                             {isActive && (
-                              <span className="px-1 py-0.2 rounded text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-800 font-semibold">
+                              <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-950/90 text-emerald-400 border border-emerald-800/80 font-semibold">
                                 ACTIVE
                               </span>
                             )}
                           </span>
-                          <span className={`px-1 py-0.2 rounded text-[9px] font-semibold ${
+                          <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${
                             ver.status === "APPROVED"
-                              ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                              ? "bg-emerald-950/90 text-emerald-400 border border-emerald-800/80"
                               : ver.status === "DRAFT"
-                              ? "bg-amber-950 text-amber-400 border border-amber-800"
-                              : "bg-slate-900 text-slate-500 border border-slate-800"
+                              ? "bg-amber-950/90 text-amber-300 border border-amber-700/80"
+                              : "bg-slate-900 text-slate-400 border border-slate-800"
                           }`}>
                             {ver.status}
                           </span>
@@ -1709,9 +1759,9 @@ export default function AgentIntelligenceStudioPage() {
                 type="button"
                 disabled={actionLoading}
                 onClick={handleGenerateIntelligentDraft}
-                className="w-full py-1.5 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full py-2 px-2.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
               >
-                <Sparkles className="w-3 h-3 text-cyan-400" /> Generate Intelligent Draft
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Generate Intelligent Draft
               </button>
             </div>
           </div>
@@ -1722,7 +1772,7 @@ export default function AgentIntelligenceStudioPage() {
             {studioTab === "editor" && (
               <>
                 {!selectedVersion ? (
-                  <div className="p-8 border border-slate-800 rounded-lg bg-slate-900/40 text-center space-y-3">
+                  <div className="p-8 rounded-xl theme-glass-card text-center space-y-3">
                     <Sparkles className="w-8 h-8 text-cyan-400 mx-auto" />
                     <h3 className="text-sm font-semibold text-slate-200">No Policy Baseline for This Rule</h3>
                     <p className="text-xs text-slate-400 max-w-md mx-auto">
@@ -1732,7 +1782,7 @@ export default function AgentIntelligenceStudioPage() {
                       type="button"
                       disabled={actionLoading}
                       onClick={handleGenerateIntelligentDraft}
-                      className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-semibold inline-flex items-center gap-1.5 transition-colors shadow-sm"
+                      className="px-4 py-2 theme-primary-btn rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all"
                     >
                       <Sparkles className="w-3.5 h-3.5" /> Synthesize Intelligent Draft Now
                     </button>
@@ -1740,19 +1790,19 @@ export default function AgentIntelligenceStudioPage() {
                 ) : (
                   <>
                     {/* Top Toolbar */}
-                    <div className="p-2.5 sm:p-3 rounded-lg border border-slate-800 bg-slate-900/40 flex flex-wrap items-center justify-between gap-2">
+                    <div className="p-3 sm:px-4 rounded-xl theme-glass-panel flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-bold text-slate-100">
+                          <span className="text-sm font-bold text-slate-100">
                             Version {selectedVersion.version_number}
                           </span>
                           {isSelectedActive && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3" /> Production Active
                             </span>
                           )}
                           {selectedVersion.is_template_draft && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-sky-950 text-sky-400 border border-sky-800">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-950/80 text-sky-300 border border-sky-700/70">
                               INTELLIGENT DRAFT
                             </span>
                           )}
@@ -1767,7 +1817,7 @@ export default function AgentIntelligenceStudioPage() {
                           type="button"
                           onClick={() => handleExportSingleRule(selectedRuleId, "json")}
                           disabled={downloadingExport}
-                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                          className="px-2.5 py-1.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
                         >
                           <Download className="w-3.5 h-3.5 text-cyan-400" /> Download
                         </button>
@@ -1776,7 +1826,7 @@ export default function AgentIntelligenceStudioPage() {
                           <button
                             type="button"
                             onClick={() => setIsEditing(true)}
-                            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded text-xs font-semibold transition-colors"
+                            className="px-2.5 py-1.5 theme-secondary-btn rounded-lg text-xs font-semibold transition-colors"
                           >
                             Edit as New Draft
                           </button>
@@ -1784,7 +1834,7 @@ export default function AgentIntelligenceStudioPage() {
                           <button
                             type="button"
                             onClick={() => setIsEditing(false)}
-                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 rounded text-xs font-semibold transition-colors"
+                            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 rounded-lg text-xs font-semibold transition-colors"
                           >
                             Cancel Editing
                           </button>
@@ -1795,9 +1845,9 @@ export default function AgentIntelligenceStudioPage() {
                     {/* Structured 9-Section Policy Form */}
                     <form onSubmit={handleSaveManualDraft} className="space-y-3">
                       {/* Section 1: Common SOC Baseline */}
-                      <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/30 space-y-1.5">
+                      <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
                         <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                          <label className="text-xs font-bold text-sky-400 flex items-center gap-1.5 tracking-wide">
                             <Shield className="w-3.5 h-3.5 text-sky-400" />
                             1. COMMON SOC BASELINE PROTOCOL
                           </label>
@@ -1808,19 +1858,19 @@ export default function AgentIntelligenceStudioPage() {
                             rows={5}
                             value={editCommon}
                             onChange={(e) => setEditCommon(e.target.value)}
-                            className="w-full p-2 text-xs font-mono rounded border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-sky-500"
+                            className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-sky-500"
                           />
                         ) : (
-                          <div className="p-2 text-xs font-mono rounded border border-slate-800/80 bg-slate-950 text-slate-300 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                          <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
                             {selectedVersion.common_prompt}
                           </div>
                         )}
                       </div>
 
                       {/* Section 2: Rule-Specific Guidance */}
-                      <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/30 space-y-1.5">
+                      <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
                         <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                          <label className="text-xs font-bold text-sky-400 flex items-center gap-1.5 tracking-wide">
                             <FileCode className="w-3.5 h-3.5 text-cyan-400" />
                             2. RULE-SPECIFIC DIRECTIVE &amp; PATTERN DETAILS
                           </label>
@@ -1831,11 +1881,11 @@ export default function AgentIntelligenceStudioPage() {
                             rows={6}
                             value={editRuleSpecific}
                             onChange={(e) => setEditRuleSpecific(e.target.value)}
-                            className="w-full p-2 text-xs font-mono rounded border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-cyan-500"
+                            className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-cyan-500"
                             required
                           />
                         ) : (
-                          <div className="p-2 text-xs font-mono rounded border border-slate-800/80 bg-slate-950 text-slate-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                          <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-60 overflow-y-auto leading-relaxed">
                             {selectedVersion.rule_specific_prompt}
                           </div>
                         )}
@@ -1843,8 +1893,8 @@ export default function AgentIntelligenceStudioPage() {
 
                       {/* Section 3 & 4: Detection Conditions & Evidence */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/30 space-y-1.5">
-                          <label className="text-xs font-bold text-slate-200 block">
+                        <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
+                          <label className="text-xs font-bold text-sky-400 block tracking-wide">
                             3. DETECTION CONDITIONS &amp; PATTERN LOGIC
                           </label>
                           {isEditing ? (
@@ -1852,17 +1902,17 @@ export default function AgentIntelligenceStudioPage() {
                               rows={4}
                               value={editConditions}
                               onChange={(e) => setEditConditions(e.target.value)}
-                              className="w-full p-2 text-xs font-mono rounded border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
+                              className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
                             />
                           ) : (
-                            <div className="p-2 text-xs font-mono rounded border border-slate-800/80 bg-slate-950 text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto">
+                            <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto">
                               {selectedVersion.detection_conditions || "No conditions specified."}
                             </div>
                           )}
                         </div>
 
-                        <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/30 space-y-1.5">
-                          <label className="text-xs font-bold text-slate-200 block">
+                        <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
+                          <label className="text-xs font-bold text-sky-400 block tracking-wide">
                             4. MANDATORY EVIDENCE GATHERING CHECKLIST
                           </label>
                           {isEditing ? (
@@ -1870,10 +1920,10 @@ export default function AgentIntelligenceStudioPage() {
                               rows={4}
                               value={editEvidence}
                               onChange={(e) => setEditEvidence(e.target.value)}
-                              className="w-full p-2 text-xs font-mono rounded border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
+                              className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
                             />
                           ) : (
-                            <div className="p-2 text-xs font-mono rounded border border-slate-800/80 bg-slate-950 text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto">
+                            <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto">
                               {selectedVersion.required_evidence || "Standard telemetry artifacts."}
                             </div>
                           )}
@@ -1959,8 +2009,8 @@ export default function AgentIntelligenceStudioPage() {
                       </div>
 
                       {/* Section 9: Standard Q&A Checklist */}
-                      <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/30 space-y-2">
-                        <label className="text-xs font-bold text-slate-200 block">
+                      <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
+                        <label className="text-xs font-bold text-sky-400 block tracking-wide">
                           9. STANDARD INVESTIGATIVE Q&amp;A CHECKLIST
                         </label>
                         <div className="space-y-1.5">

@@ -41,7 +41,7 @@ export function formatExecutionProvenanceBadge(opts: {
       return {
         label: "HTTP_MOCK",
         sublabel: opts.historicalProvenance || "Test HTTP Mock Endpoint (Non-GPU)",
-        className: "bg-cyan-950/70 text-cyan-300 border-cyan-700/70",
+        className: "bg-teal-950/70 text-teal-300 border-teal-700/70",
         isMock: true,
         isLiveProvider: false,
       };
@@ -128,8 +128,8 @@ export function formatServer2HealthSummary(opts?: {
       statusLabel: "HTTP_MOCK",
       archLabel: "S1 + HTTP_MOCK (Test)",
       modelStatusText: "Mock HTTP (Non-GPU)",
-      badgeClass: "bg-cyan-950/60 border-cyan-700/70 text-cyan-300",
-      dotClass: "bg-cyan-400",
+      badgeClass: "bg-teal-950/60 border-teal-700/70 text-teal-300",
+      dotClass: "bg-teal-400",
       isMockEndpoint: true,
     };
   }
@@ -160,8 +160,8 @@ export function formatServer2HealthSummary(opts?: {
     statusLabel: "S2 OFFLINE",
     archLabel: "Server 1",
     modelStatusText: "S2 Offline",
-    badgeClass: "bg-amber-950/60 border-amber-700/70 text-amber-300",
-    dotClass: "bg-amber-400",
+    badgeClass: "bg-rose-950/80 border-rose-700/80 text-rose-300",
+    dotClass: "bg-rose-400",
     isMockEndpoint: false,
   };
 }

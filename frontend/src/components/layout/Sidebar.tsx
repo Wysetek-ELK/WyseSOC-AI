@@ -209,18 +209,18 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`relative flex flex-col border-r border-slate-800 bg-slate-950 text-slate-200 transition-all duration-200 select-none ${collapsed ? "w-14" : "w-60"
+      className={`relative z-10 flex flex-col theme-sidebar-shell text-slate-200 transition-all duration-200 select-none ${collapsed ? "w-14" : "w-60"
         }`}
     >
       {/* Brand Header */}
-      <div className="flex h-12 items-center justify-between px-3 border-b border-slate-800">
+      <div className="flex h-12 items-center justify-between px-3 border-b border-slate-800/80">
         <Link href="/agent-mission-control" className="flex items-center gap-2.5 overflow-hidden">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-cyan-600/20 text-cyan-400 border border-cyan-500/30">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-sky-500/15 text-sky-400 border border-sky-500/40 shadow-sm">
             <ShieldAlert className="h-4 w-4" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-bold text-xs tracking-wider text-slate-100 uppercase">
+              <span className="font-bold text-xs tracking-wider text-sky-300 uppercase">
                 AI Verdict
               </span>
               <span className="text-[9px] text-cyan-400 font-mono tracking-tight leading-none">
@@ -255,13 +255,13 @@ export function Sidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${active
-                      ? "bg-cyan-950/60 text-cyan-300 border border-cyan-700/50 shadow-sm shadow-cyan-900/20"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60"
+                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${active
+                      ? "theme-nav-active"
+                      : "text-slate-400 hover:text-slate-100 hover:bg-slate-900/60 border border-transparent"
                     }`}
                   title={collapsed ? item.title : undefined}
                 >
-                  <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "text-cyan-400" : "text-slate-400"}`} />
+                  <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "text-cyan-300" : "text-slate-400"}`} />
                   {!collapsed && (
                     <div className="flex flex-1 items-center justify-between overflow-hidden">
                       <span className="truncate">{item.title}</span>
@@ -282,7 +282,7 @@ export function Sidebar() {
       </nav>
 
       {/* Footer System Status */}
-      <div className="p-2 border-t border-slate-800 text-[10px] font-mono">
+      <div className="p-2 border-t border-slate-800/80 text-[10px] font-mono">
         {(() => {
           const s2Summary = formatServer2HealthSummary(llmStatus || undefined);
           const modelDisplay = llmStatus?.model
@@ -291,13 +291,13 @@ export function Sidebar() {
           return !collapsed ? (
             <Link
               href="/inference-control"
-              className="block rounded-md bg-slate-900/70 hover:bg-slate-900 p-2 border border-slate-800 hover:border-slate-700 space-y-0.5 transition-colors cursor-pointer"
+              className="block rounded-lg theme-glass-sunken hover:border-slate-700 p-2 space-y-1 transition-colors cursor-pointer"
               title="Inspect Inference Control & Historical Health Telemetry"
               data-testid="sidebar-inference-widget"
             >
               <div className="flex items-center justify-between mb-0.5">
                 <span className="text-slate-400 text-[9px]">INFERENCE</span>
-                <span className={`flex items-center gap-1 text-[9px] font-semibold ${s2Summary.isMockEndpoint ? "text-cyan-300" : llmStatus?.is_healthy ? "text-emerald-400" : llmStatus === null ? "text-slate-400" : "text-amber-400"}`}>
+                <span className={`flex items-center gap-1 rounded px-1.5 py-0.5 border text-[9px] font-bold tracking-wide ${s2Summary.badgeClass}`}>
                   <span className={`h-1.5 w-1.5 rounded-full ${s2Summary.dotClass}`}></span>
                   {s2Summary.statusLabel}
                 </span>
@@ -309,18 +309,18 @@ export function Sidebar() {
                 <span>LLM:</span>
                 {llmStatus?.is_healthy ? (
                   <span
-                    className={`${s2Summary.isMockEndpoint ? "text-cyan-300" : "text-emerald-400"} font-semibold flex items-center gap-1 truncate max-w-[130px]`}
+                    className={`${s2Summary.isMockEndpoint ? "text-teal-300" : "text-emerald-400"} font-semibold flex items-center gap-1 truncate max-w-[130px]`}
                     title={llmStatus.model || s2Summary.modelStatusText}
                   >
                     <span className={`h-1.5 w-1.5 rounded-full ${s2Summary.dotClass} shrink-0`}></span>
                     {s2Summary.isMockEndpoint ? `${modelDisplay} (HTTP Mock)` : `${modelDisplay} (Active)`}
                   </span>
                 ) : (
-                  <span className="text-amber-400">{s2Summary.modelStatusText}</span>
+                  <span className="text-rose-300">{s2Summary.modelStatusText}</span>
                 )}
               </div>
               {llmStatus?.test_environment && (
-                <div className="text-[8px] mt-0.5 px-1 py-0.2 rounded bg-cyan-950/70 border border-cyan-800/70 text-cyan-300 truncate" data-testid="sidebar-test-env">
+                <div className="text-[8px] mt-0.5 px-1 py-0.2 rounded bg-teal-950/70 border border-teal-800/70 text-teal-300 truncate" data-testid="sidebar-test-env">
                   TEST ENV: {llmStatus.test_environment}
                 </div>
               )}

@@ -836,14 +836,16 @@ export default function AgentConfigurationPage() {
             <div>
               <span className="text-xs font-semibold text-slate-200 block">Theme Preference</span>
               <span className="text-[11px] text-slate-400">
-                Toggle between Enterprise SOC Dark Mode and Light Mode.
+                Switch between Obsidian Glass (Default) and Classic Slate &amp; Cyan theme.
               </span>
             </div>
             <button
+              type="button"
               onClick={toggleTheme}
-              className="rounded-md border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs font-bold text-slate-200 hover:bg-slate-800"
+              data-testid="config-theme-toggle-btn"
+              className="rounded-md theme-secondary-btn px-2.5 py-1 text-xs font-bold transition-colors"
             >
-              {theme.toUpperCase()} MODE
+              {theme === "obsidian" ? "OBSIDIAN GLASS" : "CLASSIC SLATE"}
             </button>
           </div>
         </div>

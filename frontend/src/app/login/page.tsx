@@ -29,14 +29,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4 font-sans">
-      <div className="w-full max-w-sm rounded-xl border border-slate-800 bg-slate-900/70 p-6 shadow-2xl backdrop-blur-xl">
+    <div className="flex min-h-screen items-center justify-center p-4 font-sans">
+      <div className="w-full max-w-sm rounded-xl theme-glass-panel p-6 shadow-2xl">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-950/70 text-cyan-400 border border-cyan-500/40 shadow-lg shadow-cyan-950/50 mb-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 text-sky-400 border border-sky-500/40 shadow-lg mb-3">
             <ShieldAlert className="h-6 w-6" />
           </div>
-          <h1 className="text-lg font-bold tracking-tight text-slate-100">AI VERDICT</h1>
+          <h1 className="text-lg font-bold tracking-tight text-sky-300">AI VERDICT</h1>
           <p className="text-[11px] text-cyan-400 font-mono mt-0.5 tracking-wider uppercase">
             Agentic SOC Intelligence Platform
           </p>
@@ -90,7 +90,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full mt-2 flex items-center justify-center gap-2 rounded-md bg-cyan-600 py-1.5 text-xs font-semibold text-white shadow-md shadow-cyan-950/50 hover:bg-cyan-500 disabled:opacity-50 transition-colors"
+            className="w-full mt-2 flex items-center justify-center gap-2 rounded-md theme-primary-btn py-1.5 text-xs font-semibold disabled:opacity-50 transition-all"
           >
             <span>{isSubmitting ? "Authenticating..." : "Sign In to Platform"}</span>
             <ArrowRight className="h-3.5 w-3.5" />

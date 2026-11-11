@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, api } from "@/lib/api";
 
+export type AppTheme = "obsidian" | "classic";
+
 interface AppContextType {
   user: User | null;
   isLoading: boolean;
@@ -10,31 +12,35 @@ interface AppContextType {
   setBlindReviewMode: (enabled: boolean) => void;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  theme: "dark" | "light";
+  theme: AppTheme;
   toggleTheme: () => void;
   refreshUser: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+function applyThemeToDocument(nextTheme: AppTheme) {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute("data-theme", nextTheme);
+  document.documentElement.classList.add("dark");
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [blindReviewMode, setBlindReviewState] = useState<boolean>(false);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<AppTheme>("obsidian");
 
   useEffect(() => {
     // Load stored preferences
     const storedBlind = localStorage.getItem("ai_verdict_blind_review");
     if (storedBlind === "true") setBlindReviewState(true);
 
-    const storedTheme = (localStorage.getItem("ai_verdict_theme") as "dark" | "light") || "dark";
-    setTheme(storedTheme);
-    if (storedTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    const rawStoredTheme = localStorage.getItem("ai_verdict_theme");
+    const resolvedTheme: AppTheme =
+      rawStoredTheme === "classic" ? "classic" : "obsidian";
+    setTheme(resolvedTheme);
+    applyThemeToDocument(resolvedTheme);
 
     // Check user session
     refreshUser();
@@ -72,14 +78,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
+    const next: AppTheme = theme === "obsidian" ? "classic" : "obsidian";
     setTheme(next);
     localStorage.setItem("ai_verdict_theme", next);
-    if (next === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    applyThemeToDocument(next);
   };
 
   const login = async (username: string, password: string) => {
