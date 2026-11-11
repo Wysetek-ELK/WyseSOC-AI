@@ -2297,7 +2297,22 @@ export default function AgentIntelligenceStudioPage() {
                             {(qualityAssessment.autonomous_operation_eligible ?? false) ? "ELIGIBLE" : "REQUIRES G8 PASS"}
                           </strong>
                         </span>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          Model: <strong className="text-slate-200">{qualityAssessment.scoring_model_version || qualityAssessment.validator_version}</strong>
+                          {" "}({qualityAssessment.gate_scores_total ?? qualityAssessment.quality_score}/{qualityAssessment.gate_max_total ?? 100} gate pts)
+                        </span>
+                        {qualityAssessment.simulation_provider_type && (
+                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${qualityAssessment.simulation_is_simulated ? "border-amber-700/70 bg-amber-950/30 text-amber-300" : "border-cyan-800/70 bg-cyan-950/30 text-cyan-300"}`}>
+                            Sim: {qualityAssessment.simulation_provider_type}
+                            {qualityAssessment.simulation_model_identifier ? ` • ${qualityAssessment.simulation_model_identifier}` : ""}
+                          </span>
+                        )}
                       </div>
+                      {qualityAssessment.historical_assessment_preserved && qualityAssessment.persisted_validator_version && qualityAssessment.persisted_validator_version !== qualityAssessment.validator_version && (
+                        <div className="text-[10px] font-mono text-amber-300">
+                          Stored historical assessment preserved verbatim ({qualityAssessment.persisted_validator_version}: {qualityAssessment.persisted_quality_score}/100)
+                        </div>
+                      )}
                     </div>
 
                     {/* Blocking Findings Box */}

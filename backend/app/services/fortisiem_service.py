@@ -337,12 +337,30 @@ class FortiSIEMService:
         sub_cat = str(rule_dict.get("subCategory") or rule_dict.get("phSubIncidentCategory") or rule_dict.get("incidentTagName") or "Policy Violation")
         data_src = str(rule_dict.get("dataSource") or rule_dict.get("incidentRptDevName") or "FortiSIEM")
 
-        pattern = str(rule_dict.get("pattern") or rule_dict.get("patternLogic") or rule_dict.get("expression") or rule_dict.get("incidentDetail") or "")
-        if not pattern and rule_dict.get("incidentDetailJson"):
+        # Runtime incident counters/details MUST NEVER populate authoritative rule pattern_logic.
+        pattern = str(rule_dict.get("pattern") or rule_dict.get("patternLogic") or rule_dict.get("expression") or "").strip()
+        inc_detail = str(rule_dict.get("incidentDetail") or "").strip()
+        if not inc_detail and rule_dict.get("incidentDetailJson"):
             try:
-                pattern = json.dumps(rule_dict.get("incidentDetailJson"))
+                inc_detail = json.dumps(rule_dict.get("incidentDetailJson"))
             except Exception:
-                pattern = str(rule_dict.get("incidentDetailJson"))
+                inc_detail = str(rule_dict.get("incidentDetailJson"))
+
+        has_authoritative_logic = bool(
+            pattern
+            and not ('"incidentCount"' in pattern and pattern.startswith("{"))
+            and "incidentDetail" not in pattern
+        )
+        metadata: Dict[str, Any] = {
+            "source": "FORTISIEM_LIVE_RULE_API" if has_authoritative_logic else "AUTO_SYNCED_FROM_INCIDENT",
+            "definition_status": "VERIFIED" if has_authoritative_logic else "INCOMPLETE",
+            "attackTechnique": rule_dict.get("attackTechnique") or rule_dict.get("mitreTechnique"),
+            "attackTactic": rule_dict.get("attackTactic") or rule_dict.get("mitreTactic"),
+            "customer": rule_dict.get("customer"),
+            "synced_at": utc_now().isoformat(),
+        }
+        if inc_detail:
+            metadata["source_incident_metrics"] = {"incident_detail": inc_detail}
 
         return {
             "rule_id": rule_id,
@@ -352,15 +370,9 @@ class FortiSIEMService:
             "category": category,
             "sub_category": sub_cat,
             "data_source": data_src,
-            "pattern_logic": pattern,
-            "raw_rule_text": f"Rule: {name}\nEventType: {rule_id}\nCategory: {category}\nSubCategory: {sub_cat}\nPattern: {pattern}",
-            "metadata": {
-                "source": "FORTISIEM_LIVE_RULE_API",
-                "attackTechnique": rule_dict.get("attackTechnique") or rule_dict.get("mitreTechnique"),
-                "attackTactic": rule_dict.get("attackTactic") or rule_dict.get("mitreTactic"),
-                "customer": rule_dict.get("customer"),
-                "synced_at": utc_now().isoformat(),
-            },
+            "pattern_logic": pattern if has_authoritative_logic else "",
+            "raw_rule_text": f"Rule: {name}\nEventType: {rule_id}\nCategory: {category}\nSubCategory: {sub_cat}\nPattern: {pattern if has_authoritative_logic else 'UNVERIFIED'}",
+            "metadata": metadata,
         }
 
     def _parse_xml_rule(
@@ -472,6 +484,22 @@ class FortiSIEMService:
                 },
             }
 
+        # Never mark an empty or runtime-counter-only definition VERIFIED
+        pattern_txt = str(parsed.get("pattern_logic") or "").strip()
+        is_verified_def = bool(
+            pattern_txt
+            and not (pattern_txt.startswith("{") and ("incidentCount" in pattern_txt or "sentBytes64" in pattern_txt))
+            and not (
+                ("incidentCount" in pattern_txt or "incidentDetail" in pattern_txt)
+                and "COUNT(" not in pattern_txt
+                and "Pattern Conditions:" not in str(parsed.get("raw_rule_text") or "")
+            )
+        )
+        computed_def_status = "VERIFIED" if is_verified_def else "INCOMPLETE"
+        computed_provenance = parsed["metadata"].get("source", "AUTHORITATIVE_XML_IMPORT")
+        if not is_verified_def and computed_provenance in ("AUTHORITATIVE_XML_IMPORT", "FORTISIEM_LIVE_RULE_API"):
+            computed_provenance = "HEURISTIC_PARSER"
+
         # Look up rule in database
         q = select(Rule).where(or_(Rule.id == clean_id, Rule.rule_id == clean_id, Rule.event_type == clean_id))
         res = await self.db.execute(q)
@@ -481,7 +509,12 @@ class FortiSIEMService:
             drift_payload = {
                 "pattern_logic": parsed["pattern_logic"],
                 "severity": parsed["severity"],
-                "parsed_metadata": {**(existing.parsed_metadata or {}), **parsed["metadata"], "definition_status": "VERIFIED", "provenance": "AUTHORITATIVE_XML_IMPORT"},
+                "parsed_metadata": {
+                    **(existing.parsed_metadata or {}),
+                    **parsed["metadata"],
+                    "definition_status": computed_def_status,
+                    "provenance": computed_provenance,
+                },
             }
             try:
                 from app.services.policy_lifecycle_monitor import PolicyLifecycleMonitor
@@ -498,17 +531,17 @@ class FortiSIEMService:
             existing.raw_rule_text = parsed["raw_rule_text"]
             meta = existing.parsed_metadata or {}
             meta.update(parsed["metadata"])
-            meta["definition_status"] = "VERIFIED"
-            meta["provenance"] = "AUTHORITATIVE_XML_IMPORT"
+            meta["definition_status"] = computed_def_status
+            meta["provenance"] = computed_provenance
             existing.parsed_metadata = meta
             existing.updated_at = utc_now()
             await self.db.commit()
             await self.db.refresh(existing)
             target_rule = existing
         else:
-            meta = parsed["metadata"]
-            meta["definition_status"] = "VERIFIED"
-            meta["provenance"] = "AUTHORITATIVE_XML_IMPORT"
+            meta = dict(parsed["metadata"])
+            meta["definition_status"] = computed_def_status
+            meta["provenance"] = computed_provenance
             target_rule = Rule(
                 rule_id=parsed["rule_id"],
                 name=parsed["name"],
@@ -527,15 +560,25 @@ class FortiSIEMService:
             await self.db.commit()
             await self.db.refresh(target_rule)
 
+        # Keep persisted RuleIntelligenceSnapshot synchronized with G1 & verdict execution
+        try:
+            from app.services.rule_intelligence_analyzer import RuleIntelligenceAnalyzer
+            from app.services.prompt_studio_service import PromptStudioService
+
+            sem = RuleIntelligenceAnalyzer.analyze_rule(target_rule)
+            await PromptStudioService(self.db)._persist_rule_intelligence_snapshot(target_rule, sem)
+        except Exception as snap_exc:
+            logger.warning(f"Snapshot sync warning on authoritative rule import: {snap_exc}")
+
         return {
             "success": True,
             "rule_id": target_rule.id,
             "rule_identifier": target_rule.rule_id,
             "name": target_rule.name,
-            "provenance": "AUTHORITATIVE_XML_IMPORT",
+            "provenance": computed_provenance,
             "pattern_logic": target_rule.pattern_logic,
-            "definition_status": "VERIFIED",
-            "message": f"Successfully imported authoritative rule definition for '{target_rule.name}'.",
+            "definition_status": computed_def_status,
+            "message": f"Successfully imported rule definition for '{target_rule.name}' (status={computed_def_status}).",
         }
 
     async def pull_incidents_for_rule(

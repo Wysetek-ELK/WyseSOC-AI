@@ -192,9 +192,16 @@ class EvidenceNormalizationService:
 
         # 1. Top-Level Incident Fields
         obs_time = None
-        if incident.created_at_epoch:
+        top_epoch = (
+            getattr(incident, "first_seen_epoch", None)
+            or getattr(incident, "created_at_epoch", None)
+            or getattr(incident, "last_seen_epoch", None)
+        )
+        if top_epoch:
             try:
-                obs_time = datetime.fromtimestamp(incident.created_at_epoch / 1000.0, timezone.utc).isoformat()
+                ep_num = float(top_epoch)
+                ep_sec = ep_num / 1000.0 if ep_num >= 1e11 else ep_num
+                obs_time = datetime.fromtimestamp(ep_sec, timezone.utc).isoformat()
             except Exception:
                 pass
 

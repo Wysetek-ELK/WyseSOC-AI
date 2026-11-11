@@ -93,6 +93,8 @@ export interface IncidentListItem {
   id: string;
   incident_id: string;
   rule_id?: string;
+  rule_uuid?: string;
+  logical_rule_id?: string;
   rule_name?: string;
   event_type: string;
   title: string;
@@ -114,10 +116,34 @@ export interface IncidentListItem {
   created_at: string;
 }
 
+export interface IncidentMatchedRuleSummary {
+  rule_uuid?: string | null;
+  logical_rule_id: string;
+  rule_name?: string | null;
+  event_type?: string | null;
+  incident_count: number;
+}
+
+export interface IncidentListResponse {
+  items: IncidentListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  exact_rule_id?: string | null;
+  exact_logical_rule_id?: string | null;
+  exact_rule_name?: string | null;
+  distinct_rule_count?: number;
+  combines_multiple_rules?: boolean;
+  matched_rules?: IncidentMatchedRuleSummary[];
+}
+
 export interface IncidentDetail {
   id: string;
   incident_id: string;
   rule_id?: string;
+  rule_uuid?: string;
+  logical_rule_id?: string;
   rule_name?: string;
   rule_description?: string;
   import_job_id?: string;
@@ -577,10 +603,18 @@ export interface PolicyQualityAssessmentResponse {
   prompt_version_id?: string;
   archetype: string;
   validator_version: string;
+  scoring_model_version?: string;
+  scoring_denominator?: number;
+  structural_denominator?: number;
+  structural_raw_score?: number | null;
+  empirical_denominator?: number;
   quality_score: number;
   structural_quality_score?: number;
   empirical_validation_score?: number;
   empirical_validation_status?: string;
+  validation_status: string;
+  gate_scores_total?: number;
+  gate_max_total?: number;
   score_breakdown: Record<string, number>;
   gate_results: Record<string, QualityGateResult>;
   gates?: QualityGateResult[];
@@ -590,12 +624,22 @@ export interface PolicyQualityAssessmentResponse {
   missing_evidence_mappings: string[];
   recommendations: string[];
   simulation_status: string;
+  simulation_run_id?: string | null;
+  simulation_provider_type?: string | null;
+  simulation_model_identifier?: string | null;
+  simulation_execution_provenance?: string | null;
+  simulation_is_simulated?: boolean | null;
+  simulation_sample_count?: number | null;
+  simulation_verified_cases?: number | null;
+  simulation_policy_digest?: string | null;
   approval_eligible: boolean;
   structural_approval_eligible?: boolean;
   empirical_validation_eligible?: boolean;
   autonomous_operation_eligible?: boolean;
   hard_gate_failure?: boolean;
-  validation_status?: string;
+  historical_assessment_preserved?: boolean;
+  persisted_validator_version?: string | null;
+  persisted_quality_score?: number | null;
   policy_digest: string;
   contract_digest: string;
   rule_digest: string;
@@ -1001,9 +1045,10 @@ export const api = {
     severity?: string;
     status?: string;
     rule_id?: string;
+    exact_rule_id?: string;
     resolution?: string;
     blind_review?: boolean;
-  } = {}) {
+  } = {}): Promise<IncidentListResponse> {
     const q = new URLSearchParams();
     if (params.page) q.set("page", params.page.toString());
     if (params.page_size) q.set("page_size", params.page_size.toString());
@@ -1011,6 +1056,7 @@ export const api = {
     if (params.severity) q.set("severity", params.severity);
     if (params.status) q.set("status", params.status);
     if (params.rule_id) q.set("rule_id", params.rule_id);
+    if (params.exact_rule_id) q.set("exact_rule_id", params.exact_rule_id);
     if (params.resolution) q.set("resolution", params.resolution);
     if (params.blind_review !== undefined) q.set("blind_review", params.blind_review.toString());
 

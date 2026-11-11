@@ -32,6 +32,8 @@ class IncidentListItemResponse(BaseModel):
     id: str
     incident_id: str
     rule_id: Optional[str] = None
+    rule_uuid: Optional[str] = None
+    logical_rule_id: Optional[str] = None
     rule_name: Optional[str] = None
     event_type: str
     title: str
@@ -59,6 +61,8 @@ class IncidentDetailResponse(BaseModel):
     id: str
     incident_id: str
     rule_id: Optional[str] = None
+    rule_uuid: Optional[str] = None
+    logical_rule_id: Optional[str] = None
     rule_name: Optional[str] = None
     rule_description: Optional[str] = None
     import_job_id: Optional[str] = None
@@ -91,12 +95,26 @@ class IncidentDetailResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class IncidentMatchedRuleSummary(BaseModel):
+    rule_uuid: Optional[str] = None
+    logical_rule_id: str
+    rule_name: Optional[str] = None
+    event_type: Optional[str] = None
+    incident_count: int = 0
+
+
 class IncidentListResponse(BaseModel):
     items: List[IncidentListItemResponse]
     total: int
     page: int
     page_size: int
     total_pages: int
+    exact_rule_id: Optional[str] = None
+    exact_logical_rule_id: Optional[str] = None
+    exact_rule_name: Optional[str] = None
+    distinct_rule_count: int = 0
+    combines_multiple_rules: bool = False
+    matched_rules: List[IncidentMatchedRuleSummary] = Field(default_factory=list)
 
 
 class ModelFacingEvent(BaseModel):

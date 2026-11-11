@@ -41,9 +41,13 @@ class PolicyQualityValidator:
       an invented threshold is detected, or policy contradicts contract,
       approval_eligible MUST BE FALSE.
     """
-    VALIDATOR_VERSION = "v2.0.0"
+    VALIDATOR_VERSION = "v2.2.0"
+    LEGACY_VALIDATOR_VERSION = "v2.0.0"
+    SUPPORTED_VALIDATOR_VERSIONS = ("v2.0.0", "v2.2.0")
 
-    # Scoring Weights (Total = 100)
+    # Reconciled Scoring Weights (v2.2.0: G1 10 + G2 10 + G3 20 + G4 10 + G5 10 + G6 15 + G7 10 + G8 15 = 100)
+    WEIGHT_RULE_INTEGRITY = 10.0
+    WEIGHT_ARCHETYPE_RELEVANCE = 10.0
     WEIGHT_DETECTION_SEMANTICS = 20.0
     WEIGHT_EVIDENCE_CONTRACT = 20.0
     WEIGHT_TP_FP_SPECIFICITY = 20.0
@@ -59,11 +63,18 @@ class PolicyQualityValidator:
         contract: Optional[RuleEvidenceContract] = None,
         semantics: Optional[DetectionSemantics] = None,
         simulation_results: Optional[Dict[str, Any]] = None,
+        validator_version: Optional[str] = None,
     ) -> PolicyQualityAssessmentResponse:
         """
         Executes comprehensive quality validation across G1 through G8.
-        Returns a deterministic PolicyQualityAssessmentResponse with exact digest bindings.
+        Defaults to reconciled scoring model v2.2.0 (100-pt non-double-counted G1=10 + G2=10 = 20),
+        while preserving explicit validator_version='v2.0.0' for historical regression parity.
         """
+        active_scoring_ver = (validator_version or cls.VALIDATOR_VERSION).strip()
+        if active_scoring_ver not in cls.SUPPORTED_VALIDATOR_VERSIONS:
+            active_scoring_ver = cls.VALIDATOR_VERSION
+        is_legacy_v20 = (active_scoring_ver == cls.LEGACY_VALIDATOR_VERSION)
+
         # 1. Resolve Semantics & Classification
         if not semantics:
             semantics = RuleIntelligenceAnalyzer.analyze_rule(rule)
@@ -84,34 +95,42 @@ class PolicyQualityValidator:
         score_breakdown: Dict[str, float] = {}
 
         # -------------------------------------------------------------------------
-        # GATE 1: Rule Definition Integrity (Weight: 20 pts)
+        # GATE 1: Rule Definition Integrity (v2.2.0: 10 pts | v2.0.0 legacy: 20 pts)
         # -------------------------------------------------------------------------
-        g1_score, g1_status, g1_blockers, g1_warns, g1_details = cls._evaluate_gate_1_integrity(semantics, prompt_version)
+        g1_max = cls.WEIGHT_DETECTION_SEMANTICS if is_legacy_v20 else cls.WEIGHT_RULE_INTEGRITY
+        g1_score, g1_status, g1_blockers, g1_warns, g1_details = cls._evaluate_gate_1_integrity(
+            semantics,
+            prompt_version,
+            max_score=g1_max,
+        )
         gate_results["G1_RULE_INTEGRITY"] = QualityGateResult(
             gate_id="G1",
             gate_name="Rule Definition Integrity",
             status=g1_status,
             score=g1_score,
-            max_score=cls.WEIGHT_DETECTION_SEMANTICS,
+            max_score=g1_max,
             details=g1_details,
             blocking_findings=g1_blockers,
             warnings=g1_warns,
         )
         blocking_issues.extend(g1_blockers)
         warnings.extend(g1_warns)
-        score_breakdown["detection_semantics"] = g1_score
 
         # -------------------------------------------------------------------------
-        # GATE 2: Detection Archetype Relevance (Weight evaluated with G1 / G7)
+        # GATE 2: Detection Archetype Relevance (v2.2.0: 10 pts | v2.0.0 legacy: 20 pts)
         # -------------------------------------------------------------------------
+        g2_max = cls.WEIGHT_DETECTION_SEMANTICS if is_legacy_v20 else cls.WEIGHT_ARCHETYPE_RELEVANCE
         g2_status, g2_blockers, g2_warns, g2_details = cls._evaluate_gate_2_relevance(prompt_version, archetype_def, semantics)
-        g2_score = cls.WEIGHT_DETECTION_SEMANTICS if g2_status == GateStatus.PASSED else (10.0 if g2_status == GateStatus.WARNING else 0.0)
+        if is_legacy_v20:
+            g2_score = cls.WEIGHT_DETECTION_SEMANTICS if g2_status == GateStatus.PASSED else (10.0 if g2_status == GateStatus.WARNING else 0.0)
+        else:
+            g2_score = cls.WEIGHT_ARCHETYPE_RELEVANCE if g2_status == GateStatus.PASSED else (5.0 if g2_status == GateStatus.WARNING else 0.0)
         gate_results["G2_ARCHETYPE_RELEVANCE"] = QualityGateResult(
             gate_id="G2",
             gate_name="Detection Archetype Relevance",
             status=g2_status,
             score=g2_score,
-            max_score=cls.WEIGHT_DETECTION_SEMANTICS,
+            max_score=g2_max,
             details=g2_details,
             blocking_findings=g2_blockers,
             warnings=g2_warns,
@@ -119,11 +138,15 @@ class PolicyQualityValidator:
         blocking_issues.extend(g2_blockers)
         warnings.extend(g2_warns)
 
-        # Ensure score_breakdown reflects G2 penalty
-        if g2_status == GateStatus.WARNING:
-            score_breakdown["detection_semantics"] = min(score_breakdown.get("detection_semantics", 20.0), 10.0)
-        elif g2_status == GateStatus.FAILED:
-            score_breakdown["detection_semantics"] = 0.0
+        if is_legacy_v20:
+            score_breakdown["detection_semantics"] = g1_score
+            if g2_status == GateStatus.WARNING:
+                score_breakdown["detection_semantics"] = min(score_breakdown.get("detection_semantics", 20.0), 10.0)
+            elif g2_status == GateStatus.FAILED:
+                score_breakdown["detection_semantics"] = 0.0
+        else:
+            # Eliminates v2.0.0 double-counting: G1 (max 10) + G2 (max 10) = detection_semantics (max 20)
+            score_breakdown["detection_semantics"] = round(g1_score + g2_score, 1)
 
         # -------------------------------------------------------------------------
         # GATE 3: Evidence Contract Feasibility (Weight: 20 pts)
@@ -246,10 +269,33 @@ class PolicyQualityValidator:
         )
         structural_score = round(min(100.0, (structural_raw / 85.0) * 100.0), 1)
         total_score = round(sum(score_breakdown.values()), 1)
+        gate_scores_total = round(sum(g.score for g in gate_results.values()), 1)
+        gate_max_total = round(sum(g.max_score for g in gate_results.values()), 1)
 
         # 4. Strict Approval Eligibility Determination
         # MANDATORY: Zero blocking issues allowed. High score does NOT override blocking findings.
         approval_eligible = (len(blocking_issues) == 0)
+
+        sim_res_dict = simulation_results if isinstance(simulation_results, dict) else {}
+        sim_provider = str(sim_res_dict.get("provider_type") or "").upper().strip() or None
+        sim_prov_label = str(sim_res_dict.get("execution_provenance") or "").upper().strip() or None
+        is_sim_prov = bool(
+            sim_res_dict.get("is_simulated") is True
+            or (sim_provider or "") in ("SIMULATED", "MOCK", "HEURISTIC", "SIMULATED_FALLBACK", "MOCK_LLM")
+            or (sim_prov_label or "") in ("SIMULATED", "MOCK", "HEURISTIC", "SIMULATED_FALLBACK", "MOCK_LLM")
+        )
+        g8_gate_res = gate_results.get("G8_SIMULATION_REGRESSION")
+        empirical_eligible = bool(
+            sim_status == SimulationStatus.EVALUATED_PASSED
+            and g8_gate_res is not None
+            and g8_gate_res.status == GateStatus.PASSED
+            and not is_sim_prov
+        )
+        validation_status_str = (
+            "SIMULATED_ONLY_NOT_CERTIFYING"
+            if (simulation_results and is_sim_prov)
+            else sim_status.value
+        )
 
         # Build comprehensive corrective recommendations covering all failed and warning gates
         seen_recs = set()
@@ -319,19 +365,39 @@ class PolicyQualityValidator:
             policy_version_number=prompt_version.version_number,
             prompt_version_id=prompt_version.id,
             archetype=archetype_def.archetype_id.value,
-            validator_version=cls.VALIDATOR_VERSION,
+            validator_version=active_scoring_ver,
+            scoring_model_version=active_scoring_ver,
+            scoring_denominator=100.0,
+            structural_denominator=85.0,
+            structural_raw_score=round(structural_raw, 1),
+            empirical_denominator=15.0,
             quality_score=total_score,
             structural_quality_score=structural_score,
             empirical_validation_score=round(g8_score, 1),
             empirical_validation_status=sim_status.value,
+            validation_status=validation_status_str,
+            gate_scores_total=gate_scores_total,
+            gate_max_total=gate_max_total,
             score_breakdown=score_breakdown,
             gate_results=gate_results,
             blocking_issues=blocking_issues,
             warnings=warnings,
             missing_evidence_mappings=missing_evidence_mappings,
             recommendations=recommendations,
+            hard_gate_failure=bool(blocking_issues),
             simulation_status=sim_status,
+            simulation_run_id=sim_res_dict.get("simulation_run_id") or sim_res_dict.get("run_id"),
+            simulation_provider_type=sim_provider,
+            simulation_model_identifier=sim_res_dict.get("model_identifier") or sim_res_dict.get("simulation_model_identifier"),
+            simulation_execution_provenance=sim_prov_label,
+            simulation_is_simulated=(is_sim_prov if simulation_results is not None else None),
+            simulation_sample_count=sim_res_dict.get("sample_count"),
+            simulation_verified_cases=sim_res_dict.get("eligible_ground_truth_count", sim_res_dict.get("verified_ground_truth_cases")),
+            simulation_policy_digest=sim_res_dict.get("policy_digest"),
             approval_eligible=approval_eligible,
+            structural_approval_eligible=approval_eligible,
+            empirical_validation_eligible=empirical_eligible,
+            autonomous_operation_eligible=(approval_eligible and empirical_eligible),
             policy_digest=policy_digest,
             contract_digest=contract_digest,
             rule_digest=rule_digest,
@@ -345,11 +411,15 @@ class PolicyQualityValidator:
 
     @classmethod
     def _evaluate_gate_1_integrity(
-        cls, semantics: DetectionSemantics, prompt_version: PromptVersion
+        cls,
+        semantics: DetectionSemantics,
+        prompt_version: PromptVersion,
+        max_score: float = 10.0,
     ) -> Tuple[float, GateStatus, List[str], List[str], str]:
         blockers = []
         warns = []
-        score = 20.0
+        scale = float(max_score) / 20.0
+        score = float(max_score)
 
         # Mandatory reference case check: Incomplete SIEM rule definition
         if semantics.definition_status in (SemanticsDefinitionStatus.INCOMPLETE, SemanticsDefinitionStatus.UNKNOWN):
@@ -357,21 +427,21 @@ class PolicyQualityValidator:
                 f"RULE_DEFINITION_INCOMPLETE: Rule '{semantics.rule_identifier}' lacks authoritative SIEM "
                 "detection logic. Observed incident telemetry (e.g. incidentCount, sentBytes64) cannot serve as a verified threshold."
             )
-            score -= 10.0
+            score -= 10.0 * scale
 
         if semantics.source_provenance == SourceProvenance.AUTO_SYNCED_FROM_INCIDENT:
             warns.append("Rule was auto-synced from incident telemetry cache-miss. Source parameters are unverified.")
-            score -= 4.0
+            score -= 4.0 * scale
         elif semantics.source_provenance == SourceProvenance.HEURISTIC_PARSER:
             warns.append("Rule definition was inferred via heuristic parser without authoritative SIEM definition/XML.")
-            score -= 6.0
+            score -= 6.0 * scale
 
         # Check if runtime incident metadata is present in rule conditions/logic
         s3 = getattr(prompt_version, "detection_conditions", "") or ""
         conds_str = str(getattr(semantics, "conditions", []) or []) + str(s3)
         if "incidentCount" in conds_str or "incidentDetail" in conds_str:
             warns.append("Incident runtime counter observed in rule conditions. Authoritative correlation parameters required.")
-            score -= 4.0
+            score -= 4.0 * scale
 
         # Check if policy Section 3 invents a threshold
         if semantics.threshold is None and re.search(r"threshold\s*[:=]\s*\d+", s3, re.IGNORECASE):
@@ -380,12 +450,12 @@ class PolicyQualityValidator:
                 "INVENTED_THRESHOLD_DETECTED: Section 3 asserts a specific numeric threshold that is not present "
                 "in the authoritative SIEM rule definition."
             )
-            score -= 8.0
+            score -= 8.0 * scale
 
         if semantics.definition_status in (SemanticsDefinitionStatus.INCOMPLETE, SemanticsDefinitionStatus.UNKNOWN):
-            score = min(score, 10.0)
+            score = min(score, 10.0 * scale)
 
-        score = max(0.0, score)
+        score = round(max(0.0, score), 1)
         status = GateStatus.FAILED if blockers else (GateStatus.WARNING if warns else GateStatus.PASSED)
         details = f"Rule definition provenance: {semantics.source_provenance.value}. Status: {semantics.definition_status.value}."
         return score, status, blockers, warns, details

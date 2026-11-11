@@ -72,10 +72,22 @@ async def test_gate_2_unclassified_telemetry_receives_warning_and_penalized_scor
 
     g2_result = assessment.gate_results["G2_ARCHETYPE_RELEVANCE"]
     assert g2_result.status == GateStatus.WARNING
-    assert g2_result.score == 10.0  # NOT full marks (20.0)
+    assert g2_result.score == 5.0  # Penalized 50% in reconciled v2.2.0 model (max_score=10.0)
+    assert g2_result.max_score == 10.0
     assert g2_result.score < g2_result.max_score
     assert any("INADEQUATE_TELEMETRY" in w for w in assessment.warnings)
-    assert assessment.score_breakdown["detection_semantics"] <= 10.0
+    assert assessment.score_breakdown["detection_semantics"] <= 15.0
+
+    # Verify legacy v2.0.0 scoring parity when explicitly requested
+    legacy_assessment = PolicyQualityValidator.validate_policy_quality(
+        rule=rule,
+        prompt_version=pv,
+        contract=contract,
+        semantics=semantics,
+        validator_version="v2.0.0",
+    )
+    assert legacy_assessment.gate_results["G2_ARCHETYPE_RELEVANCE"].score == 10.0
+    assert legacy_assessment.score_breakdown["detection_semantics"] <= 10.0
 
 
 @pytest.mark.asyncio
@@ -283,12 +295,23 @@ async def test_heavy_tcp_scan_before_after_remediation():
     c2 = EvidenceRequirementMapper.map_evidence_contract(rule, semantics, archetype_def, v2)
     res_v2 = PolicyQualityValidator.validate_policy_quality(rule, v2, c2, semantics)
 
+    # Default AIS 2.2 reconciled 100-point scoring model (G1=10 + G2=10 + G3=20 + G4=10 + G5=10 + G6=15 + G7=10 + G8=15 = 100)
+    assert res_v2.validator_version == "v2.2.0"
+    assert res_v2.scoring_model_version == "v2.2.0"
+    assert res_v2.gate_max_total == 100.0
+    assert res_v2.gate_scores_total == 85.0
     assert res_v2.approval_eligible is True
+    assert res_v2.structural_approval_eligible is True
+    assert res_v2.empirical_validation_eligible is False
+    assert res_v2.autonomous_operation_eligible is False
+    assert res_v2.validation_status == "NOT_EVALUATED"
     assert len(res_v2.blocking_issues) == 0
     assert res_v2.gate_results["G1_RULE_INTEGRITY"].status == GateStatus.PASSED
-    assert res_v2.gate_results["G1_RULE_INTEGRITY"].score == 20.0
+    assert res_v2.gate_results["G1_RULE_INTEGRITY"].score == 10.0
+    assert res_v2.gate_results["G1_RULE_INTEGRITY"].max_score == 10.0
     assert res_v2.gate_results["G2_ARCHETYPE_RELEVANCE"].status == GateStatus.PASSED
-    assert res_v2.gate_results["G2_ARCHETYPE_RELEVANCE"].score == 20.0
+    assert res_v2.gate_results["G2_ARCHETYPE_RELEVANCE"].score == 10.0
+    assert res_v2.gate_results["G2_ARCHETYPE_RELEVANCE"].max_score == 10.0
     assert res_v2.gate_results["G3_EVIDENCE_FEASIBILITY"].status == GateStatus.PASSED
     assert res_v2.gate_results["G3_EVIDENCE_FEASIBILITY"].score == 20.0
     assert res_v2.gate_results["G4_TP_CRITERIA_VALIDITY"].status == GateStatus.PASSED
@@ -305,6 +328,17 @@ async def test_heavy_tcp_scan_before_after_remediation():
     # Structural quality 100/100, Total score 85/100 with G8 INSUFFICIENT_DATA
     assert res_v2.structural_quality_score == 100.0
     assert res_v2.quality_score == 85.0
+
+    # Legacy v2.0.0 scoring parity preserved when requested explicitly for historical comparison
+    res_v2_legacy = PolicyQualityValidator.validate_policy_quality(
+        rule, v2, c2, semantics, validator_version="v2.0.0"
+    )
+    assert res_v2_legacy.validator_version == "v2.0.0"
+    assert res_v2_legacy.gate_max_total == 120.0
+    assert res_v2_legacy.gate_results["G1_RULE_INTEGRITY"].score == 20.0
+    assert res_v2_legacy.gate_results["G2_ARCHETYPE_RELEVANCE"].score == 20.0
+    assert res_v2_legacy.structural_quality_score == 100.0
+    assert res_v2_legacy.quality_score == 85.0
 
 
 @pytest.mark.asyncio

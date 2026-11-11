@@ -35,19 +35,21 @@ async def list_incidents(
     severity: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     rule_id: Optional[str] = Query(None),
+    exact_rule_id: Optional[str] = Query(None),
     resolution: Optional[str] = Query(None),
     blind_review: bool = Query(False, description="Hide ground truth for unbiased analyst review"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     service = IncidentService(db)
-    items, total = await service.list_incidents(
+    items, total, rule_meta = await service.list_incidents_with_rule_summary(
         page=page,
         page_size=page_size,
         search=search,
         severity=severity,
         status=status,
         rule_id=rule_id,
+        exact_rule_id=exact_rule_id,
         resolution=resolution,
         blind_review=blind_review,
     )
@@ -59,6 +61,7 @@ async def list_incidents(
         page=page,
         page_size=page_size,
         total_pages=total_pages,
+        **rule_meta,
     )
 
 

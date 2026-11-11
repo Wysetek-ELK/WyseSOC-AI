@@ -274,19 +274,12 @@ async def get_rule_prompt(
 
 
 async def _analyze_with_snapshot(db: AsyncSession, rule: Rule):
-    snap_q = select(RuleIntelligenceSnapshot).where(RuleIntelligenceSnapshot.rule_id == rule.id)
-    snap = (await db.execute(snap_q)).scalar_one_or_none()
-    auth_def = None
-    if snap and snap.definition_status == "VERIFIED" and snap.threshold is not None:
-        auth_def = {
-            "threshold": snap.threshold,
-            "threshold_unit": snap.threshold_unit,
-            "aggregation_window": snap.aggregation_window,
-        }
-    semantics = RuleIntelligenceAnalyzer.analyze_rule(rule, authoritative_siem_definition=auth_def)
+    semantics, contract, _ = await get_rule_semantics_and_contract(
+        db, rule, for_quality_validation=True
+    )
     classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
     archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
-    return semantics, classification, archetype_def
+    return semantics, classification, archetype_def, contract
 
 
 @router.get("/rule/{rule_id}/intelligence")
@@ -296,15 +289,14 @@ async def get_rule_intelligence(
     current_user: User = Depends(get_current_active_user),
 ):
     """
-    REQ-01 / REQ-02: Returns structured detection semantics and archetype classification for a rule.
+    REQ-01 / REQ-02: Returns structured detection semantics and archetype classification for a rule,
+    honoring any persisted RuleIntelligenceSnapshot consistently with G1 and verdict execution.
     """
-    rule_res = await db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
-    rule = rule_res.scalars().first()
+    rule = await resolve_canonical_rule(db, rule_id)
     if not rule:
         raise HTTPException(status_code=404, detail=f"SIEM Rule {rule_id} not found")
 
-    semantics, classification, archetype_def = await _analyze_with_snapshot(db, rule)
-    contract = EvidenceRequirementMapper.map_evidence_contract(rule, semantics, archetype_def)
+    semantics, classification, archetype_def, contract = await _analyze_with_snapshot(db, rule)
 
     return {
         "rule_id": rule.id,
@@ -326,8 +318,7 @@ async def analyze_rule_intelligence(
     """
     REQ-01: Re-analyzes rule semantics with optional authoritative SIEM rule definition.
     """
-    rule_res = await db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
-    rule = rule_res.scalars().first()
+    rule = await resolve_canonical_rule(db, rule_id)
     if not rule:
         raise HTTPException(status_code=404, detail=f"SIEM Rule {rule_id} not found")
 
@@ -464,6 +455,7 @@ async def _compute_policy_quality_readonly(
         )
 
         sim_results = {
+            "simulation_run_id": latest_run.id,
             "sample_count": getattr(latest_run, "total_cases", 0) or getattr(latest_run, "sample_size", 0),
             "eligible_ground_truth_count": eligible_gt,
             "verified_ground_truth_cases": eligible_gt,
@@ -477,6 +469,7 @@ async def _compute_policy_quality_readonly(
             "brier_score": brier_val,
             "policy_digest": cfg_snapshot.get("policy_digest"),
             "provider_type": provider_type or ("SIMULATED" if is_simulated_run else "OPENAI_COMPATIBLE"),
+            "model_identifier": cfg_snapshot.get("model_identifier"),
             "execution_provenance": exec_prov or ("SIMULATED" if is_simulated_run else "REAL_LOCAL_LLM"),
             "is_simulated": is_simulated_run,
             "metrics": metrics_dict,
@@ -503,10 +496,79 @@ async def _compute_policy_quality_readonly(
         structural_eligible and empirical_eligible and str(target_ver.status).upper() == "APPROVED"
     )
     if str(target_ver.status).upper() != "APPROVED":
-        # Note: in preview before approval, autonomous_operation_eligible can still reflect
-        # whether approving this candidate version would make it autonomous-ready (unless blocked)
         assessment.autonomous_operation_eligible = structural_eligible and empirical_eligible
+
+    # Surface historical persisted assessment metadata read-only without rescoring old records
+    persisted_q = (
+        select(PolicyQualityAssessmentRecord)
+        .where(
+            PolicyQualityAssessmentRecord.rule_id == rule.id,
+            PolicyQualityAssessmentRecord.prompt_version_id == str(target_ver.id),
+        )
+        .order_by(desc(PolicyQualityAssessmentRecord.evaluated_at))
+        .limit(1)
+    )
+    persisted_rec = (await db.execute(persisted_q)).scalars().first()
+    if persisted_rec is not None:
+        assessment.historical_assessment_preserved = True
+        assessment.persisted_validator_version = persisted_rec.validator_version
+        assessment.persisted_quality_score = persisted_rec.quality_score
     return rule, target_ver, assessment
+
+
+@router.get("/rule/{rule_id}/assessments")
+async def list_stored_policy_assessments(
+    rule_id: str,
+    version_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Returns persisted historical PolicyQualityAssessmentRecord rows verbatim without
+    silently rescoring legacy scoring models (e.g., v2.0.0 -> v2.2.0).
+    """
+    rule = await resolve_canonical_rule(db, rule_id)
+    if not rule:
+        raise HTTPException(status_code=404, detail=f"SIEM Rule {rule_id} not found")
+
+    q = (
+        select(PolicyQualityAssessmentRecord)
+        .where(PolicyQualityAssessmentRecord.rule_id == rule.id)
+        .order_by(desc(PolicyQualityAssessmentRecord.evaluated_at))
+    )
+    if version_id:
+        q = q.where(PolicyQualityAssessmentRecord.prompt_version_id == str(version_id))
+    rows = (await db.execute(q)).scalars().all()
+    return {
+        "rule_id": rule.id,
+        "rule_identifier": rule.rule_id,
+        "current_validator_version": PolicyQualityValidator.VALIDATOR_VERSION,
+        "assessments": [
+            {
+                "assessment_id": r.id,
+                "rule_id": r.rule_id,
+                "prompt_version_id": r.prompt_version_id,
+                "version_number": r.version_number,
+                "archetype": r.archetype,
+                "quality_score": r.quality_score,
+                "approval_eligible": r.approval_eligible,
+                "simulation_status": r.simulation_status,
+                "score_breakdown": r.score_breakdown,
+                "gate_results": r.gate_results,
+                "blocking_issues": r.blocking_issues,
+                "warnings": r.warnings,
+                "missing_evidence_mappings": r.missing_evidence_mappings,
+                "recommendations": r.recommendations,
+                "policy_digest": r.policy_digest,
+                "contract_digest": r.contract_digest,
+                "rule_digest": r.rule_digest,
+                "validator_version": r.validator_version,
+                "is_legacy_scoring_model": r.validator_version != PolicyQualityValidator.VALIDATOR_VERSION,
+                "evaluated_at": r.evaluated_at.isoformat() if r.evaluated_at else None,
+            }
+            for r in rows
+        ],
+    }
 
 
 @router.get("/rule/{rule_id}/quality-preview", response_model=PolicyQualityAssessmentResponse)

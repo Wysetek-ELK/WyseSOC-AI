@@ -134,8 +134,8 @@ class RuleIntelligenceAnalyzer:
 
         is_authoritative = (source_prov in (SourceProvenance.AUTHORITATIVE_SIEM_DEFINITION, SourceProvenance.VENDOR_RULE_FILE))
 
-        # Check for incident-derived pseudo-pattern (e.g. {"sentBytes64": 2130499380})
-        # If the pattern is merely a JSON dump of observed incident fields, DO NOT treat as a rule condition!
+        # Check for incident-derived pseudo-pattern or runtime counter string (e.g. {"sentBytes64": 2130499380}, incidentCount=3)
+        # Runtime incident counters MUST NOT be mistaken for authoritative rule correlation thresholds.
         pattern_is_incident_dump = False
         parsed_json_pattern = None
         if raw_pattern.strip().startswith("{") and raw_pattern.strip().endswith("}"):
@@ -143,10 +143,18 @@ class RuleIntelligenceAnalyzer:
                 parsed_json_pattern = json.loads(raw_pattern)
                 if isinstance(parsed_json_pattern, dict):
                     observed_fields.extend(list(parsed_json_pattern.keys()))
-                    if not is_authoritative or source_prov == SourceProvenance.AUTO_SYNCED_FROM_INCIDENT:
+                    if not is_authoritative or source_prov == SourceProvenance.AUTO_SYNCED_FROM_INCIDENT or any(
+                        rk in raw_pattern for rk in ("incidentCount", "incidentDetail", "incidentId")
+                    ):
                         pattern_is_incident_dump = True
             except Exception:
                 pass
+        elif raw_pattern.strip() and (
+            ("incidentCount" in raw_pattern or "incidentDetail" in raw_pattern)
+            and "COUNT(" not in raw_pattern
+            and "Pattern Conditions:" not in raw_text
+        ):
+            pattern_is_incident_dump = True
 
         if observed_incident_sample and isinstance(observed_incident_sample, dict):
             for k in observed_incident_sample.keys():
@@ -172,9 +180,10 @@ class RuleIntelligenceAnalyzer:
                 provenance_details["threshold_semantics"] = "COUNT >= 1 indicates single-event occurrence trigger; not an aggregated volume threshold."
         elif pattern_is_incident_dump:
             # Explicitly log that observed values must not become verified thresholds
+            obs_keys = list(parsed_json_pattern.keys()) if isinstance(parsed_json_pattern, dict) else ["runtime_counter"]
             provenance_details["pattern_warning"] = (
-                f"Observed pattern metadata {list(parsed_json_pattern.keys())} represents observed incident "
-                "telemetry attributes from auto-sync. It is NOT an authoritative SIEM rule condition or threshold."
+                f"Observed pattern metadata {obs_keys} represents runtime incident "
+                "telemetry counters/attributes. It is NOT an authoritative SIEM rule correlation threshold."
             )
             missing_requirements.append("Authoritative SIEM detection condition and threshold definition missing")
             missing_requirements.append("Aggregation window and grouping keys unverified")
@@ -355,6 +364,10 @@ class RuleIntelligenceAnalyzer:
         for c in conditions:
             val_str = c.get("value", "")
             field = c.get("field", "").lower()
+            field_compact = re.sub(r"[^a-z0-9]", "", field)
+            # Reject runtime incident counters masquerading as rule correlation thresholds
+            if field_compact in ("incidentcount", "incidentdetail", "incidentid", "eventcount", "totalcount"):
+                continue
             if any(term in field for term in ("byte", "count", "size", "rate", "threshold", "volume")):
                 # Check for numeric match
                 num_match = re.search(r"(\d+(?:\.\d+)?)", val_str)

@@ -167,6 +167,69 @@ test("buildQualityGatesExportPayload includes full G1-G8 assessment, eligibility
   assert.equal(payload.assessment.eligibility.empirical_validation_eligible, false);
   assert.equal(payload.assessment.eligibility.autonomous_operation_eligible, false);
   assert.equal(payload.assessment.digests.policy_digest, "sha256:policy123");
+  assert.notEqual(payload.assessment.validation_status, null);
+  assert.equal(payload.assessment.validation_status, "INSUFFICIENT_DATA");
+});
+
+test("buildQualityGatesExportFile eliminates validation_status null and exports provenance + digests across JSON, Markdown, and CSV for v2.2.0", () => {
+  const assessment = makeSampleAssessment({
+    validator_version: "v2.2.0",
+    scoring_model_version: "v2.2.0",
+    gate_scores_total: 83,
+    gate_max_total: 100,
+    structural_raw_score: 83,
+    validation_status: "SIMULATED_ONLY_NOT_CERTIFYING",
+    simulation_run_id: "run-sim-22",
+    simulation_provider_type: "SIMULATED",
+    simulation_model_identifier: "simulated-v2.2",
+    simulation_execution_provenance: "SIMULATED",
+    simulation_is_simulated: true,
+    simulation_sample_count: 10,
+    simulation_verified_cases: 10,
+    simulation_policy_digest: "sha256:policy123",
+    gate_results: {
+      ...makeSampleAssessment().gate_results,
+      G1_RULE_INTEGRITY: {
+        gate_id: "G1",
+        gate_name: "Rule Definition Integrity",
+        status: "WARNING",
+        score: 8,
+        max_score: 10,
+        details: "Status: VERIFIED.",
+        blocking_findings: [],
+        warnings: ["Runtime counter notice."],
+      },
+      G2_ARCHETYPE_RELEVANCE: {
+        gate_id: "G2",
+        gate_name: "Detection Archetype Relevance",
+        status: "PASSED",
+        score: 10,
+        max_score: 10,
+        details: "Archetype: Network Scan.",
+        blocking_findings: [],
+        warnings: [],
+      },
+    },
+  });
+
+  const jsonParsed = JSON.parse(buildQualityGatesExportFile(assessment, "json").content);
+  assert.equal(jsonParsed.assessment.validation_status, "SIMULATED_ONLY_NOT_CERTIFYING");
+  assert.equal(jsonParsed.assessment.gate_max_total, 100);
+  assert.equal(jsonParsed.assessment.simulation_provenance.provider_type, "SIMULATED");
+  assert.equal(jsonParsed.assessment.eligibility.empirical_validation_eligible, false);
+
+  const md = formatQualityGatesMarkdown(assessment);
+  assert.match(md, /SIMULATED_ONLY_NOT_CERTIFYING/);
+  assert.match(md, /v2\.2\.0.*83\/100 gate pts/);
+  assert.match(md, /simulated-v2\.2/);
+
+  const csv = formatQualityGatesCsv(assessment);
+  const csvLines = csv.split("\n");
+  assert.equal(csvLines.length, 9);
+  assert.ok(csvLines[0].includes("simulation_provider_type"));
+  assert.ok(csvLines[0].includes("policy_digest"));
+  assert.match(csvLines[1], /SIMULATED_ONLY_NOT_CERTIFYING/);
+  assert.match(csvLines[1], /sha256:policy123/);
 });
 
 test("formatQualityGatesMarkdown renders readable summary, all 8 gates, recommendations, and digests", () => {

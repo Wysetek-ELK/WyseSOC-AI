@@ -27,7 +27,7 @@ import {
   Database,
   RefreshCw,
 } from "lucide-react";
-import { api, IncidentListItem, IncidentAiVerdictResponse } from "@/lib/api";
+import { api, IncidentListItem, IncidentAiVerdictResponse, IncidentMatchedRuleSummary } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import { formatExecutionProvenanceBadge } from "@/lib/provenance";
 
@@ -43,8 +43,22 @@ function AITriageWorkbenchContent() {
   const [pageSize, setPageSize] = useState(15);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filters
+  // Filters & Canonical Rule Disambiguation
   const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [exactRuleId, setExactRuleId] = useState(
+    searchParams.get("exact_rule_id") || searchParams.get("rule_id") || ""
+  );
+  const [ruleOptions, setRuleOptions] = useState<
+    Array<{ id: string; rule_id: string; name: string; event_type: string }>
+  >([]);
+  const [matchedRules, setMatchedRules] = useState<IncidentMatchedRuleSummary[]>([]);
+  const [distinctRuleCount, setDistinctRuleCount] = useState(0);
+  const [combinesMultipleRules, setCombinesMultipleRules] = useState(false);
+  const [exactRuleMeta, setExactRuleMeta] = useState<{
+    rule_uuid?: string | null;
+    logical_rule_id?: string | null;
+    rule_name?: string | null;
+  } | null>(null);
   const [severity, setSeverity] = useState("");
   const [status, setStatus] = useState("");
   const [resolution, setResolution] = useState("");
@@ -111,6 +125,29 @@ function AITriageWorkbenchContent() {
     }
   };
 
+  useEffect(() => {
+    let mounted = true;
+    api.getRules({ page: 1, page_size: 100 })
+      .then((res) => {
+        if (mounted && Array.isArray(res?.items)) {
+          setRuleOptions(
+            res.items.map((r: any) => ({
+              id: r.id,
+              rule_id: r.rule_id,
+              name: r.name,
+              event_type: r.event_type,
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        /* ignore rule catalog fetch warning */
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const loadIncidents = async () => {
     setIsLoading(true);
     try {
@@ -118,6 +155,7 @@ function AITriageWorkbenchContent() {
         page,
         page_size: pageSize,
         search: search || undefined,
+        exact_rule_id: exactRuleId || undefined,
         severity: severity || undefined,
         status: status || undefined,
         resolution: resolution || undefined,
@@ -126,6 +164,18 @@ function AITriageWorkbenchContent() {
       setIncidents(data.items);
       setTotal(data.total);
       setTotalPages(data.total_pages);
+      setMatchedRules(Array.isArray(data.matched_rules) ? data.matched_rules : []);
+      setDistinctRuleCount(Number(data.distinct_rule_count ?? 0));
+      setCombinesMultipleRules(Boolean(data.combines_multiple_rules));
+      setExactRuleMeta(
+        data.exact_rule_id || data.exact_logical_rule_id
+          ? {
+              rule_uuid: data.exact_rule_id,
+              logical_rule_id: data.exact_logical_rule_id,
+              rule_name: data.exact_rule_name,
+            }
+          : null
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -135,7 +185,7 @@ function AITriageWorkbenchContent() {
 
   useEffect(() => {
     loadIncidents();
-  }, [page, pageSize, severity, status, resolution, blindReviewMode]);
+  }, [page, pageSize, severity, status, resolution, exactRuleId, blindReviewMode]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -298,6 +348,24 @@ function AITriageWorkbenchContent() {
         </form>
 
         <div className="flex flex-wrap gap-1.5 items-center">
+          {/* Exact Canonical Rule Filter */}
+          <select
+            aria-label="Exact Rule Filter"
+            value={exactRuleId}
+            onChange={(e) => {
+              setExactRuleId(e.target.value);
+              setPage(1);
+            }}
+            className="max-w-[260px] rounded-md border border-slate-800 bg-slate-900 px-2 py-1 text-xs text-slate-300 focus:border-cyan-500 focus:outline-none"
+          >
+            <option value="">All Rules (No Exact Filter)</option>
+            {ruleOptions.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.rule_id} — {r.name} ({r.id.slice(0, 8)})
+              </option>
+            ))}
+          </select>
+
           {/* Severity */}
           <select
             value={severity}
@@ -344,10 +412,11 @@ function AITriageWorkbenchContent() {
             </select>
           )}
 
-          {(search || severity || status || resolution) && (
+          {(search || exactRuleId || severity || status || resolution) && (
             <button
               onClick={() => {
                 setSearch("");
+                setExactRuleId("");
                 setSeverity("");
                 setStatus("");
                 setResolution("");
@@ -360,6 +429,75 @@ function AITriageWorkbenchContent() {
           )}
         </div>
       </div>
+
+      {/* Multi-Rule Search Disambiguation & Exact Canonical Rule Status Banners */}
+      {exactRuleId && (
+        <div
+          data-testid="exact-rule-filter-banner"
+          className="rounded-lg border border-cyan-800/80 bg-cyan-950/30 p-2.5 text-xs text-cyan-200 flex flex-wrap items-center justify-between gap-2"
+        >
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <Shield className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+            <span>
+              <strong>Exact Rule Scope:</strong>{" "}
+              <code className="font-mono text-cyan-300">
+                {exactRuleMeta?.logical_rule_id || exactRuleId}
+              </code>
+              {exactRuleMeta?.rule_uuid && (
+                <span className="ml-1.5 text-slate-400 font-mono">
+                  (UUID: {exactRuleMeta.rule_uuid})
+                </span>
+              )}
+              {" — "}
+              <strong>{total}</strong> matching incident(s) (aligned with AIS canonical rule filter).
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setExactRuleId("");
+              setPage(1);
+            }}
+            className="text-[10px] px-2 py-0.5 rounded border border-cyan-700 bg-slate-900 text-cyan-300 hover:text-white"
+          >
+            Clear Exact Rule Filter
+          </button>
+        </div>
+      )}
+
+      {combinesMultipleRules && (
+        <div
+          data-testid="multi-rule-search-warning"
+          className="rounded-lg border border-amber-700/80 bg-amber-950/30 p-2.5 text-xs text-amber-200 space-y-1.5"
+        >
+          <div className="flex items-center gap-2 text-[11px] font-semibold">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+            <span>
+              Results combine {distinctRuleCount} distinct SIEM rules across {total} incidents. Select an exact canonical rule to avoid cross-rule confusion:
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {matchedRules.map((mr) => (
+              <button
+                key={`${mr.rule_uuid || "unlinked"}-${mr.logical_rule_id}`}
+                type="button"
+                onClick={() => {
+                  setExactRuleId(mr.rule_uuid || mr.logical_rule_id);
+                  setPage(1);
+                }}
+                className="px-2 py-1 rounded border border-amber-800/70 bg-slate-900/90 hover:bg-slate-800 text-[10px] font-mono text-amber-100 flex items-center gap-1.5"
+                title={`UUID: ${mr.rule_uuid || "unlinked"} | Event: ${mr.event_type || "N/A"}`}
+              >
+                <span className="font-bold text-cyan-300">{mr.logical_rule_id}</span>
+                {mr.rule_uuid && (
+                  <span className="text-slate-400">[{mr.rule_uuid.slice(0, 8)}]</span>
+                )}
+                <span className="px-1 rounded bg-amber-900/60 text-amber-200">{mr.incident_count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Incidents Table */}
       <div className="rounded-lg border border-slate-800 bg-slate-950 overflow-hidden shadow-sm">
@@ -415,11 +553,14 @@ function AITriageWorkbenchContent() {
                       </div>
                     </td>
                     <td className="py-1.5 px-2.5 text-slate-300">
-                      <div className="font-semibold text-slate-200 truncate max-w-[200px]" title={inc.rule_name || inc.title}>
+                      <div className="font-semibold text-slate-200 truncate max-w-[240px]" title={inc.rule_name || inc.title}>
                         {inc.rule_name || inc.title}
                       </div>
-                      <div className="text-[10px] text-slate-500 truncate max-w-[200px]" title={inc.event_type}>
-                        {inc.event_type}
+                      <div className="text-[10px] font-mono text-cyan-400 truncate max-w-[240px]" title={`Logical Rule ID: ${inc.logical_rule_id || inc.event_type}`}>
+                        {inc.logical_rule_id || inc.event_type}
+                      </div>
+                      <div className="text-[9px] text-slate-500 truncate max-w-[240px]" title={`Rule UUID: ${inc.rule_uuid || inc.rule_id || "unlinked"} | Event: ${inc.event_type}`}>
+                        UUID: {inc.rule_uuid ? inc.rule_uuid.slice(0, 8) : (inc.rule_id ? inc.rule_id.slice(0, 8) : "unlinked")} • Evt: {inc.event_type}
                       </div>
                     </td>
                     <td className="py-1.5 px-2.5">

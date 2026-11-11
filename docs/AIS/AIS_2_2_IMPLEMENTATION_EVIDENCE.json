@@ -1,0 +1,176 @@
+{
+  "release": "AIS 2.2 P2 Quality, Export, Rule Identity, Evidence Integrity & Ground-Truth Readiness",
+  "generated_at": "2026-11-11T20:05:00+05:30",
+  "base_commit": "8fe9972",
+  "targets_implemented": {
+    "target_1_ais_f05_scoring": {
+      "status": "IMPLEMENTED_AND_LOCALLY_TESTED",
+      "validator_version": "v2.2.0",
+      "legacy_validator_version_preserved": "v2.0.0",
+      "gate_weights": {
+        "G1_RULE_INTEGRITY": 10.0,
+        "G2_ARCHETYPE_RELEVANCE": 10.0,
+        "G3_EVIDENCE_FEASIBILITY": 20.0,
+        "G4_TP_CRITERIA_VALIDITY": 10.0,
+        "G5_FP_CRITERIA_VALIDITY": 10.0,
+        "G6_ABSTENTION_ESCALATION": 15.0,
+        "G7_POLICY_CONSISTENCY": 10.0,
+        "G8_SIMULATION_REGRESSION": 15.0
+      },
+      "gate_max_total": 100.0,
+      "structural_max": 85.0,
+      "empirical_max": 15.0,
+      "double_counting_eliminated": true,
+      "historical_assessments_endpoint": "GET /api/prompts/rule/{rule_id}/assessments"
+    },
+    "target_2_ais_f06_exports": {
+      "status": "IMPLEMENTED_AND_LOCALLY_TESTED",
+      "validation_status_never_null": true,
+      "formats_aligned": ["json", "markdown", "csv"],
+      "provenance_fields": [
+        "simulation_run_id",
+        "simulation_provider_type",
+        "simulation_model_identifier",
+        "simulation_execution_provenance",
+        "simulation_is_simulated",
+        "simulation_sample_count",
+        "simulation_verified_cases",
+        "simulation_policy_digest"
+      ]
+    },
+    "target_3_ais_f07_workbench_rule_identity": {
+      "status": "IMPLEMENTED_AND_LOCALLY_TESTED",
+      "api_endpoint": "GET /api/incidents",
+      "exact_rule_param": "exact_rule_id",
+      "item_fields_added": ["rule_uuid", "logical_rule_id"],
+      "response_summary_fields": [
+        "exact_rule_id",
+        "exact_logical_rule_id",
+        "exact_rule_name",
+        "distinct_rule_count",
+        "combines_multiple_rules",
+        "matched_rules"
+      ],
+      "canonical_parity_with_ais_simulation": true
+    },
+    "target_4_g1_and_evidence_integrity": {
+      "status": "IMPLEMENTED_AND_LOCALLY_TESTED",
+      "runtime_counter_rejection": [
+        "FortiSIEMService._parse_json_rule ignores incidentDetail/incidentDetailJson for pattern_logic",
+        "FortiSIEMService.import_authoritative_rule_definition refuses VERIFIED without correlation conditions",
+        "RuleIntelligenceAnalyzer rejects non-JSON incidentCount/incidentDetail and skips runtime counters in _extract_threshold_from_conditions",
+        "EvidenceNormalizationService extracts top-level event.timestamp across first_seen_epoch/created_at_epoch/last_seen_epoch"
+      ]
+    },
+    "target_5_ground_truth_readiness": {
+      "status": "IMPLEMENTED_AND_LOCALLY_AUDITED",
+      "cli_script": "backend/scripts/audit_ground_truth_readiness.py",
+      "api_endpoint": "GET /api/verdict-intelligence/eligibility-report",
+      "local_dev_db_audit": {
+        "database_mutated": false,
+        "available_incident_count": 26,
+        "verified_tp_count": 2,
+        "verified_fp_count": 4,
+        "eligible_independent_count": 6,
+        "unverified_or_ml_count": 12,
+        "synthetic_count": 6,
+        "duplicate_excluded_count": 2,
+        "total_flagged_ml_generated": 13,
+        "confirmed_ml_or_automated": 12,
+        "false_positive_ml_candidates": 1,
+        "sample_threshold_alone_sufficient": false
+      }
+    }
+  },
+  "environment_boundary": {
+    "local_tests_verified": true,
+    "remote_postgresql_verified": "NOT VERIFIED",
+    "remote_server2_vllm_verified": "NOT VERIFIED",
+    "remote_redis_celery_worker_verified": "NOT VERIFIED",
+    "remote_fortisiem_supervisor_verified": "NOT VERIFIED"
+  },
+  "files_changed": {
+    "new_files": [
+      "backend/scripts/audit_ground_truth_readiness.py",
+      "backend/tests/test_ais_2_2_remediation.py",
+      "docs/AIS/AIS_2_2_IMPLEMENTATION_REPORT.md",
+      "docs/AIS/AIS_2_2_SCORING_RECONCILIATION.md",
+      "docs/AIS/AIS_2_2_RULE_MAPPING_VALIDATION.md",
+      "docs/AIS/AIS_2_2_GROUND_TRUTH_READINESS.md",
+      "docs/AIS/AIS_2_2_TEST_RESULTS.md",
+      "docs/AIS/AIS_2_2_REMAINING_GAPS.md",
+      "docs/AIS/AIS_2_2_IMPLEMENTATION_EVIDENCE.json"
+    ],
+    "modified_tracked_files": [
+      "backend/app/api/incidents.py",
+      "backend/app/api/prompts.py",
+      "backend/app/schemas/incident.py",
+      "backend/app/schemas/policy_quality.py",
+      "backend/app/services/evidence_normalization_service.py",
+      "backend/app/services/fortisiem_service.py",
+      "backend/app/services/historical_eligibility_service.py",
+      "backend/app/services/incident_service.py",
+      "backend/app/services/policy_quality_validator.py",
+      "backend/app/services/prompt_studio_service.py",
+      "backend/app/services/rule_intelligence_analyzer.py",
+      "backend/tests/test_policy_remediation_and_ground_truth.py",
+      "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "frontend/src/app/ai-triage-workbench/page.tsx",
+      "frontend/src/lib/api.ts",
+      "frontend/src/lib/qualityExport.ts",
+      "frontend/tests/quality-export.test.mjs"
+    ]
+  },
+  "verification_runs_post_final_edit": {
+    "backend_full_suite": {
+      "command": "cd backend; python -m pytest -q",
+      "status": "PASSED",
+      "passed": 320,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 430.23
+    },
+    "ais_2_2_dedicated_suite": {
+      "command": "cd backend; python -m pytest tests/test_ais_2_2_remediation.py -v",
+      "status": "PASSED",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 7.02
+    },
+    "frontend_unit_tests": {
+      "command": "cd frontend; node --experimental-strip-types --test tests/quality-export.test.mjs tests/admin-guide.test.mjs",
+      "status": "PASSED",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0
+    },
+    "frontend_typescript_check": {
+      "command": "cd frontend; npx tsc --noEmit",
+      "status": "PASSED",
+      "exit_code": 0
+    },
+    "frontend_production_build": {
+      "command": "cd frontend; npm run build",
+      "status": "PASSED",
+      "exit_code": 0,
+      "routes_built": 32
+    },
+    "feature_registry_check": {
+      "command": "python scripts/validate_feature_registry.py",
+      "status": "PASSED",
+      "features": 44,
+      "modules": 19
+    },
+    "ground_truth_readiness_local_cli": {
+      "command": "cd backend; python scripts/audit_ground_truth_readiness.py",
+      "status": "PASSED",
+      "database_mutated": false
+    },
+    "security_diff_hygiene_scan": {
+      "status": "PASSED",
+      "non_test_ip_hits": 0,
+      "secret_hits": 0
+    }
+  }
+}

@@ -265,26 +265,9 @@ class AgentPolicyEngine:
         if not target_version:
             raise ValueError(f"Prompt version {version_id} not found for rule {rule_id}")
 
-        # Derive semantics and machine-verifiable contract (check snapshot)
-        snap_q = select(RuleIntelligenceSnapshot).where(RuleIntelligenceSnapshot.rule_id == rule.id)
-        snap_res = await self.db.execute(snap_q)
-        snap = snap_res.scalar_one_or_none()
-        auth_def = None
-        if snap and snap.definition_status == "VERIFIED" and snap.threshold is not None:
-            auth_def = {
-                "threshold": snap.threshold,
-                "threshold_unit": snap.threshold_unit,
-                "aggregation_window": snap.aggregation_window,
-            }
-
-        semantics = RuleIntelligenceAnalyzer.analyze_rule(rule, authoritative_siem_definition=auth_def)
-        classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
-        archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
-        contract = EvidenceRequirementMapper.map_evidence_contract(
-            rule=rule,
-            semantics=semantics,
-            archetype_def=archetype_def,
-            prompt_version=target_version,
+        # Derive semantics and machine-verifiable contract via shared resolver (honors RuleIntelligenceSnapshot)
+        semantics, contract, _ = await get_rule_semantics_and_contract(
+            self.db, rule, prompt_version=target_version, for_quality_validation=True
         )
 
         # Look up latest completed empirical simulation run for G8 enforcement during approval
@@ -310,6 +293,7 @@ class AgentPolicyEngine:
                 provider_t = str(cfg_snap.get("provider_type") or ("SIMULATED" if cfg_snap.get("is_simulated") else "UNKNOWN")).upper()
                 is_sim = bool(cfg_snap.get("is_simulated")) or provider_t == "SIMULATED"
                 sim_results = {
+                    "simulation_run_id": latest_sim_run.id,
                     "sample_count": getattr(latest_sim_run, "total_cases", 0),
                     "eligible_ground_truth_count": eligible_gt,
                     "verified_ground_truth_cases": eligible_gt,
@@ -318,6 +302,7 @@ class AgentPolicyEngine:
                     "critical_regressions": 1 if latest_sim_run.status == "FAILED" or m_dict.get("critical_false_negatives", 0) > 0 or latest_sim_run.validation_state == "REGRESSION_DETECTED" else 0,
                     "policy_digest": cfg_snap.get("policy_digest"),
                     "provider_type": provider_t,
+                    "model_identifier": cfg_snap.get("model_identifier"),
                     "is_simulated": is_sim,
                     "execution_provenance": cfg_snap.get("execution_provenance"),
                 }

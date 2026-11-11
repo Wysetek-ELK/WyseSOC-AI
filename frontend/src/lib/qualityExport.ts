@@ -75,6 +75,17 @@ function resolveEmpiricalStatus(assessment: PolicyQualityAssessmentResponse): st
   );
 }
 
+function resolveValidationStatus(assessment: PolicyQualityAssessmentResponse): string {
+  if (assessment.validation_status) {
+    return assessment.validation_status;
+  }
+  const provider = String(assessment.simulation_provider_type || "").toUpperCase();
+  if (assessment.simulation_is_simulated === true || provider === "SIMULATED") {
+    return "SIMULATED_ONLY_NOT_CERTIFYING";
+  }
+  return resolveEmpiricalStatus(assessment);
+}
+
 function resolveExportTimestamp(exportedAt?: string): string {
   return exportedAt || new Date().toISOString();
 }
@@ -138,17 +149,28 @@ export function buildQualityGatesExportPayload(
   const blockingIssues = getBlockingIssues(assessment);
   const passedCount = gates.filter((g) => g.status === "PASSED").length;
   const empiricalStatus = resolveEmpiricalStatus(assessment);
+  const validationStatus = resolveValidationStatus(assessment);
+  const gateScoresTotal =
+    assessment.gate_scores_total ??
+    Number(gates.reduce((sum, g) => sum + Number(g.score || 0), 0).toFixed(1));
+  const gateMaxTotal =
+    assessment.gate_max_total ??
+    Number(gates.reduce((sum, g) => sum + Number(g.max_score || 0), 0).toFixed(1));
+  const scoringModelVersion =
+    assessment.scoring_model_version || assessment.validator_version || "v2.2.0";
   const structuralEligible =
     assessment.structural_approval_eligible ??
     (Boolean(assessment.approval_eligible) && blockingIssues.length === 0);
+  const isSimulatedRun = Boolean(assessment.simulation_is_simulated);
   const empiricalEligible =
-    assessment.empirical_validation_eligible ??
-    empiricalStatus === "EVALUATED_PASSED";
+    (assessment.empirical_validation_eligible ??
+      empiricalStatus === "EVALUATED_PASSED") &&
+    !isSimulatedRun;
 
   return {
     schema_version: "1.0",
     report_type: "quality_gates_g1_g8_assessment",
-    title: "Agent Intelligence Studio 2.0 — Policy Quality Gates (G1–G8) Output",
+    title: "Agent Intelligence Studio — Policy Quality Gates (G1–G8) Output",
     exported_at: exportedAt,
     rule: {
       id: assessment.rule_identifier || context.ruleIdentifier || "",
@@ -166,10 +188,16 @@ export function buildQualityGatesExportPayload(
     assessment: {
       assessment_id: assessment.assessment_id,
       validator_version: assessment.validator_version,
+      scoring_model_version: scoringModelVersion,
+      scoring_denominator: assessment.scoring_denominator ?? 100,
+      structural_denominator: assessment.structural_denominator ?? 85,
+      gate_scores_total: gateScoresTotal,
+      gate_max_total: gateMaxTotal,
       evaluated_at: assessment.evaluated_at,
-      validation_status: assessment.validation_status || null,
+      validation_status: validationStatus,
       overall_quality_score: assessment.quality_score,
       structural_quality_score: assessment.structural_quality_score ?? null,
+      structural_raw_score: assessment.structural_raw_score ?? null,
       empirical_validation_score: assessment.empirical_validation_score ?? null,
       empirical_validation_status: empiricalStatus,
       simulation_status: assessment.simulation_status,
@@ -180,9 +208,26 @@ export function buildQualityGatesExportPayload(
         structural_approval_eligible: structuralEligible,
         empirical_validation_eligible: empiricalEligible,
         autonomous_operation_eligible:
-          assessment.autonomous_operation_eligible ?? false,
+          (assessment.autonomous_operation_eligible ?? false) && !isSimulatedRun,
         hard_gate_failure:
           assessment.hard_gate_failure ?? blockingIssues.length > 0,
+      },
+      simulation_provenance: {
+        run_id: assessment.simulation_run_id ?? null,
+        provider_type: assessment.simulation_provider_type ?? null,
+        model_identifier: assessment.simulation_model_identifier ?? null,
+        execution_provenance: assessment.simulation_execution_provenance ?? null,
+        is_simulated: assessment.simulation_is_simulated ?? null,
+        sample_count: assessment.simulation_sample_count ?? null,
+        verified_ground_truth_cases: assessment.simulation_verified_cases ?? null,
+        simulation_policy_digest: assessment.simulation_policy_digest ?? null,
+      },
+      historical_preservation: {
+        historical_assessment_preserved:
+          assessment.historical_assessment_preserved ?? false,
+        persisted_validator_version:
+          assessment.persisted_validator_version ?? null,
+        persisted_quality_score: assessment.persisted_quality_score ?? null,
       },
       score_breakdown: assessment.score_breakdown || {},
       gates,
@@ -219,7 +264,7 @@ export function formatQualityGatesMarkdown(
     `- **Detection Archetype:** \`${rule.archetype}\` (${rule.archetype_version})`,
     `- **Policy Version:** v${pv.version_number}${pv.status ? ` (${pv.status})` : ""}`,
     `- **Assessment ID:** \`${summary.assessment_id}\``,
-    `- **Validator Version:** \`${summary.validator_version}\``,
+    `- **Validator / Scoring Model:** \`${summary.validator_version}\` (\`${summary.scoring_model_version}\`, ${summary.gate_scores_total}/${summary.gate_max_total} gate pts)`,
     `- **Evaluated At:** ${summary.evaluated_at}`,
     `- **Exported At:** ${payload.exported_at}`,
     "",
@@ -227,9 +272,12 @@ export function formatQualityGatesMarkdown(
     "",
     "| Metric | Value |",
     "| --- | --- |",
+    `| Validation Status | **${summary.validation_status}** |`,
     `| Overall Quality Score | **${summary.overall_quality_score} / 100** |`,
     `| Structural Quality (G1–G7) | ${summary.structural_quality_score !== null ? `${summary.structural_quality_score} / 100` : "N/A"} |`,
     `| Empirical Validation (G8) | ${summary.empirical_validation_status} |`,
+    `| Simulation Provider | ${summary.simulation_provenance.provider_type || "NOT_EVALUATED"}${summary.simulation_provenance.model_identifier ? ` (${summary.simulation_provenance.model_identifier})` : ""} |`,
+    `| Simulation Provenance | ${summary.simulation_provenance.execution_provenance || "NONE"}${summary.simulation_provenance.is_simulated ? " [SIMULATED]" : ""} |`,
     `| Gates Passed | ${summary.gates_passed} / ${summary.gates_total} |`,
     `| Blocking Issues | ${summary.blocking_issues.length} |`,
     `| Structural Approval | ${summary.eligibility.structural_approval_eligible ? "ELIGIBLE (G1–G7)" : "BLOCKED"} |`,
@@ -363,10 +411,23 @@ export function formatQualityGatesCsv(
     "policy_version_status",
     "archetype",
     "assessment_id",
+    "validator_version",
+    "scoring_model_version",
     "evaluated_at",
+    "validation_status",
     "overall_quality_score",
     "structural_quality_score",
+    "gate_scores_total",
+    "gate_max_total",
     "empirical_validation_status",
+    "simulation_status",
+    "simulation_provider_type",
+    "simulation_model_identifier",
+    "simulation_execution_provenance",
+    "simulation_is_simulated",
+    "policy_digest",
+    "contract_digest",
+    "rule_digest",
     "structural_approval_eligible",
     "empirical_validation_eligible",
     "autonomous_operation_eligible",
@@ -391,10 +452,23 @@ export function formatQualityGatesCsv(
     pv.status ?? "",
     rule.archetype,
     summary.assessment_id,
+    summary.validator_version,
+    summary.scoring_model_version,
     summary.evaluated_at,
+    summary.validation_status,
     summary.overall_quality_score,
     summary.structural_quality_score ?? "",
+    summary.gate_scores_total,
+    summary.gate_max_total,
     summary.empirical_validation_status,
+    summary.simulation_status,
+    summary.simulation_provenance.provider_type ?? "",
+    summary.simulation_provenance.model_identifier ?? "",
+    summary.simulation_provenance.execution_provenance ?? "",
+    summary.simulation_provenance.is_simulated ?? "",
+    summary.digests.policy_digest,
+    summary.digests.contract_digest,
+    summary.digests.rule_digest,
     summary.eligibility.structural_approval_eligible,
     summary.eligibility.empirical_validation_eligible,
     summary.eligibility.autonomous_operation_eligible,
