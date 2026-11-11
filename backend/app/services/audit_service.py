@@ -2,6 +2,7 @@ import hmac
 import hashlib
 import json
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -48,7 +49,7 @@ class AuditService:
         details: Optional[Dict[str, Any]] = None,
         ip_address: Optional[str] = None,
     ) -> AuditLog:
-        now = datetime.utcnow()
+        now = utc_now()
         safe_details = details or {}
         sig = compute_audit_signature(
             user_id=user_id,

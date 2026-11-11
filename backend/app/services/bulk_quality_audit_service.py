@@ -2,6 +2,7 @@ import logging
 import uuid
 from typing import Optional, Dict, Any, List
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -49,7 +50,7 @@ class BulkQualityAuditService:
             job = BulkQualityAuditJobRecord(
                 id=job_id,
                 status="RUNNING",
-                started_at=datetime.utcnow(),
+                started_at=utc_now(),
                 created_by_user_id=user_id,
             )
             self.db.add(job)
@@ -63,7 +64,7 @@ class BulkQualityAuditService:
                 job = BulkQualityAuditJobRecord(
                     id=job_id,
                     status="RUNNING",
-                    started_at=datetime.utcnow(),
+                    started_at=utc_now(),
                     created_by_user_id=user_id,
                 )
                 self.db.add(job)
@@ -170,10 +171,10 @@ class BulkQualityAuditService:
             job.summary_metrics = {
                 "quality_distribution": distribution,
                 "total_assessed": processed,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utc_now().isoformat(),
             }
             job.status = "COMPLETED"
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             await self.db.commit()
             await self.db.refresh(job)
             return job
@@ -182,7 +183,7 @@ class BulkQualityAuditService:
             logger.error(f"Bulk quality audit job {job.id} failed: {str(e)}", exc_info=True)
             job.status = "FAILED"
             job.error_message = str(e)
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             await self.db.commit()
             return job
 

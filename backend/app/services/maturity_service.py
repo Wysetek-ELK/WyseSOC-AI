@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -147,8 +148,8 @@ class RuleMaturityService:
         eval_record.f1_score = f1
         eval_record.sample_size = sample_size
         eval_record.unresolved_evidence_gaps = list(evidence_gaps)[:5]
-        eval_record.latest_test_date = datetime.utcnow()
-        eval_record.updated_at = datetime.utcnow()
+        eval_record.latest_test_date = utc_now()
+        eval_record.updated_at = utc_now()
 
         # Conservative state machine:
         # If already approved by admin, preserve state unless precision dropped severely
@@ -190,12 +191,12 @@ class RuleMaturityService:
         eval_record.maturity_status = "APPROVED_FOR_AUTOMATION"
         eval_record.is_admin_approved = True
         eval_record.approved_by_user_id = user_id
-        eval_record.approved_at = datetime.utcnow()
+        eval_record.approved_at = utc_now()
         eval_record.approval_notes = approval_notes.strip()
         eval_record.recommendation_explanation = (
             f"Approved for production automation by Administrator. Notes: {approval_notes.strip()}"
         )
-        eval_record.updated_at = datetime.utcnow()
+        eval_record.updated_at = utc_now()
 
         await self.db.commit()
         await self.db.refresh(eval_record)

@@ -6,6 +6,7 @@ import math
 import time
 import uuid
 from datetime import datetime, timedelta
+from app.utils.datetime_utils import utc_now
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import desc, func, or_, select
@@ -30,7 +31,8 @@ from app.schemas.pilot import (
     PilotSupervisorVerifyRequest,
 )
 from app.schemas.verdict_intelligence import GroundTruthLabel
-from app.services.audit_service import AuditService
+from app.services.audit_service import AuditService, compute_audit_signature
+from app.services.provenance import classify_endpoint_status, classify_execution_provenance
 from app.services.distributed_lock import DistributedLockManager
 from app.services.empirical_accuracy_evaluator import EmpiricalAccuracyEvaluator
 from app.services.evidence_normalization_service import EvidenceNormalizationService
@@ -194,7 +196,7 @@ class PilotService:
         cfg.reporting_schedule = req.reporting_schedule
         cfg.version_number += 1
         cfg.updated_by = actor
-        cfg.updated_at = datetime.utcnow()
+        cfg.updated_at = utc_now()
 
         self.db.add(cfg)
         await self._record_history_and_audit(cfg, "PILOT_CONFIG_UPDATED", actor, req.change_reason)
@@ -210,7 +212,7 @@ class PilotService:
         cfg.is_paused = False
         cfg.version_number += 1
         cfg.updated_by = actor
-        cfg.updated_at = datetime.utcnow()
+        cfg.updated_at = utc_now()
         PilotService._consecutive_errors = 0
         self.db.add(cfg)
         await self._record_history_and_audit(cfg, f"PILOT_ACTIVATED_{cfg.mode}", actor, req.change_reason)
@@ -222,7 +224,7 @@ class PilotService:
         cfg.is_paused = True
         cfg.version_number += 1
         cfg.updated_by = actor
-        cfg.updated_at = datetime.utcnow()
+        cfg.updated_at = utc_now()
         self.db.add(cfg)
         await self._record_history_and_audit(cfg, "PILOT_PAUSED", actor, reason)
         await self.db.refresh(cfg)
@@ -236,7 +238,7 @@ class PilotService:
         PilotService._consecutive_errors = 0
         cfg.version_number += 1
         cfg.updated_by = actor
-        cfg.updated_at = datetime.utcnow()
+        cfg.updated_at = utc_now()
         self.db.add(cfg)
         await self._record_history_and_audit(cfg, "PILOT_RESUMED", actor, reason)
         await self.db.refresh(cfg)
@@ -253,7 +255,7 @@ class PilotService:
         cfg.is_paused = False
         cfg.version_number += 1
         cfg.updated_by = actor
-        cfg.updated_at = datetime.utcnow()
+        cfg.updated_at = utc_now()
         self.db.add(cfg)
         await self._record_history_and_audit(
             cfg,
@@ -302,7 +304,7 @@ class PilotService:
         cfg.reporting_schedule = snap.get("reporting_schedule", "HOURLY")
         cfg.version_number += 1
         cfg.updated_by = actor
-        cfg.updated_at = datetime.utcnow()
+        cfg.updated_at = utc_now()
 
         self.db.add(cfg)
         await self._record_history_and_audit(
@@ -326,7 +328,7 @@ class PilotService:
         return list(res.scalars().all())
 
     async def _get_budget_usage(self, pilot_id: str) -> Tuple[int, int]:
-        now = datetime.utcnow()
+        now = utc_now()
         hour_ago = now - timedelta(hours=1)
         day_ago = now - timedelta(hours=24)
 
@@ -556,9 +558,44 @@ class PilotService:
                 rec.total_tokens = int(verdict_data.get("total_tokens") or 0)
                 rec.evidence_snapshot_hash = ev_hash
                 rec.error_message = None
-                rec.updated_at = datetime.utcnow()
+                rec.updated_at = utc_now()
+
+                eval_prov = classify_execution_provenance(
+                    is_simulated=rec.is_simulated,
+                    model_identifier=rec.model_identifier,
+                    validation_status=rec.validation_status,
+                    eligibility_status=rec.eligibility_status,
+                    source_type=rec.source_type,
+                    recorded_provenance=verdict_data.get("execution_provenance"),
+                    recorded_test_env=verdict_data.get("test_environment"),
+                    base_url=settings.LOCAL_LLM_BASE_URL,
+                )
 
                 self.db.add(rec)
+                await self.db.flush()
+                now_ts = utc_now()
+                prov_details = {
+                    "execution_provenance": eval_prov["execution_provenance"],
+                    "configured_provider": eval_prov["configured_provider"],
+                    "historical_execution_provenance": eval_prov["historical_execution_provenance"],
+                    "source_type": rec.source_type,
+                    "model_identifier": rec.model_identifier,
+                    "is_simulated": rec.is_simulated,
+                    "test_environment": eval_prov["test_environment"],
+                }
+                self.db.add(
+                    AuditLog(
+                        user_id=actor,
+                        username=actor,
+                        action="PILOT_EVALUATION_RECORDED",
+                        resource_type="PILOT_EVALUATION",
+                        resource_id=rec.id,
+                        details=prov_details,
+                        created_at=now_ts,
+                        signature=compute_audit_signature(actor, "PILOT_EVALUATION_RECORDED", "PILOT_EVALUATION", rec.id, now_ts, prov_details),
+                        key_id=AuditService.KEY_ID,
+                    )
+                )
                 await self.db.commit()
                 await self.db.refresh(rec)
                 return {
@@ -570,6 +607,9 @@ class PilotService:
                     "validated_verdict": rec.validated_verdict,
                     "trust_score": rec.trust_score,
                     "is_simulated": rec.is_simulated,
+                    "execution_provenance": eval_prov["execution_provenance"],
+                    "configured_provider": eval_prov["configured_provider"],
+                    "test_environment": eval_prov["test_environment"],
                 }
 
             except LocalLLMUnavailableError as llm_err:
@@ -652,6 +692,38 @@ class PilotService:
             error_message=err_msg[:2000],
         )
         self.db.add(rec)
+        await self.db.flush()
+        fail_prov = classify_execution_provenance(
+            is_simulated=False,
+            model_identifier=rec.model_identifier,
+            validation_status=rec.validation_status,
+            eligibility_status="FAILED",
+            source_type=clean_source,
+            error_message=err_msg,
+        )
+        now_fail = utc_now()
+        fail_details = {
+            "execution_provenance": fail_prov["execution_provenance"],
+            "configured_provider": fail_prov["configured_provider"],
+            "historical_execution_provenance": fail_prov["historical_execution_provenance"],
+            "source_type": clean_source,
+            "model_identifier": rec.model_identifier,
+            "is_simulated": False,
+            "test_environment": fail_prov["test_environment"],
+        }
+        self.db.add(
+            AuditLog(
+                user_id=actor,
+                username=actor,
+                action="PILOT_EVALUATION_FAILED",
+                resource_type="PILOT_EVALUATION",
+                resource_id=rec.id,
+                details=fail_details,
+                created_at=now_fail,
+                signature=compute_audit_signature(actor, "PILOT_EVALUATION_FAILED", "PILOT_EVALUATION", rec.id, now_fail, fail_details),
+                key_id=AuditService.KEY_ID,
+            )
+        )
 
         auto_paused = False
         if (
@@ -664,7 +736,7 @@ class PilotService:
                 live_cfg.is_paused = True
                 live_cfg.version_number += 1
                 live_cfg.updated_by = "pilot_circuit_guard"
-                live_cfg.updated_at = datetime.utcnow()
+                live_cfg.updated_at = utc_now()
                 self.db.add(live_cfg)
                 await self._record_history_and_audit(
                     live_cfg,
@@ -749,9 +821,9 @@ class PilotService:
         rec.analyst_decision = req.analyst_decision
         rec.analyst_override_reason = req.reason.strip()
         rec.analyst_user = analyst_username
-        rec.analyst_decided_at = datetime.utcnow()
+        rec.analyst_decided_at = utc_now()
         rec.supervisor_verified = False  # Requires independent supervisor verification
-        rec.updated_at = datetime.utcnow()
+        rec.updated_at = utc_now()
         self.db.add(rec)
 
         audit = AuditService(self.db)
@@ -788,9 +860,9 @@ class PilotService:
 
         rec.supervisor_verified = bool(req.approved)
         rec.supervisor_user = supervisor_username
-        rec.supervisor_verified_at = datetime.utcnow()
+        rec.supervisor_verified_at = utc_now()
         rec.supervisor_notes = req.notes.strip()
-        rec.updated_at = datetime.utcnow()
+        rec.updated_at = utc_now()
         self.db.add(rec)
 
         audit = AuditService(self.db)
@@ -858,11 +930,59 @@ class PilotService:
         from app.services.ai_verdict_service import VerdictTriageAgent
 
         try:
-            provider_available = await VerdictTriageAgent.is_local_llm_available()
+            provider_available = await VerdictTriageAgent.is_local_llm_available(force_refresh=True)
         except Exception:
             provider_available = False
+        ep_prov = classify_endpoint_status(
+            is_healthy=provider_available,
+            raw_status="ONLINE" if provider_available else "OFFLINE",
+            base_url=settings.LOCAL_LLM_BASE_URL,
+            metrics_available=False,
+            configured_provider="OPENAI_COMPATIBLE",
+        )
         gpu_telem = gpu_workload_manager.get_telemetry()
         cb_state = gpu_telem.get("circuit_breaker", {}).get("state", "CLOSED")
+
+        # Count live_evals by persisted execution_provenance from AuditLog so HTTP_MOCK is never merged with verified GPU inference
+        eval_ids = [e.id for e in evals]
+        prov_map: Dict[str, Dict[str, Any]] = {}
+        if eval_ids:
+            p_res = await self.db.execute(
+                select(AuditLog)
+                .where(
+                    AuditLog.resource_type == "PILOT_EVALUATION",
+                    AuditLog.resource_id.in_(eval_ids),
+                )
+                .order_by(desc(AuditLog.created_at))
+            )
+            for alog in p_res.scalars().all():
+                if alog.resource_id and alog.resource_id not in prov_map and isinstance(alog.details, dict):
+                    prov_map[alog.resource_id] = alog.details
+
+        http_mock_cnt = 0
+        live_provider_cnt = 0
+        historical_cnt = 0
+        guard_cnt = 0
+        for e in live_evals:
+            det = prov_map.get(e.id, {})
+            p_cls = classify_execution_provenance(
+                is_simulated=e.is_simulated,
+                model_identifier=e.model_identifier,
+                validation_status=e.validation_status,
+                eligibility_status=e.eligibility_status,
+                source_type=e.source_type,
+                error_message=e.error_message,
+                recorded_provenance=det.get("execution_provenance"),
+                recorded_test_env=det.get("test_environment"),
+            )["execution_provenance"]
+            if p_cls == "HTTP_MOCK":
+                http_mock_cnt += 1
+            elif p_cls == "LIVE_PROVIDER":
+                live_provider_cnt += 1
+            elif p_cls == "HISTORICAL":
+                historical_cnt += 1
+            elif p_cls in ("POLICY_GUARD", "PREFLIGHT_GUARD", "TOKEN_BUDGET_GUARD", "VALIDATION_GUARD"):
+                guard_cnt += 1
 
         hr_used, day_used = await self._get_budget_usage(cfg.id)
 
@@ -969,6 +1089,15 @@ class PilotService:
                 "daily_budget_limit": cfg.daily_evaluation_budget,
                 "queue_backlog": queue_backlog,
                 "provider_available": provider_available,
+                "configured_provider": ep_prov["configured_provider"],
+                "endpoint_provenance": ep_prov["endpoint_provenance"],
+                "current_s2_health": ep_prov["current_s2_health"],
+                "gpu_telemetry_verified": ep_prov["gpu_telemetry_verified"],
+                "test_environment": ep_prov["test_environment"],
+                "live_provider_evaluations_count": live_provider_cnt,
+                "http_mock_evaluations_count": http_mock_cnt,
+                "historical_evaluations_count": historical_cnt,
+                "guard_abstention_evaluations_count": guard_cnt,
                 "circuit_breaker_state": cb_state,
             },
             "reliability": {

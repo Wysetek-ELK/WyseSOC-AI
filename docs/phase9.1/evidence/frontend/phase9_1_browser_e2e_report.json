@@ -1,0 +1,35 @@
+{
+  "suite": "Phase 9.1 Role Consistency & Execution Provenance Browser E2E",
+  "test_environment": "MOCK_HTTP_E2E",
+  "execution_provenance": "HTTP_MOCK",
+  "steps": [
+    {
+      "step": "1_login_no_hardcoded_secret",
+      "status": "PASSED"
+    },
+    {
+      "step": "2_admin_role_and_http_mock_provenance",
+      "status": "PASSED"
+    },
+    {
+      "step": "3_historical_mock_preserved_with_s2_offline",
+      "status": "PASSED"
+    },
+    {
+      "step": "4_analyst_role_consistency",
+      "status": "PASSED"
+    },
+    {
+      "step": "5_viewer_role_consistency_fixed",
+      "status": "PASSED"
+    }
+  ],
+  "console_errors": [],
+  "page_errors": [],
+  "screenshots": [
+    "p91_01_admin_http_mock_provenance.png",
+    "p91_02_historical_mock_when_s2_offline.png",
+    "p91_03_analyst_role_consistency.png",
+    "p91_04_viewer_role_consistency_fixed.png"
+  ]
+}

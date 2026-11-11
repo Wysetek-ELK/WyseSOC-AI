@@ -22,6 +22,7 @@ import sys
 import time
 import zipfile
 from datetime import datetime, timedelta
+from app.utils.datetime_utils import utc_now
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
@@ -181,7 +182,7 @@ async def test_p8_1_def_001_distributed_lock_lease_loss_aborts_stale_commit(tmp_
                     ).scalars().first()
                     assert lock_row is not None
                     lock_row.owner_id = "worker-B-takeover"
-                    lock_row.expires_at = datetime.utcnow() + timedelta(minutes=2)
+                    lock_row.expires_at = utc_now() + timedelta(minutes=2)
                     await steal_s.commit()
                 return StructuredModelVerdict(
                     incident_id="INC-P81-LEASE-01",
@@ -466,8 +467,8 @@ async def test_p8_1_def_004_quality_gates_three_tier_eligibility_separation(
         metrics={"balanced_accuracy": 0.91, "ece": 0.04, "brier_score": 0.06, "critical_false_negatives": 0},
         regression_summary={"regression_status": "PASS"},
         config_snapshot={"policy_digest": cold["policy_digest"]},
-        started_at=datetime.utcnow(),
-        completed_at=datetime.utcnow(),
+        started_at=utc_now(),
+        completed_at=utc_now(),
     )
     db_session.add(run_ok)
     await db_session.commit()

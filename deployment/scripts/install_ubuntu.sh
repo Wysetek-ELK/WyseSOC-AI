@@ -140,9 +140,10 @@ if [ -f "$APP_DIR/deployment/logrotate/ai-verdict" ]; then
 fi
 
 systemctl daemon-reload
-systemctl enable ai-verdict-backend ai-verdict-worker ai-verdict-frontend
+systemctl enable ai-verdict-backend ai-verdict-worker ai-verdict-scheduler ai-verdict-frontend
 systemctl restart ai-verdict-backend
 systemctl restart ai-verdict-worker
+systemctl restart ai-verdict-scheduler
 systemctl restart ai-verdict-frontend
 
 cp "$APP_DIR/deployment/nginx/ai-verdict.conf" /etc/nginx/sites-available/ai-verdict.conf

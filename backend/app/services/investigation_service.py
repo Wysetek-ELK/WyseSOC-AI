@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, desc
 from sqlalchemy.orm import selectinload
@@ -9,8 +10,10 @@ from app.models.incident import Incident
 from app.models.rule import Rule
 from app.models.user import User
 from app.models.learning import LearningRecord
+from app.models.audit import AuditLog
 from app.models.pilot import PilotEvaluationRecord
 from app.models.verdict_intelligence import VerdictTrustAssessmentRecord
+from app.services.provenance import classify_endpoint_status, classify_execution_provenance
 from app.services.verdict_trustworthiness_engine import VerdictTrustworthinessEngine
 from app.schemas.investigation import (
     AIAssuranceSummary,
@@ -194,7 +197,7 @@ class ReviewOrchestrator:
         elif not user_id and inv.status == "ASSIGNED":
             inv.status = "PENDING_REVIEW"
 
-        inv.updated_at = datetime.utcnow()
+        inv.updated_at = utc_now()
         await self.db.commit()
         await self.db.refresh(inv)
         return inv
@@ -210,7 +213,7 @@ class ReviewOrchestrator:
             return None
 
         inv.status = normalized_status
-        inv.updated_at = datetime.utcnow()
+        inv.updated_at = utc_now()
         await self.db.commit()
         await self.db.refresh(inv)
         return inv
@@ -230,7 +233,7 @@ class ReviewOrchestrator:
         # Transition status to AWAITING_INFORMATION if in progress or assigned
         if inv.status in {"ASSIGNED", "IN_PROGRESS"}:
             inv.status = "AWAITING_INFORMATION"
-        inv.updated_at = datetime.utcnow()
+        inv.updated_at = utc_now()
 
         await self.db.commit()
         await self.db.refresh(q)
@@ -245,12 +248,12 @@ class ReviewOrchestrator:
 
         q.answer = answer.strip()
         q.answered_by_user_id = answered_by_user_id
-        q.answered_at = datetime.utcnow()
+        q.answered_at = utc_now()
 
         # Update investigation updated_at
         inv = await self.get_by_id(q.investigation_id)
         if inv:
-            inv.updated_at = datetime.utcnow()
+            inv.updated_at = utc_now()
             if inv.status == "AWAITING_INFORMATION":
                 inv.status = "IN_PROGRESS"
 
@@ -278,7 +281,7 @@ class ReviewOrchestrator:
             analyst_rationale=analyst_rationale.strip(),
         )
         self.db.add(ev)
-        inv.updated_at = datetime.utcnow()
+        inv.updated_at = utc_now()
         await self.db.commit()
         await self.db.refresh(ev)
         return ev
@@ -328,6 +331,43 @@ class ReviewOrchestrator:
         hist_t = hist_t or norm_av.get("historical_trust_score")
         cap_applied = cap_applied or bool(norm_av.get("trust_cap_applied", False))
 
+        pe_prov_details: Dict[str, Any] = {}
+        if pe is not None:
+            p_res = await self.db.execute(
+                select(AuditLog)
+                .where(
+                    AuditLog.resource_type == "PILOT_EVALUATION",
+                    AuditLog.resource_id == pe.id,
+                )
+                .order_by(desc(AuditLog.created_at))
+                .limit(1)
+            )
+            alog = p_res.scalar_one_or_none()
+            if alog and isinstance(alog.details, dict):
+                pe_prov_details = alog.details
+
+        from app.services.ai_verdict_service import VerdictTriageAgent
+        try:
+            s2_online = await VerdictTriageAgent.is_local_llm_available(force_refresh=True)
+        except Exception:
+            s2_online = False
+        ep_status = classify_endpoint_status(is_healthy=s2_online, raw_status="ONLINE" if s2_online else "OFFLINE")
+
+        is_sim_val = bool(pe.is_simulated if pe is not None else (trec.is_simulated if trec is not None else norm_av.get("is_simulated", False)))
+        model_id_val = (pe.model_identifier if pe else None) or (trec.model_identifier if trec else None) or norm_av.get("model_identifier")
+        val_status_val = (pe.validation_status if pe else None) or norm_av.get("validation_status")
+        prov_info = classify_execution_provenance(
+            is_simulated=is_sim_val,
+            model_identifier=model_id_val,
+            validation_status=val_status_val,
+            eligibility_status=pe.eligibility_status if pe else None,
+            source_type=pe.source_type if pe else "HISTORICAL",
+            error_message=pe.error_message if pe else None,
+            recorded_provenance=pe_prov_details.get("execution_provenance") or norm_av.get("execution_provenance"),
+            recorded_test_env=pe_prov_details.get("test_environment") or norm_av.get("test_environment"),
+            is_historical_context=True,
+        )
+
         return AIAssuranceSummary(
             incident_summary=inc.description or inc.title or "",
             rule_id=rule.rule_id if rule else (pe.rule_id if pe else inc.rule_id),
@@ -340,7 +380,7 @@ class ReviewOrchestrator:
             policy_digest=(pe.policy_digest if pe else None) or norm_av.get("compilation_digest"),
             proposed_verdict=(pe.proposed_verdict if pe else None) or (trec.suggested_verdict if trec else None) or norm_av.get("proposed_verdict"),
             validated_verdict=(pe.validated_verdict if pe else None) or (trec.effective_verdict if trec else None) or norm_av.get("verdict"),
-            validation_status=(pe.validation_status if pe else None) or norm_av.get("validation_status"),
+            validation_status=val_status_val,
             abstention_reason=(pe.abstention_reason if pe else None) or (trec.escalation_reason if trec else None) or norm_av.get("abstention_reason"),
             supporting_evidence=list((pe.supporting_evidence if pe else None) or (trec.supporting_evidence if trec else None) or norm_av.get("supporting_evidence") or []),
             contradictory_evidence=list((pe.contradictory_evidence if pe else None) or (trec.contradictory_evidence if trec else None) or norm_av.get("detected_contradictions") or []),
@@ -356,8 +396,13 @@ class ReviewOrchestrator:
                 or norm_av.get("historical_validation_status")
                 or "UNCALIBRATED"
             ),
-            model_identifier=(pe.model_identifier if pe else None) or (trec.model_identifier if trec else None) or norm_av.get("model_identifier"),
-            is_simulated=bool(pe.is_simulated if pe is not None else (trec.is_simulated if trec is not None else norm_av.get("is_simulated", False))),
+            model_identifier=model_id_val,
+            is_simulated=is_sim_val,
+            configured_provider=pe_prov_details.get("configured_provider") or norm_av.get("configured_provider") or prov_info["configured_provider"],
+            execution_provenance=prov_info["execution_provenance"],
+            historical_execution_provenance=prov_info["historical_execution_provenance"],
+            current_s2_health=ep_status["current_s2_health"],
+            test_environment=prov_info["test_environment"],
             pilot_evaluation_id=pe.id if pe else None,
             pilot_mode=(pe.execution_mode if pe else None) or norm_av.get("pilot_mode"),
             evaluated_at=(pe.created_at.isoformat() if pe else None) or norm_av.get("evaluated_at"),
@@ -388,7 +433,7 @@ class ReviewOrchestrator:
         inv.is_disputed = verdict_data.is_disputed
         inv.is_independently_verified = verdict_data.is_independently_verified
         inv.status = verdict_data.status or "REVIEWED"
-        inv.updated_at = datetime.utcnow()
+        inv.updated_at = utc_now()
 
         # If independently verified and not disputed, sync to LearningRecord for AI training Ground Truth
         if inv.is_independently_verified and not inv.is_disputed:
@@ -430,7 +475,7 @@ class ReviewOrchestrator:
                         evidence_references=ev_refs,
                         answered_questions=qa_data,
                         verification_status="PENDING_REVIEW",
-                        feedback_timestamp=datetime.utcnow(),
+                        feedback_timestamp=utc_now(),
                     )
                     self.db.add(lr)
                 else:
@@ -442,7 +487,7 @@ class ReviewOrchestrator:
                     lr.evidence_references = ev_refs
                     lr.answered_questions = qa_data
                     lr.verification_status = "PENDING_REVIEW"
-                    lr.feedback_timestamp = datetime.utcnow()
+                    lr.feedback_timestamp = utc_now()
 
         # Sync analyst decision to latest PilotEvaluationRecord without overwriting AI verdict
         if inv.incident:
@@ -467,9 +512,9 @@ class ReviewOrchestrator:
                 pe_rec.analyst_decision = verdict_norm
                 pe_rec.analyst_override_reason = verdict_data.verdict_reason or verdict_data.analyst_notes
                 pe_rec.analyst_user = username or user_id or "analyst"
-                pe_rec.analyst_decided_at = datetime.utcnow()
+                pe_rec.analyst_decided_at = utc_now()
                 pe_rec.supervisor_verified = False
-                pe_rec.updated_at = datetime.utcnow()
+                pe_rec.updated_at = utc_now()
                 self.db.add(pe_rec)
 
         await self.db.commit()

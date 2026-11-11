@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
@@ -165,7 +166,7 @@ class ValidationEngine:
             processed_items=0,
             error_count=0,
             is_simulated=is_simulated,
-            started_at=datetime.utcnow(),
+            started_at=utc_now(),
         )
         self.db.add(job)
         await self.db.commit()
@@ -180,7 +181,7 @@ class ValidationEngine:
             cur_status = status_check.scalar_one_or_none()
             if cur_status == "CANCELLED":
                 job.status = "CANCELLED"
-                job.completed_at = datetime.utcnow()
+                job.completed_at = utc_now()
                 await self.db.commit()
                 return job
 
@@ -250,7 +251,7 @@ class ValidationEngine:
                     latency_ms=verdict.latency_ms,
                     is_simulated=verdict.is_simulated,
                     executed_by_user="simulation_engine",
-                    timestamp=datetime.utcnow(),
+                    timestamp=utc_now(),
                     details={
                         "job_id": job.id,
                         "config_name": config.name,
@@ -282,7 +283,7 @@ class ValidationEngine:
                 self.db.add(err_result)
 
         job.status = "COMPLETED"
-        job.completed_at = datetime.utcnow()
+        job.completed_at = utc_now()
         await self.db.commit()
         await self.db.refresh(job)
         return job
@@ -302,7 +303,7 @@ class ValidationEngine:
             return None
         if job.status not in ("COMPLETED", "FAILED", "CANCELLED"):
             job.status = "CANCELLED"
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             await self.db.commit()
             await self.db.refresh(job)
         return job
@@ -318,7 +319,7 @@ class ValidationEngine:
 
         elapsed_seconds = 0
         if job.started_at:
-            end_time = job.completed_at or datetime.utcnow()
+            end_time = job.completed_at or utc_now()
             elapsed_seconds = max(0, int((end_time - job.started_at).total_seconds()))
 
         eta_seconds = 0

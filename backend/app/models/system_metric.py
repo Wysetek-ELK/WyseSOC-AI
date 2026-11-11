@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any
 from sqlalchemy import String, Float, Integer, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column
@@ -12,7 +13,7 @@ class SystemServerSample(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     server_id: Mapped[str] = mapped_column(String(32), index=True, nullable=False)  # "server-1" or "server-2"
     server_name: Mapped[str] = mapped_column(String(128), nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="ONLINE", nullable=False)
 
     # Core system utilization

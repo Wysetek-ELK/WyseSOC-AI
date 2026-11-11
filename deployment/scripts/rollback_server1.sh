@@ -33,9 +33,10 @@ echo "Rebuilding frontend..."
 cd "$APP_DIR/frontend"
 sudo -u "$APP_USER" npm run build
 
-echo "Restarting services in safe order (backend -> worker -> frontend -> nginx)..."
+echo "Restarting services in safe order (backend -> worker -> scheduler -> frontend -> nginx)..."
 systemctl restart ai-verdict-backend
 systemctl restart ai-verdict-worker
+systemctl restart ai-verdict-scheduler
 systemctl restart ai-verdict-frontend
 systemctl reload nginx
 

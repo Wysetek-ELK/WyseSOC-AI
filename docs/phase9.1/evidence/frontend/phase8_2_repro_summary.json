@@ -1,0 +1,37 @@
+{
+  "runner": "pytest backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+  "browser": "chromium-headless",
+  "total_steps": 4,
+  "passed_steps": 4,
+  "console_errors_count": 0,
+  "page_errors_count": 0,
+  "screenshots": [
+    "01_vi_zero_denominator_not_calculable.png",
+    "02_inference_control_s2_degraded.png",
+    "03_workbench_historical_live_s2_offline.png",
+    "04_ais_viewer_readonly_preview.png"
+  ],
+  "steps": [
+    {
+      "step": "1_vi_zero_denominator_not_calculable",
+      "status": "PASSED"
+    },
+    {
+      "step": "2_inference_control_degraded_s2_offline",
+      "status": "PASSED"
+    },
+    {
+      "step": "3_workbench_runtime_status_integrity",
+      "status": "PASSED"
+    },
+    {
+      "step": "4_ais_viewer_readonly_preview_and_rbac",
+      "status": "PASSED",
+      "rbac": {
+        "previewViewer": 200,
+        "postViewer": 403,
+        "postAnalyst": 200
+      }
+    }
+  ]
+}

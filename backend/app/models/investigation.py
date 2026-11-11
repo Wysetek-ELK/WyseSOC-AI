@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any
 from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,8 +29,8 @@ class Investigation(Base):
     # Explicit insufficient evidence reason
     insufficient_evidence_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     # Relationships
     incident: Mapped["Incident"] = relationship("Incident")
@@ -50,7 +51,7 @@ class InvestigationQuestion(Base):
     asked_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     answered_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     answered_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationship
@@ -68,7 +69,7 @@ class InvestigationEvidence(Base):
     evidence_content: Mapped[str] = mapped_column(Text, default="")
     analyst_rationale: Mapped[str] = mapped_column(Text, default="")
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationship
     investigation: Mapped["Investigation"] = relationship("Investigation", back_populates="evidence_items")

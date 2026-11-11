@@ -1,0 +1,23 @@
+{
+  "phase9_baseline_report": "docs/phase9/evidence/backend/pytest_backend_full_report.txt",
+  "phase9_1_post_fix_report": "docs/phase9.1/evidence/tests/pytest_backend_full_report.txt",
+  "before": {
+    "total_warnings": 6072,
+    "categories": {
+      "Python 3.13 + SQLAlchemy ORM column default/onupdate=datetime.utcnow": 4573,
+      "Python 3.13 direct datetime.utcnow() calls": 1017,
+      "Python 3.13 + Pydantic Schema Field(default_factory=datetime.utcnow)": 400,
+      "Python 3.13 datetime.utcfromtimestamp() deprecated": 58,
+      "Pydantic v2 class Config deprecated -> ConfigDict": 12,
+      "Alembic missing path_separator in alembic.ini": 8,
+      "Pydantic v2 .from_orm() deprecated -> .model_validate()": 3,
+      "Pydantic v2 .dict() deprecated -> .model_dump()": 1
+    }
+  },
+  "after": {
+    "total_warnings": 0,
+    "categories": {}
+  },
+  "warnings_eliminated": 6072,
+  "reduction_pct": 100.0
+}

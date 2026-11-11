@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any
 from sqlalchemy import String, Integer, Float, Text, DateTime, Boolean, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -43,7 +44,7 @@ class VerdictTrustAssessmentRecord(Base):
     model_identifier: Mapped[str] = mapped_column(String(64), default="default-model")
     is_simulated: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
-    evaluated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
 
 class EvidenceSufficiencyAssessmentRecord(Base):
@@ -71,7 +72,7 @@ class EvidenceSufficiencyAssessmentRecord(Base):
     unsupported_fields_requested: Mapped[List[str]] = mapped_column(JSON, default=list)
     contradictions_detected: Mapped[List[str]] = mapped_column(JSON, default=list)
 
-    evaluated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
 
 class GroundTruthValidationRecord(Base):
@@ -92,7 +93,7 @@ class GroundTruthValidationRecord(Base):
     dataset_partition: Mapped[str] = mapped_column(String(32), default="LOCKED_TEST", index=True)
     is_eligible_for_evaluation: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
 
 class HistoricalEvaluationRunRecord(Base):
@@ -123,7 +124,7 @@ class HistoricalEvaluationRunRecord(Base):
     regression_summary: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     config_snapshot: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationships
@@ -161,7 +162,7 @@ class HistoricalEvaluationResultRecord(Base):
     claims_summary: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     escalation_reason: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     run: Mapped["HistoricalEvaluationRunRecord"] = relationship("HistoricalEvaluationRunRecord", back_populates="results")

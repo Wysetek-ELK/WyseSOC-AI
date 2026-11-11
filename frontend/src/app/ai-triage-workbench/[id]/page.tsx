@@ -32,6 +32,7 @@ import {
 import { api, IncidentDetail, IncidentAiVerdictResponse } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import { HistoricalTelemetryTimeline } from "@/components/telemetry/HistoricalTelemetryTimeline";
+import { formatExecutionProvenanceBadge } from "@/lib/provenance";
 
 export default function AITriageWorkbenchDetailPage({
   params,
@@ -344,17 +345,35 @@ export default function AITriageWorkbenchDetailPage({
                 <span className="text-[10px] text-slate-500">({aiVerdict.prompt_tokens || 0} in / {aiVerdict.completion_tokens || 0} out)</span>
               </span>
 
-              {aiVerdict.model_identifier && ["POLICY_GUARD", "PREFLIGHT_GUARD", "TOKEN_BUDGET_GUARD"].includes(aiVerdict.model_identifier) ? (
-                <span className="text-amber-400 font-semibold">• Deterministic Guard ({aiVerdict.model_identifier})</span>
-              ) : aiVerdict.validation_status === "INVALID_MODEL_OUTPUT" ? (
-                <span className="text-rose-400 font-semibold">• INVALID_MODEL_OUTPUT (Abstained)</span>
-              ) : aiVerdict.is_simulated ? (
-                <span className="text-amber-300 font-semibold">• SIMULATED (Non-Production)</span>
-              ) : llmOnline ? (
-                <span className="text-emerald-400 font-semibold">• Recorded S2 Inference (GPU Live Now)</span>
-              ) : (
-                <span className="text-cyan-300 font-semibold">• Historical Live Record (S2 Offline Now)</span>
-              )}
+              {(() => {
+                const pb = formatExecutionProvenanceBadge({
+                  executionProvenance: aiVerdict.execution_provenance,
+                  isSimulated: aiVerdict.is_simulated,
+                  validationStatus: aiVerdict.validation_status,
+                  modelIdentifier: aiVerdict.model_identifier,
+                  currentS2Health: llmOnline ? "ONLINE" : "OFFLINE",
+                });
+                const text =
+                  aiVerdict.validation_status === "INVALID_MODEL_OUTPUT"
+                    ? "• INVALID_MODEL_OUTPUT (Abstained)"
+                    : pb.label === "SIMULATED"
+                    ? "• SIMULATED (Non-Production)"
+                    : ["POLICY_GUARD", "PREFLIGHT_GUARD", "TOKEN_BUDGET_GUARD", "VALIDATION_GUARD"].includes(pb.label)
+                    ? `• Deterministic Guard (${aiVerdict.model_identifier || pb.label})`
+                    : pb.label === "LIVE_PROVIDER"
+                    ? llmOnline
+                      ? `• LIVE_PROVIDER (${aiVerdict.model_identifier || "Server 2"}) • S2 Online`
+                      : `• Historical Live Record (S2 Offline Now) • LIVE_PROVIDER`
+                    : `• Provenance: ${pb.label} (${aiVerdict.model_identifier || "Model"}) • S2 Now: ${llmOnline ? "ONLINE" : "OFFLINE"}`;
+                return (
+                  <span
+                    className={`px-1.5 py-0.5 rounded border font-semibold ${pb.className}`}
+                    title={pb.sublabel}
+                  >
+                    {text}
+                  </span>
+                );
+              })()}
               <button
                 onClick={() => setAiVerdict(null)}
                 className="text-slate-400 hover:text-slate-200 text-xs px-1"

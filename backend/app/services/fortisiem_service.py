@@ -6,6 +6,7 @@ import time
 import asyncio
 import logging
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Dict, Any, Tuple, List, Optional
 import httpx
 from fastapi import HTTPException
@@ -216,7 +217,7 @@ class FortiSIEMService:
                 "customer": inc.get("customer"),
                 "source_incident_metrics": {"incident_detail": incident_detail} if incident_detail else {},
                 "definition_status": "INCOMPLETE",
-                "synced_at": datetime.utcnow().isoformat(),
+                "synced_at": utc_now().isoformat(),
             }
 
             existing = rules_by_type.get(event_type) or rules_by_id.get(event_type)
@@ -267,7 +268,7 @@ class FortiSIEMService:
                 if existing.pattern_logic and ('"incidentCount"' in existing.pattern_logic or 'sentBytes64' in existing.pattern_logic and existing.pattern_logic.strip().startswith('{')):
                     existing.pattern_logic = ""
                 existing.parsed_metadata = metadata
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = utc_now()
                 updated_count += 1
                 synced_rules_summary.append({
                     "rule_id": existing.rule_id,
@@ -358,7 +359,7 @@ class FortiSIEMService:
                 "attackTechnique": rule_dict.get("attackTechnique") or rule_dict.get("mitreTechnique"),
                 "attackTactic": rule_dict.get("attackTactic") or rule_dict.get("mitreTactic"),
                 "customer": rule_dict.get("customer"),
-                "synced_at": datetime.utcnow().isoformat(),
+                "synced_at": utc_now().isoformat(),
             },
         }
 
@@ -423,7 +424,7 @@ class FortiSIEMService:
                     "attackTechnique": root.findtext("attackTechnique") or root.findtext("mitreTechnique"),
                     "attackTactic": root.findtext("attackTactic") or root.findtext("mitreTactic"),
                     "customer": root.findtext("customer"),
-                    "synced_at": datetime.utcnow().isoformat(),
+                    "synced_at": utc_now().isoformat(),
                 },
             }
         except Exception:
@@ -467,7 +468,7 @@ class FortiSIEMService:
                 "raw_rule_text": definition_text.strip(),
                 "metadata": {
                     "source": "AUTHORITATIVE_XML_IMPORT",
-                    "synced_at": datetime.utcnow().isoformat(),
+                    "synced_at": utc_now().isoformat(),
                 },
             }
 
@@ -500,7 +501,7 @@ class FortiSIEMService:
             meta["definition_status"] = "VERIFIED"
             meta["provenance"] = "AUTHORITATIVE_XML_IMPORT"
             existing.parsed_metadata = meta
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = utc_now()
             await self.db.commit()
             await self.db.refresh(existing)
             target_rule = existing
@@ -740,7 +741,7 @@ class FortiSIEMService:
             existing_rule.pattern_logic = parsed_rule["pattern_logic"]
             existing_rule.raw_rule_text = parsed_rule["raw_rule_text"]
             existing_rule.parsed_metadata = parsed_rule["metadata"]
-            existing_rule.updated_at = datetime.utcnow()
+            existing_rule.updated_at = utc_now()
             await self.db.commit()
             target_rule = existing_rule
         else:
@@ -1209,7 +1210,7 @@ class FortiSIEMService:
                 gt.is_ml_generated = gt_data["is_ml_generated"]
                 updated = True
             if updated:
-                gt.updated_at = datetime.utcnow()
+                gt.updated_at = utc_now()
 
         # Update Incident status if closed/cleared
         if gt_data["status_code"] == 2 and incident.status_code != 2:

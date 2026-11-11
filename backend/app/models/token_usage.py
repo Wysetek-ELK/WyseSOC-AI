@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any
 from sqlalchemy import String, Integer, Float, DateTime, Boolean, JSON
 from sqlalchemy.orm import Mapped, mapped_column
@@ -41,6 +42,6 @@ class TokenUsageRecord(Base):
     is_simulated: Mapped[bool] = mapped_column(Boolean, default=False, index=True, nullable=False)
     executed_by_user: Mapped[str] = mapped_column(String(64), default="system", nullable=False)
 
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True, nullable=False)
     details: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 

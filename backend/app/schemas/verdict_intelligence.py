@@ -11,6 +11,7 @@ Covers:
 """
 
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from enum import Enum
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
@@ -106,7 +107,7 @@ class EvidenceSufficiencyAssessmentResult(BaseModel):
     unsupported_fields_requested: List[str] = Field(default_factory=list)
     contradictions_detected: List[str] = Field(default_factory=list)
     notes: List[str] = Field(default_factory=list)
-    evaluated_at: datetime = Field(default_factory=datetime.utcnow)
+    evaluated_at: datetime = Field(default_factory=utc_now)
 
     @property
     def status(self) -> EvidenceStatus:
@@ -240,7 +241,7 @@ class VerdictTrustAssessmentResult(BaseModel):
     human_readable_explanation: str
     model_identifier: str = "default-model"
     is_simulated: bool = False
-    evaluated_at: datetime = Field(default_factory=datetime.utcnow)
+    evaluated_at: datetime = Field(default_factory=utc_now)
     evidence_sufficiency: Optional[EvidenceSufficiencyAssessmentResult] = None
     claim_verification: Optional[ClaimVerificationResult] = None
 

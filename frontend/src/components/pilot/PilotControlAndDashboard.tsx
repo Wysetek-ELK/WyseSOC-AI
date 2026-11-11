@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -25,6 +25,7 @@ import {
   PilotMetricsResponse,
 } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
+import { formatExecutionProvenanceBadge, formatServer2HealthSummary } from "@/lib/provenance";
 
 interface PilotControlProps {
   onError?: (msg: string | null) => void;
@@ -32,9 +33,9 @@ interface PilotControlProps {
 }
 
 export default function PilotControlAndDashboard({ onError, onSuccess }: PilotControlProps) {
-  const { user } = useApp();
-  const isAdmin = user?.role === "Administrator";
-  const isAnalystOrAdmin = user?.role === "Administrator" || user?.role === "SOC Analyst";
+  const { user, isLoading: authLoading } = useApp();
+  const isAdmin = !authLoading && user?.role === "Administrator";
+  const isAnalystOrAdmin = !authLoading && (user?.role === "Administrator" || user?.role === "SOC Analyst");
 
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -88,7 +89,9 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
     if (onSuccess) onSuccess(msg);
   };
 
-  const loadPilotData = useCallback(async () => {
+  const formInitializedRef = useRef(false);
+
+  const loadPilotData = useCallback(async (syncForm: boolean = false) => {
     setLoading(true);
     try {
       const [cfg, met, hist, evals, aud] = await Promise.all([
@@ -104,22 +107,25 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
       setEvaluations(evals);
       setAuditItems(aud.items || []);
 
-      // Sync form state
-      setPilotName(cfg.pilot_name);
-      setDescription(cfg.description || "");
-      setIngestionSource(cfg.ingestion_source);
-      setRuleIdsText((cfg.selected_rule_ids || []).join(", "));
-      setArchetypesText((cfg.selected_archetypes || []).join(", "));
-      setSeverities(cfg.included_severities || ["CRITICAL", "HIGH", "MEDIUM", "LOW"]);
-      setDailyBudget(cfg.daily_evaluation_budget);
-      setHourlyBudget(cfg.hourly_evaluation_budget);
-      setMaxConcurrency(cfg.max_concurrent_inference);
-      setTimeoutSeconds(cfg.request_timeout_seconds);
-      setErrorPolicy((cfg.error_handling_policy as any) || "ABSTAIN_AND_LOG");
-      setErrorThreshold(cfg.consecutive_error_pause_threshold || 5);
-      setReportingSchedule((cfg.reporting_schedule as any) || "HOURLY");
-      setRequireApprovedPolicy(Boolean(cfg.require_approved_policy));
-      setRequireAnalystReview(Boolean(cfg.require_analyst_review));
+      // Sync form state only on initial load or explicit sync (save/rollback/manual refresh)
+      if (!formInitializedRef.current || syncForm) {
+        formInitializedRef.current = true;
+        setPilotName(cfg.pilot_name);
+        setDescription(cfg.description || "");
+        setIngestionSource(cfg.ingestion_source);
+        setRuleIdsText((cfg.selected_rule_ids || []).join(", "));
+        setArchetypesText((cfg.selected_archetypes || []).join(", "));
+        setSeverities(cfg.included_severities || ["CRITICAL", "HIGH", "MEDIUM", "LOW"]);
+        setDailyBudget(cfg.daily_evaluation_budget);
+        setHourlyBudget(cfg.hourly_evaluation_budget);
+        setMaxConcurrency(cfg.max_concurrent_inference);
+        setTimeoutSeconds(cfg.request_timeout_seconds);
+        setErrorPolicy((cfg.error_handling_policy as any) || "ABSTAIN_AND_LOG");
+        setErrorThreshold(cfg.consecutive_error_pause_threshold || 5);
+        setReportingSchedule((cfg.reporting_schedule as any) || "HOURLY");
+        setRequireApprovedPolicy(Boolean(cfg.require_approved_policy));
+        setRequireAnalystReview(Boolean(cfg.require_analyst_review));
+      }
     } catch (err: any) {
       reportError(err.message || "Failed to load SOC Pilot state");
     } finally {
@@ -239,7 +245,7 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
       const updated = await api.rollbackPilot(versionNumber, `Rollback to pilot configuration v${versionNumber}`);
       setConfig(updated);
       reportSuccess(`Rolled back Pilot configuration cleanly to v${versionNumber} (now v${updated.version_number}).`);
-      await loadPilotData();
+      await loadPilotData(true);
     } catch (err: any) {
       reportError(err.message || "Failed to rollback pilot configuration");
     } finally {
@@ -347,9 +353,14 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
               <span className="px-2 py-0.5 text-xs font-mono rounded bg-slate-950 text-slate-400 border border-slate-800">
                 Config v{config?.version_number || 1}
               </span>
-              <span className="px-2 py-0.5 text-xs font-mono rounded bg-slate-950 text-cyan-400 border border-slate-800">
-                Role: {user?.role || "Unknown"}
+              <span className="px-2 py-0.5 text-xs font-mono rounded bg-slate-950 text-cyan-400 border border-slate-800" data-testid="pilot-role-badge">
+                Role: {authLoading ? "Verifying session..." : user?.role || "Unauthenticated"}
               </span>
+              {metrics?.operational.test_environment && (
+                <span className="px-2 py-0.5 text-xs font-mono font-bold rounded bg-cyan-950/70 text-cyan-300 border border-cyan-700" data-testid="pilot-test-env-badge">
+                  TEST ENV: {metrics.operational.test_environment}
+                </span>
+              )}
             </div>
             <h3 className="text-lg font-semibold text-white mt-2">
               {config?.pilot_name || "Default SOC Pilot"} — Controlled Rollout &amp; Monitoring
@@ -362,7 +373,7 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={loadPilotData}
+              onClick={() => loadPilotData(true)}
               disabled={loading || busy}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-300 hover:text-white"
             >
@@ -422,7 +433,11 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
           <div className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-amber-300" data-testid="pilot-rbac-notice">
             <Lock className="w-4 h-4 shrink-0" />
             <span>
-              {isAnalystOrAdmin
+              {authLoading
+                ? "Verifying authenticated role and RBAC permissions..."
+                : !user
+                ? "Unauthenticated session: Sign in to view or operate SOC Pilot controls."
+                : isAnalystOrAdmin
                 ? "SOC Analyst mode: Pilot configuration, mode activation, pause/disable, rollback, and supervisor verification require Administrator authorization."
                 : "Read-Only Viewer mode: All SOC Pilot configuration, execution, and feedback controls are locked."}
             </span>
@@ -455,15 +470,26 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Operational Metrics */}
           <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2 gap-2">
               <h4 className="text-sm font-semibold text-white">Operational &amp; Provider Health</h4>
-              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                metrics.operational.provider_available
-                  ? "bg-emerald-950/70 text-emerald-300 border-emerald-800"
-                  : "bg-red-950/70 text-red-300 border-red-800"
-              }`}>
-                Server 2: {metrics.operational.provider_available ? "ONLINE" : "OFFLINE"}
-              </span>
+              {(() => {
+                const s2Health = formatServer2HealthSummary({
+                  is_healthy: metrics.operational.provider_available,
+                  endpoint_provenance: metrics.operational.endpoint_provenance,
+                  current_s2_health: metrics.operational.current_s2_health,
+                  gpu_telemetry_verified: metrics.operational.gpu_telemetry_verified,
+                });
+                return (
+                  <span
+                    data-testid="pilot-provider-health-badge"
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded border ${s2Health.badgeClass}`}
+                  >
+                    {s2Health.isMockEndpoint
+                      ? "Endpoint: HTTP_MOCK (Test)"
+                      : `Server 2: ${metrics.operational.current_s2_health || (metrics.operational.provider_available ? "ONLINE" : "OFFLINE")}`}
+                  </span>
+                );
+              })()}
             </div>
             <div className="grid grid-cols-2 gap-2.5 text-xs">
               <div className="p-2.5 rounded bg-slate-950 border border-slate-800">
@@ -492,7 +518,12 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
                 </span>
               </div>
               <div className="p-2.5 rounded bg-slate-950 border border-slate-800">
-                <span className="text-slate-500 block">Live Provider Tokens</span>
+                <span className="text-slate-500 block">
+                  {(metrics.operational.http_mock_evaluations_count || 0) > 0 &&
+                  (metrics.operational.live_provider_evaluations_count || 0) === 0
+                    ? "Non-Simulated Tokens (HTTP_MOCK)"
+                    : "Live Provider Tokens"}
+                </span>
                 <span className="font-mono text-emerald-300">
                   {metrics.operational.token_consumption_live.total_tokens.toLocaleString()}
                 </span>
@@ -929,9 +960,26 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
                           {ev.execution_mode}
                         </span>
                         <div className="text-[10px] mt-1">
-                          <span className={ev.is_simulated ? "text-amber-300" : "text-emerald-300"}>
-                            {ev.source_type} • {ev.is_simulated ? "SIMULATED" : "LIVE_PROVIDER"}
-                          </span>
+                          {(() => {
+                            const pb = formatExecutionProvenanceBadge({
+                              executionProvenance: ev.execution_provenance,
+                              historicalProvenance: ev.historical_execution_provenance,
+                              isSimulated: ev.is_simulated,
+                              validationStatus: ev.validation_status,
+                              modelIdentifier: ev.model_identifier,
+                              sourceType: ev.source_type,
+                              eligibilityStatus: ev.eligibility_status,
+                              currentS2Health: metrics?.operational?.current_s2_health,
+                            });
+                            return (
+                              <span
+                                title={pb.sublabel}
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border font-mono ${pb.className}`}
+                              >
+                                {ev.source_type} • {pb.label}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </td>
                       <td className="py-2.5 pr-3 font-mono">

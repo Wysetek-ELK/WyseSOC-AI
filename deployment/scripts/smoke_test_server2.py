@@ -17,10 +17,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any, Dict, Tuple
 
@@ -41,12 +43,19 @@ def _http_call(url: str, method: str = "GET", payload: Dict[str, Any] | None = N
         return he.code, he.read().decode("utf-8", errors="replace")
 
 
-def run_smoke_test(base_url: str, model: str, api_key: str, timeout: float) -> Dict[str, Any]:
+def run_smoke_test(base_url: str, model: str, api_key: str, timeout: float, live_server2: bool = False) -> Dict[str, Any]:
     clean_v1 = base_url.rstrip("/")
     root_url = re.sub(r"/v1$", "", clean_v1)
+    parsed_host = (urllib.parse.urlparse(clean_v1).hostname or "").strip().lower()
+    is_loopback = parsed_host in {"127.0.0.1", "localhost", "::1", "0.0.0.0"}
+    test_env = os.getenv("AI_VERDICT_TEST_ENV", "").strip() or None
+    provenance = "LIVE_PROVIDER" if (live_server2 or not is_loopback) else "HTTP_MOCK"
     report: Dict[str, Any] = {
         "base_url": clean_v1,
         "model": model,
+        "execution_provenance": provenance,
+        "is_loopback_target": is_loopback,
+        "test_environment": test_env,
         "overall_status": "NOT_EXECUTED",
         "checks": {},
     }
@@ -137,9 +146,10 @@ def main() -> int:
     parser.add_argument("--model", default="Qwen/Qwen2.5-7B-Instruct-AWQ")
     parser.add_argument("--api-key", default="EMPTY")
     parser.add_argument("--timeout", type=float, default=15.0)
+    parser.add_argument("--live-server2", action="store_true", help="Assert that a loopback tunnel targets a physical Server 2 GPU")
     args = parser.parse_args()
 
-    res = run_smoke_test(args.base_url, args.model, args.api_key, args.timeout)
+    res = run_smoke_test(args.base_url, args.model, args.api_key, args.timeout, live_server2=args.live_server2)
     print(json.dumps(res, indent=2))
     if res["overall_status"] == "PASSED":
         return 0

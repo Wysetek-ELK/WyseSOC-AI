@@ -1,0 +1,114 @@
+{
+  "gitleaks_exit_code": 1,
+  "total_findings": 18,
+  "findings": [
+    {
+      "rule_id": "generic-api-key",
+      "file": "AGENT_INTELLIGENCE_STUDIO_2_1_VALIDATION_REPORT.md",
+      "start_line": 82,
+      "match_preview": "Token ID      : 0df209f03bfc26bbcdd3234f41c3d..."
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "AGENT_INTELLIGENCE_STUDIO_2_1_VALIDATION_REPORT.md",
+      "start_line": 89,
+      "match_preview": "Token ID      : <redacted-governor-receipt-hash-2>"
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "backend/app/services/policy_quality_validator.py",
+      "start_line": 280,
+      "match_preview": "gate_key == \"G3_EVIDENCE_FEASIBILITY\""
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "backend/app/services/policy_quality_validator.py",
+      "start_line": 286,
+      "match_preview": "gate_key == \"G4_TP_CRITERIA_VALIDITY\""
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "backend/app/services/policy_quality_validator.py",
+      "start_line": 289,
+      "match_preview": "gate_key == \"G5_FP_CRITERIA_VALIDITY\""
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "backend/app/services/policy_quality_validator.py",
+      "start_line": 300,
+      "match_preview": "gate_key == \"G7_POLICY_CONSISTENCY\""
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "backend/app/services/policy_quality_validator.py",
+      "start_line": 308,
+      "match_preview": "gate_key == \"G8_SIMULATION_REGRESSION\""
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "deployment/env.production.example",
+      "start_line": 60,
+      "match_preview": "FORTISIEM_PASSWORD=\"\"\nFORTISIEM_VERIFY_SSL=\""
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "backend/tests/test_phase1_security_controls.py",
+      "start_line": 51,
+      "match_preview": "SECRET_KEY=\"short-key-12345\""
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "docs/AI_VERDICT_IMPLEMENTATION/PHASE_1/10_DEPLOYMENT_AND_ROLLBACK_GUIDE.md",
+      "start_line": 30,
+      "match_preview": "secure_vault_password>\r\nFORTISIEM_VERIFY_SSL=..."
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "frontend/.next/cache/.previewinfo",
+      "start_line": 1,
+      "match_preview": "previewModeSigningKey\":\"d31917d416d6f44cd44f3..."
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "frontend/.next/cache/.previewinfo",
+      "start_line": 1,
+      "match_preview": "previewModeEncryptionKey\":\"8326583d629a9c95c7..."
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "frontend/.next/cache/.rscinfo",
+      "start_line": 1,
+      "match_preview": "encryption.key\":\"0/OXQ3JWrVliv+JQCeUsyuG29/3n..."
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "frontend/.next/prerender-manifest.json",
+      "start_line": 854,
+      "match_preview": "previewModeSigningKey\": \"d31917d416d6f44cd44f..."
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "frontend/.next/prerender-manifest.json",
+      "start_line": 855,
+      "match_preview": "previewModeEncryptionKey\": \"8326583d629a9c95c..."
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "frontend/.next/server/preview-props.json",
+      "start_line": 3,
+      "match_preview": "previewModeSigningKey\": \"d31917d416d6f44cd44f..."
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "frontend/.next/server/preview-props.json",
+      "start_line": 4,
+      "match_preview": "previewModeEncryptionKey\": \"8326583d629a9c95c..."
+    },
+    {
+      "rule_id": "generic-api-key",
+      "file": "frontend/.next/server/server-reference-manifest.json",
+      "start_line": 4,
+      "match_preview": "encryptionKey\": \"0/OXQ3JWrVliv+JQCeUsyuG29/3n..."
+    }
+  ]
+}

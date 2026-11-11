@@ -11,7 +11,7 @@ FRONTEND_URL="${FRONTEND_URL:-http://127.0.0.1:3000}"
 echo "Verifying Server 1 AI Verdict stack..."
 
 echo "[1/6] Checking systemd units..."
-for svc in postgresql redis-server ai-verdict-backend ai-verdict-worker ai-verdict-frontend nginx; do
+for svc in postgresql redis-server ai-verdict-backend ai-verdict-worker ai-verdict-scheduler ai-verdict-frontend nginx; do
   if systemctl is-active --quiet "$svc"; then
     echo "  OK: $svc active"
   else

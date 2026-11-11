@@ -18,6 +18,7 @@ When mandatory evidence is missing or contradictory:
 
 import logging
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Dict, Any, List, Optional, Set, Tuple
 
 from app.schemas.verdict_intelligence import (
@@ -305,7 +306,7 @@ class EvidenceSufficiencyEngine:
             unsupported_fields_requested=[],
             contradictions_detected=contradictions,
             notes=notes,
-            evaluated_at=datetime.utcnow(),
+            evaluated_at=utc_now(),
         )
 
     @classmethod

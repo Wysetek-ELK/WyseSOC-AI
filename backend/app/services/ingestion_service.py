@@ -2,6 +2,7 @@ import json
 import io
 import re
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Dict, Any, List, Tuple, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
@@ -254,7 +255,7 @@ class IngestionService:
         except ZipSecurityException as e:
             job.status = "FAILED"
             job.error_details = [{"error": str(e), "file": filename}]
-            job.completed_at = datetime.utcnow()
+            job.completed_at = utc_now()
             await self.db.commit()
             return job, {
                 "job_id": job.id,
@@ -369,7 +370,7 @@ class IngestionService:
         job.duplicate_count = duplicates
         job.error_count = errors
         job.status = "COMPLETED" if errors == 0 else "COMPLETED_WITH_ERRORS"
-        job.completed_at = datetime.utcnow()
+        job.completed_at = utc_now()
 
         # Audit log entry
         audit = AuditLog(
@@ -436,7 +437,7 @@ class IngestionService:
             job.status = "FAILED"
             job.error_details = [{"file": filename, "error": msg}]
 
-        job.completed_at = datetime.utcnow()
+        job.completed_at = utc_now()
         await self.db.commit()
         await self.db.refresh(job)
         return job, result, msg
@@ -665,7 +666,7 @@ class IngestionService:
                 severity=severity,
                 source_ip=incident.source_ip,
                 reporting_device=incident.reporting_device,
-                epoch_ms=created_at_epoch or int(datetime.utcnow().timestamp() * 1000),
+                epoch_ms=created_at_epoch or int(utc_now().timestamp() * 1000),
                 token_count=0,
                 details={
                     "event_count": len(raw_events),
@@ -732,7 +733,7 @@ class IngestionService:
             raw_text = live_rule.get("raw_rule_text") or f"Rule: {rule_name}\nEventType: {clean_event_type}\nPattern: {pattern}"
             metadata = live_rule.get("metadata") or {
                 "source": "FORTISIEM_LIVE_RULE_API",
-                "synced_at": datetime.utcnow().isoformat(),
+                "synced_at": utc_now().isoformat(),
             }
         else:
             rule_id = clean_event_type
@@ -766,7 +767,7 @@ class IngestionService:
                 "attackTechnique": raw_data.get("attackTechnique"),
                 "attackTactic": raw_data.get("attackTactic"),
                 "customer": raw_data.get("customer"),
-                "auto_registered_at": datetime.utcnow().isoformat(),
+                "auto_registered_at": utc_now().isoformat(),
             }
 
         new_rule = Rule(

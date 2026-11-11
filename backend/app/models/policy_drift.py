@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any
 from sqlalchemy import String, DateTime, Boolean, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -24,7 +25,7 @@ class PolicyDriftEvent(Base):
     acknowledged: Mapped[bool] = mapped_column(Boolean, default=False)
     acknowledged_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     rule = relationship("Rule")
     prompt_version = relationship("PromptVersion")

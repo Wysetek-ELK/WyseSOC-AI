@@ -35,8 +35,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 REPO_ROOT = BACKEND_DIR.parent
-FRONTEND_EVIDENCE_DIR = REPO_ROOT / "docs" / "phase9" / "evidence" / "frontend"
-SCREENSHOTS_DIR = REPO_ROOT / "docs" / "phase9" / "evidence" / "screenshots"
+_EV_ROOT = Path(os.getenv("PHASE9_EVIDENCE_ROOT", str(REPO_ROOT / "docs" / "phase9" / "evidence")))
+FRONTEND_EVIDENCE_DIR = _EV_ROOT / "frontend"
+SCREENSHOTS_DIR = _EV_ROOT / "screenshots"
 
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
@@ -383,6 +384,8 @@ def e2e_p9_servers(tmp_path_factory):
     env["LOCAL_LLM_BASE_URL"] = f"http://127.0.0.1:{mock_llm.port}/v1"
     env["LOCAL_LLM_MODEL_NAME"] = "qwen2.5-32b-instruct"
     env["LOCAL_LLM_ALLOW_MOCK_FALLBACK"] = "false"
+    env["LOCAL_LLM_PROVENANCE"] = "HTTP_MOCK"
+    env["AI_VERDICT_TEST_ENV"] = "MOCK_HTTP_E2E"
     env["SECRET_KEY"] = f"p9-e2e-secret-{secrets.token_hex(16)}"
 
     alembic_res = subprocess.run(["alembic", "upgrade", "head"], cwd=str(BACKEND_DIR), env=env, capture_output=True, text=True)
@@ -418,7 +421,10 @@ def e2e_p9_servers(tmp_path_factory):
     finally:
         for proc in (fe_proc, be_proc):
             if proc.poll() is None:
-                proc.terminate()
+                if os.name == "nt":
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
+                else:
+                    proc.terminate()
                 try:
                     proc.wait(timeout=8)
                 except subprocess.TimeoutExpired:
@@ -482,7 +488,8 @@ def test_phase9_soc_pilot_and_audit_remediations_browser_e2e(e2e_p9_servers):
         main.get_by_test_id("btn-run-pilot-batch").click()
         expect(main.get_by_test_id("pilot-success-banner")).to_be_visible(timeout=20000)
         expect(main.get_by_text("P9-UI-INC-2").first).to_be_visible(timeout=10000)
-        expect(main.get_by_text("LIVE_PROVIDER").first).to_be_visible()
+        expect(main.get_by_text("HTTP_MOCK").first).to_be_visible()
+        expect(main.get_by_test_id("pilot-role-badge")).to_contain_text("Administrator")
         page.screenshot(path=str(SCREENSHOTS_DIR / "01_pilot_shadow_dashboard.png"), full_page=True)
 
         # Verify P9-UI-INC-2 Incident AI Verdict remains untouched/absent in SHADOW mode!
@@ -501,6 +508,8 @@ def test_phase9_soc_pilot_and_audit_remediations_browser_e2e(e2e_p9_servers):
         # Sign in as Analyst: check RBAC guard on Admin buttons, then Human Review Queue AI Assurance & Override
         _login(page, "analyst", e2e_p9_servers["analyst_secret"])
         page.goto(f"{base_url}/verdict-intelligence?tab=pilot", wait_until="domcontentloaded")
+        expect(page.get_by_test_id("header-user-role")).to_contain_text("SOC Analyst", timeout=15000)
+        expect(main.get_by_test_id("pilot-role-badge")).to_contain_text("Role: SOC Analyst", timeout=15000)
         expect(main.get_by_test_id("pilot-rbac-notice")).to_be_visible(timeout=15000)
         expect(main.get_by_test_id("btn-disable-pilot")).to_be_disabled()
 
@@ -555,10 +564,12 @@ def test_phase9_soc_pilot_and_audit_remediations_browser_e2e(e2e_p9_servers):
         page.screenshot(path=str(SCREENSHOTS_DIR / "04_historical_eligibility_report.png"), full_page=True)
         steps.append({"step": "8_historical_eligibility_panel", "status": "PASSED"})
 
-        # 9. Read-Only Viewer UX lock verification (zero console/page errors)
+        # 9. Read-Only Viewer UX lock verification (zero console/page errors, consistent Header & Pilot role badges)
         _login(page, "viewer", e2e_p9_servers["viewer_secret"])
         page.goto(f"{base_url}/verdict-intelligence?tab=pilot", wait_until="domcontentloaded")
-        expect(main.get_by_test_id("pilot-rbac-notice")).to_be_visible(timeout=15000)
+        expect(page.get_by_test_id("header-user-role")).to_contain_text("Read-Only Viewer", timeout=15000)
+        expect(main.get_by_test_id("pilot-role-badge")).to_contain_text("Role: Read-Only Viewer", timeout=15000)
+        expect(main.get_by_test_id("pilot-rbac-notice")).to_contain_text("Read-Only Viewer mode", timeout=15000)
         expect(main.get_by_test_id("btn-save-pilot-config")).to_be_disabled()
         expect(main.get_by_test_id("btn-run-pilot-batch")).to_be_disabled()
         page.screenshot(path=str(SCREENSHOTS_DIR / "03_pilot_viewer_readonly.png"), full_page=True)
@@ -576,6 +587,8 @@ def test_phase9_soc_pilot_and_audit_remediations_browser_e2e(e2e_p9_servers):
 
     report = {
         "suite": "Phase 9 Browser E2E (Chromium)",
+        "test_environment": "MOCK_HTTP_E2E",
+        "execution_provenance": "HTTP_MOCK",
         "steps": steps,
         "console_errors": console_errors,
         "page_errors": page_errors,

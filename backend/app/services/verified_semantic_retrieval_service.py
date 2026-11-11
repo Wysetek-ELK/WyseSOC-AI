@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from app.utils.datetime_utils import utc_now, utc_from_timestamp
 from typing import Optional, List, Dict, Any, Set
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -118,11 +119,11 @@ class VerifiedSemanticRetrievalService:
         query_time = incident.created_at
         if not query_time and incident.created_at_epoch:
             try:
-                query_time = datetime.utcfromtimestamp(incident.created_at_epoch)
+                query_time = utc_from_timestamp(incident.created_at_epoch)
             except Exception:
-                query_time = datetime.utcnow()
+                query_time = utc_now()
         if not query_time:
-            query_time = datetime.utcnow()
+            query_time = utc_now()
 
         # Query all learning records for candidate pool
         stmt = (
@@ -199,7 +200,7 @@ class VerifiedSemanticRetrievalService:
                 analyst_explanation=cand.analyst_explanation or "Supervisor confirmed ground-truth verdict.",
                 key_evidence_summary=key_ev,
                 similarity_score=score,
-                feedback_timestamp=(cand.feedback_timestamp or datetime.utcnow()).isoformat(),
+                feedback_timestamp=(cand.feedback_timestamp or utc_now()).isoformat(),
                 is_exact_rule_match=is_exact_rule,
                 temporal_check_passed=True,
             )

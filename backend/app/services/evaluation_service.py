@@ -1,6 +1,7 @@
 import io
 import csv
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, or_
@@ -174,7 +175,7 @@ class VerdictEvaluationEngine:
             confusion_matrix=matrix,
             rule_breakdown=breakdown,
             average_latency_ms=avg_latency,
-            generated_at=datetime.utcnow(),
+            generated_at=utc_now(),
         )
 
     async def compare_prompt_versions(self, rule_id: str) -> List[PromptComparisonItem]:

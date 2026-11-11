@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any
 from sqlalchemy import String, Integer, Float, Text, DateTime, Boolean, JSON, ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column
@@ -46,8 +47,8 @@ class PilotConfiguration(Base):
 
     created_by: Mapped[str] = mapped_column(String(128), default="system", nullable=False)
     updated_by: Mapped[str] = mapped_column(String(128), default="system", nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
 
 class PilotConfigHistory(Base):
@@ -65,7 +66,7 @@ class PilotConfigHistory(Base):
     config_snapshot: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     change_reason: Mapped[str] = mapped_column(Text, default="")
     changed_by: Mapped[str] = mapped_column(String(128), nullable=False)
-    changed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
 
 class PilotEvaluationRecord(Base):
@@ -134,6 +135,6 @@ class PilotEvaluationRecord(Base):
     supervisor_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     supervisor_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 

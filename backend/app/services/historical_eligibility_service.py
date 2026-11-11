@@ -2,6 +2,7 @@ import csv
 import io
 import json
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import select
@@ -280,7 +281,7 @@ class HistoricalEligibilityService:
         )
 
         return {
-            "generated_at": datetime.utcnow().isoformat() + "Z",
+            "generated_at": utc_now().isoformat() + "Z",
             "rule_filter": rule_id,
             "integrity_notice": (
                 "Excludes synthetic debug fixtures, ML-generated resolutions, missing-evidence wrappers, "

@@ -1,5 +1,6 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from app.utils.datetime_utils import utc_from_timestamp
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, or_
 from sqlalchemy.orm import selectinload
@@ -30,7 +31,7 @@ class TelemetryTimelineService:
             return "N/A"
         ms = epoch_ms if epoch_ms > 1e11 else epoch_ms * 1000
         try:
-            return datetime.utcfromtimestamp(ms / 1000.0).isoformat() + "Z"
+            return utc_from_timestamp(ms / 1000.0).isoformat() + "Z"
         except Exception:
             return "N/A"
 

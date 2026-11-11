@@ -13,6 +13,7 @@ import json
 import argparse
 import logging
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Dict, Any
 import sqlite3
 
@@ -33,14 +34,14 @@ def create_backup(
     output_dir: str = "backups",
 ) -> Dict[str, Any]:
     os.makedirs(output_dir, exist_ok=True)
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = utc_now().strftime("%Y%m%d_%H%M%S")
     backup_subdir = os.path.join(output_dir, f"backup_{timestamp}")
     os.makedirs(backup_subdir, exist_ok=True)
 
     logger.info(f"Initiating full backup to '{backup_subdir}'...")
 
     manifest: Dict[str, Any] = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": utc_now().isoformat() + "Z",
         "backup_id": f"backup_{timestamp}",
         "database_type": "sqlite" if db_path.endswith(".db") else "postgresql",
         "artifacts": {},

@@ -177,7 +177,7 @@ async def export_job_json(
         export_data = {
             "job_id": job_id,
             "exported_at": metrics.generated_at.isoformat(),
-            "metrics": metrics.dict(),
+            "metrics": metrics.model_dump(),
             "results": [
                 {
                     "result_id": r.id,

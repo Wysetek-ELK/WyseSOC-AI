@@ -98,8 +98,8 @@ async def get_investigation(
         event_type=inc.event_type if inc else None,
         source_ip=inc.source_ip if inc else None,
         reporting_device=inc.reporting_device if inc else None,
-        questions=[InvestigationQuestionResponse.from_orm(q) for q in inv.questions],
-        evidence_items=[InvestigationEvidenceResponse.from_orm(e) for e in inv.evidence_items],
+        questions=[InvestigationQuestionResponse.model_validate(q) for q in inv.questions],
+        evidence_items=[InvestigationEvidenceResponse.model_validate(e) for e in inv.evidence_items],
         ai_assurance=ai_assurance,
     )
 
@@ -142,8 +142,8 @@ async def get_investigation_by_incident(
         event_type=inc.event_type if inc else None,
         source_ip=inc.source_ip if inc else None,
         reporting_device=inc.reporting_device if inc else None,
-        questions=[InvestigationQuestionResponse.from_orm(q) for q in inv.questions],
-        evidence_items=[InvestigationEvidenceResponse.from_orm(e) for e in inv.evidence_items],
+        questions=[InvestigationQuestionResponse.model_validate(q) for q in inv.questions],
+        evidence_items=[InvestigationEvidenceResponse.model_validate(e) for e in inv.evidence_items],
         ai_assurance=ai_assurance,
     )
 
@@ -215,7 +215,7 @@ async def add_investigation_question(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return InvestigationQuestionResponse.from_orm(q)
+    return InvestigationQuestionResponse.model_validate(q)
 
 
 @router.post("/questions/{question_id}/answer", response_model=InvestigationQuestionResponse)
@@ -230,7 +230,7 @@ async def answer_investigation_question(
     if not q:
         raise HTTPException(status_code=404, detail="Question not found")
 
-    return InvestigationQuestionResponse.from_orm(q)
+    return InvestigationQuestionResponse.model_validate(q)
 
 
 @router.post("/{id}/evidence", response_model=InvestigationEvidenceResponse)
@@ -252,7 +252,7 @@ async def attach_investigation_evidence(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return InvestigationEvidenceResponse.from_orm(ev)
+    return InvestigationEvidenceResponse.model_validate(ev)
 
 
 @router.post("/{id}/verdict")

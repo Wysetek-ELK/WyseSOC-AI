@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any
 from sqlalchemy import String, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,8 +29,8 @@ class LearningRecord(Base):
     answered_questions: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list)
 
     verification_status: Mapped[str] = mapped_column(String(32), default="PENDING_REVIEW", index=True)  # PENDING_REVIEW, VERIFIED, REJECTED, DISPUTED
-    feedback_timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    feedback_timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     rule: Mapped["Rule"] = relationship("Rule")

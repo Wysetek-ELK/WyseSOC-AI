@@ -1,0 +1,27 @@
+{
+  "mode": "OFFLINE_CONTRACT_TESTS",
+  "timestamp_utc": "2026-11-11T07:58:47Z",
+  "overall_status": "PASSED",
+  "checks": {
+    "server1_server2_contract": {
+      "status": "PASSED",
+      "exit_code": 0,
+      "summary": "6 passed, 5 deselected in 5.84s"
+    },
+    "app_postgresql_contract": {
+      "status": "PASSED",
+      "exit_code": 0,
+      "summary": "6 passed in 1.75s"
+    },
+    "app_redis_celery_contract": {
+      "status": "PASSED",
+      "exit_code": 0,
+      "summary": "2 passed in 0.53s"
+    },
+    "app_fortisiem_contract": {
+      "status": "PASSED",
+      "exit_code": 0,
+      "summary": "18 passed in 11.28s"
+    }
+  }
+}

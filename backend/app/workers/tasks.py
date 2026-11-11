@@ -3,6 +3,7 @@ import logging
 import random
 import time
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Dict, Any, Optional
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,7 +39,7 @@ async def _async_record_task_state(
             res = await session.execute(stmt)
             task_rec = res.scalar_one_or_none()
 
-            now = datetime.utcnow()
+            now = utc_now()
             if task_rec:
                 task_rec.status = status
                 task_rec.retry_count = retry_count

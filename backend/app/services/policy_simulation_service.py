@@ -14,6 +14,7 @@ import uuid
 import json
 import logging
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, desc
@@ -265,9 +266,9 @@ class PolicySimulationService:
                 "split_partition": split_partition.value if hasattr(split_partition, "value") else split_partition,
                 "after_epoch": after_epoch,
                 "before_epoch": before_epoch,
-                "evaluated_at": datetime.utcnow().isoformat(),
+                "evaluated_at": utc_now().isoformat(),
             },
-            started_at=datetime.utcnow(),
+            started_at=utc_now(),
         )
         self.db.add(run_record)
         await self.db.flush()
@@ -326,7 +327,7 @@ class PolicySimulationService:
         if total_cases == 0:
             run_record.status = "COMPLETED"
             run_record.validation_state = EvaluationValidationState.INSUFFICIENT_DATA.value
-            run_record.completed_at = datetime.utcnow()
+            run_record.completed_at = utc_now()
             run_record.metrics = {
                 "message": f"Zero historical incidents found in dataset. Empirical evaluation requires at least {self.MIN_HISTORICAL_SAMPLES} samples.",
                 "funnel": {
@@ -689,7 +690,7 @@ class PolicySimulationService:
                     ).hexdigest(),
                 },
                 escalation_reason=str(trust_res.escalation_reason)[:256] if trust_res.escalation_reason else None,
-                created_at=datetime.utcnow(),
+                created_at=utc_now(),
             )
             self.db.add(result_record)
 
@@ -781,7 +782,7 @@ class PolicySimulationService:
                 run_record.validation_state = EvaluationValidationState.INCONCLUSIVE.value
 
         run_record.status = "COMPLETED"
-        run_record.completed_at = datetime.utcnow()
+        run_record.completed_at = utc_now()
         await self.db.commit()
         await self.db.refresh(run_record)
         return run_record
@@ -1242,5 +1243,5 @@ class PolicySimulationService:
             "regressed_cases": reg_summary.get("regressed_cases", []),
             "improved_cases": reg_summary.get("improved_cases", []),
             "per_incident_results": per_incident_results,
-            "evaluated_at": datetime.utcnow().isoformat(),
+            "evaluated_at": utc_now().isoformat(),
         }

@@ -231,9 +231,12 @@ export default function AgentMissionControlPage() {
             <span className="text-slate-400 font-mono text-[11px]">
               Evaluated: <strong className="text-white">{pilotMetrics.operational.incidents_evaluated}</strong> • Backlog:{" "}
               <strong className="text-slate-200">{pilotMetrics.operational.queue_backlog}</strong> • Server 2:{" "}
-              <strong className={pilotMetrics.operational.provider_available ? "text-emerald-300" : "text-rose-300"}>
-                {pilotMetrics.operational.provider_available ? "ONLINE" : "OFFLINE"}
+              <strong className={pilotMetrics.operational.endpoint_provenance === "HTTP_MOCK" ? "text-cyan-300" : pilotMetrics.operational.provider_available ? "text-emerald-300" : "text-rose-300"}>
+                {pilotMetrics.operational.endpoint_provenance === "HTTP_MOCK"
+                  ? "HTTP_MOCK (TEST)"
+                  : pilotMetrics.operational.current_s2_health || (pilotMetrics.operational.provider_available ? "ONLINE" : "OFFLINE")}
               </strong>
+              {pilotMetrics.operational.test_environment ? ` • TEST_ENV=${pilotMetrics.operational.test_environment}` : ""}
             </span>
           </div>
           <Link

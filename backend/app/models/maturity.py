@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any
 from sqlalchemy import String, Text, DateTime, ForeignKey, Integer, Float, Boolean, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -41,8 +42,8 @@ class RuleMaturityEvaluation(Base):
     approval_notes: Mapped[str] = mapped_column(Text, default="")
 
     latest_test_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     # Relationship
     rule: Mapped["Rule"] = relationship("Rule")

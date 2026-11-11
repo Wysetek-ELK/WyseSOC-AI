@@ -33,6 +33,7 @@ from app.models.user import User
 from app.utils.security import get_password_hash
 from app.services.fortisiem_scheduler import fortisiem_scheduler
 from sqlalchemy import select
+from app.utils.datetime_utils import utc_now
 
 
 @asynccontextmanager
@@ -53,23 +54,29 @@ async def lifespan(app: FastAPI):
             else:
                 await conn.run_sync(Base.metadata.create_all)
 
-    # Seed initial administrator if no users exist
+    # Seed initial development administrator ONLY in non-production environments if no users exist
     async with AsyncSessionLocal() as session:
         stmt = select(User).limit(1)
         res = await session.execute(stmt)
         first_user = res.scalar_one_or_none()
         if not first_user:
-            admin_user = User(
-                username="admin",
-                email="admin@ai-verdict.internal",
-                hashed_password=get_password_hash("AdminPassword123!"),
-                full_name="System Administrator",
-                role="Administrator",
-                is_active=True,
-            )
-            session.add(admin_user)
-            await session.commit()
-            print("Default Administrator created (username: admin, default credentials)")
+            if is_prod:
+                print(
+                    "SECURITY NOTICE: No users found in production database. Skipping insecure default admin seed; "
+                    "run 'python -m app.cli create-admin' with an explicit password before first sign-in."
+                )
+            else:
+                admin_user = User(
+                    username="admin",
+                    email="admin@example.com",
+                    hashed_password=get_password_hash("AdminPassword123!"),
+                    full_name="System Administrator",
+                    role="Administrator",
+                    is_active=True,
+                )
+                session.add(admin_user)
+                await session.commit()
+                print("Default Administrator created (username: admin, development environment only)")
 
         # Self-healing migration: Backfill missing incident timestamps for existing records
         try:
@@ -181,7 +188,7 @@ async def lifespan(app: FastAPI):
                             latency_ms=av.get("latency_ms", 1250),
                             is_simulated=av.get("is_simulated", False),
                             executed_by_user=av.get("evaluated_by_user", "system"),
-                            timestamp=inc.created_at or datetime.utcnow(),
+                            timestamp=inc.created_at or utc_now(),
                             details={"verdict": av.get("verdict", "UNKNOWN"), "rule_name": inc.title},
                         )
                     )

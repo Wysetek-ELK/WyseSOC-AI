@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any
 from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey, Integer, JSON, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,8 +15,8 @@ class RulePrompt(Base):
     title: Mapped[str] = mapped_column(String(256), default="")
     active_version_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     # Relationships
     rule: Mapped["Rule"] = relationship("Rule")
@@ -55,7 +56,7 @@ class PromptVersion(Base):
     approved_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationship
     prompt: Mapped["RulePrompt"] = relationship("RulePrompt", back_populates="versions")

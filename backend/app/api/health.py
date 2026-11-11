@@ -11,6 +11,7 @@ from app.database import get_db, check_db_health, is_postgres
 from app.workers.celery_app import is_redis_available, get_queue_depth
 from app.services.gpu_manager import gpu_workload_manager
 from app.services.ai_verdict_service import AIVerdictService
+from app.services.provenance import classify_endpoint_status, get_test_environment_id
 from app.models.incident import Incident
 from app.models.dry_run import DryRunResult
 
@@ -70,12 +71,23 @@ async def health_check(
         if settings.LOCAL_LLM_BASE_URL
         else ""
     )
+    llm_prov = classify_endpoint_status(
+        is_healthy=llm_online,
+        raw_status="ONLINE" if llm_online else "OFFLINE",
+        base_url=settings.LOCAL_LLM_BASE_URL,
+        metrics_available=False,
+        configured_provider="OPENAI_COMPATIBLE",
+    )
     components["local_llm"] = {
         "status": "healthy" if llm_online else "offline",
         "reachable": llm_online,
         "endpoint_configured": bool(settings.LOCAL_LLM_BASE_URL),
         "base_url_redacted": redacted_llm_url,
         "model_name": settings.LOCAL_LLM_MODEL_NAME,
+        "configured_provider": llm_prov["configured_provider"],
+        "endpoint_provenance": llm_prov["endpoint_provenance"],
+        "current_s2_health": llm_prov["current_s2_health"],
+        "gpu_telemetry_verified": llm_prov["gpu_telemetry_verified"],
         "circuit_breaker_state": cb_state,
         "active_concurrent_slots": gpu_telemetry.get("active_requests", 0),
         "max_concurrent_slots": gpu_telemetry.get("max_concurrent_slots", 4),
@@ -101,6 +113,7 @@ async def health_check(
     return {
         "status": overall_status,
         "environment": settings.APP_ENV,
+        "test_environment": get_test_environment_id(),
         "version": settings.VERSION,
         "timestamp": time.time(),
         "components": components,

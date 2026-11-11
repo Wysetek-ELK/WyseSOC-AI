@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 
 from app.models.rule import Rule
 from app.models.prompt import PromptVersion
@@ -335,7 +336,7 @@ class PolicyQualityValidator:
             contract_digest=contract_digest,
             rule_digest=rule_digest,
             archetype_version=archetype_def.version,
-            evaluated_at=datetime.utcnow(),
+            evaluated_at=utc_now(),
         )
 
     # -------------------------------------------------------------------------

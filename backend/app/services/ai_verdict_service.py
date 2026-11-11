@@ -1,6 +1,7 @@
 import time
 import asyncio
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, desc, or_, func
@@ -24,6 +25,7 @@ from app.schemas.compiled_policy import CompilationExecutionMode
 from app.services.policy_compiler_service import PolicyCompilerService
 from app.services.verified_semantic_retrieval_service import VerifiedSemanticRetrievalService
 from app.services.token_budget_service import TokenBudgetService
+from app.services.provenance import classify_execution_provenance
 
 
 class LocalLLMUnavailableError(Exception):
@@ -71,7 +73,7 @@ class VerdictTriageAgent:
         lines = [line for line in existing.split("\n\n") if line.strip() and not line.strip().startswith("[AI Verdict (")]
         lines.append(note_entry)
         inv.analyst_notes = "\n\n".join(lines)
-        inv.updated_at = datetime.utcnow()
+        inv.updated_at = utc_now()
 
     @staticmethod
     async def _assert_lock_held(db: AsyncSession, lock_key: Optional[str], lock_owner_id: Optional[str]) -> None:
@@ -301,6 +303,9 @@ class VerdictTriageAgent:
                     "completion_tokens": 0,
                     "total_tokens": 0,
                     "is_simulated": False,
+                    "execution_provenance": "POLICY_GUARD",
+                    "configured_provider": "POLICY_GUARD",
+                    "test_environment": classify_execution_provenance(model_identifier="POLICY_GUARD")["test_environment"],
                     "validation_status": "POLICY_NOT_APPROVED",
                     "validation_reason_codes": ["POLICY_NOT_APPROVED", "EVIDENCE_CONTRACT_UNVERIFIED"],
                     "is_decisive_accepted": False,
@@ -315,7 +320,7 @@ class VerdictTriageAgent:
                     "reevaluation_attempts": prev_attempts + 1,
                     "rule_name": rule.name if rule else incident.title,
                     "severity": incident.severity,
-                    "evaluated_at": datetime.utcnow().isoformat(),
+                    "evaluated_at": utc_now().isoformat(),
                     "evaluated_by_user": username,
                 }
                 await self._assert_lock_held(self.db, lock_key, lock_owner_id)
@@ -383,6 +388,9 @@ class VerdictTriageAgent:
                 "completion_tokens": 0,
                 "total_tokens": 0,
                 "is_simulated": False,
+                "execution_provenance": "PREFLIGHT_GUARD",
+                "configured_provider": "POLICY_GUARD",
+                "test_environment": classify_execution_provenance(model_identifier="PREFLIGHT_GUARD")["test_environment"],
                 "validation_status": preflight.preflight_status,
                 "validation_reason_codes": ["EVIDENCE_MISSING"] if preflight.critical_missing_fields else ["EVIDENCE_CONTRACT_UNVERIFIED"],
                 "is_decisive_accepted": False,
@@ -400,7 +408,7 @@ class VerdictTriageAgent:
                 "reevaluation_attempts": prev_attempts + 1,
                 "rule_name": rule.name if rule else incident.title,
                 "severity": incident.severity,
-                "evaluated_at": datetime.utcnow().isoformat(),
+                "evaluated_at": utc_now().isoformat(),
                 "evaluated_by_user": username,
             }
             await self._assert_lock_held(self.db, lock_key, lock_owner_id)
@@ -484,6 +492,9 @@ class VerdictTriageAgent:
                 "completion_tokens": 0,
                 "total_tokens": budgeted.breakdown.total_prompt_tokens,
                 "is_simulated": False,
+                "execution_provenance": "TOKEN_BUDGET_GUARD",
+                "configured_provider": "POLICY_GUARD",
+                "test_environment": classify_execution_provenance(model_identifier="TOKEN_BUDGET_GUARD")["test_environment"],
                 "validation_status": "CONTEXT_WINDOW_EXCEEDED",
                 "validation_reason_codes": ["CONTEXT_WINDOW_EXCEEDED"],
                 "is_decisive_accepted": False,
@@ -506,7 +517,7 @@ class VerdictTriageAgent:
                 "reevaluation_attempts": prev_attempts + 1,
                 "rule_name": rule.name if rule else incident.title,
                 "severity": incident.severity,
-                "evaluated_at": datetime.utcnow().isoformat(),
+                "evaluated_at": utc_now().isoformat(),
                 "evaluated_by_user": username,
             }
             await self._assert_lock_held(self.db, lock_key, lock_owner_id)
@@ -780,7 +791,7 @@ class VerdictTriageAgent:
                 optional_enrichment_present=suff.optional_enrichment_present,
                 unsupported_fields_requested=suff.unsupported_fields_requested,
                 contradictions_detected=suff.contradictions_detected,
-                evaluated_at=datetime.utcnow(),
+                evaluated_at=utc_now(),
             ))
 
         self.db.add(VerdictTrustAssessmentRecord(
@@ -806,10 +817,17 @@ class VerdictTriageAgent:
             human_readable_explanation=trust_res.human_readable_explanation,
             model_identifier=verdict.model_identifier,
             is_simulated=verdict.is_simulated,
-            evaluated_at=datetime.utcnow(),
+            evaluated_at=utc_now(),
         ))
 
         # 6. Format Structured Authoritative Verdict (P2-REQ-07, P3-REQ-01, P3-REQ-07)
+        verdict_prov = classify_execution_provenance(
+            is_simulated=bool(verdict.is_simulated),
+            model_identifier=verdict.model_identifier,
+            validation_status=final_validation_status,
+            source_type=(pilot_context.get("source_type") if pilot_context else "LIVE"),
+            base_url=settings.LOCAL_LLM_BASE_URL,
+        )
         verdict_data = {
             "incident_id": incident.incident_id,
             "proposed_verdict": val_res.proposed_verdict,
@@ -828,6 +846,9 @@ class VerdictTriageAgent:
             "total_tokens": t_tokens,
             "token_usage_source": token_usage_source,
             "is_simulated": verdict.is_simulated,
+            "execution_provenance": verdict_prov["execution_provenance"],
+            "configured_provider": verdict_prov["configured_provider"],
+            "test_environment": verdict_prov["test_environment"],
             "validation_status": final_validation_status,
             "validation_reason_codes": final_reason_codes,
             "is_decisive_accepted": final_is_decisive,
@@ -873,7 +894,7 @@ class VerdictTriageAgent:
             "replay_signature": val_res.replay_signature,
             "rule_name": rule.name if rule else incident.title,
             "severity": incident.severity,
-            "evaluated_at": datetime.utcnow().isoformat(),
+            "evaluated_at": utc_now().isoformat(),
             "evaluated_by_user": username,
             "pilot_mode": pilot_context.get("mode") if pilot_context else None,
             "pilot_id": pilot_context.get("pilot_id") if pilot_context else None,
@@ -899,7 +920,7 @@ class VerdictTriageAgent:
             latency_ms=verdict.latency_ms,
             is_simulated=verdict.is_simulated,
             executed_by_user=username,
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             details={
                 "verdict": final_auth_verdict,
                 "proposed_verdict": val_res.proposed_verdict,
@@ -970,6 +991,9 @@ class VerdictTriageAgent:
                 "latency_ms": verdict.latency_ms,
                 "model": verdict.model_identifier,
                 "is_simulated": verdict.is_simulated,
+                "execution_provenance": verdict_prov["execution_provenance"],
+                "configured_provider": verdict_prov["configured_provider"],
+                "test_environment": verdict_prov["test_environment"],
             },
         )
         self.db.add(audit)

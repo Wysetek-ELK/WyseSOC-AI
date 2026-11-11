@@ -15,13 +15,13 @@ APP_ENV=production
 
 # 2. Secret Key (MANDATORY: Minimum 32 cryptographically random characters)
 # Generate with: openssl rand -base64 32
-SECRET_KEY="c2VjdXJlLWVudGVycHJpc2Utc29jLWFpLXZlcmRpY3QtMjAyNi1wcm9kdWN0aW9u"
+SECRET_KEY=<generate_via_openssl_rand_base64_32>
 
 # 3. Model Fallback Guard (Must remain false in production)
 LOCAL_LLM_ALLOW_MOCK_FALLBACK=false
 
 # 4. Outbound IP / Host Configuration (Optional override for zero-egress resolution)
-SERVER1_OUTBOUND_IP=10.0.10.15
+SERVER1_OUTBOUND_IP=<SERVER_1_OUTBOUND_IP>
 SERVER1_HOST=soc-server1.corp.internal
 
 # 5. FortiSIEM Connection

@@ -61,6 +61,10 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
             detail: {
               is_healthy: nextS2Status === "ONLINE",
               model: live.server_2?.details?.model_name,
+              endpoint_provenance: (live.server_2?.details as any)?.endpoint_provenance,
+              current_s2_health: (live.server_2?.details as any)?.current_s2_health,
+              gpu_telemetry_verified: (live.server_2?.details as any)?.gpu_telemetry_verified,
+              test_environment: (live.server_2?.details as any)?.test_environment,
             },
           })
         );

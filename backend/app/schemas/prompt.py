@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PromptVersionResponse(BaseModel):
@@ -27,8 +27,7 @@ class PromptVersionResponse(BaseModel):
     approved_at: Optional[datetime] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RulePromptResponse(BaseModel):
@@ -43,8 +42,7 @@ class RulePromptResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PromptVersionCreate(BaseModel):
@@ -97,5 +95,4 @@ class RulePromptSummaryItem(BaseModel):
     last_validated_date: Optional[datetime] = None
     revalidation_required: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

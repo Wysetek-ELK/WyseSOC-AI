@@ -23,6 +23,7 @@ from app.schemas.pilot import (
 )
 from app.services.historical_eligibility_service import HistoricalEligibilityService
 from app.services.pilot_service import PilotService
+from app.services.provenance import classify_execution_provenance
 from app.services.verdict_trustworthiness_engine import VerdictTrustworthinessEngine
 
 router = APIRouter(prefix="/pilot", tags=["Controlled SOC Pilot"])
@@ -205,9 +206,24 @@ async def run_pilot_batch(
     return await svc.run_pilot_batch(req, actor=current_user.username)
 
 
-def _to_eval_response(r: PilotEvaluationRecord) -> PilotEvaluationResponse:
+def _to_eval_response(
+    r: PilotEvaluationRecord,
+    prov_details: Optional[Dict[str, Any]] = None,
+) -> PilotEvaluationResponse:
     eff_t, hist_t, _, _ = VerdictTrustworthinessEngine.cap_uncalibrated_trust_score(
         r.trust_score, is_calibrated=bool(r.is_calibrated)
+    )
+    det = prov_details or {}
+    prov = classify_execution_provenance(
+        is_simulated=bool(r.is_simulated),
+        model_identifier=r.model_identifier,
+        validation_status=r.validation_status,
+        eligibility_status=r.eligibility_status,
+        source_type=r.source_type,
+        error_message=r.error_message,
+        recorded_provenance=det.get("execution_provenance"),
+        recorded_test_env=det.get("test_environment"),
+        is_historical_context=(str(r.source_type or "").upper() == "HISTORICAL"),
     )
     return PilotEvaluationResponse(
         id=r.id,
@@ -239,6 +255,10 @@ def _to_eval_response(r: PilotEvaluationRecord) -> PilotEvaluationResponse:
         policy_digest=r.policy_digest,
         model_identifier=r.model_identifier,
         is_simulated=r.is_simulated,
+        configured_provider=det.get("configured_provider") or prov["configured_provider"],
+        execution_provenance=prov["execution_provenance"],
+        historical_execution_provenance=prov["historical_execution_provenance"],
+        test_environment=prov["test_environment"],
         latency_ms=r.latency_ms,
         prompt_tokens=r.prompt_tokens,
         completion_tokens=r.completion_tokens,
@@ -272,7 +292,36 @@ async def list_pilot_evaluations(
     if not include_simulated:
         q = q.where(PilotEvaluationRecord.is_simulated == False)
     res = await db.execute(q)
-    return [_to_eval_response(r) for r in res.scalars().all()]
+    records = list(res.scalars().all())
+    prov_map: Dict[str, Dict[str, Any]] = {}
+    rec_ids = [r.id for r in records]
+    if rec_ids:
+        p_res = await db.execute(
+            select(AuditLog)
+            .where(
+                AuditLog.resource_type == "PILOT_EVALUATION",
+                AuditLog.resource_id.in_(rec_ids),
+            )
+            .order_by(desc(AuditLog.created_at))
+        )
+        for alog in p_res.scalars().all():
+            if alog.resource_id and alog.resource_id not in prov_map and isinstance(alog.details, dict):
+                prov_map[alog.resource_id] = alog.details
+    return [_to_eval_response(r, prov_map.get(r.id)) for r in records]
+
+
+async def _load_eval_prov(db: AsyncSession, eval_id: str) -> Optional[Dict[str, Any]]:
+    res = await db.execute(
+        select(AuditLog)
+        .where(
+            AuditLog.resource_type == "PILOT_EVALUATION",
+            AuditLog.resource_id == eval_id,
+        )
+        .order_by(desc(AuditLog.created_at))
+        .limit(1)
+    )
+    alog = res.scalar_one_or_none()
+    return alog.details if alog and isinstance(alog.details, dict) else None
 
 
 @router.post("/evaluations/{evaluation_id}/feedback", response_model=PilotEvaluationResponse)
@@ -288,7 +337,7 @@ async def submit_pilot_analyst_feedback(
         r = await svc.record_analyst_feedback(evaluation_id, req, analyst_username=current_user.username)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    return _to_eval_response(r)
+    return _to_eval_response(r, await _load_eval_prov(db, r.id))
 
 
 @router.post("/evaluations/{evaluation_id}/supervisor-verify", response_model=PilotEvaluationResponse)
@@ -304,7 +353,7 @@ async def supervisor_verify_pilot_feedback(
         r = await svc.supervisor_verify_feedback(evaluation_id, req, supervisor_username=current_user.username)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return _to_eval_response(r)
+    return _to_eval_response(r, await _load_eval_prov(db, r.id))
 
 
 @router.get("/metrics")

@@ -1,5 +1,6 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from app.utils.datetime_utils import utc_now
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
 from app.models.token_usage import TokenUsageRecord
@@ -48,7 +49,7 @@ class TokenAnalyticsService:
             latency_ms=max(0, int(latency_ms)),
             is_simulated=is_simulated,
             executed_by_user=executed_by_user,
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             details=details or {},
         )
         self.db.add(record)
@@ -65,7 +66,7 @@ class TokenAnalyticsService:
         """
         Calculates comprehensive bifurcated token analytics across all processes.
         """
-        cutoff = datetime.utcnow() - timedelta(days=window_days)
+        cutoff = utc_now() - timedelta(days=window_days)
 
         # Base filter
         filters = [TokenUsageRecord.timestamp >= cutoff]

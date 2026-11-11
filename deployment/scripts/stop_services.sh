@@ -7,6 +7,8 @@ set -euo pipefail
 
 echo "Stopping AI Verdict Services..."
 sudo systemctl stop ai-verdict-frontend
+sudo systemctl stop ai-verdict-scheduler
+sudo systemctl stop ai-verdict-worker
 sudo systemctl stop ai-verdict-backend
 
 echo "AI Verdict services stopped successfully."

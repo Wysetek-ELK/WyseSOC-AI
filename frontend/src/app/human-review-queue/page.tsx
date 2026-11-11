@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { api, InvestigationListItem, InvestigationDetail, User } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
+import { formatExecutionProvenanceBadge } from "@/lib/provenance";
 
 export default function HumanReviewQueuePage() {
   const { user } = useApp();
@@ -626,9 +627,35 @@ export default function HumanReviewQueuePage() {
                           Policy: v{a.policy_version_number}
                         </span>
                       )}
-                      <span className={`px-1.5 py-0.5 rounded border ${a.is_simulated ? "bg-amber-950 text-amber-300 border-amber-800" : "bg-emerald-950 text-emerald-300 border-emerald-800"}`}>
-                        {a.is_simulated ? "SIMULATED" : "LIVE"} • {a.model_identifier || "Unknown"}
-                      </span>
+                      {(() => {
+                        const pb = formatExecutionProvenanceBadge({
+                          executionProvenance: a.execution_provenance,
+                          historicalProvenance: a.historical_execution_provenance,
+                          isSimulated: a.is_simulated,
+                          validationStatus: a.validation_status,
+                          modelIdentifier: a.model_identifier,
+                          currentS2Health: a.current_s2_health,
+                        });
+                        return (
+                          <span
+                            title={pb.sublabel}
+                            className={`px-1.5 py-0.5 rounded border ${pb.className}`}
+                            data-testid="drawer-provenance-badge"
+                          >
+                            {pb.label} • {a.model_identifier || "Unknown"}
+                          </span>
+                        );
+                      })()}
+                      {a.current_s2_health && (
+                        <span className="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-700">
+                          S2 Now: {a.current_s2_health}
+                        </span>
+                      )}
+                      {a.test_environment && (
+                        <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                          {a.test_environment}
+                        </span>
+                      )}
                     </div>
                   </div>
 

@@ -20,6 +20,7 @@ import json
 import argparse
 import logging
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Dict, Any, List, Optional, Tuple
 import sqlite3
 import sqlalchemy as sa
@@ -69,7 +70,7 @@ def compute_sha256(filepath: str) -> str:
 def create_pre_migration_backup(sqlite_path: str, backup_dir: str) -> Tuple[str, str]:
     """Creates a timestamped snapshot backup of the source SQLite database."""
     os.makedirs(backup_dir, exist_ok=True)
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = utc_now().strftime("%Y%m%d_%H%M%S")
     base_name = os.path.basename(sqlite_path)
     backup_filename = f"{base_name}.pre_migration_backup_{timestamp}"
     backup_path = os.path.join(backup_dir, backup_filename)
@@ -112,7 +113,7 @@ def run_migration(
     Executes the SQLite to PostgreSQL migration workflow.
     """
     report: Dict[str, Any] = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": utc_now().isoformat() + "Z",
         "sqlite_path": sqlite_path,
         "pg_url_redacted": pg_url.split("@")[-1] if "@" in pg_url else pg_url,
         "dry_run": dry_run,
@@ -129,7 +130,7 @@ def run_migration(
     report["backup"] = {
         "path": backup_path,
         "sha256": backup_hash,
-        "created_at": datetime.utcnow().isoformat() + "Z",
+        "created_at": utc_now().isoformat() + "Z",
     }
 
     # Step 2: Read source table counts

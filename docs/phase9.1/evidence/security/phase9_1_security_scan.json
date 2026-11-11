@@ -1,0 +1,60 @@
+{
+  "gitleaks_total": 18,
+  "ast_cwe_checks": {
+    "backend/app/main.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    },
+    "backend/app/services/provenance.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    },
+    "backend/app/utils/datetime_utils.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    },
+    "backend/app/services/pilot_service.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    },
+    "backend/app/services/investigation_service.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    },
+    "backend/app/api/pilot.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    },
+    "backend/app/api/health.py": {
+      "status": "PASSED",
+      "dangerous_calls": []
+    }
+  },
+  "frontend_checks": {
+    "frontend/src/lib/provenance.ts": {
+      "uses_dangerouslySetInnerHTML": false,
+      "uses_eval": false,
+      "contains_hardcoded_admin_default_pass": false
+    },
+    "frontend/src/components/layout/Header.tsx": {
+      "uses_dangerouslySetInnerHTML": false,
+      "uses_eval": false,
+      "contains_hardcoded_admin_default_pass": false
+    },
+    "frontend/src/components/layout/Sidebar.tsx": {
+      "uses_dangerouslySetInnerHTML": false,
+      "uses_eval": false,
+      "contains_hardcoded_admin_default_pass": false
+    },
+    "frontend/src/components/pilot/PilotControlAndDashboard.tsx": {
+      "uses_dangerouslySetInnerHTML": false,
+      "uses_eval": false,
+      "contains_hardcoded_admin_default_pass": false
+    },
+    "frontend/src/app/login/page.tsx": {
+      "uses_dangerouslySetInnerHTML": false,
+      "uses_eval": false,
+      "contains_hardcoded_admin_default_pass": false
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any
 from sqlalchemy import String, DateTime, Boolean, ForeignKey, Integer, Float, JSON, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -29,7 +30,7 @@ class RuleIntelligenceSnapshot(Base):
     semantics_payload: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     rule_digest: Mapped[str] = mapped_column(String(64), default="")
     
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     rule = relationship("Rule")

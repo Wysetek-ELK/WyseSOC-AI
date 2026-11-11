@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any
 from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey, Integer, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -25,7 +26,7 @@ class DryRunConfig(Base):
     dataset_filters: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
     created_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     rule: Mapped[Optional["Rule"]] = relationship("Rule")
@@ -51,7 +52,7 @@ class DryRunJob(Base):
     # Error message if failed
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationships
@@ -88,7 +89,7 @@ class DryRunResult(Base):
     # Critical isolation flag
     is_simulated: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     job: Mapped["DryRunJob"] = relationship("DryRunJob", back_populates="results")

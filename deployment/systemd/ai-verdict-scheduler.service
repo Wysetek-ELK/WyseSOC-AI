@@ -1,7 +1,7 @@
 [Unit]
 Description=AI Verdict Celery Beat Scheduler Service
-After=network.target postgresql.service redis.service ai-verdict-worker.service
-Wants=postgresql.service redis.service
+After=network.target postgresql.service redis-server.service ai-verdict-worker.service
+Wants=postgresql.service redis-server.service
 
 [Service]
 Type=simple

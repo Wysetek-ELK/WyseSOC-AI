@@ -165,6 +165,10 @@ class PilotEvaluationResponse(BaseModel):
     policy_digest: Optional[str] = None
     model_identifier: str
     is_simulated: bool
+    configured_provider: str = "OPENAI_COMPATIBLE"
+    execution_provenance: str = "LIVE_PROVIDER"
+    historical_execution_provenance: Optional[str] = None
+    test_environment: Optional[str] = None
     latency_ms: int
     prompt_tokens: int
     completion_tokens: int

@@ -3,6 +3,7 @@ import json
 import asyncio
 import logging
 from datetime import datetime, timezone
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,6 +20,7 @@ from app.models.incident import Incident
 from app.models.token_usage import TokenUsageRecord
 from app.api.deps import get_current_user
 from app.services.llm_config_service import LLMConfigService
+from app.services.provenance import classify_endpoint_status
 from app.schemas.chat import (
     ChatMessageItem,
     ChatRequest,
@@ -86,6 +88,13 @@ async def get_chat_llm_status(
     except Exception as exc:
         status_msg = f"Cannot reach Server 2 ({type(exc).__name__}: {str(exc)})"
 
+    prov = classify_endpoint_status(
+        is_healthy=is_online,
+        raw_status="ONLINE" if is_online else "OFFLINE",
+        base_url=base_url,
+        metrics_available=False,
+        configured_provider="OPENAI_COMPATIBLE",
+    )
     return ChatStatusResponse(
         is_online=is_online,
         host=parsed["host"],
@@ -96,6 +105,11 @@ async def get_chat_llm_status(
         available_models=available_models,
         latency_ms=latency_ms,
         status_message=status_msg,
+        configured_provider=prov["configured_provider"],
+        endpoint_provenance=prov["endpoint_provenance"],
+        current_s2_health=prov["current_s2_health"],
+        gpu_telemetry_verified=prov["gpu_telemetry_verified"],
+        test_environment=prov["test_environment"],
     )
 
 
@@ -210,7 +224,7 @@ async def _record_chat_token_usage(
             latency_ms=int(latency_ms),
             is_simulated=False,
             executed_by_user=username,
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             details={
                 "role": "SOC AI Chatbot",
                 "attached_incident": bool(attached_incident_data),

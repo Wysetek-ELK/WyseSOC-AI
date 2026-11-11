@@ -17,7 +17,7 @@ import { useApp } from "@/context/AppContext";
 
 export function Header() {
   const router = useRouter();
-  const { user, logout, blindReviewMode, setBlindReviewMode, theme, toggleTheme } = useApp();
+  const { user, isLoading, logout, blindReviewMode, setBlindReviewMode, theme, toggleTheme } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
@@ -32,10 +32,15 @@ export function Header() {
         return "bg-rose-950/70 text-rose-300 border-rose-800/60";
       case "SOC Analyst":
         return "bg-cyan-950/70 text-cyan-300 border-cyan-800/60";
+      case "Read-Only Viewer":
+        return "bg-amber-950/70 text-amber-300 border-amber-800/60";
       default:
         return "bg-slate-800 text-slate-300 border-slate-700";
     }
   };
+
+  const displayName = user ? user.username : isLoading ? "Verifying..." : "Guest";
+  const displayRole = user?.role ? user.role : isLoading ? "SYNCING" : "UNAUTHENTICATED";
 
   return (
     <header className="flex h-12 w-full items-center justify-between border-b border-slate-800 bg-slate-950/90 px-3.5 backdrop-blur-md">
@@ -88,15 +93,16 @@ export function Header() {
         {/* User Profile & Role */}
         <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
           <div className="flex flex-col text-right">
-            <span className="text-xs font-semibold text-slate-200 leading-none">
-              {user ? user.username : "Analyst"}
+            <span className="text-xs font-semibold text-slate-200 leading-none" data-testid="header-user-name">
+              {displayName}
             </span>
             <span
+              data-testid="header-user-role"
               className={`mt-0.5 inline-block self-end rounded border px-1 py-0.2 text-[9px] font-mono tracking-wider uppercase leading-none ${getRoleBadge(
-                user?.role || "SOC Analyst"
+                displayRole
               )}`}
             >
-              {user?.role || "Analyst"}
+              {displayRole}
             </span>
           </div>
 

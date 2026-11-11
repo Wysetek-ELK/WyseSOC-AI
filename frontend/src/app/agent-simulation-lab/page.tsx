@@ -36,7 +36,12 @@ export default function AgentSimulationLabPage() {
   const [launching, setLaunching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [llmStatus, setLlmStatus] = useState<{ is_healthy: boolean; model?: string; latency_ms?: number } | null>(null);
+  const [llmStatus, setLlmStatus] = useState<{
+    is_healthy: boolean;
+    model?: string;
+    latency_ms?: number;
+    endpoint_provenance?: string;
+  } | null>(null);
 
   // Form State
   const [name, setName] = useState("Dry-Run Simulation Replay");
@@ -152,7 +157,9 @@ export default function AgentSimulationLabPage() {
             <Server className={`w-3 h-3 ${llmStatus?.is_healthy ? "text-emerald-400" : "text-amber-400"}`} />
             <span>
               Server 2 LLM:{" "}
-              {llmStatus?.is_healthy ? (
+              {llmStatus?.endpoint_provenance === "HTTP_MOCK" ? (
+                <strong className="text-cyan-300">HTTP_MOCK ({llmStatus.model || "Test Endpoint"})</strong>
+              ) : llmStatus?.is_healthy ? (
                 <strong className="text-emerald-400">Connected ({llmStatus.model || "Qwen 2.5 7B"})</strong>
               ) : (
                 <strong className="text-foreground">Disconnected (Phase 3 Guard)</strong>
@@ -255,7 +262,7 @@ export default function AgentSimulationLabPage() {
                   className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary font-mono text-[11px]"
                 >
                   <option value="OPENAI_COMPATIBLE">
-                    OPENAI_COMPATIBLE (Server 2 GPU Node — {llmStatus?.is_healthy ? "Live Connected" : "vLLM Node"})
+                    OPENAI_COMPATIBLE ({llmStatus?.endpoint_provenance === "HTTP_MOCK" ? "HTTP_MOCK Test Endpoint" : llmStatus?.is_healthy ? "Server 2 Configured Endpoint — Online" : "Server 2 vLLM Node"})
                   </option>
                   <option value="SIMULATED">SIMULATED (Deterministic Heuristics - Fallback)</option>
                   <option value="DISABLED">DISABLED (Safe Provider Default)</option>

@@ -1,9 +1,10 @@
 {
   "metadata": {
     "project": "AI Verdict \u2014 Enterprise Agentic SOC Intelligence Platform",
-    "updated_at": "2026-11-11T10:50:00+05:30",
-    "git_commit": "cefe4ad+phase8.2",
-    "architecture_version": "AIS 2.1 + Audit Remediation v2.2.1 + Phase 8.1/8.2 Hardening",
+    "updated_at": "2026-11-11T14:00:00+05:30",
+    "git_commit": "8b91592+phase9.1",
+    "architecture_version": "AIS 2.1 + Audit Remediation v2.2.1 + Phase 9/9.1 Controlled SOC Pilot Readiness",
+    "phase_baseline": "Phase 9.1 Final Development Closure & Controlled SOC Pilot Readiness Baseline",
     "weighting_rule": "Unweighted criteria ratio per feature (satisfied_impl / applicable_impl; verified_acc / applicable_acc); NOT_APPLICABLE criteria excluded from denominator with explicit justification. Module and overall percentages sum raw criteria across features."
   },
   "summary": {
@@ -1332,7 +1333,9 @@
       "completion_pct": 100.0,
       "verification_pct": 100.0,
       "frontend_files": [
-        "frontend/src/app/governance-access/page.tsx"
+        "frontend/src/app/governance-access/page.tsx",
+        "frontend/src/app/login/page.tsx",
+        "frontend/src/context/AppContext.tsx"
       ],
       "backend_files": [
         "backend/app/api/auth.py",
@@ -1341,6 +1344,7 @@
         "backend/app/services/audit_service.py",
         "backend/app/utils/security.py",
         "backend/app/config.py",
+        "backend/app/main.py",
         "backend/app/api/incidents.py"
       ],
       "test_files": [
@@ -1348,17 +1352,22 @@
         "backend/tests/test_phase1_security_controls.py",
         "backend/tests/test_audit_remediations.py",
         "backend/tests/test_phase8_1_validation.py",
-        "backend/tests/test_phase8_2_validation.py"
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py"
       ],
       "evidence_files": [
         "backend/app/utils/security.py",
         "backend/app/services/audit_service.py",
         "docs/phase8.1/PHASE_8_1_SECURITY_VALIDATION.md",
         "docs/phase8.2/PHASE_8_2_FRONTEND_SECURITY.md",
-        "docs/phase8.2/evidence/security/governor_security_scan.txt"
+        "docs/phase8.2/evidence/security/governor_security_scan.txt",
+        "docs/phase9.1/PHASE_9_1_SECURITY_REVIEW.md",
+        "docs/phase9.1/evidence/security/gitleaks_scan.json",
+        "docs/phase9.1/evidence/security/phase9_1_security_scan.json"
       ],
       "evidence_notes": [
-        "Bcrypt/PyJWT auth, admin approval gate, Viewer 403 block on POST /incidents/{id}/ai-verdict (P8.1-DEF-005) & POST /prompts/rule/{rule_id}/validate-quality vs GET /quality-preview (P8.2-DEF-005), prompt-injection defense, GT isolation, and tamper-evident AuditLog verified."
+        "Bcrypt/PyJWT auth, admin approval gate, Viewer 403 block on POST /incidents/{id}/ai-verdict (P8.1-DEF-005) & POST /prompts/rule/{rule_id}/validate-quality vs GET /quality-preview (P8.2-DEF-005), APP_ENV=production default-admin seed guard, login credential removal, fail-closed auth hydration, 18 verified non-secret gitleaks hits, GT isolation, and tamper-evident AuditLog verified."
       ],
       "remaining_gap": "External SIEM/CEF syslog forwarding of AuditLog depends on deployment environment.",
       "acceptance_criteria": [
@@ -1379,24 +1388,29 @@
       "verification_pct": 100.0,
       "frontend_files": [
         "frontend/src/app/infrastructure/page.tsx",
-        "frontend/src/app/telemetry-hub/page.tsx"
+        "frontend/src/app/telemetry-hub/page.tsx",
+        "frontend/src/lib/provenance.ts"
       ],
       "backend_files": [
         "backend/app/api/health.py",
         "backend/app/services/token_analytics_service.py",
-        "backend/app/services/telemetry_timeline_service.py"
+        "backend/app/services/telemetry_timeline_service.py",
+        "backend/app/services/provenance.py"
       ],
       "test_files": [
         "backend/tests/test_system_health_observability.py",
         "backend/tests/test_telemetry_timeline_and_tokens.py",
-        "backend/tests/test_phase8_2_validation.py"
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase9_1_hardening.py"
       ],
       "evidence_files": [
         "backend/app/services/telemetry_timeline_service.py",
-        "docs/phase8.2/PHASE_8_2_FRONTEND_SECURITY.md"
+        "backend/app/services/provenance.py",
+        "docs/phase8.2/PHASE_8_2_FRONTEND_SECURITY.md",
+        "docs/phase9.1/PHASE_9_1_UI_ROLE_PROVENANCE.md"
       ],
       "evidence_notes": [
-        "Live/simulated token bifurcation, per-incident timeline milestone storage, unauthenticated /api/health base_url redaction, and Inference Control DEGRADED (S2 OFFLINE) reporting (P8.2-DEF-006) verified."
+        "Live/simulated token bifurcation, per-incident timeline milestone storage, unauthenticated /api/health base_url redaction, Inference Control DEGRADED (S2 OFFLINE) reporting (P8.2-DEF-006), and Phase 9.1 strict 5-axis provenance + AI_VERDICT_TEST_ENV badging verified."
       ],
       "remaining_gap": "None in local API layer.",
       "acceptance_criteria": [
@@ -1416,22 +1430,27 @@
       "completion_pct": 100.0,
       "verification_pct": 50.0,
       "frontend_files": [
-        "frontend/src/app/infrastructure/page.tsx"
+        "frontend/src/app/infrastructure/page.tsx",
+        "frontend/src/components/system/ServerInfrastructureMonitor.tsx",
+        "frontend/src/lib/provenance.ts"
       ],
       "backend_files": [
         "backend/app/services/system_monitor_service.py",
-        "backend/app/api/system_monitor.py"
+        "backend/app/api/system_monitor.py",
+        "backend/app/services/provenance.py"
       ],
       "test_files": [
         "backend/tests/test_system_monitor.py",
-        "backend/tests/test_phase8_integration.py"
+        "backend/tests/test_phase8_integration.py",
+        "backend/tests/test_phase9_1_hardening.py"
       ],
       "evidence_files": [
         "backend/app/services/system_monitor_service.py",
-        "docs/phase8/PHASE_8_LIVE_LLM_VALIDATION.md"
+        "docs/phase8/PHASE_8_LIVE_LLM_VALIDATION.md",
+        "docs/phase9.1/PHASE_9_1_UI_ROLE_PROVENANCE.md"
       ],
       "evidence_notes": [
-        "Honest OFFLINE/DEGRADED reporting with null GPU metrics when Server 2 unreachable verified in test_system_monitor.py."
+        "Honest OFFLINE/DEGRADED reporting with null GPU metrics when Server 2 unreachable verified in test_system_monitor.py; Phase 9.1 ensures loopback HTTP mocks never report gpu_telemetry_verified=True or synthetic GPU VRAM."
       ],
       "remaining_gap": "Prometheus GPU cache/request scraping against a live Server 2 vLLM /metrics endpoint unverified without hardware host.",
       "acceptance_criteria": [
@@ -1458,7 +1477,8 @@
       "verification_pct": 100.0,
       "frontend_files": [],
       "backend_files": [
-        "backend/tests/conftest.py"
+        "backend/tests/conftest.py",
+        "backend/app/utils/datetime_utils.py"
       ],
       "test_files": [
         "backend/tests/test_audit_remediations.py",
@@ -1468,14 +1488,21 @@
         "backend/tests/test_phase3_integration.py",
         "backend/tests/test_phase4_integration.py",
         "backend/tests/test_phase8_1_validation.py",
-        "backend/tests/test_phase8_2_validation.py"
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_feature_registry.py"
       ],
       "evidence_files": [
         "backend/tests/test_audit_remediations.py",
-        "docs/phase8.2/evidence/test-results/phase8_2_master_test_results.json"
+        "docs/phase8.2/evidence/test-results/phase8_2_master_test_results.json",
+        "docs/phase9.1/PHASE_9_1_WARNING_ANALYSIS.md",
+        "docs/phase9.1/PHASE_9_1_REGRESSION_TESTS.md",
+        "docs/phase9.1/evidence/tests/pytest_backend_full_report.txt",
+        "docs/phase9.1/evidence/logs/warnings_comparison.json"
       ],
       "evidence_notes": [
-        "Full backend pytest suite (283 passed, 0 failed) including Phase 8.1 and Phase 8.2 defect/security/wire suites passed without skipped or relaxed assertions after final edits."
+        "Full backend pytest suite (299 passed, 0 failed, 0 warnings \u2014 100.0% reduction from 6,072 warnings without global suppression) including Phase 8.1, 8.2, 9, and 9.1 defect/security/provenance/wire suites passed without skipped or relaxed assertions."
       ],
       "remaining_gap": "External hardware integration tests (live Server 2 GPU + live FortiSIEM appliance) excluded from offline pytest environment.",
       "acceptance_criteria": [
@@ -1495,14 +1522,17 @@
       "completion_pct": 100.0,
       "verification_pct": 100.0,
       "frontend_files": [
-        "frontend/package.json"
+        "frontend/package.json",
+        "frontend/src/lib/provenance.ts"
       ],
       "backend_files": [],
       "test_files": [
         "frontend/tests/admin-guide.test.mjs",
         "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
         "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
-        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py"
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py"
       ],
       "evidence_files": [
         "frontend/tests/admin-guide.test.mjs",
@@ -1510,10 +1540,12 @@
         "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md",
         "docs/phase8.1/PHASE_8_1_FRONTEND_VALIDATION.md",
         "docs/phase8.2/PHASE_8_2_FRONTEND_SECURITY.md",
-        "docs/phase8.2/evidence/frontend/playwright_p82_summary.json"
+        "docs/phase8.2/evidence/frontend/playwright_p82_summary.json",
+        "docs/phase9.1/PHASE_9_1_REGRESSION_TESTS.md",
+        "docs/phase9.1/evidence/frontend/phase9_1_browser_e2e_report.json"
       ],
       "evidence_notes": [
-        "npx tsc --noEmit, admin-guide tests (7/7), Next.js production build (30 routes), and Playwright Chromium E2E suites (Phase 8, 8.1, & 8.2, 0 console/page errors) all verified passing."
+        "npx tsc --noEmit, admin-guide tests (7/7), Next.js production build (30 routes), and Playwright Chromium E2E suites (Phase 8, 8.1, 8.2, 9, & 9.1, 0 console/page errors) all verified passing."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1608,10 +1640,21 @@
         "docs/phase8.2/PHASE_8_2_REMAINING_WORK.md",
         "docs/phase8.2/PHASE_8_2_FINAL_REPORT.md",
         "docs/phase9/README.md",
-        "docs/phase9/PHASE_9_FINAL_REPORT.md"
+        "docs/phase9/PHASE_9_FINAL_REPORT.md",
+        "docs/phase9.1/README.md",
+        "docs/phase9.1/PHASE_9_1_BASELINE_RECONCILIATION.md",
+        "docs/phase9.1/PHASE_9_1_REGISTRY_CORRECTION.md",
+        "docs/phase9.1/PHASE_9_1_UI_ROLE_PROVENANCE.md",
+        "docs/phase9.1/PHASE_9_1_SECURITY_REVIEW.md",
+        "docs/phase9.1/PHASE_9_1_WARNING_ANALYSIS.md",
+        "docs/phase9.1/PHASE_9_1_DEPLOYMENT_PACKAGE_AUDIT.md",
+        "docs/phase9.1/PHASE_9_1_REGRESSION_TESTS.md",
+        "docs/phase9.1/PHASE_9_1_DEFECT_REGISTER.md",
+        "docs/phase9.1/PHASE_9_1_REMAINING_WORK.md",
+        "docs/phase9.1/PHASE_9_1_FINAL_REPORT.md"
       ],
       "evidence_notes": [
-        "Phase 5/6 architecture docs, Phase 8 & 8.1 docs (preserved unchanged), and complete 18-report Phase 8.2 suite under docs/phase8.2/ authored and path-checked."
+        "Phase 5/6 architecture docs, Phase 8, 8.1, 8.2, & 9 docs (preserved unchanged), and complete 11-report Phase 9.1 closure suite under docs/phase9.1/ authored and path-checked."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1646,10 +1689,12 @@
         "docs/phase8.1/PHASE_8_1_FINAL_REPORT.md",
         "docs/phase8.2/PHASE_8_2_FEATURE_STATUS.md",
         "docs/phase8.2/PHASE_8_2_FINAL_REPORT.md",
-        "docs/phase9/PHASE_9_FEATURE_STATUS.md"
+        "docs/phase9/PHASE_9_FEATURE_STATUS.md",
+        "docs/phase9.1/PHASE_9_1_REGISTRY_CORRECTION.md",
+        "docs/phase9.1/PHASE_9_1_FINAL_REPORT.md"
       ],
       "evidence_notes": [
-        "Automated script + pytest enforcement verify unique IDs, valid repo paths, mathematical percentage rollups, and JSON-to-Markdown parity."
+        "Automated script + pytest enforcement verify unique IDs, valid repo paths, mathematical percentage rollups, accurate Phase 9.1 metadata, and JSON-to-Markdown parity."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1670,7 +1715,9 @@
       "verification_pct": 100.0,
       "frontend_files": [
         "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
-        "frontend/src/app/governance-access/page.tsx"
+        "frontend/src/app/governance-access/page.tsx",
+        "frontend/src/components/layout/Header.tsx",
+        "frontend/src/context/AppContext.tsx"
       ],
       "backend_files": [
         "backend/app/models/pilot.py",
@@ -1681,14 +1728,18 @@
       ],
       "test_files": [
         "backend/tests/test_phase9_audit_and_pilot.py",
-        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py"
       ],
       "evidence_files": [
         "docs/phase9/PHASE_9_SOC_PILOT_DESIGN.md",
-        "docs/phase9/evidence/pilot/pilot_contract_evidence.json"
+        "docs/phase9/evidence/pilot/pilot_contract_evidence.json",
+        "docs/phase9.1/PHASE_9_1_UI_ROLE_PROVENANCE.md",
+        "docs/phase9.1/evidence/frontend/p91_04_viewer_role_consistency_fixed.png"
       ],
       "evidence_notes": [
-        "Defaults to DISABLED mode, versions every change in pilot_config_history + HMAC audit_logs, supports safe disable/rollback, and rejects external SIEM writeback or auto-closure (HTTP 422)."
+        "Defaults to DISABLED mode, versions every change in pilot_config_history + HMAC audit_logs, supports safe disable/rollback, eliminates auth hydration Role Unknown/Header mismatch and checkbox overwrite race, and rejects external SIEM writeback or auto-closure (HTTP 422)."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1756,23 +1807,28 @@
       "completion_pct": 100.0,
       "verification_pct": 100.0,
       "frontend_files": [
-        "frontend/src/app/human-review-queue/page.tsx"
+        "frontend/src/app/human-review-queue/page.tsx",
+        "frontend/src/lib/provenance.ts"
       ],
       "backend_files": [
         "backend/app/schemas/investigation.py",
         "backend/app/services/investigation_service.py",
-        "backend/app/api/investigations.py"
+        "backend/app/api/investigations.py",
+        "backend/app/services/provenance.py"
       ],
       "test_files": [
         "backend/tests/test_phase9_audit_and_pilot.py",
-        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py"
       ],
       "evidence_files": [
         "docs/phase9/PHASE_9_VERDICT_ASSURANCE.md",
-        "docs/phase9/evidence/screenshots/02_human_review_ai_assurance.png"
+        "docs/phase9/evidence/screenshots/02_human_review_ai_assurance.png",
+        "docs/phase9.1/evidence/frontend/p91_02_historical_mock_when_s2_offline.png"
       ],
       "evidence_notes": [
-        "Exposes policy version, proposed vs validated verdict, evidence lists, trust score & calibration status; preserves original AI recommendation on override and enforces independent supervisor verification."
+        "Exposes policy version, proposed vs validated verdict, evidence lists, trust score, historical runtime provenance, & calibration status; preserves original AI recommendation on override and enforces independent supervisor verification."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1795,26 +1851,32 @@
         "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
         "frontend/src/app/verdict-intelligence/page.tsx",
         "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
-        "frontend/src/app/page.tsx"
+        "frontend/src/app/page.tsx",
+        "frontend/src/lib/provenance.ts"
       ],
       "backend_files": [
         "backend/app/api/verdict_intelligence.py",
         "backend/app/services/verdict_trustworthiness_engine.py",
         "backend/app/services/empirical_accuracy_evaluator.py",
-        "backend/app/services/incident_service.py"
+        "backend/app/services/incident_service.py",
+        "backend/app/services/provenance.py"
       ],
       "test_files": [
         "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_phase9_1_hardening.py",
         "backend/tests/e2e_browser/test_phase9_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
         "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
         "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py"
       ],
       "evidence_files": [
         "docs/phase9/PHASE_9_FINAL_CODE_REMEDIATION.md",
-        "docs/phase9/evidence/metrics/issue1_issue2_db_audit.json"
+        "docs/phase9/evidence/metrics/issue1_issue2_db_audit.json",
+        "docs/phase9.1/PHASE_9_1_UI_ROLE_PROVENANCE.md",
+        "docs/phase9.1/evidence/frontend/p91_01_admin_http_mock_provenance.png"
       ],
       "evidence_notes": [
-        "Fixes Issue 1 (stale 50% decision coverage on zero/missing decisive denominator) and Issue 2 (uncalibrated <=6/10 trust cap with preserved historical provenance); separates live vs simulated tokens in Pilot Dashboard."
+        "Fixes Issue 1 (stale 50% decision coverage on zero/missing decisive denominator) and Issue 2 (uncalibrated <=6/10 trust cap with preserved historical provenance); enforces 5-axis runtime vs historical provenance separation, AI_VERDICT_TEST_ENV badging, and live vs simulated token split."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1871,28 +1933,37 @@
       "verification_pct": 50.0,
       "frontend_files": [],
       "backend_files": [
+        ".gitattributes",
         "deployment/env.production.example",
         "deployment/scripts/install_ubuntu.sh",
         "deployment/scripts/verify_server1.sh",
+        "deployment/scripts/deploy_server1.sh",
+        "deployment/scripts/start_services.sh",
+        "deployment/scripts/stop_services.sh",
         "deployment/scripts/rollback_server1.sh",
         "deployment/scripts/install_llm_server.sh",
         "deployment/scripts/setup_server2_gpu.sh",
         "deployment/scripts/smoke_test_server2.py",
+        "deployment/systemd/ai-verdict-worker.service",
         "deployment/systemd/ai-verdict-scheduler.service",
         "deployment/logrotate/ai-verdict",
         "scripts/run_integration_suite.py"
       ],
       "test_files": [
-        "backend/tests/test_phase9_audit_and_pilot.py"
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_phase9_1_hardening.py"
       ],
       "evidence_files": [
         "docs/phase9/PHASE_9_DEPLOYMENT_READINESS.md",
         "docs/phase9/evidence/deployment/deployment_static_validation.json",
         "docs/phase9/evidence/deployment/offline_contract_tests.json",
-        "docs/phase9/evidence/deployment/staging_integration_probes.json"
+        "docs/phase9/evidence/deployment/staging_integration_probes.json",
+        "docs/phase9.1/PHASE_9_1_DEPLOYMENT_PACKAGE_AUDIT.md",
+        "docs/phase9.1/evidence/deployment/deployment_package_audit.json",
+        "docs/phase9.1/evidence/deployment/offline_contract_results.json"
       ],
       "evidence_notes": [
-        "10/10 shell scripts passed bash -n, 4/4 systemd INIs validated, zero hardcoded secrets/IPs, offline contract suite PASSED (32 tests), and smoke_test_server2.py validated against local HTTP mock."
+        "100% Unix LF normalization across deployment/ (+ .gitattributes), unified ai-verdict-scheduler & redis-server systemd dependencies, 4/4 offline contract checks PASSED, and smoke_test_server2.py + LIVE_MODEL_VALIDATION block HTTP mocks from masquerading as live GPU verification."
       ],
       "remaining_gap": "Live Ubuntu Server 1 and Server 2 deployment and staging service verification not yet executed.",
       "acceptance_criteria": [
@@ -1923,15 +1994,19 @@
       ],
       "test_files": [
         "backend/tests/test_phase9_audit_and_pilot.py",
-        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py",
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py"
       ],
       "evidence_files": [
         "docs/phase9/PHASE_9_PERFORMANCE_VALIDATION.md",
         "docs/phase9/evidence/performance/phase9_load_benchmark.json",
-        "docs/phase9/evidence/frontend/phase9_browser_e2e_report.json"
+        "docs/phase9/evidence/frontend/phase9_browser_e2e_report.json",
+        "docs/phase9.1/PHASE_9_1_REGRESSION_TESTS.md",
+        "docs/phase9.1/evidence/frontend/phase9_1_browser_e2e_report.json"
       ],
       "evidence_notes": [
-        "Synthetic SQLite/CPU benchmark across 2,000 rules and 500 incidents completed with 0.0 error rate; 293 backend tests and 4 Chromium browser E2E suites passed offline."
+        "Synthetic SQLite/CPU benchmark across 2,000 rules and 500 incidents completed with 0.0 error rate; 299 backend tests (0 warnings) and all 5 Chromium browser E2E suites passed offline."
       ],
       "remaining_gap": "Live Server 2 vLLM GPU tokens/sec benchmark under production concurrency not yet executed.",
       "acceptance_criteria": [
@@ -1951,5 +2026,5 @@
     }
   ],
   "last_updated": "2026-11-11",
-  "phase_baseline": "Phase 9 Closure & Controlled SOC Pilot Readiness"
+  "phase_baseline": "Phase 9.1 Final Development Closure & Controlled SOC Pilot Readiness Baseline"
 }

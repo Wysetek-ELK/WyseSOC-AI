@@ -22,6 +22,7 @@ Trust Score Mapping (Ordinal 1–10):
 
 import logging
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Dict, Any, List, Optional, Tuple
 
 from app.schemas.verdict_intelligence import (
@@ -300,7 +301,7 @@ class VerdictTrustworthinessEngine:
             human_readable_explanation=" ".join(explanation_lines),
             model_identifier=str(model_output.get("model_identifier", "default-model")),
             is_simulated=bool(model_output.get("is_simulated", False)),
-            evaluated_at=datetime.utcnow(),
+            evaluated_at=utc_now(),
             evidence_sufficiency=sufficiency,
             claim_verification=claim_verification,
         )
@@ -417,7 +418,7 @@ class VerdictTrustworthinessEngine:
             calibrated_probability=None if not calibrated else round(raw_total / 100.0, 4),
             human_readable_explanation=f"Direct computation for {rule_id}. Trust Score: {ordinal}/10.",
             model_identifier="direct-evaluator",
-            evaluated_at=datetime.utcnow(),
+            evaluated_at=utc_now(),
             evidence_sufficiency=suff,
             claim_verification=claim_res,
         )

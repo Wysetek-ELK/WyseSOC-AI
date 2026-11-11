@@ -38,4 +38,9 @@ class ChatStatusResponse(BaseModel):
     available_models: List[str] = Field(default_factory=list)
     latency_ms: Optional[float] = None
     status_message: str
+    configured_provider: str = "OPENAI_COMPATIBLE"
+    endpoint_provenance: str = "OFFLINE"
+    current_s2_health: str = "OFFLINE"
+    gpu_telemetry_verified: bool = False
+    test_environment: Optional[str] = None
 

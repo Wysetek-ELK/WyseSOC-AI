@@ -21,7 +21,7 @@ import socket
 import subprocess
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 from urllib.parse import urlparse
@@ -103,7 +103,7 @@ def run_offline_contract_tests() -> Dict[str, Any]:
     overall = "PASSED" if all(c["status"] == "PASSED" for c in checks.values()) else "FAILED"
     return {
         "mode": "OFFLINE_CONTRACT_TESTS",
-        "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "overall_status": overall,
         "checks": checks,
     }
@@ -136,16 +136,26 @@ async def run_staging_probes(mode: str) -> Dict[str, Any]:
             api_key=settings.LOCAL_LLM_API_KEY,
             timeout=float(settings.LOCAL_LLM_TIMEOUT or 30.0),
         )
-        checks["server1_to_server2"] = {
-            "status": smoke["overall_status"],
-            "classification": smoke["overall_status"],
-            "checks": smoke["checks"],
-        }
+        if smoke.get("execution_provenance") == "HTTP_MOCK":
+            checks["server1_to_server2"] = {
+                "status": "BLOCKED",
+                "classification": "NOT_TESTED",
+                "execution_provenance": "HTTP_MOCK",
+                "reason": "Loopback/mock HTTP endpoint detected; cannot certify LIVE_MODEL_VALIDATION against HTTP_MOCK.",
+                "checks": smoke["checks"],
+            }
+        else:
+            checks["server1_to_server2"] = {
+                "status": smoke["overall_status"],
+                "classification": smoke["overall_status"],
+                "execution_provenance": smoke.get("execution_provenance", "LIVE_PROVIDER"),
+                "checks": smoke["checks"],
+            }
 
     if mode == "LIVE_MODEL_VALIDATION":
         return {
             "mode": mode,
-            "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+            "timestamp_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "overall_status": checks["server1_to_server2"]["status"],
             "checks": checks,
         }
@@ -198,7 +208,7 @@ async def run_staging_probes(mode: str) -> Dict[str, Any]:
     overall = "PASSED" if statuses == {"PASSED"} else ("BLOCKED" if "FAILED" not in statuses else "FAILED")
     return {
         "mode": mode,
-        "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+        "timestamp_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "overall_status": overall,
         "checks": checks,
     }

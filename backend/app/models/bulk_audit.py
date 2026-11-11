@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any
 from sqlalchemy import String, DateTime, Integer, Float, JSON, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,5 +29,5 @@ class BulkQualityAuditJobRecord(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     created_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

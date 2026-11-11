@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class QuestionCreate(BaseModel):
@@ -21,8 +21,7 @@ class InvestigationQuestionResponse(BaseModel):
     created_at: datetime
     answered_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EvidenceAttach(BaseModel):
@@ -41,8 +40,7 @@ class InvestigationEvidenceResponse(BaseModel):
     analyst_rationale: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InvestigationAssignRequest(BaseModel):
@@ -86,6 +84,11 @@ class AIAssuranceSummary(BaseModel):
     historical_validation_status: str = "UNCALIBRATED"
     model_identifier: Optional[str] = None
     is_simulated: bool = False
+    configured_provider: Optional[str] = None
+    execution_provenance: Optional[str] = None
+    historical_execution_provenance: Optional[str] = None
+    current_s2_health: Optional[str] = None
+    test_environment: Optional[str] = None
     pilot_evaluation_id: Optional[str] = None
     pilot_mode: Optional[str] = None
     evaluated_at: Optional[str] = None
@@ -116,8 +119,7 @@ class InvestigationListItem(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InvestigationDetailResponse(BaseModel):
@@ -150,8 +152,7 @@ class InvestigationDetailResponse(BaseModel):
     evidence_items: List[InvestigationEvidenceResponse] = []
     ai_assurance: Optional[AIAssuranceSummary] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InvestigationQueueResponse(BaseModel):

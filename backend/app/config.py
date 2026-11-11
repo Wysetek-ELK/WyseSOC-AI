@@ -86,6 +86,8 @@ class Settings(BaseSettings):
     LOCAL_LLM_CONTEXT_BUDGET: int = int(os.getenv("LOCAL_LLM_CONTEXT_BUDGET", "4096"))
     LOCAL_LLM_MAX_TOKENS: int = int(os.getenv("LOCAL_LLM_MAX_TOKENS", "512"))
     LOCAL_LLM_ALLOW_MOCK_FALLBACK: bool = False
+    LOCAL_LLM_PROVENANCE: str = os.getenv("LOCAL_LLM_PROVENANCE", "AUTO")
+    TEST_ENVIRONMENT_ID: str = os.getenv("AI_VERDICT_TEST_ENV", "")
 
     # Server 1 Networking
     SERVER1_HOST: str = os.getenv("SERVER1_HOST", "")

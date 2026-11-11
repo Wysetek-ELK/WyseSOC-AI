@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LearningRecordCreate(BaseModel):
@@ -39,8 +39,7 @@ class LearningRecordResponse(BaseModel):
     feedback_timestamp: datetime
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SimilarCaseQuery(BaseModel):

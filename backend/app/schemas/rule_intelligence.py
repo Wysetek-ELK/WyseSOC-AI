@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 
 
 class SemanticsDefinitionStatus(str, Enum):
@@ -83,7 +84,7 @@ class DetectionSemantics(BaseModel):
     provenance_details: Dict[str, str] = Field(default_factory=dict, description="Detailed field-level provenance")
     review_required: bool = Field(True, description="Whether human review is required before approval")
     missing_requirements: List[str] = Field(default_factory=list, description="List of unverified / missing rule conditions")
-    extracted_at: datetime = Field(default_factory=datetime.utcnow)
+    extracted_at: datetime = Field(default_factory=utc_now)
 
 
 class ArchetypeDefinition(BaseModel):
@@ -116,4 +117,4 @@ class ArchetypeClassificationResult(BaseModel):
     matched_features: List[str] = Field(default_factory=list)
     traceability_log: List[str] = Field(default_factory=list)
     registry_version: str = "v2.0.0"
-    classified_at: datetime = Field(default_factory=datetime.utcnow)
+    classified_at: datetime = Field(default_factory=utc_now)

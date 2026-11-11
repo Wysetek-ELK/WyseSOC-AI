@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { api } from "@/lib/api";
+import { formatServer2HealthSummary } from "@/lib/provenance";
 import {
   ShieldAlert,
   LayoutDashboard,
@@ -135,7 +136,15 @@ const NAV_GROUPS: NavGroup[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [llmStatus, setLlmStatus] = useState<{ is_healthy: boolean; model?: string } | null>(null);
+  const [llmStatus, setLlmStatus] = useState<{
+    is_healthy: boolean;
+    model?: string;
+    status?: string;
+    endpoint_provenance?: string;
+    current_s2_health?: string;
+    gpu_telemetry_verified?: boolean;
+    test_environment?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -146,7 +155,14 @@ export function Sidebar() {
           if (isMounted) setLlmStatus(res);
         })
         .catch(() => {
-          if (isMounted) setLlmStatus({ is_healthy: false });
+          if (isMounted) {
+            setLlmStatus({
+              is_healthy: false,
+              endpoint_provenance: "OFFLINE",
+              current_s2_health: "OFFLINE",
+              gpu_telemetry_verified: false,
+            });
+          }
         });
     };
 
@@ -164,6 +180,10 @@ export function Sidebar() {
           setLlmStatus({
             is_healthy: customEvent.detail.is_healthy,
             model: customEvent.detail.model,
+            endpoint_provenance: customEvent.detail.endpoint_provenance,
+            current_s2_health: customEvent.detail.current_s2_health,
+            gpu_telemetry_verified: customEvent.detail.gpu_telemetry_verified,
+            test_environment: customEvent.detail.test_environment,
           });
         }
       } else {
@@ -263,63 +283,61 @@ export function Sidebar() {
 
       {/* Footer System Status */}
       <div className="p-2 border-t border-slate-800 text-[10px] font-mono">
-        {!collapsed ? (
-          <Link
-            href="/inference-control"
-            className="block rounded-md bg-slate-900/70 hover:bg-slate-900 p-2 border border-slate-800 hover:border-slate-700 space-y-0.5 transition-colors cursor-pointer"
-            title="Inspect Inference Control & Historical Health Telemetry"
-          >
-            <div className="flex items-center justify-between mb-0.5">
-              <span className="text-slate-400 text-[9px]">INFERENCE</span>
-              {llmStatus?.is_healthy ? (
-                <span className="flex items-center gap-1 text-emerald-400 text-[9px]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  ACTIVE
+        {(() => {
+          const s2Summary = formatServer2HealthSummary(llmStatus || undefined);
+          const modelDisplay = llmStatus?.model
+            ? llmStatus.model.split("/").pop()?.replace(/-Instruct.*$/i, "") || llmStatus.model
+            : "Qwen 2.5 7B";
+          return !collapsed ? (
+            <Link
+              href="/inference-control"
+              className="block rounded-md bg-slate-900/70 hover:bg-slate-900 p-2 border border-slate-800 hover:border-slate-700 space-y-0.5 transition-colors cursor-pointer"
+              title="Inspect Inference Control & Historical Health Telemetry"
+              data-testid="sidebar-inference-widget"
+            >
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-slate-400 text-[9px]">INFERENCE</span>
+                <span className={`flex items-center gap-1 text-[9px] font-semibold ${s2Summary.isMockEndpoint ? "text-cyan-300" : llmStatus?.is_healthy ? "text-emerald-400" : llmStatus === null ? "text-slate-400" : "text-amber-400"}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${s2Summary.dotClass}`}></span>
+                  {s2Summary.statusLabel}
                 </span>
-              ) : llmStatus === null ? (
-                <span className="flex items-center gap-1 text-slate-400 text-[9px]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
-                  CHECKING
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-amber-400 text-[9px]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
-                  S2 OFFLINE
-                </span>
+              </div>
+              <div className="text-[9px] text-slate-400 leading-tight" data-testid="sidebar-arch-label">
+                Arch: <span className="text-slate-300">{s2Summary.archLabel}</span>
+              </div>
+              <div className="text-[9px] text-slate-400 leading-tight flex items-center justify-between gap-1">
+                <span>LLM:</span>
+                {llmStatus?.is_healthy ? (
+                  <span
+                    className={`${s2Summary.isMockEndpoint ? "text-cyan-300" : "text-emerald-400"} font-semibold flex items-center gap-1 truncate max-w-[130px]`}
+                    title={llmStatus.model || s2Summary.modelStatusText}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${s2Summary.dotClass} shrink-0`}></span>
+                    {s2Summary.isMockEndpoint ? `${modelDisplay} (HTTP Mock)` : `${modelDisplay} (Active)`}
+                  </span>
+                ) : (
+                  <span className="text-amber-400">{s2Summary.modelStatusText}</span>
+                )}
+              </div>
+              {llmStatus?.test_environment && (
+                <div className="text-[8px] mt-0.5 px-1 py-0.2 rounded bg-cyan-950/70 border border-cyan-800/70 text-cyan-300 truncate" data-testid="sidebar-test-env">
+                  TEST ENV: {llmStatus.test_environment}
+                </div>
               )}
-            </div>
-            <div className="text-[9px] text-slate-400 leading-tight">
-              Arch: <span className="text-slate-300">{llmStatus?.is_healthy ? "S1 + S2 (GPU)" : "Server 1"}</span>
-            </div>
-            <div className="text-[9px] text-slate-400 leading-tight flex items-center justify-between gap-1">
-              <span>LLM:</span>
-              {llmStatus?.is_healthy ? (
-                <span
-                  className="text-emerald-400 font-semibold flex items-center gap-1 truncate max-w-[130px]"
-                  title={llmStatus.model || "Local LLM Active"}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-                  {llmStatus.model
-                    ? `${llmStatus.model.split("/").pop()?.replace(/-Instruct.*$/i, "") || llmStatus.model} (Active)`
-                    : "Qwen 2.5 7B (Active)"}
-                </span>
-              ) : (
-                <span className="text-amber-400">S2 Offline</span>
-              )}
-            </div>
-          </Link>
-        ) : (
-          <Link
-            href="/inference-control"
-            className="flex justify-center py-1"
-            title={llmStatus?.is_healthy ? "Server 2 LLM Active" : "Server 2 LLM Offline"}
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${llmStatus?.is_healthy ? "bg-emerald-400" : "bg-amber-400"}`}
-              title={llmStatus?.is_healthy ? "Server 2 LLM Active" : "Server 2 LLM Offline"}
-            ></span>
-          </Link>
-        )}
+            </Link>
+          ) : (
+            <Link
+              href="/inference-control"
+              className="flex justify-center py-1"
+              title={`${s2Summary.archLabel} (${s2Summary.statusLabel})`}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${s2Summary.dotClass}`}
+                title={`${s2Summary.archLabel} (${s2Summary.statusLabel})`}
+              ></span>
+            </Link>
+          );
+        })()}
       </div>
     </aside>
   );

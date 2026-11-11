@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from sqlalchemy import String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
@@ -15,6 +16,6 @@ class DistributedLock(Base):
 
     lock_key: Mapped[str] = mapped_column(String(128), primary_key=True)
     owner_id: Mapped[str] = mapped_column(String(128), nullable=False)
-    acquired_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    acquired_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime, index=True, nullable=False)
 

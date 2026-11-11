@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, or_
 from sqlalchemy.orm import selectinload
@@ -355,7 +356,7 @@ class AgentPolicyEngine:
             contract_digest=quality_res.contract_digest,
             rule_digest=quality_res.rule_digest,
             validator_version=quality_res.validator_version,
-            evaluated_at=datetime.utcnow(),
+            evaluated_at=utc_now(),
         )
         self.db.add(assessment_record)
 
@@ -371,12 +372,12 @@ class AgentPolicyEngine:
         target_version.quality_score = quality_res.quality_score
         target_version.quality_assessment_id = quality_res.assessment_id
         target_version.approved_by_user_id = user_id
-        target_version.approved_at = datetime.utcnow()
+        target_version.approved_at = utc_now()
         if change_summary:
             target_version.change_summary = change_summary
 
         rule_prompt.active_version_id = target_version.id
-        rule_prompt.updated_at = datetime.utcnow()
+        rule_prompt.updated_at = utc_now()
 
         await self.db.commit()
         await self.db.refresh(target_version)
@@ -446,7 +447,7 @@ class AgentPolicyEngine:
             change_summary=f"Rollback to Version {source_version.version_number}",
             created_by_user_id=user_id,
             approved_by_user_id=user_id,
-            approved_at=datetime.utcnow(),
+            approved_at=utc_now(),
         )
 
         # Archive others
@@ -458,7 +459,7 @@ class AgentPolicyEngine:
         await self.db.flush()
 
         rule_prompt.active_version_id = rolled_version.id
-        rule_prompt.updated_at = datetime.utcnow()
+        rule_prompt.updated_at = utc_now()
 
         await self.db.commit()
         await self.db.refresh(rolled_version)
@@ -488,8 +489,8 @@ class AgentPolicyEngine:
                 review_required=semantics.review_required,
                 semantics_payload=semantics.model_dump(mode="json"),
                 rule_digest=assessment.rule_digest if assessment else "",
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=utc_now(),
+                updated_at=utc_now(),
             )
             self.db.add(snap)
         else:
@@ -501,7 +502,7 @@ class AgentPolicyEngine:
             snap.aggregation_window = semantics.aggregation_window
             snap.review_required = semantics.review_required
             snap.semantics_payload = semantics.model_dump(mode="json")
-            snap.updated_at = datetime.utcnow()
+            snap.updated_at = utc_now()
 
         await self.db.commit()
 
@@ -566,7 +567,7 @@ class AgentPolicyEngine:
         lines = [
             f"# {title}",
             "",
-            f"- **Generated At:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}",
+            f"- **Generated At:** {utc_now().strftime('%Y-%m-%d %H:%M:%S UTC')}",
             f"- **Total Rules Included:** {len(export_items)}",
             "",
             "---",
@@ -638,7 +639,7 @@ class AgentPolicyEngine:
             rp = prompts_by_rule_id.get(r.id)
             items.append(self._rule_to_export_item(r, rp))
 
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = utc_now().strftime("%Y%m%d_%H%M%S")
         if format.lower() in ("markdown", "md"):
             md_content = self._format_markdown_report(items)
             return md_content, "text/markdown; charset=utf-8", f"agent_intelligence_studio_rules_prompts_{timestamp}.md"
@@ -646,7 +647,7 @@ class AgentPolicyEngine:
         export_data = {
             "schema_version": "1.0",
             "title": "Agent Intelligence Studio 2.0 — Rule-Wise Prompts & Configurations",
-            "exported_at": datetime.utcnow().isoformat(),
+            "exported_at": utc_now().isoformat(),
             "total_rules": len(items),
             "rules": items,
         }
@@ -662,7 +663,7 @@ class AgentPolicyEngine:
         item = self._rule_to_export_item(rule, prompt)
 
         safe_name = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in rule.name.lower())[:40]
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = utc_now().strftime("%Y%m%d_%H%M%S")
 
         if format.lower() in ("markdown", "md"):
             md_content = self._format_markdown_report([item], title=f"Agent Intelligence Policy — {rule.name}")
@@ -671,7 +672,7 @@ class AgentPolicyEngine:
         export_data = {
             "schema_version": "1.0",
             "title": f"Agent Intelligence Policy — {rule.name}",
-            "exported_at": datetime.utcnow().isoformat(),
+            "exported_at": utc_now().isoformat(),
             "rule": item,
         }
         return json.dumps(export_data, indent=2), "application/json", f"rule_prompt_{safe_name}_{timestamp}.json"

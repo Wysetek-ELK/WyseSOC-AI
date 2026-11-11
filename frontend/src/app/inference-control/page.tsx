@@ -8,21 +8,32 @@ import { Server } from "lucide-react";
 
 export default function InferenceControlPage() {
   const [s2Online, setS2Online] = useState<boolean | null>(null);
+  const [s2Provenance, setS2Provenance] = useState<string | null>(null);
+  const [testEnv, setTestEnv] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     api.getServersLive()
       .then((res) => {
-        if (mounted) setS2Online(res?.server_2?.status === "ONLINE");
+        if (mounted) {
+          setS2Online(res?.server_2?.status === "ONLINE");
+          setS2Provenance((res?.server_2?.details as any)?.endpoint_provenance || null);
+          setTestEnv((res?.server_2?.details as any)?.test_environment || null);
+        }
       })
       .catch(() => {
-        if (mounted) setS2Online(false);
+        if (mounted) {
+          setS2Online(false);
+          setS2Provenance("OFFLINE");
+        }
       });
 
     const onStatus = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (mounted && detail && typeof detail.is_healthy === "boolean") {
         setS2Online(detail.is_healthy);
+        if (detail.endpoint_provenance) setS2Provenance(detail.endpoint_provenance);
+        if (detail.test_environment !== undefined) setTestEnv(detail.test_environment);
       }
     };
     window.addEventListener("llm-status-change", onStatus);
@@ -47,10 +58,20 @@ export default function InferenceControlPage() {
         </div>
 
         <div className="flex items-center gap-2 text-xs font-mono">
+          {testEnv && (
+            <span className="px-2 py-1 rounded bg-cyan-950/70 border border-cyan-800 text-cyan-300">
+              TEST ENV: {testEnv}
+            </span>
+          )}
           {s2Online === null ? (
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400">
               <span className="h-2 w-2 rounded-full bg-slate-500"></span>
               Cluster Status: <strong className="text-slate-300">CHECKING</strong>
+            </span>
+          ) : s2Provenance === "HTTP_MOCK" ? (
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950/50 border border-cyan-700/70 text-cyan-200">
+              <span className="h-2 w-2 rounded-full bg-cyan-400"></span>
+              Cluster Status: <strong className="text-cyan-300">HTTP_MOCK (TEST ENDPOINT)</strong>
             </span>
           ) : s2Online ? (
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-emerald-800/60 text-slate-300">

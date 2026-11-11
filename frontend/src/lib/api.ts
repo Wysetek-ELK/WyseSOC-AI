@@ -33,6 +33,9 @@ export interface IncidentAiVerdictResponse {
   latency_ms: number;
   model_identifier: string;
   is_simulated: boolean;
+  execution_provenance?: string;
+  configured_provider?: string;
+  test_environment?: string | null;
   rule_name?: string;
   severity?: string;
   prompt_tokens?: number;
@@ -432,6 +435,11 @@ export interface AIAssuranceSummary {
   historical_validation_status: string;
   model_identifier?: string | null;
   is_simulated: boolean;
+  configured_provider?: string | null;
+  execution_provenance?: string | null;
+  historical_execution_provenance?: string | null;
+  current_s2_health?: string | null;
+  test_environment?: string | null;
   pilot_evaluation_id?: string | null;
   pilot_mode?: string | null;
   evaluated_at?: string | null;
@@ -950,6 +958,11 @@ export const api = {
     model: string;
     latency_ms: number;
     message?: string;
+    configured_provider?: string;
+    endpoint_provenance?: string;
+    current_s2_health?: string;
+    gpu_telemetry_verified?: boolean;
+    test_environment?: string | null;
   }> {
     const res = await fetchWithAuth(`${API_BASE}/dashboard/llm-status`);
     if (!res.ok) throw new Error("Failed to load LLM status");
@@ -2584,6 +2597,11 @@ export interface ChatStatusResponse {
   available_models: string[];
   latency_ms?: number | null;
   status_message: string;
+  configured_provider?: string;
+  endpoint_provenance?: string;
+  current_s2_health?: string;
+  gpu_telemetry_verified?: boolean;
+  test_environment?: string | null;
 }
 
 export interface PilotConfig {
@@ -2657,6 +2675,10 @@ export interface PilotEvaluationItem {
   policy_digest?: string | null;
   model_identifier: string;
   is_simulated: boolean;
+  configured_provider?: string;
+  execution_provenance?: string;
+  historical_execution_provenance?: string | null;
+  test_environment?: string | null;
   latency_ms: number;
   prompt_tokens: number;
   completion_tokens: number;
@@ -2698,6 +2720,15 @@ export interface PilotMetricsResponse {
     daily_budget_limit: number;
     queue_backlog: number;
     provider_available: boolean;
+    configured_provider?: string;
+    endpoint_provenance?: string;
+    current_s2_health?: string;
+    gpu_telemetry_verified?: boolean;
+    test_environment?: string | null;
+    live_provider_evaluations_count?: number;
+    http_mock_evaluations_count?: number;
+    historical_evaluations_count?: number;
+    guard_abstention_evaluations_count?: number;
     circuit_breaker_state: string;
   };
   reliability: {

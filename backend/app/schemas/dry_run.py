@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DryRunConfigCreate(BaseModel):
@@ -26,8 +26,7 @@ class DryRunConfigResponse(BaseModel):
     created_by_user_id: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DryRunResultResponse(BaseModel):
@@ -53,8 +52,7 @@ class DryRunResultResponse(BaseModel):
     is_agreement: Optional[bool] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DryRunJobResponse(BaseModel):
@@ -70,8 +68,7 @@ class DryRunJobResponse(BaseModel):
     started_at: datetime
     completed_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DryRunTriggerRequest(BaseModel):

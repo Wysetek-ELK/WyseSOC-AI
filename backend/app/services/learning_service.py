@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, desc
 from sqlalchemy.orm import selectinload
@@ -400,7 +401,7 @@ class AgentMemoryEngine:
                 evidence_references=[f"Incident ID {inc.incident_id}"],
                 answered_questions=[],
                 verification_status="VERIFIED",
-                feedback_timestamp=datetime.utcnow(),
+                feedback_timestamp=utc_now(),
             )
             self.db.add(lr)
             added_count += 1

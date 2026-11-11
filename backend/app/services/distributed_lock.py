@@ -11,6 +11,7 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from app.utils.datetime_utils import utc_now
 from typing import AsyncGenerator, Optional
 
 from sqlalchemy import delete, select
@@ -126,7 +127,7 @@ class DistributedLockManager:
 
         try:
             while True:
-                now = datetime.utcnow()
+                now = utc_now()
                 expires = now + timedelta(seconds=max(5, int(ttl_seconds)))
 
                 # Fast optional Redis coordination when async Celery/Redis is active
@@ -233,7 +234,7 @@ class DistributedLockManager:
         from sqlalchemy.ext.asyncio import AsyncEngine
         async_engine = bind if isinstance(bind, AsyncEngine) else AsyncEngine(bind)
 
-        now = datetime.utcnow()
+        now = utc_now()
         new_expires_at = now + timedelta(seconds=max(5, int(ttl_seconds)))
         is_in_memory = ":memory:" in str(getattr(bind, "url", "")).lower()
         try:

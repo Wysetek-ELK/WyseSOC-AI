@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 
 
 class GateStatus(str, Enum):
@@ -74,7 +75,7 @@ class PolicyQualityAssessmentResponse(BaseModel):
     contract_digest: str = Field(..., description="SHA-256 digest of linked Evidence Contract")
     rule_digest: str = Field(..., description="SHA-256 digest of SIEM rule definition")
     archetype_version: str = "v2.0.0"
-    evaluated_at: datetime = Field(default_factory=datetime.utcnow)
+    evaluated_at: datetime = Field(default_factory=utc_now)
 
 
 class QualitySummaryItem(BaseModel):

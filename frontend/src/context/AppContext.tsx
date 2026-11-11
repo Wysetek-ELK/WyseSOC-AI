@@ -57,6 +57,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("ai_verdict_user", JSON.stringify(u));
     } catch {
       setUser(null);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("ai_verdict_user");
+        localStorage.removeItem("ai_verdict_token");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -84,13 +88,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("ai_verdict_token", res.access_token);
       localStorage.setItem("ai_verdict_user", JSON.stringify(res.user));
       setUser(res.user);
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
-    await api.logout();
-    setUser(null);
-    window.location.href = "/login";
+    try {
+      await api.logout();
+    } finally {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("ai_verdict_token");
+        localStorage.removeItem("ai_verdict_user");
+      }
+      setUser(null);
+      window.location.href = "/login";
+    }
   };
 
   return (

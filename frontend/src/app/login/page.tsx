@@ -8,8 +8,8 @@ import { useApp } from "@/context/AppContext";
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useApp();
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("AdminPassword123!");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,7 +99,7 @@ export default function LoginPage() {
 
         <div className="mt-5 border-t border-slate-800/80 pt-3 text-center">
           <p className="text-[10px] text-slate-500 font-mono">
-            Default credentials: <span className="text-slate-400">admin</span> / <span className="text-slate-400">AdminPassword123!</span>
+            Authorized SOC Personnel Only • JWT &amp; RBAC Protected
           </p>
         </div>
       </div>

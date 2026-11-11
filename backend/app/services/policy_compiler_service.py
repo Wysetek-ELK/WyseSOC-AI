@@ -1,6 +1,7 @@
 import hashlib
 import json
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any
 
 from app.models.rule import Rule
@@ -317,6 +318,6 @@ class PolicyCompilerService:
             model_response_schema=cls.MODEL_RESPONSE_SCHEMA,
             compilation_digest=compilation_digest,
             total_estimated_tokens=total_tokens,
-            compiled_at=datetime.utcnow().isoformat(),
+            compiled_at=utc_now().isoformat(),
         )
 

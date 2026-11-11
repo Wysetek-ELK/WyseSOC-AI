@@ -1,5 +1,6 @@
 import pytest
 from datetime import datetime, timedelta
+from app.utils.datetime_utils import utc_now
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.incident import Incident
@@ -184,7 +185,7 @@ async def test_verified_rag_safe_fallback_when_empty(db_session: AsyncSession):
         rule_id=rule.id,
         event_type="DNS",
         title="DNS Tunneling Alert",
-        created_at=datetime.utcnow(),
+        created_at=utc_now(),
     )
     db_session.add(incident)
     await db_session.commit()

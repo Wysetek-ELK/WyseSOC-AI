@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any
 from sqlalchemy import String, Text, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column
@@ -19,5 +20,5 @@ class AuditLog(Base):
     ip_address: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     signature: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
     key_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False, index=True)
 

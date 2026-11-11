@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any, List
 from sqlalchemy import String, Integer, BigInteger, Text, DateTime, JSON, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -43,8 +44,8 @@ class Incident(Base):
     # Persisted AI Evaluation Verdict and telemetry for instant re-use
     ai_verdict: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     # Relationships
     rule: Mapped[Optional["Rule"]] = relationship("Rule", back_populates="incidents")
@@ -68,7 +69,7 @@ class IncidentEvent(Base):
     event_type: Mapped[str] = mapped_column(String(128), default="")
     raw_log: Mapped[str] = mapped_column(Text, default="")
     attributes: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # Generic nested vendor attributes
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     incident: Mapped["Incident"] = relationship("Incident", back_populates="events")
@@ -94,8 +95,8 @@ class HistoricalGroundTruth(Base):
     resolved_at_epoch: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     is_ml_generated: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     # Relationships
     incident: Mapped["Incident"] = relationship("Incident", back_populates="ground_truth")

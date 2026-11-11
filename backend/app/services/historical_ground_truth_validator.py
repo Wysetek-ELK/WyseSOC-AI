@@ -120,7 +120,7 @@ class HistoricalGroundTruthValidator:
         raw_events = raw_payload.get("rawEvents") if isinstance(raw_payload, dict) else None
         has_real_events = bool(len(ev_list) > 0 or (isinstance(raw_events, list) and len(raw_events) > 0))
         is_debug_prefix = inc_id.startswith(("INC-DEBUG", "SYNTHETIC-", "DEBUG-FIXTURE"))
-        if is_debug_prefix and not has_real_events and getattr(incident, "first_seen_epoch", None) is None:
+        if is_debug_prefix and not has_real_events:
             return f"Zero-event synthetic debug fixture '{inc_id}' lacks real SIEM rawEvents telemetry."
         return None
 

@@ -1,5 +1,6 @@
 import pytest
 from datetime import datetime, timedelta
+from app.utils.datetime_utils import utc_now
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -70,7 +71,7 @@ async def test_phase3_full_end_to_end_investigation(db_session: AsyncSession):
         event_type="Process-Creation",
         title="Historical Encoded PowerShell Attack",
         customer="CORP-SOC",
-        created_at=datetime.utcnow() - timedelta(days=10),
+        created_at=utc_now() - timedelta(days=10),
     )
     db_session.add(past_inc)
     await db_session.flush()
@@ -82,7 +83,7 @@ async def test_phase3_full_end_to_end_investigation(db_session: AsyncSession):
         verified_verdict="TRUE_POSITIVE",
         analyst_explanation="Confirmed malicious base64 cradle invoking remote stager.",
         evidence_references=["process.command_line: powershell.exe -enc ..."],
-        feedback_timestamp=datetime.utcnow() - timedelta(days=9),
+        feedback_timestamp=utc_now() - timedelta(days=9),
     )
     db_session.add(lr)
     await db_session.flush()
@@ -97,7 +98,7 @@ async def test_phase3_full_end_to_end_investigation(db_session: AsyncSession):
         customer="CORP-SOC",
         source_ip="10.0.1.25",
         reporting_device="WIN-SRV-01",
-        created_at=datetime.utcnow(),
+        created_at=utc_now(),
     )
     db_session.add(target_inc)
     await db_session.flush()

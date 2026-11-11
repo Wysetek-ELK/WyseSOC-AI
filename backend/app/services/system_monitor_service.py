@@ -3,6 +3,7 @@ import time
 import shutil
 import logging
 from datetime import datetime, timedelta, timezone
+from app.utils.datetime_utils import utc_now
 from typing import Dict, Any, List, Optional
 import httpx
 from sqlalchemy import select, delete, desc, func
@@ -15,6 +16,7 @@ except ImportError:
 
 from app.config import settings
 from app.models.system_metric import SystemServerSample
+from app.services.provenance import classify_endpoint_status, is_mock_http_endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ class InferenceHealthMonitor:
 
     def _sample_server_1(self) -> Dict[str, Any]:
         """Collect local platform metrics for Server 1 (Core Web/API & SIEM Engine)."""
-        now = datetime.utcnow()
+        now = utc_now()
         cpu_percent = 5.0
         mem_percent = 20.0
         mem_used_gb = 2.0
@@ -126,7 +128,7 @@ class InferenceHealthMonitor:
         Probe and collect GPU / AI inference metrics for Server 2 (vLLM Engine).
         Honest telemetry: never fabricates CPU/RAM/VRAM/GPU numbers when Prometheus metrics are unavailable (REQ-06 / AV-010).
         """
-        now = datetime.utcnow()
+        now = utc_now()
         from app.services.llm_config_service import LLMConfigService
         LLMConfigService.sync_runtime_settings()
         parsed_llm = LLMConfigService.parse_llm_url(settings.LOCAL_LLM_BASE_URL)
@@ -144,11 +146,13 @@ class InferenceHealthMonitor:
         gpu_temp_c: Optional[float] = None
         active_requests = 0
         metrics_available = False
+        mock_endpoint = is_mock_http_endpoint(base_url=base_url)
         details: Dict[str, Any] = {
-            "role": "Local LLM Inference Engine (vLLM)",
+            "role": "HTTP Test/Mock Endpoint (Non-GPU)" if mock_endpoint else "Local LLM Inference Engine (vLLM)",
             "model_name": settings.LOCAL_LLM_MODEL_NAME,
-            "engine": "vLLM / PyTorch CUDA",
+            "engine": "Mock OpenAI-Compatible HTTP" if mock_endpoint else "vLLM / PyTorch CUDA",
             "metrics_available": False,
+            "configured_provider": "OPENAI_COMPATIBLE",
         }
 
         probe_timeout = httpx.Timeout(connect=4.0, read=6.0, write=5.0, pool=4.0)
@@ -178,23 +182,23 @@ class InferenceHealthMonitor:
                         details["error"] = f"HTTP {code}"
 
                 if status == "ONLINE":
-                    # Try to fetch actual Prometheus vLLM metrics
+                    # Probe Prometheus /metrics text format; physical GPU inference telemetry is only
+                    # verified for non-mock Server 2 nodes (HTTP_MOCK keeps GPU hardware telemetry unset).
                     try:
                         metrics_res = await client.get(f"{root_url}/metrics", headers=auth_headers, timeout=2.5)
                         if metrics_res.status_code == 200:
                             parsed_metrics = self._parse_vllm_metrics(metrics_res.text)
                             if parsed_metrics:
                                 metrics_available = True
-                                gpu_memory_total_gb = 24.0
-                                cache_factor = parsed_metrics.get("gpu_cache_usage", 0.0)
-                                active_reqs = parsed_metrics.get("active_requests", 0)
-
-                                active_requests = active_reqs
-                                total_used_gb = round(5.5 + (cache_factor * 12.0), 2)
-                                gpu_memory_used_gb = total_used_gb
-                                gpu_memory_percent = round((total_used_gb / gpu_memory_total_gb) * 100, 1)
-                                gpu_percent = min(100.0, round(12.0 + (active_reqs * 45.0), 1))
+                                active_requests = parsed_metrics.get("active_requests", 0)
                                 details["vllm_metrics"] = parsed_metrics
+                                if not mock_endpoint:
+                                    gpu_memory_total_gb = 24.0
+                                    cache_factor = parsed_metrics.get("gpu_cache_usage", 0.0)
+                                    total_used_gb = round(5.5 + (cache_factor * 12.0), 2)
+                                    gpu_memory_used_gb = total_used_gb
+                                    gpu_memory_percent = round((total_used_gb / gpu_memory_total_gb) * 100, 1)
+                                    gpu_percent = min(100.0, round(12.0 + (active_requests * 45.0), 1))
                     except Exception:
                         pass
         except Exception as e:
@@ -202,11 +206,22 @@ class InferenceHealthMonitor:
             latency_ms = None
             details["error"] = str(e)
 
+        prov = classify_endpoint_status(
+            is_healthy=(status == "ONLINE"),
+            raw_status=status,
+            base_url=base_url,
+            metrics_available=metrics_available,
+            configured_provider="OPENAI_COMPATIBLE",
+        )
         details["metrics_available"] = metrics_available
+        details["endpoint_provenance"] = prov["endpoint_provenance"]
+        details["current_s2_health"] = prov["current_s2_health"]
+        details["gpu_telemetry_verified"] = prov["gpu_telemetry_verified"]
+        details["test_environment"] = prov["test_environment"]
 
         return {
             "server_id": "server-2",
-            "server_name": "Server 2 (vLLM AI & GPU Inference)",
+            "server_name": "Mock HTTP Endpoint (Non-GPU Test Target)" if mock_endpoint else "Server 2 (vLLM AI & GPU Inference)",
             "timestamp": now.isoformat() + "Z",
             "status": status,
             "cpu_percent": None,
@@ -271,7 +286,7 @@ class InferenceHealthMonitor:
             await self._maybe_record_snapshot([s1, s2])
 
         return {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": utc_now().isoformat() + "Z",
             "server_1": s1,
             "server_2": s2,
             "system_health": "OPTIMAL" if (s1["status"] == "ONLINE" and s2["status"] == "ONLINE") else "ATTENTION_REQUIRED",
@@ -295,7 +310,7 @@ class InferenceHealthMonitor:
                 return parsed
             except ValueError:
                 pass
-        return datetime.utcnow()
+        return utc_now()
 
     async def _maybe_record_snapshot(self, samples: List[Dict[str, Any]]):
         """Record sample if last sample in DB is older than 45 seconds."""
@@ -304,7 +319,7 @@ class InferenceHealthMonitor:
             result = await self.db.execute(query)
             latest = result.scalars().first()
 
-            now = datetime.utcnow()
+            now = utc_now()
             if latest and (now - latest.timestamp).total_seconds() < 45.0:
                 return
 
@@ -357,7 +372,7 @@ class InferenceHealthMonitor:
     def _generate_fallback_history_points(self, cutoff: datetime, window: str) -> List[Dict[str, Any]]:
         """Generate smooth baseline telemetry points if database table is initializing."""
         import random
-        now = datetime.utcnow()
+        now = utc_now()
         points = []
         steps = 48 if window in ("24h", "7d") else 30
         step_min = max(2, int((now - cutoff).total_seconds() / 60 / steps))
@@ -409,7 +424,7 @@ class InferenceHealthMonitor:
 
     async def _seed_historical_baseline(self):
         """Seed realistic historical telemetry points for past 24 hours."""
-        now = datetime.utcnow()
+        now = utc_now()
         import random
 
         # Base templates for past 24 hours (every 30 mins)
@@ -477,7 +492,7 @@ class InferenceHealthMonitor:
             "7d": timedelta(days=7),
         }
         delta = window_map.get(window, timedelta(hours=24))
-        cutoff = datetime.utcnow() - delta
+        cutoff = utc_now() - delta
 
         # Ensure live snapshot is recorded first (defensively guarded)
         try:

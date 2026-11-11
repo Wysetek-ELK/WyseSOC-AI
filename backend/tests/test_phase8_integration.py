@@ -25,6 +25,7 @@ import tempfile
 import threading
 import time
 from datetime import datetime, timedelta
+from app.utils.datetime_utils import utc_now
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Dict, List
@@ -263,8 +264,8 @@ asyncio.run(main(sys.argv[1]))
             DistributedLock(
                 lock_key="incident_triage:INC-CONC-P8",
                 owner_id="crashed-worker",
-                acquired_at=datetime.utcnow() - timedelta(minutes=10),
-                expires_at=datetime.utcnow() - timedelta(minutes=5),
+                acquired_at=utc_now() - timedelta(minutes=10),
+                expires_at=utc_now() - timedelta(minutes=5),
             )
         )
         rule, _ = await _seed_approved_rule_and_policy(setup_s, rule_code="PH_RULE_CONC_P8")
@@ -976,8 +977,8 @@ async def test_phase8_calibration_stats_and_unbalanced_gating(db_session):
         verified_ground_truth_cases=35,
         metrics={"overall_accuracy": 0.95},
         calibration_metrics={"is_calibrated": False, "status": "NOT_CALIBRATED"},
-        started_at=datetime.utcnow(),
-        completed_at=datetime.utcnow(),
+        started_at=utc_now(),
+        completed_at=utc_now(),
     )
     db_session.add(run_rec)
     await db_session.commit()

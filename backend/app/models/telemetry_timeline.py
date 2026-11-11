@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from typing import Optional, Dict, Any
 from sqlalchemy import String, Integer, BigInteger, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column
@@ -29,6 +30,6 @@ class TelemetryTimelineRecord(Base):
     epoch_ms: Mapped[Optional[int]] = mapped_column(BigInteger, index=True, nullable=True)
     token_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True, nullable=False)
     details: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 

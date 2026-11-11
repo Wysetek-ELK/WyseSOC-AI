@@ -14,6 +14,7 @@ import json
 import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from app.utils.datetime_utils import utc_now
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -157,7 +158,7 @@ async def evaluate_incident_trust(
             optional_enrichment_present=suff.optional_enrichment_present,
             unsupported_fields_requested=suff.unsupported_fields_requested,
             contradictions_detected=suff.contradictions_detected,
-            evaluated_at=datetime.utcnow(),
+            evaluated_at=utc_now(),
         )
         db.add(suff_rec)
 
@@ -184,7 +185,7 @@ async def evaluate_incident_trust(
         human_readable_explanation=trust_res.human_readable_explanation,
         model_identifier=trust_res.model_identifier,
         is_simulated=trust_res.is_simulated,
-        evaluated_at=datetime.utcnow(),
+        evaluated_at=utc_now(),
     )
     db.add(record)
     await db.commit()

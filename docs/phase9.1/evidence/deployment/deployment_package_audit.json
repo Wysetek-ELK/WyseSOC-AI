@@ -1,0 +1,96 @@
+{
+  "shell_scripts": {
+    "deployment/scripts/backup_db.sh": {
+      "crlf_count": 0,
+      "has_shebang": true,
+      "has_strict_mode": true
+    },
+    "deployment/scripts/deploy_server1.sh": {
+      "crlf_count": 0,
+      "has_shebang": true,
+      "has_strict_mode": true
+    },
+    "deployment/scripts/install_llm_server.sh": {
+      "crlf_count": 0,
+      "has_shebang": true,
+      "has_strict_mode": true
+    },
+    "deployment/scripts/install_ollama_llm.sh": {
+      "crlf_count": 0,
+      "has_shebang": true,
+      "has_strict_mode": true
+    },
+    "deployment/scripts/install_ubuntu.sh": {
+      "crlf_count": 0,
+      "has_shebang": true,
+      "has_strict_mode": true
+    },
+    "deployment/scripts/rollback_server1.sh": {
+      "crlf_count": 0,
+      "has_shebang": true,
+      "has_strict_mode": true
+    },
+    "deployment/scripts/setup_server2_gpu.sh": {
+      "crlf_count": 0,
+      "has_shebang": true,
+      "has_strict_mode": true
+    },
+    "deployment/scripts/start_services.sh": {
+      "crlf_count": 0,
+      "has_shebang": true,
+      "has_strict_mode": true
+    },
+    "deployment/scripts/stop_services.sh": {
+      "crlf_count": 0,
+      "has_shebang": true,
+      "has_strict_mode": true
+    },
+    "deployment/scripts/verify_server1.sh": {
+      "crlf_count": 0,
+      "has_shebang": true,
+      "has_strict_mode": true
+    }
+  },
+  "systemd_units": {
+    "deployment/systemd/ai-verdict-backend.service": {
+      "crlf_count": 0,
+      "sections": [
+        "Unit",
+        "Service",
+        "Install"
+      ],
+      "after": "network.target postgresql.service redis-server.service",
+      "user": "aiverdict"
+    },
+    "deployment/systemd/ai-verdict-frontend.service": {
+      "crlf_count": 0,
+      "sections": [
+        "Unit",
+        "Service",
+        "Install"
+      ],
+      "after": "network.target ai-verdict-backend.service",
+      "user": "aiverdict"
+    },
+    "deployment/systemd/ai-verdict-scheduler.service": {
+      "crlf_count": 0,
+      "sections": [
+        "Unit",
+        "Service",
+        "Install"
+      ],
+      "after": "network.target postgresql.service redis-server.service ai-verdict-worker.service",
+      "user": "aiverdict"
+    },
+    "deployment/systemd/ai-verdict-worker.service": {
+      "crlf_count": 0,
+      "sections": [
+        "Unit",
+        "Service",
+        "Install"
+      ],
+      "after": "network.target postgresql.service redis-server.service",
+      "user": "aiverdict"
+    }
+  }
+}

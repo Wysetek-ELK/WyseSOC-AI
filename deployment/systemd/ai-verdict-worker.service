@@ -1,7 +1,7 @@
 [Unit]
 Description=AI Verdict Celery Distributed Task Worker Service
-After=network.target postgresql.service redis.service
-Wants=postgresql.service redis.service
+After=network.target postgresql.service redis-server.service
+Wants=postgresql.service redis-server.service
 
 [Service]
 Type=simple
