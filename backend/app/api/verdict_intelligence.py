@@ -287,6 +287,41 @@ async def start_historical_evaluation(
     }
 
 
+def _sanitize_run_metrics(run: HistoricalEvaluationRunRecord) -> Optional[Dict[str, Any]]:
+    """Enforces zero-denominator and missing-class honesty on stored run metrics."""
+    if run.metrics is None:
+        return None
+    m = dict(run.metrics)
+    if "verified_ground_truth_cases" not in m:
+        m["verified_ground_truth_cases"] = int(run.verified_ground_truth_cases or 0)
+    tp = int(m.get("true_positives") or 0)
+    fp = int(m.get("false_positives") or 0)
+    tn = int(m.get("true_negatives") or 0)
+    fn = int(m.get("false_negatives") or 0)
+    decisive = tp + fp + tn + fn
+    verified_n = int(m.get("verified_ground_truth_cases") or 0)
+    if verified_n == 0 or decisive == 0:
+        m["overall_accuracy"] = None
+        m["precision"] = None
+        m["recall"] = None
+        m["specificity"] = None
+        m["balanced_accuracy"] = None
+        m["f1_score"] = None
+        m["metric_status"] = "NOT_CALCULABLE"
+        m["balanced_accuracy_reason"] = (
+            "NOT_CALCULABLE: Zero verified ground-truth cases (N=0)."
+            if verified_n == 0
+            else "NOT_CALCULABLE: Zero decisive automated verdicts (TP+FP+TN+FN = 0)."
+        )
+    elif m.get("recall") is None or m.get("specificity") is None or (tp + fn) == 0 or (tn + fp) == 0:
+        m["balanced_accuracy"] = None
+        m["metric_status"] = "PARTIAL"
+        m["balanced_accuracy_reason"] = "NOT_CALCULABLE: Requires both non-zero TP (TP+FN > 0) and FP (TN+FP > 0) denominators."
+    else:
+        m.setdefault("metric_status", "CALCULATED")
+    return m
+
+
 @router.get("/dry-run/runs")
 async def list_evaluation_runs(
     limit: int = 20,
@@ -299,23 +334,26 @@ async def list_evaluation_runs(
     q = select(HistoricalEvaluationRunRecord).order_by(desc(HistoricalEvaluationRunRecord.started_at)).limit(limit)
     res = await db.execute(q)
     runs = res.scalars().all()
-    return [
-        {
-            "id": r.id,
-            "run_name": r.run_name,
-            "rule_id": r.rule_id,
-            "archetype": r.archetype,
-            "status": r.status,
-            "validation_state": r.validation_state,
-            "total_cases": r.total_cases,
-            "evaluated_cases": r.evaluated_cases,
-            "started_at": r.started_at.isoformat(),
-            "completed_at": r.completed_at.isoformat() if r.completed_at else None,
-            "overall_accuracy": (r.metrics or {}).get("overall_accuracy"),
-            "automatic_coverage": (r.metrics or {}).get("automatic_decision_coverage"),
-        }
-        for r in runs
-    ]
+    items = []
+    for r in runs:
+        san = _sanitize_run_metrics(r) or {}
+        items.append(
+            {
+                "id": r.id,
+                "run_name": r.run_name,
+                "rule_id": r.rule_id,
+                "archetype": r.archetype,
+                "status": r.status,
+                "validation_state": r.validation_state,
+                "total_cases": r.total_cases,
+                "evaluated_cases": r.evaluated_cases,
+                "started_at": r.started_at.isoformat(),
+                "completed_at": r.completed_at.isoformat() if r.completed_at else None,
+                "overall_accuracy": san.get("overall_accuracy"),
+                "automatic_coverage": san.get("automatic_decision_coverage"),
+            }
+        )
+    return items
 
 
 @router.get("/dry-run/runs/{run_id}")
@@ -350,7 +388,7 @@ async def get_evaluation_run_details(
             "total_cases": run.total_cases,
             "evaluated_cases": run.evaluated_cases,
             "verified_ground_truth_cases": run.verified_ground_truth_cases,
-            "metrics": run.metrics,
+            "metrics": _sanitize_run_metrics(run),
             "selective_metrics": run.selective_metrics,
             "calibration_metrics": run.calibration_metrics,
             "regression_summary": run.regression_summary,
@@ -432,16 +470,16 @@ async def get_verdict_trust_overview(
     missing_evidence_count = sum(1 for a in assessments if a.missing_evidence)
     conflicting_count = sum(1 for a in assessments if a.evidence_status == "CONFLICTING")
 
-    avg_trust = (sum(a.raw_trust_score for a in assessments) / total_evaluated) if total_evaluated > 0 else 0.0
-    avg_sufficiency = (sum(a.evidence_sufficiency_score for a in assessments) / total_evaluated) if total_evaluated > 0 else 0.0
+    avg_trust = (sum(a.raw_trust_score for a in assessments) / total_evaluated) if total_evaluated > 0 else None
+    avg_sufficiency = (sum(a.evidence_sufficiency_score for a in assessments) / total_evaluated) if total_evaluated > 0 else None
 
     return {
         "total_evaluated_incidents": total_evaluated,
         "true_positive_recommendations": tp_count,
         "false_positive_recommendations": fp_count,
         "analyst_attention_decisions": attention_count,
-        "average_trust_score": round(avg_trust / 10.0, 1),
-        "average_sufficiency_score": round(avg_sufficiency, 1),
+        "average_trust_score": round(avg_trust / 10.0, 1) if avg_trust is not None else None,
+        "average_sufficiency_score": round(avg_sufficiency, 1) if avg_sufficiency is not None else None,
         "trust_score_distribution": score_dist,
         "low_trust_verdicts_count": low_trust_count,
         "missing_evidence_count": missing_evidence_count,
@@ -496,9 +534,10 @@ async def get_rule_wise_trustworthiness(
         # Find matching run if any
         matching_run = next((run for run in runs if run.rule_id in (r.id, r.rule_id)), None)
         if matching_run and matching_run.metrics:
-            measured_acc = matching_run.metrics.get("overall_accuracy")
-            tp_recall = matching_run.metrics.get("recall")
-            fp_spec = matching_run.metrics.get("specificity")
+            san_metrics = _sanitize_run_metrics(matching_run) or {}
+            measured_acc = san_metrics.get("overall_accuracy")
+            tp_recall = san_metrics.get("recall")
+            fp_spec = san_metrics.get("specificity")
             val_state = matching_run.validation_state
         else:
             measured_acc = None

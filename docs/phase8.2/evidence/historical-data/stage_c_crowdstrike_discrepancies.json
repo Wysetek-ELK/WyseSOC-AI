@@ -1,0 +1,206 @@
+{
+  "timestamp_utc": "2026-11-11T05:24:36.946149+00:00",
+  "git_sha": "cefe4ad031c873e9d7f97c01d1aba6f5486dbaa1",
+  "incidents": [
+    {
+      "incident_id": "132439932",
+      "incident_uuid": "3bb3f856-cf32-4daf-92ac-b59a9700cc72",
+      "rule_id": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "rule_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on TSI-IT-002-200",
+      "customer": "Tosoh",
+      "reporting_device": "api.us-2.crowdstrike.com",
+      "siem_event_count": 8,
+      "telemetry_highlights": {
+        "command": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+        "file_name": "UltraViewer_Service.exe",
+        "ioc_value": "update.ultraviewer.net",
+        "process_blocked_attr": "false",
+        "pattern_kill_process": "true",
+        "pattern_disposition": "Prevention, process killed.",
+        "ioa_rule_name": "Ultraviewer Domain Block"
+      },
+      "historical_resolution": "False Positive",
+      "cleared_reason": "kill process is true",
+      "cleared_user": "",
+      "cleared_time_epoch": 1793783492775,
+      "is_ml_generated": false,
+      "weak_containment_only_fp_note": true,
+      "local_investigation_state": {
+        "status": "PENDING_REVIEW",
+        "analyst_verdict": null,
+        "verdict_reason": "",
+        "is_disputed": 0,
+        "is_independently_verified": 0,
+        "analyst_notes": "[AI Verdict (TRUE_POSITIVE - 94%)]: Observed behavioral pattern matches adversary technique: suspicious process invocation with unauthorized script execution artifacts.\n\n[AI Verdict (TRUE_POSITIVE - 94%)]: Observed behavioral pattern matches adversary technique: suspicious process invocation with unauthorized script execution artifacts."
+      },
+      "stored_ai_verdict": {
+        "verdict": "TRUE_POSITIVE",
+        "confidence": 94.0,
+        "evaluated_at": "2026-11-07T12:40:59.598943",
+        "evaluated_by_user": "scheduler",
+        "model_identifier": "simulated-heuristic-v1",
+        "is_simulated": true,
+        "total_tokens": 0,
+        "validation_status": null,
+        "contract_id": null
+      },
+      "verdict_trust_rows": 0,
+      "evidence_sufficiency_rows": 0,
+      "token_usage_rows": 0,
+      "audit_logs": [
+        {
+          "username": "scheduler",
+          "action": "AI_VERDICT_EVALUATE",
+          "details": "{\"verdict\": \"TRUE_POSITIVE\", \"confidence\": 94.0, \"latency_ms\": 12, \"model\": \"simulated-heuristic-v1\", \"is_simulated\": true}",
+          "created_at": "2026-11-07 12:40:59.502736"
+        },
+        {
+          "username": "scheduler",
+          "action": "AI_VERDICT_EVALUATE",
+          "details": "{\"verdict\": \"TRUE_POSITIVE\", \"confidence\": 94.0, \"latency_ms\": 12, \"model\": \"simulated-heuristic-v1\", \"is_simulated\": true}",
+          "created_at": "2026-11-07 12:40:59.608937"
+        }
+      ],
+      "primary_classification": "HISTORICAL_SNAPSHOT",
+      "secondary_classifications": [
+        "DIFFERENT_VERDICT_SEMANTICS",
+        "LABEL_ERROR"
+      ],
+      "finding_summary": "Stored AI TP (94.0%) came from legacy scheduler simulated-heuristic-v1 batch on 2026-11-07T12:40:59.598943 with 0 tokens and 0 AIS 2.1 validation/trust rows; NOT a Server 2 LLM inference error. Human FP closure rationale cites containment ('kill process') with empty clearedUser matching ML batch epoch rather than benign authorization."
+    },
+    {
+      "incident_id": "132441815",
+      "incident_uuid": "1052979a-685f-45e0-848a-ebc3185253fa",
+      "rule_id": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "rule_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on DESKTOP-E0G2R49",
+      "customer": "Tosoh",
+      "reporting_device": "api.us-2.crowdstrike.com",
+      "siem_event_count": 16,
+      "telemetry_highlights": {
+        "command": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+        "file_name": "UltraViewer_Service.exe",
+        "ioc_value": "update.ultraviewer.net",
+        "process_blocked_attr": "false",
+        "pattern_kill_process": "true",
+        "pattern_disposition": "Prevention, process killed.",
+        "ioa_rule_name": "Ultraviewer Domain Block"
+      },
+      "historical_resolution": "False Positive",
+      "cleared_reason": "proccess is kiled",
+      "cleared_user": "",
+      "cleared_time_epoch": 1793784466188,
+      "is_ml_generated": false,
+      "weak_containment_only_fp_note": true,
+      "local_investigation_state": {
+        "status": "PENDING_REVIEW",
+        "analyst_verdict": null,
+        "verdict_reason": "",
+        "is_disputed": 0,
+        "is_independently_verified": 0,
+        "analyst_notes": "[AI Verdict (TRUE_POSITIVE - 94%)]: Observed behavioral pattern matches adversary technique: suspicious process invocation with unauthorized script execution artifacts.\n\n[AI Verdict (TRUE_POSITIVE - 94%)]: Observed behavioral pattern matches adversary technique: suspicious process invocation with unauthorized script execution artifacts."
+      },
+      "stored_ai_verdict": {
+        "verdict": "TRUE_POSITIVE",
+        "confidence": 94.0,
+        "evaluated_at": "2026-11-07T12:40:59.776620",
+        "evaluated_by_user": "scheduler",
+        "model_identifier": "simulated-heuristic-v1",
+        "is_simulated": true,
+        "total_tokens": 0,
+        "validation_status": null,
+        "contract_id": null
+      },
+      "verdict_trust_rows": 0,
+      "evidence_sufficiency_rows": 0,
+      "token_usage_rows": 0,
+      "audit_logs": [
+        {
+          "username": "scheduler",
+          "action": "AI_VERDICT_EVALUATE",
+          "details": "{\"verdict\": \"TRUE_POSITIVE\", \"confidence\": 94.0, \"latency_ms\": 12, \"model\": \"simulated-heuristic-v1\", \"is_simulated\": true}",
+          "created_at": "2026-11-07 12:40:59.678369"
+        },
+        {
+          "username": "scheduler",
+          "action": "AI_VERDICT_EVALUATE",
+          "details": "{\"verdict\": \"TRUE_POSITIVE\", \"confidence\": 94.0, \"latency_ms\": 12, \"model\": \"simulated-heuristic-v1\", \"is_simulated\": true}",
+          "created_at": "2026-11-07 12:40:59.781774"
+        }
+      ],
+      "primary_classification": "HISTORICAL_SNAPSHOT",
+      "secondary_classifications": [
+        "DIFFERENT_VERDICT_SEMANTICS",
+        "LABEL_ERROR"
+      ],
+      "finding_summary": "Stored AI TP (94.0%) came from legacy scheduler simulated-heuristic-v1 batch on 2026-11-07T12:40:59.776620 with 0 tokens and 0 AIS 2.1 validation/trust rows; NOT a Server 2 LLM inference error. Human FP closure rationale cites containment ('kill process') with empty clearedUser matching ML batch epoch rather than benign authorization."
+    },
+    {
+      "incident_id": "132474210",
+      "incident_uuid": "bf34ee32-7d66-4448-b4f7-05e16b61f139",
+      "rule_id": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "rule_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on PC-TSI-DC",
+      "customer": "Tosoh",
+      "reporting_device": "api.us-2.crowdstrike.com",
+      "siem_event_count": 13,
+      "telemetry_highlights": {
+        "command": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+        "file_name": "UltraViewer_Service.exe",
+        "ioc_value": "update.ultraviewer.net",
+        "process_blocked_attr": "false",
+        "pattern_kill_process": "true",
+        "pattern_disposition": "Prevention, process killed.",
+        "ioa_rule_name": "Ultraviewer Domain Block"
+      },
+      "historical_resolution": "False Positive",
+      "cleared_reason": "legitimate activity, nothing suspicious observed.",
+      "cleared_user": "",
+      "cleared_time_epoch": 1793798921497,
+      "is_ml_generated": false,
+      "weak_containment_only_fp_note": false,
+      "local_investigation_state": {
+        "status": "PENDING_REVIEW",
+        "analyst_verdict": null,
+        "verdict_reason": "",
+        "is_disputed": 0,
+        "is_independently_verified": 0,
+        "analyst_notes": "[AI Verdict (TRUE_POSITIVE - 94%)]: Observed behavioral pattern matches adversary technique: suspicious process invocation with unauthorized script execution artifacts.\n\n[AI Verdict (TRUE_POSITIVE - 94%)]: Observed behavioral pattern matches adversary technique: suspicious process invocation with unauthorized script execution artifacts."
+      },
+      "stored_ai_verdict": {
+        "verdict": "TRUE_POSITIVE",
+        "confidence": 94.0,
+        "evaluated_at": "2026-11-07T12:41:00.574172",
+        "evaluated_by_user": "scheduler",
+        "model_identifier": "simulated-heuristic-v1",
+        "is_simulated": true,
+        "total_tokens": 0,
+        "validation_status": null,
+        "contract_id": null
+      },
+      "verdict_trust_rows": 0,
+      "evidence_sufficiency_rows": 0,
+      "token_usage_rows": 0,
+      "audit_logs": [
+        {
+          "username": "scheduler",
+          "action": "AI_VERDICT_EVALUATE",
+          "details": "{\"verdict\": \"TRUE_POSITIVE\", \"confidence\": 94.0, \"latency_ms\": 12, \"model\": \"simulated-heuristic-v1\", \"is_simulated\": true}",
+          "created_at": "2026-11-07 12:41:00.501576"
+        },
+        {
+          "username": "scheduler",
+          "action": "AI_VERDICT_EVALUATE",
+          "details": "{\"verdict\": \"TRUE_POSITIVE\", \"confidence\": 94.0, \"latency_ms\": 12, \"model\": \"simulated-heuristic-v1\", \"is_simulated\": true}",
+          "created_at": "2026-11-07 12:41:00.582790"
+        }
+      ],
+      "primary_classification": "HISTORICAL_SNAPSHOT",
+      "secondary_classifications": [
+        "EVIDENCE_ERROR"
+      ],
+      "finding_summary": "Stored AI TP (94.0%) came from legacy scheduler simulated-heuristic-v1 batch on 2026-11-07T12:41:00.574172 with 0 tokens and 0 AIS 2.1 validation/trust rows; NOT a Server 2 LLM inference error. Human FP closure states legitimate activity with empty clearedUser and no independent local Investigation verification."
+    }
+  ]
+}

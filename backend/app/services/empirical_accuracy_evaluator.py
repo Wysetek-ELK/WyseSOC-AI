@@ -156,19 +156,39 @@ class EmpiricalAccuracyEvaluator:
         fpr = (fp / (fp + tn)) if (fp + tn) > 0 else None
         fnr = (fn / (tp + fn)) if (tp + fn) > 0 else None
 
-        # Balanced Accuracy & F1
-        if recall is not None and specificity is not None:
-            balanced_accuracy = (recall + specificity) / 2.0
-        else:
+        # Balanced Accuracy & F1 (requires both TP and FP classes with non-zero decisive denominators)
+        if verified_gt_count == 0:
             balanced_accuracy = None
+            ba_reason = "NOT_CALCULABLE: Zero verified ground-truth cases (N=0)."
+        elif auto_decision_count == 0:
+            balanced_accuracy = None
+            ba_reason = "NOT_CALCULABLE: Zero decisive automated predictions (all abstained)."
+        elif recall is None and specificity is None:
+            balanced_accuracy = None
+            ba_reason = "NOT_CALCULABLE: Zero decisive TP and FP denominators."
+        elif recall is None:
+            balanced_accuracy = None
+            ba_reason = "NOT_CALCULABLE: Missing True Positive class denominator (TP + FN = 0)."
+        elif specificity is None:
+            balanced_accuracy = None
+            ba_reason = "NOT_CALCULABLE: Missing False Positive class denominator (TN + FP = 0)."
+        else:
+            balanced_accuracy = (recall + specificity) / 2.0
+            ba_reason = "CALCULATED: Two-class denominator verified (TP+FN > 0 and TN+FP > 0)."
+
+        overall_acc = ((tp + tn) / auto_decision_count) if auto_decision_count > 0 else None
+        auto_error_rate = ((fp + fn) / auto_decision_count) if auto_decision_count > 0 else None
+
+        metric_status = (
+            "CALCULATED"
+            if balanced_accuracy is not None
+            else ("PARTIAL" if overall_acc is not None else "NOT_CALCULABLE")
+        )
 
         if precision is not None and recall is not None and (precision + recall) > 0:
             f1 = 2.0 * (precision * recall) / (precision + recall)
         else:
             f1 = None
-
-        overall_acc = ((tp + tn) / auto_decision_count) if auto_decision_count > 0 else None
-        auto_error_rate = ((fp + fn) / auto_decision_count) if auto_decision_count > 0 else None
 
         return EmpiricalAccuracyMetrics(
             total_evaluated_incidents=total,
@@ -198,6 +218,8 @@ class EmpiricalAccuracyEvaluator:
             f1_score=round(f1, 4) if f1 is not None else None,
             overall_accuracy=round(overall_acc, 4) if overall_acc is not None else None,
             error_rate_among_automatic=round(auto_error_rate, 4) if auto_error_rate is not None else None,
+            metric_status=metric_status,
+            balanced_accuracy_reason=ba_reason,
             critical_false_negatives=fn,
             unsupported_verdicts=unsupported_count,
             evidence_insufficiency_count=insufficiency_count,

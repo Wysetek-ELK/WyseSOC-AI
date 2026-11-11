@@ -1516,6 +1516,15 @@ export const api = {
     return res.json();
   },
 
+  async previewPolicyQuality(ruleId: string, versionId?: string): Promise<PolicyQualityAssessmentResponse> {
+    const url = versionId
+      ? `${API_BASE}/prompts/rule/${ruleId}/quality-preview?version_id=${versionId}`
+      : `${API_BASE}/prompts/rule/${ruleId}/quality-preview`;
+    const res = await fetchWithAuth(url);
+    if (!res.ok) throw new Error("Failed to load read-only policy quality preview");
+    return res.json();
+  },
+
   async validatePolicyQuality(ruleId: string, versionId?: string): Promise<PolicyQualityAssessmentResponse> {
     const url = versionId ? `${API_BASE}/prompts/rule/${ruleId}/validate-quality?version_id=${versionId}` : `${API_BASE}/prompts/rule/${ruleId}/validate-quality`;
     const res = await fetchWithAuth(url, { method: "POST" });
@@ -2279,8 +2288,8 @@ export interface VerdictTrustOverviewResponse {
   true_positive_recommendations: number;
   false_positive_recommendations: number;
   analyst_attention_decisions: number;
-  average_trust_score: number;
-  average_sufficiency_score: number;
+  average_trust_score?: number | null;
+  average_sufficiency_score?: number | null;
   trust_score_distribution: Record<string, number>;
   low_trust_verdicts_count: number;
   missing_evidence_count: number;

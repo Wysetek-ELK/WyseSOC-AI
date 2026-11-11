@@ -109,6 +109,12 @@ FIELD_MAPPINGS: Dict[str, Dict[str, str]] = {
     "attack tactic": {"field": "mitre.tactic", "type": "SECURITY_EVENT"},
     "attacktechnique": {"field": "mitre.technique", "type": "SECURITY_EVENT"},
     "attack technique": {"field": "mitre.technique", "type": "SECURITY_EVENT"},
+    "timestamp": {"field": "event.timestamp", "type": "SECURITY_EVENT"},
+    "eventtime": {"field": "event.timestamp", "type": "SECURITY_EVENT"},
+    "event_time": {"field": "event.timestamp", "type": "SECURITY_EVENT"},
+    "eventreceivetime": {"field": "event.timestamp", "type": "SECURITY_EVENT"},
+    "event_receive_time": {"field": "event.timestamp", "type": "SECURITY_EVENT"},
+    "event receive time": {"field": "event.timestamp", "type": "SECURITY_EVENT"},
 }
 
 
@@ -184,6 +190,9 @@ class EvidenceNormalizationService:
             except Exception:
                 pass
 
+        if obs_time:
+            add_record("event.timestamp", obs_time, "SECURITY_EVENT", "TOP", obs_time)
+
         if incident.source_ip and incident.source_ip.strip():
             add_record("network.source_ip", incident.source_ip.strip(), "NETWORK_CONNECTION", "TOP", obs_time)
 
@@ -211,6 +220,9 @@ class EvidenceNormalizationService:
                     evt_time_str = datetime.fromtimestamp(evt_rx_time / 1000.0, timezone.utc).isoformat()
                 except Exception:
                     pass
+
+            if evt_time_str:
+                add_record("event.timestamp", evt_time_str, "SECURITY_EVENT", evt_id, evt_time_str)
 
             if evt_type and evt_type.strip():
                 add_record("security.event_type", evt_type.strip(), "SECURITY_EVENT", evt_id, evt_time_str)

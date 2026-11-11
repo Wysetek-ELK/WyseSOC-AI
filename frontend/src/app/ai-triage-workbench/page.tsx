@@ -54,6 +54,29 @@ function AITriageWorkbenchContent() {
   const [verdictError, setVerdictError] = useState<string | null>(null);
   const [syncingResolutions, setSyncingResolutions] = useState(false);
   const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
+  const [llmOnline, setLlmOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    api.getLlmStatus()
+      .then((res) => {
+        if (mounted) setLlmOnline(Boolean(res?.is_healthy));
+      })
+      .catch(() => {
+        if (mounted) setLlmOnline(false);
+      });
+    const onStatus = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (mounted && detail && typeof detail.is_healthy === "boolean") {
+        setLlmOnline(detail.is_healthy);
+      }
+    };
+    window.addEventListener("llm-status-change", onStatus);
+    return () => {
+      mounted = false;
+      window.removeEventListener("llm-status-change", onStatus);
+    };
+  }, []);
 
   const handleSyncResolutions = async () => {
     setSyncingResolutions(true);
@@ -677,7 +700,17 @@ function AITriageWorkbenchContent() {
                         <Database className="h-3 w-3" />
                         Stored in DB
                       </span>
-                      <span className="text-emerald-400 font-semibold">• GPU Live</span>
+                      {aiVerdict.model_identifier && ["POLICY_GUARD", "PREFLIGHT_GUARD", "TOKEN_BUDGET_GUARD"].includes(aiVerdict.model_identifier) ? (
+                        <span className="text-amber-400 font-semibold">• Deterministic Guard</span>
+                      ) : aiVerdict.validation_status === "INVALID_MODEL_OUTPUT" ? (
+                        <span className="text-rose-400 font-semibold">• INVALID_MODEL_OUTPUT (Abstained)</span>
+                      ) : aiVerdict.is_simulated ? (
+                        <span className="text-amber-300 font-semibold">• SIMULATED (Non-Production)</span>
+                      ) : llmOnline ? (
+                        <span className="text-emerald-400 font-semibold">• Recorded Server 2 Inference (S2 Online)</span>
+                      ) : (
+                        <span className="text-cyan-300 font-semibold">• Historical Live Record (S2 Offline Now)</span>
+                      )}
                     </div>
                   </div>
 

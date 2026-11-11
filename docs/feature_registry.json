@@ -1,9 +1,9 @@
 {
   "metadata": {
     "project": "AI Verdict \u2014 Enterprise Agentic SOC Intelligence Platform",
-    "updated_at": "2026-11-11T09:43:54+05:30",
-    "git_commit": "d7448ed+phase8.1",
-    "architecture_version": "AIS 2.1 + Audit Remediation v2.2.1 + Phase 8.1 Hardening",
+    "updated_at": "2026-11-11T10:50:00+05:30",
+    "git_commit": "cefe4ad+phase8.2",
+    "architecture_version": "AIS 2.1 + Audit Remediation v2.2.1 + Phase 8.1/8.2 Hardening",
     "weighting_rule": "Unweighted criteria ratio per feature (satisfied_impl / applicable_impl; verified_acc / applicable_acc); NOT_APPLICABLE criteria excluded from denominator with explicit justification. Module and overall percentages sum raw criteria across features."
   },
   "summary": {
@@ -228,11 +228,14 @@
         "backend/tests/test_audit_remediations.py",
         "backend/tests/test_policy_remediation_and_ground_truth.py",
         "backend/tests/test_agent_intelligence_studio_v2.py",
-        "backend/tests/test_phase8_1_validation.py"
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py"
       ],
       "evidence_files": [
         "backend/app/services/policy_quality_validator.py",
-        "docs/phase8.1/PHASE_8_1_QUALITY_GATES.md"
+        "docs/phase8.1/PHASE_8_1_QUALITY_GATES.md",
+        "docs/phase8.2/PHASE_8_2_G1_G8_VALIDATION.md",
+        "docs/phase8.2/evidence/quality-gates/stage_g_policy_quality_gates.json"
       ],
       "evidence_notes": [
         "G1-G8 gate scoring, G5 RFC-1918 checks, G7 consistency, G8 INCONCLUSIVE/stale-digest checks, and P8.1-DEF-004 3-tier eligibility separation (structural vs empirical vs autonomous) verified."
@@ -492,14 +495,16 @@
       ],
       "test_files": [
         "backend/tests/test_evidence_normalization.py",
-        "backend/tests/test_audit_remediations.py"
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_phase8_2_validation.py"
       ],
       "evidence_files": [
         "backend/app/services/evidence_normalization_service.py",
-        "backend/app/api/incidents.py"
+        "backend/app/api/incidents.py",
+        "docs/phase8.2/PHASE_8_2_LIVE_LLM_VALIDATION.md"
       ],
       "evidence_notes": [
-        "Supports FortiSIEM aliases (sentBytes64, direction, processBlocked), unique digest-salted IDs on duplicate payload fields, and exposes canonical_evidence via /api/incidents/{id}/model-payload."
+        "Supports FortiSIEM aliases (sentBytes64, direction, processBlocked, event_receive_time), canonical event.timestamp emission (P8.2-DEF-007), unique digest-salted IDs, and exposes canonical_evidence via /api/incidents/{id}/model-payload."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -661,15 +666,17 @@
         "backend/tests/test_verdict_intelligence_validation.py",
         "backend/tests/test_verdict_intelligence_enhancements_v2.py",
         "backend/tests/test_audit_remediations.py",
-        "backend/tests/test_phase8_1_validation.py"
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py"
       ],
       "evidence_files": [
         "backend/app/services/verdict_trustworthiness_engine.py",
         "backend/app/api/verdict_intelligence.py",
-        "docs/phase8.1/evidence/verdicts/stage5_verdict_disposition_traces.json"
+        "docs/phase8.1/evidence/verdicts/stage5_verdict_disposition_traces.json",
+        "docs/phase8.2/PHASE_8_2_EMPIRICAL_ACCURACY.md"
       ],
       "evidence_notes": [
-        "Real DB-backed trust assessments, NOT_CALCULABLE handling, contradiction/ungrounded trust cap <=3, and invalid model output trust cap <=2 (P8.1-DEF-003) verified."
+        "Real DB-backed trust assessments, NOT_CALCULABLE handling, contradiction/ungrounded trust cap <=3, invalid model output trust cap <=2 (P8.1-DEF-003), and compute_trust_score is_calibrated=False parity (P8.2-DEF-006) verified."
       ],
       "remaining_gap": "Real production DB currently holds 0 calibrated rules until >=30 adjudicated historical outcomes per rule accumulate.",
       "acceptance_criteria": [
@@ -740,13 +747,17 @@
       "test_files": [
         "backend/tests/test_ground_truth_isolation.py",
         "backend/tests/test_verified_semantic_rag.py",
-        "backend/tests/test_verdict_intelligence_validation.py"
+        "backend/tests/test_verdict_intelligence_validation.py",
+        "backend/tests/test_phase8_2_validation.py"
       ],
       "evidence_files": [
-        "backend/app/services/historical_ground_truth_validator.py"
+        "backend/app/services/historical_ground_truth_validator.py",
+        "docs/phase8.2/PHASE_8_2_GROUND_TRUTH_AUDIT.md",
+        "docs/phase8.2/PHASE_8_2_HISTORICAL_DISCREPANCIES.md",
+        "docs/phase8.2/evidence/historical-data/stage_c_corpus_inventory.json"
       ],
       "evidence_notes": [
-        "Strips cleared/resolution keys recursively before inference; rejects ML-generated ground truth labels; partitions deterministically via SHA-256."
+        "Strips cleared/resolution keys recursively before inference (0 leakage hits); rejects ML labels, synthetic 0-event debug fixtures (P8.2-DEF-001), and near-duplicate clusters (P8.2-DEF-002); flags containment-only FP notes."
       ],
       "remaining_gap": "Real SOC historical closure dataset volume remains external dependency.",
       "acceptance_criteria": [
@@ -782,13 +793,16 @@
       "test_files": [
         "backend/tests/test_verdict_intelligence_validation.py",
         "backend/tests/test_verdict_intelligence_enhancements_v2.py",
-        "backend/tests/test_evaluation_metrics.py"
+        "backend/tests/test_evaluation_metrics.py",
+        "backend/tests/test_phase8_2_validation.py"
       ],
       "evidence_files": [
-        "backend/app/services/empirical_accuracy_evaluator.py"
+        "backend/app/services/empirical_accuracy_evaluator.py",
+        "docs/phase8.2/PHASE_8_2_EMPIRICAL_ACCURACY.md",
+        "docs/phase8.2/evidence/metrics/stage_f_empirical_accuracy_and_calibration.json"
       ],
       "evidence_notes": [
-        "Returns None (not 0.0) when denominators are zero; computes Wilson score intervals and 10-step risk-coverage curve."
+        "Returns NOT_CALCULABLE / INSUFFICIENT_CLASS_BALANCE with None balanced_accuracy when denominators/classes are insufficient (P8.2-DEF-003/004); sanitizes legacy evaluation runs at API read time."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1142,15 +1156,18 @@
       ],
       "test_files": [
         "backend/tests/test_audit_remediations.py",
-        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py"
       ],
       "evidence_files": [
         "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
         "docs/phase8/evidence/test-results/playwright_e2e_summary.json",
-        "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md"
+        "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md",
+        "docs/phase8.2/evidence/frontend/playwright_p82_summary.json",
+        "docs/phase8.2/PHASE_8_2_FRONTEND_SECURITY.md"
       ],
       "evidence_notes": [
-        "Verified authoritative verdict badge, deterministic guard banner, 0/0 claim ratio, canonical evidence tab, blind review toggle, GT isolation, offline fail-closed UI, and 404 handling in headless Chromium Playwright E2E."
+        "Verified authoritative verdict badge, deterministic guard banner, 0/0 claim ratio, canonical evidence tab, blind review toggle, GT isolation, offline runtime badge distinction ('Historical Live Record (S2 Offline Now)' vs 'SIMULATED'), Uncalibrated Ordinal trust label, and 404 handling in headless Chromium Playwright E2E."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1186,16 +1203,19 @@
       ],
       "test_files": [
         "frontend/tests/admin-guide.test.mjs",
-        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py"
       ],
       "evidence_files": [
         "frontend/src/app/verdict-intelligence/page.tsx",
         "frontend/tests/admin-guide.test.mjs",
         "docs/phase8/evidence/test-results/playwright_e2e_summary.json",
-        "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md"
+        "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md",
+        "docs/phase8.2/evidence/frontend/playwright_p82_summary.json",
+        "docs/phase8.2/PHASE_8_2_FRONTEND_SECURITY.md"
       ],
       "evidence_notes": [
-        "Admin guide 7/7 assertions pass; fixed Dashboard B missing-CI nullish crash (P8-DEF-09); verified DOM-to-API parity, simulation toggle default OFF, NOT_CALIBRATED badge, and AIS G1-G8 browser workflows via Playwright Chromium E2E."
+        "Admin guide 7/7 assertions pass; fixed Dashboard B missing-CI nullish crash (P8-DEF-09) and zero-denominator NOT_CALCULABLE integrity (P8.2-DEF-003/004); verified DOM-to-API parity, simulation toggle default OFF, NOT_CALIBRATED badge, and AIS G1-G8 browser workflows via Playwright Chromium E2E."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1324,15 +1344,18 @@
         "backend/tests/test_auth.py",
         "backend/tests/test_phase1_security_controls.py",
         "backend/tests/test_audit_remediations.py",
-        "backend/tests/test_phase8_1_validation.py"
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py"
       ],
       "evidence_files": [
         "backend/app/utils/security.py",
         "backend/app/services/audit_service.py",
-        "docs/phase8.1/PHASE_8_1_SECURITY_VALIDATION.md"
+        "docs/phase8.1/PHASE_8_1_SECURITY_VALIDATION.md",
+        "docs/phase8.2/PHASE_8_2_FRONTEND_SECURITY.md",
+        "docs/phase8.2/evidence/security/governor_security_scan.txt"
       ],
       "evidence_notes": [
-        "Bcrypt/PyJWT auth, admin approval gate, Viewer 403 block on POST /incidents/{id}/ai-verdict (P8.1-DEF-005), prompt-injection defense, GT isolation, and tamper-evident AuditLog verified."
+        "Bcrypt/PyJWT auth, admin approval gate, Viewer 403 block on POST /incidents/{id}/ai-verdict (P8.1-DEF-005) & POST /prompts/rule/{rule_id}/validate-quality vs GET /quality-preview (P8.2-DEF-005), prompt-injection defense, GT isolation, and tamper-evident AuditLog verified."
       ],
       "remaining_gap": "External SIEM/CEF syslog forwarding of AuditLog depends on deployment environment.",
       "acceptance_criteria": [
@@ -1362,13 +1385,15 @@
       ],
       "test_files": [
         "backend/tests/test_system_health_observability.py",
-        "backend/tests/test_telemetry_timeline_and_tokens.py"
+        "backend/tests/test_telemetry_timeline_and_tokens.py",
+        "backend/tests/test_phase8_2_validation.py"
       ],
       "evidence_files": [
-        "backend/app/services/telemetry_timeline_service.py"
+        "backend/app/services/telemetry_timeline_service.py",
+        "docs/phase8.2/PHASE_8_2_FRONTEND_SECURITY.md"
       ],
       "evidence_notes": [
-        "Live/simulated token bifurcation and per-incident timeline milestone storage verified."
+        "Live/simulated token bifurcation, per-incident timeline milestone storage, unauthenticated /api/health base_url redaction, and Inference Control DEGRADED (S2 OFFLINE) reporting (P8.2-DEF-006) verified."
       ],
       "remaining_gap": "None in local API layer.",
       "acceptance_criteria": [
@@ -1439,13 +1464,15 @@
         "backend/tests/test_phase2_integration.py",
         "backend/tests/test_phase3_integration.py",
         "backend/tests/test_phase4_integration.py",
-        "backend/tests/test_phase8_1_validation.py"
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py"
       ],
       "evidence_files": [
-        "backend/tests/test_audit_remediations.py"
+        "backend/tests/test_audit_remediations.py",
+        "docs/phase8.2/evidence/test-results/phase8_2_master_test_results.json"
       ],
       "evidence_notes": [
-        "Full backend pytest suite plus Phase 8.1 defect/security suite passed without skipped or relaxed assertions after final edits."
+        "Full backend pytest suite (283 passed, 0 failed) including Phase 8.1 and Phase 8.2 defect/security/wire suites passed without skipped or relaxed assertions after final edits."
       ],
       "remaining_gap": "External hardware integration tests (live Server 2 GPU + live FortiSIEM appliance) excluded from offline pytest environment.",
       "acceptance_criteria": [
@@ -1471,16 +1498,19 @@
       "test_files": [
         "frontend/tests/admin-guide.test.mjs",
         "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
-        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py"
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py"
       ],
       "evidence_files": [
         "frontend/tests/admin-guide.test.mjs",
         "docs/phase8/evidence/test-results/playwright_e2e_summary.json",
         "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md",
-        "docs/phase8.1/PHASE_8_1_FRONTEND_VALIDATION.md"
+        "docs/phase8.1/PHASE_8_1_FRONTEND_VALIDATION.md",
+        "docs/phase8.2/PHASE_8_2_FRONTEND_SECURITY.md",
+        "docs/phase8.2/evidence/frontend/playwright_p82_summary.json"
       ],
       "evidence_notes": [
-        "npx tsc --noEmit, admin-guide tests (7/7), Next.js production build, and Playwright Chromium E2E suites (Phase 8 & Phase 8.1, 0 console/page errors) all verified passing."
+        "npx tsc --noEmit, admin-guide tests (7/7), Next.js production build (30 routes), and Playwright Chromium E2E suites (Phase 8, 8.1, & 8.2, 0 console/page errors) all verified passing."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1555,10 +1585,28 @@
         "docs/phase8.1/PHASE_8_1_EXECUTION_MATRIX.md",
         "docs/phase8.1/PHASE_8_1_FEATURE_STATUS.md",
         "docs/phase8.1/PHASE_8_1_REMAINING_WORK.md",
-        "docs/phase8.1/PHASE_8_1_FINAL_REPORT.md"
+        "docs/phase8.1/PHASE_8_1_FINAL_REPORT.md",
+        "docs/phase8.2/README.md",
+        "docs/phase8.2/PHASE_8_2_BASELINE_AUDIT.md",
+        "docs/phase8.2/PHASE_8_2_STAGING_READINESS.md",
+        "docs/phase8.2/PHASE_8_2_STAGING_DEPLOYMENT.md",
+        "docs/phase8.2/PHASE_8_2_DATABASE_WORKERS.md",
+        "docs/phase8.2/PHASE_8_2_LIVE_LLM_VALIDATION.md",
+        "docs/phase8.2/PHASE_8_2_GROUND_TRUTH_AUDIT.md",
+        "docs/phase8.2/PHASE_8_2_HISTORICAL_DISCREPANCIES.md",
+        "docs/phase8.2/PHASE_8_2_EMPIRICAL_ACCURACY.md",
+        "docs/phase8.2/PHASE_8_2_G1_G8_VALIDATION.md",
+        "docs/phase8.2/PHASE_8_2_VERDICT_E2E_TESTS.md",
+        "docs/phase8.2/PHASE_8_2_FRONTEND_SECURITY.md",
+        "docs/phase8.2/PHASE_8_2_FORTISIEM_VALIDATION.md",
+        "docs/phase8.2/PHASE_8_2_DEFECT_REGISTER.md",
+        "docs/phase8.2/PHASE_8_2_EXECUTION_MATRIX.md",
+        "docs/phase8.2/PHASE_8_2_FEATURE_STATUS.md",
+        "docs/phase8.2/PHASE_8_2_REMAINING_WORK.md",
+        "docs/phase8.2/PHASE_8_2_FINAL_REPORT.md"
       ],
       "evidence_notes": [
-        "Phase 5/6 architecture docs, Phase 8 docs (preserved unchanged), and complete Phase 8.1 documentation suite under docs/phase8.1/ authored and path-checked."
+        "Phase 5/6 architecture docs, Phase 8 & 8.1 docs (preserved unchanged), and complete 18-report Phase 8.2 suite under docs/phase8.2/ authored and path-checked."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1590,7 +1638,9 @@
         "scripts/validate_feature_registry.py",
         "docs/phase8/PHASE_8_FINAL_REPORT.md",
         "docs/phase8.1/PHASE_8_1_FEATURE_STATUS.md",
-        "docs/phase8.1/PHASE_8_1_FINAL_REPORT.md"
+        "docs/phase8.1/PHASE_8_1_FINAL_REPORT.md",
+        "docs/phase8.2/PHASE_8_2_FEATURE_STATUS.md",
+        "docs/phase8.2/PHASE_8_2_FINAL_REPORT.md"
       ],
       "evidence_notes": [
         "Automated script + pytest enforcement verify unique IDs, valid repo paths, mathematical percentage rollups, and JSON-to-Markdown parity."

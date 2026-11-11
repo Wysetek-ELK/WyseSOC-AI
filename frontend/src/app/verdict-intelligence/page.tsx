@@ -393,11 +393,11 @@ function VerdictIntelligenceContent() {
             <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
               <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Average Trust Score</span>
               <div className="text-3xl font-bold text-indigo-400 mt-2 flex items-baseline gap-1">
-                {overview?.average_trust_score || "N/A"}
+                {overview?.average_trust_score != null ? overview.average_trust_score : "N/A"}
                 <span className="text-sm font-normal text-slate-500">/ 10</span>
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Avg Sufficiency: {overview?.average_sufficiency_score || 0}%
+                Avg Sufficiency: {overview?.average_sufficiency_score != null ? `${overview.average_sufficiency_score}%` : "N/A"} (Uncalibrated Ordinal Scale)
               </p>
             </div>
           </div>
@@ -556,7 +556,7 @@ function VerdictIntelligenceContent() {
                       <p className="text-xs text-slate-400">Statistical bounds (95% two-sided Wilson score intervals)</p>
                     </div>
                     <span className="text-xs px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md border border-slate-700 font-mono">
-                      N = {runDetails.run.metrics.verified_ground_truth_cases || 0} Verified Cases
+                      N = {runDetails.run.metrics.verified_ground_truth_cases ?? runDetails.run.verified_ground_truth_cases ?? 0} Verified GT · Decisive = {(runDetails.run.metrics.true_positives || 0) + (runDetails.run.metrics.false_positives || 0) + (runDetails.run.metrics.false_negatives || 0) + (runDetails.run.metrics.true_negatives || 0)}
                     </span>
                   </div>
 
@@ -602,12 +602,23 @@ function VerdictIntelligenceContent() {
 
                     <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800">
                       <span className="text-xs text-slate-400 font-medium">Balanced Accuracy</span>
-                      <div className="text-xl font-bold text-white mt-1">
-                        {runDetails.run.metrics.balanced_accuracy != null
-                          ? `${Math.round(runDetails.run.metrics.balanced_accuracy * 100)}%`
-                          : "N/A"}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">(Recall + Specificity)/2</div>
+                      {(() => {
+                        const m = runDetails.run.metrics;
+                        const dec = (m.true_positives || 0) + (m.false_positives || 0) + (m.false_negatives || 0) + (m.true_negatives || 0);
+                        const validBA = m.balanced_accuracy != null && m.recall != null && m.specificity != null && dec > 0;
+                        return (
+                          <>
+                            <div className="text-xl font-bold text-white mt-1">
+                              {validBA ? `${Math.round(m.balanced_accuracy * 100)}%` : "NOT_CALCULABLE"}
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                              {validBA
+                                ? `(Recall + Specificity)/2 (Decisive N=${dec})`
+                                : (m.balanced_accuracy_reason || "Requires non-zero TP & FP decisive denominators")}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -616,21 +627,21 @@ function VerdictIntelligenceContent() {
                     <div>
                       <span className="text-xs text-slate-400">Automatic Decision Coverage</span>
                       <div className="text-lg font-bold text-emerald-400 mt-0.5">
-                        {runDetails.run.metrics.automatic_decision_coverage !== null
+                        {runDetails.run.metrics.automatic_decision_coverage != null
                           ? `${Math.round(runDetails.run.metrics.automatic_decision_coverage * 100)}%`
-                          : "0%"}
+                          : "N/A"}
                       </div>
-                      <p className="text-[11px] text-slate-500">Decided without human intervention</p>
+                      <p className="text-[11px] text-slate-500">Decided without human intervention (Verified GT denominator)</p>
                     </div>
 
                     <div>
                       <span className="text-xs text-slate-400">Analyst Escalation Rate</span>
                       <div className="text-lg font-bold text-amber-400 mt-0.5">
-                        {runDetails.run.metrics.analyst_attention_rate !== null
+                        {runDetails.run.metrics.analyst_attention_rate != null
                           ? `${Math.round(runDetails.run.metrics.analyst_attention_rate * 100)}%`
-                          : "0%"}
+                          : "N/A"}
                       </div>
-                      <p className="text-[11px] text-slate-500">Safely abstained on uncertain telemetry</p>
+                      <p className="text-[11px] text-slate-500">Safely abstained on uncertain telemetry (not 0% error)</p>
                     </div>
 
                     <div>
@@ -679,10 +690,10 @@ function VerdictIntelligenceContent() {
                           <td className="py-2.5 px-3 text-slate-300">{bin.mean_predicted_trust} / 10</td>
                           <td className="py-2.5 px-3 text-slate-300">{bin.sample_count}</td>
                           <td className="py-2.5 px-3 text-emerald-400">
-                            {bin.observed_accuracy !== null ? `${Math.round(bin.observed_accuracy * 100)}%` : "N/A"}
+                            {bin.observed_accuracy != null ? `${Math.round(bin.observed_accuracy * 100)}%` : "N/A"}
                           </td>
                           <td className="py-2.5 px-3 text-red-400">
-                            {bin.error_rate !== null ? `${Math.round(bin.error_rate * 100)}%` : "N/A"}
+                            {bin.error_rate != null ? `${Math.round(bin.error_rate * 100)}%` : "N/A"}
                           </td>
                           <td className="py-2.5 px-3 text-slate-400 font-sans">
                             {bin.sample_count >= 5 ? "Sufficient Data" : "Sparse (< 5)"}
@@ -1127,8 +1138,8 @@ function VerdictIntelligenceContent() {
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2 font-mono">
                       <span>N={r.total_cases}</span>
-                      <span>Acc: {r.overall_accuracy !== null ? `${Math.round(r.overall_accuracy * 100)}%` : "N/A"}</span>
-                      <span>Cov: {r.automatic_coverage !== null ? `${Math.round(r.automatic_coverage * 100)}%` : "N/A"}</span>
+                      <span>Acc: {r.overall_accuracy != null ? `${Math.round(r.overall_accuracy * 100)}%` : "NOT_CALCULABLE"}</span>
+                      <span>Cov: {r.automatic_coverage != null ? `${Math.round(r.automatic_coverage * 100)}%` : "N/A"}</span>
                     </div>
                   </div>
                 ))}

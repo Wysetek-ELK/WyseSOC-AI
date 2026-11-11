@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import {
   api,
+  User,
   RuleItem,
   RulePrompt,
   PromptVersion,
@@ -87,6 +88,8 @@ export default function AgentIntelligenceStudioPage() {
   // Policy Quality Validation State
   const [qualityAssessment, setQualityAssessment] = useState<PolicyQualityAssessmentResponse | null>(null);
   const [loadingQuality, setLoadingQuality] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const isViewer = currentUser?.role === "Read-Only Viewer";
 
   // Policy Simulation State
   const [simulationResult, setSimulationResult] = useState<PolicySimulationResult | null>(null);
@@ -218,6 +221,7 @@ export default function AgentIntelligenceStudioPage() {
   // Initial data loading & URL query parameter check
   useEffect(() => {
     async function init() {
+      api.getMe().then(setCurrentUser).catch(() => null);
       await Promise.all([loadRules(), loadSummaries()]);
 
       if (typeof window !== "undefined") {
@@ -286,6 +290,19 @@ export default function AgentIntelligenceStudioPage() {
     }
   };
 
+  const fetchQualityPreview = async (ruleId: string, versionId?: string) => {
+    if (!ruleId) return;
+    setLoadingQuality(true);
+    try {
+      const qRes = await api.previewPolicyQuality(ruleId, versionId);
+      setQualityAssessment(qRes);
+    } catch (err: any) {
+      console.error("Failed to preview policy quality:", err);
+    } finally {
+      setLoadingQuality(false);
+    }
+  };
+
   const fetchQualityValidation = async (ruleId: string, versionId?: string) => {
     if (!ruleId) return;
     setLoadingQuality(true);
@@ -294,6 +311,7 @@ export default function AgentIntelligenceStudioPage() {
       setQualityAssessment(qRes);
     } catch (err: any) {
       console.error("Failed to validate policy quality:", err);
+      setFeedback({ type: "error", text: err.message || "Failed to validate policy quality" });
     } finally {
       setLoadingQuality(false);
     }
@@ -322,7 +340,7 @@ export default function AgentIntelligenceStudioPage() {
 
   useEffect(() => {
     if (selectedRuleId && selectedVersionId) {
-      fetchQualityValidation(selectedRuleId, selectedVersionId);
+      fetchQualityPreview(selectedRuleId, selectedVersionId);
     }
   }, [selectedRuleId, selectedVersionId]);
 
@@ -1430,9 +1448,10 @@ export default function AgentIntelligenceStudioPage() {
 
           <button
             type="button"
-            disabled={loadingQuality || !selectedVersionId}
+            disabled={loadingQuality || !selectedVersionId || isViewer}
             onClick={() => fetchQualityValidation(selectedRuleId, selectedVersionId)}
-            className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition-colors"
+            title={isViewer ? "Requires SOC Analyst or Administrator role to persist validation scores" : "Persist validated quality score & audit log"}
+            className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 font-medium flex items-center gap-1.5 transition-colors"
           >
             <Award className="w-3.5 h-3.5 text-cyan-400" />
             Validate Quality
@@ -2053,8 +2072,9 @@ export default function AgentIntelligenceStudioPage() {
                     </div>
                     <button
                       onClick={() => fetchQualityValidation(selectedRuleId, selectedVersionId)}
-                      disabled={loadingQuality}
-                      className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-1.5"
+                      disabled={loadingQuality || isViewer}
+                      title={isViewer ? "Requires SOC Analyst or Administrator role" : "Re-run and persist validation"}
+                      className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 flex items-center gap-1.5"
                     >
                       <RefreshCw className={`w-3 h-3 text-cyan-400 ${loadingQuality ? "animate-spin" : ""}`} />
                       Revalidate
@@ -2809,9 +2829,11 @@ export default function AgentIntelligenceStudioPage() {
                       <div>
                         <div className="text-[10px] text-slate-500 uppercase">Balanced Accuracy</div>
                         <div className="text-base font-bold font-mono text-cyan-400 mt-0.5">
-                          {simulationResult.balanced_accuracy != null
+                          {simulationResult.balanced_accuracy != null &&
+                          simulationResult.recall != null &&
+                          simulationResult.specificity != null
                             ? `${Math.round(simulationResult.balanced_accuracy * 100)}%`
-                            : "N/A"}
+                            : "NOT_CALCULABLE"}
                         </div>
                       </div>
                       <div>

@@ -1,0 +1,49 @@
+{
+  "timestamp_utc": "2026-11-11T05:19:00Z",
+  "phase": "Phase 8.2",
+  "overall_result": "PASSED_OFFLINE_GATES_WITH_STAGING_BLOCKED",
+  "backend_unit_and_integration": {
+    "command": "cd backend && pytest -v --ignore=tests/e2e_browser --tb=short",
+    "passed": 283,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": 239.55,
+    "log_file": "docs/phase8.2/evidence/test-results/backend_pytest_final.txt"
+  },
+  "phase8_2_specific_backend": {
+    "command": "cd backend && pytest -v tests/test_phase8_2_validation.py --tb=short",
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": 11.74
+  },
+  "frontend_build_and_unit": {
+    "typecheck": "npx tsc --noEmit -> exit 0",
+    "admin_guide_tests": "npm run test:admin-guide -> 7/7 passed",
+    "production_build": "npm run build -> exit 0 (30 routes)",
+    "log_file": "docs/phase8.2/evidence/frontend/frontend_checks_final.txt"
+  },
+  "browser_e2e": {
+    "phase8_2_e2e": {
+      "command": "cd backend && pytest -v tests/e2e_browser/test_phase8_2_ui_e2e.py --tb=short",
+      "passed": 1,
+      "steps_passed": 4,
+      "steps_total": 4,
+      "console_errors": 0,
+      "page_errors": 0,
+      "duration_seconds": 26.99,
+      "log_file": "docs/phase8.2/evidence/test-results/playwright_p82_final.txt",
+      "summary_file": "docs/phase8.2/evidence/frontend/playwright_p82_summary.json"
+    },
+    "phase8_1_e2e": {
+      "command": "cd backend && pytest -v tests/e2e_browser/test_phase8_1_ui_e2e.py --tb=short",
+      "passed": 1,
+      "duration_seconds": 35.88
+    },
+    "phase8_e2e": {
+      "command": "cd backend && pytest -v tests/e2e_browser/test_phase8_ui_e2e.py --tb=short",
+      "passed": 1,
+      "duration_seconds": 45.80
+    }
+  }
+}

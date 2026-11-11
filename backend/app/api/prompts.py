@@ -373,17 +373,12 @@ async def generate_intelligent_draft(
     return PromptVersionResponse.model_validate(ver)
 
 
-@router.post("/rule/{rule_id}/validate-quality", response_model=PolicyQualityAssessmentResponse)
-async def validate_policy_quality(
+async def _compute_policy_quality_readonly(
+    db: AsyncSession,
     rule_id: str,
-    version_id: Optional[str] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    version_id: Optional[str] = None,
 ):
-    """
-    REQ-05 / REQ-06: Evaluates policy quality against 8 mandatory gates.
-    Returns quality score, gate findings, blocking issues, and approval eligibility.
-    """
+    """Evaluates policy G1-G8 quality without mutating database state."""
     rule_res = await db.execute(select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id)))
     rule = rule_res.scalars().first()
     if not rule:
@@ -404,11 +399,9 @@ async def validate_policy_quality(
     if not target_ver:
         raise HTTPException(status_code=404, detail="Specified prompt version not found")
 
-    # Evaluate contract and quality (check if authoritative snapshot exists)
     semantics, classification, archetype_def = await _analyze_with_snapshot(db, rule)
     contract = EvidenceRequirementMapper.map_evidence_contract(rule, semantics, archetype_def, target_ver)
 
-    # Check for recent simulation results in HistoricalEvaluationRunRecord to prevent stale G8
     latest_run_q = (
         select(HistoricalEvaluationRunRecord)
         .where(
@@ -425,7 +418,18 @@ async def validate_policy_quality(
         metrics_dict = getattr(latest_run, "metrics", {}) or getattr(latest_run, "metrics_payload", {}) or {}
         reg_summary = getattr(latest_run, "regression_summary", {}) or {}
         cfg_snapshot = getattr(latest_run, "config_snapshot", {}) or {}
-        eligible_gt = metrics_dict.get("verified_ground_truth_cases", getattr(latest_run, "verified_ground_truth_cases", 0))
+        eligible_gt = metrics_dict.get("verified_ground_truth_cases")
+        if eligible_gt is None:
+            eligible_gt = getattr(latest_run, "verified_ground_truth_cases", 0)
+        ba_val = metrics_dict.get("balanced_accuracy")
+        if ba_val is None:
+            ba_val = getattr(latest_run, "balanced_accuracy", None)
+        ece_val = metrics_dict.get("ece")
+        if ece_val is None:
+            ece_val = getattr(latest_run, "ece", None)
+        brier_val = metrics_dict.get("brier_score")
+        if brier_val is None:
+            brier_val = getattr(latest_run, "brier_score", None)
         sim_results = {
             "sample_count": getattr(latest_run, "total_cases", 0) or getattr(latest_run, "sample_size", 0),
             "eligible_ground_truth_count": eligible_gt,
@@ -433,9 +437,9 @@ async def validate_policy_quality(
             "simulation_status": latest_run.validation_state,
             "regression_status": reg_summary.get("regression_status") or ("NOT_ASSESSED" if not latest_run.baseline_run_id else latest_run.validation_state),
             "critical_regressions": 1 if latest_run.status == "FAILED" or metrics_dict.get("critical_false_negatives", 0) > 0 or latest_run.validation_state == "REGRESSION_DETECTED" else 0,
-            "balanced_accuracy": metrics_dict.get("balanced_accuracy") or getattr(latest_run, "balanced_accuracy", None),
-            "ece": metrics_dict.get("ece") or getattr(latest_run, "ece", None),
-            "brier_score": metrics_dict.get("brier_score") or getattr(latest_run, "brier_score", None),
+            "balanced_accuracy": ba_val,
+            "ece": ece_val,
+            "brier_score": brier_val,
             "policy_digest": cfg_snapshot.get("policy_digest"),
             "metrics": metrics_dict,
         }
@@ -457,12 +461,55 @@ async def validate_policy_quality(
     assessment.structural_approval_eligible = structural_eligible
     assessment.empirical_validation_eligible = empirical_eligible
     assessment.autonomous_operation_eligible = structural_eligible and empirical_eligible
+    return rule, target_ver, assessment
 
-    # Update version status
+
+@router.get("/rule/{rule_id}/quality-preview", response_model=PolicyQualityAssessmentResponse)
+async def preview_policy_quality(
+    rule_id: str,
+    version_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Read-only G1-G8 quality assessment preview (permits Viewers without DB mutation)."""
+    _, _, assessment = await _compute_policy_quality_readonly(db, rule_id, version_id)
+    return assessment
+
+
+@router.post("/rule/{rule_id}/validate-quality", response_model=PolicyQualityAssessmentResponse)
+async def validate_policy_quality(
+    rule_id: str,
+    version_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+):
+    """
+    REQ-05 / REQ-06: Evaluates policy quality against 8 mandatory gates and persists
+    validated quality score/status to the prompt version (Analyst/Admin only).
+    """
+    rule, target_ver, assessment = await _compute_policy_quality_readonly(db, rule_id, version_id)
+
+    # Persist quality metadata only for authorized mutating POST
     target_ver.quality_score = assessment.quality_score
     target_ver.quality_assessment_id = assessment.assessment_id
-    if not target_ver.status == "APPROVED":
+    if target_ver.status != "APPROVED":
         target_ver.quality_status = "APPROVAL_ELIGIBLE" if assessment.approval_eligible else "REWORK_REQUIRED"
+
+    audit = AuditService(db)
+    await audit.log(
+        action="POLICY_QUALITY_VALIDATED",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="PromptVersion",
+        entity_id=str(target_ver.id),
+        details={
+            "rule_id": rule.id,
+            "quality_score": assessment.quality_score,
+            "structural_approval_eligible": assessment.structural_approval_eligible,
+            "empirical_validation_eligible": assessment.empirical_validation_eligible,
+            "quality_status": target_ver.quality_status,
+        },
+    )
     await db.commit()
 
     return assessment

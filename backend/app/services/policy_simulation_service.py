@@ -127,11 +127,12 @@ class PolicySimulationService:
         except Exception as e:
             logger.warning(f"Failed querying completed evaluation runs for rule {rule_id}: {e}")
 
-        # 2. Fallback: count real verified non-ML HistoricalGroundTruth records for this rule
+        # 2. Fallback: count real verified non-ML, non-synthetic, non-duplicate HistoricalGroundTruth records
         try:
             gt_q = (
                 select(Incident, HistoricalGroundTruth)
                 .join(HistoricalGroundTruth, Incident.id == HistoricalGroundTruth.incident_id)
+                .options(selectinload(Incident.events))
                 .where(
                     Incident.rule_id.in_(list(rule_ids)),
                     HistoricalGroundTruth.is_ml_generated == False,
@@ -139,13 +140,34 @@ class PolicySimulationService:
             )
             gt_res = await self.db.execute(gt_q)
             verified_count = 0
-            for _, gt in gt_res.all():
+            seen_clusters = set()
+            for inc_obj, gt in gt_res.all():
+                rp = inc_obj.raw_payload
+                if isinstance(rp, str):
+                    try:
+                        rp = json.loads(rp)
+                    except Exception:
+                        rp = {}
+                elif not isinstance(rp, dict):
+                    rp = {}
+                if HistoricalGroundTruthValidator.is_synthetic_fixture(inc_obj, rp, gt):
+                    continue
+                miss_reason, _ = HistoricalGroundTruthValidator.is_missing_evidence(inc_obj, rp)
+                if miss_reason:
+                    continue
                 adj, _, _ = HistoricalGroundTruthValidator.adjudicate_label(
                     raw_resolution=gt.resolution,
                     analyst_comments=gt.comments,
                     is_ml_generated=gt.is_ml_generated,
+                    cleared_reason=getattr(gt, "cleared_reason", None),
+                    cleared_user=getattr(gt, "cleared_user", None),
                 )
                 if adj in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
+                    cluster_key = HistoricalGroundTruthValidator.compute_duplicate_cluster_key(inc_obj, gt, adj.value)
+                    if cluster_key:
+                        if cluster_key in seen_clusters:
+                            continue
+                        seen_clusters.add(cluster_key)
                     verified_count += 1
 
             return {
@@ -339,12 +361,17 @@ class PolicySimulationService:
         analyst_labeled_count = 0
         eligible_count = 0
         excluded_count = 0
+        duplicate_excluded_count = 0
+        synthetic_excluded_count = 0
         rule_matched_count = 0
         exclusion_reasons: Dict[str, int] = {
             "RULE_MISMATCH": 0,
             "MISSING_ANALYST_LABEL": 0,
             "AMBIGUOUS_LABEL": 0,
             "CORRUPT_OR_EMPTY_PAYLOAD": 0,
+            "MISSING_EVIDENCE": 0,
+            "SYNTHETIC_FIXTURE_EXCLUDED": 0,
+            "DUPLICATE_CLUSTER_EXCLUDED": 0,
             "HEURISTIC_OR_ML_LABEL": 0,
         }
         exclusions_detail: List[Dict[str, Any]] = []
@@ -356,6 +383,44 @@ class PolicySimulationService:
             "excluded": [],
             "evaluated": [],
         }
+
+        def _parse_payload(inc_obj: Incident) -> Dict[str, Any]:
+            rp = inc_obj.raw_payload
+            if isinstance(rp, str):
+                try:
+                    rp = json.loads(rp)
+                except Exception:
+                    rp = {}
+            elif not isinstance(rp, dict):
+                rp = {}
+            return rp
+
+        # Deterministic pre-pass to select primary representative per duplicate closure cluster
+        cluster_candidates: Dict[str, Tuple[int, str]] = {}
+        for inc_c, gt_c in rows:
+            if rule_ids and (inc_c.rule_id not in rule_ids):
+                continue
+            rp_c = _parse_payload(inc_c)
+            if HistoricalGroundTruthValidator.is_synthetic_fixture(inc_c, rp_c, gt_c):
+                continue
+            miss_c, _ = HistoricalGroundTruthValidator.is_missing_evidence(inc_c, rp_c)
+            if miss_c or not gt_c or not gt_c.resolution:
+                continue
+            adj_c, _, _ = HistoricalGroundTruthValidator.adjudicate_label(
+                raw_resolution=gt_c.resolution,
+                analyst_comments=gt_c.comments,
+                is_ml_generated=gt_c.is_ml_generated,
+                cleared_reason=getattr(gt_c, "cleared_reason", None),
+                cleared_user=getattr(gt_c, "cleared_user", None),
+            )
+            if adj_c in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
+                ckey = HistoricalGroundTruthValidator.compute_duplicate_cluster_key(inc_c, gt_c, adj_c.value)
+                if ckey:
+                    ev_score = len(getattr(inc_c, "events", None) or []) + len(rp_c.get("rawEvents") or [])
+                    cid_str = str(inc_c.incident_id or inc_c.id)
+                    best = cluster_candidates.get(ckey)
+                    if best is None or ev_score > best[0] or (ev_score == best[0] and cid_str < best[1]):
+                        cluster_candidates[ckey] = (ev_score, cid_str)
 
         for inc, gt in rows:
             inc_id_str = str(inc.incident_id or inc.id)
@@ -405,27 +470,25 @@ class PolicySimulationService:
                 "resolution": str(gt.resolution) if gt and gt.resolution else None,
             })
 
-            # Safely handle raw payload whether dict or JSON string
-            raw_payload = inc.raw_payload
-            if isinstance(raw_payload, str):
-                try:
-                    raw_payload = json.loads(raw_payload)
-                except Exception:
-                    raw_payload = {}
-            elif not isinstance(raw_payload, dict):
-                raw_payload = {}
-
-            is_empty_payload = not raw_payload or (isinstance(raw_payload, dict) and len(raw_payload) == 0 and not inc.source_ip)
+            raw_payload = _parse_payload(inc)
 
             # Ground truth adjudication and exclusion tracking
             gt_label = None
             exclusion_reason = None
             exclusion_detail = None
 
-            if is_empty_payload:
-                exclusion_reason = "CORRUPT_OR_EMPTY_PAYLOAD"
-                exclusion_detail = "Incident telemetry payload is empty or corrupt."
-                exclusion_reasons["CORRUPT_OR_EMPTY_PAYLOAD"] += 1
+            synthetic_detail = HistoricalGroundTruthValidator.is_synthetic_fixture(inc, raw_payload, gt)
+            missing_code, missing_detail = HistoricalGroundTruthValidator.is_missing_evidence(inc, raw_payload)
+
+            if synthetic_detail:
+                exclusion_reason = "SYNTHETIC_FIXTURE_EXCLUDED"
+                exclusion_detail = synthetic_detail
+                exclusion_reasons["SYNTHETIC_FIXTURE_EXCLUDED"] += 1
+                synthetic_excluded_count += 1
+            elif missing_code:
+                exclusion_reason = missing_code
+                exclusion_detail = missing_detail
+                exclusion_reasons[missing_code] = exclusion_reasons.get(missing_code, 0) + 1
             elif not gt or not gt.resolution:
                 exclusion_reason = "MISSING_ANALYST_LABEL"
                 exclusion_detail = "Incident has not been closed or labeled by an analyst."
@@ -439,12 +502,11 @@ class PolicySimulationService:
                     "comments": str(gt.comments or ""),
                     "is_ml_generated": bool(gt.is_ml_generated),
                 })
-                is_automated_res = (
-                    gt.is_ml_generated
-                    or "machine learning" in (gt.comments or "").lower()
-                    or "resolution set by machine learning" in (gt.comments or "").lower()
-                    or "automated" in (gt.comments or "").lower()
-                    or "auto cleared" in (gt.comments or "").lower()
+                is_automated_res = HistoricalGroundTruthValidator._is_automated_resolution_text(
+                    is_ml_generated=bool(gt.is_ml_generated),
+                    comments=str(gt.comments or ""),
+                    cleared_reason=str(getattr(gt, "cleared_reason", "") or ""),
+                    cleared_user=str(getattr(gt, "cleared_user", "") or ""),
                 )
                 if is_automated_res:
                     exclusion_reason = "HEURISTIC_OR_ML_LABEL"
@@ -455,6 +517,8 @@ class PolicySimulationService:
                         raw_resolution=gt.resolution,
                         analyst_comments=gt.comments,
                         is_ml_generated=gt.is_ml_generated,
+                        cleared_reason=getattr(gt, "cleared_reason", None),
+                        cleared_user=getattr(gt, "cleared_user", None),
                     )
                     if adj_label in (GroundTruthLabel.UNKNOWN, GroundTruthLabel.UNVERIFIED):
                         exclusion_reason = "AMBIGUOUS_LABEL"
@@ -465,15 +529,33 @@ class PolicySimulationService:
                         exclusion_detail = "Conflicting analyst assessments logged."
                         exclusion_reasons["AMBIGUOUS_LABEL"] += 1
                     elif adj_label in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP):
-                        eligible_count += 1
-                        gt_label = adj_label.value
-                        stage_details["eligible"].append({
-                            "incident_id": inc_id_str,
-                            "rule_id": inc_rule_str,
-                            "ground_truth": gt_label,
-                            "resolution": str(gt.resolution),
-                            "comments": str(gt.comments or ""),
-                        })
+                        ckey = HistoricalGroundTruthValidator.compute_duplicate_cluster_key(inc, gt, adj_label.value)
+                        if ckey and cluster_candidates.get(ckey, (0, ""))[1] != inc_id_str:
+                            exclusion_reason = "DUPLICATE_CLUSTER_EXCLUDED"
+                            exclusion_detail = (
+                                f"Duplicate batch-closure cluster '{ckey}' represented by primary incident "
+                                f"'{cluster_candidates[ckey][1]}' to prevent sample-size inflation."
+                            )
+                            exclusion_reasons["DUPLICATE_CLUSTER_EXCLUDED"] += 1
+                            duplicate_excluded_count += 1
+                        else:
+                            eligible_count += 1
+                            gt_label = adj_label.value
+                            weak_fp_note = HistoricalGroundTruthValidator.is_containment_only_fp_note(
+                                raw_resolution=gt.resolution,
+                                cleared_reason=getattr(gt, "cleared_reason", None),
+                                analyst_comments=gt.comments,
+                                cleared_user=getattr(gt, "cleared_user", None),
+                            )
+                            stage_details["eligible"].append({
+                                "incident_id": inc_id_str,
+                                "rule_id": inc_rule_str,
+                                "ground_truth": gt_label,
+                                "resolution": str(gt.resolution),
+                                "comments": str(gt.comments or getattr(gt, "cleared_reason", "") or ""),
+                                "cluster_key": ckey,
+                                "weak_containment_fp_note": weak_fp_note,
+                            })
 
             if exclusion_reason:
                 excluded_count += 1
@@ -604,13 +686,17 @@ class PolicySimulationService:
             rule_matched=rule_matched_count,
             analyst_labeled=analyst_labeled_count,
             eligible=eligible_count,
+            independent_group_count=eligible_count,
             excluded=excluded_count,
+            duplicate_excluded_count=duplicate_excluded_count,
+            synthetic_excluded_count=synthetic_excluded_count,
             evaluated=len(eval_items),
             exclusion_reasons=exclusion_reasons,
             exclusions_detail=[IncidentExclusionRecord(**ex) for ex in exclusions_detail[:500]],
             stage_details=stage_details,
         )
         metrics = EmpiricalAccuracyEvaluator.evaluate_performance(eval_items, funnel=funnel_model)
+        metrics.independent_group_count = eligible_count
         metrics_dict = metrics.model_dump()
         metrics_dict["stage_details"] = stage_details
 
@@ -984,7 +1070,10 @@ class PolicySimulationService:
             empirical_validation_status = "INSUFFICIENT_DATA"
         elif int(metrics.get("critical_false_negatives") or 0) > 0:
             empirical_validation_status = "EVALUATED_FAILED"
-        elif (metrics.get("overall_accuracy") or 0.0) >= 0.80 or (metrics.get("balanced_accuracy") or 0.0) >= 0.80:
+        elif (
+            (metrics.get("overall_accuracy") is not None and float(metrics["overall_accuracy"]) >= 0.80)
+            or (metrics.get("balanced_accuracy") is not None and float(metrics["balanced_accuracy"]) >= 0.80)
+        ):
             empirical_validation_status = "EVALUATED_PASSED"
         else:
             empirical_validation_status = "INCONCLUSIVE"

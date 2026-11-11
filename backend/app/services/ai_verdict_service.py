@@ -41,6 +41,7 @@ class VerdictTriageAgent:
 
     _last_probe_time: float = 0.0
     _is_local_llm_online: Optional[bool] = None
+    _last_probed_base_url: Optional[str] = None
     _incident_locks: Dict[str, asyncio.Lock] = {}
 
     def __init__(self, db: AsyncSession):
@@ -92,12 +93,17 @@ class VerdictTriageAgent:
         if LLMConfigService.sync_runtime_settings():
             force_refresh = True
 
+        current_base_url = str(getattr(settings, "LOCAL_LLM_BASE_URL", "") or "").rstrip("/")
+        if cls._last_probed_base_url != current_base_url:
+            force_refresh = True
+
         now = time.time()
         cache_ttl = 30.0 if cls._is_local_llm_online else 8.0
         if not force_refresh and cls._is_local_llm_online is not None and (now - cls._last_probe_time) < cache_ttl:
             return cls._is_local_llm_online
 
         cls._last_probe_time = now
+        cls._last_probed_base_url = current_base_url
         provider = get_model_provider("OPENAI_COMPATIBLE")
         try:
             health = await provider.get_health()

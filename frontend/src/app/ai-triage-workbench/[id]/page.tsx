@@ -56,6 +56,29 @@ export default function AITriageWorkbenchDetailPage({
   const [verdictError, setVerdictError] = useState<string | null>(null);
   const [syncingResolution, setSyncingResolution] = useState(false);
   const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
+  const [llmOnline, setLlmOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    api.getLlmStatus()
+      .then((res) => {
+        if (mounted) setLlmOnline(Boolean(res?.is_healthy));
+      })
+      .catch(() => {
+        if (mounted) setLlmOnline(false);
+      });
+    const onStatus = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (mounted && detail && typeof detail.is_healthy === "boolean") {
+        setLlmOnline(detail.is_healthy);
+      }
+    };
+    window.addEventListener("llm-status-change", onStatus);
+    return () => {
+      mounted = false;
+      window.removeEventListener("llm-status-change", onStatus);
+    };
+  }, []);
 
   const handleSyncResolution = async () => {
     if (!incident) return;
@@ -323,10 +346,14 @@ export default function AITriageWorkbenchDetailPage({
 
               {aiVerdict.model_identifier && ["POLICY_GUARD", "PREFLIGHT_GUARD", "TOKEN_BUDGET_GUARD"].includes(aiVerdict.model_identifier) ? (
                 <span className="text-amber-400 font-semibold">• Deterministic Guard ({aiVerdict.model_identifier})</span>
+              ) : aiVerdict.validation_status === "INVALID_MODEL_OUTPUT" ? (
+                <span className="text-rose-400 font-semibold">• INVALID_MODEL_OUTPUT (Abstained)</span>
               ) : aiVerdict.is_simulated ? (
-                <span className="text-amber-300 font-semibold">• Simulated Mode</span>
+                <span className="text-amber-300 font-semibold">• SIMULATED (Non-Production)</span>
+              ) : llmOnline ? (
+                <span className="text-emerald-400 font-semibold">• Recorded S2 Inference (GPU Live Now)</span>
               ) : (
-                <span className="text-emerald-400 font-semibold">• GPU Live</span>
+                <span className="text-cyan-300 font-semibold">• Historical Live Record (S2 Offline Now)</span>
               )}
               <button
                 onClick={() => setAiVerdict(null)}
@@ -487,7 +514,7 @@ export default function AITriageWorkbenchDetailPage({
                       ? "bg-amber-950/60 text-amber-300 border-amber-800/70"
                       : "bg-rose-950/60 text-rose-300 border-rose-800/70"
                   }`}>
-                    Trust: {aiVerdict.trust_score}/10
+                    Trust: {aiVerdict.trust_score}/10 ({aiVerdict.is_calibrated ? "Calibrated" : "Uncalibrated Ordinal"})
                   </span>
                 )}
               </div>

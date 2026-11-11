@@ -78,12 +78,120 @@ class HistoricalGroundTruthValidator:
         return result if isinstance(result, dict) else {}
 
     @classmethod
+    def _is_automated_resolution_text(
+        cls,
+        is_ml_generated: bool = False,
+        comments: str = "",
+        cleared_reason: str = "",
+        cleared_user: str = "",
+        provenance: str = "",
+    ) -> bool:
+        combined = " ".join([comments, cleared_reason, cleared_user, provenance]).lower()
+        return bool(
+            is_ml_generated
+            or "machine learning" in combined
+            or "resolution set by machine learning" in combined
+            or "automated" in combined
+            or "auto-cleared" in combined
+            or "auto cleared" in combined
+            or "ai verdict" in combined
+            or "simulated-heuristic" in combined
+            or "ml generated" in combined
+            or str(provenance or "").upper().strip() in ("AI_GENERATED", "ML_GENERATED", "SIMULATED", "HEURISTIC")
+        )
+
+    @classmethod
+    def is_synthetic_fixture(
+        cls,
+        incident: Any,
+        raw_payload: Dict[str, Any],
+        ground_truth: Optional[Any] = None,
+    ) -> Optional[str]:
+        """
+        Identifies zero-event synthetic/debug fixtures so they never enter
+        empirical evaluation cohorts silently.
+        """
+        inc_id = str(getattr(incident, "incident_id", "") or "").upper().strip()
+        gt_prov = str(getattr(ground_truth, "provenance", "") or "").upper().strip()
+        if raw_payload.get("is_synthetic") is True or raw_payload.get("synthetic") is True or gt_prov == "SYNTHETIC_FIXTURE":
+            return "Incident is explicitly tagged as a synthetic test fixture without production telemetry."
+
+        ev_list = getattr(incident, "events", None) or []
+        raw_events = raw_payload.get("rawEvents") if isinstance(raw_payload, dict) else None
+        has_real_events = bool(len(ev_list) > 0 or (isinstance(raw_events, list) and len(raw_events) > 0))
+        is_debug_prefix = inc_id.startswith(("INC-DEBUG", "SYNTHETIC-", "DEBUG-FIXTURE"))
+        if is_debug_prefix and not has_real_events and getattr(incident, "first_seen_epoch", None) is None:
+            return f"Zero-event synthetic debug fixture '{inc_id}' lacks real SIEM rawEvents telemetry."
+        return None
+
+    @classmethod
+    def is_missing_evidence(cls, incident: Any, raw_payload: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Distinguishes corrupt/empty payloads from metadata-only wrappers lacking telemetry.
+        Returns: (reason_code, detail) or (None, None).
+        """
+        ev_list = getattr(incident, "events", None) or []
+        src_ip = getattr(incident, "source_ip", None)
+        if not raw_payload or (isinstance(raw_payload, dict) and len(raw_payload) == 0 and not src_ip and len(ev_list) == 0):
+            return "CORRUPT_OR_EMPTY_PAYLOAD", "Incident telemetry payload is empty or corrupt."
+
+        if isinstance(raw_payload, dict) and len(ev_list) == 0 and not src_ip:
+            raw_events = raw_payload.get("rawEvents")
+            non_meta_keys = [k for k in raw_payload.keys() if k not in ("metadata", "rawEventCount", "incidentId", "id")]
+            if not non_meta_keys and not (isinstance(raw_events, list) and len(raw_events) > 0):
+                return "MISSING_EVIDENCE", "Incident contains wrapper metadata only with zero normalized or raw event telemetry."
+        return None, None
+
+    @classmethod
+    def is_containment_only_fp_note(
+        cls,
+        raw_resolution: Optional[str],
+        cleared_reason: Optional[str] = None,
+        analyst_comments: Optional[str] = None,
+        cleared_user: Optional[str] = None,
+    ) -> bool:
+        """
+        Flags False Positive closures whose rationale only states EDR process kill/block
+        without benign/authorized justification or cleared_user attribution.
+        """
+        res_upper = str(raw_resolution or "").upper()
+        if "FALSE POSITIVE" not in res_upper and "FALSE_POSITIVE" not in res_upper:
+            return False
+        note = " ".join([str(cleared_reason or ""), str(analyst_comments or "")]).lower().strip()
+        benign_markers = ("legitimate", "benign", "authorized", "approved", "scheduled", "expected", "maintenance")
+        containment_markers = ("kill process", "proccess is kiled", "process killed", "blocked", "quarantined")
+        return bool(any(m in note for m in containment_markers) and not any(b in note for b in benign_markers) and not str(cleared_user or "").strip())
+
+    @classmethod
+    def compute_duplicate_cluster_key(
+        cls,
+        incident: Any,
+        ground_truth: Any,
+        adjudicated_label: str,
+    ) -> Optional[str]:
+        """
+        Computes a conservative near-duplicate batch closure cluster key so batch-closed
+        identical incident groups do not inflate sample counts or empirical confidence.
+        """
+        rule_key = str(getattr(incident, "rule_id", "") or getattr(incident, "event_type", "") or "").strip()
+        cleared_epoch = getattr(ground_truth, "cleared_time_epoch", None)
+        reason_norm = re.sub(r"\s+", " ", str(getattr(ground_truth, "cleared_reason", "") or "").strip().lower())
+        if not rule_key or not adjudicated_label:
+            return None
+        if cleared_epoch and len(reason_norm) >= 8:
+            raw_key = f"{rule_key}|{adjudicated_label}|epoch:{cleared_epoch}|{reason_norm}"
+            return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()[:16]
+        return None
+
+    @classmethod
     def adjudicate_label(
         cls,
         raw_resolution: str,
         analyst_comments: Optional[str] = None,
         is_ml_generated: bool = False,
         provenance: str = "HISTORICAL_IMPORT",
+        cleared_reason: Optional[str] = None,
+        cleared_user: Optional[str] = None,
     ) -> Tuple[GroundTruthLabel, float, str]:
         """
         Adjudicates a raw incident resolution into a verified ground truth label.
@@ -91,17 +199,17 @@ class HistoricalGroundTruthValidator:
         """
         clean_res = str(raw_resolution or "").strip().upper()
         comments = str(analyst_comments or "").strip()
+        reason_txt = str(cleared_reason or "").strip()
+        user_txt = str(cleared_user or "").strip()
+        combined_rationale = comments or reason_txt
 
         # If resolution was ML-generated or automated without human verification, mark UNVERIFIED
-        is_automated = (
-            is_ml_generated
-            or "machine learning" in comments.lower()
-            or "resolution set by machine learning" in comments.lower()
-            or "automated" in comments.lower()
-            or "auto-cleared" in comments.lower()
-            or "auto cleared" in comments.lower()
-            or "ai verdict" in comments.lower()
-            or "ml generated" in comments.lower()
+        is_automated = cls._is_automated_resolution_text(
+            is_ml_generated=is_ml_generated,
+            comments=comments,
+            cleared_reason=reason_txt,
+            cleared_user=user_txt,
+            provenance=provenance,
         )
         if is_automated:
             return (
@@ -115,7 +223,7 @@ class HistoricalGroundTruthValidator:
             return GroundTruthLabel.UNKNOWN, 0.0, "Incident is open or lacks resolution."
 
         # Incident closure alone without explicit TP/FP disposition is unverified
-        if clean_res in ("CLOSED", "MANUALLY CLEARED", "AUTO CLEARED", "CLEARED", "RESOLVED"):
+        if clean_res in ("CLOSED", "MANUALLY CLEARED", "AUTO CLEARED", "CLEARED", "RESOLVED", "CLOSE", "MITIGATED", "BLOCKED", "KILLED"):
             return (
                 GroundTruthLabel.UNVERIFIED,
                 0.5,
@@ -124,15 +232,15 @@ class HistoricalGroundTruthValidator:
 
         # Check for True Positive variants
         if any(term in clean_res for term in ("TRUE POSITIVE", "TRUE_POSITIVE", "MALICIOUS", "ATTACK", "INCIDENT")):
-            if len(comments) >= 10:
-                return GroundTruthLabel.VERIFIED_TP, 1.0, f"Verified TP with analyst rationale: {comments[:80]}"
+            if len(combined_rationale) >= 10:
+                return GroundTruthLabel.VERIFIED_TP, 1.0, f"Verified TP with analyst rationale: {combined_rationale[:80]}"
             else:
                 return GroundTruthLabel.VERIFIED_TP, 0.85, "TP indicated by analyst without extensive comments."
 
         # Check for False Positive variants
         if any(term in clean_res for term in ("FALSE POSITIVE", "FALSE_POSITIVE", "BENIGN", "AUTHORIZED", "EXPECTED", "NO_ACTION")):
-            if len(comments) >= 10:
-                return GroundTruthLabel.VERIFIED_FP, 1.0, f"Verified FP with analyst rationale: {comments[:80]}"
+            if len(combined_rationale) >= 10:
+                return GroundTruthLabel.VERIFIED_FP, 1.0, f"Verified FP with analyst rationale: {combined_rationale[:80]}"
             else:
                 return GroundTruthLabel.VERIFIED_FP, 0.85, "FP indicated by analyst without extensive comments."
 

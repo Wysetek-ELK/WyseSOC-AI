@@ -304,7 +304,10 @@ class IncidentEligibilityFunnel(BaseModel):
     rule_matched: int = 0
     analyst_labeled: int = 0
     eligible: int = 0
+    independent_group_count: int = 0
     excluded: int = 0
+    duplicate_excluded_count: int = 0
+    synthetic_excluded_count: int = 0
     evaluated: int = 0
     exclusion_reasons: Dict[str, int] = Field(default_factory=dict)
     exclusions_detail: List[IncidentExclusionRecord] = Field(default_factory=list)
@@ -365,6 +368,9 @@ class EmpiricalAccuracyMetrics(BaseModel):
     f1_score: Optional[float] = None
     overall_accuracy: Optional[float] = None
     error_rate_among_automatic: Optional[float] = None
+    independent_group_count: Optional[int] = None
+    metric_status: Optional[str] = None
+    balanced_accuracy_reason: Optional[str] = None
 
     # Safety indicators
     critical_false_negatives: int = 0

@@ -86,7 +86,7 @@ class VerdictTrustworthinessEngine:
         definition_status: str = "VERIFIED",
         historical_sample_count: int = 0,
         historical_accuracy: Optional[float] = None,
-        is_calibrated: bool = False,
+        is_calibrated: Optional[bool] = None,
         calibrated_prob: Optional[float] = None,
     ) -> VerdictTrustAssessmentResult:
         """
@@ -169,7 +169,12 @@ class VerdictTrustworthinessEngine:
         acc_pct = (historical_accuracy * 100.0) if (historical_accuracy is not None and historical_accuracy <= 1.0) else historical_accuracy
         acc_ratio = (acc_pct / 100.0) if acc_pct is not None else 0.90
 
-        if is_calibrated or (historical_sample_count >= 30 and (acc_pct is None or acc_pct >= 70.0)):
+        effective_calibrated = (
+            bool(is_calibrated)
+            if is_calibrated is not None
+            else bool(historical_sample_count >= 30 and (acc_pct is None or acc_pct >= 70.0))
+        )
+        if effective_calibrated:
             hist_pts = acc_ratio * 15.0
             hist_status = "CALIBRATED"
         elif historical_sample_count >= 5:
@@ -184,7 +189,6 @@ class VerdictTrustworthinessEngine:
         # -------------------------------------------------------------
         # Total Raw Score & Ordinal 1–10 Normalization
         # -------------------------------------------------------------
-        effective_calibrated = bool(is_calibrated or hist_status == "CALIBRATED")
         raw_total = round(dim1 + dim2 + dim3 + dim4 + dim5, 2)
         ordinal_score = cls.score_to_ordinal(
             raw_total=raw_total,
@@ -313,7 +317,7 @@ class VerdictTrustworthinessEngine:
         claim_verification: Optional[Any] = None,
         historical_sample_size: int = 0,
         historical_accuracy: Optional[float] = None,
-        is_calibrated: bool = False,
+        is_calibrated: Optional[bool] = None,
         **kwargs
     ) -> VerdictTrustAssessmentResult:
         verdict = effective_verdict or proposed_verdict or "REQUIRES_ATTENTION"
@@ -346,7 +350,11 @@ class VerdictTrustworthinessEngine:
         # 5. Historical Empirical Validation (Max 15)
         acc_pct = (historical_accuracy * 100.0) if (historical_accuracy is not None and historical_accuracy <= 1.0) else historical_accuracy
         acc_ratio = (acc_pct / 100.0) if acc_pct is not None else 0.90
-        calibrated = is_calibrated or (historical_sample_size >= 30 and (acc_pct is None or acc_pct >= 70.0))
+        calibrated = (
+            bool(is_calibrated)
+            if is_calibrated is not None
+            else bool(historical_sample_size >= 30 and (acc_pct is None or acc_pct >= 70.0))
+        )
 
         if calibrated:
             dim5 = round(acc_ratio * 15.0, 2)
@@ -360,7 +368,20 @@ class VerdictTrustworthinessEngine:
 
         raw_total = round(dim1 + dim2 + dim3 + dim4 + dim5, 2)
         ordinal = cls.score_to_ordinal(raw_total, is_calibrated=calibrated, sample_count=historical_sample_size)
-        if suff and (getattr(suff, "mandatory_fields_missing", None) or getattr(suff, "evidence_status", None) == EvidenceStatus.CONFLICTING):
+        has_contradictions = bool(
+            (suff and (getattr(suff, "contradictions_detected", None) or getattr(suff, "evidence_status", None) == EvidenceStatus.CONFLICTING))
+            or (claim_res and (getattr(claim_res, "has_contradictions", False) or getattr(claim_res, "contradicted_claims", 0) > 0))
+        )
+        zero_grounded_decisive = bool(
+            str(verdict).upper().strip() in ("TRUE_POSITIVE", "FALSE_POSITIVE")
+            and (
+                not claim_res
+                or getattr(claim_res, "total_claims", 0) == 0
+                or getattr(claim_res, "grounded_claims", 0) == 0
+                or getattr(claim_res, "has_unsupported_assertions", False)
+            )
+        )
+        if (suff and getattr(suff, "mandatory_fields_missing", None)) or has_contradictions or zero_grounded_decisive:
             ordinal = min(3, ordinal)
 
         breakdown = TrustScoreDimensionBreakdown(
@@ -393,6 +414,7 @@ class VerdictTrustworthinessEngine:
             confidence_limitations=[],
             historical_validation_status=hist_status,
             is_calibrated=calibrated,
+            calibrated_probability=None if not calibrated else round(raw_total / 100.0, 4),
             human_readable_explanation=f"Direct computation for {rule_id}. Trust Score: {ordinal}/10.",
             model_identifier="direct-evaluator",
             evaluated_at=datetime.utcnow(),

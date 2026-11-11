@@ -63,10 +63,18 @@ async def health_check(
         llm_online = False
     gpu_telemetry = gpu_workload_manager.get_telemetry()
     cb_state = gpu_telemetry.get("circuit_breaker", {}).get("state", "CLOSED")
+    from urllib.parse import urlparse
+    parsed_llm = urlparse(settings.LOCAL_LLM_BASE_URL or "")
+    redacted_llm_url = (
+        f"{parsed_llm.scheme or 'http'}://<configured>:{parsed_llm.port or (443 if parsed_llm.scheme == 'https' else 8000)}{parsed_llm.path}"
+        if settings.LOCAL_LLM_BASE_URL
+        else ""
+    )
     components["local_llm"] = {
         "status": "healthy" if llm_online else "offline",
         "reachable": llm_online,
-        "base_url": settings.LOCAL_LLM_BASE_URL,
+        "endpoint_configured": bool(settings.LOCAL_LLM_BASE_URL),
+        "base_url_redacted": redacted_llm_url,
         "model_name": settings.LOCAL_LLM_MODEL_NAME,
         "circuit_breaker_state": cb_state,
         "active_concurrent_slots": gpu_telemetry.get("active_requests", 0),
