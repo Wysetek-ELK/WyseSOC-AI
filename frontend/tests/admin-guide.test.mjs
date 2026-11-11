@@ -187,3 +187,19 @@ test("Glossary, Guided Tour, and Troubleshooting cover required diagnostic scena
   assert.ok(ids.has("ts-missing-evidence-lowers-trust"));
   assert.ok(ids.has("ts-v1-vs-v2-different-results"));
 });
+
+test("WorkflowFlowDiagram fits full workspace screen with collapsible Step Details and no fullscreen maximize overlay", () => {
+  const diagramSrc = fs.readFileSync(
+    path.resolve("src/components/admin-guide/WorkflowFlowDiagram.tsx"),
+    "utf-8"
+  );
+  const pageSrc = fs.readFileSync(
+    path.resolve("src/app/admin-guide/page.tsx"),
+    "utf-8"
+  );
+  assert.doesNotMatch(diagramSrc, /Enter Fullscreen|Fullscreen Diagram Mode/);
+  assert.match(diagramSrc, /useState<boolean>\(false\)/);
+  assert.match(diagramSrc, /Step Details/);
+  assert.match(diagramSrc, /xl:col-span-12/);
+  assert.match(pageSrc, /className="space-y-4 w-full"/);
+});

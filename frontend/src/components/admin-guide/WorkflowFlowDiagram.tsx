@@ -8,8 +8,9 @@ import {
   RotateCcw,
   SkipBack,
   SkipForward,
-  Maximize2,
-  Minimize2,
+  PanelRightOpen,
+  PanelRightClose,
+  X,
   Scan,
   ZoomIn,
   ZoomOut,
@@ -242,6 +243,7 @@ export function WorkflowFlowDiagram({
 
   const [activeIndex, setActiveIndex] = useState<number>(initialIdx);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [showInspector, setShowInspector] = useState<boolean>(false);
   const [prevJumpTarget, setPrevJumpTarget] = useState<string>(
     `${initialStepId || ""}:${jumpNonce}`
   );
@@ -253,6 +255,7 @@ export function WorkflowFlowDiagram({
       if (targetIdx >= 0) {
         setActiveIndex(targetIdx);
         setIsPlaying(false);
+        setShowInspector(true);
       }
     }
   }
@@ -260,7 +263,6 @@ export function WorkflowFlowDiagram({
   const osReducedMotion = usePrefersReducedMotion();
   const [manualReducedMotion, setManualReducedMotion] = useState<boolean | null>(null);
   const reducedMotion = manualReducedMotion ?? osReducedMotion;
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [mobileListMode, setMobileListMode] = useState<boolean>(false);
   const [isDraggingCanvas, setIsDraggingCanvas] = useState<boolean>(false);
   const [fitPulseActive, setFitPulseActive] = useState<boolean>(false);
@@ -318,20 +320,22 @@ export function WorkflowFlowDiagram({
     };
   }, []);
 
+  const computeWorkspaceCanvasHeight = useCallback(() => {
+    if (typeof window === "undefined") return 560;
+    const cardEl = rootRef.current;
+    const mainEl = cardEl?.closest("main");
+    const mainTop = mainEl ? mainEl.getBoundingClientRect().top : 0;
+    const chromeAbove =
+      (toolbarRef.current?.offsetHeight || 68) +
+      (scrubberRef.current?.offsetHeight || 32);
+    const avail = Math.floor(window.innerHeight - (mainTop + 8) - chromeAbove - 16);
+    return Math.max(360, avail);
+  }, []);
+
   useEffect(() => {
-    if (isFullscreen || mobileListMode || typeof window === "undefined") return;
+    if (mobileListMode || typeof window === "undefined") return;
     const syncPanelHeight = () => {
-      const cardEl = rootRef.current;
-      if (!cardEl) return;
-      const cardTop = cardEl.getBoundingClientRect().top;
-      const mainEl = cardEl.closest("main");
-      const mainTop = mainEl ? mainEl.getBoundingClientRect().top : 0;
-      const topBound = Math.max(mainTop + 8, cardTop);
-      const chromeAbove =
-        (toolbarRef.current?.offsetHeight || 76) +
-        (scrubberRef.current?.offsetHeight || 32);
-      const avail = Math.floor(window.innerHeight - topBound - chromeAbove - 18);
-      const clamped = Math.max(300, Math.min(680, avail));
+      const clamped = computeWorkspaceCanvasHeight();
       setCanvasPanelHeight((prev) => (prev === clamped ? prev : clamped));
     };
     const rafId = requestAnimationFrame(syncPanelHeight);
@@ -340,7 +344,7 @@ export function WorkflowFlowDiagram({
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", syncPanelHeight);
     };
-  }, [isFullscreen, mobileListMode]);
+  }, [mobileListMode, computeWorkspaceCanvasHeight]);
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -353,15 +357,15 @@ export function WorkflowFlowDiagram({
     });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [mobileListMode, isFullscreen]);
+  }, [mobileListMode, showInspector]);
 
   const fittedTransform = useMemo(() => {
-    const pad = 20;
+    const pad = 12;
     const availW = Math.max(120, viewportSize.w - pad);
     const availH = Math.max(120, viewportSize.h - pad);
     const scaleX = availW / canvasBounds.contentWidth;
     const scaleY = availH / canvasBounds.contentHeight;
-    const zoom = Math.max(0.18, Math.min(scaleX, scaleY, 1.15));
+    const zoom = Math.max(0.18, Math.min(scaleX, scaleY, 1.28));
     const panX =
       (viewportSize.w - canvasBounds.contentWidth * zoom) / 2 -
       canvasBounds.minX * zoom;
@@ -374,16 +378,15 @@ export function WorkflowFlowDiagram({
   const activeTransform = manualTransform || fittedTransform;
 
   useEffect(() => {
-    if (!isFullscreen) return;
+    if (!showInspector) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setIsFullscreen(false);
-        setManualTransform(null);
+        setShowInspector(false);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isFullscreen]);
+  }, [showInspector]);
 
   useEffect(() => {
     const strip = scrubberRef.current;
@@ -456,28 +459,21 @@ export function WorkflowFlowDiagram({
   );
 
   const handleFitView = () => {
-    if (!isFullscreen && rootRef.current && typeof window !== "undefined") {
+    setShowInspector(false);
+    setManualTransform(null);
+
+    if (rootRef.current && typeof window !== "undefined") {
       const cardEl = rootRef.current;
       const mainEl = cardEl.closest("main");
-      const mainTop = mainEl ? mainEl.getBoundingClientRect().top : 0;
-      const chromeAbove =
-        (toolbarRef.current?.offsetHeight || 76) +
-        (scrubberRef.current?.offsetHeight || 32);
-      const screenFitH = Math.max(
-        300,
-        Math.min(720, Math.floor(window.innerHeight - (mainTop + 8) - chromeAbove - 18))
-      );
+      const screenFitH = computeWorkspaceCanvasHeight();
       setCanvasPanelHeight(screenFitH);
 
-      const hudH = hudRef.current?.getBoundingClientRect().height || 38;
+      const hudH = hudRef.current?.getBoundingClientRect().height || 34;
       const el = viewportRef.current;
       if (el) {
         const rect = el.getBoundingClientRect();
         const nextVw = rect.width;
-        const nextVh =
-          screenFitH === canvasPanelHeight
-            ? rect.height
-            : Math.max(120, screenFitH - hudH);
+        const nextVh = Math.max(120, screenFitH - hudH);
         if (nextVw > 50 && nextVh > 50) {
           setViewportSize((prev) =>
             Math.abs(prev.w - nextVw) < 0.5 && Math.abs(prev.h - nextVh) < 0.5
@@ -489,46 +485,23 @@ export function WorkflowFlowDiagram({
 
       if (mainEl) {
         requestAnimationFrame(() => {
-          const curCard = rootRef.current;
-          const curMain = curCard?.closest("main");
-          if (!curCard || !curMain) return;
-          const cTop = curCard.getBoundingClientRect().top;
-          const mTop = curMain.getBoundingClientRect().top;
-          const maxScroll = Math.max(0, curMain.scrollHeight - curMain.clientHeight);
-          const targetScroll = Math.max(0, Math.min(maxScroll, curMain.scrollTop + (cTop - (mTop + 8))));
-          curMain.scrollTo({
-            top: targetScroll,
-            behavior: reducedMotion ? "auto" : "smooth",
+          requestAnimationFrame(() => {
+            const curCard = rootRef.current;
+            const curMain = curCard?.closest("main");
+            if (!curCard || !curMain) return;
+            const cTop = curCard.getBoundingClientRect().top;
+            const mTop = curMain.getBoundingClientRect().top;
+            const maxScroll = Math.max(0, curMain.scrollHeight - curMain.clientHeight);
+            const targetScroll = Math.max(0, Math.min(maxScroll, curMain.scrollTop + (cTop - (mTop + 8))));
+            curMain.scrollTo({
+              top: targetScroll,
+              behavior: reducedMotion ? "auto" : "smooth",
+            });
           });
-          // If content below the card is shorter than needed to reach mTop+8, keep card bottom within window.innerHeight
-          const projectedTop = cTop - (targetScroll - curMain.scrollTop);
-          const curChrome =
-            (toolbarRef.current?.offsetHeight || 76) +
-            (scrubberRef.current?.offsetHeight || 32);
-          const safePanelH = Math.max(
-            300,
-            Math.min(720, Math.floor(window.innerHeight - Math.max(mTop + 8, projectedTop) - curChrome - 18))
-          );
-          if (safePanelH < screenFitH) {
-            setCanvasPanelHeight(safePanelH);
-          }
         });
-      }
-    } else {
-      const el = viewportRef.current;
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        if (rect.width > 50 && rect.height > 50) {
-          setViewportSize((prev) =>
-            Math.abs(prev.w - rect.width) < 0.5 && Math.abs(prev.h - rect.height) < 0.5
-              ? prev
-              : { w: rect.width, h: rect.height }
-          );
-        }
       }
     }
 
-    setManualTransform(null);
     setFitPulseActive(true);
     if (fitPulseTimerRef.current) clearTimeout(fitPulseTimerRef.current);
     fitPulseTimerRef.current = setTimeout(() => setFitPulseActive(false), 950);
@@ -614,10 +587,7 @@ export function WorkflowFlowDiagram({
     <div
       ref={rootRef}
       data-flow-root="true"
-      className={`${reducedMotion ? "guide-reduced-motion" : ""} ${isFullscreen
-          ? "fixed inset-0 z-50 bg-slate-950 p-3 sm:p-4 flex flex-col overflow-hidden"
-          : "rounded-xl border border-slate-800 bg-slate-950/90 overflow-hidden"
-        }`}
+      className={`${reducedMotion ? "guide-reduced-motion" : ""} rounded-xl border border-slate-800 bg-slate-950/90 overflow-hidden`}
     >
       {/* Toolbar Header */}
       <div
@@ -747,15 +717,17 @@ export function WorkflowFlowDiagram({
 
           <button
             type="button"
-            onClick={() => {
-              setManualTransform(null);
-              setIsFullscreen((f) => !f);
-            }}
-            className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
-            title={isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen Diagram Mode"}
-            aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            onClick={() => setShowInspector((open) => !open)}
+            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${showInspector
+                ? "bg-cyan-950/70 text-cyan-300 border-cyan-700/70"
+                : "bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cyan-200"
+              }`}
+            title={showInspector ? "Hide step detail panel to expand diagram" : "Show 6-part details for the selected step"}
+            aria-expanded={showInspector}
+            aria-label={showInspector ? "Hide Step Details" : "Show Step Details"}
           >
-            {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            {showInspector ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">{showInspector ? "Hide Details" : "Step Details"}</span>
           </button>
         </div>
       </div>
@@ -789,20 +761,19 @@ export function WorkflowFlowDiagram({
         })}
       </div>
 
-      {/* Main Split: Interactive Diagram + Step Inspector */}
-      <div
-        className={`grid grid-cols-1 xl:grid-cols-12 ${isFullscreen ? "flex-1 min-h-0" : ""
-          }`}
-      >
-        {/* Left / Top: Interactive Pan/Zoom SVG Diagram OR Accessible Step List */}
+      {/* Main Split: Full-Width Interactive Diagram + Collapsible Step Inspector */}
+      <div className="grid grid-cols-1 xl:grid-cols-12">
+        {/* Left / Full Width: Interactive Pan/Zoom SVG Diagram OR Accessible Step List */}
         <div
           style={
-            !isFullscreen && canvasPanelHeight
+            canvasPanelHeight
               ? { height: `${canvasPanelHeight}px` }
               : undefined
           }
-          className={`xl:col-span-8 flex flex-col border-b xl:border-b-0 xl:border-r border-slate-800 ${isFullscreen ? "h-full min-h-[380px]" : "h-[460px] sm:h-[540px] lg:h-[600px]"
-            }`}
+          className={`${showInspector
+              ? "xl:col-span-8 border-b xl:border-b-0 xl:border-r border-slate-800"
+              : "xl:col-span-12"
+            } flex flex-col h-[500px] sm:h-[580px] lg:h-[680px]`}
         >
           {mobileListMode ? (
             <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-slate-950">
@@ -815,6 +786,7 @@ export function WorkflowFlowDiagram({
                     onClick={() => {
                       setActiveIndex(idx);
                       setIsPlaying(false);
+                      setShowInspector(true);
                     }}
                     className={`w-full text-left rounded-lg border p-3 transition-colors ${active
                         ? "border-cyan-500/70 bg-cyan-950/25"
@@ -998,6 +970,10 @@ export function WorkflowFlowDiagram({
                       type="button"
                       data-flow-node="true"
                       onClick={() => handleSelectStepById(step.id)}
+                      onDoubleClick={() => {
+                        handleSelectStepById(step.id);
+                        setShowInspector(true);
+                      }}
                       aria-label={`Step ${step.stepNumber}: ${step.title}`}
                       aria-pressed={isActive}
                       style={{
@@ -1107,44 +1083,57 @@ export function WorkflowFlowDiagram({
                     {fitPulseActive ? "Fitted " : ""}
                     {Math.round(activeTransform.zoom * 100)}%
                   </span>
-                  <span className="hidden md:inline text-slate-500">
-                    Drag to pan · Ctrl+Wheel to zoom
+                  <span className="hidden lg:inline text-slate-500">
+                    Drag to pan · Ctrl+Wheel to zoom · Double-click node for details
                   </span>
                 </div>
 
-                {/* Color Legend */}
-                <div className="hidden sm:flex flex-wrap items-center gap-2.5 text-slate-400">
-                  <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-cyan-400" />
-                    Governance Plane
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    Runtime Plane
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-indigo-400" />
-                    Cross-Plane Bridge
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-amber-400" />
-                    Safety / Abstention
-                  </span>
+                {/* Active Step Inspect Shortcut & Color Legend */}
+                <div className="flex flex-wrap items-center gap-2.5 text-slate-400">
+                  {!showInspector && (
+                    <button
+                      type="button"
+                      onClick={() => setShowInspector(true)}
+                      className="inline-flex items-center gap-1 rounded border border-cyan-800/70 bg-cyan-950/60 px-2 py-0.5 text-[10px] font-mono text-cyan-300 hover:bg-cyan-900/70 hover:text-cyan-100 transition-colors"
+                      title="Open 6-part details drawer for active step"
+                    >
+                      <PanelRightOpen className="h-3 w-3" />
+                      <span>Step #{activeStep.stepNumber}: {activeStep.shortLabel} · View Details</span>
+                    </button>
+                  )}
+                  <div className="hidden sm:flex flex-wrap items-center gap-2.5">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-cyan-400" />
+                      Governance Plane
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                      Runtime Plane
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-indigo-400" />
+                      Cross-Plane Bridge
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full bg-amber-400" />
+                      Safety / Abstention
+                    </span>
+                  </div>
                 </div>
               </div>
             </>
           )}
         </div>
 
-        {/* Right / Bottom: 6-Part Component Step Inspector */}
+        {/* Right / Bottom: Collapsible 6-Part Component Step Inspector */}
+        {showInspector && (
         <div
           style={
-            !isFullscreen && canvasPanelHeight
+            canvasPanelHeight
               ? { maxHeight: `${canvasPanelHeight}px` }
               : undefined
           }
-          className={`xl:col-span-4 bg-slate-900/30 p-3.5 space-y-3 overflow-y-auto ${isFullscreen ? "h-full" : "max-h-[600px]"
-            }`}
+          className="xl:col-span-4 bg-slate-900/30 p-3.5 space-y-3 overflow-y-auto max-h-[680px]"
         >
           <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
             <div>
@@ -1159,6 +1148,15 @@ export function WorkflowFlowDiagram({
               <h3 className="text-sm font-bold text-slate-100 mt-1">{activeStep.title}</h3>
               <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">{activeStep.summary}</p>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowInspector(false)}
+              className="rounded-md border border-slate-700 bg-slate-900 p-1 text-slate-400 hover:text-slate-100 hover:bg-slate-800 shrink-0"
+              title="Close Step Details (Esc)"
+              aria-label="Close Step Details"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
 
           {/* 1. Component Name & Live Route Link */}
@@ -1256,6 +1254,7 @@ export function WorkflowFlowDiagram({
             </ul>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
