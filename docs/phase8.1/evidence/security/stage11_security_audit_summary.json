@@ -1,0 +1,314 @@
+{
+  "timestamp_utc": "2026-11-11T04:11:21.693231+00:00",
+  "mutating_routes_scanned": 51,
+  "p8_1_def_005_remediated": "backend/app/api/incidents.py::request_incident_ai_verdict updated from get_current_user to require_analyst",
+  "mutating_routes": [
+    {
+      "file": "auth.py",
+      "line": 16,
+      "decorator": "@router.post(\"/login\", response_model=Token)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "auth.py",
+      "line": 91,
+      "decorator": "@router.post(\"/logout\")",
+      "auth_dependency": "get_current_user"
+    },
+    {
+      "file": "chat.py",
+      "line": 237,
+      "decorator": "@router.post(\"/message\", response_model=ChatResponse)",
+      "auth_dependency": "get_current_user"
+    },
+    {
+      "file": "chat.py",
+      "line": 346,
+      "decorator": "@router.post(\"/stream\")",
+      "auth_dependency": "get_current_user"
+    },
+    {
+      "file": "dry_run.py",
+      "line": 27,
+      "decorator": "@router.post(\"/configs\", response_model=DryRunConfigResponse, status_code=status.HTTP_201_CREATED)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "dry_run.py",
+      "line": 120,
+      "decorator": "@router.post(\"/trigger\", response_model=DryRunJobResponse, status_code=status.HTTP_201_CREATED)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "dry_run.py",
+      "line": 301,
+      "decorator": "@router.post(\"/jobs/{job_id}/cancel\", response_model=DryRunJobResponse)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "evaluations.py",
+      "line": 73,
+      "decorator": "@router.post(\"/rule-maturity/{rule_id}/approve\", response_model=RuleMaturityResponse)",
+      "auth_dependency": "require_admin"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 72,
+      "decorator": "@router.post(\"/config\", response_model=FortiSIEMConfigResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 95,
+      "decorator": "@router.post(\"/test-connection\", response_model=FortiSIEMTestConnectionResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 114,
+      "decorator": "@router.post(\"/fetch\", response_model=FortiSIEMPullResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 141,
+      "decorator": "@router.post(\"/pull-all\", response_model=FortiSIEMBatchPullResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 191,
+      "decorator": "@router.post(\"/process-pending-verdicts\", response_model=Dict[str, Any])",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 261,
+      "decorator": "@router.post(\"/scheduler/start\", response_model=FortiSIEMSchedulerStatusResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 283,
+      "decorator": "@router.post(\"/scheduler/stop\", response_model=FortiSIEMSchedulerStatusResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 299,
+      "decorator": "@router.post(\"/scheduler/trigger\", response_model=Dict[str, Any])",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 310,
+      "decorator": "@router.post(\"/batch-ai-verdict\", response_model=FortiSIEMBatchVerdictResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 329,
+      "decorator": "@router.post(\"/sync-rules\", response_model=FortiSIEMRuleSyncResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 343,
+      "decorator": "@router.post(\"/pull-rule\", response_model=FortiSIEMRulePullResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 362,
+      "decorator": "@router.post(\"/sync-resolutions\", response_model=FortiSIEMSyncResolutionsResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "fortisiem.py",
+      "line": 376,
+      "decorator": "@router.post(\"/incident/{incident_id}/sync-resolution\", response_model=FortiSIEMSingleSyncResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "imports.py",
+      "line": 18,
+      "decorator": "@router.post(\"/upload\", response_model=ImportSummaryResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "incidents.py",
+      "line": 133,
+      "decorator": "@router.post(\"/{identifier}/ai-verdict\")",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "investigations.py",
+      "line": 147,
+      "decorator": "@router.post(\"/{id}/assign\")",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "investigations.py",
+      "line": 172,
+      "decorator": "@router.post(\"/{id}/status\")",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "investigations.py",
+      "line": 201,
+      "decorator": "@router.post(\"/{id}/questions\", response_model=InvestigationQuestionResponse)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "investigations.py",
+      "line": 217,
+      "decorator": "@router.post(\"/questions/{question_id}/answer\", response_model=InvestigationQuestionResponse)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "investigations.py",
+      "line": 232,
+      "decorator": "@router.post(\"/{id}/evidence\", response_model=InvestigationEvidenceResponse)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "investigations.py",
+      "line": 254,
+      "decorator": "@router.post(\"/{id}/verdict\")",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "learning.py",
+      "line": 67,
+      "decorator": "@router.put(\"/records/{id}/verify\", response_model=LearningRecordResponse)",
+      "auth_dependency": "require_admin"
+    },
+    {
+      "file": "learning.py",
+      "line": 108,
+      "decorator": "@router.post(\"/similar-cases\", response_model=List[SimilarCaseMatch])",
+      "auth_dependency": "get_current_active_user"
+    },
+    {
+      "file": "learning.py",
+      "line": 119,
+      "decorator": "@router.post(\"/seed-historical\")",
+      "auth_dependency": "require_admin"
+    },
+    {
+      "file": "llm_config.py",
+      "line": 26,
+      "decorator": "@router.post(\"/config\", response_model=LLMConfigResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "llm_config.py",
+      "line": 48,
+      "decorator": "@router.post(\"/test-connection\", response_model=LLMTestConnectionResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "prompts.py",
+      "line": 178,
+      "decorator": "@router.post(\"/quality/bulk-assess\")",
+      "auth_dependency": "require_admin"
+    },
+    {
+      "file": "prompts.py",
+      "line": 296,
+      "decorator": "@router.post(\"/rule/{rule_id}/analyze\")",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "prompts.py",
+      "line": 327,
+      "decorator": "@router.post(\"/rule/{rule_id}/generate-intelligent-draft\", response_model=PromptVersionResponse)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "prompts.py",
+      "line": 362,
+      "decorator": "@router.post(\"/rule/{rule_id}/validate-quality\", response_model=PolicyQualityAssessmentResponse)",
+      "auth_dependency": "get_current_active_user"
+    },
+    {
+      "file": "prompts.py",
+      "line": 470,
+      "decorator": "@router.post(\"/rule/{rule_id}/evaluate-simulation\")",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "prompts.py",
+      "line": 541,
+      "decorator": "@router.post(\"/rule/{rule_id}/acknowledge-drift\")",
+      "auth_dependency": "require_admin"
+    },
+    {
+      "file": "prompts.py",
+      "line": 582,
+      "decorator": "@router.post(\"/rule/{rule_id}/generate-draft\", response_model=PromptVersionResponse)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "prompts.py",
+      "line": 607,
+      "decorator": "@router.post(\"/rule/{rule_id}/draft\", response_model=PromptVersionResponse)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "prompts.py",
+      "line": 653,
+      "decorator": "@router.post(\"/rule/{rule_id}/approve/{version_id}\", response_model=PromptVersionResponse)",
+      "auth_dependency": "require_admin"
+    },
+    {
+      "file": "prompts.py",
+      "line": 683,
+      "decorator": "@router.post(\"/rule/{rule_id}/rollback/{version_id}\", response_model=PromptVersionResponse)",
+      "auth_dependency": "require_admin"
+    },
+    {
+      "file": "rules.py",
+      "line": 181,
+      "decorator": "@router.post(\"/sync/fortisiem\", response_model=FortiSIEMRuleSyncResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "rules.py",
+      "line": 288,
+      "decorator": "@router.post(\"/{identifier}/import-definition\")",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "users.py",
+      "line": 26,
+      "decorator": "@router.post(\"\", response_model=UserResponse, status_code=status.HTTP_201_CREATED)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "users.py",
+      "line": 70,
+      "decorator": "@router.patch(\"/{user_id}\", response_model=UserResponse)",
+      "auth_dependency": "unknown"
+    },
+    {
+      "file": "verdict_intelligence.py",
+      "line": 60,
+      "decorator": "@router.post(\"/evaluate-incident-trust\", response_model=VerdictTrustAssessmentResult)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "verdict_intelligence.py",
+      "line": 61,
+      "decorator": "@router.post(\"/evaluate-incident\", response_model=VerdictTrustAssessmentResult)",
+      "auth_dependency": "require_analyst"
+    },
+    {
+      "file": "verdict_intelligence.py",
+      "line": 257,
+      "decorator": "@router.post(\"/dry-run/evaluate\")",
+      "auth_dependency": "require_analyst"
+    }
+  ],
+  "runtime_security_test_ref": "backend/tests/test_phase8_1_validation.py::test_stage11_security_rbac_injection_gt_leakage_and_siem_write_safety"
+}

@@ -50,12 +50,13 @@ class IndependentVerdictValidator:
         unsupported_claims: List[Dict[str, Any]] = list(claim_grounding.unsupported_claim_details)
 
         # Output Integrity Check (Check 8)
-        if clean_prop_verdict not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "REQUIRES_ATTENTION"):
+        invalid_output_flag = clean_prop_verdict not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "REQUIRES_ATTENTION")
+        if invalid_output_flag:
             clean_prop_verdict = "REQUIRES_ATTENTION"
             reason_codes.append("MODEL_OUTPUT_INVALID")
 
         final_verdict = clean_prop_verdict
-        validation_status = "VALIDATED"
+        validation_status = "INVALID_MODEL_OUTPUT" if invalid_output_flag else "VALIDATED"
         is_decisive = False
         action_directive = "Verdict verified against canonical evidence contract."
 
@@ -167,9 +168,13 @@ class IndependentVerdictValidator:
         elif clean_prop_verdict == "REQUIRES_ATTENTION":
             final_verdict = "REQUIRES_ATTENTION"
             is_decisive = False
-            if not reason_codes:
-                reason_codes.append("EVIDENCE_VALIDATED")
-            action_directive = "Follow standard SOC tier-1 investigation runbook for ambiguous telemetry."
+            if invalid_output_flag or "MODEL_OUTPUT_INVALID" in reason_codes:
+                validation_status = "INVALID_MODEL_OUTPUT"
+                action_directive = "Model returned invalid or malformed structured output; safely abstained and routed to analyst review."
+            else:
+                if not reason_codes:
+                    reason_codes.append("EVIDENCE_VALIDATED")
+                action_directive = "Follow standard SOC tier-1 investigation runbook for ambiguous telemetry."
 
         # Audit Verification Token (Cryptographically binds contract, verdict, evidence count, and policy digest)
         comp_part = f":{compilation_digest}" if compilation_digest else ""

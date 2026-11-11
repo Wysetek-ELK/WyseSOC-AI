@@ -1,0 +1,346 @@
+{
+  "timestamp_utc": "2026-11-11T04:11:19.158844+00:00",
+  "policy_version_assessments": [
+    {
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+      "version_number": 1,
+      "version_status": "APPROVED",
+      "quality_score": 77.0,
+      "structural_quality_score": 90.6,
+      "empirical_validation_score": 0.0,
+      "empirical_validation_status": "INSUFFICIENT_DATA",
+      "simulation_status": "INSUFFICIENT_DATA",
+      "approval_eligible": true,
+      "structural_approval_eligible": true,
+      "empirical_validation_eligible": false,
+      "autonomous_operation_eligible": false,
+      "blocking_issues": [],
+      "warnings": [
+        "TP indicators equate general suspiciousness with confirmed maliciousness without objective criteria.",
+        "Abstention criteria do not explicitly mandate voting REQUIRES_ATTENTION when telemetry is deficient.",
+        "Field 'process.command_line' marked critical in contract but not explicitly listed in Section 4.",
+        "Field 'detection.threshold' marked critical in contract but not explicitly listed in Section 4.",
+        "G8_INSUFFICIENT_DATA: Insufficient verified historical cases (evaluated=26, eligible_ground_truth=3 < 5) to empirically validate policy."
+      ],
+      "gates": {
+        "G1_RULE_INTEGRITY": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G2_ARCHETYPE_RELEVANCE": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G3_EVIDENCE_FEASIBILITY": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G4_TP_CRITERIA_VALIDITY": {
+          "status": "WARNING",
+          "score": 7.0,
+          "max_score": 10.0
+        },
+        "G5_FP_CRITERIA_VALIDITY": {
+          "status": "PASSED",
+          "score": 10.0,
+          "max_score": 10.0
+        },
+        "G6_ABSTENTION_ESCALATION": {
+          "status": "WARNING",
+          "score": 12.0,
+          "max_score": 15.0
+        },
+        "G7_POLICY_CONSISTENCY": {
+          "status": "WARNING",
+          "score": 8.0,
+          "max_score": 10.0
+        },
+        "G8_SIMULATION_REGRESSION": {
+          "status": "WARNING",
+          "score": 0.0,
+          "max_score": 15.0
+        }
+      }
+    },
+    {
+      "rule_id": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "version_id": "8ae7beaa-626a-4061-a0c4-8500f7e6a69d",
+      "version_number": 1,
+      "version_status": "APPROVED",
+      "quality_score": 70.0,
+      "structural_quality_score": 82.4,
+      "empirical_validation_score": 0.0,
+      "empirical_validation_status": "INCONCLUSIVE",
+      "simulation_status": "INCONCLUSIVE",
+      "approval_eligible": true,
+      "structural_approval_eligible": true,
+      "empirical_validation_eligible": false,
+      "autonomous_operation_eligible": false,
+      "blocking_issues": [],
+      "warnings": [
+        "INADEQUATE_TELEMETRY: Rule is classified as 'Unclassified / Inadequate Telemetry'. Archetype semantics are not definitively established to validate policy relevance.",
+        "Abstention criteria do not explicitly mandate voting REQUIRES_ATTENTION when telemetry is deficient.",
+        "Field 'security.event_type' marked critical in contract but not explicitly listed in Section 4.",
+        "Field 'detection.threshold' marked critical in contract but not explicitly listed in Section 4.",
+        "G8_INCONCLUSIVE_SIMULATION: Historical simulation produced 0% decisive coverage or inconclusive empirical accuracy (evaluated=26, eligible=5); empirical points withheld."
+      ],
+      "gates": {
+        "G1_RULE_INTEGRITY": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G2_ARCHETYPE_RELEVANCE": {
+          "status": "WARNING",
+          "score": 10.0,
+          "max_score": 20.0
+        },
+        "G3_EVIDENCE_FEASIBILITY": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G4_TP_CRITERIA_VALIDITY": {
+          "status": "PASSED",
+          "score": 10.0,
+          "max_score": 10.0
+        },
+        "G5_FP_CRITERIA_VALIDITY": {
+          "status": "PASSED",
+          "score": 10.0,
+          "max_score": 10.0
+        },
+        "G6_ABSTENTION_ESCALATION": {
+          "status": "WARNING",
+          "score": 12.0,
+          "max_score": 15.0
+        },
+        "G7_POLICY_CONSISTENCY": {
+          "status": "WARNING",
+          "score": 8.0,
+          "max_score": 10.0
+        },
+        "G8_SIMULATION_REGRESSION": {
+          "status": "WARNING",
+          "score": 0.0,
+          "max_score": 15.0
+        }
+      }
+    },
+    {
+      "rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT",
+      "version_id": "84f91c17-60ed-4e60-a341-7372b87d5547",
+      "version_number": 2,
+      "version_status": "DRAFT",
+      "quality_score": 85.0,
+      "structural_quality_score": 100.0,
+      "empirical_validation_score": 0.0,
+      "empirical_validation_status": "INSUFFICIENT_DATA",
+      "simulation_status": "INSUFFICIENT_DATA",
+      "approval_eligible": true,
+      "structural_approval_eligible": true,
+      "empirical_validation_eligible": false,
+      "autonomous_operation_eligible": false,
+      "blocking_issues": [],
+      "warnings": [
+        "G8_INSUFFICIENT_DATA: Insufficient verified historical cases (evaluated=26, eligible_ground_truth=0 < 5) to empirically validate policy."
+      ],
+      "gates": {
+        "G1_RULE_INTEGRITY": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G2_ARCHETYPE_RELEVANCE": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G3_EVIDENCE_FEASIBILITY": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G4_TP_CRITERIA_VALIDITY": {
+          "status": "PASSED",
+          "score": 10.0,
+          "max_score": 10.0
+        },
+        "G5_FP_CRITERIA_VALIDITY": {
+          "status": "PASSED",
+          "score": 10.0,
+          "max_score": 10.0
+        },
+        "G6_ABSTENTION_ESCALATION": {
+          "status": "PASSED",
+          "score": 15.0,
+          "max_score": 15.0
+        },
+        "G7_POLICY_CONSISTENCY": {
+          "status": "PASSED",
+          "score": 10.0,
+          "max_score": 10.0
+        },
+        "G8_SIMULATION_REGRESSION": {
+          "status": "WARNING",
+          "score": 0.0,
+          "max_score": 15.0
+        }
+      }
+    },
+    {
+      "rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT",
+      "version_id": "83b9085e-8145-422b-9e95-f0fe29c01ab1",
+      "version_number": 1,
+      "version_status": "ARCHIVED",
+      "quality_score": 67.0,
+      "structural_quality_score": 78.8,
+      "empirical_validation_score": 0.0,
+      "empirical_validation_status": "NOT_EVALUATED",
+      "simulation_status": "NOT_EVALUATED",
+      "approval_eligible": false,
+      "structural_approval_eligible": false,
+      "empirical_validation_eligible": false,
+      "autonomous_operation_eligible": false,
+      "blocking_issues": [
+        "UNSAFE_FP_ASSUMPTION: Policy contains blanket assertion that internal RFC-1918 traffic is benign.",
+        "PRESCRIPTIVE_CONFIDENCE_RANGE: Policy specifies hardcoded artificial confidence ranges (e.g. 80-98%)."
+      ],
+      "warnings": [
+        "Abstention criteria do not explicitly mandate voting REQUIRES_ATTENTION when telemetry is deficient.",
+        "Field 'security.event_type' marked critical in contract but not explicitly listed in Section 4.",
+        "Field 'event.timestamp' marked critical in contract but not explicitly listed in Section 4.",
+        "Field 'network.source_ip' marked critical in contract but not explicitly listed in Section 4.",
+        "Field 'network.destination_port' marked critical in contract but not explicitly listed in Section 4.",
+        "Field 'detection.threshold' marked critical in contract but not explicitly listed in Section 4.",
+        "G8_STALE_SIMULATION: Policy content was modified after the last historical simulation run. Re-run simulation for current digest."
+      ],
+      "gates": {
+        "G1_RULE_INTEGRITY": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G2_ARCHETYPE_RELEVANCE": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G3_EVIDENCE_FEASIBILITY": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G4_TP_CRITERIA_VALIDITY": {
+          "status": "PASSED",
+          "score": 10.0,
+          "max_score": 10.0
+        },
+        "G5_FP_CRITERIA_VALIDITY": {
+          "status": "FAILED",
+          "score": 0.0,
+          "max_score": 10.0
+        },
+        "G6_ABSTENTION_ESCALATION": {
+          "status": "WARNING",
+          "score": 12.0,
+          "max_score": 15.0
+        },
+        "G7_POLICY_CONSISTENCY": {
+          "status": "WARNING",
+          "score": 5.0,
+          "max_score": 10.0
+        },
+        "G8_SIMULATION_REGRESSION": {
+          "status": "WARNING",
+          "score": 0.0,
+          "max_score": 15.0
+        }
+      }
+    },
+    {
+      "rule_id": "PH_RULE_DEBUG_FUNNEL",
+      "version_id": "85c43e36-c8e6-4e9d-942c-815019f74f28",
+      "version_number": 1,
+      "version_status": "DRAFT",
+      "quality_score": 35.0,
+      "structural_quality_score": 41.2,
+      "empirical_validation_score": 0.0,
+      "empirical_validation_status": "INSUFFICIENT_DATA",
+      "simulation_status": "INSUFFICIENT_DATA",
+      "approval_eligible": false,
+      "structural_approval_eligible": false,
+      "empirical_validation_eligible": false,
+      "autonomous_operation_eligible": false,
+      "blocking_issues": [
+        "RULE_DEFINITION_INCOMPLETE: Rule 'PH_RULE_DEBUG_FUNNEL' lacks authoritative SIEM detection logic. Observed incident telemetry (e.g. incidentCount, sentBytes64) cannot serve as a verified threshold.",
+        "INADEQUATE_TP_CRITERIA: True positive indicators are empty or unacceptably brief.",
+        "MISSING_CRITICAL_ABSTENTION: Abstention criteria (when to vote REQUIRES_ATTENTION) are undefined.",
+        "G7_CONTRACT_EVIDENCE_OMITTED: Section 4 Required Evidence is blank/missing despite critical fields in Evidence Contract."
+      ],
+      "warnings": [
+        "Rule definition was inferred via heuristic parser without authoritative SIEM definition/XML.",
+        "INADEQUATE_TELEMETRY: Rule is classified as 'Unclassified / Inadequate Telemetry'. Archetype semantics are not definitively established to validate policy relevance.",
+        "False positive criteria are brief; legitimate administrative exceptions should be expanded.",
+        "P1/P2 escalation conditions are minimal.",
+        "G8_INSUFFICIENT_DATA: Insufficient verified historical cases (evaluated=26, eligible_ground_truth=2 < 5) to empirically validate policy."
+      ],
+      "gates": {
+        "G1_RULE_INTEGRITY": {
+          "status": "FAILED",
+          "score": 4.0,
+          "max_score": 20.0
+        },
+        "G2_ARCHETYPE_RELEVANCE": {
+          "status": "WARNING",
+          "score": 10.0,
+          "max_score": 20.0
+        },
+        "G3_EVIDENCE_FEASIBILITY": {
+          "status": "PASSED",
+          "score": 20.0,
+          "max_score": 20.0
+        },
+        "G4_TP_CRITERIA_VALIDITY": {
+          "status": "FAILED",
+          "score": 0.0,
+          "max_score": 10.0
+        },
+        "G5_FP_CRITERIA_VALIDITY": {
+          "status": "WARNING",
+          "score": 8.0,
+          "max_score": 10.0
+        },
+        "G6_ABSTENTION_ESCALATION": {
+          "status": "FAILED",
+          "score": 3.0,
+          "max_score": 15.0
+        },
+        "G7_POLICY_CONSISTENCY": {
+          "status": "FAILED",
+          "score": 0.0,
+          "max_score": 10.0
+        },
+        "G8_SIMULATION_REGRESSION": {
+          "status": "WARNING",
+          "score": 0.0,
+          "max_score": 15.0
+        }
+      }
+    }
+  ],
+  "paired_regression_checks": [
+    {
+      "rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT",
+      "baseline_version": 1,
+      "candidate_version": 2,
+      "regression_status": "INSUFFICIENT_DATA",
+      "simulation_status": "INSUFFICIENT_DATA"
+    }
+  ],
+  "stale_digest_verification": {}
+}

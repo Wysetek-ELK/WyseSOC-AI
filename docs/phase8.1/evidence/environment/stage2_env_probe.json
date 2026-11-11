@@ -1,0 +1,33 @@
+{
+  "timestamp_utc": "2026-11-11T04:11:10.383464+00:00",
+  "app_env": "development",
+  "database_dialect": "sqlite+aiosqlite",
+  "use_async_celery": false,
+  "local_llm_allow_mock_fallback": true,
+  "fortisiem_mock_fallback": true,
+  "governor_configured_targets": [
+    "remote-server (production) (production)"
+  ],
+  "probes": {
+    "postgres_5432": {
+      "reachable": false,
+      "status": "UNREACHABLE",
+      "error": "TimeoutError"
+    },
+    "redis_broker": {
+      "reachable": false,
+      "status": "UNREACHABLE",
+      "error": "TimeoutError"
+    },
+    "server2_llm": {
+      "reachable": false,
+      "status": "UNREACHABLE",
+      "error": "TimeoutError"
+    },
+    "fortisiem_api": {
+      "reachable": false,
+      "status": "UNREACHABLE",
+      "error": "gaierror"
+    }
+  }
+}

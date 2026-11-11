@@ -1,0 +1,56 @@
+{
+  "runner": "pytest backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+  "browser": "chromium-headless",
+  "total_steps": 9,
+  "passed_steps": 9,
+  "console_errors_count": 0,
+  "page_errors_count": 0,
+  "screenshots_captured": [
+    "01_ais_3tier_eligibility.png",
+    "02_workbench_invalid_output_abstained.png",
+    "03_verdict_intelligence_uncalibrated.png",
+    "04_human_review_persisted.png"
+  ],
+  "steps": [
+    {
+      "step": "1_login_error_state",
+      "status": "PASSED"
+    },
+    {
+      "step": "2_login_success_session",
+      "status": "PASSED"
+    },
+    {
+      "step": "3_ais_three_tier_eligibility",
+      "status": "PASSED"
+    },
+    {
+      "step": "4_ais_incomplete_and_rbac",
+      "status": "PASSED",
+      "rbac": {
+        "viewer": 403,
+        "admin": 400
+      }
+    },
+    {
+      "step": "5_workbench_tp_gt_isolation",
+      "status": "PASSED"
+    },
+    {
+      "step": "6_workbench_invalid_model_output_ui",
+      "status": "PASSED"
+    },
+    {
+      "step": "7_workbench_offline_fail_closed",
+      "status": "PASSED"
+    },
+    {
+      "step": "8_verdict_intelligence_parity",
+      "status": "PASSED"
+    },
+    {
+      "step": "9_human_review_queue_reload_persistence",
+      "status": "PASSED"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "source_snapshot": "backend/ai_verdict.db (cloned read-only for staging validation)",
+  "pre_upgrade_alembic_revisions": [
+    "006_verdict_intelligence_validation"
+  ],
+  "post_upgrade_alembic_revisions": [
+    "007_distributed_locks"
+  ],
+  "added_tables_on_upgrade": [
+    "distributed_locks"
+  ],
+  "total_tables_post_upgrade": 32,
+  "table_row_counts_pre_upgrade": {
+    "alembic_version": 1,
+    "audit_logs": 57,
+    "bulk_quality_audit_jobs": 0,
+    "dry_run_configs": 0,
+    "dry_run_jobs": 0,
+    "dry_run_results": 0,
+    "evidence_sufficiency_assessments": 0,
+    "ground_truth_validations": 0,
+    "historical_evaluation_results": 56,
+    "historical_evaluation_runs": 8,
+    "historical_ground_truth": 24,
+    "import_jobs": 1,
+    "incident_events": 197,
+    "incidents": 26,
+    "investigation_evidence": 0,
+    "investigation_questions": 0,
+    "investigations": 26,
+    "learning_records": 20,
+    "policy_drift_events": 0,
+    "policy_quality_assessments": 0,
+    "prompt_versions": 5,
+    "queued_tasks": 0,
+    "rule_intelligence_snapshots": 0,
+    "rule_maturity_evaluations": 0,
+    "rule_prompts": 4,
+    "rules": 4,
+    "system_server_samples": 98,
+    "telemetry_timeline_records": 6,
+    "token_usage_records": 6,
+    "users": 1,
+    "verdict_trust_assessments": 0
+  }
+}

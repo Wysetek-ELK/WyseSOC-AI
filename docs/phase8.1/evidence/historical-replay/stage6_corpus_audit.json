@@ -1,0 +1,479 @@
+{
+  "timestamp_utc": "2026-11-11T04:11:19.158800+00:00",
+  "total_incidents": 26,
+  "synthetic_debug_incidents": [
+    {
+      "incident_id": "INC-DEBUG-01",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "event_count": 0,
+      "raw_keys": [
+        "command_line"
+      ],
+      "gt_resolution": "True Positive"
+    },
+    {
+      "incident_id": "INC-DEBUG-02",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "event_count": 0,
+      "raw_keys": [
+        "command_line"
+      ],
+      "gt_resolution": "False Positive"
+    },
+    {
+      "incident_id": "INC-DEBUG-03",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "event_count": 0,
+      "raw_keys": [
+        "command_line"
+      ],
+      "gt_resolution": null
+    },
+    {
+      "incident_id": "INC-DEBUG-04",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "event_count": 0,
+      "raw_keys": [
+        "command_line"
+      ],
+      "gt_resolution": "Under Investigation"
+    },
+    {
+      "incident_id": "INC-DEBUG-05",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "event_count": 0,
+      "raw_keys": [],
+      "gt_resolution": null
+    },
+    {
+      "incident_id": "INC-DEBUG-06",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "event_count": 0,
+      "raw_keys": [
+        "command_line"
+      ],
+      "gt_resolution": "True Positive"
+    }
+  ],
+  "batch_near_duplicate_clusters": [
+    {
+      "cluster_key": "PH_RULE_CS_SUSPICIOUS_ACTIVITY|1793783492775|kill process is true",
+      "member_count": 2,
+      "members": [
+        {
+          "incident_id": "132438483",
+          "is_ml_generated": true,
+          "resolution": "False Positive",
+          "first_seen_epoch": 1793781975000,
+          "ev_cnt": 25
+        },
+        {
+          "incident_id": "132439932",
+          "is_ml_generated": false,
+          "resolution": "False Positive",
+          "first_seen_epoch": 1793782650000,
+          "ev_cnt": 8
+        }
+      ]
+    },
+    {
+      "cluster_key": "PH_RULE_CS_SUSPICIOUS_ACTIVITY|1793797211833|case raised and client are working on it",
+      "member_count": 2,
+      "members": [
+        {
+          "incident_id": "132461368",
+          "is_ml_generated": true,
+          "resolution": "True Positive",
+          "first_seen_epoch": 1793791290000,
+          "ev_cnt": 19
+        },
+        {
+          "incident_id": "132472498",
+          "is_ml_generated": true,
+          "resolution": "True Positive",
+          "first_seen_epoch": 1793796015000,
+          "ev_cnt": 30
+        }
+      ]
+    },
+    {
+      "cluster_key": "Prisma_SASE_Suspicious_File_Threat_Detection_|1793812767020|file does not found suspicious hence marking as fp",
+      "member_count": 2,
+      "members": [
+        {
+          "incident_id": "132499023",
+          "is_ml_generated": true,
+          "resolution": "False Positive",
+          "first_seen_epoch": 1793812050000,
+          "ev_cnt": 1
+        },
+        {
+          "incident_id": "132499745",
+          "is_ml_generated": true,
+          "resolution": "False Positive",
+          "first_seen_epoch": 1793812260000,
+          "ev_cnt": 1
+        }
+      ]
+    },
+    {
+      "cluster_key": "Prisma_SASE_Suspicious_File_Threat_Detection_|1793846725003|Case has been raised for the similar incidents.",
+      "member_count": 3,
+      "members": [
+        {
+          "incident_id": "132599145",
+          "is_ml_generated": false,
+          "resolution": "True Positive",
+          "first_seen_epoch": 1793846370000,
+          "ev_cnt": 2
+        },
+        {
+          "incident_id": "132599146",
+          "is_ml_generated": false,
+          "resolution": "True Positive",
+          "first_seen_epoch": 1793846370000,
+          "ev_cnt": 11
+        },
+        {
+          "incident_id": "132599330",
+          "is_ml_generated": false,
+          "resolution": "True Positive",
+          "first_seen_epoch": 1793846415000,
+          "ev_cnt": 2
+        }
+      ]
+    }
+  ],
+  "rule_breakdown": {
+    "PH_RULE_CS_SUSPICIOUS_ACTIVITY": {
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "rule_status": "INACTIVE",
+      "total_incidents": 10,
+      "ev_cnt_zero_synthetic": 0,
+      "ml_generated_rows": 7,
+      "human_eligible_tp": 0,
+      "human_eligible_fp": 3,
+      "unverified_or_missing_label": 0
+    },
+    "Prisma_SASE_Suspicious_File_Threat_Detection_": {
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "rule_status": "ACTIVE",
+      "total_incidents": 10,
+      "ev_cnt_zero_synthetic": 0,
+      "ml_generated_rows": 5,
+      "human_eligible_tp": 4,
+      "human_eligible_fp": 1,
+      "unverified_or_missing_label": 0
+    },
+    "PH_RULE_DEBUG_FUNNEL": {
+      "rule_name": "Debug Funnel Rule",
+      "rule_status": "ACTIVE",
+      "total_incidents": 6,
+      "ev_cnt_zero_synthetic": 6,
+      "ml_generated_rows": 1,
+      "human_eligible_tp": 1,
+      "human_eligible_fp": 1,
+      "unverified_or_missing_label": 3
+    }
+  },
+  "leakage_audit": {
+    "checked_incidents": 26,
+    "leaked_cases_count": 0,
+    "leaked_cases": [],
+    "leakage_free": true
+  },
+  "partition_distribution": {
+    "TRAIN": 15,
+    "LOCKED_TEST": 3,
+    "CALIBRATION": 4,
+    "TUNING": 4
+  },
+  "incidents": [
+    {
+      "incident_id": "132438483",
+      "rule_code": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "status_name": "Closed",
+      "event_count": 25,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132439932",
+      "rule_code": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "status_name": "Closed",
+      "event_count": 8,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "VERIFIED_FP",
+      "partition": "LOCKED_TEST",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132441815",
+      "rule_code": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "status_name": "Closed",
+      "event_count": 16,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "VERIFIED_FP",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132461358",
+      "rule_code": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "status_name": "Manually Cleared",
+      "event_count": 34,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "CALIBRATION",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132461368",
+      "rule_code": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "status_name": "Closed",
+      "event_count": 19,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132472498",
+      "rule_code": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "status_name": "Closed",
+      "event_count": 30,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132474210",
+      "rule_code": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "status_name": "Closed",
+      "event_count": 13,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "VERIFIED_FP",
+      "partition": "LOCKED_TEST",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132501348",
+      "rule_code": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "status_name": "Manually Cleared",
+      "event_count": 2,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132502453",
+      "rule_code": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "status_name": "Closed",
+      "event_count": 24,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TUNING",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132527297",
+      "rule_code": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "status_name": "Closed",
+      "event_count": 2,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132499009",
+      "rule_code": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "status_name": "Closed",
+      "event_count": 1,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "VERIFIED_FP",
+      "partition": "TUNING",
+      "stored_ai_verdict": "REQUIRES_ATTENTION"
+    },
+    {
+      "incident_id": "132499023",
+      "rule_code": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "status_name": "Closed",
+      "event_count": 1,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "REQUIRES_ATTENTION"
+    },
+    {
+      "incident_id": "132499745",
+      "rule_code": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "status_name": "Closed",
+      "event_count": 1,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "REQUIRES_ATTENTION"
+    },
+    {
+      "incident_id": "132578774",
+      "rule_code": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "status_name": "Closed",
+      "event_count": 1,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "FALSE_POSITIVE"
+    },
+    {
+      "incident_id": "132591888",
+      "rule_code": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "status_name": "Closed",
+      "event_count": 3,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "FALSE_POSITIVE"
+    },
+    {
+      "incident_id": "132595592",
+      "rule_code": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "status_name": "Closed",
+      "event_count": 1,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132596403",
+      "rule_code": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "status_name": "Closed",
+      "event_count": 1,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "VERIFIED_TP",
+      "partition": "LOCKED_TEST",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132599145",
+      "rule_code": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "status_name": "Closed",
+      "event_count": 2,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "VERIFIED_TP",
+      "partition": "CALIBRATION",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132599146",
+      "rule_code": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "status_name": "Closed",
+      "event_count": 11,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "VERIFIED_TP",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "132599330",
+      "rule_code": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "status_name": "Closed",
+      "event_count": 2,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "VERIFIED_TP",
+      "partition": "CALIBRATION",
+      "stored_ai_verdict": "TRUE_POSITIVE"
+    },
+    {
+      "incident_id": "INC-DEBUG-01",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "status_name": "Open",
+      "event_count": 0,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "VERIFIED_TP",
+      "partition": "TUNING",
+      "stored_ai_verdict": "REQUIRES_ATTENTION"
+    },
+    {
+      "incident_id": "INC-DEBUG-02",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "status_name": "Open",
+      "event_count": 0,
+      "gt_resolution": "False Positive",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "VERIFIED_FP",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "REQUIRES_ATTENTION"
+    },
+    {
+      "incident_id": "INC-DEBUG-03",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "status_name": "Open",
+      "event_count": 0,
+      "gt_resolution": null,
+      "gt_is_ml_generated": null,
+      "adjudicated_label": null,
+      "partition": "CALIBRATION",
+      "stored_ai_verdict": "REQUIRES_ATTENTION"
+    },
+    {
+      "incident_id": "INC-DEBUG-04",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "status_name": "Open",
+      "event_count": 0,
+      "gt_resolution": "Under Investigation",
+      "gt_is_ml_generated": false,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TUNING",
+      "stored_ai_verdict": "REQUIRES_ATTENTION"
+    },
+    {
+      "incident_id": "INC-DEBUG-05",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "status_name": "Open",
+      "event_count": 0,
+      "gt_resolution": null,
+      "gt_is_ml_generated": null,
+      "adjudicated_label": null,
+      "partition": "TRAIN",
+      "stored_ai_verdict": "REQUIRES_ATTENTION"
+    },
+    {
+      "incident_id": "INC-DEBUG-06",
+      "rule_code": "PH_RULE_DEBUG_FUNNEL",
+      "status_name": "Open",
+      "event_count": 0,
+      "gt_resolution": "True Positive",
+      "gt_is_ml_generated": true,
+      "adjudicated_label": "UNVERIFIED",
+      "partition": "TRAIN",
+      "stored_ai_verdict": "REQUIRES_ATTENTION"
+    }
+  ]
+}

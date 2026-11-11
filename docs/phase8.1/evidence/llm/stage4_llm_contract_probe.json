@@ -1,0 +1,15 @@
+{
+  "timestamp_utc": "2026-11-11T04:11:21.665405+00:00",
+  "live_server2_probe": {
+    "reachable": false,
+    "status": "UNREACHABLE",
+    "error": "TimeoutError"
+  },
+  "configured_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "live_inference_status": "BLOCKED_UNREACHABLE",
+  "wire_contract_checks": {
+    "valid_json_parsed": true,
+    "malformed_json_rejected": true
+  },
+  "fault_tolerance_test_ref": "backend/tests/test_phase8_integration.py::test_phase8_llm_http_contract_fault_injection + backend/tests/test_phase8_1_validation.py::test_p8_1_def_002_003_invalid_model_output_and_contradiction_trust_bounds"
+}

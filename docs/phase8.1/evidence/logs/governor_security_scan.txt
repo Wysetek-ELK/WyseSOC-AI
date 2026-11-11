@@ -1,0 +1,7 @@
+﻿Gitleaks binary: C:\Users\amit\AppData\Local\Microsoft\WinGet\Packages\Gitleaks.Gitleaks_Microsoft.Winget.Source_8wekyb3d8bbwe\gitleaks.EXE
+Gitleaks checked modified+new targets: 18 (flagged: 0)
+Modified tracked files diff-checked: 14
+New Phase 8.1 / test / evidence files scanned: 41
+Total custom Governor findings across Phase 8.1 diff + new files: 0
+[GOVERNOR DIFF + NEW FILES + GITLEAKS SCAN PASSED] Clean: 0 findings.
+

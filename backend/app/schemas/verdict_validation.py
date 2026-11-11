@@ -10,9 +10,12 @@ class VerdictValidationResult(BaseModel):
     incident_id: str
     proposed_verdict: str = Field(..., description="Verdict proposed by the LLM or simulation")
     final_verdict: str = Field(..., description="Authoritative validated verdict accepted by the system")
-    validation_status: str = Field(..., description="VALIDATED, ABSTAINED, REJECTED, INSUFFICIENT_EVIDENCE")
+    validation_status: str = Field(..., description="VALIDATED, ABSTAINED, REJECTED, INSUFFICIENT_EVIDENCE, INVALID_MODEL_OUTPUT")
     validation_reason_codes: List[str] = Field(default_factory=list, description="Machine-readable diagnostic reason codes")
     is_decisive_accepted: bool = Field(False, description="True if proposed TP or FP was accepted; False if routed to REQUIRES_ATTENTION")
+    proposal_validation_outcome: Optional[str] = Field(None, description="VALID_DECISIVE_PROPOSAL, MODEL_ABSTENTION, REJECTED_BY_VALIDATOR, or INVALID_MODEL_OUTPUT")
+    final_disposition: Optional[str] = Field(None, description="ACCEPTED_DECISIVE_VERDICT, SAFE_ANALYST_ESCALATION, OVERRULED_TO_ANALYST_ATTENTION, or SAFE_ABSTENTION_AFTER_INVALID_OUTPUT")
+    abstention_reason: Optional[str] = Field(None, description="Explicit reason for abstention or invalid model output handling")
     evidence_completeness: float = Field(0.0, ge=0.0, le=1.0, description="Proportion of contract required fields present")
     grounding_ratio: float = Field(0.0, ge=0.0, le=1.0, description="Proportion of model claims verified by source evidence")
     total_claims_count: int = 0

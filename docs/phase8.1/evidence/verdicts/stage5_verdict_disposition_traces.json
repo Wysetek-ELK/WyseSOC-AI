@@ -1,0 +1,25 @@
+{
+  "timestamp_utc": "2026-11-11T04:11:21.685357+00:00",
+  "invalid_label_trace": {
+    "final_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "INVALID_MODEL_OUTPUT",
+    "reason_codes": [
+      "MODEL_OUTPUT_INVALID",
+      "EVIDENCE_MISSING"
+    ],
+    "trust_score": 2,
+    "limitations": [
+      "Rule is UNCALIBRATED (insufficient historical verification cases < 30). Trust capped at 6/10.",
+      "Mandatory evidence missing from incident telemetry."
+    ]
+  },
+  "contradiction_trace": {
+    "effective_verdict": "REQUIRES_ANALYST_ATTENTION",
+    "trust_score": 3,
+    "limitations": [
+      "Rule is UNCALIBRATED (insufficient historical verification cases < 30). Trust capped at 6/10.",
+      "Mandatory evidence missing from incident telemetry."
+    ]
+  },
+  "e2e_agent_test_ref": "backend/tests/test_phase8_1_validation.py::test_p8_1_def_002_003_invalid_model_output_and_contradiction_trust_bounds"
+}

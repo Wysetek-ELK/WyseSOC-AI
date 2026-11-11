@@ -1,0 +1,215 @@
+{
+  "exists": true,
+  "file_path": "fixtures/Incident json.zip",
+  "json_entry_count": 20,
+  "rules_breakdown": {
+    "PH_RULE_CS_SUSPICIOUS_ACTIVITY": 10,
+    "Prisma_SASE_Suspicious_File_Threat_Detection_": 10
+  },
+  "ml_vs_human_counts": {
+    "ml": 12,
+    "human_or_blank": 8
+  },
+  "entries": [
+    {
+      "zip_path": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132438483.json",
+      "incident_id": "132438483",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "resolution": "False Positive",
+      "cleared_time": 1793783492775,
+      "cleared_reason": "kill process is true",
+      "comments_is_ml": true,
+      "raw_event_count": 25
+    },
+    {
+      "zip_path": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132439932.json",
+      "incident_id": "132439932",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "resolution": "False Positive",
+      "cleared_time": 1793783492775,
+      "cleared_reason": "kill process is true",
+      "comments_is_ml": false,
+      "raw_event_count": 8
+    },
+    {
+      "zip_path": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132441815.json",
+      "incident_id": "132441815",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "resolution": "False Positive",
+      "cleared_time": 1793784466188,
+      "cleared_reason": "proccess is kiled",
+      "comments_is_ml": false,
+      "raw_event_count": 16
+    },
+    {
+      "zip_path": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132461358.json",
+      "incident_id": "132461358",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "resolution": "False Positive",
+      "cleared_time": 1793797048134,
+      "cleared_reason": "hash value is clean",
+      "comments_is_ml": true,
+      "raw_event_count": 34
+    },
+    {
+      "zip_path": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132461368.json",
+      "incident_id": "132461368",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "resolution": "True Positive",
+      "cleared_time": 1793797211833,
+      "cleared_reason": "case raised and client are working on it",
+      "comments_is_ml": true,
+      "raw_event_count": 19
+    },
+    {
+      "zip_path": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132472498.json",
+      "incident_id": "132472498",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "resolution": "True Positive",
+      "cleared_time": 1793797211833,
+      "cleared_reason": "case raised and client are working on it",
+      "comments_is_ml": true,
+      "raw_event_count": 30
+    },
+    {
+      "zip_path": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132474210.json",
+      "incident_id": "132474210",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "resolution": "False Positive",
+      "cleared_time": 1793798921497,
+      "cleared_reason": "legitimate activity, nothing suspicious observed.",
+      "comments_is_ml": false,
+      "raw_event_count": 13
+    },
+    {
+      "zip_path": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132501348.json",
+      "incident_id": "132501348",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "resolution": "True Positive",
+      "cleared_time": 1793816257159,
+      "cleared_reason": "",
+      "comments_is_ml": true,
+      "raw_event_count": 2
+    },
+    {
+      "zip_path": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132502453.json",
+      "incident_id": "132502453",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "resolution": "True Positive",
+      "cleared_time": 1793816227062,
+      "cleared_reason": "Informed to client, alert still generating",
+      "comments_is_ml": true,
+      "raw_event_count": 24
+    },
+    {
+      "zip_path": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132527297.json",
+      "incident_id": "132527297",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "resolution": "True Positive",
+      "cleared_time": 1793823744400,
+      "cleared_reason": "Endpoint security has blocked the ultraviewer.exe",
+      "comments_is_ml": true,
+      "raw_event_count": 2
+    },
+    {
+      "zip_path": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132499009.json",
+      "incident_id": "132499009",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "resolution": "False Positive",
+      "cleared_time": 1793814703580,
+      "cleared_reason": "No suspicious activity was identified during the analysis",
+      "comments_is_ml": false,
+      "raw_event_count": 1
+    },
+    {
+      "zip_path": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132499023.json",
+      "incident_id": "132499023",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "resolution": "False Positive",
+      "cleared_time": 1793812767020,
+      "cleared_reason": "file does not found suspicious hence marking as fp",
+      "comments_is_ml": true,
+      "raw_event_count": 1
+    },
+    {
+      "zip_path": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132499745.json",
+      "incident_id": "132499745",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "resolution": "False Positive",
+      "cleared_time": 1793812767020,
+      "cleared_reason": "file does not found suspicious hence marking as fp",
+      "comments_is_ml": true,
+      "raw_event_count": 1
+    },
+    {
+      "zip_path": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132578774.json",
+      "incident_id": "132578774",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "resolution": "False Positive",
+      "cleared_time": 1793834991675,
+      "cleared_reason": "file observed is not suspicious",
+      "comments_is_ml": true,
+      "raw_event_count": 1
+    },
+    {
+      "zip_path": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132591888.json",
+      "incident_id": "132591888",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "resolution": "False Positive",
+      "cleared_time": 1793842245487,
+      "cleared_reason": "file observed is not suspicious",
+      "comments_is_ml": true,
+      "raw_event_count": 3
+    },
+    {
+      "zip_path": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132595592.json",
+      "incident_id": "132595592",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "resolution": "True Positive",
+      "cleared_time": 1793845533473,
+      "cleared_reason": "Mail has been sent already",
+      "comments_is_ml": true,
+      "raw_event_count": 1
+    },
+    {
+      "zip_path": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132596403.json",
+      "incident_id": "132596403",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "resolution": "True Positive",
+      "cleared_time": 1793845939271,
+      "cleared_reason": "Mail has been sent already",
+      "comments_is_ml": false,
+      "raw_event_count": 1
+    },
+    {
+      "zip_path": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132599145.json",
+      "incident_id": "132599145",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "resolution": "True Positive",
+      "cleared_time": 1793846725003,
+      "cleared_reason": "Case has been raised for the similar incidents.",
+      "comments_is_ml": false,
+      "raw_event_count": 2
+    },
+    {
+      "zip_path": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132599146.json",
+      "incident_id": "132599146",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "resolution": "True Positive",
+      "cleared_time": 1793846725003,
+      "cleared_reason": "Case has been raised for the similar incidents.",
+      "comments_is_ml": false,
+      "raw_event_count": 11
+    },
+    {
+      "zip_path": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132599330.json",
+      "incident_id": "132599330",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "resolution": "True Positive",
+      "cleared_time": 1793846725003,
+      "cleared_reason": "Case has been raised for the similar incidents.",
+      "comments_is_ml": false,
+      "raw_event_count": 2
+    }
+  ]
+}

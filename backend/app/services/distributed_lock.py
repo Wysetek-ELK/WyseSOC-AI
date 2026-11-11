@@ -209,3 +209,66 @@ class DistributedLockManager:
                     logger.warning(f"Failed releasing DB distributed lock '{clean_key}': {rel_exc}")
             if redis_acquired:
                 _release_redis_lock(clean_key, owner_id)
+
+    @staticmethod
+    async def verify_or_renew(
+        db,
+        lock_key: str,
+        owner_id: Optional[str],
+        ttl_seconds: int = 120,
+    ) -> bool:
+        """
+        Verify before committing state changes that this caller still owns an unexpired
+        distributed lease, renewing its expiration atomically when valid.
+        """
+        if not owner_id:
+            return True
+
+        clean_key = (lock_key or "").strip()
+        bind = db.get_bind() if db is not None else None
+        if bind is None:
+            return True
+
+        from sqlalchemy import update
+        from sqlalchemy.ext.asyncio import AsyncEngine
+        async_engine = bind if isinstance(bind, AsyncEngine) else AsyncEngine(bind)
+
+        now = datetime.utcnow()
+        new_expires_at = now + timedelta(seconds=max(5, int(ttl_seconds)))
+        is_in_memory = ":memory:" in str(getattr(bind, "url", "")).lower()
+        try:
+            async with async_engine.begin() as conn:
+                res = await conn.execute(
+                    update(DistributedLock)
+                    .where(
+                        DistributedLock.lock_key == clean_key,
+                        DistributedLock.owner_id == owner_id,
+                        DistributedLock.expires_at > now,
+                    )
+                    .values(expires_at=new_expires_at)
+                )
+                if (res.rowcount or 0) > 0:
+                    return True
+                if is_in_memory:
+                    # On ephemeral :memory: test DBs, acquire() skips DB row creation;
+                    # allow commit unless an explicit lease row exists for another owner/expired.
+                    existing = (
+                        await conn.execute(
+                            select(DistributedLock.owner_id, DistributedLock.expires_at).where(
+                                DistributedLock.lock_key == clean_key
+                            )
+                        )
+                    ).first()
+                    return existing is None
+                return False
+        except Exception as exc:
+            err_lower = str(exc).lower()
+            if "no such table" in err_lower or "does not exist" in err_lower:
+                logger.debug(f"distributed_locks table unavailable during renewal ({exc}); allowing local commit.")
+                return True
+            raise
+
+
+class DistributedLockLostError(RuntimeError):
+    """Raised when a worker's distributed lease expires or is superseded before DB commit."""
+    pass

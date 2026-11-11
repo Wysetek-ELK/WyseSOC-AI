@@ -223,6 +223,15 @@ class VerdictGuardrailsEngine:
             return VerdictGuardrailResult(UserVisibleVerdict.TRUE_POSITIVE, None, confidence_limitations, guardrails_triggered)
         elif clean_prop == "FALSE_POSITIVE":
             return VerdictGuardrailResult(UserVisibleVerdict.FALSE_POSITIVE, None, confidence_limitations, guardrails_triggered)
+        elif clean_prop not in ("REQUIRES_ATTENTION", "REQUIRES_ANALYST_ATTENTION"):
+            confidence_limitations.append("INVALID_MODEL_OUTPUT: Malformed or unrecognized model verdict forces minimal trust (<= 2/10).")
+            guardrails_triggered.append("G0_INVALID_MODEL_OUTPUT")
+            return VerdictGuardrailResult(
+                UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION,
+                f"Malformed or unrecognized model verdict '{proposed_verdict}' rejected safely.",
+                confidence_limitations,
+                guardrails_triggered,
+            )
         else:
             return VerdictGuardrailResult(UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION, "Model suggested analyst attention.", confidence_limitations, guardrails_triggered)
 

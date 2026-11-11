@@ -469,7 +469,7 @@ export default function AITriageWorkbenchDetailPage({
             {/* Metric 3: Validation Status */}
             <div className="p-2 rounded-lg bg-slate-900/80 border border-slate-800">
               <span className="text-[9px] text-slate-400 block uppercase">Validation Status</span>
-              <div className="mt-0.5 truncate">
+              <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                 <span className={`text-xs font-bold px-1.5 py-0.5 rounded border inline-block ${
                   aiVerdict.validation_status === "VALIDATED"
                     ? "bg-emerald-950 text-emerald-300 border-emerald-800"
@@ -479,7 +479,23 @@ export default function AITriageWorkbenchDetailPage({
                 }`}>
                   {aiVerdict.validation_status || "UNVERIFIED"}
                 </span>
+                {aiVerdict.trust_score !== undefined && aiVerdict.trust_score !== null && (
+                  <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                    aiVerdict.trust_score >= 7
+                      ? "bg-emerald-950/60 text-emerald-300 border-emerald-800/70"
+                      : aiVerdict.trust_score >= 4
+                      ? "bg-amber-950/60 text-amber-300 border-amber-800/70"
+                      : "bg-rose-950/60 text-rose-300 border-rose-800/70"
+                  }`}>
+                    Trust: {aiVerdict.trust_score}/10
+                  </span>
+                )}
               </div>
+              {aiVerdict.final_disposition && (
+                <span className="text-[9px] text-slate-400 font-mono block mt-1 truncate" title={aiVerdict.final_disposition}>
+                  Disposition: {aiVerdict.final_disposition}
+                </span>
+              )}
             </div>
 
             {/* Metric 4: Replay Audit */}

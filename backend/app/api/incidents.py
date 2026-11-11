@@ -22,7 +22,7 @@ from app.services.model_payload_allowlist import build_model_facing_payload
 from app.services.model_provider.factory import get_model_provider
 from app.services.prompt_studio_service import PromptStudioService, COMMON_SOC_BASELINE
 from app.models.prompt import RulePrompt
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_analyst
 
 router = APIRouter(prefix="/incidents", tags=["Incidents"])
 
@@ -134,7 +134,7 @@ async def get_incident_model_payload(
 async def request_incident_ai_verdict(
     identifier: str,
     request: Request = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_analyst),
     db: AsyncSession = Depends(get_db),
 ):
     """

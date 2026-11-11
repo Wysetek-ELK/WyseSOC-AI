@@ -72,6 +72,19 @@ class VerdictTriageAgent:
         inv.analyst_notes = "\n\n".join(lines)
         inv.updated_at = datetime.utcnow()
 
+    @staticmethod
+    async def _assert_lock_held(db: AsyncSession, lock_key: Optional[str], lock_owner_id: Optional[str]) -> None:
+        if lock_key and lock_owner_id:
+            from app.services.distributed_lock import DistributedLockManager, DistributedLockLostError
+            held = await DistributedLockManager.verify_or_renew(
+                db, lock_key=lock_key, owner_id=lock_owner_id, ttl_seconds=120
+            )
+            if not held:
+                await db.rollback()
+                raise DistributedLockLostError(
+                    f"Distributed lease lost or expired before commit for '{lock_key}' (owner={lock_owner_id})."
+                )
+
     @classmethod
     async def is_local_llm_available(cls, force_refresh: bool = False) -> bool:
         """Checks if Server 2 LLM endpoint is reachable, caching positive status for 30s and offline status for 8s."""
@@ -132,12 +145,13 @@ class VerdictTriageAgent:
 
         inc_lock = self._get_incident_lock(canonical_key)
         async with inc_lock:
+            lock_key = f"incident_triage:{canonical_key}"
             async with DistributedLockManager.acquire(
                 self.db,
-                lock_key=f"incident_triage:{canonical_key}",
+                lock_key=lock_key,
                 ttl_seconds=120,
                 acquire_timeout_seconds=30.0,
-            ):
+            ) as lock_owner_id:
                 # Reload authoritative DB state inside locks to prevent stale snapshots or duplicate triage
                 stmt = (
                     select(Incident)
@@ -158,6 +172,8 @@ class VerdictTriageAgent:
                     username=username,
                     model_provider_type=model_provider_type,
                     allow_simulated_fallback=allow_simulated_fallback,
+                    lock_key=lock_key,
+                    lock_owner_id=lock_owner_id,
                 )
 
     async def _evaluate_incident_locked(
@@ -166,6 +182,8 @@ class VerdictTriageAgent:
         username: str = "system",
         model_provider_type: Optional[str] = None,
         allow_simulated_fallback: bool = False,
+        lock_key: Optional[str] = None,
+        lock_owner_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Protected single-incident evaluation execution under per-incident concurrency lock."""
         prev_attempts = 0
@@ -273,6 +291,10 @@ class VerdictTriageAgent:
                     "is_simulated": False,
                     "validation_status": "POLICY_NOT_APPROVED",
                     "validation_reason_codes": ["POLICY_NOT_APPROVED", "EVIDENCE_CONTRACT_UNVERIFIED"],
+                    "is_decisive_accepted": False,
+                    "proposal_validation_outcome": "POLICY_NOT_APPROVED",
+                    "final_disposition": "DEFERRED_PENDING_POLICY_APPROVAL",
+                    "abstention_reason": deferral_detail,
                     "evidence_completeness": 0.0,
                     "grounding_ratio": 0.0,
                     "canonical_evidence_count": norm_result.total_evidence_count,
@@ -284,6 +306,7 @@ class VerdictTriageAgent:
                     "evaluated_at": datetime.utcnow().isoformat(),
                     "evaluated_by_user": username,
                 }
+                await self._assert_lock_held(self.db, lock_key, lock_owner_id)
                 incident.ai_verdict = verdict_data
                 self.db.add(incident)
 
@@ -349,6 +372,10 @@ class VerdictTriageAgent:
                 "is_simulated": False,
                 "validation_status": preflight.preflight_status,
                 "validation_reason_codes": ["EVIDENCE_MISSING"] if preflight.critical_missing_fields else ["EVIDENCE_CONTRACT_UNVERIFIED"],
+                "is_decisive_accepted": False,
+                "proposal_validation_outcome": "PREFLIGHT_EVIDENCE_INSUFFICIENT",
+                "final_disposition": "SAFE_ANALYST_ESCALATION",
+                "abstention_reason": preflight.reason,
                 "evidence_completeness": preflight.evidence_completeness,
                 "grounding_ratio": 0.0,
                 "canonical_evidence_count": norm_result.total_evidence_count,
@@ -363,6 +390,7 @@ class VerdictTriageAgent:
                 "evaluated_at": datetime.utcnow().isoformat(),
                 "evaluated_by_user": username,
             }
+            await self._assert_lock_held(self.db, lock_key, lock_owner_id)
             incident.ai_verdict = verdict_data
             self.db.add(incident)
 
@@ -442,6 +470,10 @@ class VerdictTriageAgent:
                 "is_simulated": False,
                 "validation_status": "CONTEXT_WINDOW_EXCEEDED",
                 "validation_reason_codes": ["CONTEXT_WINDOW_EXCEEDED"],
+                "is_decisive_accepted": False,
+                "proposal_validation_outcome": "CONTEXT_BUDGET_EXCEEDED",
+                "final_disposition": "SAFE_ANALYST_ESCALATION",
+                "abstention_reason": budgeted.abstention_reason or "CONTEXT_WINDOW_EXCEEDED",
                 "evidence_completeness": preflight.evidence_completeness,
                 "grounding_ratio": 0.0,
                 "canonical_evidence_count": norm_result.total_evidence_count,
@@ -461,6 +493,7 @@ class VerdictTriageAgent:
                 "evaluated_at": datetime.utcnow().isoformat(),
                 "evaluated_by_user": username,
             }
+            await self._assert_lock_held(self.db, lock_key, lock_owner_id)
             incident.ai_verdict = verdict_data
             self.db.add(incident)
             await self.db.commit()
@@ -513,10 +546,9 @@ class VerdictTriageAgent:
             )
             
             # Check if OPENAI_COMPATIBLE provider suffered an actual connection failure or HTTP error
-            is_connection_error = (
-                getattr(verdict, "validation_status", "") in ("CONNECTION_ERROR", "HTTP_ERROR")
-                or (getattr(verdict, "confidence", 100.0) == 0.0 and getattr(verdict, "validation_status", "") != "VALID")
-            )
+            # NOTE: INVALID_SCHEMA / UNEXPECTED_VERDICT mean the LLM responded over HTTP 200 with malformed output
+            # and must NOT trip the circuit breaker or silently swap to mock simulation.
+            is_connection_error = getattr(verdict, "validation_status", "") in ("CONNECTION_ERROR", "HTTP_ERROR")
             if use_gpu_manager:
                 if is_connection_error:
                     await gpu_workload_manager.release_inference_slot(success=False, error_message=getattr(verdict, "reason", "connection failure"))
@@ -578,6 +610,7 @@ class VerdictTriageAgent:
             "supporting_evidence": verdict.supporting_evidence,
             "supporting_claims": getattr(verdict, "supporting_claims", []),
             "contradictory_evidence": getattr(verdict, "contradictory_evidence", []),
+            "validation_status": getattr(verdict, "validation_status", "VALID"),
         })
         claim_grounding = ModelClaimExtractor.extract_and_ground_claims(
             incident_id=incident.incident_id,
@@ -645,6 +678,35 @@ class VerdictTriageAgent:
         final_confidence_display = val_res.validated_confidence_display if val_res.validated_confidence_display is not None else verdict.confidence
         final_action_directive = val_res.analyst_action_directive
 
+        raw_provider_status = str(getattr(verdict, "validation_status", "VALID") or "VALID").upper().strip()
+        if raw_provider_status in ("INVALID_SCHEMA", "UNEXPECTED_VERDICT", "INVALID_MODEL_OUTPUT", "PARSE_ERROR") or "MODEL_OUTPUT_INVALID" in final_reason_codes:
+            final_auth_verdict = "REQUIRES_ATTENTION"
+            final_is_decisive = False
+            final_validation_status = "INVALID_MODEL_OUTPUT"
+            final_confidence_display = 0.0
+            if "MODEL_OUTPUT_INVALID" not in final_reason_codes:
+                final_reason_codes.append("MODEL_OUTPUT_INVALID")
+            final_action_directive = (
+                "Model returned malformed or invalid structured output; safely abstained and routed to analyst review."
+            )
+
+        if final_validation_status == "INVALID_MODEL_OUTPUT":
+            proposal_validation_outcome = "INVALID_MODEL_OUTPUT"
+            final_disposition = "SAFE_ABSTENTION_AFTER_INVALID_OUTPUT"
+            abstention_reason = final_action_directive
+        elif final_is_decisive and final_auth_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+            proposal_validation_outcome = "VALID_DECISIVE_PROPOSAL"
+            final_disposition = "ACCEPTED_DECISIVE_VERDICT"
+            abstention_reason = None
+        elif val_res.proposed_verdict != final_auth_verdict or final_validation_status in ("REJECTED", "INSUFFICIENT_EVIDENCE", "GUARDRAIL_ABSTAINED"):
+            proposal_validation_outcome = "REJECTED_BY_VALIDATOR"
+            final_disposition = "OVERRULED_TO_ANALYST_ATTENTION"
+            abstention_reason = final_action_directive or "; ".join(final_reason_codes)
+        else:
+            proposal_validation_outcome = "MODEL_ABSTENTION"
+            final_disposition = "SAFE_ANALYST_ESCALATION"
+            abstention_reason = final_action_directive or "Model recommended cautious analyst escalation."
+
         if final_auth_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE") and trust_res.effective_verdict == UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION:
             esc_lower = (trust_res.escalation_reason or "").lower()
             is_hard_guardrail_block = bool(
@@ -666,6 +728,21 @@ class VerdictTriageAgent:
                     final_reason_codes.append("TRUST_GUARDRAIL_BLOCK")
                 if trust_res.escalation_reason:
                     final_action_directive = trust_res.escalation_reason
+
+        if final_validation_status == "INVALID_MODEL_OUTPUT":
+            note_invalid = (
+                "INVALID_MODEL_OUTPUT: Malformed or unparseable model verdict forced safe abstention and minimal trust (<= 2/10)."
+            )
+            if note_invalid not in trust_res.confidence_limitations:
+                trust_res.confidence_limitations.append(note_invalid)
+            if trust_res.trust_score is not None:
+                trust_res.trust_score = min(2, trust_res.trust_score)
+        elif val_res.detected_contradictions or final_validation_status == "REJECTED" or "EVIDENCE_CONTRADICTION" in final_reason_codes:
+            if trust_res.trust_score is not None:
+                trust_res.trust_score = min(3, trust_res.trust_score)
+
+        # Verify distributed lock lease is still owned by this worker before staging any DB writes
+        await self._assert_lock_held(self.db, lock_key, lock_owner_id)
 
         # Persist AIS 2.1 assessment records alongside live verdict
         if trust_res.evidence_sufficiency is not None:
@@ -737,6 +814,9 @@ class VerdictTriageAgent:
             "validation_status": final_validation_status,
             "validation_reason_codes": final_reason_codes,
             "is_decisive_accepted": final_is_decisive,
+            "proposal_validation_outcome": proposal_validation_outcome,
+            "final_disposition": final_disposition,
+            "abstention_reason": abstention_reason,
             "evidence_completeness": val_res.evidence_completeness,
             "grounding_ratio": val_res.grounding_ratio,
             "total_claims_count": val_res.total_claims_count,

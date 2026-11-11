@@ -1,0 +1,121 @@
+﻿
+> frontend@0.1.0 test:admin-guide
+> node --experimental-strip-types --test tests/admin-guide.test.mjs
+
+node.exe : (node:15324) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+At C:\nvm4w\nodejs\npm.ps1:29 char:3
++   & $NODE_EXE $NPM_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:15324) Ex...nge at any time:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:15584) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:15584) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/amit/OneDrive/Documents/SOC-AI-Agent/frontend/src/data/admin-guide/architectureFlowData.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\frontend\\package.json.
+# Subtest: Sidebar contains Platform Control -> AI Verdict Admin Guide route
+ok 1 - Sidebar contains Platform Control -> AI Verdict Admin Guide route
+  ---
+  duration_ms: 3.1929
+  ...
+# Subtest: End-to-End Architecture flow includes all 17 stages, two lanes, bridges, and 6-part metadata
+ok 2 - End-to-End Architecture flow includes all 17 stages, two lanes, bridges, and 6-part metadata
+  ---
+  duration_ms: 1.7995
+  ...
+# Subtest: AI Verdict Decision Engine flow includes 9 pipeline steps and all 3 verdict outcomes
+ok 3 - AI Verdict Decision Engine flow includes 9 pipeline steps and all 3 verdict outcomes
+  ---
+  duration_ms: 0.3859
+  ...
+# Subtest: AIS 2.0 Guide covers 8 lifecycle stages, NETWORK_SCAN, 9 policy sections, and Quality Gates G1-G8
+ok 4 - AIS 2.0 Guide covers 8 lifecycle stages, NETWORK_SCAN, 9 policy sections, and Quality Gates G1-G8
+  ---
+  duration_ms: 0.2846
+  ...
+# Subtest: Incident 165233 illustrative walkthrough adheres strictly to non-fabrication constraints
+ok 5 - Incident 165233 illustrative walkthrough adheres strictly to non-fabrication constraints
+  ---
+  duration_ms: 0.3421
+  ...
+# Subtest: Admin Setup covers all 11 domains and valid platform route links
+ok 6 - Admin Setup covers all 11 domains and valid platform route links
+  ---
+  duration_ms: 2.0775
+  ...
+# Subtest: Glossary, Guided Tour, and Troubleshooting cover required diagnostic scenarios
+ok 7 - Glossary, Guided Tour, and Troubleshooting cover required diagnostic scenarios
+  ---
+  duration_ms: 0.4221
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 317.6869
+
+> frontend@0.1.0 build
+> next build
+
+▲ Next.js 16.4.5 (Turbopack)
+✓ Running next.config.ts took 126ms
+- Experiments (use with caution):
+  · proxyTimeout: 300000
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 12.1s
+  Running TypeScript ...
+  Finished TypeScript in 27.7s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/30) ...
+  Generating static pages using 11 workers (7/30) 
+  Generating static pages using 11 workers (14/30) 
+  Generating static pages using 11 workers (22/30) 
+✓ Generating static pages using 11 workers (30/30) in 6.2s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin
+├ ○ /admin-guide
+├ ○ /agent-configuration
+├ ○ /agent-intelligence-studio
+├ ○ /agent-memory
+├ ○ /agent-mission-control
+├ ○ /agent-simulation-lab
+├ ○ /ai-triage-workbench
+├ ƒ /ai-triage-workbench/[id]
+├ ○ /analyst-attention
+├ ○ /detection-intelligence
+├ ƒ /detection-intelligence/[id]
+├ ○ /dry-run
+├ ○ /evaluation-reports
+├ ○ /governance-access
+├ ○ /human-review-queue
+├ ○ /imports
+├ ○ /incidents
+├ ƒ /incidents/[id]
+├ ○ /inference-control
+├ ○ /infrastructure
+├ ○ /learning-history
+├ ○ /login
+├ ○ /prompt-studio
+├ ○ /rules
+├ ƒ /rules/[id]
+├ ○ /settings
+├ ○ /soc-chatbot
+├ ○ /telemetry-hub
+└ ○ /verdict-intelligence
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

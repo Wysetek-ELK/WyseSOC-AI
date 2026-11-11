@@ -1,0 +1,49 @@
+{
+  "timestamp_utc": "2026-11-11T04:22:00Z",
+  "baseline_commit": "d7448ed244db9e16399e04db3b28a3cf8f7d75c0",
+  "overall_status": "PHASE_8_1_BLOCKED",
+  "classification_reason": "External staging/live hardware dependencies (PostgreSQL daemon, Redis/Celery broker, Server 2 Qwen GPU vLLM, FortiSIEM Supervisor API) are unreachable offline and RepoDeploy Governor targets only remote-server (production); user confirmed Proceed offline under Phase 8.1 Rules 11-12.",
+  "suites": {
+    "backend_pytest_full": {
+      "command": "pytest -v --ignore=tests/e2e_browser --tb=short",
+      "collected": 277,
+      "passed": 277,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 294.92,
+      "log_file": "docs/phase8.1/evidence/logs/backend_pytest_final.txt"
+    },
+    "frontend_tsc_admin_build": {
+      "commands": [
+        "npx tsc --noEmit",
+        "npm run test:admin-guide",
+        "npm run build"
+      ],
+      "tsc_exit": 0,
+      "admin_guide_subtests_passed": 7,
+      "admin_guide_subtests_total": 7,
+      "nextjs_routes_compiled": 30,
+      "log_file": "docs/phase8.1/evidence/logs/frontend_checks_final.txt"
+    },
+    "playwright_browser_e2e_p81": {
+      "command": "pytest -v tests/e2e_browser/test_phase8_1_ui_e2e.py --tb=short",
+      "passed": 1,
+      "failed": 0,
+      "duration_seconds": 46.64,
+      "workflow_steps_passed": 9,
+      "workflow_steps_total": 9,
+      "console_errors": 0,
+      "page_errors": 0,
+      "summary_file": "docs/phase8.1/evidence/browser/playwright_p81_summary.json",
+      "log_file": "docs/phase8.1/evidence/logs/playwright_p81_final.txt"
+    }
+  },
+  "defects_resolved": [
+    "P8.1-DEF-001",
+    "P8.1-DEF-002",
+    "P8.1-DEF-003",
+    "P8.1-DEF-004",
+    "P8.1-DEF-005",
+    "P8.1-DEF-006"
+  ]
+}

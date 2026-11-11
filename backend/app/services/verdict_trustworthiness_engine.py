@@ -193,8 +193,26 @@ class VerdictTrustworthinessEngine:
         )
 
         # If mandatory evidence is absent or material contradictions exist, score cannot exceed 3/10
-        if sufficiency.mandatory_fields_missing or sufficiency.evidence_status == EvidenceStatus.CONFLICTING:
+        _claim_contradiction = bool(
+            getattr(claim_verification, "has_contradictions", False)
+            or getattr(claim_verification, "contradiction_detected", False)
+            or (model_output or {}).get("contradictory_evidence")
+        )
+        _zero_grounded_decisive = bool(
+            str((model_output or {}).get("verdict") or (model_output or {}).get("proposed_verdict") or "").upper().strip() in ("TRUE_POSITIVE", "FALSE_POSITIVE")
+            and (getattr(claim_verification, "has_unsupported_assertions", False) or getattr(claim_verification, "grounded_claims", 0) == 0)
+        )
+        _model_val_status = str((model_output or {}).get("validation_status", "VALID")).upper().strip()
+        _raw_prop_label = str((model_output or {}).get("verdict") or (model_output or {}).get("proposed_verdict") or "").upper().strip()
+        _is_malformed_output = (
+            _model_val_status in ("INVALID_SCHEMA", "UNEXPECTED_VERDICT", "INVALID_MODEL_OUTPUT", "PARSE_ERROR", "HTTP_ERROR")
+            or (_raw_prop_label != "" and _raw_prop_label not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "REQUIRES_ATTENTION"))
+        )
+
+        if sufficiency.mandatory_fields_missing or sufficiency.evidence_status == EvidenceStatus.CONFLICTING or _claim_contradiction or _zero_grounded_decisive:
             ordinal_score = min(3, ordinal_score)
+        if _is_malformed_output:
+            ordinal_score = min(2, ordinal_score)
 
         breakdown = TrustScoreDimensionBreakdown(
             direct_claim_support=dim1,

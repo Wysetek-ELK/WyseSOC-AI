@@ -2095,10 +2095,36 @@ export default function AgentIntelligenceStudioPage() {
                         <div className="text-xl font-bold font-mono text-rose-400">{blockingIssuesList.length}</div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Approval Eligible</div>
+                        <div className="text-[10px] text-slate-500 uppercase">Structural Approval</div>
                         <div className={`text-sm font-bold mt-1 ${isApprovalEligible ? "text-emerald-400" : "text-amber-400"}`}>
-                          {isApprovalEligible ? "YES" : "NO (REWORK)"}
+                          {isApprovalEligible ? "ELIGIBLE (G1–G7)" : "NO (REWORK)"}
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Explicit Separation of Structural vs Empirical vs Autonomous Eligibility */}
+                    <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-900/40 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span>
+                          <span className="text-slate-400">Structural (G1–G7): </span>
+                          <strong className={(isApprovalEligible && (qualityAssessment.structural_approval_eligible ?? true)) ? "text-emerald-400" : "text-rose-400"}>
+                            {(isApprovalEligible && (qualityAssessment.structural_approval_eligible ?? true)) ? "ELIGIBLE" : "BLOCKED"}
+                          </strong>
+                        </span>
+                        <span>
+                          <span className="text-slate-400">Empirical G8: </span>
+                          <strong className={(qualityAssessment.empirical_validation_eligible ?? (qualityAssessment.empirical_validation_status === "EVALUATED_PASSED")) ? "text-emerald-400" : "text-amber-400"}>
+                            {(qualityAssessment.empirical_validation_eligible ?? (qualityAssessment.empirical_validation_status === "EVALUATED_PASSED"))
+                              ? "VERIFIED"
+                              : `NOT CERTIFIED (${qualityAssessment.empirical_validation_status || qualityAssessment.simulation_status || "NOT_EVALUATED"})`}
+                          </strong>
+                        </span>
+                        <span>
+                          <span className="text-slate-400">Autonomous Ops: </span>
+                          <strong className={(qualityAssessment.autonomous_operation_eligible ?? false) ? "text-emerald-400" : "text-amber-300"}>
+                            {(qualityAssessment.autonomous_operation_eligible ?? false) ? "ELIGIBLE" : "REQUIRES G8 PASS"}
+                          </strong>
+                        </span>
                       </div>
                     </div>
 

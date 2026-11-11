@@ -43,6 +43,11 @@ export interface IncidentAiVerdictResponse {
   validation_status?: string;
   validation_reason_codes?: string[];
   is_decisive_accepted?: boolean;
+  proposal_validation_outcome?: string;
+  final_disposition?: string;
+  abstention_reason?: string | null;
+  trust_score?: number | null;
+  trust_status?: string;
   evidence_completeness?: number;
   grounding_ratio?: number;
   total_claims_count?: number;
@@ -542,6 +547,9 @@ export interface PolicyQualityAssessmentResponse {
   recommendations: string[];
   simulation_status: string;
   approval_eligible: boolean;
+  structural_approval_eligible?: boolean;
+  empirical_validation_eligible?: boolean;
+  autonomous_operation_eligible?: boolean;
   hard_gate_failure?: boolean;
   validation_status?: string;
   policy_digest: string;

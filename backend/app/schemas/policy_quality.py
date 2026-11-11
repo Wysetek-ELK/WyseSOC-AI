@@ -65,6 +65,9 @@ class PolicyQualityAssessmentResponse(BaseModel):
     # Simulation & Approval Eligibility
     simulation_status: SimulationStatus = Field(SimulationStatus.NOT_EVALUATED)
     approval_eligible: bool = Field(False, description="True ONLY if ZERO blocking issues exist regardless of quality_score")
+    structural_approval_eligible: bool = Field(False, description="True if structural/contract/security gates (G1-G7) have zero blocking issues")
+    empirical_validation_eligible: bool = Field(False, description="True only if empirical historical simulation Gate G8 passed (EVALUATED_PASSED)")
+    autonomous_operation_eligible: bool = Field(False, description="True only if both structural gates (G1-G7) and empirical Gate G8 passed")
     
     # Cryptographic Content Bindings
     policy_digest: str = Field(..., description="SHA-256 digest of 9 policy sections")

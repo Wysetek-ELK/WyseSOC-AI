@@ -37,8 +37,10 @@ from app.schemas.rule_intelligence import (
     ArchetypeClassificationResult,
 )
 from app.schemas.policy_quality import (
+    GateStatus,
     PolicyQualityAssessmentResponse,
     QualitySummaryItem,
+    SimulationStatus,
 )
 
 logger = logging.getLogger("ai_verdict.prompts")
@@ -262,6 +264,22 @@ async def get_rule_prompt(
     )
 
 
+async def _analyze_with_snapshot(db: AsyncSession, rule: Rule):
+    snap_q = select(RuleIntelligenceSnapshot).where(RuleIntelligenceSnapshot.rule_id == rule.id)
+    snap = (await db.execute(snap_q)).scalar_one_or_none()
+    auth_def = None
+    if snap and snap.definition_status == "VERIFIED" and snap.threshold is not None:
+        auth_def = {
+            "threshold": snap.threshold,
+            "threshold_unit": snap.threshold_unit,
+            "aggregation_window": snap.aggregation_window,
+        }
+    semantics = RuleIntelligenceAnalyzer.analyze_rule(rule, authoritative_siem_definition=auth_def)
+    classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
+    archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
+    return semantics, classification, archetype_def
+
+
 @router.get("/rule/{rule_id}/intelligence")
 async def get_rule_intelligence(
     rule_id: str,
@@ -276,9 +294,7 @@ async def get_rule_intelligence(
     if not rule:
         raise HTTPException(status_code=404, detail=f"SIEM Rule {rule_id} not found")
 
-    semantics = RuleIntelligenceAnalyzer.analyze_rule(rule)
-    classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
-    archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
+    semantics, classification, archetype_def = await _analyze_with_snapshot(db, rule)
     contract = EvidenceRequirementMapper.map_evidence_contract(rule, semantics, archetype_def)
 
     return {
@@ -389,20 +405,7 @@ async def validate_policy_quality(
         raise HTTPException(status_code=404, detail="Specified prompt version not found")
 
     # Evaluate contract and quality (check if authoritative snapshot exists)
-    snap_q = select(RuleIntelligenceSnapshot).where(RuleIntelligenceSnapshot.rule_id == rule.id)
-    snap_res = await db.execute(snap_q)
-    snap = snap_res.scalar_one_or_none()
-    auth_def = None
-    if snap and snap.definition_status == "VERIFIED" and snap.threshold is not None:
-        auth_def = {
-            "threshold": snap.threshold,
-            "threshold_unit": snap.threshold_unit,
-            "aggregation_window": snap.aggregation_window,
-        }
-
-    semantics = RuleIntelligenceAnalyzer.analyze_rule(rule, authoritative_siem_definition=auth_def)
-    classification = DetectionArchetypeRegistry.classify_rule(semantics, rule)
-    archetype_def = DetectionArchetypeRegistry.get_archetype_definition(classification.primary_archetype)
+    semantics, classification, archetype_def = await _analyze_with_snapshot(db, rule)
     contract = EvidenceRequirementMapper.map_evidence_contract(rule, semantics, archetype_def, target_ver)
 
     # Check for recent simulation results in HistoricalEvaluationRunRecord to prevent stale G8
@@ -444,6 +447,16 @@ async def validate_policy_quality(
         semantics=semantics,
         simulation_results=sim_results,
     )
+    g8_gate = assessment.gate_results.get("G8_SIMULATION_REGRESSION")
+    structural_eligible = bool(assessment.approval_eligible)
+    empirical_eligible = bool(
+        assessment.simulation_status == SimulationStatus.EVALUATED_PASSED
+        and g8_gate is not None
+        and g8_gate.status == GateStatus.PASSED
+    )
+    assessment.structural_approval_eligible = structural_eligible
+    assessment.empirical_validation_eligible = empirical_eligible
+    assessment.autonomous_operation_eligible = structural_eligible and empirical_eligible
 
     # Update version status
     target_ver.quality_score = assessment.quality_score

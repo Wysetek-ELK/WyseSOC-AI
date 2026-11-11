@@ -1,20 +1,20 @@
 {
   "metadata": {
     "project": "AI Verdict \u2014 Enterprise Agentic SOC Intelligence Platform",
-    "updated_at": "2026-11-10T22:01:28+05:30",
-    "git_commit": "a68d41f+phase8",
-    "architecture_version": "AIS 2.1 + Audit Remediation v2.2.1",
+    "updated_at": "2026-11-11T09:43:54+05:30",
+    "git_commit": "d7448ed+phase8.1",
+    "architecture_version": "AIS 2.1 + Audit Remediation v2.2.1 + Phase 8.1 Hardening",
     "weighting_rule": "Unweighted criteria ratio per feature (satisfied_impl / applicable_impl; verified_acc / applicable_acc); NOT_APPLICABLE criteria excluded from denominator with explicit justification. Module and overall percentages sum raw criteria across features."
   },
   "summary": {
     "total_features": 37,
     "total_modules": 19,
-    "satisfied_impl_criteria": 66,
-    "applicable_impl_criteria": 66,
+    "satisfied_impl_criteria": 67,
+    "applicable_impl_criteria": 67,
     "overall_completion_pct": 100.0,
-    "verified_acc_criteria": 60,
-    "applicable_acc_criteria": 66,
-    "overall_verification_pct": 90.9
+    "verified_acc_criteria": 61,
+    "applicable_acc_criteria": 67,
+    "overall_verification_pct": 91.0
   },
   "features": [
     {
@@ -35,15 +35,18 @@
       ],
       "test_files": [
         "backend/tests/test_prompt_studio.py",
-        "backend/tests/test_agent_intelligence_studio_v2.py"
+        "backend/tests/test_agent_intelligence_studio_v2.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py"
       ],
       "evidence_files": [
-        "backend/app/services/prompt_studio_service.py"
+        "backend/app/services/prompt_studio_service.py",
+        "docs/phase8.1/evidence/browser/playwright_p81_summary.json"
       ],
       "evidence_notes": [
-        "9-section schema & studio CRUD endpoints verified in test_prompt_studio.py and test_agent_intelligence_studio_v2.py; rule UUID/rule_id resolution unified."
+        "9-section schema, CRUD API, rule UUID/rule_id resolution, and live headless Chromium AIS Studio UI click-through verified across test_phase8_ui_e2e.py & test_phase8_1_ui_e2e.py."
       ],
-      "remaining_gap": "Interactive browser UI rendering & drag-and-drop click paths not covered by Playwright E2E tests (backend API & TypeScript compile verified).",
+      "remaining_gap": "None within offline staging scope.",
       "acceptance_criteria": [
         {
           "id": "AIS-01-C1",
@@ -60,9 +63,8 @@
         {
           "id": "AIS-01-C3",
           "description": "Live browser UI form E2E click-through",
-          "implementation_state": "NOT_APPLICABLE",
-          "verification_state": "NOT_APPLICABLE",
-          "not_applicable_justification": "Backend-focused API/unit scope; frontend covered via tsc typecheck."
+          "implementation_state": "SATISFIED",
+          "verification_state": "VERIFIED"
         }
       ]
     },
@@ -225,13 +227,15 @@
       "test_files": [
         "backend/tests/test_audit_remediations.py",
         "backend/tests/test_policy_remediation_and_ground_truth.py",
-        "backend/tests/test_agent_intelligence_studio_v2.py"
+        "backend/tests/test_agent_intelligence_studio_v2.py",
+        "backend/tests/test_phase8_1_validation.py"
       ],
       "evidence_files": [
-        "backend/app/services/policy_quality_validator.py"
+        "backend/app/services/policy_quality_validator.py",
+        "docs/phase8.1/PHASE_8_1_QUALITY_GATES.md"
       ],
       "evidence_notes": [
-        "Remediated G5 common_prompt baseline dilution, G7 blocking omissions/self-contradiction checks, G8 policy_digest staleness detection, and /prompts/summary real status reporting."
+        "G1-G8 gate scoring, G5 RFC-1918 checks, G7 consistency, G8 INCONCLUSIVE/stale-digest checks, and P8.1-DEF-004 3-tier eligibility separation (structural vs empirical vs autonomous) verified."
       ],
       "remaining_gap": "G8 remains WARNING (0/15 pts) until >=5 verified rule-matched ground truth cases are accumulated per rule.",
       "acceptance_criteria": [
@@ -410,14 +414,16 @@
       "test_files": [
         "backend/tests/test_audit_remediations.py",
         "backend/tests/test_llm_offline_backlog.py",
-        "backend/tests/test_phase8_integration.py"
+        "backend/tests/test_phase8_integration.py",
+        "backend/tests/test_phase8_1_validation.py"
       ],
       "evidence_files": [
         "backend/app/services/ai_verdict_service.py",
-        "docs/phase8/PHASE_8_INFRASTRUCTURE_VALIDATION.md"
+        "docs/phase8/PHASE_8_INFRASTRUCTURE_VALIDATION.md",
+        "docs/phase8.1/PHASE_8_1_DATABASE_WORKERS.md"
       ],
       "evidence_notes": [
-        "DB-backed DistributedLockManager atomic lease UPSERT + optional Redis SET NX PX serializes OS worker processes; Investigation notes upsert idempotently; bounded reevaluation picks up POLICY_NOT_APPROVED / EVIDENCE_MISSING up to 3 attempts."
+        "DB DistributedLockManager atomic lease UPSERT, pre-commit lease verify_or_renew abort on expiry/takeover (P8.1-DEF-001), idempotent note upsert, and bounded 3-attempt reevaluation verified."
       ],
       "remaining_gap": "None (cross-process OS locking and idempotency verified in test_phase8_integration.py).",
       "acceptance_criteria": [
@@ -566,14 +572,16 @@
         "backend/tests/test_independent_verdict_validator.py",
         "backend/tests/test_evidence_grounding.py",
         "backend/tests/test_structured_output_and_injection.py",
-        "backend/tests/test_audit_remediations.py"
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_phase8_1_validation.py"
       ],
       "evidence_files": [
         "backend/app/services/independent_verdict_validator.py",
-        "backend/app/services/model_claim_extractor.py"
+        "backend/app/services/model_claim_extractor.py",
+        "docs/phase8.1/PHASE_8_1_VERDICT_E2E_VALIDATION.md"
       ],
       "evidence_notes": [
-        "Blocked empty-claim decisive bypass for both TP & FP, blocked blanket RFC-1918 FP, unified V3/P2 claim schemas, and preserved bit-identical deterministic replay."
+        "Blocked empty-claim/blanket-FP bypasses, separated proposal_validation_outcome vs final_disposition vs abstention_reason, and marked malformed model output INVALID_MODEL_OUTPUT (P8.1-DEF-002)."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -652,14 +660,16 @@
       "test_files": [
         "backend/tests/test_verdict_intelligence_validation.py",
         "backend/tests/test_verdict_intelligence_enhancements_v2.py",
-        "backend/tests/test_audit_remediations.py"
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_phase8_1_validation.py"
       ],
       "evidence_files": [
         "backend/app/services/verdict_trustworthiness_engine.py",
-        "backend/app/api/verdict_intelligence.py"
+        "backend/app/api/verdict_intelligence.py",
+        "docs/phase8.1/evidence/verdicts/stage5_verdict_disposition_traces.json"
       ],
       "evidence_notes": [
-        "Live triage and API now compute and persist real DB-backed trust assessments (zero hardcoded 10/85% or NOT_CALIBRATED overrides), handle NOT_CALCULABLE safely, and enforce simulation opt-in/production prohibition."
+        "Real DB-backed trust assessments, NOT_CALCULABLE handling, contradiction/ungrounded trust cap <=3, and invalid model output trust cap <=2 (P8.1-DEF-003) verified."
       ],
       "remaining_gap": "Real production DB currently holds 0 calibrated rules until >=30 adjudicated historical outcomes per rule accumulate.",
       "acceptance_criteria": [
@@ -1307,19 +1317,22 @@
         "backend/app/api/audit.py",
         "backend/app/services/audit_service.py",
         "backend/app/utils/security.py",
-        "backend/app/config.py"
+        "backend/app/config.py",
+        "backend/app/api/incidents.py"
       ],
       "test_files": [
         "backend/tests/test_auth.py",
         "backend/tests/test_phase1_security_controls.py",
-        "backend/tests/test_audit_remediations.py"
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_phase8_1_validation.py"
       ],
       "evidence_files": [
         "backend/app/utils/security.py",
-        "backend/app/services/audit_service.py"
+        "backend/app/services/audit_service.py",
+        "docs/phase8.1/PHASE_8_1_SECURITY_VALIDATION.md"
       ],
       "evidence_notes": [
-        "Bcrypt + PyJWT auth, admin-only policy approval gate (require_admin), production SECRET_KEY check, and tamper-evident audit logging verified."
+        "Bcrypt/PyJWT auth, admin approval gate, Viewer 403 block on POST /incidents/{id}/ai-verdict (P8.1-DEF-005), prompt-injection defense, GT isolation, and tamper-evident AuditLog verified."
       ],
       "remaining_gap": "External SIEM/CEF syslog forwarding of AuditLog depends on deployment environment.",
       "acceptance_criteria": [
@@ -1425,13 +1438,14 @@
         "backend/tests/test_agent_intelligence_studio_v2.py",
         "backend/tests/test_phase2_integration.py",
         "backend/tests/test_phase3_integration.py",
-        "backend/tests/test_phase4_integration.py"
+        "backend/tests/test_phase4_integration.py",
+        "backend/tests/test_phase8_1_validation.py"
       ],
       "evidence_files": [
         "backend/tests/test_audit_remediations.py"
       ],
       "evidence_notes": [
-        "Comprehensive backend pytest suite executed after final edits (see docs/testing/END_TO_END_VALIDATION_REPORT.md)."
+        "Full backend pytest suite plus Phase 8.1 defect/security suite passed without skipped or relaxed assertions after final edits."
       ],
       "remaining_gap": "External hardware integration tests (live Server 2 GPU + live FortiSIEM appliance) excluded from offline pytest environment.",
       "acceptance_criteria": [
@@ -1456,15 +1470,17 @@
       "backend_files": [],
       "test_files": [
         "frontend/tests/admin-guide.test.mjs",
-        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py"
       ],
       "evidence_files": [
         "frontend/tests/admin-guide.test.mjs",
         "docs/phase8/evidence/test-results/playwright_e2e_summary.json",
-        "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md"
+        "docs/phase8/PHASE_8_FRONTEND_E2E_REPORT.md",
+        "docs/phase8.1/PHASE_8_1_FRONTEND_VALIDATION.md"
       ],
       "evidence_notes": [
-        "npx tsc --noEmit, npm run test:admin-guide (7/7 assertions), Next.js production build, and Playwright Chromium E2E suite (9/9 workflows, 0 console/page errors) all verified passing."
+        "npx tsc --noEmit, admin-guide tests (7/7), Next.js production build, and Playwright Chromium E2E suites (Phase 8 & Phase 8.1, 0 console/page errors) all verified passing."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1521,10 +1537,28 @@
         "docs/phase8/PHASE_8_FORTISIEM_INTEGRATION.md",
         "docs/phase8/PHASE_8_DEFECT_REGISTER.md",
         "docs/phase8/PHASE_8_REMAINING_WORK.md",
-        "docs/phase8/PHASE_8_FINAL_REPORT.md"
+        "docs/phase8/PHASE_8_FINAL_REPORT.md",
+        "docs/phase8.1/README.md",
+        "docs/phase8.1/PHASE_8_1_BASELINE_AUDIT.md",
+        "docs/phase8.1/PHASE_8_1_REMOTE_DEPLOYMENT.md",
+        "docs/phase8.1/PHASE_8_1_INFRASTRUCTURE_VALIDATION.md",
+        "docs/phase8.1/PHASE_8_1_DATABASE_WORKERS.md",
+        "docs/phase8.1/PHASE_8_1_LIVE_LLM_VALIDATION.md",
+        "docs/phase8.1/PHASE_8_1_VERDICT_E2E_VALIDATION.md",
+        "docs/phase8.1/PHASE_8_1_HISTORICAL_DATASET_AUDIT.md",
+        "docs/phase8.1/PHASE_8_1_EMPIRICAL_ACCURACY.md",
+        "docs/phase8.1/PHASE_8_1_QUALITY_GATES.md",
+        "docs/phase8.1/PHASE_8_1_FRONTEND_VALIDATION.md",
+        "docs/phase8.1/PHASE_8_1_FORTISIEM_VALIDATION.md",
+        "docs/phase8.1/PHASE_8_1_SECURITY_VALIDATION.md",
+        "docs/phase8.1/PHASE_8_1_DEFECT_REGISTER.md",
+        "docs/phase8.1/PHASE_8_1_EXECUTION_MATRIX.md",
+        "docs/phase8.1/PHASE_8_1_FEATURE_STATUS.md",
+        "docs/phase8.1/PHASE_8_1_REMAINING_WORK.md",
+        "docs/phase8.1/PHASE_8_1_FINAL_REPORT.md"
       ],
       "evidence_notes": [
-        "All Phase 5/6 architecture/audit docs and all 13 centralized Phase 8 verification deliverables under docs/phase8/ authored, path-checked, and cross-referenced."
+        "Phase 5/6 architecture docs, Phase 8 docs (preserved unchanged), and complete Phase 8.1 documentation suite under docs/phase8.1/ authored and path-checked."
       ],
       "remaining_gap": "None.",
       "acceptance_criteria": [
@@ -1554,7 +1588,9 @@
         "docs/feature_registry.json",
         "docs/FEATURE_IMPLEMENTATION_STATUS.md",
         "scripts/validate_feature_registry.py",
-        "docs/phase8/PHASE_8_FINAL_REPORT.md"
+        "docs/phase8/PHASE_8_FINAL_REPORT.md",
+        "docs/phase8.1/PHASE_8_1_FEATURE_STATUS.md",
+        "docs/phase8.1/PHASE_8_1_FINAL_REPORT.md"
       ],
       "evidence_notes": [
         "Automated script + pytest enforcement verify unique IDs, valid repo paths, mathematical percentage rollups, and JSON-to-Markdown parity."

@@ -1,0 +1,135 @@
+{
+  "timestamp_utc": "2026-11-11T04:11:19.158830+00:00",
+  "provider_mode": "SIMULATED (Server 2 GPU unavailable offline; deterministic safety/policy replay)",
+  "calibration_minimum_requirements": {
+    "min_samples": 30,
+    "min_per_class": 3,
+    "min_balanced_rule_threshold_note": "CALIBRATED withheld whenever total verified < 30 OR TP < 3 OR FP < 3"
+  },
+  "rule_replays": [
+    {
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "policy_version_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+      "policy_status": "APPROVED",
+      "simulation_status": "INSUFFICIENT_DATA",
+      "empirical_validation_status": "INSUFFICIENT_DATA",
+      "total_scanned": 26,
+      "rule_matched": 10,
+      "verified_ground_truth_cases": 3,
+      "excluded_count": 23,
+      "exclusion_reasons": {
+        "RULE_MISMATCH": 16,
+        "MISSING_ANALYST_LABEL": 0,
+        "AMBIGUOUS_LABEL": 0,
+        "CORRUPT_OR_EMPTY_PAYLOAD": 0,
+        "HEURISTIC_OR_ML_LABEL": 7
+      },
+      "ground_truth_distribution": {
+        "tp": 0,
+        "fp": 3,
+        "unverified": 0
+      },
+      "decision_coverage": 0.0,
+      "abstention_rate": 1.0,
+      "overall_accuracy": null,
+      "balanced_accuracy": null,
+      "calibration_status": "NOT_CALIBRATED",
+      "is_calibrated": false,
+      "message": "Evaluated 26 historical incidents. Empirical accuracy based on 3 eligible analyst-labeled incidents (23 excluded; minimum 5 required)."
+    },
+    {
+      "rule_id": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "policy_version_id": "8ae7beaa-626a-4061-a0c4-8500f7e6a69d",
+      "policy_status": "APPROVED",
+      "simulation_status": "INCONCLUSIVE",
+      "empirical_validation_status": "INCONCLUSIVE",
+      "total_scanned": 26,
+      "rule_matched": 10,
+      "verified_ground_truth_cases": 5,
+      "excluded_count": 21,
+      "exclusion_reasons": {
+        "RULE_MISMATCH": 16,
+        "MISSING_ANALYST_LABEL": 0,
+        "AMBIGUOUS_LABEL": 0,
+        "CORRUPT_OR_EMPTY_PAYLOAD": 0,
+        "HEURISTIC_OR_ML_LABEL": 5
+      },
+      "ground_truth_distribution": {
+        "tp": 4,
+        "fp": 1,
+        "unverified": 0
+      },
+      "decision_coverage": 0.0,
+      "abstention_rate": 1.0,
+      "overall_accuracy": null,
+      "balanced_accuracy": null,
+      "calibration_status": "NOT_CALIBRATED",
+      "is_calibrated": false,
+      "message": "Simulation INCONCLUSIVE on 26 historical incidents (5 verified cases; 0% decisive coverage or inconclusive accuracy)."
+    },
+    {
+      "rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT",
+      "rule_name": "Heavy TCP Host Scan On Fixed Port",
+      "policy_version_id": "84f91c17-60ed-4e60-a341-7372b87d5547",
+      "policy_status": "DRAFT",
+      "simulation_status": "INSUFFICIENT_DATA",
+      "empirical_validation_status": "INSUFFICIENT_DATA",
+      "total_scanned": 26,
+      "rule_matched": 0,
+      "verified_ground_truth_cases": 0,
+      "excluded_count": 26,
+      "exclusion_reasons": {
+        "RULE_MISMATCH": 26,
+        "MISSING_ANALYST_LABEL": 0,
+        "AMBIGUOUS_LABEL": 0,
+        "CORRUPT_OR_EMPTY_PAYLOAD": 0,
+        "HEURISTIC_OR_ML_LABEL": 0
+      },
+      "ground_truth_distribution": {
+        "tp": 0,
+        "fp": 0,
+        "unverified": 0
+      },
+      "decision_coverage": 0.0,
+      "abstention_rate": 0.0,
+      "overall_accuracy": null,
+      "balanced_accuracy": null,
+      "calibration_status": "NOT_CALIBRATED",
+      "is_calibrated": false,
+      "message": "Evaluated 26 historical incidents. Empirical accuracy based on 0 eligible analyst-labeled incidents (26 excluded; minimum 5 required)."
+    },
+    {
+      "rule_id": "PH_RULE_DEBUG_FUNNEL",
+      "rule_name": "Debug Funnel Rule",
+      "policy_version_id": "85c43e36-c8e6-4e9d-942c-815019f74f28",
+      "policy_status": "DRAFT",
+      "simulation_status": "INSUFFICIENT_DATA",
+      "empirical_validation_status": "INSUFFICIENT_DATA",
+      "total_scanned": 26,
+      "rule_matched": 6,
+      "verified_ground_truth_cases": 2,
+      "excluded_count": 24,
+      "exclusion_reasons": {
+        "RULE_MISMATCH": 20,
+        "MISSING_ANALYST_LABEL": 1,
+        "AMBIGUOUS_LABEL": 1,
+        "CORRUPT_OR_EMPTY_PAYLOAD": 1,
+        "HEURISTIC_OR_ML_LABEL": 1
+      },
+      "ground_truth_distribution": {
+        "tp": 1,
+        "fp": 1,
+        "unverified": 0
+      },
+      "decision_coverage": 0.0,
+      "abstention_rate": 1.0,
+      "overall_accuracy": null,
+      "balanced_accuracy": null,
+      "calibration_status": "NOT_CALIBRATED",
+      "is_calibrated": false,
+      "message": "Evaluated 26 historical incidents. Empirical accuracy based on 2 eligible analyst-labeled incidents (24 excluded; minimum 5 required)."
+    }
+  ]
+}
