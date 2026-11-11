@@ -188,7 +188,7 @@ test("Glossary, Guided Tour, and Troubleshooting cover required diagnostic scena
   assert.ok(ids.has("ts-v1-vs-v2-different-results"));
 });
 
-test("WorkflowFlowDiagram fits full workspace screen with collapsible Step Details and no fullscreen maximize overlay", () => {
+test("WorkflowFlowDiagram fits full workspace screen with browser fullscreen animated-architecture view and collapsible Step Details", () => {
   const diagramSrc = fs.readFileSync(
     path.resolve("src/components/admin-guide/WorkflowFlowDiagram.tsx"),
     "utf-8"
@@ -197,7 +197,9 @@ test("WorkflowFlowDiagram fits full workspace screen with collapsible Step Detai
     path.resolve("src/app/admin-guide/page.tsx"),
     "utf-8"
   );
-  assert.doesNotMatch(diagramSrc, /Enter Fullscreen|Fullscreen Diagram Mode/);
+  assert.match(diagramSrc, /requestFullscreen/);
+  assert.match(diagramSrc, /fullscreenchange/);
+  assert.match(diagramSrc, /fixed inset-0 z-50/);
   assert.match(diagramSrc, /useState<boolean>\(false\)/);
   assert.match(diagramSrc, /Step Details/);
   assert.match(diagramSrc, /xl:col-span-12/);
