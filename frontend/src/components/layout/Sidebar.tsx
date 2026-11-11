@@ -213,11 +213,23 @@ export function Sidebar() {
         }`}
     >
       {/* Brand Header */}
-      <div className="flex h-10 items-center justify-between px-2.5 border-b border-slate-800/80">
-        <Link href="/agent-mission-control" className="flex items-center gap-2 overflow-hidden">
-          <BrandLogo size={26} priority />
+      <div
+        className={`flex items-center border-b border-slate-800/80 ${
+          collapsed
+            ? "flex-col justify-center gap-1 py-2 px-1"
+            : "h-10 justify-between px-2.5"
+        }`}
+      >
+        <Link
+          href="/agent-mission-control"
+          className={`flex items-center ${
+            collapsed ? "justify-center shrink-0" : "gap-2 overflow-hidden min-w-0"
+          }`}
+          title="AI Verdict — Agentic SOC Intelligence"
+        >
+          <BrandLogo size={collapsed ? 28 : 26} priority />
           {!collapsed && (
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <span className="font-bold text-xs tracking-wider text-sky-300 uppercase leading-tight">
                 AI Verdict
               </span>
@@ -229,8 +241,11 @@ export function Sidebar() {
         </Link>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
+          className={`rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors shrink-0 ${
+            collapsed ? "w-full flex items-center justify-center py-0.5" : "p-1"
+          }`}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
         </button>
