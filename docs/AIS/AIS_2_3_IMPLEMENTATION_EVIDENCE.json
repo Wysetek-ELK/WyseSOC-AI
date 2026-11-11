@@ -1,0 +1,146 @@
+{
+  "phase": "AIS 2.3",
+  "status": {
+    "development": "COMPLETE_LOCAL",
+    "integration": "NOT_VERIFIED",
+    "production_readiness": "NOT_ESTABLISHED"
+  },
+  "findings_addressed": [
+    "AIS-F11",
+    "AIS-F12",
+    "CONTEXT_WINDOW_EXCEEDED",
+    "INTEGRATION_PREFLIGHT_DIAGNOSTICS"
+  ],
+  "modified_files": [
+    "backend/app/api/verdict_intelligence.py",
+    "backend/app/config.py",
+    "backend/app/schemas/evaluation.py",
+    "backend/app/schemas/llm_config.py",
+    "backend/app/services/dry_run_service.py",
+    "backend/app/services/evaluation_service.py",
+    "backend/app/services/fortisiem_service.py",
+    "backend/app/services/historical_eligibility_service.py",
+    "backend/app/services/llm_config_service.py",
+    "backend/app/services/maturity_service.py",
+    "backend/app/services/model_provider/openai_compatible.py",
+    "backend/app/services/policy_generation_service.py",
+    "backend/app/services/token_budget_service.py",
+    "backend/app/services/verdict_pipeline.py",
+    "backend/app/workers/celery_app.py",
+    "backend/tests/test_fortisiem_pull.py",
+    "deployment/env.production.example"
+  ],
+  "added_files": [
+    "backend/app/services/integration_diagnostic_service.py",
+    "backend/app/services/runtime_config_service.py",
+    "backend/scripts/run_integration_diagnostics.py",
+    "backend/tests/test_ais_2_3_remediation.py",
+    "docs/AIS/AIS_2_3_ARCHITECTURE_CONSOLIDATION.md",
+    "docs/AIS/AIS_2_3_CONFIGURATION_READINESS.md",
+    "docs/AIS/AIS_2_3_CONTEXT_BUDGET_VALIDATION.md",
+    "docs/AIS/AIS_2_3_IMPLEMENTATION_EVIDENCE.json",
+    "docs/AIS/AIS_2_3_IMPLEMENTATION_REPORT.md",
+    "docs/AIS/AIS_2_3_INTEGRATION_CHECKLIST.md",
+    "docs/AIS/AIS_2_3_REMAINING_GAPS.md",
+    "docs/AIS/AIS_2_3_TEST_RESULTS.md"
+  ],
+  "context_budget_measurements": {
+    "default_context_tokens": 4096,
+    "reserved_completion_tokens": 512,
+    "available_prompt_budget_at_4096": 3584,
+    "validated_extended_option": 8192,
+    "clamping_enforced_when_verified_max_model_len_lower": true,
+    "archetypes": [
+      {
+        "rule": "Heavy TCP Host Scan",
+        "archetype": "NETWORK_SCAN",
+        "compiled_system_tokens": 2379,
+        "rule_overhead_tokens": 42,
+        "total_prompt_tokens_4096": 3515,
+        "can_proceed_4096": true,
+        "total_prompt_tokens_8192": 3515,
+        "can_proceed_8192": true
+      },
+      {
+        "rule": "Suspicious PowerShell Execution",
+        "archetype": "MALWARE_EXECUTION",
+        "compiled_system_tokens": 1783,
+        "rule_overhead_tokens": 46,
+        "total_prompt_tokens_4096": 2743,
+        "can_proceed_4096": true,
+        "total_prompt_tokens_8192": 2743,
+        "can_proceed_8192": true
+      },
+      {
+        "rule": "Large Outbound Data Exfiltration",
+        "archetype": "NETWORK_EXFILTRATION",
+        "compiled_system_tokens": 2280,
+        "rule_overhead_tokens": 49,
+        "total_prompt_tokens_4096": 3404,
+        "can_proceed_4096": true,
+        "total_prompt_tokens_8192": 3404,
+        "can_proceed_8192": true
+      },
+      {
+        "rule": "Repeated Brute Force Logon Failure",
+        "archetype": "AUTHENTICATION",
+        "compiled_system_tokens": 1755,
+        "rule_overhead_tokens": 48,
+        "total_prompt_tokens_4096": 2589,
+        "can_proceed_4096": true,
+        "total_prompt_tokens_8192": 2589,
+        "can_proceed_8192": true
+      }
+    ]
+  },
+  "verification_results": {
+    "backend_pytest": {
+      "command": "cd backend; python -m pytest -q",
+      "passed": 325,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 505.0,
+      "ais_2_3_suite_passed": 5
+    },
+    "frontend_unit_tests": {
+      "command": "cd frontend; node --experimental-strip-types --test tests/quality-export.test.mjs tests/admin-guide.test.mjs",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0
+    },
+    "frontend_tsc": {
+      "command": "cd frontend; npx tsc --noEmit",
+      "exit_code": 0
+    },
+    "frontend_build": {
+      "command": "cd frontend; npm run build",
+      "exit_code": 0,
+      "routes_built": 32
+    },
+    "feature_registry": {
+      "command": "python scripts/validate_feature_registry.py",
+      "exit_code": 0,
+      "features": 44,
+      "modules": 19
+    },
+    "local_integration_diagnostics_cli": {
+      "command": "cd backend; python scripts/run_integration_diagnostics.py --format json",
+      "read_only": true,
+      "database_mutated": false,
+      "external_mutations": false,
+      "overall_status": "LOCAL_VERIFIED_REMOTE_NOT_PROBED",
+      "integration_verified": false,
+      "unprobed_remote_checks": [
+        "server2_llm_readiness",
+        "redis_celery_readiness"
+      ]
+    }
+  },
+  "remote_dependencies_not_verified": [
+    "Server 1 PostgreSQL live historical dataset (~34 rules, ~2900+ incidents)",
+    "Server 2 GPU OpenAI-compatible vLLM endpoint and live max_model_len capacity",
+    "Redis broker and Celery simulation_replay worker daemon",
+    "Live FortiSIEM Supervisor XML rule definitions"
+  ]
+}
+

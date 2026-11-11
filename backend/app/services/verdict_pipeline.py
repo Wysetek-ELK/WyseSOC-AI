@@ -563,12 +563,29 @@ async def run_shared_verdict_pipeline(
         "version": contract.version_number,
         "required_fields": [r.field for r in contract.required_evidence],
     }
+    configured_ctx = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096)
+    verified_model_len = getattr(settings, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None)
+    effective_max_ctx = (
+        min(configured_ctx, int(verified_model_len))
+        if verified_model_len is not None and int(verified_model_len) > 0
+        else configured_ctx
+    )
+    reserved_comp_tokens = int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512) or 512)
+    rule_spec = {
+        "id": rule.id if rule else (incident.rule_id or "UNKNOWN"),
+        "rule_id": getattr(rule, "rule_id", None) if rule else None,
+        "name": rule.name if rule else incident.title,
+        "severity": rule.severity if rule else incident.severity,
+        "description": rule.description if rule else "",
+    }
+    rule_overhead_tokens = TokenBudgetService.estimate_tokens(rule_spec)
     budgeted = TokenBudgetService.budget_prompt(
         compiled_policy=compiled_policy,
         incident_payload=payload_dict,
         rag_block=rag_result.formatted_rag_block,
-        max_context_tokens=int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096),
-        max_completion_tokens=int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512) or 512),
+        max_context_tokens=effective_max_ctx,
+        max_completion_tokens=reserved_comp_tokens,
+        reserved_overhead_tokens=rule_overhead_tokens,
     )
 
     if not budgeted.can_proceed_to_inference:
@@ -644,14 +661,6 @@ async def run_shared_verdict_pipeline(
     if budgeted.budgeted_rag_block:
         prompt_text += f"\n\n{budgeted.budgeted_rag_block}"
     budgeted_payload = budgeted.budgeted_incident_payload
-
-    rule_spec = {
-        "id": rule.id if rule else (incident.rule_id or "UNKNOWN"),
-        "rule_id": getattr(rule, "rule_id", None) if rule else None,
-        "name": rule.name if rule else incident.title,
-        "severity": rule.severity if rule else incident.severity,
-        "description": rule.description if rule else "",
-    }
 
     # 8. Invoke Provider
     verdict_obj, actual_provider_type = await _invoke_provider_with_guards(

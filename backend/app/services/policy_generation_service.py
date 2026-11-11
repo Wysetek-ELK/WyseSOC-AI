@@ -142,53 +142,43 @@ class PolicyGenerationService:
         classification: Any,
     ) -> str:
         lines = [
-            f"### INVESTIGATION DIRECTIVE: {semantics.rule_name.upper()}",
-            f"Rule Identifier: {semantics.rule_identifier} | Category: {semantics.event_category or 'General'}",
-            f"Behavioral Archetype: {archetype_def.name} ({archetype_def.archetype_id.value})",
-            f"Archetype Rationale: {classification.classification_reason}",
-            "",
-            "INVESTIGATIVE OBJECTIVE:",
-            semantics.detection_objective,
-            "",
-            "CORE INVESTIGATION MANDATES:",
+            f"### {semantics.rule_name.upper()} ({semantics.rule_identifier})",
+            f"Archetype: {archetype_def.archetype_id.value} | Category: {semantics.event_category or 'General'}",
+            f"Objective: {semantics.detection_objective}",
+            "Mandates:",
         ]
 
         if archetype_def.archetype_id == ArchetypeId.NETWORK_EXFILTRATION:
             lines.extend([
-                "1. Verify the exact direction of network traffic: Confirm outbound traffic from internal entity to external recipient.",
-                "2. Determine total volume of data transferred (bytes sent/received) across the aggregation window.",
-                "3. Assess destination authorization: Determine whether the destination IP/FQDN is an approved enterprise cloud repository or unknown external infrastructure.",
-                "4. Evaluate data classification & sensitivity: Cross-reference corroborating DLP alerts or endpoint file access telemetry.",
-                "5. Compare against historical baseline: Determine if outbound transfer volume is customary for this source host or user.",
-                "6. DO NOT assume internal RFC-1918 traffic is benign if internal exfiltration staging is suspected.",
+                "1. Confirm outbound direction (internal source -> external destination) and total bytes transferred.",
+                "2. Check destination authorization (approved corporate cloud/partner vs untrusted/newly registered host).",
+                "3. Cross-check corroborating DLP, archive-staging, or endpoint process context.",
+                "4. Compare volume against historical host/user baseline.",
+                "5. Do NOT assume internal RFC-1918 traffic is benign if lateral staging/exfiltration is possible.",
             ])
         elif archetype_def.archetype_id == ArchetypeId.MALWARE_EXECUTION:
             lines.extend([
-                "1. Inspect the full command line arguments, parameters, and switches of the executing process.",
-                "2. Analyze parent-child process lineage to verify execution hierarchy and anomaly origin.",
-                "3. Verify binary digital signature, vendor signer identity, and cryptographic hash reputation.",
-                "4. Check for Living-off-the-Land Binary (LOLBin) abuse or execution from suspicious writable temporary paths.",
+                "1. Inspect full process command line arguments and switches.",
+                "2. Verify parent-child process lineage, signer/digital signature, and file hash reputation.",
+                "3. Check for LOLBin abuse or execution from writable temporary paths.",
             ])
         elif archetype_def.archetype_id == ArchetypeId.NETWORK_SCAN:
             lines.extend([
-                "1. Verify scanning behavior: Confirm sequential connection attempts from source IP across multiple destination host IPs on a fixed destination port.",
-                "2. Determine source identity and authorization: Check originating IP against known authorized vulnerability scanners (e.g. Nessus, Qualys, Rapid7), monitoring discovery systems, or active IT change tickets.",
-                "3. Assess scan rate, volume, and duration: Determine target breadth (number of unique hosts) and frequency within the aggregation window.",
-                "4. Analyze TCP connection characteristics: Evaluate handshake completion ratio (SYN packets answered by RST/timeouts vs established application sessions).",
-                "5. DO NOT assume internal RFC-1918 traffic or loopback connections are benign without verifying scanner identity; adversaries conduct internal reconnaissance post-compromise.",
-                "6. Check for corroborating post-scan reconnaissance: Verify whether scan attempts were followed by exploit payloads, brute force attempts, or lateral movement.",
+                "1. Verify sequential/horizontal connection attempts across destination hosts/ports.",
+                "2. Verify whether source IP is an authorized scanner (Nessus/Qualys/Rapid7/monitoring) or change ticket.",
+                "3. Assess scan target breadth, rate, and TCP handshake behavior (SYN vs RST/timeouts/established).",
+                "4. Do NOT assume RFC-1918 or loopback traffic is benign without verified scanner/admin authorization.",
+                "5. Check follow-on exploit payloads, brute force, or lateral movement.",
             ])
         elif archetype_def.archetype_id == ArchetypeId.BRUTE_FORCE:
             lines.extend([
-                "1. Analyze authentication outcome sequence: Identify whether consecutive failures concluded in a successful logon.",
-                "2. Evaluate source IP reputation, geolocation, and ASN ownership.",
-                "3. Determine attack breadth: Check if attempts targeted a single user (lockout/brute force) or multiple users (password spray).",
+                "1. Check failed-logon sequence and whether a subsequent logon succeeded.",
+                "2. Assess source IP reputation, ASN, and targeted account breadth (single user vs password spray).",
             ])
         else:
             lines.extend([
-                "1. Validate triggering SIEM event conditions against canonical evidence telemetry.",
-                "2. Confirm user and host identity context associated with the alert.",
-                "3. Determine whether activity represents verified operational threat or documented business procedure.",
+                "1. Validate SIEM trigger conditions against canonical telemetry and host/user identity.",
+                "2. Distinguish verified threat activity from documented administrative operations.",
             ])
 
         return "\n".join(lines)
@@ -196,15 +186,13 @@ class PolicyGenerationService:
     @classmethod
     def _generate_section3_detection_conditions(cls, semantics: DetectionSemantics, rule: Rule) -> str:
         lines = [
-            f"Detection Category: {semantics.event_category or 'Standard'}",
-            f"SIEM Data Source: {semantics.data_source or 'FortiSIEM'}",
-            f"Detection Provenance: {semantics.source_provenance.value}",
+            f"Category: {semantics.event_category or 'Standard'} | Source: {semantics.data_source or 'FortiSIEM'} | Provenance: {semantics.source_provenance.value}",
         ]
 
         if semantics.threshold is not None:
-            lines.append(f"Authoritative Threshold: {semantics.threshold} {semantics.threshold_unit or ''}")
+            lines.append(f"Authoritative Threshold: {semantics.threshold} {semantics.threshold_unit or ''}".strip())
         else:
-            lines.append("Authoritative Threshold: UNVERIFIED (No verified threshold defined in SIEM rule logic)")
+            lines.append("Authoritative Threshold: UNVERIFIED (No verified threshold in SIEM rule logic)")
 
         if semantics.aggregation_window:
             lines.append(f"Aggregation Window: {semantics.aggregation_window}")
@@ -212,83 +200,72 @@ class PolicyGenerationService:
             lines.append("Aggregation Window: UNVERIFIED")
 
         if semantics.conditions:
-            lines.append("Parsed Detection Conditions:")
-            for cond in semantics.conditions:
-                lines.append(f"  - {cond.get('field')} {cond.get('operator')} {cond.get('value')}")
+            lines.append("Conditions: " + "; ".join(
+                f"{cond.get('field')} {cond.get('operator')} {cond.get('value')}"
+                for cond in semantics.conditions
+            ))
         elif rule.pattern_logic:
-            lines.append(f"SIEM Pattern Logic (Raw): {rule.pattern_logic}")
+            raw_logic = str(rule.pattern_logic).strip()
+            lines.append(f"Raw Logic: {raw_logic[:300]}")
 
         if semantics.definition_status == SemanticsDefinitionStatus.INCOMPLETE:
-            lines.append("")
-            lines.append("NOTICE — DETECTION DEFINITION INCOMPLETE:")
-            lines.append("This rule was auto-synced or lacks an authoritative SIEM rule condition block.")
-            lines.append("Observed telemetry attributes (e.g. sentBytes64) must NOT be assumed to be verified thresholds.")
+            lines.append(
+                "NOTICE (INCOMPLETE): Lacks authoritative SIEM rule condition block; observed counters (e.g. sentBytes64) are NOT thresholds."
+            )
 
         return "\n".join(lines)
 
     @classmethod
     def _generate_section4_evidence(cls, contract: RuleEvidenceContract, semantics: DetectionSemantics) -> str:
-        lines = ["MANDATORY EVIDENCE ARTIFACTS (EVIDENCE CONTRACT):"]
-        
+        lines = ["Required Evidence (Evidence Contract):"]
+
         core_reqs = [r for r in contract.required_evidence if getattr(r, "requirement_level", "CORE") == "CORE"]
         cond_reqs = [r for r in contract.required_evidence if getattr(r, "requirement_level", "") == "CONDITIONAL"]
         opt_reqs = [r for r in contract.required_evidence if getattr(r, "requirement_level", "") in ("OPTIONAL", "UNVERIFIED")]
 
-        lines.append("### Core Mandatory Fields (Required for Decision Path):")
-        for idx, r in enumerate(core_reqs, start=1):
-            crit_label = "[CRITICAL]" if r.critical else "[STANDARD]"
-            lines.append(f"{idx}. {r.field} ({r.evidence_type}) {crit_label} — {r.description}")
+        if core_reqs:
+            core_items = [
+                f"{r.field}{' [CRITICAL]' if r.critical else ''} ({r.evidence_type})"
+                for r in core_reqs
+            ]
+            lines.append("Core: " + "; ".join(core_items))
 
         if cond_reqs:
-            lines.append("")
-            lines.append("### Conditional Context Fields (Context-Dependent Evaluation):")
-            for idx, r in enumerate(cond_reqs, start=1):
-                lines.append(f"{idx}. {r.field} ({r.evidence_type}) — {r.description}")
+            lines.append("Conditional: " + "; ".join(r.field for r in cond_reqs))
 
         if opt_reqs:
-            lines.append("")
-            lines.append("### Observed / Optional Telemetry Fields:")
-            for idx, r in enumerate(opt_reqs, start=1):
-                lines.append(f"{idx}. {r.field} — {r.description}")
+            lines.append("Optional: " + "; ".join(r.field for r in opt_reqs))
 
         return "\n".join(lines)
 
     @classmethod
     def _generate_section5_tp_indicators(cls, semantics: DetectionSemantics, archetype_def: ArchetypeDefinition) -> str:
-        lines = [
-            "Vote TRUE_POSITIVE only when observed telemetry independently validates security-relevant indicators:",
-        ]
+        lines = ["TRUE_POSITIVE only when observed telemetry verifies:"]
         for ind in archetype_def.tp_indicator_candidates:
             lines.append(f"- {ind}")
         return "\n".join(lines)
 
     @classmethod
     def _generate_section6_fp_indicators(cls, semantics: DetectionSemantics, archetype_def: ArchetypeDefinition) -> str:
-        lines = [
-            "Vote FALSE_POSITIVE when observed indicators independently verify authorized operations or detection noise:",
-        ]
+        lines = ["FALSE_POSITIVE when observed telemetry verifies authorized operations/noise:"]
         for ind in archetype_def.fp_indicator_candidates:
             lines.append(f"- {ind}")
         return "\n".join(lines)
 
     @classmethod
     def _generate_section7_abstention(cls, semantics: DetectionSemantics, archetype_def: ArchetypeDefinition) -> str:
-        lines = [
-            "You MUST abstain and classify as REQUIRES_ATTENTION under any of the following conditions:",
-        ]
+        lines = ["Abstain (REQUIRES_ATTENTION) if:"]
         for req in archetype_def.abstention_requirements:
             lines.append(f"- {req}")
-        
+
         if semantics.definition_status == SemanticsDefinitionStatus.INCOMPLETE:
-            lines.append("- Authoritative SIEM threshold or time window is undefined, preventing deterministic volume evaluation.")
-            
+            lines.append("- Authoritative SIEM threshold/window undefined.")
+
         return "\n".join(lines)
 
     @classmethod
     def _generate_section8_escalation(cls, semantics: DetectionSemantics, archetype_def: ArchetypeDefinition) -> str:
-        lines = [
-            "Trigger immediate P1/P2 Incident Escalation under the following critical conditions:",
-        ]
+        lines = ["P1/P2 Escalation triggers:"]
         for esc in archetype_def.escalation_considerations:
             lines.append(f"- {esc}")
         return "\n".join(lines)

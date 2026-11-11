@@ -35,6 +35,52 @@ class TokenBudgetService:
             text = str(obj)
         return max(1, len(text) // 4)
 
+    @staticmethod
+    def _compact_canonical_evidence(
+        payload_work: Dict[str, Any],
+    ) -> bool:
+        """
+        Strips non-reasoning forensic digest/null metadata from canonical_evidence
+        while strictly preserving every evidence_id, source_field, observed_value,
+        and evidence_type required for grounded LLM citations.
+        Returns True if payload_work changed.
+        """
+        can_ev = payload_work.get("canonical_evidence")
+        if not isinstance(can_ev, list) or not can_ev:
+            return False
+
+        has_event_raw_log = bool(
+            isinstance(payload_work.get("events"), list)
+            and payload_work["events"]
+            and isinstance(payload_work["events"][0], dict)
+            and payload_work["events"][0].get("raw_log")
+        )
+        compacted: List[Dict[str, Any]] = []
+        changed = False
+        for item in can_ev:
+            if not isinstance(item, dict):
+                compacted.append(item)
+                continue
+            # Avoid duplicating the raw log string twice when events[0].raw_log is already present
+            if (
+                has_event_raw_log
+                and item.get("source_field") == "security.raw_log"
+                and len(can_ev) > 1
+            ):
+                changed = True
+                continue
+            minimal: Dict[str, Any] = {}
+            for keep_key in ("evidence_id", "source_field", "observed_value", "evidence_type"):
+                if keep_key in item and item[keep_key] is not None:
+                    minimal[keep_key] = item[keep_key]
+            if len(minimal) < len(item):
+                changed = True
+            compacted.append(minimal if minimal else item)
+
+        if changed:
+            payload_work["canonical_evidence"] = compacted
+        return changed
+
     @classmethod
     def budget_prompt(
         cls,
@@ -43,6 +89,7 @@ class TokenBudgetService:
         rag_block: str = "",
         max_context_tokens: int = DEFAULT_MAX_CONTEXT,
         max_completion_tokens: int = DEFAULT_MAX_COMPLETION,
+        reserved_overhead_tokens: int = 0,
     ) -> BudgetedPromptResult:
         available_budget = max(512, max_context_tokens - max_completion_tokens)
 
@@ -78,6 +125,7 @@ class TokenBudgetService:
             cls.estimate_tokens(compiled_policy.compiled_system_prompt)
             + cls.estimate_tokens(payload_work)
             + p7_rag_tokens
+            + max(0, int(reserved_overhead_tokens))
         )
 
         rag_trimmed = False
@@ -94,6 +142,7 @@ class TokenBudgetService:
             total_tokens = (
                 cls.estimate_tokens(compiled_policy.compiled_system_prompt)
                 + cls.estimate_tokens(payload_work)
+                + max(0, int(reserved_overhead_tokens))
             )
 
         # Trimming Step 2: If still over budget, trim optional enrichment (P6)
@@ -105,6 +154,7 @@ class TokenBudgetService:
             total_tokens = (
                 cls.estimate_tokens(compiled_policy.compiled_system_prompt)
                 + cls.estimate_tokens(payload_work)
+                + max(0, int(reserved_overhead_tokens))
             )
 
         # Trimming Step 3: If still over budget, prune secondary events (P5), preserving primary event
@@ -117,7 +167,19 @@ class TokenBudgetService:
             total_tokens = (
                 cls.estimate_tokens(compiled_policy.compiled_system_prompt)
                 + cls.estimate_tokens(payload_work)
+                + max(0, int(reserved_overhead_tokens))
             )
+
+        # Trimming Step 3b: If still over budget, compact non-reasoning metadata inside canonical_evidence
+        # while strictly preserving every evidence_id, source_field, and observed_value.
+        if total_tokens > available_budget:
+            if cls._compact_canonical_evidence(payload_work):
+                p4_critical_tokens = cls.estimate_tokens(payload_work.get("canonical_evidence") or []) + cls.estimate_tokens(payload_work.get("title"))
+                total_tokens = (
+                    cls.estimate_tokens(compiled_policy.compiled_system_prompt)
+                    + cls.estimate_tokens(payload_work)
+                    + max(0, int(reserved_overhead_tokens))
+                )
 
         # Trimming Step 4: Check if mandatory core (P1 + P2 + P3 + P4) still exceeds budget
         if total_tokens > available_budget:

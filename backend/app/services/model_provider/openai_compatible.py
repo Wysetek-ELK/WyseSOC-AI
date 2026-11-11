@@ -271,34 +271,40 @@ class OpenAICompatibleProvider(BaseModelProvider):
         incident_id = str(incident_payload.get("incident_id", ""))
         rule_id = str(rule_spec.get("id", rule_spec.get("rule_id", "")))
 
-        system_instruction = (
-            f"{prompt_text}\n\n"
-            "CRITICAL: Output must be a strictly valid JSON object matching this schema:\n"
-            "{\n"
-            '  "verdict": "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ATTENTION",\n'
-            '  "confidence": <float 0-100>,\n'
-            '  "reason": "<string>",\n'
-            '  "supporting_claims": [\n'
-            '    {\n'
-            '      "claim_type": "PROCESS_EXECUTION" | "NETWORK_CONNECTION" | "FILE_HASH" | "USER_CONTEXT" | "OBSERVED_FACT",\n'
-            '      "field": "<canonical source_field>",\n'
-            '      "asserted_value": "<exact observed value>",\n'
-            '      "claim_text": "<concise grounded observation>",\n'
-            '      "evidence_ids": ["<canonical evidence_id from incident.canonical_evidence>"]\n'
-            "    }\n"
-            "  ],\n"
-            '  "supporting_evidence": ["<string>"],\n'
-            '  "contradictory_evidence": ["<string>"],\n'
-            '  "missing_evidence": ["<string>"],\n'
-            '  "analyst_questions": ["<string>"]\n'
-            "}"
-        )
+        if "SECTION 11:" in prompt_text:
+            system_instruction = (
+                f"{prompt_text}\n\n"
+                "Note: Populate supporting_claims[].evidence_ids strictly from incident.canonical_evidence[].evidence_id."
+            )
+        else:
+            system_instruction = (
+                f"{prompt_text}\n\n"
+                "CRITICAL: Output must be a strictly valid JSON object matching this schema:\n"
+                "{\n"
+                '  "verdict": "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ATTENTION",\n'
+                '  "confidence": <float 0-100>,\n'
+                '  "reason": "<string>",\n'
+                '  "supporting_claims": [\n'
+                '    {\n'
+                '      "claim_type": "PROCESS_EXECUTION" | "NETWORK_CONNECTION" | "FILE_HASH" | "USER_CONTEXT" | "OBSERVED_FACT",\n'
+                '      "field": "<canonical source_field>",\n'
+                '      "asserted_value": "<exact observed value>",\n'
+                '      "claim_text": "<concise grounded observation>",\n'
+                '      "evidence_ids": ["<canonical evidence_id from incident.canonical_evidence>"]\n'
+                "    }\n"
+                "  ],\n"
+                '  "supporting_evidence": ["<string>"],\n'
+                '  "contradictory_evidence": ["<string>"],\n'
+                '  "missing_evidence": ["<string>"],\n'
+                '  "analyst_questions": ["<string>"]\n'
+                "}"
+            )
 
-        # Construct clean formatted JSON prompt for the local LLM
+        # Construct compact valid JSON prompt for local LLM (avoids indent bloat inside finite context window)
         user_content = json.dumps({
             "incident": incident_payload,
             "rule": rule_spec,
-        }, indent=2)
+        }, separators=(",", ":"))
 
         payload = {
             "model": self.model_name,

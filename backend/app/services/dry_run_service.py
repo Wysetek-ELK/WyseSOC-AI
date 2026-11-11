@@ -1,22 +1,32 @@
 import asyncio
+import logging
 from datetime import datetime
 from app.utils.datetime_utils import utc_now
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, or_
+from sqlalchemy import select, func, desc, or_, and_
 from sqlalchemy.orm import selectinload
 
 from app.models.dry_run import DryRunConfig, DryRunJob, DryRunResult
 from app.models.incident import Incident, HistoricalGroundTruth
+from app.models.investigation import Investigation
 from app.models.rule import Rule
 from app.models.prompt import RulePrompt, PromptVersion
-from app.services.model_provider.factory import get_model_provider
-from app.services.incident_service import IncidentService
-from app.schemas.incident import ModelFacingIncidentPayload
+from app.models.verdict_intelligence import (
+    HistoricalEvaluationRunRecord,
+    HistoricalEvaluationResultRecord,
+)
 from app.schemas.dry_run import DryRunConfigCreate
-from app.schemas.compiled_policy import CompilationExecutionMode
-from app.services.policy_compiler_service import PolicyCompilerService
-from app.services.token_budget_service import TokenBudgetService
+from app.schemas.verdict_intelligence import GroundTruthLabel
+from app.services.policy_governance import resolve_canonical_rule
+from app.services.policy_quality_validator import PolicyQualityValidator
+from app.services.historical_ground_truth_validator import HistoricalGroundTruthValidator
+from app.services.verdict_pipeline import (
+    PipelineLLMUnavailableError,
+    run_shared_verdict_pipeline,
+)
+
+logger = logging.getLogger("ai_verdict.dry_run_service")
 
 
 class ValidationEngine:
@@ -76,7 +86,19 @@ class ValidationEngine:
         )
 
         if rule_id:
-            query = query.where(or_(Incident.rule_id == rule_id, Incident.event_type == rule_id))
+            canonical_rule = await resolve_canonical_rule(self.db, rule_id)
+            if canonical_rule:
+                query = query.where(
+                    or_(
+                        Incident.rule_id == canonical_rule.id,
+                        and_(
+                            Incident.rule_id.is_(None),
+                            Incident.event_type == canonical_rule.event_type,
+                        ),
+                    )
+                )
+            else:
+                query = query.where(or_(Incident.rule_id == rule_id, Incident.event_type == rule_id))
 
         query = query.order_by(Incident.created_at_epoch.asc())
         res = await self.db.execute(query)
@@ -114,50 +136,88 @@ class ValidationEngine:
 
         return selected
 
+    _SCHEMA_ERROR_STATUSES = {
+        "INVALID_SCHEMA",
+        "HTTP_ERROR",
+        "UNEXPECTED_VERDICT",
+        "LLM_UNAVAILABLE",
+        "CIRCUIT_OPEN",
+        "CONTEXT_WINDOW_EXCEEDED",
+        "CONTEXT_BUDGET_EXCEEDED",
+        "BLOCKED_UNCERTIFIED_FOR_AUTONOMOUS_ACTION",
+    }
+
+    @classmethod
+    def _normalize_legacy_verdict(cls, raw_verdict: str) -> str:
+        up = str(raw_verdict or "REQUIRES_ATTENTION").upper().strip()
+        if up == "REQUIRES_ANALYST_ATTENTION":
+            return "REQUIRES_ATTENTION"
+        if up in ("TRUE_POSITIVE", "FALSE_POSITIVE", "REQUIRES_ATTENTION"):
+            return up
+        return "REQUIRES_ATTENTION"
+
     async def execute_dry_run_job(self, config_id: str, custom_sample_limit: Optional[int] = None) -> DryRunJob:
+        """
+        Backward-compatible ValidationEngine / DryRunService entrypoint.
+        Delegates incident evaluation through the canonical `PolicySimulationService` +
+        `run_shared_verdict_pipeline` execution path and records both canonical
+        `HistoricalEvaluationRunRecord`/`HistoricalEvaluationResultRecord` entries and
+        legacy `DryRunJob`/`DryRunResult` rows with full provenance isolation.
+        """
+        from app.services.policy_simulation_service import PolicySimulationService
+
         config = await self.get_config(config_id)
         if not config:
             raise ValueError(f"Dry run configuration {config_id} not found")
 
-        provider = get_model_provider(config.provider_type)
-        is_simulated = (config.provider_type.upper() == "SIMULATED")
+        provider_upper = (config.provider_type or "SIMULATED").upper().strip()
+        is_simulated = (provider_upper != "OPENAI_COMPATIBLE")
 
-        # Resolve prompt policy with 100% Live-Simulation Parity (P3-REQ-02)
         target_pv = None
         target_rule = None
         if config.prompt_version_id:
             pv_res = await self.db.execute(select(PromptVersion).where(PromptVersion.id == config.prompt_version_id))
             target_pv = pv_res.scalars().first()
-        elif config.rule_id:
-            r_res = await self.db.execute(select(Rule).where(Rule.id == config.rule_id))
-            target_rule = r_res.scalars().first()
-            rp_res = await self.db.execute(
-                select(RulePrompt).where(RulePrompt.rule_id == config.rule_id).options(selectinload(RulePrompt.versions))
-            )
-            rp = rp_res.scalars().first()
-            if rp and rp.versions:
-                target_pv = next((v for v in rp.versions if v.id == rp.active_version_id), rp.versions[0])
+        if config.rule_id:
+            target_rule = await resolve_canonical_rule(self.db, config.rule_id)
+            if not target_pv and target_rule:
+                rp_res = await self.db.execute(
+                    select(RulePrompt)
+                    .where(RulePrompt.rule_id == target_rule.id)
+                    .options(selectinload(RulePrompt.versions))
+                )
+                rp = rp_res.scalars().first()
+                if rp and rp.versions:
+                    target_pv = next((v for v in rp.versions if v.id == rp.active_version_id), rp.versions[0])
 
         if not target_rule and target_pv:
-            rp_q = await self.db.execute(select(RulePrompt).where(RulePrompt.id == target_pv.prompt_id).options(selectinload(RulePrompt.rule)))
+            rp_q = await self.db.execute(
+                select(RulePrompt).where(RulePrompt.id == target_pv.prompt_id).options(selectinload(RulePrompt.rule))
+            )
             rp_obj = rp_q.scalars().first()
             if rp_obj:
                 target_rule = rp_obj.rule
 
-        compiled_policy = PolicyCompilerService.compile_policy(
-            rule=target_rule,
-            prompt_version=target_pv,
-            execution_mode=CompilationExecutionMode.SIMULATION,
-            raise_on_unapproved=False,
-        )
-        prompt_ver_num = compiled_policy.version_number or 1
+        prompt_ver_num = target_pv.version_number if target_pv else 1
+        policy_digest = PolicyQualityValidator.compute_policy_digest(target_pv) if target_pv else None
 
-        # Dataset splitting
         incidents_to_test = await self.split_dataset(
             strategy=config.split_strategy,
-            rule_id=config.rule_id,
-            custom_limit=custom_sample_limit
+            rule_id=(target_rule.id if target_rule else config.rule_id),
+            custom_limit=custom_sample_limit,
         )
+
+        sim_service = PolicySimulationService(self.db)
+        hist_stats = await sim_service.get_rule_calibration_stats(target_rule.id if target_rule else None)
+
+        inv_map: Dict[str, Investigation] = {}
+        inc_db_ids = [inc.id for inc in incidents_to_test]
+        if inc_db_ids:
+            inv_q = await self.db.execute(
+                select(Investigation).where(Investigation.incident_id.in_(inc_db_ids))
+            )
+            for inv_row in inv_q.scalars().all():
+                inv_map[inv_row.incident_id] = inv_row
 
         job = DryRunJob(
             config_id=config.id,
@@ -169,121 +229,229 @@ class ValidationEngine:
             started_at=utc_now(),
         )
         self.db.add(job)
+        await self.db.flush()
+
+        canonical_run = HistoricalEvaluationRunRecord(
+            run_name=f"DryRun Adapter: {config.name}",
+            rule_id=(target_rule.id if target_rule else config.rule_id),
+            policy_version_id=(target_pv.id if target_pv else None),
+            status="RUNNING",
+            total_cases=len(incidents_to_test),
+            evaluated_cases=0,
+            verified_ground_truth_cases=0,
+            validation_state="INCONCLUSIVE",
+            config_snapshot={
+                "adapter": "LEGACY_DRY_RUN_ADAPTER",
+                "legacy_dry_run_job_id": job.id,
+                "legacy_dry_run_config_id": config.id,
+                "provider_type": provider_upper,
+                "execution_provenance": "SIMULATED" if is_simulated else "REAL_LOCAL_LLM",
+                "is_simulated": is_simulated,
+                "split_strategy": config.split_strategy,
+                "policy_version_id": target_pv.id if target_pv else None,
+                "policy_digest": policy_digest,
+            },
+            started_at=job.started_at,
+        )
+        self.db.add(canonical_run)
         await self.db.commit()
         await self.db.refresh(job)
 
-        incident_service = IncidentService(self.db)
+        from app.models.token_usage import TokenUsageRecord
 
-        # Execute replay
+        verified_gt_count = 0
+
         for inc in incidents_to_test:
-            # Check for cancellation signal in DB
             status_check = await self.db.execute(select(DryRunJob.status).where(DryRunJob.id == job.id))
-            cur_status = status_check.scalar_one_or_none()
-            if cur_status == "CANCELLED":
+            if status_check.scalar_one_or_none() == "CANCELLED":
                 job.status = "CANCELLED"
                 job.completed_at = utc_now()
+                canonical_run.status = "CANCELLED"
+                canonical_run.completed_at = job.completed_at
                 await self.db.commit()
                 return job
 
+            inc_rule = inc.rule or target_rule
+            inc_pv = target_pv
+            if inc_rule and (not target_rule or inc_rule.id != target_rule.id) and not config.prompt_version_id:
+                rp_q = await self.db.execute(
+                    select(RulePrompt).where(RulePrompt.rule_id == inc_rule.id).options(selectinload(RulePrompt.versions))
+                )
+                rp_row = rp_q.scalars().first()
+                if rp_row and rp_row.versions:
+                    inc_pv = next((v for v in rp_row.versions if v.id == rp_row.active_version_id), rp_row.versions[0])
+
             try:
-                # 1. Generate strictly sanitized model-facing payload (ZERO ground-truth leakage)
-                payload_dict = incident_service.get_model_facing_payload(inc)
-
-                rule_dict = {
-                    "id": inc.rule_id or "",
-                    "name": inc.rule.name if inc.rule else inc.event_type,
-                    "event_type": inc.event_type,
-                    "severity": inc.severity,
-                }
-
-                budgeted = TokenBudgetService.budget_prompt(
-                    compiled_policy=compiled_policy,
-                    incident_payload=payload_dict,
-                    rag_block="",
-                )
-                prompt_text = budgeted.budgeted_system_prompt
-                budgeted_payload = budgeted.budgeted_incident_payload
-
-                # 2. Invoke provider
-                verdict = await provider.analyze_incident(
-                    incident_payload=budgeted_payload,
-                    rule_spec=rule_dict,
-                    prompt_text=prompt_text,
-                    prompt_version_number=prompt_ver_num,
+                pipe_res = await run_shared_verdict_pipeline(
+                    db=self.db,
+                    incident=inc,
+                    rule=inc_rule,
+                    prompt_version=inc_pv,
+                    active_approved_version=inc_pv,
+                    model_provider_type=provider_upper,
+                    allow_simulated_fallback=False,
+                    is_simulation=True,
+                    is_prod=False,
+                    execution_context="SIMULATION",
+                    require_autonomous_certification=False,
+                    username="simulation_engine",
+                    historical_stats=hist_stats,
+                    simulated_output_fn=sim_service._simulate_model_output if is_simulated else None,
                 )
 
-                p_tok = getattr(verdict, "prompt_tokens", 0) or max(40, len(prompt_text) // 4)
-                c_tok = getattr(verdict, "completion_tokens", 0) or max(20, len(verdict.reason) // 4)
-                t_tok = getattr(verdict, "total_tokens", 0) or (p_tok + c_tok)
+                vdata = pipe_res.verdict_data
+                eff_verdict = str(pipe_res.effective_verdict or vdata.get("verdict") or "REQUIRES_ATTENTION")
+                legacy_pred = self._normalize_legacy_verdict(eff_verdict)
+                raw_val_status = str(vdata.get("validation_status") or "VALID")
+                legacy_val_status = raw_val_status if raw_val_status in self._SCHEMA_ERROR_STATUSES else "VALID"
+                latency_ms = int(vdata.get("latency_ms") or 0)
+                model_ident = str(vdata.get("model_identifier") or ("simulated-v2.2-policy-aware" if is_simulated else "OPENAI_COMPATIBLE"))
+                p_tok = int(pipe_res.prompt_tokens or vdata.get("prompt_tokens") or 0)
+                c_tok = int(pipe_res.completion_tokens or vdata.get("completion_tokens") or 0)
+                t_tok = int(pipe_res.total_tokens or vdata.get("total_tokens") or (p_tok + c_tok))
+                pv_num_used = int(vdata.get("prompt_version_number") or (inc_pv.version_number if inc_pv else prompt_ver_num))
 
-                # 3. Save result
+                # Adjudicate ground truth cleanly via HistoricalGroundTruthValidator (never leaks into prompt)
+                gt_obj = getattr(inc, "ground_truth", None)
+                inv_obj = inv_map.get(inc.id)
+                gt_label_str: Optional[str] = None
+                is_eligible_gt = False
+                is_correct: Optional[bool] = None
+                is_abstained = (legacy_pred == "REQUIRES_ATTENTION")
+                is_critical_error = False
+                gt_prov_src = "NONE"
+                if gt_obj is not None or inv_obj is not None:
+                    adj_label, excl_code, _detail, _rel, gt_prov_src = (
+                        HistoricalGroundTruthValidator.adjudicate_incident_ground_truth(
+                            ground_truth=gt_obj,
+                            investigation=inv_obj,
+                            incident=inc,
+                        )
+                    )
+                    gt_label_str = adj_label.value
+                    is_eligible_gt = (
+                        excl_code is None
+                        and adj_label in (GroundTruthLabel.VERIFIED_TP, GroundTruthLabel.VERIFIED_FP)
+                    )
+                    if is_eligible_gt:
+                        verified_gt_count += 1
+                        expected = "TRUE_POSITIVE" if adj_label == GroundTruthLabel.VERIFIED_TP else "FALSE_POSITIVE"
+                        if not is_abstained:
+                            is_correct = (legacy_pred == expected)
+                            if adj_label == GroundTruthLabel.VERIFIED_TP and legacy_pred == "FALSE_POSITIVE":
+                                is_critical_error = True
+
                 result_entry = DryRunResult(
                     job_id=job.id,
                     incident_id=inc.id,
-                    predicted_verdict=verdict.verdict,
-                    confidence=int(verdict.confidence),
-                    reasoning=verdict.reason,
-                    supporting_evidence=verdict.supporting_evidence,
-                    missing_evidence=verdict.missing_evidence,
-                    analyst_questions=verdict.analyst_questions,
-                    latency_ms=verdict.latency_ms,
-                    model_identifier=verdict.model_identifier,
-                    prompt_version_number=verdict.prompt_version_number,
-                    validation_status=verdict.validation_status,
-                    is_simulated=verdict.is_simulated,
+                    predicted_verdict=legacy_pred,
+                    confidence=int(round(float(vdata.get("confidence", 0.0)))),
+                    reasoning=str(vdata.get("reason") or ""),
+                    supporting_evidence=list(vdata.get("supporting_evidence") or []),
+                    missing_evidence=list(vdata.get("missing_evidence") or []),
+                    analyst_questions=list(vdata.get("analyst_questions") or []),
+                    latency_ms=latency_ms,
+                    model_identifier=model_ident,
+                    prompt_version_number=pv_num_used,
+                    validation_status=legacy_val_status,
+                    is_simulated=is_simulated,
                     prompt_tokens=p_tok,
                     completion_tokens=c_tok,
                     total_tokens=t_tok,
                 )
-                self.db.add(result_entry)
 
-                # 3b. Record persistent bifurcated token usage on Server 1
-                from app.models.token_usage import TokenUsageRecord
+                canon_res = HistoricalEvaluationResultRecord(
+                    run_id=canonical_run.id,
+                    incident_id=str(inc.incident_id or inc.id),
+                    rule_id=(inc_rule.id if inc_rule else (target_rule.id if target_rule else "UNKNOWN")),
+                    suggested_verdict=str(vdata.get("proposed_verdict") or eff_verdict),
+                    effective_verdict=eff_verdict,
+                    ground_truth_label=gt_label_str,
+                    trust_score=pipe_res.trust_score,
+                    raw_trust_score=float(pipe_res.raw_trust_score or 0.0),
+                    evidence_sufficiency_score=float(vdata.get("evidence_sufficiency_score") or 0.0),
+                    evidence_status=str(pipe_res.evidence_status or "INSUFFICIENT"),
+                    is_correct=is_correct,
+                    is_abstained=is_abstained,
+                    is_critical_error=is_critical_error,
+                    claims_summary={
+                        "adapter": "LEGACY_DRY_RUN_ADAPTER",
+                        "legacy_dry_run_job_id": job.id,
+                        "is_simulated": is_simulated,
+                        "provider_type": provider_upper,
+                        "model_identifier": model_ident,
+                        "policy_digest": policy_digest,
+                        "validation_status": raw_val_status,
+                        "proposal_validation_outcome": vdata.get("proposal_validation_outcome"),
+                        "is_eligible_ground_truth": is_eligible_gt,
+                        "ground_truth_provenance": gt_prov_src,
+                    },
+                    escalation_reason=str(pipe_res.escalation_reason)[:256] if pipe_res.escalation_reason else None,
+                )
+
                 tok_rec = TokenUsageRecord(
                     process_type="SIMULATION_REPLAY",
                     process_id=job.id,
                     incident_id=inc.incident_id,
-                    rule_id=inc.rule.rule_id if inc.rule else inc.event_type,
-                    model_identifier=verdict.model_identifier,
+                    rule_id=inc_rule.rule_id if inc_rule else inc.event_type,
+                    model_identifier=model_ident,
                     prompt_tokens=p_tok,
                     completion_tokens=c_tok,
                     total_tokens=t_tok,
-                    latency_ms=verdict.latency_ms,
-                    is_simulated=verdict.is_simulated,
+                    latency_ms=latency_ms,
+                    is_simulated=is_simulated,
                     executed_by_user="simulation_engine",
                     timestamp=utc_now(),
                     details={
                         "job_id": job.id,
+                        "canonical_run_id": canonical_run.id,
                         "config_name": config.name,
                         "split_strategy": config.split_strategy,
                     },
                 )
+                self.db.add(result_entry)
+                self.db.add(canon_res)
                 self.db.add(tok_rec)
                 job.processed_items += 1
 
-            except Exception as e:
+            except (Exception, PipelineLLMUnavailableError) as e:
+                logger.warning(f"DryRun adapter error on incident {inc.incident_id}: {e}")
                 job.error_count += 1
                 job.processed_items += 1
-                # Record error entry
-                err_result = DryRunResult(
-                    job_id=job.id,
-                    incident_id=inc.id,
-                    predicted_verdict="REQUIRES_ATTENTION",
-                    confidence=0,
-                    reasoning=f"Execution error: {str(e)}",
-                    supporting_evidence=[],
-                    missing_evidence=["Execution completion"],
-                    analyst_questions=[],
-                    latency_ms=0,
-                    model_identifier="error",
-                    prompt_version_number=prompt_ver_num,
-                    validation_status="INVALID_SCHEMA",
-                    is_simulated=is_simulated,
+                self.db.add(
+                    DryRunResult(
+                        job_id=job.id,
+                        incident_id=inc.id,
+                        predicted_verdict="REQUIRES_ATTENTION",
+                        confidence=0,
+                        reasoning=f"Execution error: {str(e)}",
+                        supporting_evidence=[],
+                        missing_evidence=["Execution completion"],
+                        analyst_questions=[],
+                        latency_ms=0,
+                        model_identifier="error",
+                        prompt_version_number=prompt_ver_num,
+                        validation_status="INVALID_SCHEMA",
+                        is_simulated=is_simulated,
+                    )
                 )
-                self.db.add(err_result)
 
         job.status = "COMPLETED"
         job.completed_at = utc_now()
+        canonical_run.status = "COMPLETED"
+        canonical_run.completed_at = job.completed_at
+        canonical_run.evaluated_cases = job.processed_items
+        canonical_run.verified_ground_truth_cases = verified_gt_count
+        # Simulated or split-adapter runs remain INCONCLUSIVE for empirical G8 certification
+        canonical_run.validation_state = "INCONCLUSIVE"
+        canonical_run.metrics = {
+            "adapter": "LEGACY_DRY_RUN_ADAPTER",
+            "legacy_dry_run_job_id": job.id,
+            "is_simulated": is_simulated,
+            "sample_count": job.processed_items,
+            "verified_ground_truth_cases": verified_gt_count,
+            "error_count": job.error_count,
+        }
         await self.db.commit()
         await self.db.refresh(job)
         return job

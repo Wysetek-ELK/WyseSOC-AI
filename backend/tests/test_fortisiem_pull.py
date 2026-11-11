@@ -208,41 +208,55 @@ async def test_fortisiem_pull_live_404_falls_back_to_fixtures(client: AsyncClien
 @pytest.mark.asyncio
 async def test_fortisiem_config_and_rbac(client: AsyncClient, admin_token: str, analyst_token: str):
     """Test getting and updating FortiSIEM configuration from the UI with RBAC enforcement."""
-    # 1. Non-admin forbidden
-    res = await client.get("/api/fortisiem/config", headers={"Authorization": f"Bearer {analyst_token}"})
-    assert res.status_code == 403
+    orig_host = settings.FORTISIEM_HOST
+    orig_user = settings.FORTISIEM_USERNAME
+    orig_pass = settings.FORTISIEM_PASSWORD
+    orig_ssl = settings.FORTISIEM_VERIFY_SSL
+    orig_timeout = settings.FORTISIEM_TIMEOUT
+    orig_mock = settings.FORTISIEM_MOCK_FALLBACK
+    try:
+        # 1. Non-admin forbidden
+        res = await client.get("/api/fortisiem/config", headers={"Authorization": f"Bearer {analyst_token}"})
+        assert res.status_code == 403
 
-    # 2. Admin can get config
-    res = await client.get("/api/fortisiem/config", headers={"Authorization": f"Bearer {admin_token}"})
-    assert res.status_code == 200
-    cfg = res.json()
-    assert "host" in cfg
-    assert "username" in cfg
-    assert "is_password_set" in cfg
-    assert "verify_ssl" in cfg
+        # 2. Admin can get config
+        res = await client.get("/api/fortisiem/config", headers={"Authorization": f"Bearer {admin_token}"})
+        assert res.status_code == 200
+        cfg = res.json()
+        assert "host" in cfg
+        assert "username" in cfg
+        assert "is_password_set" in cfg
+        assert "verify_ssl" in cfg
 
-    # 3. Admin can update config
-    update_payload = {
-        "host": "https://siem-supervisor.internal",
-        "username": "svc_soc_ai",
-        "password": "SecretSuperPassword123!",
-        "verify_ssl": False,
-        "timeout": 30.0,
-        "mock_fallback": True,
-    }
-    update_res = await client.post(
-        "/api/fortisiem/config",
-        json=update_payload,
-        headers={"Authorization": f"Bearer {admin_token}"}
-    )
-    assert update_res.status_code == 200
-    updated_cfg = update_res.json()
-    assert updated_cfg["host"] == "https://siem-supervisor.internal"
-    assert updated_cfg["username"] == "svc_soc_ai"
-    assert updated_cfg["is_password_set"] is True
-    assert updated_cfg["timeout"] == 30.0
-    # Guarantee password is never leaked in response
-    assert "password" not in updated_cfg
+        # 3. Admin can update config
+        update_payload = {
+            "host": "https://siem-supervisor.example.org",
+            "username": "svc_soc_ai",
+            "password": "SecretSuperPassword123!",
+            "verify_ssl": False,
+            "timeout": 30.0,
+            "mock_fallback": True,
+        }
+        update_res = await client.post(
+            "/api/fortisiem/config",
+            json=update_payload,
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        assert update_res.status_code == 200
+        updated_cfg = update_res.json()
+        assert updated_cfg["host"] == "https://siem-supervisor.example.org"
+        assert updated_cfg["username"] == "svc_soc_ai"
+        assert updated_cfg["is_password_set"] is True
+        assert updated_cfg["timeout"] == 30.0
+        # Guarantee password is never leaked in response
+        assert "password" not in updated_cfg
+    finally:
+        settings.FORTISIEM_HOST = orig_host
+        settings.FORTISIEM_USERNAME = orig_user
+        settings.FORTISIEM_PASSWORD = orig_pass
+        settings.FORTISIEM_VERIFY_SSL = orig_ssl
+        settings.FORTISIEM_TIMEOUT = orig_timeout
+        settings.FORTISIEM_MOCK_FALLBACK = orig_mock
 
 
 @pytest.mark.asyncio

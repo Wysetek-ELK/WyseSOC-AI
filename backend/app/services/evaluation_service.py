@@ -207,9 +207,79 @@ class VerdictEvaluationEngine:
         pv_res = await self.db.execute(pv_query)
         versions = pv_res.scalars().all()
 
+        from app.models.verdict_intelligence import (
+            HistoricalEvaluationRunRecord,
+            HistoricalEvaluationResultRecord,
+        )
+        from app.services.policy_governance import SIMULATED_PROVIDER_TOKENS
+
         comparisons = []
         for v in versions:
-            # Query results tested with this prompt version number
+            # 1. Prefer canonical HistoricalEvaluationRunRecord/ResultRecord linked to this policy_version_id
+            canon_runs_res = await self.db.execute(
+                select(HistoricalEvaluationRunRecord).where(
+                    HistoricalEvaluationRunRecord.policy_version_id == str(v.id),
+                    HistoricalEvaluationRunRecord.status == "COMPLETED",
+                )
+            )
+            canon_runs = list(canon_runs_res.scalars().all())
+            non_sim_runs = [
+                r for r in canon_runs
+                if not (
+                    (r.config_snapshot or {}).get("is_simulated") is True
+                    or str((r.config_snapshot or {}).get("provider_type") or "").upper() in SIMULATED_PROVIDER_TOKENS
+                )
+            ]
+            use_runs = non_sim_runs if non_sim_runs else canon_runs
+            if use_runs:
+                run_ids = [r.id for r in use_runs]
+                canon_res_rows = list((await self.db.execute(
+                    select(HistoricalEvaluationResultRecord).where(
+                        HistoricalEvaluationResultRecord.run_id.in_(run_ids)
+                    )
+                )).scalars().all())
+                c_eval = len(canon_res_rows)
+                if c_eval > 0:
+                    c_resolved = 0
+                    c_agree = 0
+                    c_tp_agree = 0
+                    c_pred_tp = 0
+                    c_fp_agree = 0
+                    c_pred_fp = 0
+                    for cr in canon_res_rows:
+                        pred = str(cr.effective_verdict or "").upper()
+                        gt_lbl = str(cr.ground_truth_label or "").upper()
+                        gt_tp = gt_lbl == "VERIFIED_TP"
+                        gt_fp = gt_lbl == "VERIFIED_FP"
+                        if pred == "TRUE_POSITIVE":
+                            c_resolved += 1
+                            c_pred_tp += 1
+                            if gt_tp:
+                                c_tp_agree += 1
+                                c_agree += 1
+                        elif pred == "FALSE_POSITIVE":
+                            c_resolved += 1
+                            c_pred_fp += 1
+                            if gt_fp:
+                                c_fp_agree += 1
+                                c_agree += 1
+                    comparisons.append(
+                        PromptComparisonItem(
+                            prompt_version_number=v.version_number,
+                            prompt_version_id=v.id,
+                            is_template_draft=v.is_template_draft,
+                            status=v.status,
+                            evaluated_cases=c_eval,
+                            verdict_accuracy=_safe_divide(c_agree, c_resolved),
+                            tp_precision=_safe_divide(c_tp_agree, c_pred_tp),
+                            fp_precision=_safe_divide(c_fp_agree, c_pred_fp),
+                            coverage=_safe_divide(c_resolved, c_eval),
+                            average_latency_ms=0.0,
+                        )
+                    )
+                    continue
+
+            # 2. Fallback to legacy DryRunResult rows tested with this prompt version number
             res_query = (
                 select(DryRunResult)
                 .where(DryRunResult.prompt_version_number == v.version_number)

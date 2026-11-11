@@ -9,7 +9,22 @@ class LLMConfigResponse(BaseModel):
     base_url: str = Field(..., description="Full base URL for OpenAI-compatible endpoint")
     model_name: str = Field(..., description="Active model identifier")
     timeout: float = Field(30.0, description="Inference timeout in seconds")
-    allow_mock_fallback: bool = Field(True, description="Whether fallback to heuristic/mock is allowed when offline")
+    context_budget: int = Field(4096, description="Configured total context window budget in tokens")
+    max_tokens: int = Field(512, description="Reserved completion tokens per inference call")
+    verified_max_model_len: Optional[int] = Field(
+        None,
+        description="Model-server max_model_len last observed from Server 2 /models probe (None until verified)",
+    )
+    context_budget_verified: bool = Field(
+        False,
+        description="True only when Server 2 reported max_model_len >= configured context_budget",
+    )
+    context_budget_warning: Optional[str] = Field(
+        None,
+        description="Warning when configured context_budget exceeds 4096 without Server 2 capacity verification or exceeds verified limit",
+    )
+    operating_mode: str = Field("development", description="Resolved platform operating mode")
+    allow_mock_fallback: bool = Field(False, description="Whether fallback to heuristic/mock is allowed when offline")
     is_online: bool = Field(False, description="Cached online reachability status")
     server1_outbound_ip: Optional[str] = Field(None, description="Outbound public IP of Server 1 (for security group whitelisting)")
 
@@ -20,7 +35,9 @@ class LLMConfigUpdate(BaseModel):
     protocol: Optional[str] = Field("http", description="Protocol (http or https)")
     model_name: Optional[str] = Field(None, description="Model identifier")
     timeout: Optional[float] = Field(None, ge=2.0, le=300.0, description="Timeout in seconds")
-    allow_mock_fallback: Optional[bool] = Field(None, description="Allow heuristic/mock fallback when offline")
+    context_budget: Optional[int] = Field(None, ge=1024, le=65536, description="Total context window budget (e.g. 4096 or 8192)")
+    max_tokens: Optional[int] = Field(None, ge=64, le=4096, description="Reserved completion tokens per response")
+    allow_mock_fallback: Optional[bool] = Field(None, description="Allow heuristic/mock fallback when offline (disabled in production)")
 
 
 class LLMTestConnectionRequest(BaseModel):
@@ -37,3 +54,11 @@ class LLMTestConnectionResponse(BaseModel):
     message: str
     models: List[str] = Field(default_factory=list)
     tested_url: str = ""
+    server_max_model_len: Optional[int] = Field(
+        None,
+        description="Reported max_model_len from Server 2 /models metadata when exposed by vLLM",
+    )
+    context_budget_supported: Optional[bool] = Field(
+        None,
+        description="Whether reported server_max_model_len supports configured LOCAL_LLM_CONTEXT_BUDGET (None if unexposed)",
+    )

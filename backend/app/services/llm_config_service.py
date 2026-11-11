@@ -42,12 +42,16 @@ class LLMConfigService:
         """
         Atomically writes active Server 2 configuration to a shared runtime state file
         so all Uvicorn API workers and background workers stay synchronized even in production.
+        Strictly excludes secrets and API tokens.
         """
         state_file = cls._state_file_path()
         payload = {
             "base_url": settings.LOCAL_LLM_BASE_URL,
             "model_name": settings.LOCAL_LLM_MODEL_NAME,
             "timeout": float(settings.LOCAL_LLM_TIMEOUT),
+            "context_budget": int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096)),
+            "max_tokens": int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512)),
+            "verified_max_model_len": getattr(settings, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None),
             "allow_mock_fallback": bool(settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK),
             "updated_at": time.time(),
         }
@@ -116,6 +120,24 @@ class LLMConfigService:
                 new_mock = False if is_prod else bool(data["allow_mock_fallback"])
                 if new_mock != bool(settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK):
                     settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK = new_mock
+                    changed = True
+
+            if data.get("context_budget") is not None:
+                new_ctx = int(data["context_budget"])
+                if 1024 <= new_ctx <= 65536 and new_ctx != int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096)):
+                    settings.LOCAL_LLM_CONTEXT_BUDGET = new_ctx
+                    changed = True
+
+            if data.get("max_tokens") is not None:
+                new_max_tok = int(data["max_tokens"])
+                if 64 <= new_max_tok <= 4096 and new_max_tok != int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512)):
+                    settings.LOCAL_LLM_MAX_TOKENS = new_max_tok
+                    changed = True
+
+            if "verified_max_model_len" in data:
+                v_len = int(data["verified_max_model_len"]) if data["verified_max_model_len"] is not None else None
+                if v_len != getattr(settings, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None):
+                    settings.LOCAL_LLM_VERIFIED_MAX_MODEL_LEN = v_len
                     changed = True
 
             cls._last_synced_state_mtime_ns = st.st_mtime_ns
@@ -219,6 +241,100 @@ class LLMConfigService:
 
         return None
 
+    _ENV_SECTION_HEADER = "# Local LLM Server 2 Integration (vLLM / OpenAI-Compatible)"
+    _MANAGED_ENV_KEYS = (
+        "LOCAL_LLM_BASE_URL",
+        "LOCAL_LLM_MODEL_NAME",
+        "LOCAL_LLM_TIMEOUT",
+        "LOCAL_LLM_CONTEXT_BUDGET",
+        "LOCAL_LLM_MAX_TOKENS",
+        "LOCAL_LLM_ALLOW_MOCK_FALLBACK",
+    )
+
+    @classmethod
+    def _evaluate_context_status(cls) -> Dict[str, Any]:
+        ctx_budget = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096)
+        max_tokens = int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512) or 512)
+        verified_len = getattr(settings, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None)
+        verified = False
+        warning: Optional[str] = None
+        if verified_len is not None:
+            if int(verified_len) >= ctx_budget:
+                verified = True
+            else:
+                warning = (
+                    f"Configured context_budget ({ctx_budget}) exceeds Server 2 verified "
+                    f"max_model_len ({verified_len}); reduce context_budget or restart vLLM with higher --max-model-len."
+                )
+        elif ctx_budget > 4096:
+            warning = (
+                f"Configured context_budget={ctx_budget} (>4096) has not been verified against live Server 2 capacity; "
+                "run Test Connection or integration diagnostics before relying on >4096 tokens."
+            )
+        return {
+            "context_budget": ctx_budget,
+            "max_tokens": max_tokens,
+            "verified_max_model_len": int(verified_len) if verified_len is not None else None,
+            "context_budget_verified": verified,
+            "context_budget_warning": warning,
+            "operating_mode": getattr(settings, "resolved_operating_mode", "development"),
+        }
+
+    @classmethod
+    def _upsert_env_vars(cls, env_path: str, updates: Dict[str, str]) -> None:
+        """
+        Idempotently updates or inserts managed keys in `.env` in-place.
+        Eliminates duplicated comment headers, preserves unrelated keys,
+        and never writes secrets/credentials.
+        """
+        existing_lines: List[str] = []
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                existing_lines = f.readlines()
+
+        new_lines: List[str] = []
+        seen_keys: set[str] = set()
+        header_seen = False
+
+        for line in existing_lines:
+            stripped = line.strip()
+            if stripped == cls._ENV_SECTION_HEADER:
+                if header_seen:
+                    # Drop duplicate repeated section headers appended by legacy builds
+                    if new_lines and not new_lines[-1].strip():
+                        new_lines.pop()
+                    continue
+                header_seen = True
+                new_lines.append(line if line.endswith("\n") else f"{line}\n")
+                continue
+
+            match = re.match(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=", line)
+            if match:
+                key = match.group(1)
+                if key in updates:
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        new_lines.append(f"{key}={updates[key]}\n")
+                    continue
+            new_lines.append(line)
+
+        missing_keys = [k for k in updates if k not in seen_keys]
+        if missing_keys:
+            if new_lines and new_lines[-1].strip():
+                new_lines.append("\n")
+            if not header_seen:
+                new_lines.append(f"{cls._ENV_SECTION_HEADER}\n")
+            for k in missing_keys:
+                new_lines.append(f"{k}={updates[k]}\n")
+
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+        if hasattr(os, "chmod"):
+            try:
+                os.chmod(env_path, 0o600)
+            except Exception:
+                pass
+
     @classmethod
     async def get_config(cls) -> LLMConfigResponse:
         """
@@ -227,6 +343,7 @@ class LLMConfigService:
         cls.sync_runtime_settings()
         parsed = cls.parse_llm_url(settings.LOCAL_LLM_BASE_URL)
         server1_ip = await cls.get_server1_outbound_ip()
+        ctx_info = cls._evaluate_context_status()
 
         # Check live online status from AIVerdictService (utilizes 15s cache)
         from app.services.ai_verdict_service import AIVerdictService
@@ -242,6 +359,12 @@ class LLMConfigService:
             base_url=settings.LOCAL_LLM_BASE_URL,
             model_name=settings.LOCAL_LLM_MODEL_NAME,
             timeout=settings.LOCAL_LLM_TIMEOUT,
+            context_budget=ctx_info["context_budget"],
+            max_tokens=ctx_info["max_tokens"],
+            verified_max_model_len=ctx_info["verified_max_model_len"],
+            context_budget_verified=ctx_info["context_budget_verified"],
+            context_budget_warning=ctx_info["context_budget_warning"],
+            operating_mode=ctx_info["operating_mode"],
             allow_mock_fallback=settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK,
             is_online=is_online,
             server1_outbound_ip=server1_ip,
@@ -250,8 +373,8 @@ class LLMConfigService:
     @classmethod
     def update_config(cls, data: LLMConfigUpdate) -> LLMConfigResponse:
         """
-        Updates LLM Server IP, port, and inference settings dynamically in memory
-        and persists them securely to the .env file.
+        Updates LLM Server IP, port, context budget, and inference settings dynamically in memory
+        and persists non-secret configuration idempotently to `.env` in non-production environments.
         """
         parsed = cls.parse_llm_url(
             raw_input=data.host,
@@ -261,16 +384,31 @@ class LLMConfigService:
 
         # 1. Update in-memory settings
         is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+        previous_base_url = settings.LOCAL_LLM_BASE_URL
         settings.LOCAL_LLM_BASE_URL = parsed["base_url"]
+        if parsed["base_url"] != previous_base_url:
+            settings.LOCAL_LLM_VERIFIED_MAX_MODEL_LEN = None
 
         if data.model_name and data.model_name.strip():
-            settings.LOCAL_LLM_MODEL_NAME = data.model_name.strip()
+            new_model = data.model_name.strip()
+            if new_model != settings.LOCAL_LLM_MODEL_NAME:
+                settings.LOCAL_LLM_VERIFIED_MAX_MODEL_LEN = None
+            settings.LOCAL_LLM_MODEL_NAME = new_model
 
         if data.timeout is not None:
             settings.LOCAL_LLM_TIMEOUT = float(data.timeout)
 
+        new_ctx = int(data.context_budget) if data.context_budget is not None else int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096))
+        new_max_tok = int(data.max_tokens) if data.max_tokens is not None else int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512))
+        if (new_ctx - new_max_tok) < 512:
+            raise ValueError(
+                f"Invalid context budget ({new_ctx}) and max_tokens ({new_max_tok}): must leave at least 512 prompt tokens."
+            )
+        settings.LOCAL_LLM_CONTEXT_BUDGET = new_ctx
+        settings.LOCAL_LLM_MAX_TOKENS = new_max_tok
+
         if data.allow_mock_fallback is not None:
-            # In production, mock fallback is strictly disabled (REQ-02 / AV-004)
+            # In production, mock fallback is strictly disabled (REQ-02 / AV-004 / AIS-F12)
             settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK = False if is_prod else bool(data.allow_mock_fallback)
 
         # Reset online status so next evaluation/monitoring triggers a fresh probe
@@ -281,48 +419,24 @@ class LLMConfigService:
         # Persist shared runtime state so all Uvicorn & Celery workers pick up changes immediately
         cls._persist_runtime_state()
 
-        # 2. Persist to backend .env file (development / staging only - avoided in production)
+        # 2. Persist non-secret settings idempotently to backend .env file (dev/staging only)
         if not is_prod:
             env_path = os.path.join(BASE_DIR, ".env")
-            env_lines = []
-
-            if os.path.exists(env_path):
-                with open(env_path, "r", encoding="utf-8") as f:
-                    for line in f:
-                        match = re.match(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=", line)
-                        if match:
-                            key = match.group(1)
-                            if key in (
-                                "LOCAL_LLM_BASE_URL",
-                                "LOCAL_LLM_MODEL_NAME",
-                                "LOCAL_LLM_TIMEOUT",
-                                "LOCAL_LLM_ALLOW_MOCK_FALLBACK",
-                            ):
-                                continue
-                        env_lines.append(line)
-
-            # Append updated LLM variables
-            env_updates = [
-                f'\n# Local LLM Server 2 Integration (vLLM / OpenAI-Compatible)\n',
-                f'LOCAL_LLM_BASE_URL="{settings.LOCAL_LLM_BASE_URL}"\n',
-                f'LOCAL_LLM_MODEL_NAME="{settings.LOCAL_LLM_MODEL_NAME}"\n',
-                f'LOCAL_LLM_TIMEOUT={settings.LOCAL_LLM_TIMEOUT}\n',
-                f'LOCAL_LLM_ALLOW_MOCK_FALLBACK={"true" if settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK else "false"}\n',
-            ]
-            env_lines.extend(env_updates)
-
+            env_updates = {
+                "LOCAL_LLM_BASE_URL": f'"{settings.LOCAL_LLM_BASE_URL}"',
+                "LOCAL_LLM_MODEL_NAME": f'"{settings.LOCAL_LLM_MODEL_NAME}"',
+                "LOCAL_LLM_TIMEOUT": str(settings.LOCAL_LLM_TIMEOUT),
+                "LOCAL_LLM_CONTEXT_BUDGET": str(settings.LOCAL_LLM_CONTEXT_BUDGET),
+                "LOCAL_LLM_MAX_TOKENS": str(settings.LOCAL_LLM_MAX_TOKENS),
+                "LOCAL_LLM_ALLOW_MOCK_FALLBACK": "true" if settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK else "false",
+            }
             try:
-                with open(env_path, "w", encoding="utf-8") as f:
-                    f.writelines(env_lines)
-                if hasattr(os, "chmod"):
-                    try:
-                        os.chmod(env_path, 0o600)
-                    except Exception:
-                        pass
+                cls._upsert_env_vars(env_path, env_updates)
             except Exception as e:
                 logger.warning(f"Could not persist LLM settings to {env_path}: {e}")
 
-        logger.info(f"Updated LOCAL_LLM_BASE_URL to {settings.LOCAL_LLM_BASE_URL}")
+        logger.info("Updated LOCAL_LLM configuration in runtime state (credentials omitted).")
+        ctx_info = cls._evaluate_context_status()
 
         return LLMConfigResponse(
             host=parsed["host"],
@@ -331,15 +445,47 @@ class LLMConfigService:
             base_url=settings.LOCAL_LLM_BASE_URL,
             model_name=settings.LOCAL_LLM_MODEL_NAME,
             timeout=settings.LOCAL_LLM_TIMEOUT,
+            context_budget=ctx_info["context_budget"],
+            max_tokens=ctx_info["max_tokens"],
+            verified_max_model_len=ctx_info["verified_max_model_len"],
+            context_budget_verified=ctx_info["context_budget_verified"],
+            context_budget_warning=ctx_info["context_budget_warning"],
+            operating_mode=ctx_info["operating_mode"],
             allow_mock_fallback=settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK,
             is_online=False,
             server1_outbound_ip=cls._cached_server1_ip,
         )
 
+    @staticmethod
+    def _extract_max_model_len(models_payload: Dict[str, Any], preferred_model: Optional[str] = None) -> Optional[int]:
+        entries = models_payload.get("data") or []
+        if not isinstance(entries, list):
+            return None
+        preferred_match: Optional[int] = None
+        fallback_len: Optional[int] = None
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            raw_len = entry.get("max_model_len") or entry.get("context_length")
+            if raw_len is None:
+                continue
+            try:
+                parsed_len = int(raw_len)
+            except (TypeError, ValueError):
+                continue
+            if parsed_len <= 0:
+                continue
+            if preferred_model and str(entry.get("id", "")).strip() == preferred_model.strip():
+                preferred_match = parsed_len
+            elif fallback_len is None:
+                fallback_len = parsed_len
+        return preferred_match if preferred_match is not None else fallback_len
+
     @classmethod
     async def test_connection(cls, req: LLMTestConnectionRequest) -> LLMTestConnectionResponse:
         """
-        Probes the specified LLM server endpoint to verify reachability and model list.
+        Probes the specified LLM server endpoint to verify reachability, model list,
+        and exposed `max_model_len` capacity without assuming support beyond Server 2 telemetry.
         """
         parsed = cls.parse_llm_url(
             raw_input=req.host,
@@ -361,23 +507,37 @@ class LLMConfigService:
 
                 if res.status_code == 200:
                     data = res.json()
-                    models = [m.get("id", "") for m in data.get("data", []) if m.get("id")]
+                    models = [m.get("id", "") for m in data.get("data", []) if isinstance(m, dict) and m.get("id")]
                     model_str = ", ".join(models) if models else settings.LOCAL_LLM_MODEL_NAME
+                    server_max_len = cls._extract_max_model_len(data, settings.LOCAL_LLM_MODEL_NAME)
+                    configured_budget = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096)
+                    supported: Optional[bool] = (
+                        (server_max_len >= configured_budget) if server_max_len is not None else None
+                    )
 
-                    # Mark local LLM online if testing the currently configured endpoint
                     from app.services.ai_verdict_service import AIVerdictService
                     active_parsed = cls.parse_llm_url(settings.LOCAL_LLM_BASE_URL)
                     if base_url == active_parsed["base_url"]:
                         AIVerdictService._is_local_llm_online = True
                         AIVerdictService._last_probe_time = time.time()
+                        settings.LOCAL_LLM_VERIFIED_MAX_MODEL_LEN = server_max_len
+                        cls._persist_runtime_state()
+
+                    capacity_note = (
+                        f" | max_model_len={server_max_len} ({'supports' if supported else 'BELOW'} configured {configured_budget})"
+                        if server_max_len is not None
+                        else " | max_model_len not exposed by server (capacity unverified)"
+                    )
 
                     return LLMTestConnectionResponse(
                         success=True,
                         status_code=200,
                         latency_ms=latency_ms,
-                        message=f"Connection successful! Models loaded on Server 2: {model_str}",
+                        message=f"Connection successful! Models loaded on Server 2: {model_str}{capacity_note}",
                         models=models,
                         tested_url=models_url,
+                        server_max_model_len=server_max_len,
+                        context_budget_supported=supported,
                     )
                 else:
                     return LLMTestConnectionResponse(

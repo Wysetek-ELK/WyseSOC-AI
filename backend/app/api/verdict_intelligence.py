@@ -667,6 +667,30 @@ async def get_historical_eligibility_report(
     return report
 
 
+@router.get("/integration-diagnostics")
+async def get_integration_diagnostics(
+    rule_id: Optional[str] = Query(None, description="Optional canonical Rule UUID or logical rule_id filter"),
+    probe_remote: bool = Query(False, description="Probe live Server 2 LLM and Redis/Celery endpoints (read-only)"),
+    strict_production: bool = Query(False, description="Evaluate strict production dependency readiness"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+):
+    """
+    Non-destructive AIS 2.3 integration readiness diagnostics across configuration,
+    PostgreSQL/Alembic schema, canonical rule-incident links, GT eligibility & ML
+    re-evaluation audit, G1 coverage, Server 2 context capacity, Redis/Celery,
+    Workbench-vs-AIS parity, and policy digest governance. Strictly read-only.
+    """
+    from app.services.integration_diagnostic_service import IntegrationDiagnosticService
+
+    svc = IntegrationDiagnosticService(db)
+    return await svc.run_diagnostics(
+        rule_id=rule_id,
+        probe_remote=probe_remote,
+        strict_production=strict_production,
+    )
+
+
 # --------------------------------------------------------------------------
 # 5. Export Reports (JSON & CSV)
 # --------------------------------------------------------------------------

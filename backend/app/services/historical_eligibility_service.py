@@ -175,7 +175,7 @@ class HistoricalEligibilityService:
                 ok_t, _ = verify_incident_matches_rule(inc, target_ctx)
                 if not ok_t:
                     continue
-                key = target_ctx.canonical_rule_uuid or target_ctx.canonical_rule_identifier or str(rule_id)
+                key = (target_ctx.rule.id if target_ctx.rule else None) or target_ctx.canonical_rule_identifier or str(rule_id)
             elif rule_id:
                 cand_ids = {str(inc.rule_id or ""), str(inc.event_type or "")}
                 if matched_rule:

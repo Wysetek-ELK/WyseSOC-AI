@@ -1,5 +1,6 @@
+import logging
 import os
-from typing import List, Set
+from typing import List, Optional, Set
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,6 +19,16 @@ KNOWN_INSECURE_SECRETS: Set[str] = {
     "",
 }
 
+SUPPORTED_OPERATING_MODES: Set[str] = {
+    "development",
+    "integration",
+    "shadow",
+    "advisory",
+    "autonomous",
+}
+PRODUCTION_SAFE_MODES: Set[str] = {"shadow", "advisory", "autonomous"}
+VALIDATED_CONTEXT_BUDGET_TIERS: List[int] = [4096, 8192]
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -31,6 +42,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
     APP_ENV: str = os.getenv("APP_ENV", "development")
+    PLATFORM_OPERATING_MODE: str = os.getenv("PLATFORM_OPERATING_MODE", "")
 
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY", "")
@@ -85,6 +97,7 @@ class Settings(BaseSettings):
     LOCAL_LLM_TIMEOUT: float = float(os.getenv("LOCAL_LLM_TIMEOUT", "60.0"))
     LOCAL_LLM_CONTEXT_BUDGET: int = int(os.getenv("LOCAL_LLM_CONTEXT_BUDGET", "4096"))
     LOCAL_LLM_MAX_TOKENS: int = int(os.getenv("LOCAL_LLM_MAX_TOKENS", "512"))
+    LOCAL_LLM_VERIFIED_MAX_MODEL_LEN: Optional[int] = None
     LOCAL_LLM_ALLOW_MOCK_FALLBACK: bool = False
     LOCAL_LLM_PROVENANCE: str = os.getenv("LOCAL_LLM_PROVENANCE", "AUTO")
     TEST_ENVIRONMENT_ID: str = os.getenv("AI_VERDICT_TEST_ENV", "")
@@ -116,12 +129,34 @@ class Settings(BaseSettings):
     # Phase 4: Cryptographic Audit Trail Signing
     AUDIT_SIGNING_KEY: str = os.getenv("AUDIT_SIGNING_KEY", "")
 
+    @property
+    def resolved_operating_mode(self) -> str:
+        raw = (self.PLATFORM_OPERATING_MODE or "").strip().lower()
+        if raw:
+            return raw
+        is_prod = self.APP_ENV.lower() in ("production", "prod")
+        return "advisory" if is_prod else "development"
+
     def model_post_init(self, __context) -> None:
+        is_prod = self.APP_ENV.lower() in ("production", "prod")
+        if is_prod and (self.LOCAL_LLM_ALLOW_MOCK_FALLBACK or self.FORTISIEM_MOCK_FALLBACK):
+            logging.getLogger("ai_verdict.config").critical(
+                "SECURITY OVERRIDE (AIS-F12): Forcing LOCAL_LLM_ALLOW_MOCK_FALLBACK=False and FORTISIEM_MOCK_FALLBACK=False in production."
+            )
+            self.LOCAL_LLM_ALLOW_MOCK_FALLBACK = False
+            self.FORTISIEM_MOCK_FALLBACK = False
         self.validate_security()
 
     def validate_security(self) -> None:
-        """Validates production security configuration."""
+        """Validates production security, operating mode, and context budget configuration."""
         is_prod = self.APP_ENV.lower() in ("production", "prod")
+        raw_mode = (self.PLATFORM_OPERATING_MODE or "").strip().lower()
+        if raw_mode and raw_mode not in SUPPORTED_OPERATING_MODES:
+            raise RuntimeError(
+                f"Invalid PLATFORM_OPERATING_MODE '{raw_mode}'. "
+                f"Expected one of: {sorted(SUPPORTED_OPERATING_MODES)}."
+            )
+
         if is_prod:
             if not self.SECRET_KEY or self.SECRET_KEY in KNOWN_INSECURE_SECRETS:
                 raise RuntimeError(
@@ -132,10 +167,27 @@ class Settings(BaseSettings):
                 raise RuntimeError(
                     "Critical Security Blocker (AV-014): SECRET_KEY is too short for production (minimum 32 characters required)."
                 )
+            if raw_mode == "development":
+                raise RuntimeError(
+                    "Critical Security Blocker (AIS-F12): PLATFORM_OPERATING_MODE='development' is forbidden when APP_ENV='production'."
+                )
         else:
             # In development or testing, assign a safe dedicated development secret if unconfigured
             if not self.SECRET_KEY or self.SECRET_KEY in KNOWN_INSECURE_SECRETS:
                 self.SECRET_KEY = "dev-insecure-test-key-32-chars-minimum-ok-for-local"
+
+        if self.LOCAL_LLM_CONTEXT_BUDGET < 1024 or self.LOCAL_LLM_CONTEXT_BUDGET > 65536:
+            raise RuntimeError(
+                f"Invalid LOCAL_LLM_CONTEXT_BUDGET={self.LOCAL_LLM_CONTEXT_BUDGET}. Expected 1024..65536."
+            )
+        if self.LOCAL_LLM_MAX_TOKENS < 64 or self.LOCAL_LLM_MAX_TOKENS > 4096:
+            raise RuntimeError(
+                f"Invalid LOCAL_LLM_MAX_TOKENS={self.LOCAL_LLM_MAX_TOKENS}. Expected 64..4096."
+            )
+        if (self.LOCAL_LLM_CONTEXT_BUDGET - self.LOCAL_LLM_MAX_TOKENS) < 512:
+            raise RuntimeError(
+                "Invalid LLM token budget: (LOCAL_LLM_CONTEXT_BUDGET - LOCAL_LLM_MAX_TOKENS) must leave at least 512 prompt tokens."
+            )
 
 
 settings = Settings()

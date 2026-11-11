@@ -623,7 +623,11 @@ class FortiSIEMService:
                 logger.warning(f"Live query for rule incidents failed: {e}")
 
         # 2. Check fixture zip
-        if not discovered and settings.FORTISIEM_MOCK_FALLBACK and os.path.exists(self.fixtures_zip_path):
+        allow_mock = (
+            getattr(settings, "APP_ENV", "development").lower() not in ("production", "prod")
+            and bool(settings.FORTISIEM_MOCK_FALLBACK)
+        )
+        if not discovered and allow_mock and os.path.exists(self.fixtures_zip_path):
             try:
                 with zipfile.ZipFile(self.fixtures_zip_path, "r") as z:
                     for name in z.namelist():
@@ -1029,6 +1033,9 @@ class FortiSIEMService:
         if not clean_id:
             raise HTTPException(status_code=400, detail="Incident ID cannot be empty.")
 
+        is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+        allow_mock = False if is_prod else bool(settings.FORTISIEM_MOCK_FALLBACK)
+
         # 1. Try Live FortiSIEM REST API if host is configured
         if settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip():
             base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
@@ -1046,7 +1053,7 @@ class FortiSIEMService:
             except HTTPException:
                 raise
             except httpx.RequestError as exc:
-                if not settings.FORTISIEM_MOCK_FALLBACK:
+                if not allow_mock:
                     raise HTTPException(
                         status_code=502,
                         detail=f"Failed to connect to FortiSIEM host ({base_url}): {str(exc)}"
@@ -1056,14 +1063,14 @@ class FortiSIEMService:
                 return live_data, "LIVE"
 
             # If not found on live SIEM, and mock fallback is explicitly disabled, raise 404
-            if not settings.FORTISIEM_MOCK_FALLBACK:
+            if not allow_mock:
                 raise HTTPException(
                     status_code=404,
                     detail=f"Incident '{clean_id}' was not found in live FortiSIEM ({base_url})."
                 )
 
         # 2. Fixture fallback (Development, offline, demo mode, or when not found on live SIEM)
-        if settings.FORTISIEM_MOCK_FALLBACK and os.path.exists(self.fixtures_zip_path):
+        if allow_mock and os.path.exists(self.fixtures_zip_path):
             with zipfile.ZipFile(self.fixtures_zip_path, "r") as z:
                 for name in z.namelist():
                     match = re.search(r"incid\w*id_(\d+)\.json", name, re.IGNORECASE)
@@ -1477,7 +1484,11 @@ class FortiSIEMService:
                 pass
 
         # 2. Fixture fallback if live returned empty and mock fallback enabled
-        if not discovered_incidents and settings.FORTISIEM_MOCK_FALLBACK and os.path.exists(self.fixtures_zip_path):
+        allow_mock = (
+            getattr(settings, "APP_ENV", "development").lower() not in ("production", "prod")
+            and bool(settings.FORTISIEM_MOCK_FALLBACK)
+        )
+        if not discovered_incidents and allow_mock and os.path.exists(self.fixtures_zip_path):
             source_mode = "FIXTURE_FALLBACK"
             try:
                 with zipfile.ZipFile(self.fixtures_zip_path, "r") as z:
@@ -1837,13 +1848,14 @@ class FortiSIEMService:
         clean_user = raw_user.strip()
 
         # 1. Update in-memory settings
+        is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
         settings.FORTISIEM_HOST = clean_host
         settings.FORTISIEM_USERNAME = clean_user
         if password is not None and password.strip():
             settings.FORTISIEM_PASSWORD = password.strip()
         settings.FORTISIEM_VERIFY_SSL = verify_ssl
         settings.FORTISIEM_TIMEOUT = float(timeout)
-        settings.FORTISIEM_MOCK_FALLBACK = mock_fallback
+        settings.FORTISIEM_MOCK_FALLBACK = False if is_prod else bool(mock_fallback)
         if auto_poll_enabled is not None:
             settings.FORTISIEM_AUTO_POLL_ENABLED = bool(auto_poll_enabled)
         if poll_interval_seconds is not None:

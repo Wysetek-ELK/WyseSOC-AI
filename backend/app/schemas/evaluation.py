@@ -85,6 +85,9 @@ class RuleMaturityResponse(BaseModel):
     approved_at: Optional[datetime] = None
     approval_notes: str
     latest_test_date: Optional[datetime] = None
+    evaluation_source: str = "HISTORICAL_EVALUATION_RUN"
+    autonomous_runtime_eligible: bool = False
+    governance_gate_note: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
