@@ -570,12 +570,20 @@ async def run_shared_verdict_pipeline(
     model_profile = LLMConfigService.get_model_profile(active_model)
     configured_ctx = int(model_profile.get("max_context_tokens") or getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384)
     verified_model_len = getattr(settings, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None)
+    if verified_model_len is None:
+        try:
+            verified_model_len = await LLMConfigService.get_or_probe_verified_max_model_len()
+        except Exception:
+            verified_model_len = None
+
     effective_max_ctx = (
         min(configured_ctx, int(verified_model_len))
         if verified_model_len is not None and int(verified_model_len) > 0
         else configured_ctx
     )
     reserved_comp_tokens = int(model_profile.get("reserved_output_tokens") or getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
+    if effective_max_ctx <= 4096 and reserved_comp_tokens > 512:
+        reserved_comp_tokens = 512
     target_input = int(model_profile.get("target_input_budget") or getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192)
 
     rule_spec = {

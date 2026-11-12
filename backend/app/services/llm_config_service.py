@@ -31,6 +31,7 @@ class LLMConfigService:
     _cached_ip_timestamp: float = 0.0
     _process_start_time: float = time.time()
     _last_synced_state_mtime_ns: int = 0
+    _cached_verified_max_model_len: Optional[int] = None
 
     DEFAULT_MODEL_PROFILES: Dict[str, Dict[str, int]] = {
         "Qwen/Qwen2.5-7B-Instruct-AWQ": {
@@ -598,6 +599,35 @@ class LLMConfigService:
             elif fallback_len is None:
                 fallback_len = parsed_len
         return preferred_match if preferred_match is not None else fallback_len
+
+    @classmethod
+    async def get_or_probe_verified_max_model_len(cls) -> Optional[int]:
+        """
+        Dynamically probes the active Server 2 endpoint to discover max_model_len.
+        Caches result to avoid redundant network overhead during triage loops.
+        """
+        if cls._cached_verified_max_model_len is not None:
+            return cls._cached_verified_max_model_len
+        try:
+            base_url = str(getattr(settings, "LOCAL_LLM_BASE_URL", "http://127.0.0.1:8000/v1")).rstrip("/")
+            models_url = f"{base_url}/models"
+            timeout_sec = 3.0
+            async with httpx.AsyncClient(timeout=timeout_sec) as client:
+                res = await client.get(
+                    models_url,
+                    headers={"Authorization": f"Bearer {settings.LOCAL_LLM_API_KEY}"},
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    model_len = cls._extract_max_model_len(data, settings.LOCAL_LLM_MODEL_NAME)
+                    if model_len and model_len > 0:
+                        cls._cached_verified_max_model_len = model_len
+                        settings.LOCAL_LLM_VERIFIED_MAX_MODEL_LEN = model_len
+                        logger.info(f"Dynamically discovered Server 2 max_model_len={model_len}")
+                        return model_len
+        except Exception as e:
+            logger.debug(f"Could not probe Server 2 capacity: {e}")
+        return getattr(settings, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None)
 
     @classmethod
     async def test_connection(cls, req: LLMTestConnectionRequest) -> LLMTestConnectionResponse:
