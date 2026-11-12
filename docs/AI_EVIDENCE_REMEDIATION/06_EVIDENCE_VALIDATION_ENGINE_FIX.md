@@ -104,3 +104,4 @@ The validation subsystem establishes 8 distinct, deterministic validation states
 | **T11** | HTTP status string vs integer | Evaluated `status="200"` against observed `200` $\to$ Matched | PASS |
 | **T14** | Genuine insufficient evidence | Model safely abstains with `REQUIRES_ATTENTION` | PASS |
 | **T21** | URL normalization edge cases | Verified scheme/host normalization without path traversal leakage | PASS |
+

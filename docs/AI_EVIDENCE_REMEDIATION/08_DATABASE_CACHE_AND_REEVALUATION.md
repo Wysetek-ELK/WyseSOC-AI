@@ -97,3 +97,4 @@ Historical audit records are never overwritten or deleted. If an incident was ev
 | **T16** | Re-evaluation with stale cache | Stale snapshot bypassed; fresh normalization applied $\to$ Extracted updated fields | PASS |
 | **T18** | Cross-tenant incident access | Evaluated cross-tenant incident access request $\to$ Rejected with 403/404 Forbidden | PASS |
 | **T20** | Repeated re-evaluation idempotency | Triggered repeated re-evaluations $\to$ Preserved audit chain without duplicate corruption | PASS |
+

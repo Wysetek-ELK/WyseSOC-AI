@@ -76,3 +76,4 @@ This ensures the LLM can reference verified telemetry without hallucinating or r
 | **T21** | URL normalization edge cases | Preserved security-relevant paths and query strings across encoding variations | PASS |
 | **T22** | Prompt injection in raw evidence | Escaped and quarantined prompt injection strings in raw logs | PASS |
 | **8K/16K** | Token budgeting boundary tests | Verified incidents exceeding 4,978 tokens and up to 14,000 tokens compact cleanly | PASS |
+
