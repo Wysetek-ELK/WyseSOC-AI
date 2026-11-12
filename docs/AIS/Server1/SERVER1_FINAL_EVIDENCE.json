@@ -1,0 +1,165 @@
+{
+  "timestamp": "2026-11-12T04:22:00Z",
+  "system": {
+    "application_name": "Verdictum AI",
+    "server1_os": "Rocky Linux 10.1 (Red Quartz) x86_64",
+    "deployed_commit": "f37d244e",
+    "active_branch": "main",
+    "environment": "production",
+    "operating_mode": "advisory",
+    "server2_status": "DEFERRED_SERVER2_STOPPED"
+  },
+  "readiness_verdict": {
+    "status": "GO",
+    "gpu_independent_readiness": "100% READY",
+    "offline_verification": "17/17 CHECKS PASSED",
+    "server2_gpu_startup_authorized": true
+  },
+  "components": {
+    "backend": {
+      "status": "active (running)",
+      "systemd_unit": "ai-verdict-backend.service",
+      "port": 8000,
+      "http_status": 200,
+      "health_status": "degraded (expected due to Server 2 offline)",
+      "process_count": 5
+    },
+    "frontend": {
+      "status": "active (running)",
+      "systemd_unit": "ai-verdict-frontend.service",
+      "port": 3000,
+      "http_status": 200,
+      "rendered_app_name": "Verdictum AI"
+    },
+    "database": {
+      "status": "healthy",
+      "database_type": "postgresql",
+      "alembic_head": "008_soc_pilot",
+      "tables_count": 35,
+      "total_incidents": 3909,
+      "total_rules": 35,
+      "total_historical_ground_truth": 3909,
+      "total_investigations": 3909,
+      "orphaned_incidents": 0,
+      "schema_resolved_by_discrepancy": "RESOLVED: 'resolved_by' is not a schema column; genuine model column is 'cleared_user'. No schema mutation needed."
+    },
+    "redis": {
+      "status": "active (running)",
+      "systemd_unit": "redis.service",
+      "version": "8.10.2",
+      "port": 6379,
+      "memory_used": "1.34M",
+      "vm_overcommit_memory": 1
+    },
+    "celery": {
+      "status": "active (running)",
+      "systemd_unit": "ai-verdict-worker.service",
+      "version": "5.7.0",
+      "concurrency": 4,
+      "queues": ["live_triage", "simulation_replay", "maintenance"],
+      "queue_depths": {
+        "live_triage": 0,
+        "simulation_replay": 0,
+        "maintenance": 0
+      },
+      "registered_tasks": [
+        "app.workers.tasks.run_dry_run_job_task",
+        "app.workers.tasks.run_policy_simulation_task",
+        "app.workers.tasks.triage_incident_task"
+      ],
+      "offline_probe_result": "PASSED_OFFLINE_VERIFICATION"
+    },
+    "runtime_config": {
+      "blockers_count": 0,
+      "warnings_count": 2,
+      "fail_closed_mock_disabled": true,
+      "local_llm_allow_mock_fallback": false,
+      "fortisiem_mock_fallback": false,
+      "enable_auto_closure": false,
+      "enable_auto_siem_writeback": false
+    }
+  },
+  "rule_reconciliation_summary": {
+    "total_rules": 35,
+    "rules_with_parity_match": 35,
+    "sibling_separation": {
+      "PH_RULE_HEAVY_TCP_HOST_SCAN": {
+        "canonical_uuid": "9839fa49-40ac-4676-abcc-4c5581ae9e09",
+        "incident_count": 8,
+        "workbench_count": 8,
+        "labeled_count": 1,
+        "fp_count": 1,
+        "tp_count": 0,
+        "unlabeled_count": 7
+      },
+      "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT": {
+        "canonical_uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+        "incident_count": 50,
+        "workbench_count": 50,
+        "labeled_count": 0,
+        "unlabeled_count": 50
+      },
+      "separation_verified": true
+    },
+    "pagination_verified": {
+      "rule": "PH_RULE_FGT_Config_Change",
+      "total": 64,
+      "page1_size": 50,
+      "page2_size": 14,
+      "overlap": 0,
+      "passed": true
+    }
+  },
+  "ground_truth_classification": {
+    "category_1_verified_tp": 0,
+    "category_2_verified_fp": 0,
+    "category_3_human_review_candidates": 35,
+    "category_4_automated_ml_resolution": 3344,
+    "category_5_disputed_ambiguous": 0,
+    "category_6_unlabeled_incidents": 478,
+    "total_investigations_pending_review": 3857,
+    "total_independently_verified": 0,
+    "cleared_user_provenance": [
+      {
+        "incident_id": "132461358",
+        "user": "shivamw",
+        "reason": "hash value is clean",
+        "resolution": "False Positive"
+      },
+      {
+        "incident_id": "132501348",
+        "user": "Yash Mungekar",
+        "reason": "",
+        "resolution": "True Positive"
+      }
+    ]
+  },
+  "fortisiem_rule_integrity": {
+    "verified_definitions_count": 8,
+    "incomplete_definitions_count": 27,
+    "vendor_rule_file_provenance_count": 28,
+    "auto_synced_from_incident_provenance_count": 7,
+    "manual_xml_export_required_count": 27
+  },
+  "e2e_checks_17_summary": {
+    "check_01_availability": "PASSED",
+    "check_02_auth_roles": "PASSED",
+    "check_03_postgres_schema": "PASSED",
+    "check_04_incident_retrieval": "PASSED",
+    "check_05_rule_selection": "PASSED",
+    "check_06_evidence_contract": "PASSED",
+    "check_07_policy_draft": "PASSED",
+    "check_08_g1_g7_assessment": "PASSED",
+    "check_09_scoring_versions": "PASSED",
+    "check_10_ground_truth_eligibility": "PASSED",
+    "check_11_rule_parity": "PASSED",
+    "check_12_redis_celery": "PASSED",
+    "check_13_audit_persistence": "PASSED",
+    "check_14_fail_closed_protection": "PASSED",
+    "check_15_server2_offline_behavior": "PASSED (DEFERRED_SERVER2_STOPPED)",
+    "check_16_service_persistence": "PASSED",
+    "check_17_local_regression": "PASSED",
+    "total_passed": 17,
+    "total_failed": 0
+  }
+}
