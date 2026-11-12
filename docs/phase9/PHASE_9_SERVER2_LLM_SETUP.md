@@ -12,7 +12,7 @@ Execute on Server 2 after provisioning GPU drivers (or let `install_llm_server.s
 ```bash
 cd /opt/ai-verdict/deployment/scripts
 sudo MODEL_NAME="Qwen/Qwen2.5-7B-Instruct-AWQ" \
-     MAX_MODEL_LEN="4096" \
+     MAX_MODEL_LEN="16384" \
      MAX_NUM_SEQS="8" \
      GPU_MEM_UTIL="0.90" \
      bash install_llm_server.sh <SERVER_1_PRIVATE_IP>
@@ -42,8 +42,9 @@ Expected exit codes:
 ## 3. Server 1 Alignment Settings
 
 Ensure Server 1 `/opt/ai-verdict/backend/.env` matches Server 2 `MAX_MODEL_LEN` and API key:
-- `LOCAL_LLM_CONTEXT_BUDGET="4096"`
-- `LOCAL_LLM_MAX_TOKENS="512"`
+- `LOCAL_LLM_CONTEXT_BUDGET="16384"`
+- `LOCAL_LLM_MAX_TOKENS="1024"`
+- `LOCAL_LLM_TARGET_INPUT_BUDGET="8192"`
 - `LOCAL_LLM_TIMEOUT="60.0"`
 - `LOCAL_LLM_ALLOW_MOCK_FALLBACK="false"`
 

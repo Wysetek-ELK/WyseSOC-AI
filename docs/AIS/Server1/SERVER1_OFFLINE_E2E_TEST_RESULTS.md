@@ -164,3 +164,4 @@ The following items are strictly deferred until Server 2 is started and verified
 2. **G8 Empirical Accuracy:** Empirical False Positive reduction rate across historical datasets.
 3. **GPU Context Budget Verification:** Live confirmation of `max_model_len` against vLLM server parameters.
 4. **GPU Throughput / Concurrency Benchmark:** Under 4 concurrent Celery worker inference slots.
+

@@ -116,3 +116,4 @@ pg_dump -U aiverdict_user -h 127.0.0.1 -Fc ai_verdict > /var/backups/ai_verdict_
 # To test or execute database restoration:
 pg_restore -U aiverdict_user -h 127.0.0.1 -d ai_verdict --clean --if-exists /var/backups/<backup_file>.dump
 ```
+

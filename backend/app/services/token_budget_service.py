@@ -13,15 +13,42 @@ class TokenBudgetService:
     P2: Approved policy directives (IMMUTABLE)
     P3: Mandatory Evidence Contract requirements (IMMUTABLE)
     P4: Critical current incident telemetry & evidence IDs (IMMUTABLE)
-    P5: Correlated secondary events (TRIMMABLE)
+    P5: Correlated secondary events (PROGRESSIVELY TRIMMABLE)
     P6: Optional enrichment fields (TRIMMABLE)
     P7: Verified historical precedents (TRIMMED FIRST)
 
     Guarantees that critical evidence values, command lines, and evidence IDs are NEVER naively truncated.
-    If the mandatory core exceeds available budget, triggers safe abstention.
+    If the mandatory core exceeds available budget, triggers safe fail-closed CONTEXT_WINDOW_EXCEEDED abstention.
     """
-    DEFAULT_MAX_CONTEXT = 4096
+    DEFAULT_MAX_CONTEXT = 16384
     DEFAULT_MAX_COMPLETION = 1024
+    DEFAULT_TARGET_INPUT_BUDGET = 8192
+
+    @classmethod
+    def calculate_available_input_tokens(
+        cls,
+        max_context_tokens: int = DEFAULT_MAX_CONTEXT,
+        reserved_output_tokens: Optional[int] = None,
+        max_completion_tokens: Optional[int] = None,
+        target_input_budget: Optional[int] = None,
+    ) -> int:
+        """
+        Dynamically calculates available input tokens based on model context capacity,
+        reserved output tokens, and optional target input budget.
+        - Headroom: max(512, max_context_tokens - comp_tokens).
+        - When target_input_budget is provided, effective input is bounded by available headroom
+          and target_input_budget.
+        Guarantees at least 512 prompt tokens if context allows.
+        """
+        comp_tokens = (
+            int(reserved_output_tokens)
+            if reserved_output_tokens is not None
+            else (int(max_completion_tokens) if max_completion_tokens is not None else cls.DEFAULT_MAX_COMPLETION)
+        )
+        headroom = max(512, int(max_context_tokens) - comp_tokens)
+        if target_input_budget is not None and int(target_input_budget) > 0:
+            return max(512, min(int(target_input_budget), headroom))
+        return headroom
 
     @staticmethod
     def estimate_tokens(obj: Any) -> int:
@@ -57,6 +84,7 @@ class TokenBudgetService:
         )
         compacted: List[Dict[str, Any]] = []
         changed = False
+        preserved_keys = ("evidence_id", "source_field", "field", "observed_value", "value", "evidence_type")
         for item in can_ev:
             if not isinstance(item, dict):
                 compacted.append(item)
@@ -70,7 +98,7 @@ class TokenBudgetService:
                 changed = True
                 continue
             minimal: Dict[str, Any] = {}
-            for keep_key in ("evidence_id", "source_field", "observed_value", "evidence_type"):
+            for keep_key in preserved_keys:
                 if keep_key in item and item[keep_key] is not None:
                     minimal[keep_key] = item[keep_key]
             if len(minimal) < len(item):
@@ -79,6 +107,42 @@ class TokenBudgetService:
 
         if changed:
             payload_work["canonical_evidence"] = compacted
+        return changed
+
+    @staticmethod
+    def _compact_events(
+        payload_work: Dict[str, Any],
+        contract_fields: set,
+    ) -> bool:
+        """
+        Compacts remaining events by stripping empty/null attributes and long non-contract fields
+        while strictly preserving all fields defined in the Evidence Contract.
+        Returns True if payload_work changed.
+        """
+        events = payload_work.get("events")
+        if not isinstance(events, list) or not events:
+            return False
+
+        compacted_events: List[Dict[str, Any]] = []
+        changed = False
+        for ev in events:
+            if not isinstance(ev, dict):
+                compacted_events.append(ev)
+                continue
+            ev_copy = dict(ev)
+            attrs = ev_copy.get("attributes")
+            if isinstance(attrs, dict):
+                min_attrs = {
+                    k: v for k, v in attrs.items()
+                    if v is not None and v != "" and (k in contract_fields or len(str(v)) < 250)
+                }
+                if len(min_attrs) < len(attrs):
+                    ev_copy["attributes"] = min_attrs
+                    changed = True
+            compacted_events.append(ev_copy)
+
+        if changed:
+            payload_work["events"] = compacted_events
         return changed
 
     @classmethod
@@ -90,8 +154,14 @@ class TokenBudgetService:
         max_context_tokens: int = DEFAULT_MAX_CONTEXT,
         max_completion_tokens: int = DEFAULT_MAX_COMPLETION,
         reserved_overhead_tokens: int = 0,
+        model_name: Optional[str] = None,
+        target_input_budget: Optional[int] = None,
     ) -> BudgetedPromptResult:
-        available_budget = max(512, max_context_tokens - max_completion_tokens)
+        available_budget = cls.calculate_available_input_tokens(
+            max_context_tokens=max_context_tokens,
+            reserved_output_tokens=max_completion_tokens,
+            target_input_budget=target_input_budget,
+        )
 
         # Deepcopy payload so original is unmutated
         payload_work = copy.deepcopy(incident_payload)
@@ -131,6 +201,8 @@ class TokenBudgetService:
         rag_trimmed = False
         enrichment_trimmed = False
         events_pruned = 0
+        events_compacted = False
+        evidence_compacted = False
         overflow_detected = False
         overflow_reason = None
 
@@ -157,23 +229,42 @@ class TokenBudgetService:
                 + max(0, int(reserved_overhead_tokens))
             )
 
-        # Trimming Step 3: If still over budget, prune secondary events (P5), preserving primary event
+        # Trimming Step 3a: Progressive pruning of secondary events (P5)
+        # Pruning from the last secondary event backwards, preserving events[0]
+        # and as many correlated events as fit in budget.
         if total_tokens > available_budget and len(events) > 1:
             orig_count = len(events)
-            # Keep primary event only
-            payload_work["events"] = events[:1]
-            events_pruned = orig_count - 1
-            p5_events_tokens = 0
-            total_tokens = (
-                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                + cls.estimate_tokens(payload_work)
-                + max(0, int(reserved_overhead_tokens))
-            )
+            current_events = list(events)
+            while len(current_events) > 1 and total_tokens > available_budget:
+                current_events.pop()
+                payload_work["events"] = current_events
+                events_pruned = orig_count - len(current_events)
+                p5_events_tokens = cls.estimate_tokens(current_events[1:]) if len(current_events) > 1 else 0
+                total_tokens = (
+                    cls.estimate_tokens(compiled_policy.compiled_system_prompt)
+                    + cls.estimate_tokens(payload_work)
+                    + max(0, int(reserved_overhead_tokens))
+                )
 
-        # Trimming Step 3b: If still over budget, compact non-reasoning metadata inside canonical_evidence
+        # Trimming Step 3b: Event attribute and log compaction for remaining events
+        if total_tokens > available_budget and payload_work.get("events"):
+            contract_fields = set(contract_info.get("required_fields") or [])
+            if cls._compact_events(payload_work, contract_fields):
+                events_compacted = True
+                remaining_events = payload_work.get("events") or []
+                p5_events_tokens = cls.estimate_tokens(remaining_events[1:]) if len(remaining_events) > 1 else 0
+                total_tokens = (
+                    cls.estimate_tokens(compiled_policy.compiled_system_prompt)
+                    + cls.estimate_tokens(payload_work)
+                    + max(0, int(reserved_overhead_tokens))
+                )
+
+        # Trimming Step 3c: Canonical evidence compaction
+        # Strips non-reasoning forensic digest/null metadata inside canonical_evidence
         # while strictly preserving every evidence_id, source_field, and observed_value.
         if total_tokens > available_budget:
             if cls._compact_canonical_evidence(payload_work):
+                evidence_compacted = True
                 p4_critical_tokens = cls.estimate_tokens(payload_work.get("canonical_evidence") or []) + cls.estimate_tokens(payload_work.get("title"))
                 total_tokens = (
                     cls.estimate_tokens(compiled_policy.compiled_system_prompt)
@@ -194,6 +285,8 @@ class TokenBudgetService:
             max_context_tokens=max_context_tokens,
             max_completion_tokens=max_completion_tokens,
             available_prompt_budget=available_budget,
+            target_input_budget=target_input_budget,
+            model_name=model_name,
             p1_safety_and_schema_tokens=p1_schema_tokens,
             p2_policy_sections_tokens=p2_policy_tokens,
             p3_mandatory_contract_tokens=p3_contract_tokens,
@@ -205,6 +298,8 @@ class TokenBudgetService:
             rag_trimmed=rag_trimmed,
             enrichment_trimmed=enrichment_trimmed,
             events_pruned_count=events_pruned,
+            events_compacted=events_compacted,
+            evidence_compacted=evidence_compacted,
             context_overflow_detected=overflow_detected,
             overflow_reason=overflow_reason,
         )

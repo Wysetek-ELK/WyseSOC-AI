@@ -27,7 +27,7 @@ SUPPORTED_OPERATING_MODES: Set[str] = {
     "autonomous",
 }
 PRODUCTION_SAFE_MODES: Set[str] = {"shadow", "advisory", "autonomous"}
-VALIDATED_CONTEXT_BUDGET_TIERS: List[int] = [4096, 8192]
+VALIDATED_CONTEXT_BUDGET_TIERS: List[int] = [4096, 8192, 16384]
 
 
 class Settings(BaseSettings):
@@ -95,8 +95,9 @@ class Settings(BaseSettings):
     LOCAL_LLM_MODEL_NAME: str = os.getenv("LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ")
     LOCAL_LLM_API_KEY: str = os.getenv("LOCAL_LLM_API_KEY", "EMPTY")
     LOCAL_LLM_TIMEOUT: float = float(os.getenv("LOCAL_LLM_TIMEOUT", "60.0"))
-    LOCAL_LLM_CONTEXT_BUDGET: int = int(os.getenv("LOCAL_LLM_CONTEXT_BUDGET", "4096"))
-    LOCAL_LLM_MAX_TOKENS: int = int(os.getenv("LOCAL_LLM_MAX_TOKENS", "512"))
+    LOCAL_LLM_CONTEXT_BUDGET: int = int(os.getenv("LOCAL_LLM_CONTEXT_BUDGET", "16384"))
+    LOCAL_LLM_MAX_TOKENS: int = int(os.getenv("LOCAL_LLM_MAX_TOKENS", "1024"))
+    LOCAL_LLM_TARGET_INPUT_BUDGET: int = int(os.getenv("LOCAL_LLM_TARGET_INPUT_BUDGET", "8192"))
     LOCAL_LLM_VERIFIED_MAX_MODEL_LEN: Optional[int] = None
     LOCAL_LLM_ALLOW_MOCK_FALLBACK: bool = False
     LOCAL_LLM_PROVENANCE: str = os.getenv("LOCAL_LLM_PROVENANCE", "AUTO")
@@ -176,13 +177,13 @@ class Settings(BaseSettings):
             if not self.SECRET_KEY or self.SECRET_KEY in KNOWN_INSECURE_SECRETS:
                 self.SECRET_KEY = "dev-insecure-test-key-32-chars-minimum-ok-for-local"
 
-        if self.LOCAL_LLM_CONTEXT_BUDGET < 1024 or self.LOCAL_LLM_CONTEXT_BUDGET > 65536:
+        if self.LOCAL_LLM_CONTEXT_BUDGET < 1024 or self.LOCAL_LLM_CONTEXT_BUDGET > 131072:
             raise RuntimeError(
-                f"Invalid LOCAL_LLM_CONTEXT_BUDGET={self.LOCAL_LLM_CONTEXT_BUDGET}. Expected 1024..65536."
+                f"Invalid LOCAL_LLM_CONTEXT_BUDGET={self.LOCAL_LLM_CONTEXT_BUDGET}. Expected 1024..131072."
             )
-        if self.LOCAL_LLM_MAX_TOKENS < 64 or self.LOCAL_LLM_MAX_TOKENS > 4096:
+        if self.LOCAL_LLM_MAX_TOKENS < 64 or self.LOCAL_LLM_MAX_TOKENS > 16384:
             raise RuntimeError(
-                f"Invalid LOCAL_LLM_MAX_TOKENS={self.LOCAL_LLM_MAX_TOKENS}. Expected 64..4096."
+                f"Invalid LOCAL_LLM_MAX_TOKENS={self.LOCAL_LLM_MAX_TOKENS}. Expected 64..16384."
             )
         if (self.LOCAL_LLM_CONTEXT_BUDGET - self.LOCAL_LLM_MAX_TOKENS) < 512:
             raise RuntimeError(

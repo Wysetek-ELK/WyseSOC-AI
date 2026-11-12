@@ -1,0 +1,286 @@
+{
+  "audit_metadata": {
+    "report_name": "AIS Remote Integration & Empirical Validation Evidence",
+    "version": "2.3.0",
+    "generated_at": "2026-11-11T16:14:36.454344+00:00",
+    "read_only": true,
+    "database_mutated": false,
+    "external_mutations": false,
+    "stage_a_status": "COMPLETED",
+    "stage_b_status": "NOT_EXECUTED",
+    "overall_decision": "NO_GO_FOR_SHADOW_VALIDATION"
+  },
+  "overall_readiness_matrix": {
+    "development_readiness": "VERIFIED_100_PERCENT",
+    "infrastructure_integration_status": "BLOCKED",
+    "historical_data_readiness": "INSUFFICIENT",
+    "actual_llm_inference_status": "OFFLINE_TIMEOUT",
+    "empirical_g8_validation_status": "NOT_EXECUTED",
+    "autonomous_operation_eligibility": "STRICTLY_BLOCKED",
+    "confirmed_blockers_count": 7
+  },
+  "server1_infrastructure": {
+    "host_role": "FastAPI Application Host & PostgreSQL 14+ Database",
+    "git_deployment": {
+      "deployed_commit_sha": "9616971f47e24bfe7fcf8881f8da0457509294ba",
+      "repository_head_sha": "6cdb82a3b0fae00508ddffb701239c03bfe34b8c",
+      "is_synchronized_with_origin_main": false,
+      "branch": "HEAD",
+      "working_tree_dirty": true,
+      "last_commit_message": "feat(studio): add Quality Gates G1-G8 output download (JSON, Markdown, CSV)"
+    },
+    "database_reconciliation": {
+      "dialect": "postgresql",
+      "alembic_current_revision": "008_soc_pilot",
+      "alembic_head_revision": "008_soc_pilot",
+      "schema_aligned": true,
+      "table_counts": {
+        "rules": 34,
+        "incidents": 3107,
+        "historical_ground_truth": 3107,
+        "investigations": 3107,
+        "rule_prompts": 34,
+        "prompt_versions": 39,
+        "policy_quality_assessments": 2
+      },
+      "schema_discrepancy_detected": {
+        "missing_column": "historical_ground_truth.resolved_by",
+        "error_observed": "psycopg2.errors.UndefinedColumn: column hgt.resolved_by does not exist",
+        "alternative_present": "cleared_user"
+      }
+    },
+    "service_states": {
+      "ai_verdict_backend_service": "active",
+      "redis_server": "inactive",
+      "celery_daemon": "inactive",
+      "wysesoc_ai_celery": "inactive"
+    },
+    "redis_celery": {
+      "broker_url_redacted": "redis://localhost:6379/0",
+      "redis_ping": false,
+      "connection_error": "Error 111 connecting to localhost:6379. Connection refused.",
+      "live_triage_depth": 0,
+      "simulation_replay_depth": 0,
+      "active_workers_count": 0
+    },
+    "redacted_environment": {
+      "app_env": "production",
+      "database_url_redacted": "postgresql+asyncpg://aiverdict_user:***@127.0.0.1:5432/ai_verdict",
+      "sync_database_url_redacted": "postgresql+psycopg2://aiverdict_user:***@127.0.0.1:5432/ai_verdict",
+      "fortisiem_host": "https://198.51.100.31",
+      "fortisiem_username": "super/test",
+      "fortisiem_verify_ssl": false,
+      "local_llm_base_url_redacted": "http://***:8000/v1",
+      "local_llm_model_name": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "local_llm_timeout_seconds": 30.0,
+      "local_llm_allow_mock_fallback": false
+    }
+  },
+  "server2_llm_inference": {
+    "host_role": "Remote GPU Inference Host (vLLM Engine)",
+    "configured_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "configured_base_url_redacted": "http://***:8000/v1",
+    "probe_results": {
+      "tcp_port_8000_reachable": false,
+      "tcp_probe_latency_ms": 3003.9,
+      "tcp_error": "TimeoutError: timed out",
+      "http_health_status": "TIMEOUT",
+      "http_models_status": "TIMEOUT",
+      "http_chat_completions_status": "TIMEOUT",
+      "sample_triage_attempt": {
+        "incident_id": "173265",
+        "error_type": "LocalLLMUnavailableError",
+        "error_message": "Local LLM (Server 2) is currently offline. AI verdict generation is deferred until Local LLM comes online."
+      }
+    },
+    "context_budget_parameters": {
+      "configured_budget": 4096,
+      "reserved_completion_tokens": 512,
+      "available_prompt_budget": 3584,
+      "verified_server_max_model_len": null,
+      "capacity_verification_status": "UNVERIFIED"
+    }
+  },
+  "target_rules_audit": {
+    "heavy_tcp_host_scan": {
+      "rule_uuid": "9839fa49-40ac-4676-abcc-4c5581ae9e09",
+      "logical_rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN",
+      "display_name": "Heavy TCP Host Scan",
+      "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN",
+      "pattern_logic": "{\"incidentCount\":230}",
+      "canonical_incidents_count": 2,
+      "labeled_incidents_count": 1,
+      "verified_true_positives": 0,
+      "verified_false_positives": 0,
+      "unverified_legacy_labels": 1,
+      "is_ml_generated_count": 0,
+      "is_independently_verified_count": 0,
+      "is_disputed_count": 0,
+      "g8_empirical_eligibility": "INSUFFICIENT_DATA",
+      "sample_incidents": [
+        {
+          "incident_id": "a3031c7d-8047-42f2-8554-e668aca35de1",
+          "external_incident_id": "160051",
+          "resolution": "",
+          "is_ml_generated": false,
+          "is_independently_verified": false
+        },
+        {
+          "incident_id": "45d951b8-62ad-4141-ad48-258e5164b3bb",
+          "external_incident_id": "165233",
+          "resolution": "False Positive",
+          "is_ml_generated": false,
+          "is_independently_verified": false
+        }
+      ]
+    },
+    "heavy_tcp_host_scan_fixed_port": {
+      "rule_uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "logical_rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+      "display_name": "Heavy TCP Host Scan On Fixed Port",
+      "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+      "pattern_logic": "{\"incidentCount\":161}",
+      "canonical_incidents_count": 31,
+      "labeled_incidents_count": 0,
+      "verified_true_positives": 0,
+      "verified_false_positives": 0,
+      "is_independently_verified_count": 0,
+      "g8_empirical_eligibility": "INSUFFICIENT_DATA"
+    },
+    "workbench_reconciliation": {
+      "free_text_search_query": "Heavy TCP Host Scan",
+      "workbench_search_matched_count": 33,
+      "composition": {
+        "from_heavy_tcp_host_scan": 2,
+        "from_heavy_tcp_host_scan_fixed_port": 31,
+        "sum": 33
+      },
+      "root_cause_explanation": "Free-text substring search in AI Triage Workbench conflated 2 distinct canonical rules sharing a name prefix."
+    }
+  },
+  "ground_truth_corpus_audit": {
+    "total_incidents": 3107,
+    "total_labeled": 2746,
+    "reported_tp": 2722,
+    "reported_fp": 24,
+    "total_unlabeled": 361,
+    "flagged_is_ml_generated": 2734,
+    "percentage_of_labeled_flagged_ml": 99.56,
+    "cleared_user_populated_count": 2,
+    "cleared_reason_populated_count": 33,
+    "independently_verified_count": 0,
+    "disputed_investigations_count": 0,
+    "governance_assessment": "Ground truth corpus is dominated by automated ML/heuristic closures without documented human analyst provenance."
+  },
+  "corpus_archetype_distribution": {
+    "total_rules": 34,
+    "top_archetypes": [
+      {
+        "rule_id": "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST",
+        "name": "Website access policy violation: Same Source and Destination",
+        "incident_count": 2675,
+        "percentage": 86.10
+      },
+      {
+        "rule_id": "PH_Rule_MISP_MalwareIP_Inbound",
+        "name": "Permitted Traffic from MISP Malware IP List",
+        "incident_count": 153,
+        "percentage": 4.92
+      },
+      {
+        "rule_id": "PH_RULE_FGT_Config_Change",
+        "name": "FortiGate: Config Change Detected",
+        "incident_count": 64,
+        "percentage": 2.06
+      },
+      {
+        "rule_id": "PH_Rule_MISP_MalwareIP_Outbound",
+        "name": "Traffic to MISP Malware IP List",
+        "incident_count": 37,
+        "percentage": 1.19
+      },
+      {
+        "rule_id": "Permitted_Traffic_from_MISP_Malware_IP_List_3_27_2026",
+        "name": "Permitted Traffic from MISP Malware IP ListTest",
+        "incident_count": 35,
+        "percentage": 1.13
+      },
+      {
+        "rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+        "name": "Heavy TCP Host Scan On Fixed Port",
+        "incident_count": 31,
+        "percentage": 1.00
+      },
+      {
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "name": "Crowdstrike: Suspicious Activity",
+        "incident_count": 10,
+        "percentage": 0.32
+      },
+      {
+        "rule_id": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+        "name": "Prisma SASE: Suspicious File Threat Detection",
+        "incident_count": 10,
+        "percentage": 0.32
+      },
+      {
+        "rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN",
+        "name": "Heavy TCP Host Scan",
+        "incident_count": 2,
+        "percentage": 0.06
+      }
+    ]
+  },
+  "blockers_register": [
+    {
+      "id": "BLK-01",
+      "priority": "P0",
+      "component": "Server 2 (vLLM GPU Host)",
+      "issue": "Remote local LLM inference endpoint unreachable (TCP timeout on port 8000)",
+      "remediation": "Start vLLM daemon, verify GPU health, update security group to allow inbound TCP 8000 from Server 1"
+    },
+    {
+      "id": "BLK-02",
+      "priority": "P0",
+      "component": "Server 1 (Source Code)",
+      "issue": "Server 1 running outdated commit 9616971 (lacks AIS 2.1–2.3 remediation and pipeline consolidation)",
+      "remediation": "Deploy commit 6cdb82a via RepoDeploy Governor two-stage gate"
+    },
+    {
+      "id": "BLK-03",
+      "priority": "P1",
+      "component": "Server 1 (Redis / Celery)",
+      "issue": "Redis and Celery daemons inactive; simulation_replay queue cannot process background jobs",
+      "remediation": "Start redis-server and wysesoc-celery systemd services"
+    },
+    {
+      "id": "BLK-04",
+      "priority": "P1",
+      "component": "Corpus Ground Truth",
+      "issue": "Ground-truth scarcity (target rule has N=2 < 5); 99.56% of labeled data is unverified ML heuristic",
+      "remediation": "Conduct analyst ground-truth labeling and set investigations.is_independently_verified = true"
+    },
+    {
+      "id": "BLK-05",
+      "priority": "P1",
+      "component": "FortiSIEM Rule Definitions",
+      "issue": "Rules store runtime counters ({\"incidentCount\": ...}) instead of XML correlation condition expressions",
+      "remediation": "Sync genuine FortiSIEM correlation conditions into rules.pattern_logic"
+    },
+    {
+      "id": "BLK-06",
+      "priority": "P2",
+      "component": "PostgreSQL Schema",
+      "issue": "Column historical_ground_truth.resolved_by missing in Server 1 database",
+      "remediation": "Use cleared_user in all SQL queries or apply Alembic migration adding resolved_by alias"
+    },
+    {
+      "id": "BLK-07",
+      "priority": "P2",
+      "component": "Server 1 Environment",
+      "issue": "Trailing newlines present in quoted .env values on Server 1",
+      "remediation": "Normalize .env file with LLMConfigService._upsert_env_vars"
+    }
+  ]
+}
+

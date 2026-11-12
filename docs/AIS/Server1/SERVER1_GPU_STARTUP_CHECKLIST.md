@@ -140,3 +140,4 @@ Once G8 empirical simulation and live inference are confirmed:
 2. The circuit breaker automatically opens after 5 failed inference attempts, shedding LLM load without hanging HTTP requests.
 3. Because fail-closed guards are active (`LOCAL_LLM_ALLOW_MOCK_FALLBACK=false`), the system will never fabricate mock triage verdicts.
 4. Incidents remain in `PENDING_REVIEW` in the Investigation Workbench for manual analyst disposition.
+

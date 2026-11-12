@@ -40,6 +40,7 @@ from app.services.policy_governance import (
     get_rule_semantics_and_contract,
 )
 from app.services.provenance import classify_execution_provenance
+from app.services.llm_config_service import LLMConfigService
 from app.services.token_budget_service import TokenBudgetService
 from app.services.verified_semantic_retrieval_service import VerifiedSemanticRetrievalService
 from app.services.verdict_trustworthiness_engine import VerdictTrustworthinessEngine
@@ -563,14 +564,19 @@ async def run_shared_verdict_pipeline(
         "version": contract.version_number,
         "required_fields": [r.field for r in contract.required_evidence],
     }
-    configured_ctx = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096)
+    # Resolve per-model profile and capacity limits
+    active_model = getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ")
+    model_profile = LLMConfigService.get_model_profile(active_model)
+    configured_ctx = int(model_profile.get("max_context_tokens") or getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384)
     verified_model_len = getattr(settings, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None)
     effective_max_ctx = (
         min(configured_ctx, int(verified_model_len))
         if verified_model_len is not None and int(verified_model_len) > 0
         else configured_ctx
     )
-    reserved_comp_tokens = int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512) or 512)
+    reserved_comp_tokens = int(model_profile.get("reserved_output_tokens") or getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
+    target_input = int(model_profile.get("target_input_budget") or getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192)
+
     rule_spec = {
         "id": rule.id if rule else (incident.rule_id or "UNKNOWN"),
         "rule_id": getattr(rule, "rule_id", None) if rule else None,
@@ -586,6 +592,8 @@ async def run_shared_verdict_pipeline(
         max_context_tokens=effective_max_ctx,
         max_completion_tokens=reserved_comp_tokens,
         reserved_overhead_tokens=rule_overhead_tokens,
+        model_name=active_model,
+        target_input_budget=target_input,
     )
 
     if not budgeted.can_proceed_to_inference:

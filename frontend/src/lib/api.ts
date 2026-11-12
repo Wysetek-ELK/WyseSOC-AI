@@ -382,9 +382,18 @@ export interface LLMConfigResponse {
   base_url: string;
   model_name: string;
   timeout: number;
+  context_budget: number;
+  max_tokens: number;
+  target_input_budget?: number;
+  available_input_tokens?: number;
+  verified_max_model_len?: number | null;
+  context_budget_verified?: boolean;
+  context_budget_warning?: string | null;
+  operating_mode?: string;
   allow_mock_fallback: boolean;
   is_online: boolean;
   server1_outbound_ip?: string;
+  model_profiles?: Record<string, Record<string, number>>;
 }
 
 export interface LLMConfigUpdate {
@@ -393,6 +402,10 @@ export interface LLMConfigUpdate {
   protocol?: string;
   model_name?: string;
   timeout?: number;
+  context_budget?: number;
+  max_tokens?: number;
+  target_input_budget?: number;
+  model_profiles?: Record<string, Record<string, number>>;
   allow_mock_fallback?: boolean;
 }
 
@@ -410,6 +423,10 @@ export interface LLMTestConnectionResponse {
   message: string;
   models: string[];
   tested_url: string;
+  server_max_model_len?: number | null;
+  context_budget_supported?: boolean | null;
+  available_input_tokens?: number | null;
+  target_input_budget?: number | null;
 }
 
 export interface FortiSIEMRuleSyncResponse {

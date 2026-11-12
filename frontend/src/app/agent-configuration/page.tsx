@@ -56,6 +56,12 @@ export default function AgentConfigurationPage() {
   const [llmProtocol, setLlmProtocol] = useState("http");
   const [llmModelName, setLlmModelName] = useState("Qwen/Qwen2.5-7B-Instruct-AWQ");
   const [llmTimeout, setLlmTimeout] = useState(60);
+  const [llmContextBudget, setLlmContextBudget] = useState(16384);
+  const [llmMaxTokens, setLlmMaxTokens] = useState(1024);
+  const [llmTargetInputBudget, setLlmTargetInputBudget] = useState(8192);
+  const [llmAvailableInputTokens, setLlmAvailableInputTokens] = useState(8192);
+  const [llmVerifiedModelLen, setLlmVerifiedModelLen] = useState<number | null>(null);
+  const [llmContextBudgetWarning, setLlmContextBudgetWarning] = useState<string | null>(null);
   const [llmAllowMockFallback, setLlmAllowMockFallback] = useState(true);
   const [llmBaseUrl, setLlmBaseUrl] = useState("");
   const [llmIsOnline, setLlmIsOnline] = useState(false);
@@ -95,6 +101,12 @@ export default function AgentConfigurationPage() {
       setLlmProtocol(cfg.protocol || "http");
       setLlmModelName(cfg.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ");
       setLlmTimeout(cfg.timeout || 30);
+      setLlmContextBudget(cfg.context_budget || 16384);
+      setLlmMaxTokens(cfg.max_tokens || 1024);
+      setLlmTargetInputBudget(cfg.target_input_budget || 8192);
+      setLlmAvailableInputTokens(cfg.available_input_tokens || 8192);
+      setLlmVerifiedModelLen(cfg.verified_max_model_len ?? null);
+      setLlmContextBudgetWarning(cfg.context_budget_warning ?? null);
       setLlmAllowMockFallback(cfg.allow_mock_fallback);
       setLlmBaseUrl(cfg.base_url || "");
       setLlmIsOnline(cfg.is_online);
@@ -145,6 +157,12 @@ export default function AgentConfigurationPage() {
       setLlmTestResult(res);
       if (res.success) {
         setLlmIsOnline(true);
+        if (res.server_max_model_len !== undefined && res.server_max_model_len !== null) {
+          setLlmVerifiedModelLen(res.server_max_model_len);
+        }
+        if (res.available_input_tokens) {
+          setLlmAvailableInputTokens(res.available_input_tokens);
+        }
         if (typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("llm-status-change", {
@@ -182,10 +200,13 @@ export default function AgentConfigurationPage() {
     try {
       const updated = await api.updateLLMConfig({
         host: llmHost.trim(),
-        port: llmPort,
+        port: Number(llmPort),
         protocol: llmProtocol,
-        model_name: llmModelName.trim(),
-        timeout: llmTimeout,
+        model_name: llmModelName.trim() || undefined,
+        timeout: Number(llmTimeout),
+        context_budget: Number(llmContextBudget),
+        max_tokens: Number(llmMaxTokens),
+        target_input_budget: Number(llmTargetInputBudget),
         allow_mock_fallback: llmAllowMockFallback,
       });
       setLlmHost(updated.host);
@@ -194,6 +215,12 @@ export default function AgentConfigurationPage() {
       setLlmBaseUrl(updated.base_url);
       setLlmModelName(updated.model_name);
       setLlmTimeout(updated.timeout);
+      setLlmContextBudget(updated.context_budget);
+      setLlmMaxTokens(updated.max_tokens);
+      if (updated.target_input_budget) setLlmTargetInputBudget(updated.target_input_budget);
+      if (updated.available_input_tokens) setLlmAvailableInputTokens(updated.available_input_tokens);
+      setLlmVerifiedModelLen(updated.verified_max_model_len ?? null);
+      setLlmContextBudgetWarning(updated.context_budget_warning ?? null);
       setLlmAllowMockFallback(updated.allow_mock_fallback);
       setLlmSaveSuccess(`LLM Server configuration saved! Target base URL updated to ${updated.base_url}`);
       setLlmTestResult(null);
@@ -678,6 +705,73 @@ export default function AgentConfigurationPage() {
                   </div>
                 )}
               </div>
+
+              {/* Context Budget & Token Allocation Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Context Window (Tokens)
+                  </label>
+                  <input
+                    type="number"
+                    min={1024}
+                    max={131072}
+                    step={1024}
+                    disabled={!isAdmin || isSavingLLM}
+                    value={llmContextBudget}
+                    onChange={(e) => setLlmContextBudget(Number(e.target.value))}
+                    className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                  />
+                  <span className="text-[10px] text-slate-400 block">
+                    Model context: 16,384 target (or 8,192 / 4,096)
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Reserved Output (Tokens)
+                  </label>
+                  <input
+                    type="number"
+                    min={64}
+                    max={16384}
+                    step={128}
+                    disabled={!isAdmin || isSavingLLM}
+                    value={llmMaxTokens}
+                    onChange={(e) => setLlmMaxTokens(Number(e.target.value))}
+                    className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                  />
+                  <span className="text-[10px] text-slate-400 block">
+                    Output headroom: 1,024 reserved tokens
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    Effective Input Budget (Tokens)
+                  </label>
+                  <input
+                    type="number"
+                    min={512}
+                    max={131072}
+                    step={512}
+                    disabled={!isAdmin || isSavingLLM}
+                    value={llmTargetInputBudget}
+                    onChange={(e) => setLlmTargetInputBudget(Number(e.target.value))}
+                    className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
+                  />
+                  <span className="text-[10px] text-slate-400 block">
+                    Target input: 8,192 tokens ({llmAvailableInputTokens} avail)
+                  </span>
+                </div>
+              </div>
+
+              {llmContextBudgetWarning && (
+                <div className="rounded-md border border-amber-800/80 bg-amber-950/30 p-2 text-xs text-amber-300 flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                  <span>{llmContextBudgetWarning}</span>
+                </div>
+              )}
 
               {/* Toggles */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-800">

@@ -120,3 +120,4 @@ To establish verified benchmark controls for G8 policy simulation without compro
    - Backend logs the action in `audit_logs` with cryptographic signature.
 4. **Step 4: G8 Benchmark Activation**
    - Verified records become automatically eligible as "hard positive" and "hard negative" benchmark controls in AIS Simulation Lab.
+

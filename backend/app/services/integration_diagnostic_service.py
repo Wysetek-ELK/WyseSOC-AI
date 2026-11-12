@@ -266,8 +266,8 @@ class IntegrationDiagnosticService:
         }
 
     async def _check_server2_llm_readiness(self, *, probe_remote: bool) -> Dict[str, Any]:
-        configured_ctx = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096)
-        reserved_comp = int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512) or 512)
+        configured_ctx = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384)
+        reserved_comp = int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
         parsed = LLMConfigService.parse_llm_url(settings.LOCAL_LLM_BASE_URL)
         base_url = parsed["base_url"]
         models_url = f"{base_url}/models"
@@ -322,7 +322,7 @@ class IntegrationDiagnosticService:
                 status = "WARN"
             elif ctx_supported is False:
                 status = "FAIL"
-            elif ctx_supported is None and configured_ctx > 4096:
+            elif ctx_supported is None and configured_ctx > 16384:
                 status = "WARN"
             else:
                 status = "PASS"

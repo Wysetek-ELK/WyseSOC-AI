@@ -194,8 +194,9 @@ class RuntimeConfigValidator:
         llm_base = str(getattr(s, "LOCAL_LLM_BASE_URL", "") or "")
         llm_model = str(getattr(s, "LOCAL_LLM_MODEL_NAME", "") or "")
         llm_mock = bool(getattr(s, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False))
-        ctx_budget = int(getattr(s, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096)
-        max_tokens = int(getattr(s, "LOCAL_LLM_MAX_TOKENS", 512) or 512)
+        ctx_budget = int(getattr(s, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384)
+        max_tokens = int(getattr(s, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
+        target_input = int(getattr(s, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192)
         verified_max_model_len = getattr(s, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None)
 
         if not llm_base:
@@ -217,8 +218,8 @@ class RuntimeConfigValidator:
         if not llm_model.strip():
             blockers.append("LOCAL_LLM_MODEL_NAME_MISSING: Active model identifier cannot be blank.")
 
-        if ctx_budget < 1024 or ctx_budget > 65536:
-            blockers.append(f"INVALID_CONTEXT_BUDGET: LOCAL_LLM_CONTEXT_BUDGET={ctx_budget} out of supported range 1024..65536.")
+        if ctx_budget < 1024 or ctx_budget > 131072:
+            blockers.append(f"INVALID_CONTEXT_BUDGET: LOCAL_LLM_CONTEXT_BUDGET={ctx_budget} out of supported range 1024..131072.")
         elif (ctx_budget - max_tokens) < 512:
             blockers.append(
                 f"INSUFFICIENT_PROMPT_HEADROOM: LOCAL_LLM_CONTEXT_BUDGET ({ctx_budget}) - LOCAL_LLM_MAX_TOKENS ({max_tokens}) < 512."
@@ -234,9 +235,9 @@ class RuntimeConfigValidator:
                 context_capacity_status = "EXCEEDS_VERIFIED_LIMIT"
             else:
                 context_capacity_status = "VERIFIED"
-        elif ctx_budget > 4096:
+        elif ctx_budget > 16384:
             warnings.append(
-                f"UNVERIFIED_EXTENDED_CONTEXT_BUDGET: LOCAL_LLM_CONTEXT_BUDGET={ctx_budget} (>4096) configured without live "
+                f"UNVERIFIED_EXTENDED_CONTEXT_BUDGET: LOCAL_LLM_CONTEXT_BUDGET={ctx_budget} (>16384) configured without live "
                 "Server 2 max_model_len confirmation; do not assume Server 2 supports this context length until probed."
             )
 
@@ -270,6 +271,7 @@ class RuntimeConfigValidator:
             "context_budget": {
                 "configured_context_budget": ctx_budget,
                 "reserved_completion_tokens": max_tokens,
+                "target_input_budget": target_input,
                 "available_prompt_budget": max(512, ctx_budget - max_tokens),
                 "validated_tiers": list(VALIDATED_CONTEXT_BUDGET_TIERS),
                 "verified_server_max_model_len": verified_max_model_len,
@@ -315,8 +317,9 @@ class RuntimeConfigValidator:
             "local_llm_model_name": getattr(s, "LOCAL_LLM_MODEL_NAME", ""),
             "local_llm_api_key": mask_secret(getattr(s, "LOCAL_LLM_API_KEY", "")),
             "local_llm_timeout": float(getattr(s, "LOCAL_LLM_TIMEOUT", 60.0)),
-            "local_llm_context_budget": int(getattr(s, "LOCAL_LLM_CONTEXT_BUDGET", 4096)),
-            "local_llm_max_tokens": int(getattr(s, "LOCAL_LLM_MAX_TOKENS", 512)),
+            "local_llm_context_budget": int(getattr(s, "LOCAL_LLM_CONTEXT_BUDGET", 16384)),
+            "local_llm_max_tokens": int(getattr(s, "LOCAL_LLM_MAX_TOKENS", 1024)),
+            "local_llm_target_input_budget": int(getattr(s, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192)),
             "local_llm_verified_max_model_len": getattr(s, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None),
             "local_llm_allow_mock_fallback": bool(getattr(s, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)),
             "fortisiem_host": redact_url_credentials(getattr(s, "FORTISIEM_HOST", "")),

@@ -111,3 +111,4 @@ To ensure large incident collections paginate without loss or duplicate records:
 1. **Parity Success:** Every rule exhibits 100% count agreement between the Workbench view and the Simulation Lab selection engine.
 2. **Global Leak Prevention:** Global incidents are never erroneously bundled into rule simulations.
 3. **Canonical Filtering:** Queries match strictly on exact rule UUIDs or validated event types, ensuring deterministic behavioral evaluations.
+

@@ -12,7 +12,7 @@ class ChatRequest(BaseModel):
     messages: List[ChatMessageItem] = Field(..., min_length=1, description="Conversation history")
     incident_id: Optional[str] = Field(None, description="Optional FortiSIEM / DB Incident ID to attach as analysis context")
     temperature: float = Field(0.3, ge=0.0, le=1.5, description="Sampling temperature")
-    max_tokens: int = Field(1024, ge=64, le=4096, description="Maximum response tokens")
+    max_tokens: int = Field(1024, ge=64, le=16384, description="Maximum response tokens")
     system_prompt: Optional[str] = Field(None, description="Optional custom system persona instruction")
 
 

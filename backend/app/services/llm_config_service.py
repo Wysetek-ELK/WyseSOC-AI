@@ -11,6 +11,7 @@ from typing import Dict, Any, Optional, List
 import httpx
 
 from app.config import settings, BASE_DIR
+from app.services.token_budget_service import TokenBudgetService
 from app.schemas.llm_config import (
     LLMConfigResponse,
     LLMConfigUpdate,
@@ -24,12 +25,81 @@ logger = logging.getLogger(__name__)
 class LLMConfigService:
     """
     Manages dynamic runtime configuration and persistence of the Local LLM Server 2
-    IP address, port, and inference parameters.
+    IP address, port, inference parameters, and per-model context limits.
     """
     _cached_server1_ip: Optional[str] = None
     _cached_ip_timestamp: float = 0.0
     _process_start_time: float = time.time()
     _last_synced_state_mtime_ns: int = 0
+
+    DEFAULT_MODEL_PROFILES: Dict[str, Dict[str, int]] = {
+        "Qwen/Qwen2.5-7B-Instruct-AWQ": {
+            "max_context_tokens": 16384,
+            "reserved_output_tokens": 1024,
+            "target_input_budget": 8192,
+        },
+        "Qwen/Qwen2.5-14B-Instruct-AWQ": {
+            "max_context_tokens": 16384,
+            "reserved_output_tokens": 1024,
+            "target_input_budget": 8192,
+        },
+        "qwen3-8b-instruct": {
+            "max_context_tokens": 16384,
+            "reserved_output_tokens": 1024,
+            "target_input_budget": 8192,
+        },
+        "default": {
+            "max_context_tokens": 16384,
+            "reserved_output_tokens": 1024,
+            "target_input_budget": 8192,
+        },
+    }
+    _model_profiles: Dict[str, Dict[str, int]] = {k: dict(v) for k, v in DEFAULT_MODEL_PROFILES.items()}
+
+    @classmethod
+    def get_model_profile(cls, model_name: Optional[str] = None) -> Dict[str, int]:
+        """
+        Retrieves configurable context window, completion reservation, and target input budget
+        for a specific LLM model. Falls back gracefully to default profile and runtime settings.
+        """
+        if model_name:
+            clean_name = model_name.strip()
+            if clean_name in cls._model_profiles:
+                return dict(cls._model_profiles[clean_name])
+            for key, prof in cls._model_profiles.items():
+                if key.lower() in clean_name.lower() or clean_name.lower() in key.lower():
+                    return dict(prof)
+
+        def_prof = cls._model_profiles.get("default") or {}
+        return {
+            "max_context_tokens": int(def_prof.get("max_context_tokens") or getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384),
+            "reserved_output_tokens": int(def_prof.get("reserved_output_tokens") or getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024),
+            "target_input_budget": int(def_prof.get("target_input_budget") or getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192),
+        }
+
+    @classmethod
+    def get_all_model_profiles(cls) -> Dict[str, Dict[str, int]]:
+        return {k: dict(v) for k, v in cls._model_profiles.items()}
+
+    @classmethod
+    def set_model_profile(cls, model_name: str, profile: Dict[str, int]) -> Dict[str, int]:
+        max_ctx = int(profile.get("max_context_tokens", 16384))
+        res_out = int(profile.get("reserved_output_tokens", 1024))
+        target_in = int(profile.get("target_input_budget", 8192))
+        if max_ctx < 1024:
+            raise ValueError(f"max_context_tokens={max_ctx} cannot be less than 1024")
+        if res_out < 64:
+            raise ValueError(f"reserved_output_tokens={res_out} cannot be less than 64")
+        if (max_ctx - res_out) < 512:
+            raise ValueError("Context capacity minus reserved output must leave at least 512 prompt tokens")
+        entry = {
+            "max_context_tokens": max_ctx,
+            "reserved_output_tokens": res_out,
+            "target_input_budget": max(512, target_in),
+        }
+        cls._model_profiles[model_name] = entry
+        cls._persist_runtime_state()
+        return entry
 
     @classmethod
     def _state_file_path(cls) -> str:
@@ -49,9 +119,11 @@ class LLMConfigService:
             "base_url": settings.LOCAL_LLM_BASE_URL,
             "model_name": settings.LOCAL_LLM_MODEL_NAME,
             "timeout": float(settings.LOCAL_LLM_TIMEOUT),
-            "context_budget": int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096)),
-            "max_tokens": int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512)),
+            "context_budget": int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384)),
+            "max_tokens": int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024)),
+            "target_input_budget": int(getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192)),
             "verified_max_model_len": getattr(settings, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None),
+            "model_profiles": cls.get_all_model_profiles(),
             "allow_mock_fallback": bool(settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK),
             "updated_at": time.time(),
         }
@@ -124,15 +196,30 @@ class LLMConfigService:
 
             if data.get("context_budget") is not None:
                 new_ctx = int(data["context_budget"])
-                if 1024 <= new_ctx <= 65536 and new_ctx != int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096)):
+                if 1024 <= new_ctx <= 131072 and new_ctx != int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384)):
                     settings.LOCAL_LLM_CONTEXT_BUDGET = new_ctx
                     changed = True
 
             if data.get("max_tokens") is not None:
                 new_max_tok = int(data["max_tokens"])
-                if 64 <= new_max_tok <= 4096 and new_max_tok != int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512)):
+                if 64 <= new_max_tok <= 16384 and new_max_tok != int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024)):
                     settings.LOCAL_LLM_MAX_TOKENS = new_max_tok
                     changed = True
+
+            if data.get("target_input_budget") is not None:
+                new_in_tok = int(data["target_input_budget"])
+                if 512 <= new_in_tok <= 131072 and new_in_tok != int(getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192)):
+                    settings.LOCAL_LLM_TARGET_INPUT_BUDGET = new_in_tok
+                    changed = True
+
+            if isinstance(data.get("model_profiles"), dict):
+                for m_k, m_v in data["model_profiles"].items():
+                    if isinstance(m_v, dict):
+                        cls._model_profiles[m_k] = {
+                            "max_context_tokens": int(m_v.get("max_context_tokens", 16384)),
+                            "reserved_output_tokens": int(m_v.get("reserved_output_tokens", 1024)),
+                            "target_input_budget": int(m_v.get("target_input_budget", 8192)),
+                        }
 
             if "verified_max_model_len" in data:
                 v_len = int(data["verified_max_model_len"]) if data["verified_max_model_len"] is not None else None
@@ -248,13 +335,15 @@ class LLMConfigService:
         "LOCAL_LLM_TIMEOUT",
         "LOCAL_LLM_CONTEXT_BUDGET",
         "LOCAL_LLM_MAX_TOKENS",
+        "LOCAL_LLM_TARGET_INPUT_BUDGET",
         "LOCAL_LLM_ALLOW_MOCK_FALLBACK",
     )
 
     @classmethod
     def _evaluate_context_status(cls) -> Dict[str, Any]:
-        ctx_budget = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096)
-        max_tokens = int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512) or 512)
+        ctx_budget = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384)
+        max_tokens = int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
+        target_input = int(getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192)
         verified_len = getattr(settings, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None)
         verified = False
         warning: Optional[str] = None
@@ -266,18 +355,29 @@ class LLMConfigService:
                     f"Configured context_budget ({ctx_budget}) exceeds Server 2 verified "
                     f"max_model_len ({verified_len}); reduce context_budget or restart vLLM with higher --max-model-len."
                 )
-        elif ctx_budget > 4096:
+        elif ctx_budget > 16384:
             warning = (
-                f"Configured context_budget={ctx_budget} (>4096) has not been verified against live Server 2 capacity; "
-                "run Test Connection or integration diagnostics before relying on >4096 tokens."
+                f"Configured context_budget={ctx_budget} (>16384) has not been verified against live Server 2 capacity; "
+                "run Test Connection or integration diagnostics before relying on >16384 tokens."
             )
+
+        effective_capacity = min(ctx_budget, int(verified_len)) if (verified_len is not None and int(verified_len) > 0) else ctx_budget
+        available_input = TokenBudgetService.calculate_available_input_tokens(
+            max_context_tokens=effective_capacity,
+            reserved_output_tokens=max_tokens,
+            target_input_budget=target_input,
+        )
+
         return {
             "context_budget": ctx_budget,
             "max_tokens": max_tokens,
+            "target_input_budget": target_input,
+            "available_input_tokens": available_input,
             "verified_max_model_len": int(verified_len) if verified_len is not None else None,
             "context_budget_verified": verified,
             "context_budget_warning": warning,
             "operating_mode": getattr(settings, "resolved_operating_mode", "development"),
+            "model_profiles": cls.get_all_model_profiles(),
         }
 
     @classmethod
@@ -361,6 +461,8 @@ class LLMConfigService:
             timeout=settings.LOCAL_LLM_TIMEOUT,
             context_budget=ctx_info["context_budget"],
             max_tokens=ctx_info["max_tokens"],
+            target_input_budget=ctx_info["target_input_budget"],
+            available_input_tokens=ctx_info["available_input_tokens"],
             verified_max_model_len=ctx_info["verified_max_model_len"],
             context_budget_verified=ctx_info["context_budget_verified"],
             context_budget_warning=ctx_info["context_budget_warning"],
@@ -368,6 +470,7 @@ class LLMConfigService:
             allow_mock_fallback=settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK,
             is_online=is_online,
             server1_outbound_ip=server1_ip,
+            model_profiles=ctx_info["model_profiles"],
         )
 
     @classmethod
@@ -398,14 +501,25 @@ class LLMConfigService:
         if data.timeout is not None:
             settings.LOCAL_LLM_TIMEOUT = float(data.timeout)
 
-        new_ctx = int(data.context_budget) if data.context_budget is not None else int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096))
-        new_max_tok = int(data.max_tokens) if data.max_tokens is not None else int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 512))
+        new_ctx = int(data.context_budget) if data.context_budget is not None else int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384))
+        new_max_tok = int(data.max_tokens) if data.max_tokens is not None else int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024))
         if (new_ctx - new_max_tok) < 512:
             raise ValueError(
                 f"Invalid context budget ({new_ctx}) and max_tokens ({new_max_tok}): must leave at least 512 prompt tokens."
             )
         settings.LOCAL_LLM_CONTEXT_BUDGET = new_ctx
         settings.LOCAL_LLM_MAX_TOKENS = new_max_tok
+
+        if data.target_input_budget is not None:
+            new_input_budget = int(data.target_input_budget)
+            if new_input_budget < 512:
+                raise ValueError(f"Invalid target_input_budget ({new_input_budget}): must be at least 512 tokens.")
+            settings.LOCAL_LLM_TARGET_INPUT_BUDGET = new_input_budget
+
+        if data.model_profiles and isinstance(data.model_profiles, dict):
+            for m_key, m_prof in data.model_profiles.items():
+                if isinstance(m_prof, dict):
+                    cls.set_model_profile(m_key, m_prof)
 
         if data.allow_mock_fallback is not None:
             # In production, mock fallback is strictly disabled (REQ-02 / AV-004 / AIS-F12)
@@ -428,6 +542,7 @@ class LLMConfigService:
                 "LOCAL_LLM_TIMEOUT": str(settings.LOCAL_LLM_TIMEOUT),
                 "LOCAL_LLM_CONTEXT_BUDGET": str(settings.LOCAL_LLM_CONTEXT_BUDGET),
                 "LOCAL_LLM_MAX_TOKENS": str(settings.LOCAL_LLM_MAX_TOKENS),
+                "LOCAL_LLM_TARGET_INPUT_BUDGET": str(getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192)),
                 "LOCAL_LLM_ALLOW_MOCK_FALLBACK": "true" if settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK else "false",
             }
             try:
@@ -447,6 +562,8 @@ class LLMConfigService:
             timeout=settings.LOCAL_LLM_TIMEOUT,
             context_budget=ctx_info["context_budget"],
             max_tokens=ctx_info["max_tokens"],
+            target_input_budget=ctx_info["target_input_budget"],
+            available_input_tokens=ctx_info["available_input_tokens"],
             verified_max_model_len=ctx_info["verified_max_model_len"],
             context_budget_verified=ctx_info["context_budget_verified"],
             context_budget_warning=ctx_info["context_budget_warning"],
@@ -454,6 +571,7 @@ class LLMConfigService:
             allow_mock_fallback=settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK,
             is_online=False,
             server1_outbound_ip=cls._cached_server1_ip,
+            model_profiles=ctx_info["model_profiles"],
         )
 
     @staticmethod
@@ -510,9 +628,20 @@ class LLMConfigService:
                     models = [m.get("id", "") for m in data.get("data", []) if isinstance(m, dict) and m.get("id")]
                     model_str = ", ".join(models) if models else settings.LOCAL_LLM_MODEL_NAME
                     server_max_len = cls._extract_max_model_len(data, settings.LOCAL_LLM_MODEL_NAME)
-                    configured_budget = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096) or 4096)
+                    configured_budget = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384)
+                    target_input = int(getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192)
+                    res_tokens = int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
                     supported: Optional[bool] = (
                         (server_max_len >= configured_budget) if server_max_len is not None else None
+                    )
+                    avail_input: Optional[int] = (
+                        TokenBudgetService.calculate_available_input_tokens(
+                            max_context_tokens=server_max_len,
+                            reserved_output_tokens=res_tokens,
+                            target_input_budget=target_input,
+                        )
+                        if server_max_len is not None
+                        else None
                     )
 
                     from app.services.ai_verdict_service import AIVerdictService
@@ -538,6 +667,8 @@ class LLMConfigService:
                         tested_url=models_url,
                         server_max_model_len=server_max_len,
                         context_budget_supported=supported,
+                        available_input_tokens=avail_input,
+                        target_input_budget=target_input,
                     )
                 else:
                     return LLMTestConnectionResponse(

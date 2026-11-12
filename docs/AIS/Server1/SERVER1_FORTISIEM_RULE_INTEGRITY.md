@@ -112,3 +112,4 @@ Content-Type: application/xml
 </ruleDefinition>
 ```
 The backend parser (`RuleParser`) automatically ingests the authoritative expressions into `Rule.pattern_logic`, upgrading the definition status to `VERIFIED` and unlocking G1 10.0 full pass.
+

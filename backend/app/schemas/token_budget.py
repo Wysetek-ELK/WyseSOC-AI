@@ -3,9 +3,11 @@ from pydantic import BaseModel, Field
 
 
 class TokenAllocationBreakdown(BaseModel):
-    max_context_tokens: int = 4096
+    max_context_tokens: int = 16384
     max_completion_tokens: int = 1024
-    available_prompt_budget: int = 3072
+    available_prompt_budget: int = 8192
+    target_input_budget: Optional[int] = 8192
+    model_name: Optional[str] = None
 
     # Measured tokens per priority tier
     p1_safety_and_schema_tokens: int = 0
@@ -20,6 +22,8 @@ class TokenAllocationBreakdown(BaseModel):
     rag_trimmed: bool = False
     enrichment_trimmed: bool = False
     events_pruned_count: int = 0
+    events_compacted: bool = False
+    evidence_compacted: bool = False
     context_overflow_detected: bool = False
     overflow_reason: Optional[str] = None
 
