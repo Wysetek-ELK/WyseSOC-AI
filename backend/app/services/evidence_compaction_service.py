@@ -307,9 +307,9 @@ class EvidenceCompactionService:
         dedup_ratio = round(dedup_count / max(1, total_raw_count), 4)
 
         # -------------------------------------------------------------
-        # STEP 6: Deterministic Chunking (if still over budget and chunking enabled)
+        # STEP 6: Relevance Selection & Bounded Compaction
         # -------------------------------------------------------------
-        if total_dedup_tokens <= max_evidence_budget_tokens or not enable_chunking:
+        if total_dedup_tokens <= max_evidence_budget_tokens:
             return {
                 "compacted_records": compacted_dicts,
                 "all_dedup_canonical_records": extra_canonical_for_validator,
@@ -323,25 +323,80 @@ class EvidenceCompactionService:
                 "deduplication_ratio": dedup_ratio,
             }
 
-        # Deterministic Chunking with Anchor Invariant
-        anchor_records: List[Dict[str, Any]] = []
-        sliceable_records: List[Dict[str, Any]] = []
+        # Partition records into Mandatory Core Anchors vs Auxiliary Telemetry
+        core_records: List[Dict[str, Any]] = []
+        auxiliary_records: List[Dict[str, Any]] = []
 
         for r_dict in compacted_dicts:
             f_norm = r_dict["source_field"].lower()
-            if f_norm in contract_fields or score_relevance(
-                CanonicalEvidenceRecord(
-                    evidence_id=r_dict["evidence_id"],
-                    incident_id=inc_id,
-                    source_field=r_dict["source_field"],
-                    observed_value=r_dict["observed_value"],
-                    evidence_type=r_dict["evidence_type"],
-                    integrity_digest="anchor",
-                )
-            ) >= 500:
-                anchor_records.append(r_dict)
+            rec_obj = CanonicalEvidenceRecord(
+                evidence_id=r_dict["evidence_id"],
+                incident_id=inc_id,
+                source_field=r_dict["source_field"],
+                observed_value=r_dict["observed_value"],
+                evidence_type=r_dict["evidence_type"],
+                integrity_digest="anchor",
+            )
+            # Mandatory contract requirements, forensic execution indicators, rule triggers, time range & primary cluster
+            if (
+                f_norm in contract_fields
+                or f_norm in DO_NOT_COLLAPSE_FIELDS
+                or any(term in f_norm for term in DO_NOT_COLLAPSE_FIELDS)
+                or score_relevance(rec_obj) >= 450
+                or "cluster" in r_dict["evidence_id"].lower()
+                or "time_range" in f_norm
+            ):
+                core_records.append(r_dict)
             else:
-                sliceable_records.append(r_dict)
+                auxiliary_records.append(r_dict)
+
+        core_tokens = ModelTokenizerService.count_json_tokens(core_records)
+
+        # If mandatory core alone exceeds budget, fail closed (or chunk if explicitly requested)
+        if core_tokens > max_evidence_budget_tokens:
+            if not enable_chunking:
+                # Refuse naive truncation: return all records so pipeline fails closed with CONTEXT_WINDOW_EXCEEDED
+                return {
+                    "compacted_records": compacted_dicts,
+                    "all_dedup_canonical_records": extra_canonical_for_validator,
+                    "is_chunked": False,
+                    "chunk_index": 1,
+                    "total_chunks": 1,
+                    "all_chunks": [compacted_dicts],
+                    "total_raw_records": total_raw_count,
+                    "deduplicated_record_count": dedup_count,
+                    "estimated_tokens": total_dedup_tokens,
+                    "deduplication_ratio": dedup_ratio,
+                }
+
+        # When mandatory core fits, execute relevance selection on auxiliary telemetry
+        if not enable_chunking:
+            selected_records: List[Dict[str, Any]] = list(core_records)
+            current_tokens = core_tokens
+            for aux_item in auxiliary_records:
+                item_tok = ModelTokenizerService.count_json_tokens(aux_item)
+                if current_tokens + item_tok <= max_evidence_budget_tokens:
+                    selected_records.append(aux_item)
+                    current_tokens += item_tok
+                else:
+                    break
+
+            return {
+                "compacted_records": selected_records,
+                "all_dedup_canonical_records": extra_canonical_for_validator,
+                "is_chunked": False,
+                "chunk_index": 1,
+                "total_chunks": 1,
+                "all_chunks": [selected_records],
+                "total_raw_records": total_raw_count,
+                "deduplicated_record_count": len(selected_records),
+                "estimated_tokens": ModelTokenizerService.count_json_tokens(selected_records),
+                "deduplication_ratio": round(len(selected_records) / max(1, total_raw_count), 4),
+            }
+
+        # Deterministic Chunking with Anchor Invariant (when enable_chunking=True)
+        anchor_records: List[Dict[str, Any]] = list(core_records)
+        sliceable_records: List[Dict[str, Any]] = list(auxiliary_records)
 
         anchor_tokens = ModelTokenizerService.count_json_tokens(anchor_records)
         remaining_chunk_budget = max(200, max_evidence_budget_tokens - anchor_tokens)
