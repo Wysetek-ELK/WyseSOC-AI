@@ -3,6 +3,9 @@ import copy
 from typing import Optional, Dict, Any, List
 from app.schemas.token_budget import TokenAllocationBreakdown, BudgetedPromptResult
 from app.schemas.compiled_policy import CompiledPolicyPrompt
+from app.schemas.canonical_evidence import CanonicalEvidenceRecord
+from app.services.tokenizer_service import ModelTokenizerService
+from app.services.evidence_compaction_service import EvidenceCompactionService
 
 
 class TokenBudgetService:
@@ -61,6 +64,32 @@ class TokenBudgetService:
         else:
             text = str(obj)
         return max(1, len(text) // 4)
+
+    @classmethod
+    def get_token_accounting(
+        cls,
+        p1_schema_text: Optional[str] = None,
+        p2_policy_text: Optional[str] = None,
+        p3_contract_dict: Optional[Dict[str, Any]] = None,
+        p4_critical_evidence: Optional[List[Any]] = None,
+        p5_correlated_events: Optional[List[Any]] = None,
+        p6_enrichment: Optional[Dict[str, Any]] = None,
+        p7_rag_block: Optional[str] = None,
+        rule_spec: Optional[Dict[str, Any]] = None,
+        reserved_output_tokens: int = 1024,
+    ) -> Dict[str, int]:
+        """Model-compatible token accounting across all functional prompt sections."""
+        return ModelTokenizerService.account_prompt_breakdown(
+            p1_schema_text=p1_schema_text,
+            p2_policy_text=p2_policy_text,
+            p3_contract_dict=p3_contract_dict,
+            p4_critical_evidence=p4_critical_evidence,
+            p5_correlated_events=p5_correlated_events,
+            p6_enrichment=p6_enrichment,
+            p7_rag_block=p7_rag_block,
+            rule_spec=rule_spec,
+            reserved_output_tokens=reserved_output_tokens,
+        )
 
     @staticmethod
     def _compact_canonical_evidence(
@@ -259,7 +288,7 @@ class TokenBudgetService:
                     + max(0, int(reserved_overhead_tokens))
                 )
 
-        # Trimming Step 3c: Canonical evidence compaction
+        # Trimming Step 3c: Canonical evidence metadata compaction
         # Strips non-reasoning forensic digest/null metadata inside canonical_evidence
         # while strictly preserving every evidence_id, source_field, and observed_value.
         if total_tokens > available_budget:
@@ -271,6 +300,62 @@ class TokenBudgetService:
                     + cls.estimate_tokens(payload_work)
                     + max(0, int(reserved_overhead_tokens))
                 )
+
+        # Trimming Step 3d: Advanced evidence deduplication, clustering & relevance compaction
+        # Solves massive telemetry overflows (e.g. 100 duplicate firewall logs/timestamps)
+        # without dropping mandatory contract requirements or critical indicators.
+        if total_tokens > available_budget and payload_work.get("canonical_evidence"):
+            can_ev = payload_work.get("canonical_evidence") or []
+            contract_req = contract_info.get("required_fields") or []
+            overhead = (
+                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
+                + cls.estimate_tokens(contract_info)
+                + cls.estimate_tokens(payload_work.get("title"))
+                + max(0, int(reserved_overhead_tokens))
+                + 35  # wire margin
+            )
+            avail_ev_budget = max(400, available_budget - overhead)
+
+            rec_objs = []
+            for item in can_ev:
+                if isinstance(item, CanonicalEvidenceRecord):
+                    rec_objs.append(item)
+                elif isinstance(item, dict):
+                    rec_objs.append(CanonicalEvidenceRecord(
+                        evidence_id=str(item.get("evidence_id", "EV")),
+                        incident_id=str(payload_work.get("incident_id", "INC")),
+                        source_system=str(item.get("source_system", "FortiSIEM")),
+                        source_event_id=item.get("source_event_id"),
+                        source_field=str(item.get("source_field") or item.get("field", "unknown")),
+                        observed_value=item.get("observed_value") if item.get("observed_value") is not None else item.get("value", ""),
+                        observed_at=item.get("observed_at"),
+                        evidence_type=str(item.get("evidence_type", "SECURITY_EVENT")),
+                        availability=str(item.get("availability", "AVAILABLE")),
+                        provenance_status=str(item.get("provenance_status", "SOURCE_RECORDED")),
+                        integrity_digest=str(item.get("integrity_digest") or "digest"),
+                    ))
+
+            compaction_res = EvidenceCompactionService.compact_and_deduplicate(
+                records=rec_objs,
+                contract_required_fields=contract_req,
+                rule_pattern_logic=str(payload_work.get("rule_pattern") or ""),
+                max_evidence_budget_tokens=avail_ev_budget,
+            )
+            payload_work["canonical_evidence"] = compaction_res["compacted_records"]
+            if compaction_res.get("is_chunked"):
+                payload_work["evidence_chunk_info"] = {
+                    "chunk_index": compaction_res["chunk_index"],
+                    "total_chunks": compaction_res["total_chunks"],
+                    "anchor_record_count": compaction_res.get("anchor_record_count", 0),
+                    "total_raw_records": compaction_res["total_raw_records"],
+                }
+            evidence_compacted = True
+            p4_critical_tokens = cls.estimate_tokens(payload_work.get("canonical_evidence") or []) + cls.estimate_tokens(payload_work.get("title"))
+            total_tokens = (
+                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
+                + cls.estimate_tokens(payload_work)
+                + max(0, int(reserved_overhead_tokens))
+            )
 
         # Trimming Step 4: Check if mandatory core (P1 + P2 + P3 + P4) still exceeds budget
         if total_tokens > available_budget:

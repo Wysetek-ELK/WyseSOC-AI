@@ -250,30 +250,27 @@ class EvidenceNormalizationService:
             if isinstance(attrs, dict):
                 cls._extract_from_dict(attrs, evt_id, evt_time_str, add_record)
 
-        # 3. Raw Payload Extraction (nested attributes, events, rawEvents, or top-level scalar fields)
+        # 3. Raw Payload Extraction (only extract nested events from raw_payload if evts is empty)
         if incident.raw_payload and isinstance(incident.raw_payload, dict):
             raw = incident.raw_payload
-            extracted_nested = False
-            for container_key in ("attributes", "event", "events", "rawEvents"):
-                raw_sub = raw.get(container_key)
-                if isinstance(raw_sub, dict):
-                    cls._extract_from_dict(raw_sub, f"PAYLOAD_{container_key.upper()}", obs_time, add_record)
-                    extracted_nested = True
-                elif isinstance(raw_sub, list):
-                    for idx, item in enumerate(raw_sub):
-                        if isinstance(item, dict):
-                            cls._extract_from_dict(item, f"PAYLOAD_{container_key.upper()}_{idx}", obs_time, add_record)
-                            extracted_nested = True
-            if not extracted_nested:
-                cls._extract_from_dict(raw, "PAYLOAD", obs_time, add_record)
-            else:
-                # Also extract top-level scalar attributes outside nested event containers
-                top_scalars = {
-                    k: v for k, v in raw.items()
-                    if k not in ("attributes", "event", "events", "rawEvents") and not isinstance(v, (dict, list))
-                }
-                if top_scalars:
-                    cls._extract_from_dict(top_scalars, "PAYLOAD", obs_time, add_record)
+            has_existing_events = bool(evts and len(evts) > 0)
+            if not has_existing_events:
+                for container_key in ("attributes", "event", "events", "rawEvents", "triggeringEvents"):
+                    raw_sub = raw.get(container_key)
+                    if isinstance(raw_sub, dict):
+                        cls._extract_from_dict(raw_sub, f"PAYLOAD_{container_key.upper()}", obs_time, add_record)
+                    elif isinstance(raw_sub, list):
+                        for idx, item in enumerate(raw_sub):
+                            if isinstance(item, dict):
+                                cls._extract_from_dict(item, f"PAYLOAD_{container_key.upper()}_{idx}", obs_time, add_record)
+
+            # Always extract top-level scalar attributes outside nested event containers
+            top_scalars = {
+                k: v for k, v in raw.items()
+                if k not in ("attributes", "event", "events", "rawEvents", "triggeringEvents") and not isinstance(v, (dict, list))
+            }
+            if top_scalars:
+                cls._extract_from_dict(top_scalars, "PAYLOAD", obs_time, add_record)
 
         # Aggregate and categorize
         by_type: Dict[str, List[CanonicalEvidenceRecord]] = {}

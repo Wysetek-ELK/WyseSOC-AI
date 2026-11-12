@@ -670,6 +670,25 @@ async def run_shared_verdict_pipeline(
         prompt_text += f"\n\n{budgeted.budgeted_rag_block}"
     budgeted_payload = budgeted.budgeted_incident_payload
 
+    # Synchronize any newly created compacted/deduplicated canonical records into norm_result
+    # so that independent claim grounding can verify model citations without reference errors
+    existing_rec_ids = {r.evidence_id for r in norm_result.records}
+    for item in budgeted_payload.get("canonical_evidence", []):
+        eid = item.get("evidence_id")
+        if eid and eid not in existing_rec_ids:
+            norm_result.records.append(
+                CanonicalEvidenceRecord(
+                    evidence_id=eid,
+                    incident_id=str(incident.incident_id),
+                    source_system="FortiSIEM",
+                    source_field=str(item.get("source_field", "unknown")),
+                    observed_value=item.get("observed_value", ""),
+                    evidence_type=str(item.get("evidence_type", "SECURITY_EVENT")),
+                    integrity_digest="compacted",
+                )
+            )
+            existing_rec_ids.add(eid)
+
     # 8. Invoke Provider
     verdict_obj, actual_provider_type = await _invoke_provider_with_guards(
         chosen_provider_type=chosen_provider_type,
