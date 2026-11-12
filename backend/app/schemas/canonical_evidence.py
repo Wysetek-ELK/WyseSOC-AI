@@ -19,6 +19,9 @@ class CanonicalEvidenceRecord(BaseModel):
     availability: str = Field("AVAILABLE", description="AVAILABLE or UNAVAILABLE")
     provenance_status: str = Field("SOURCE_RECORDED", description="Provenance status of the evidence")
     integrity_digest: str = Field(..., description="SHA-256 cryptographic digest of source field and value")
+    raw_field_name: Optional[str] = Field(None, description="Original source field or attribute name before normalization")
+    transformation: Optional[str] = Field("DIRECT", description="Transformation applied: DIRECT, ALIASED, KEY_VALUE_EXTRACTED")
+    validation_status: Optional[str] = Field("PRESENT_VALID", description="Validation status: PRESENT_VALID, PRESENT_INVALID, NOT_IN_SOURCE, etc.")
 
     @classmethod
     def generate_digest(cls, source_field: str, observed_value: Any) -> str:
@@ -42,4 +45,7 @@ class EvidenceNormalizationResult(BaseModel):
     records: List[CanonicalEvidenceRecord]
     evidence_by_type: Dict[str, List[CanonicalEvidenceRecord]] = Field(default_factory=dict)
     evidence_by_field: Dict[str, List[CanonicalEvidenceRecord]] = Field(default_factory=dict)
+    unmapped_fields: List[Dict[str, Any]] = Field(default_factory=list, description="Raw fields present in telemetry that had no canonical mapping")
+    missing_fields: List[str] = Field(default_factory=list, description="Contract fields missing from source telemetry")
+    field_validation_status: Dict[str, str] = Field(default_factory=dict, description="Per-field validation status mapping")
 

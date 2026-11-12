@@ -567,14 +567,14 @@ class RuleIntelligenceAnalyzer:
         if "lateral" in combo or "movement" in combo or "lateral movement" in tactics:
             return ArchetypeId.LATERAL_MOVEMENT.value
 
+        if ("policy" in combo or "violation" in combo or "compliance" in combo or "filter" in combo) and "attack" not in combo and "injection" not in combo:
+            return ArchetypeId.POLICY_VIOLATION.value
+
         if "web" in combo or "sql" in combo or "xss" in combo or "injection" in combo:
             return ArchetypeId.WEB_ATTACK.value
 
         if "cloud" in combo or "s3" in combo or "iam" in combo or "azure" in combo or "gcp" in combo:
             return ArchetypeId.CLOUD_DATA_ACCESS.value
-
-        if "policy" in combo or "violation" in combo or "compliance" in combo:
-            return ArchetypeId.POLICY_VIOLATION.value
 
         if "defense evasion" in tactics or "evasion" in combo or "tamper" in combo:
             return ArchetypeId.ENDPOINT_DEFENSE_EVASION.value

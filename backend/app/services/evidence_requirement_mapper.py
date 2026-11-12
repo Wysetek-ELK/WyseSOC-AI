@@ -59,6 +59,13 @@ CANONICAL_FIELD_CATALOG: Set[str] = {
     "scan.connection_count",
     "network.destination_ip_list",
     "network.tcp_flags",
+    "webCategory",
+    "security.action",
+    "security.alert_title",
+    "endpoint.ip",
+    "endpoint.device_id",
+    "network.service",
+    "network.source_port",
 }
 
 

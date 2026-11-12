@@ -87,6 +87,8 @@ export interface IncidentAiVerdictResponse {
     feedback_timestamp: string;
   }>;
   token_budget_breakdown?: Record<string, any>;
+  field_validation_status?: Record<string, string>;
+  unmapped_fields?: string[];
 }
 
 export interface IncidentListItem {

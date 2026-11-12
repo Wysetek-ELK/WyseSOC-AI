@@ -68,6 +68,35 @@ def parse_any_timestamp(val: Any) -> Optional[int]:
     return None
 
 
+def extract_incident_network_endpoints(raw_data: Dict[str, Any]) -> Tuple[str, str, str]:
+    """Extracts (source_ip, reporting_ip, reporting_device) from FortiSIEM incident JSON or aliases."""
+    src_ip = str(raw_data.get("sourceIp") or raw_data.get("srcIpAddr") or raw_data.get("src_ip") or raw_data.get("source_ip") or "").strip()
+    if not src_ip and raw_data.get("incidentSrc"):
+        m = re.search(r'(?:srcIpAddr|srcIp|src|sourceIp)\s*[:=]\s*([0-9a-fA-F\.:]+)', str(raw_data["incidentSrc"]), re.IGNORECASE)
+        if m:
+            src_ip = m.group(1).strip()
+    if not src_ip:
+        raw_evts = raw_data.get("rawEvents") or raw_data.get("triggeringEvents") or []
+        if isinstance(raw_evts, list) and raw_evts:
+            for revt in raw_evts:
+                if isinstance(revt, dict):
+                    attrs = revt.get("attributes") or revt.get("attribute") or {}
+                    if isinstance(attrs, dict) and attrs.get("Source IP"):
+                        src_ip = str(attrs["Source IP"]).strip()
+                        break
+                    raw_msg = revt.get("rawMessage") or revt.get("rawEventLog") or ""
+                    if raw_msg:
+                        m = re.search(r'\bsrcip=([0-9a-fA-F\.:]+)', str(raw_msg))
+                        if m:
+                            src_ip = m.group(1).strip()
+                            break
+
+    rpt_ip = str(raw_data.get("reportingIp") or raw_data.get("incidentRptIp") or raw_data.get("reporting_ip") or "").strip()
+    rpt_dev = str(raw_data.get("reportingDevice") or raw_data.get("incidentRptDevName") or raw_data.get("reporting_device") or "").strip()
+
+    return src_ip, rpt_ip, rpt_dev
+
+
 def extract_incident_timestamps(raw_data: Dict[str, Any]) -> Tuple[Optional[int], Optional[int], Optional[int], Optional[int]]:
     """
     Extracts (first_seen, last_seen, created_at, updated_at) in epoch milliseconds
@@ -515,13 +544,14 @@ class IngestionService:
 
         # Timestamps: robust extraction across FortiSIEM APIs, formats, and event telemetry
         first_seen, last_seen, created_at_epoch, updated_at_epoch = extract_incident_timestamps(raw_data)
+        src_ip, rpt_ip, rpt_dev = extract_incident_network_endpoints(raw_data)
 
         incident = Incident(
             incident_id=incident_id,
             rule_id=rule.id if rule else None,
             import_job_id=import_job_id,
             event_type=event_type,
-            title=str(raw_data.get("title") or raw_data.get("eventName") or f"Incident {incident_id}"),
+            title=str(raw_data.get("title") or raw_data.get("eventName") or raw_data.get("incidentTitle") or f"Incident {incident_id}"),
             description=str(raw_data.get("description") or ""),
             detail=str(raw_data.get("detail") or ""),
             severity=severity,
@@ -530,9 +560,9 @@ class IngestionService:
             status_name=status_name,
             category=str(raw_data.get("category") or ""),
             subcategory=str(raw_data.get("subcategory") or ""),
-            source_ip=str(raw_data.get("sourceIp") or ""),
-            reporting_device=str(raw_data.get("reportingDevice") or ""),
-            reporting_ip=str(raw_data.get("reportingIp") or ""),
+            source_ip=src_ip,
+            reporting_device=rpt_dev,
+            reporting_ip=rpt_ip,
             customer=str(raw_data.get("customer") or ""),
             ticket_id=str(raw_data.get("ticketId") or ""),
             first_seen_epoch=first_seen,

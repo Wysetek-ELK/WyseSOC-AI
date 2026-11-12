@@ -535,23 +535,46 @@ class DetectionArchetypeRegistry:
             name="Enterprise Security Policy Violation",
             version=REGISTRY_VERSION,
             detection_purpose="Detection of corporate acceptable use violations or policy breaches.",
-            core_telemetry_categories=["WEB_FILTER", "CASB_LOG"],
+            core_telemetry_categories=["WEB_FILTER", "CASB_LOG", "PROXY_LOG"],
             mandatory_core_fields=[
-                "user.name",
                 "network.source_ip",
                 "security.event_type",
                 "event.timestamp",
             ],
-            conditional_fields=[],
+            conditional_fields=[
+                "user.name",
+                "http.url",
+                "webCategory",
+                "network.destination_ip",
+                "http.status_code",
+                "security.action",
+                "endpoint.hostname",
+            ],
             optional_enrichment_fields=[],
             unsupported_fields=[],
-            tp_indicator_candidates=["Circumvention of enterprise proxy via unauthorized tunnel"],
-            fp_indicator_candidates=["Proxy loopback reflection or internal health probe"],
+            tp_indicator_candidates=[
+                "Unauthorized access or attempt to access restricted, prohibited, or policy-violating web categories or destinations",
+                "Circumvention of enterprise proxy via unauthorized tunnel",
+                "Explicit security policy violation action taken by perimeter or endpoint gateway (e.g. blocked, denied)",
+            ],
+            fp_indicator_candidates=[
+                "Authorized business requirement with approved exception or change window",
+                "False category classification of legitimate enterprise resource",
+                "Proxy loopback reflection, internal health probe, or test traffic with identical source and destination on loopback interfaces",
+            ],
             abstention_requirements=["Violation category missing"],
             escalation_considerations=["Violation involves regulated PII/PCI data"],
-            analyst_question_templates=["Did the user intentionally bypass policy controls?"],
-            unsupported_assumptions=[],
-            contradiction_rules=[],
+            analyst_question_templates=["Did the user intentionally bypass policy controls?", "Was the web request blocked by security enforcement?"],
+            unsupported_assumptions=[
+                "Matching rule name does NOT mean source and destination are identical without verifying telemetry IPs",
+            ],
+            contradiction_rules=[
+                {
+                    "rule_id": "LOOPBACK_CLAIMED_ON_EXTERNAL_TRAFFIC",
+                    "rule_type": "LOOPBACK_CLAIMED_ON_EXTERNAL_TRAFFIC",
+                    "description": "Claiming benign internal loopback or same source/destination when destination IP is external public or differs from source",
+                }
+            ],
         ),
 
         ArchetypeId.ENDPOINT_DEFENSE_EVASION: ArchetypeDefinition(
@@ -778,35 +801,35 @@ class DetectionArchetypeRegistry:
             confidence = 0.88
             matched_features.append("Lateral movement or remote invocation pattern")
 
-        # 9. Check for Web Attack
+        # 9. Check for Policy Violation (Checked before generic Web Attack so policy/filtering rules are not misclassified as SQLi/XSS)
+        elif any(pol in name or pol in combo for pol in ("POLICY", "VIOLATION", "FILTER", "ACCEPTABLE USE", "COMPLIANCE")):
+            primary = ArchetypeId.POLICY_VIOLATION
+            confidence = 0.88
+            matched_features.append("Security policy violation or web filtering policy breach")
+
+        # 10. Check for Web Attack
         elif "WEB" in name or "SQL" in name or "XSS" in name or "INJECTION" in name:
             primary = ArchetypeId.WEB_ATTACK
             confidence = 0.89
             matched_features.append("Web application attack vector")
 
-        # 10. Check for Defense Evasion
+        # 11. Check for Defense Evasion
         elif "TAMPER" in name or "EVASION" in name or "DEFENSE EVASION" in tactics:
             primary = ArchetypeId.ENDPOINT_DEFENSE_EVASION
             confidence = 0.88
             matched_features.append("Defense evasion or security agent tampering")
 
-        # 11. Check for Privilege Escalation
+        # 12. Check for Privilege Escalation
         elif "PRIVILEGE" in name or "ESCALATION" in name or "PRIVILEGE ESCALATION" in tactics:
             primary = ArchetypeId.PRIVILEGE_ESCALATION
             confidence = 0.88
             matched_features.append("Privilege escalation or unauthorized admin delegation")
 
-        # 12. Check for Malware Execution
+        # 13. Check for Malware Execution
         elif "MALWARE" in name or "PROCESS" in name or "POWERSHELL" in name or "EXECUTION" in tactics or "CROWDSTRIKE" in name:
             primary = ArchetypeId.MALWARE_EXECUTION
             confidence = 0.90
             matched_features.append("Endpoint process execution or malware signature match")
-
-        # 13. Check for Policy Violation
-        elif "POLICY" in name or "VIOLATION" in name:
-            primary = ArchetypeId.POLICY_VIOLATION
-            confidence = 0.80
-            matched_features.append("Security policy violation")
 
         # 14. Check for Generic Anomaly / Custom Sensor
         elif "CUSTOM-SENSOR" in combo or "GENERIC ANOMALY" in combo or "GENERIC" in combo:

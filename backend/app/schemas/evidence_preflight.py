@@ -19,6 +19,7 @@ class PreflightValidationResult(BaseModel):
     missing_evidence_fields: List[str] = Field(default_factory=list)
     critical_missing_fields: List[str] = Field(default_factory=list)
     detected_contradictions: List[str] = Field(default_factory=list)
+    field_validation_status: Dict[str, str] = Field(default_factory=dict, description="Detailed per-field status: PRESENT_VALID, NOT_IN_SOURCE, NOT_MAPPED, DROPPED_FROM_CONTEXT")
     can_proceed_to_inference: bool = True
     must_abstain_immediately: bool = False
     safe_next_action: str = "PROCEED_TO_INFERENCE"

@@ -267,7 +267,7 @@ class EvidenceCompactionService:
                 score += 400
 
             # Priority 3: Core SOC Identifiers
-            if any(term in f_lower for term in ("command_line", "destination_port", "destport", "protocol", "proto", "destination_ip", "source_ip", "user.name", "hostname")):
+            if any(term in f_lower for term in ("command_line", "destination_port", "destport", "protocol", "proto", "destination_ip", "source_ip", "user.name", "hostname", "url", "webcategory", "method", "status_code")):
                 score += 300
 
             # Priority 4: Security Action, Severity, Alert Title

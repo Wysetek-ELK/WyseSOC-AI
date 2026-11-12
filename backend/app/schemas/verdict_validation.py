@@ -24,6 +24,7 @@ class VerdictValidationResult(BaseModel):
     missing_evidence_fields: List[str] = Field(default_factory=list)
     unsupported_claims: List[Dict[str, Any]] = Field(default_factory=list)
     detected_contradictions: List[str] = Field(default_factory=list)
+    field_validation_status: Dict[str, str] = Field(default_factory=dict, description="Detailed per-field status: PRESENT_VALID, NOT_IN_SOURCE, NOT_MAPPED, DROPPED_FROM_CONTEXT")
     analyst_action_directive: str = Field("", description="Guidance for human SOC analyst review")
     contract_id: Optional[str] = None
     contract_version: int = 1

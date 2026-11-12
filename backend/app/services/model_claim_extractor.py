@@ -14,6 +14,94 @@ IPV4_RE = re.compile(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[
 PROC_RE = re.compile(r'\b([a-zA-Z0-9_\-\.]+\.(?:exe|dll|ps1|bat|sh|bin))\b', re.IGNORECASE)
 
 
+def compare_evidence_values(field: str, asserted: Any, observed: Any) -> bool:
+    """Type-aware, security-conscious comparison between model asserted value and observed evidence value."""
+    if asserted is None or observed is None:
+        return False
+
+    raw_assert = str(asserted).strip()
+    raw_obs = str(observed).strip()
+    if not raw_assert or not raw_obs:
+        return False
+
+    # Exact string match
+    if raw_assert == raw_obs:
+        return True
+
+    clean_field = field.strip().lower()
+
+    # 1. IP Address Comparison (handles /32, leading/trailing whitespace, IPv4/IPv6 notation)
+    if "ip" in clean_field or "source_ip" in clean_field or "destination_ip" in clean_field:
+        try:
+            import ipaddress
+            clean_a = re.sub(r'/\d+$', '', raw_assert)
+            clean_o = re.sub(r'/\d+$', '', raw_obs)
+            ip_a = ipaddress.ip_address(clean_a)
+            ip_o = ipaddress.ip_address(clean_o)
+            return (ip_a == ip_o)
+        except Exception:
+            pass
+
+    # 2. HTTP Status Code Comparison (handles 200 vs "200" vs "200 OK")
+    if "status_code" in clean_field or "statuscode" in clean_field or "http_status" in clean_field:
+        try:
+            match_a = re.search(r'\b(\d{3})\b', raw_assert)
+            match_o = re.search(r'\b(\d{3})\b', raw_obs)
+            if match_a and match_o:
+                return (int(match_a.group(1)) == int(match_o.group(1)))
+        except Exception:
+            pass
+
+    # 3. HTTP Method Comparison (case-insensitive GET == get)
+    if "method" in clean_field or clean_field == "http.method":
+        return (raw_assert.upper() == raw_obs.upper())
+
+    # 4. URL Comparison (normalize scheme/host, trailing slash on root, preserve critical path/query params)
+    if "url" in clean_field or clean_field in ("http.url", "web.url"):
+        try:
+            from urllib.parse import urlsplit
+            u_a = urlsplit(raw_assert)
+            u_o = urlsplit(raw_obs)
+            scheme_a = (u_a.scheme or "http").lower()
+            scheme_o = (u_o.scheme or "http").lower()
+            netloc_a = u_a.netloc.lower()
+            netloc_o = u_o.netloc.lower()
+            path_a = u_a.path.rstrip('/') or '/'
+            path_o = u_o.path.rstrip('/') or '/'
+            query_a = u_a.query
+            query_o = u_o.query
+            return (scheme_a == scheme_o and netloc_a == netloc_o and path_a == path_o and query_a == query_o)
+        except Exception:
+            return False
+
+    # 5. Web Category Comparison (case-insensitive trimmed comparison)
+    if "category" in clean_field or clean_field == "webcategory":
+        return (raw_assert.lower() == raw_obs.lower())
+
+    # 6. Timestamp Comparison (ISO-8601 vs epoch milliseconds tolerance)
+    if "timestamp" in clean_field or "time" in clean_field:
+        try:
+            from dateutil.parser import parse as parse_date
+            dt_a = parse_date(raw_assert)
+            dt_o = parse_date(raw_obs)
+            if abs((dt_a - dt_o).total_seconds()) < 5:
+                return True
+        except Exception:
+            pass
+
+    # 7. Substring / Case-Insensitive String Match
+    assert_lower = raw_assert.lower()
+    obs_lower = raw_obs.lower()
+    if assert_lower == obs_lower:
+        return True
+    if len(assert_lower) > 4 and assert_lower in obs_lower:
+        return True
+    if len(obs_lower) >= 3 and obs_lower in assert_lower:
+        return True
+
+    return False
+
+
 class ModelClaimExtractor:
     """
     P2-REQ-04: Structured Model Claim Extractor & Grounding Verifier.
@@ -129,20 +217,16 @@ class ModelClaimExtractor:
                     actual_val = str(rec.observed_value)
                     matched_id = rec.evidence_id
 
-                    # Check value match (handles both exact asserted values and sentence-style claim_text citations)
-                    assert_str = str(claim.asserted_value).strip().lower()
-                    obs_str = actual_val.strip().lower()
-
-                    if (
-                        assert_str == obs_str
-                        or (len(assert_str) > 4 and assert_str in obs_str)
-                        or (len(obs_str) >= 3 and obs_str in assert_str)
-                    ):
+                    # Check type-aware value match
+                    if compare_evidence_values(claim.field, claim.asserted_value, actual_val):
                         pass
                     else:
                         all_ids_valid = False
                         status = "EVIDENCE_VALUE_MISMATCH"
-                        reason_diag = f"Value mismatch for '{claim.field}': claimed '{claim.asserted_value}', actual is '{actual_val}'."
+                        if rec.source_field != claim.field and claim.field != "unknown":
+                            reason_diag = f"Evidence ID '{eid}' records '{rec.source_field}' ('{actual_val}'), not '{claim.field}' ('{claim.asserted_value}')."
+                        else:
+                            reason_diag = f"Value mismatch for '{claim.field}': claimed '{claim.asserted_value}', actual is '{actual_val}'."
                         break
 
                 if all_ids_valid and matched_id:
@@ -154,12 +238,10 @@ class ModelClaimExtractor:
             else:
                 target_field = claim.field
                 candidates = evidence_by_field.get(target_field, [])
-                assert_str = str(claim.asserted_value).strip().lower()
 
-                # Search matching field candidates
+                # Search matching field candidates using type-aware comparison
                 for cand in candidates:
-                    obs_str = str(cand.observed_value).strip().lower()
-                    if assert_str == obs_str or (len(assert_str) > 4 and assert_str in obs_str) or (len(obs_str) > 4 and obs_str in assert_str):
+                    if compare_evidence_values(target_field, claim.asserted_value, cand.observed_value):
                         is_grounded = True
                         status = "GROUNDED"
                         matched_id = cand.evidence_id
@@ -171,8 +253,7 @@ class ModelClaimExtractor:
                 if not is_grounded:
                     found_anywhere = False
                     for any_rec in normalization_result.records:
-                        any_obs = str(any_rec.observed_value).strip().lower()
-                        if assert_str == any_obs or (len(assert_str) > 5 and assert_str in any_obs):
+                        if compare_evidence_values(any_rec.source_field, claim.asserted_value, any_rec.observed_value):
                             found_anywhere = True
                             status = "EVIDENCE_VALUE_MISMATCH"
                             reason_diag = f"Value '{claim.asserted_value}' observed in '{any_rec.source_field}', not '{target_field}'."

@@ -1,4 +1,5 @@
 import hashlib
+import ipaddress
 import json
 import logging
 from typing import Dict, Any, List, Optional
@@ -99,7 +100,16 @@ class IndependentVerdictValidator:
         if clean_prop_verdict == "TRUE_POSITIVE":
             # Example: Model asserts external C2 or remote download when all IPs are internal loopback
             all_ips = [r.observed_value for r in normalization_result.records if r.source_field in ("network.source_ip", "network.destination_ip")]
-            if all_ips and all(ip in ("127.0.0.1", "::1", "localhost", "10.0.0.1") for ip in all_ips):
+            def _is_loopback_addr(ip_val: Any) -> bool:
+                s = str(ip_val).strip().lower()
+                if s in ("127.0.0.1", "::1", "localhost"):
+                    return True
+                try:
+                    return ipaddress.ip_address(s).is_loopback
+                except ValueError:
+                    return False
+
+            if all_ips and all(_is_loopback_addr(ip) for ip in all_ips):
                 for claim in claim_grounding.claims:
                     if "c2" in str(claim.asserted_value).lower() or "external" in str(claim.asserted_value).lower():
                         contradictions.append("Contradiction: Claiming external communication on loopback/local interfaces")
@@ -107,6 +117,28 @@ class IndependentVerdictValidator:
                         final_verdict = "REQUIRES_ATTENTION"
                         validation_status = "REJECTED"
                         action_directive = "Activity occurs strictly on internal/loopback stack. Verify if local proxy reflection or healthcheck."
+
+        elif clean_prop_verdict == "FALSE_POSITIVE":
+            # Detect loopback / same-source-and-destination contradiction:
+            # If model reason or claims assert "loopback", "same source and destination", "internal reflection"
+            # BUT telemetry shows external destination IP or srcip != dstip:
+            reason_lower = (model_reason or "").lower()
+            claims_text = " ".join(str(c.asserted_value).lower() for c in claim_grounding.claims)
+            all_fp_text = f"{reason_lower} {claims_text}"
+
+            src_ips = [r.observed_value for r in normalization_result.records if r.source_field == "network.source_ip"]
+            dst_ips = [r.observed_value for r in normalization_result.records if r.source_field == "network.destination_ip"]
+
+            if any(term in all_fp_text for term in ("loopback", "same source and destination", "internal reflection", "local reflection")):
+                if src_ips and dst_ips and src_ips[0] != dst_ips[0]:
+                    contradictions.append(
+                        f"Contradiction: Model claims internal loopback or same source/destination, but telemetry confirms source {src_ips[0]} connects to distinct destination {dst_ips[0]}"
+                    )
+                    if "EVIDENCE_CONTRADICTION" not in reason_codes:
+                        reason_codes.append("EVIDENCE_CONTRADICTION")
+                    final_verdict = "REQUIRES_ATTENTION"
+                    validation_status = "REJECTED"
+                    action_directive = "Model falsely inferred loopback based on rule name; telemetry confirms distinct source and destination IPs. Human review required."
 
         # Check 4b: Unresolved Contradictions Prevent Decisive Classification
         if contradictions and clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
@@ -196,6 +228,7 @@ class IndependentVerdictValidator:
             missing_evidence_fields=preflight.missing_evidence_fields,
             unsupported_claims=unsupported_claims,
             detected_contradictions=contradictions,
+            field_validation_status=getattr(preflight, "field_validation_status", {}),
             analyst_action_directive=action_directive,
             contract_id=contract.contract_id,
             contract_version=contract.version_number,

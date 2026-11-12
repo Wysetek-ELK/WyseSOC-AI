@@ -656,20 +656,59 @@ export default function AITriageWorkbenchDetailPage({
             </div>
           )}
 
-          {/* Missing Required Telemetry */}
+          {/* Missing Required Telemetry & Field Mapping Diagnostics */}
           {aiVerdict.missing_evidence && aiVerdict.missing_evidence.length > 0 && (
             <div className="rounded-lg border border-slate-800/80 bg-slate-900/40 p-3 space-y-1.5">
               <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
                 <AlertCircle className="h-3 w-3" />
                 Missing Required Evidence Telemetry ({aiVerdict.missing_evidence.length})
               </div>
-              <ul className="text-xs space-y-1 text-slate-300 list-disc list-inside font-mono">
-                {aiVerdict.missing_evidence.map((item, idx) => (
-                  <li key={idx} className="text-[11px] text-amber-200/90 leading-tight">
-                    {item}
-                  </li>
-                ))}
+              <ul className="text-xs space-y-1.5 text-slate-300">
+                {aiVerdict.missing_evidence.map((item, idx) => {
+                  const status = (aiVerdict as any).field_validation_status?.[item];
+                  return (
+                    <li key={idx} className="text-[11px] leading-tight flex items-center justify-between font-mono">
+                      <span className="text-amber-200/90">{item}</span>
+                      {status && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold ${
+                          status === "NOT_MAPPED"
+                            ? "bg-rose-950 text-rose-300 border border-rose-800"
+                            : status === "CONTEXT_OMITTED"
+                            ? "bg-purple-950 text-purple-300 border border-purple-800"
+                            : status === "NOT_IN_SOURCE"
+                            ? "bg-slate-800 text-slate-300 border border-slate-700"
+                            : "bg-amber-950 text-amber-300 border border-amber-800"
+                        }`}>
+                          {status === "NOT_MAPPED" ? "Field Mapping Error" : status === "NOT_IN_SOURCE" ? "Not In Source" : status}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
+            </div>
+          )}
+
+          {/* Unmapped Raw Attributes Detected */}
+          {(aiVerdict as any).unmapped_fields && (aiVerdict as any).unmapped_fields.length > 0 && (
+            <div className="rounded-lg border border-amber-900/60 bg-amber-950/20 p-2.5 space-y-1 text-xs">
+              <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                <AlertTriangle className="h-3 w-3 text-amber-400" />
+                Unmapped Source Event Attributes ({(aiVerdict as any).unmapped_fields.length})
+              </div>
+              <p className="text-[11px] text-amber-300/80 leading-relaxed font-sans">
+                Source telemetry contains unmapped raw attributes. Normalization fell back safely without data corruption:
+              </p>
+              <div className="flex flex-wrap gap-1 font-mono text-[10px] pt-1">
+                {(aiVerdict as any).unmapped_fields.slice(0, 10).map((field: string, idx: number) => (
+                  <span key={idx} className="bg-slate-900 text-slate-300 px-1.5 py-0.5 rounded border border-slate-800">
+                    {field}
+                  </span>
+                ))}
+                {(aiVerdict as any).unmapped_fields.length > 10 && (
+                  <span className="text-slate-500 self-center">+{(aiVerdict as any).unmapped_fields.length - 10} more</span>
+                )}
+              </div>
             </div>
           )}
 

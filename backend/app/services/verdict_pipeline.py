@@ -944,6 +944,8 @@ async def run_shared_verdict_pipeline(
         "unsupported_claims_count": val_res.unsupported_claims_count,
         "unsupported_claims": val_res.unsupported_claims,
         "detected_contradictions": val_res.detected_contradictions,
+        "field_validation_status": getattr(val_res, "field_validation_status", {}),
+        "unmapped_fields": getattr(norm_result, "unmapped_fields", []),
         "analyst_action_directive": final_action_directive,
         "canonical_evidence_count": norm_result.total_evidence_count,
         "contract_id": val_res.contract_id,

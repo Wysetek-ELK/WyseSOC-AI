@@ -74,7 +74,25 @@ class EvidencePreflightValidator:
                 return True
             if field_name == "process.name" and ("process.file_name" in available_fields or "process.file_path" in available_fields):
                 return True
-            if field_name == "network.destination_ip" and "dns.domain" in available_fields:
+            if field_name == "network.destination_ip" and (
+                "dns.domain" in available_fields
+                or "network.destination_domain" in available_fields
+                or "endpoint.hostname" in available_fields
+            ):
+                return True
+            if field_name in ("webCategory", "web.category", "web_category") and (
+                "webCategory" in available_fields
+                or "web.category" in available_fields
+                or "web_category" in available_fields
+            ):
+                return True
+            if field_name in ("http.url", "web.url") and (
+                "http.url" in available_fields or "web.url" in available_fields
+            ):
+                return True
+            if field_name in ("network.bytes_out", "sentBytes64") and (
+                "network.bytes_out" in available_fields or "sentBytes64" in available_fields
+            ):
                 return True
             return False
 
@@ -83,19 +101,35 @@ class EvidencePreflightValidator:
         critical_missing: List[str] = []
         satisfied_core_count = 0
 
+        field_status_map: Dict[str, str] = {}
+        unmapped_keys = {
+            str(u.get("raw_field", "")).strip().lower()
+            for u in (getattr(normalization_result, "unmapped_fields", None) or [])
+        }
+
         core_field_names = {r.field for r in core_reqs}
         for req in core_reqs:
             if _is_field_present(req.field):
                 satisfied_core_count += 1
+                field_status_map[req.field] = "PRESENT_VALID"
             else:
                 core_missing.append(req.field)
                 missing_fields.append(req.field)
+                clean_req = req.field.replace(".", "").replace("_", "").lower()
+                is_unmapped = any(clean_req in uk or uk in clean_req for uk in unmapped_keys if uk)
+                field_status_map[req.field] = "NOT_MAPPED" if is_unmapped else "NOT_IN_SOURCE"
                 if req.critical:
                     critical_missing.append(req.field)
 
         for req in telemetry_reqs:
-            if req.field not in core_field_names and not _is_field_present(req.field):
-                missing_fields.append(req.field)
+            if req.field not in core_field_names:
+                if _is_field_present(req.field):
+                    field_status_map[req.field] = "PRESENT_VALID"
+                else:
+                    missing_fields.append(req.field)
+                    clean_req = req.field.replace(".", "").replace("_", "").lower()
+                    is_unmapped = any(clean_req in uk or uk in clean_req for uk in unmapped_keys if uk)
+                    field_status_map[req.field] = "NOT_MAPPED" if is_unmapped else "NOT_IN_SOURCE"
 
         total_reqs = len(core_reqs)
         completeness = (satisfied_core_count / total_reqs) if total_reqs > 0 else 1.0
@@ -147,6 +181,7 @@ class EvidencePreflightValidator:
             missing_evidence_fields=missing_fields,
             critical_missing_fields=critical_missing,
             detected_contradictions=detected_contradictions,
+            field_validation_status=field_status_map,
             can_proceed_to_inference=can_proceed,
             must_abstain_immediately=must_abstain,
             safe_next_action=action,
