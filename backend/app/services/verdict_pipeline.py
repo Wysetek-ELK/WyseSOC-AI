@@ -23,6 +23,7 @@ from app.models.incident import Incident
 from app.models.prompt import PromptVersion
 from app.models.rule import Rule
 from app.schemas.compiled_policy import CompilationExecutionMode
+from app.schemas.canonical_evidence import CanonicalEvidenceRecord
 from app.schemas.verdict_intelligence import UserVisibleVerdict
 from app.services.evidence_contract_service import EvidenceContractService
 from app.services.evidence_normalization_service import EvidenceNormalizationService
