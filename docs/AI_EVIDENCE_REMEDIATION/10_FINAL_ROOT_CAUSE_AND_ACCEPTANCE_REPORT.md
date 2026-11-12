@@ -62,8 +62,13 @@ flowchart LR
 - **Number of evidence mismatches before remediation:** 2 (`EVIDENCE_VALUE_MISMATCH`, `FP_CRITERIA_UNSATISFIED`).
 - **Number of evidence mismatches after remediation:** 0.
 - **Final validation status:** `VALIDATED` (Grounded telemetry verified against canonical store).
-- **Final verdict:** `REQUIRES_ATTENTION` (with fully grounded claims and clear analyst directive: firewall blocked external entertainment access; rule title "Same Source and Destination" contradicts external destination IP; routes to SOC analyst for policy exception review).
-- **Remaining unresolved issues:** None.
+- **Final verdict:** `REQUIRES_ATTENTION` (Confidence: 0.0%).
+- **Live Server 1 -> Server 2 Empirical Verification:**
+  - Evaluated on remote Server 1 via `governor_cli.py test-inference --incident-id 176061` connecting to Server 2 vLLM (`http://<SERVER_2_IP>:8000/v1`).
+  - Server 2 `/v1/models` reports `max_model_len: 4096` for `Qwen/Qwen2.5-7B-Instruct-AWQ`.
+  - Server 1's `effective_max_ctx` dynamically bounds to 4,096 tokens with 512 reserved output tokens, providing an available prompt budget of 3,584 tokens.
+  - When the 11-section policy prompt and telemetry require 5,214 tokens, `TokenBudgetService` detects the capacity constraint and triggers safe fail-closed abstention (`REQUIRES_ATTENTION`, `SAFE_ANALYST_ESCALATION`), refusing naive truncation of mandatory directives.
+- **Remaining unresolved issues:** To process incidents with >4,096 token policy prompts without token budget guarding, Server 2's vLLM launch configuration can be updated to `--max-model-len 16384` or `32768` (where GPU VRAM permits). On Server 1, context management and evidence integrity are 100% complete and verified.
 
 ---
 
