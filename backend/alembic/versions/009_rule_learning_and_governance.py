@@ -47,8 +47,8 @@ def upgrade() -> None:
             sa.Column("wilson_lower_bound", sa.Float(), nullable=True),
             sa.Column("error_distribution", sa.JSON(), nullable=False),
             sa.Column("last_evaluated_at", sa.DateTime(), nullable=True),
-            sa.Column("created_at", sa.DateTime(), nullable=False),
-            sa.Column("updated_at", sa.DateTime(), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
+            sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
             sa.UniqueConstraint("rule_id", "customer", name="uq_rule_customer_learning"),
         )
         op.create_index("ix_rule_learning_profiles_rule_id", "rule_learning_profiles", ["rule_id"])
@@ -67,7 +67,7 @@ def upgrade() -> None:
             sa.Column("transition_reason", sa.Text(), nullable=False, server_default=""),
             sa.Column("triggered_by_user_id", sa.String(36), nullable=True),
             sa.Column("metrics_snapshot", sa.JSON(), nullable=False),
-            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         )
         op.create_index("ix_rule_learning_state_history_profile_id", "rule_learning_state_history", ["profile_id"])
 
@@ -90,7 +90,7 @@ def upgrade() -> None:
             sa.Column("comparison_outcome", sa.String(64), nullable=True),
             sa.Column("ground_truth_status", sa.String(32), nullable=False, server_default="VERIFIED"),
             sa.Column("review_version", sa.Integer(), nullable=False, server_default="1"),
-            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         )
         op.create_index("ix_analyst_verdict_reviews_incident_id", "analyst_verdict_reviews", ["incident_id"])
         op.create_index("ix_analyst_verdict_reviews_investigation_id", "analyst_verdict_reviews", ["investigation_id"])
@@ -111,7 +111,7 @@ def upgrade() -> None:
             sa.Column("final_verdict", sa.String(32), nullable=False),
             sa.Column("adjudication_rationale", sa.Text(), nullable=False),
             sa.Column("original_dispute_reason", sa.Text(), nullable=False, server_default=""),
-            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         )
         op.create_index("ix_analyst_review_adjudications_review_id", "analyst_review_adjudications", ["review_id"])
         op.create_index("ix_analyst_review_adjudications_incident_id", "analyst_review_adjudications", ["incident_id"])
@@ -131,7 +131,7 @@ def upgrade() -> None:
             sa.Column("evaluation_run_id", sa.String(36), nullable=True),
             sa.Column("supporting_metrics", sa.JSON(), nullable=False),
             sa.Column("justification", sa.Text(), nullable=False, server_default=""),
-            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         )
         op.create_index("ix_rule_promotion_requests_profile_id", "rule_promotion_requests", ["profile_id"])
         op.create_index("ix_rule_promotion_requests_rule_id", "rule_promotion_requests", ["rule_id"])
@@ -148,7 +148,7 @@ def upgrade() -> None:
             sa.Column("action", sa.String(32), nullable=False),
             sa.Column("decision_notes", sa.Text(), nullable=False, server_default=""),
             sa.Column("approval_signature", sa.String(128), nullable=False, server_default=""),
-            sa.Column("approved_at", sa.DateTime(), nullable=False),
+            sa.Column("approved_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         )
         op.create_index("ix_rule_promotion_approvals_request_id", "rule_promotion_approvals", ["request_id"])
 
@@ -167,8 +167,8 @@ def upgrade() -> None:
             sa.Column("daily_closure_limit", sa.Integer(), nullable=False, server_default="50"),
             sa.Column("current_day_closure_count", sa.Integer(), nullable=False, server_default="0"),
             sa.Column("emergency_disable", sa.Boolean(), nullable=False, server_default=sa.false()),
-            sa.Column("created_at", sa.DateTime(), nullable=False),
-            sa.Column("updated_at", sa.DateTime(), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
+            sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         )
         op.create_index("ix_production_automation_policies_profile_id", "production_automation_policies", ["profile_id"])
         op.create_index("ix_production_automation_policies_rule_id", "production_automation_policies", ["rule_id"])
@@ -191,7 +191,7 @@ def upgrade() -> None:
             sa.Column("execution_status", sa.String(32), nullable=False, server_default="SUCCESS"),
             sa.Column("safety_checks_passed", sa.JSON(), nullable=False),
             sa.Column("closure_summary", sa.Text(), nullable=False, server_default=""),
-            sa.Column("executed_at", sa.DateTime(), nullable=False),
+            sa.Column("executed_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         )
         op.create_index("ix_incident_automation_audits_incident_id", "incident_automation_audits", ["incident_id"])
         op.create_index("ix_incident_automation_audits_rule_id", "incident_automation_audits", ["rule_id"])
@@ -246,7 +246,7 @@ def upgrade() -> None:
             sa.column("updated_at", sa.DateTime),
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         rules_rows = conn.execute(sa.select(rules_table.c.id, rules_table.c.rule_id, rules_table.c.event_type)).fetchall()
 
         for r_row in rules_rows:

@@ -182,11 +182,12 @@ Specific test verifications include:
 
 ---
 
-### 7. Governance & Rollback Safety
+### 7. Governance & Rollback Safety Verification
 
-1. **RepoDeploy Governor Compliance:**
-   - Zero direct pushes or unapproved SSH commands have been executed.
-   - All changes remain local in the working tree, awaiting user Gate 1 approval.
+1. **RepoDeploy Governor Compliance & Rollback Verification:**
+   - During the first deployment attempt of commit `168393a`, Alembic executed on PostgreSQL and triggered an `asyncpg.exceptions.DataError` (`can't subtract offset-naive and offset-aware datetimes`) because `sa.DateTime` in PostgreSQL expects offset-naive timestamps, whereas Python `datetime.now(timezone.utc)` provided offset-aware values during table seeding.
+   - The RepoDeploy Governor automated safety mechanism immediately detected the health failure, aborted the rollout, and triggered an **AUTOMATIC ROLLBACK** to `PREV_SHA` (`ab9d980`), restoring the remote service to an active, operational state without human intervention.
+   - The timestamp issue was permanently remediated in migration 009 by utilizing offset-naive UTC timestamps (`datetime.now(timezone.utc).replace(tzinfo=None)`) and `server_default=sa.func.now()`.
 2. **Backward Compatibility:**
    - Migration 009 adds new tables and indexes only. Existing tables (`rules`, `incidents`, `investigations`, `historical_ground_truth`) are completely untouched.
 3. **Safe Rollback Point:**
