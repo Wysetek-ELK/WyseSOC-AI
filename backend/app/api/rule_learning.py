@@ -124,6 +124,16 @@ async def get_rule_learning_profile(
     """
     profile = await RuleLearningService.get_or_create_profile(db=db, rule_id=rule_id)
     is_eligible, reasons = RuleLearningService.check_production_eligibility(profile)
+    err_dist = profile.error_distribution or {}
+    confusion_matrix = {
+        "agreed_fp": err_dist.get("agreement_fp", 0),
+        "critical_missed_tp": err_dist.get("critical_missed_tp", 0),
+        "ai_false_alarm": err_dist.get("ai_false_alarm", 0),
+        "agreed_tp": err_dist.get("agreement_tp", 0),
+        "abstained_resolved": err_dist.get("analyst_resolved_abstention", 0),
+        "disputed": err_dist.get("disputed", 0),
+        "initial_benchmarks": err_dist.get("analyst_only_initial_benchmark", 0),
+    }
 
     return {
         "id": profile.id,
@@ -147,6 +157,7 @@ async def get_rule_learning_profile(
         "is_production_eligible": is_eligible,
         "eligibility_reasons": reasons,
         "error_distribution": profile.error_distribution,
+        "confusion_matrix": confusion_matrix,
         "created_at": profile.created_at.isoformat(),
         "updated_at": profile.updated_at.isoformat(),
     }
@@ -182,6 +193,8 @@ async def transition_rule_stage(
 
 @router.get("/reviews/pending", response_model=Dict[str, Any])
 async def get_pending_analyst_reviews(
+    rule_id: Optional[str] = Query(None, description="Optional rule identifier filter"),
+    customer: Optional[str] = Query(None, description="Optional customer tenant filter"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -190,9 +203,11 @@ async def get_pending_analyst_reviews(
     """
     Fetches the double-blind review queue. AI verdicts are masked to eliminate bias.
     """
+    effective_customer = customer or (getattr(current_user, "customer", None) if getattr(current_user, "role", "") not in ("Administrator", "SuperAdmin", "SOC_Manager") else None)
     total, items = await AnalystReviewService.get_pending_reviews(
         db=db,
-        customer="DEFAULT",
+        customer=effective_customer,
+        rule_id=rule_id,
         limit=limit,
         offset=offset
     )
@@ -226,7 +241,7 @@ async def submit_analyst_review(
             correction_reason=payload.correction_reason,
             evidence_references=payload.evidence_references,
             blind_mode_active=payload.blind_mode_active,
-            customer="DEFAULT"
+            customer=getattr(current_user, "customer", None)
         )
         return res
     except ValueError as e:

@@ -23,7 +23,8 @@ class AnalystReviewService:
     async def get_pending_reviews(
         cls,
         db: AsyncSession,
-        customer: str = "DEFAULT",
+        customer: Optional[str] = None,
+        rule_id: Optional[str] = None,
         limit: int = 50,
         offset: int = 0
     ) -> Tuple[int, List[Dict[str, Any]]]:
@@ -31,28 +32,35 @@ class AnalystReviewService:
         Retrieves incidents awaiting human analyst review.
         In double-blind mode, the AI verdict is masked from the analyst payload.
         """
-        # Query incidents joined with investigations
+        from sqlalchemy import func, or_
         query = (
             select(Incident, Investigation)
             .outerjoin(Investigation, Incident.id == Investigation.incident_id)
-            .where(Incident.customer == customer)
-            .order_by(desc(Incident.created_at))
-            .limit(limit)
-            .offset(offset)
         )
+        count_q = (
+            select(func.count(Incident.id))
+            .outerjoin(Investigation, Incident.id == Investigation.incident_id)
+        )
+
+        if customer and customer.upper() != "ALL" and customer != "DEFAULT":
+            query = query.where(Incident.customer == customer)
+            count_q = count_q.where(Incident.customer == customer)
+
+        if rule_id:
+            query = query.where(or_(Incident.rule_id == rule_id, Incident.event_type == rule_id))
+            count_q = count_q.where(or_(Incident.rule_id == rule_id, Incident.event_type == rule_id))
+
+        query = query.order_by(desc(Incident.created_at)).limit(limit).offset(offset)
         res = await db.execute(query)
         rows = res.all()
-
-        count_q = select(func.count(Incident.id)).where(Incident.customer == customer)
-        # Note: func imported below
-        from sqlalchemy import func
-        total = (await db.execute(select(func.count(Incident.id)).where(Incident.customer == customer))).scalar() or 0
+        total = (await db.execute(count_q)).scalar() or 0
 
         items = []
         for inc, inv in rows:
             items.append({
                 "incident_id": inc.incident_id,
                 "db_id": inc.id,
+                "rule_id": inc.rule_id or inc.event_type,
                 "title": inc.title,
                 "event_type": inc.event_type,
                 "severity": inc.severity,
@@ -77,24 +85,40 @@ class AnalystReviewService:
         correction_reason: Optional[str] = None,
         evidence_references: Optional[List[str]] = None,
         blind_mode_active: bool = True,
-        customer: str = "DEFAULT",
+        customer: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Submits an analyst's independent verdict, reveals the stored AI verdict,
         evaluates agreement/disagreement, updates investigations, and notifies RuleLearningService.
         """
-        # 1. Lookup incident
+        from sqlalchemy import or_, cast, String
+        # 1. Lookup incident by id or incident_id (both string and integer)
         inc_stmt = select(Incident).where(
-            and_(Incident.incident_id == incident_id, Incident.customer == customer)
+            or_(
+                Incident.id == incident_id,
+                cast(Incident.incident_id, String) == str(incident_id)
+            )
         )
+        if customer and customer.upper() != "ALL" and customer != "DEFAULT":
+            inc_stmt = inc_stmt.where(Incident.customer == customer)
+
         inc_res = await db.execute(inc_stmt)
-        incident = inc_res.scalar_one_or_none()
+        incident = inc_res.scalars().first()
         if not incident:
-            # Fallback search by internal DB id
-            inc_res = await db.execute(select(Incident).where(Incident.id == incident_id))
-            incident = inc_res.scalar_one_or_none()
+            # Fallback search without tenant restriction
+            inc_res = await db.execute(
+                select(Incident).where(
+                    or_(
+                        Incident.id == incident_id,
+                        cast(Incident.incident_id, String) == str(incident_id)
+                    )
+                )
+            )
+            incident = inc_res.scalars().first()
             if not incident:
                 raise ValueError(f"Incident {incident_id} not found")
+
+        effective_customer = incident.customer or customer or "DEFAULT"
 
         # 2. Extract stored AI verdict
         ai_verdict_data = incident.ai_verdict or {}
@@ -128,11 +152,12 @@ class AnalystReviewService:
             db.add(investigation)
 
         # 5. Persist immutable AnalystVerdictReview
+        target_rule = incident.rule_id or incident.event_type or "DEFAULT_RULE"
         review = AnalystVerdictReview(
             incident_id=incident.id,
             investigation_id=investigation.id,
-            rule_id=incident.rule_id or incident.event_type,
-            customer=customer,
+            rule_id=target_rule,
+            customer=effective_customer,
             reviewer_id=reviewer_id,
             analyst_verdict=analyst_verdict,
             analyst_notes=analyst_notes,
@@ -147,10 +172,10 @@ class AnalystReviewService:
         await db.flush()
 
         # 6. Create / Update verified LearningRecord
-        if incident.rule_id:
+        if target_rule:
             learn_stmt = select(LearningRecord).where(
                 and_(
-                    LearningRecord.rule_id == incident.rule_id,
+                    LearningRecord.rule_id == target_rule,
                     LearningRecord.incident_id == incident.id
                 )
             )
@@ -158,7 +183,7 @@ class AnalystReviewService:
             learn_rec = learn_res.scalar_one_or_none()
             if not learn_rec:
                 learn_rec = LearningRecord(
-                    rule_id=incident.rule_id,
+                    rule_id=target_rule,
                     incident_id=incident.id,
                     verified_verdict=analyst_verdict,
                     analyst_explanation=analyst_notes,
@@ -175,8 +200,8 @@ class AnalystReviewService:
             # 7. Update RuleLearningProfile metrics
             profile = await RuleLearningService.get_or_create_profile(
                 db=db,
-                rule_id=incident.rule_id,
-                customer=customer
+                rule_id=target_rule,
+                customer=effective_customer
             )
             await RuleLearningService.record_analyst_feedback(
                 db=db,
@@ -191,6 +216,8 @@ class AnalystReviewService:
             "incident_id": incident.incident_id,
             "analyst_verdict": analyst_verdict,
             "revealed_ai_verdict": revealed_ai_verdict,
+            "revealed_ai_confidence": ai_verdict_data.get("confidence"),
+            "revealed_ai_rationale": ai_verdict_data.get("reasoning") or ai_verdict_data.get("summary") or ai_verdict_data.get("explanation"),
             "comparison_outcome": comparison_outcome,
             "disagreement_reason": disagreement_reason,
             "ground_truth_status": "VERIFIED",

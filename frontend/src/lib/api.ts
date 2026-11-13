@@ -2292,8 +2292,12 @@ export const api = {
     return res.json();
   },
 
-  async getPendingDoubleBlindReviews(limit = 50, offset = 0) {
-    const res = await fetchWithAuth(`${API_BASE}/reviews/pending?limit=${limit}&offset=${offset}`);
+  async getPendingDoubleBlindReviews(ruleId?: string, limit = 50, offset = 0) {
+    const params = new URLSearchParams();
+    if (ruleId) params.set("rule_id", ruleId);
+    params.set("limit", limit.toString());
+    params.set("offset", offset.toString());
+    const res = await fetchWithAuth(`${API_BASE}/reviews/pending?${params.toString()}`);
     if (!res.ok) throw new Error("Failed to load pending reviews");
     return res.json();
   },

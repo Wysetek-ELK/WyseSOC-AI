@@ -62,27 +62,42 @@ class RuleLearningService:
         Retrieves existing RuleLearningProfile or creates a default one in LEARNING state.
         Ensures strict tenant and rule scoping.
         """
+        from sqlalchemy import or_
         stmt = select(RuleLearningProfile).where(
             and_(
-                RuleLearningProfile.rule_id == rule_id,
-                RuleLearningProfile.customer == customer
+                or_(
+                    RuleLearningProfile.rule_id == rule_id,
+                    RuleLearningProfile.rule_identifier == rule_id
+                ),
+                or_(
+                    RuleLearningProfile.customer == customer,
+                    RuleLearningProfile.customer == "DEFAULT",
+                    customer == "DEFAULT"
+                )
             )
         )
         res = await db.execute(stmt)
-        profile = res.scalar_one_or_none()
+        profile = res.scalars().first()
         if profile is not None:
             return profile
 
         # Lookup rule details for identifier and archetype
-        rule_stmt = select(Rule).where(Rule.id == rule_id)
+        rule_stmt = select(Rule).where(
+            or_(
+                Rule.id == rule_id,
+                Rule.rule_id == rule_id,
+                Rule.event_type == rule_id
+            )
+        )
         rule_res = await db.execute(rule_stmt)
-        rule_obj = rule_res.scalar_one_or_none()
+        rule_obj = rule_res.scalars().first()
 
-        rule_identifier = rule_obj.rule_id if rule_obj else rule_id
+        effective_rule_id = rule_obj.id if rule_obj else rule_id
+        rule_identifier = rule_obj.rule_id if (rule_obj and rule_obj.rule_id) else rule_id
         primary_archetype = "POLICY_VIOLATION" if "policy" in rule_identifier.lower() else "UNKNOWN"
 
         profile = RuleLearningProfile(
-            rule_id=rule_id,
+            rule_id=effective_rule_id,
             rule_identifier=rule_identifier,
             customer=customer,
             primary_archetype=primary_archetype,
@@ -96,6 +111,7 @@ class RuleLearningService:
             ai_incorrect_count=0,
             abstention_count=0,
             validation_failure_count=0,
+            error_distribution={},
         )
         db.add(profile)
         await db.flush()
@@ -162,6 +178,12 @@ class RuleLearningService:
         elif analyst_verdict == "FALSE_POSITIVE":
             profile.verified_fp_count += 1
 
+        # Record distribution in profile error_distribution
+        err_dist = dict(profile.error_distribution or {})
+        outcome_key = comparison_outcome.lower()
+        err_dist[outcome_key] = err_dist.get(outcome_key, 0) + 1
+        profile.error_distribution = err_dist
+
         if comparison_outcome in ("AGREEMENT_TP", "AGREEMENT_FP"):
             profile.ai_correct_count += 1
         elif comparison_outcome in ("AI_FALSE_ALARM", "CRITICAL_MISSED_TP"):
@@ -194,22 +216,34 @@ class RuleLearningService:
         if total_eval > 0:
             profile.empirical_accuracy = round(float(profile.ai_correct_count) / float(total_eval), 4)
 
-        # For FP prediction precision: (correct FP) / (correct FP + missed TP where AI predicted FP)
-        # Note: ai_correct_count includes both TP and FP agreements.
-        # We query actual reviews or use verified FP ratio
-        total_fp_predictions = profile.verified_fp_count
-        if total_fp_predictions > 0:
-            # Conservative estimate: correct FP / total verified FP cases
+        err_dist = profile.error_distribution or {}
+        agreed_fp = err_dist.get("agreement_fp", 0)
+        missed_tp = err_dist.get("critical_missed_tp", 0)
+        agreed_tp = err_dist.get("agreement_tp", 0)
+        false_alarm = err_dist.get("ai_false_alarm", 0)
+
+        # Precision of FP predictions: correct FP / total cases where AI predicted FP
+        total_fp_pred = agreed_fp + missed_tp
+        if total_fp_pred > 0:
+            profile.fp_precision = round(float(agreed_fp) / float(total_fp_pred), 4)
+            profile.wilson_lower_bound = WilsonScoreEvaluator.calculate_lower_bound(
+                successes=agreed_fp,
+                total=total_fp_pred
+            )
+        elif profile.verified_fp_count > 0:
             successes = max(0, profile.verified_fp_count - (1 if profile.empirical_accuracy and profile.empirical_accuracy < 1.0 else 0))
-            profile.fp_precision = round(float(successes) / float(total_fp_predictions), 4)
+            profile.fp_precision = round(float(successes) / float(profile.verified_fp_count), 4)
             profile.wilson_lower_bound = WilsonScoreEvaluator.calculate_lower_bound(
                 successes=successes,
-                total=total_fp_predictions
+                total=profile.verified_fp_count
             )
 
-        total_tp = profile.verified_tp_count
-        if total_tp > 0:
-            profile.tp_recall = round(float(max(0, total_tp - profile.ai_incorrect_count)) / float(total_tp), 4)
+        # Recall of actual True Positives: correctly escalated TP / total verified TP
+        total_actual_tp = agreed_tp + missed_tp
+        if total_actual_tp > 0:
+            profile.tp_recall = round(float(agreed_tp) / float(total_actual_tp), 4)
+        elif profile.verified_tp_count > 0:
+            profile.tp_recall = round(float(max(0, profile.verified_tp_count - profile.ai_incorrect_count)) / float(profile.verified_tp_count), 4)
 
     @classmethod
     def check_production_eligibility(cls, profile: RuleLearningProfile) -> Tuple[bool, List[str]]:
