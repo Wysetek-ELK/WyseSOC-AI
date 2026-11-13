@@ -250,6 +250,13 @@ class FortiSIEMService:
                 except Exception:
                     pass
 
+                # Automatically initialize RuleLearningProfile in LEARNING state
+                try:
+                    from app.services.rule_learning_service import RuleLearningService
+                    await RuleLearningService.get_or_create_profile(self.db, new_rule.id, customer=metadata.get("customer") or "DEFAULT")
+                except Exception:
+                    pass
+
                 rules_by_type[event_type] = new_rule
                 rules_by_id[event_type] = new_rule
                 new_count += 1

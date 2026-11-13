@@ -29,9 +29,10 @@ import { api } from "@/lib/api";
 interface RuleLearningDashboardProps {
   ruleId: string;
   ruleName?: string;
+  customer?: string;
 }
 
-export function RuleLearningDashboard({ ruleId, ruleName }: RuleLearningDashboardProps) {
+export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearningDashboardProps) {
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
@@ -65,10 +66,15 @@ export function RuleLearningDashboard({ ruleId, ruleName }: RuleLearningDashboar
   const [adjudicating, setAdjudicating] = useState(false);
 
   const fetchProfile = async () => {
-    if (!ruleId) return;
+    if (!ruleId) {
+      setLoading(false);
+      setProfile(null);
+      return;
+    }
     setLoading(true);
+    setFeedback(null);
     try {
-      const data = await api.getRuleLearningProfileDetail(ruleId);
+      const data = await api.getRuleLearningProfileDetail(ruleId, customer);
       setProfile(data);
     } catch (err: any) {
       console.error(err);
@@ -196,6 +202,17 @@ export function RuleLearningDashboard({ ruleId, ruleName }: RuleLearningDashboar
     }
   };
 
+  if (!ruleId) {
+    return (
+      <div className="p-8 text-center text-slate-400 rounded-lg border border-slate-800 bg-slate-900/40">
+        <p className="text-sm font-semibold text-slate-300">No Detection Rule Selected</p>
+        <p className="text-xs text-slate-400 mt-1">
+          Please select a detection rule from the catalog above to view its learning profile, accuracy metrics, and double-blind review workbench.
+        </p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="p-8 text-center text-slate-400 flex items-center justify-center gap-2">
@@ -207,8 +224,15 @@ export function RuleLearningDashboard({ ruleId, ruleName }: RuleLearningDashboar
 
   if (!profile) {
     return (
-      <div className="p-4 rounded-lg border border-slate-800 bg-slate-900/40 text-slate-400 text-xs text-center">
-        No learning profile found for rule {ruleId}.
+      <div className="p-6 rounded-lg border border-slate-800 bg-slate-900/40 text-slate-400 text-xs text-center space-y-3">
+        <p>No learning profile could be loaded for rule <span className="font-mono text-cyan-400">{ruleId}</span>.</p>
+        <button
+          onClick={fetchProfile}
+          className="px-3 py-1.5 rounded-lg bg-sky-900/60 hover:bg-sky-800 text-sky-200 border border-sky-700 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          Retry Initialization
+        </button>
       </div>
     );
   }

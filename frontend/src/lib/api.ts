@@ -2274,9 +2274,15 @@ export const api = {
     return res.json();
   },
 
-  async getRuleLearningProfileDetail(ruleId: string) {
-    const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}`);
-    if (!res.ok) throw new Error("Failed to load rule learning profile details");
+  async getRuleLearningProfileDetail(ruleId: string, customer?: string) {
+    const url = customer
+      ? `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}?customer=${encodeURIComponent(customer)}`
+      : `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}`;
+    const res = await fetchWithAuth(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to load rule learning profile details" }));
+      throw new Error(err.detail || "Failed to load rule learning profile details");
+    }
     return res.json();
   },
 

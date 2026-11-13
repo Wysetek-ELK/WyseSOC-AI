@@ -65,6 +65,7 @@ class EmergencyDisableRequest(BaseModel):
 @router.get("/learning/rules", response_model=Dict[str, Any])
 async def list_rule_learning_profiles(
     lifecycle_stage: Optional[str] = Query(None),
+    customer: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -72,10 +73,16 @@ async def list_rule_learning_profiles(
 ):
     """
     Lists detection rule learning profiles with performance metrics and production eligibility.
+    Automatically audits and initializes profiles for any active rules.
     """
+    # Idempotently initialize missing profiles for any detection rules
+    await RuleLearningService.ensure_all_rules_initialized(db)
+
     stmt = select(RuleLearningProfile).order_by(desc(RuleLearningProfile.total_analyst_reviews))
     if lifecycle_stage:
         stmt = stmt.where(RuleLearningProfile.lifecycle_stage == lifecycle_stage.upper().strip())
+    if customer and customer.upper() != "ALL":
+        stmt = stmt.where(RuleLearningProfile.customer == customer)
 
     stmt = stmt.limit(limit).offset(offset)
     res = await db.execute(stmt)
@@ -116,13 +123,16 @@ async def list_rule_learning_profiles(
 @router.get("/learning/rules/{rule_id}", response_model=Dict[str, Any])
 async def get_rule_learning_profile(
     rule_id: str,
+    customer: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """
     Retrieves detailed learning profile, confusion metrics, and state history for a rule.
+    Safe, idempotent initialization ensures profile always exists without crashing.
     """
-    profile = await RuleLearningService.get_or_create_profile(db=db, rule_id=rule_id)
+    target_customer = customer or "DEFAULT"
+    profile = await RuleLearningService.get_or_create_profile(db=db, rule_id=rule_id, customer=target_customer)
     is_eligible, reasons = RuleLearningService.check_production_eligibility(profile)
     err_dist = profile.error_distribution or {}
     confusion_matrix = {

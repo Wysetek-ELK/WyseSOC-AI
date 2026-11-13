@@ -201,6 +201,16 @@ async def lifespan(app: FastAPI):
             await session.rollback()
             print(f"[Startup Migration Warning] Token usage backfill skipped: {exc}")
 
+        # Self-healing migration: Ensure all detection rules have an initialized RuleLearningProfile
+        try:
+            from app.services.rule_learning_service import RuleLearningService
+            initialized_profiles = await RuleLearningService.ensure_all_rules_initialized(session)
+            if initialized_profiles:
+                print(f"[Startup Migration] Ensured RuleLearningProfile initialized for {len(initialized_profiles)} rule/tenant scopes.")
+        except Exception as exc:
+            await session.rollback()
+            print(f"[Startup Migration Warning] Rule learning profile initialization skipped: {exc}")
+
     # Startup background continuous FortiSIEM poller supervisor and resume if enabled
     fortisiem_scheduler.start_supervisor()
     if getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False) or fortisiem_scheduler.is_running:
