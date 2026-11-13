@@ -36,6 +36,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
+  const [initializing, setInitializing] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Sub-Tab Navigation
@@ -81,6 +82,22 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
       setFeedback({ type: "error", text: err.message || "Failed to load learning profile" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInitializeProfile = async () => {
+    if (!ruleId) return;
+    setInitializing(true);
+    setFeedback(null);
+    try {
+      const initialized = await api.initializeRuleLearningProfile(ruleId, customer);
+      setProfile(initialized);
+      setFeedback({ type: "success", text: "Detection rule learning profile successfully initialized in LEARNING mode." });
+      await fetchPendingReviews();
+    } catch (err: any) {
+      setFeedback({ type: "error", text: err.message || "Failed to initialize learning profile" });
+    } finally {
+      setInitializing(false);
     }
   };
 
@@ -227,11 +244,12 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
       <div className="p-6 rounded-lg border border-slate-800 bg-slate-900/40 text-slate-400 text-xs text-center space-y-3">
         <p>No learning profile could be loaded for rule <span className="font-mono text-cyan-400">{ruleId}</span>.</p>
         <button
-          onClick={fetchProfile}
-          className="px-3 py-1.5 rounded-lg bg-sky-900/60 hover:bg-sky-800 text-sky-200 border border-sky-700 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+          onClick={handleInitializeProfile}
+          disabled={initializing}
+          className="px-3 py-1.5 rounded-lg bg-sky-900/60 hover:bg-sky-800 text-sky-200 border border-sky-700 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Retry Initialization
+          <RefreshCw className={`w-3.5 h-3.5 ${initializing ? "animate-spin" : ""}`} />
+          {initializing ? "Initializing Profile..." : "Initialize Learning Profile"}
         </button>
       </div>
     );

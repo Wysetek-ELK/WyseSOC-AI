@@ -209,7 +209,11 @@ async def lifespan(app: FastAPI):
                 print(f"[Startup Migration] Ensured RuleLearningProfile initialized for {len(initialized_profiles)} rule/tenant scopes.")
         except Exception as exc:
             await session.rollback()
-            print(f"[Startup Migration Warning] Rule learning profile initialization skipped: {exc}")
+            import logging
+            logging.getLogger("ai_verdict.startup").error(
+                "Rule learning profile startup initialization failed: %s", exc, exc_info=True
+            )
+            print(f"[Startup Migration ERROR] Rule learning profile initialization failed: {exc}")
 
     # Startup background continuous FortiSIEM poller supervisor and resume if enabled
     fortisiem_scheduler.start_supervisor()

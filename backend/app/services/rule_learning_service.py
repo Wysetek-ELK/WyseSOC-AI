@@ -51,114 +51,49 @@ class RuleLearningService:
     MIN_PILOT_FP = 10
     MIN_PILOT_ACCURACY = 0.90
 
-    # Canonical FortiSIEM detection rule specifications for environment parity
-    CANONICAL_FORTISIEM_RULES: Dict[str, Dict[str, Any]] = {
+    # Authoritative canonical metadata fallback for core SIEM rules when no incidents exist in the environment
+    KNOWN_CANONICAL_METADATA: Dict[str, Dict[str, Any]] = {
         "40498741-ee6b-4a71-9101-0d6d3f77154c": {
             "rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
             "name": "Heavy TCP Host Scan On Fixed Port",
             "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
             "severity": "HIGH",
-            "description": "Detection rule 'Heavy TCP Host Scan On Fixed Port' synchronized from FortiSIEM.",
             "category": "Security",
-            "sub_category": "Reconnaissance",
         },
         "9839fa49-40ac-4676-abcc-4c5581ae9e09": {
             "rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN",
             "name": "Heavy TCP Host Scan",
             "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN",
             "severity": "HIGH",
-            "description": "Detection rule 'Heavy TCP Host Scan' synchronized from FortiSIEM.",
             "category": "Security",
-            "sub_category": "Reconnaissance",
-        },
-        "7bd13e89-0828-48e6-8cf5-f3cbf12d438c": {
-            "rule_id": "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST",
-            "name": "Website access policy violation: Same Source and Destination",
-            "event_type": "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST",
-            "severity": "MEDIUM",
-            "description": "Detection rule 'Website access policy violation: Same Source and Destination' synchronized from FortiSIEM.",
-            "category": "Policy Violation",
-            "sub_category": "Web Security",
-        },
-        "73fcfc63-2961-496a-bb73-0802dfcd57bf": {
-            "rule_id": "PH_Rule_MISP_MalwareIP_Inbound",
-            "name": "Permitted Traffic from MISP Malware IP List",
-            "event_type": "PH_Rule_MISP_MalwareIP_Inbound",
-            "severity": "HIGH",
-            "description": "Detection rule 'Permitted Traffic from MISP Malware IP List' synchronized from FortiSIEM.",
-            "category": "Threat Intelligence",
-            "sub_category": "Malware",
-        },
-        "2ab8850e-80f8-4f2e-8c09-539c70011f40": {
-            "rule_id": "PH_RULE_FGT_Config_Change",
-            "name": "FortiGate: Config Change Detected",
-            "event_type": "PH_RULE_FGT_Config_Change",
-            "severity": "MEDIUM",
-            "description": "Detection rule 'FortiGate: Config Change Detected' synchronized from FortiSIEM.",
-            "category": "Operations",
-            "sub_category": "Configuration Change",
-        },
-        "d9eae951-1e54-4bb3-bbfc-5ae8ac5672b7": {
-            "rule_id": "PH_Rule_MISP_MalwareIP_Outbound",
-            "name": "Traffic to MISP Malware IP List",
-            "event_type": "PH_Rule_MISP_MalwareIP_Outbound",
-            "severity": "HIGH",
-            "description": "Detection rule 'Traffic to MISP Malware IP List' synchronized from FortiSIEM.",
-            "category": "Threat Intelligence",
-            "sub_category": "Malware",
         },
     }
 
     @classmethod
     async def _provision_missing_rule(cls, db: AsyncSession, rule_id: str) -> Rule:
         """
-        Safely and idempotently provisions a missing detection rule record to satisfy
-        foreign key constraints for RuleLearningProfile.
+        Dynamically and idempotently provisions a missing detection rule record to satisfy
+        foreign key constraints for RuleLearningProfile. Derives metadata directly from
+        incident telemetry first, then canonical metadata fallback, then dynamic synthesis.
         """
         import uuid as uuid_mod
         from app.models.incident import Incident
 
         clean_id = str(rule_id or "").strip()
 
-        # 1. Check exact UUID match in canonical map
-        canonical = cls.CANONICAL_FORTISIEM_RULES.get(clean_id)
-        target_uuid = clean_id
-        if not canonical:
-            # Check by logical rule_id or event_type in canonical map
-            for c_uuid, c_def in cls.CANONICAL_FORTISIEM_RULES.items():
-                if c_def["rule_id"] == clean_id or c_def["event_type"] == clean_id:
-                    canonical = c_def
-                    target_uuid = c_uuid
-                    break
-
-        if canonical:
-            rule_obj = Rule(
-                id=target_uuid,
-                rule_id=canonical["rule_id"],
-                name=canonical["name"],
-                event_type=canonical["event_type"],
-                description=canonical["description"],
-                severity=canonical.get("severity", "HIGH"),
-                status="ACTIVE",
-                data_source="FortiSIEM",
-                detection_tech=canonical.get("sub_category", "SIEM Rule Engine"),
-                evaluation_mode="ONLINE",
-                pattern_logic="",
-                raw_rule_text=f"Rule: {canonical['name']}\nEventType: {canonical['event_type']}",
-                parsed_metadata={
-                    "source": "CANONICAL_FORTISIEM_DEFINITION",
-                    "category": canonical.get("category", "Security"),
-                    "subCategory": canonical.get("sub_category", "Policy Violation"),
-                    "customer": "DEFAULT",
-                    "synced_at": utc_now().isoformat(),
-                },
+        # 1. Check if rule already exists under any identifier
+        existing_stmt = select(Rule).where(
+            or_(
+                Rule.id == clean_id,
+                Rule.rule_id == clean_id,
+                Rule.event_type == clean_id
             )
-            db.add(rule_obj)
-            await db.flush()
-            logger.info(f"Auto-provisioned canonical detection rule {rule_obj.name} (UUID: {rule_obj.id})")
-            return rule_obj
+        )
+        existing_rule = (await db.execute(existing_stmt)).scalars().first()
+        if existing_rule:
+            return existing_rule
 
-        # 2. Check if rule exists in incidents table
+        # 2. Check if rule exists in incidents table to inherit authentic SIEM metadata
         inc_stmt = select(Incident).where(
             or_(Incident.rule_id == clean_id, Incident.event_type == clean_id)
         ).limit(1)
@@ -174,21 +109,32 @@ class RuleLearningService:
 
         final_id = clean_id if is_valid_uuid else str(uuid_mod.uuid4())
         rule_ident = clean_id
-        rule_name = f"FortiSIEM Rule {clean_id[:8]}"
+        rule_name = f"Detection Rule {clean_id[:8]}"
         event_type = clean_id
+        severity = "MEDIUM"
+        category = "Security"
 
         if sample_inc:
             rule_name = sample_inc.title or f"FortiSIEM: {sample_inc.event_type}"
             event_type = sample_inc.event_type or clean_id
             rule_ident = sample_inc.event_type or clean_id
+            severity = sample_inc.severity or "MEDIUM"
+            category = sample_inc.category or "Security"
+        elif clean_id in cls.KNOWN_CANONICAL_METADATA:
+            canonical = cls.KNOWN_CANONICAL_METADATA[clean_id]
+            rule_ident = canonical["rule_id"]
+            rule_name = canonical["name"]
+            event_type = canonical["event_type"]
+            severity = canonical.get("severity", "HIGH")
+            category = canonical.get("category", "Security")
 
         rule_obj = Rule(
             id=final_id,
             rule_id=rule_ident,
             name=rule_name,
             event_type=event_type,
-            description=f"Detection rule '{rule_name}' synchronized from FortiSIEM.",
-            severity="MEDIUM",
+            description=f"Detection rule '{rule_name}' synchronized from FortiSIEM telemetry.",
+            severity=severity,
             status="ACTIVE",
             data_source="FortiSIEM",
             detection_tech="SIEM Rule Engine",
@@ -196,15 +142,82 @@ class RuleLearningService:
             pattern_logic="",
             raw_rule_text=f"Rule: {rule_name}\nEventType: {event_type}",
             parsed_metadata={
-                "source": "AUTO_PROVISIONED_FOR_LEARNING",
+                "source": "DYNAMIC_TELEMETRY_DISCOVERY",
                 "customer": sample_inc.customer if sample_inc else "DEFAULT",
+                "category": category,
                 "synced_at": utc_now().isoformat(),
             },
         )
         db.add(rule_obj)
         await db.flush()
-        logger.info(f"Auto-provisioned detection rule {rule_name} (UUID: {final_id}) from telemetry reference")
+        logger.info(f"Dynamically provisioned detection rule {rule_name} (UUID: {final_id}) from telemetry")
         return rule_obj
+
+    @classmethod
+    async def get_profile(
+        cls,
+        db: AsyncSession,
+        rule_id: str,
+        customer: str = "DEFAULT"
+    ) -> Optional[RuleLearningProfile]:
+        """
+        Pure read query for an existing RuleLearningProfile.
+        Never executes background writes, DDL, or database commits during GET operations.
+        """
+        clean_rule_id = str(rule_id or "").strip()
+        clean_customer = str(customer or "DEFAULT").strip() or "DEFAULT"
+
+        # 1. Query by rule_id or rule_identifier with tenant matching
+        stmt = select(RuleLearningProfile).where(
+            and_(
+                or_(
+                    RuleLearningProfile.rule_id == clean_rule_id,
+                    RuleLearningProfile.rule_identifier == clean_rule_id
+                ),
+                or_(
+                    RuleLearningProfile.customer == clean_customer,
+                    RuleLearningProfile.customer == "DEFAULT",
+                    clean_customer == "DEFAULT"
+                )
+            )
+        )
+        profiles = (await db.execute(stmt)).scalars().all()
+        if profiles:
+            for p in profiles:
+                if p.customer == clean_customer:
+                    return p
+            return profiles[0]
+
+        # 2. Fallback: check if clean_rule_id matches a Rule record in rules table
+        rule_stmt = select(Rule).where(
+            or_(
+                Rule.id == clean_rule_id,
+                Rule.rule_id == clean_rule_id,
+                Rule.event_type == clean_rule_id
+            )
+        )
+        rule_obj = (await db.execute(rule_stmt)).scalars().first()
+        if rule_obj:
+            sec_stmt = select(RuleLearningProfile).where(
+                and_(
+                    or_(
+                        RuleLearningProfile.rule_id == rule_obj.id,
+                        RuleLearningProfile.rule_identifier == rule_obj.rule_id
+                    ),
+                    or_(
+                        RuleLearningProfile.customer == clean_customer,
+                        RuleLearningProfile.customer == "DEFAULT"
+                    )
+                )
+            )
+            sec_profiles = (await db.execute(sec_stmt)).scalars().all()
+            if sec_profiles:
+                for p in sec_profiles:
+                    if p.customer == clean_customer:
+                        return p
+                return sec_profiles[0]
+
+        return None
 
     @classmethod
     async def get_or_create_profile(
@@ -365,31 +378,47 @@ class RuleLearningService:
         """
         Idempotently audits and initializes learning profiles for all detection rules in the database,
         ensuring zero rules are left without an accessible learning profile.
+        Dynamically derives all detection rules from existing Rule and Incident records.
         """
         from app.models.incident import Incident
 
-        # 1. Seed canonical FortiSIEM rules if not present
-        for c_uuid, c_def in cls.CANONICAL_FORTISIEM_RULES.items():
-            existing_rule = (await db.execute(
-                select(Rule).where(or_(Rule.id == c_uuid, Rule.rule_id == c_def["rule_id"]))
-            )).scalars().first()
-            if not existing_rule:
-                await cls._provision_missing_rule(db, c_uuid)
-
-        # 2. Query all rules in the database
+        # 1. Query all detection rules in the database
         rules_res = await db.execute(select(Rule))
-        all_rules = rules_res.scalars().all()
+        all_rules = list(rules_res.scalars().all())
+
+        # 2. Check for any referenced rules in incidents that lack a Rule record
+        try:
+            orphaned_q = select(Incident.rule_id, Incident.event_type).where(
+                or_(Incident.rule_id.isnot(None), Incident.event_type.isnot(None))
+            ).distinct()
+            orphaned_res = await db.execute(orphaned_q)
+            existing_rule_ids = {r.id for r in all_rules} | {r.rule_id for r in all_rules} | {r.event_type for r in all_rules}
+
+            for inc_r_id, inc_e_type in orphaned_res.all():
+                ref = inc_r_id or inc_e_type
+                if ref and ref not in existing_rule_ids:
+                    prov_rule = await cls._provision_missing_rule(db, ref)
+                    all_rules.append(prov_rule)
+                    existing_rule_ids.add(prov_rule.id)
+                    existing_rule_ids.add(prov_rule.rule_id)
+                    existing_rule_ids.add(prov_rule.event_type)
+        except Exception as e:
+            logger.warning(f"Orphaned incident rule check skipped: {e}")
 
         initialized_profiles: List[RuleLearningProfile] = []
 
+        # 3. Provision profiles for every rule across all discovered customer tenants
         for rule in all_rules:
-            # Find distinct customers in incidents for this rule
-            cust_q = select(Incident.customer).where(
-                or_(Incident.rule_id == rule.id, Incident.event_type == rule.event_type)
-            ).distinct()
-            cust_res = await db.execute(cust_q)
-            customers = set(cust_res.scalars().all()) - {None, ""}
-            target_customers = {"DEFAULT"} | customers
+            target_customers = {"DEFAULT"}
+            try:
+                cust_q = select(Incident.customer).where(
+                    or_(Incident.rule_id == rule.id, Incident.event_type == rule.event_type)
+                ).distinct()
+                cust_res = await db.execute(cust_q)
+                discovered = {c for c in cust_res.scalars().all() if c and str(c).strip()}
+                target_customers.update(discovered)
+            except Exception:
+                pass
 
             for cust in target_customers:
                 prof = await cls.get_or_create_profile(db=db, rule_id=rule.id, customer=cust)

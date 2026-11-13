@@ -73,11 +73,8 @@ async def list_rule_learning_profiles(
 ):
     """
     Lists detection rule learning profiles with performance metrics and production eligibility.
-    Automatically audits and initializes profiles for any active rules.
+    Pure read operation adhering to HTTP GET safety standards.
     """
-    # Idempotently initialize missing profiles for any detection rules
-    await RuleLearningService.ensure_all_rules_initialized(db)
-
     stmt = select(RuleLearningProfile).order_by(desc(RuleLearningProfile.total_analyst_reviews))
     if lifecycle_stage:
         stmt = stmt.where(RuleLearningProfile.lifecycle_stage == lifecycle_stage.upper().strip())
@@ -129,7 +126,67 @@ async def get_rule_learning_profile(
 ):
     """
     Retrieves detailed learning profile, confusion metrics, and state history for a rule.
-    Safe, idempotent initialization ensures profile always exists without crashing.
+    Pure read operation adhering to HTTP GET safety standards.
+    """
+    target_customer = customer or "DEFAULT"
+    profile = await RuleLearningService.get_profile(db=db, rule_id=rule_id, customer=target_customer)
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No learning profile found for rule '{rule_id}' in tenant scope '{target_customer}'. Please click 'Initialize Learning Profile' or call POST /api/learning/rules/{rule_id}/initialize."
+        )
+
+    is_eligible, reasons = RuleLearningService.check_production_eligibility(profile)
+    err_dist = profile.error_distribution or {}
+    confusion_matrix = {
+        "agreed_fp": err_dist.get("agreement_fp", 0),
+        "critical_missed_tp": err_dist.get("critical_missed_tp", 0),
+        "ai_false_alarm": err_dist.get("ai_false_alarm", 0),
+        "agreed_tp": err_dist.get("agreement_tp", 0),
+        "abstained_resolved": err_dist.get("analyst_resolved_abstention", 0),
+        "disputed": err_dist.get("disputed", 0),
+        "initial_benchmarks": err_dist.get("analyst_only_initial_benchmark", 0),
+    }
+
+    return {
+        "id": profile.id,
+        "rule_id": profile.rule_id,
+        "rule_identifier": profile.rule_identifier,
+        "customer": profile.customer,
+        "primary_archetype": profile.primary_archetype,
+        "lifecycle_stage": profile.lifecycle_stage,
+        "total_incidents_processed": profile.total_incidents_processed,
+        "total_analyst_reviews": profile.total_analyst_reviews,
+        "verified_tp_count": profile.verified_tp_count,
+        "verified_fp_count": profile.verified_fp_count,
+        "ai_correct_count": profile.ai_correct_count,
+        "ai_incorrect_count": profile.ai_incorrect_count,
+        "abstention_count": profile.abstention_count,
+        "validation_failure_count": profile.validation_failure_count,
+        "empirical_accuracy": profile.empirical_accuracy,
+        "fp_precision": profile.fp_precision,
+        "wilson_lower_bound": profile.wilson_lower_bound,
+        "tp_recall": profile.tp_recall,
+        "is_production_eligible": is_eligible,
+        "eligibility_reasons": reasons,
+        "error_distribution": profile.error_distribution,
+        "confusion_matrix": confusion_matrix,
+        "created_at": profile.created_at.isoformat(),
+        "updated_at": profile.updated_at.isoformat(),
+    }
+
+
+@router.post("/learning/rules/{rule_id}/initialize", response_model=Dict[str, Any])
+async def initialize_rule_learning_profile(
+    rule_id: str,
+    customer: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Explicit, authenticated, idempotent initialization of a rule's learning profile.
+    Initializes the profile in LEARNING state with zero verified reviews and auto-closure disabled.
+    If the profile already exists, returns the existing profile safely.
     """
     target_customer = customer or "DEFAULT"
     profile = await RuleLearningService.get_or_create_profile(db=db, rule_id=rule_id, customer=target_customer)
@@ -170,6 +227,23 @@ async def get_rule_learning_profile(
         "confusion_matrix": confusion_matrix,
         "created_at": profile.created_at.isoformat(),
         "updated_at": profile.updated_at.isoformat(),
+    }
+
+
+@router.post("/learning/rules/initialize-all", response_model=Dict[str, Any])
+async def initialize_all_rule_profiles(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Explicit, authenticated bulk initialization of learning profiles for all active detection rules
+    across all customer tenants.
+    """
+    profiles = await RuleLearningService.ensure_all_rules_initialized(db)
+    return {
+        "status": "success",
+        "initialized_count": len(profiles),
+        "message": f"Successfully ensured learning profiles for {len(profiles)} detection rule scopes."
     }
 
 

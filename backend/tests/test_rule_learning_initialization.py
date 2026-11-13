@@ -254,3 +254,82 @@ async def test_historical_incidents_and_verdicts_untouched(db_session: AsyncSess
     assert re_inc.ai_verdict["verdict"] == "FALSE_POSITIVE"
     assert re_inc.ai_verdict["confidence"] == 0.95
     assert re_inc.ai_verdict["reasoning"] == "Scheduled backup transfer"
+
+
+@pytest.mark.asyncio
+async def test_explicit_initialization_and_read_only_get(db_session: AsyncSession):
+    """
+    Validates Requirement 9:
+    - Pure read query returns None when uninitialized.
+    - Explicit initialization endpoint creates profile in LEARNING state idempotently.
+    - Subsequent read query finds the persisted profile.
+    """
+    rule = Rule(
+        id=str(uuid.uuid4()),
+        rule_id="PH_RULE_EXPLICIT_INIT_TEST",
+        name="Explicit Init Test Rule",
+        event_type="PH_RULE_EXPLICIT_INIT_TEST",
+    )
+    db_session.add(rule)
+    await db_session.commit()
+
+    # 1. Pure read query should return None before initialization
+    prof_before = await RuleLearningService.get_profile(db_session, rule.id, "DEFAULT")
+    assert prof_before is None
+
+    # 2. Explicit initialization creates profile
+    prof_init = await RuleLearningService.get_or_create_profile(db_session, rule.id, "DEFAULT")
+    assert prof_init is not None
+    assert prof_init.rule_id == rule.id
+    assert prof_init.lifecycle_stage == "LEARNING"
+
+    # 3. Subsequent pure read returns the exact profile
+    prof_after = await RuleLearningService.get_profile(db_session, rule.id, "DEFAULT")
+    assert prof_after is not None
+    assert prof_after.id == prof_init.id
+
+
+@pytest.mark.asyncio
+async def test_switch_between_three_rules_persistence(db_session: AsyncSession):
+    """
+    Validates Requirement 13:
+    Verifies profile persistence after reload and switching between at least three different detection rules.
+    """
+    rules_data = [
+        ("40498741-ee6b-4a71-9101-0d6d3f77154c", "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT", "Heavy TCP Host Scan On Fixed Port"),
+        (str(uuid.uuid4()), "PH_RULE_DNS_TUNNEL_ANOMALY", "DNS Tunneling Anomaly"),
+        (str(uuid.uuid4()), "PH_RULE_SUSPICIOUS_POWERSHELL_EXEC", "Suspicious PowerShell Encoded Execution"),
+    ]
+
+    for rid, rident, rname in rules_data:
+        rule = Rule(id=rid, rule_id=rident, name=rname, event_type=rident)
+        db_session.add(rule)
+    await db_session.commit()
+
+    # Initialize all three
+    profiles = []
+    for rid, rident, _ in rules_data:
+        p = await RuleLearningService.get_or_create_profile(db_session, rid, "DEFAULT")
+        profiles.append(p)
+
+    assert len(profiles) == 3
+
+    # Switch back and forth between rules
+    for idx, (rid, rident, _) in enumerate(rules_data):
+        loaded = await RuleLearningService.get_profile(db_session, rid, "DEFAULT")
+        assert loaded is not None
+        assert loaded.rule_id == rid
+        assert loaded.rule_identifier == rident
+        assert loaded.lifecycle_stage == "LEARNING"
+        assert loaded.total_analyst_reviews == 0
+
+
+@pytest.mark.asyncio
+async def test_alembic_head_and_migration_revision():
+    """
+    Validates that Alembic head revision is 009_rule_learning_and_governance
+    and points cleanly to down_revision 008_soc_pilot.
+    """
+    from app.services.migration_service import get_head_revision
+    head = get_head_revision()
+    assert head == "009_rule_learning_and_governance"

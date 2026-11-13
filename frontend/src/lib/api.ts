@@ -2286,6 +2286,31 @@ export const api = {
     return res.json();
   },
 
+  async initializeRuleLearningProfile(ruleId: string, customer?: string) {
+    const url = customer
+      ? `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/initialize?customer=${encodeURIComponent(customer)}`
+      : `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/initialize`;
+    const res = await fetchWithAuth(url, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to initialize rule learning profile" }));
+      throw new Error(err.detail || "Failed to initialize rule learning profile");
+    }
+    return res.json();
+  },
+
+  async initializeAllRuleLearningProfiles() {
+    const res = await fetchWithAuth(`${API_BASE}/learning/rules/initialize-all`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to initialize all rule learning profiles" }));
+      throw new Error(err.detail || "Failed to initialize all rule learning profiles");
+    }
+    return res.json();
+  },
+
   async transitionRuleLifecycle(ruleId: string, newStage: string, reason: string) {
     const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/transition`, {
       method: "POST",
