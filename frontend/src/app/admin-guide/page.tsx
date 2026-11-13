@@ -17,6 +17,7 @@ import {
   ArrowRight,
   Lock,
   Layers,
+  BookOpenCheck,
 } from "lucide-react";
 import type { GuideMode } from "@/data/admin-guide/types";
 import {
@@ -42,6 +43,7 @@ import { DecisionEngineSection } from "@/components/admin-guide/DecisionEngineSe
 import { IncidentWalkthroughSection } from "@/components/admin-guide/IncidentWalkthroughSection";
 import { RequirementsSection } from "@/components/admin-guide/RequirementsSection";
 import { GlossaryTroubleshootingSection } from "@/components/admin-guide/GlossaryTroubleshootingSection";
+import { AdminGuideInteractiveReader } from "@/components/admin-guide/AdminGuideInteractiveReader";
 import { BrandLogo } from "@/components/common/BrandLogo";
 
 interface SearchHit {
@@ -62,6 +64,7 @@ const MODE_TABS: Array<{
   shortLabel: string;
   icon: React.ComponentType<{ className?: string }>;
 }> = [
+  { id: "platform-pages", label: "Sidebar Pages & Workflows (14)", shortLabel: "14 Pages Guide", icon: BookOpenCheck },
   { id: "guided-tour", label: "Guided Tour", shortLabel: "Tour", icon: Compass },
   { id: "architecture", label: "Explore Architecture", shortLabel: "Architecture", icon: Network },
   { id: "policy-lifecycle", label: "Policy Lifecycle (AIS 2.0)", shortLabel: "AIS 2.0", icon: Cpu },
@@ -73,10 +76,10 @@ const MODE_TABS: Array<{
 
 function AdminGuideContent() {
   const searchParams = useSearchParams();
-  const initialModeParam = (searchParams.get("mode") as GuideMode) || "guided-tour";
+  const initialModeParam = (searchParams.get("mode") as GuideMode) || "platform-pages";
   const validMode = MODE_TABS.some((t) => t.id === initialModeParam)
     ? initialModeParam
-    : "guided-tour";
+    : "platform-pages";
 
   const [activeMode, setActiveMode] = useState<GuideMode>(validMode);
   const [prevModeParam, setPrevModeParam] = useState<GuideMode>(validMode);
@@ -330,6 +333,8 @@ function AdminGuideContent() {
       </div>
 
       {/* Mode Content Panels */}
+      {activeMode === "platform-pages" && <AdminGuideInteractiveReader />}
+
       {activeMode === "guided-tour" && (
         <GuidedTourSection onNavigateMode={(mode) => setActiveMode(mode)} />
       )}

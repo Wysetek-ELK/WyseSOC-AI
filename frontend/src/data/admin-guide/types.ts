@@ -1,4 +1,5 @@
 export type GuideMode =
+  | "platform-pages"
   | "guided-tour"
   | "architecture"
   | "policy-lifecycle"
