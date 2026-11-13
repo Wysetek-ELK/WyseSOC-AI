@@ -1019,6 +1019,21 @@ async def run_shared_verdict_pipeline(
         "model_identifier": verdict_obj.model_identifier,
     }
 
+    # Record operational learning profile metrics
+    if rule and db:
+        try:
+            from app.services.rule_learning_service import RuleLearningService
+            await RuleLearningService.record_verdict_completion(
+                db=db,
+                rule_id=rule.id,
+                customer=getattr(incident, "customer", "DEFAULT") or "DEFAULT",
+                effective_verdict=final_auth_verdict,
+                is_abstained=(final_auth_verdict == "REQUIRES_ATTENTION"),
+                validation_failed=(final_validation_status not in ("VALIDATED", "APPROVED")),
+            )
+        except Exception as lrn_exc:
+            logger.warning(f"Failed updating RuleLearningProfile counter: {lrn_exc}")
+
     return VerdictPipelineResult(
         verdict_data=verdict_data,
         early_exit=False,

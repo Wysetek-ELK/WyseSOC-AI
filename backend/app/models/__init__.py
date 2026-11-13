@@ -26,6 +26,14 @@ from app.models.verdict_intelligence import (
     HistoricalEvaluationResultRecord,
 )
 from app.models.pilot import PilotConfiguration, PilotConfigHistory, PilotEvaluationRecord
+from app.models.rule_learning import RuleLearningProfile, RuleLearningStateHistory
+from app.models.analyst_feedback import AnalystVerdictReview, AnalystReviewAdjudication
+from app.models.production_governance import (
+    RulePromotionRequest,
+    RulePromotionApproval,
+    ProductionAutomationPolicy,
+    IncidentAutomationAudit,
+)
 
 __all__ = [
     "Base",
@@ -63,4 +71,12 @@ __all__ = [
     "PilotConfiguration",
     "PilotConfigHistory",
     "PilotEvaluationRecord",
+    "RuleLearningProfile",
+    "RuleLearningStateHistory",
+    "AnalystVerdictReview",
+    "AnalystReviewAdjudication",
+    "RulePromotionRequest",
+    "RulePromotionApproval",
+    "ProductionAutomationPolicy",
+    "IncidentAutomationAudit",
 ]

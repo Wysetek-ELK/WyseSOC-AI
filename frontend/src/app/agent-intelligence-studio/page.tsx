@@ -57,11 +57,12 @@ import {
   triggerBlobDownload,
   type QualityExportFormat,
 } from "@/lib/qualityExport";
+import { RuleLearningDashboard } from "@/components/learning/RuleLearningDashboard";
 
 export default function AgentIntelligenceStudioPage() {
   // Navigation / View mode
   const [viewMode, setViewMode] = useState<"table" | "studio">("table");
-  const [studioTab, setStudioTab] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift">("editor");
+  const [studioTab, setStudioTab] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "learning">("editor");
 
   // Rules & Summaries State
   const [rules, setRules] = useState<RuleItem[]>([]);
@@ -1707,6 +1708,17 @@ export default function AgentIntelligenceStudioPage() {
             </span>
           )}
         </button>
+
+        <button
+          onClick={() => setStudioTab("learning")}
+          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "learning"
+            ? "theme-tab-active"
+            : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
+        >
+          <Shield className="w-3.5 h-3.5" />
+          Rule Learning &amp; Production Gating
+        </button>
       </div>
 
       {loadingPrompt ? (
@@ -3206,6 +3218,13 @@ export default function AgentIntelligenceStudioPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* TAB 7: RULE LEARNING & GOVERNANCE */}
+      {studioTab === "learning" && (
+        <div className="space-y-4">
+          <RuleLearningDashboard ruleId={selectedRuleId} ruleName={rulePrompt?.rule_name} />
         </div>
       )}
 

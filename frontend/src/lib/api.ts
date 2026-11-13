@@ -2263,6 +2263,114 @@ export const api = {
     if (!res.ok) throw new Error("Failed to load historical eligibility report");
     return res.json();
   },
+
+  // Rule-Based Learning & Production Governance
+  async getRuleLearningProfiles(lifecycleStage?: string, limit = 50, offset = 0) {
+    const url = lifecycleStage
+      ? `${API_BASE}/learning/rules?lifecycle_stage=${encodeURIComponent(lifecycleStage)}&limit=${limit}&offset=${offset}`
+      : `${API_BASE}/learning/rules?limit=${limit}&offset=${offset}`;
+    const res = await fetchWithAuth(url);
+    if (!res.ok) throw new Error("Failed to load rule learning profiles");
+    return res.json();
+  },
+
+  async getRuleLearningProfileDetail(ruleId: string) {
+    const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}`);
+    if (!res.ok) throw new Error("Failed to load rule learning profile details");
+    return res.json();
+  },
+
+  async transitionRuleLifecycle(ruleId: string, newStage: string, reason: string) {
+    const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/transition`, {
+      method: "POST",
+      body: JSON.stringify({ new_stage: newStage, reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to transition rule stage" }));
+      throw new Error(err.detail || "Failed to transition rule stage");
+    }
+    return res.json();
+  },
+
+  async getPendingDoubleBlindReviews(limit = 50, offset = 0) {
+    const res = await fetchWithAuth(`${API_BASE}/reviews/pending?limit=${limit}&offset=${offset}`);
+    if (!res.ok) throw new Error("Failed to load pending reviews");
+    return res.json();
+  },
+
+  async submitAnalystReview(incidentId: string, payload: {
+    analyst_verdict: string;
+    analyst_notes?: string;
+    correction_reason?: string;
+    evidence_references?: string[];
+    blind_mode_active?: boolean;
+  }) {
+    const res = await fetchWithAuth(`${API_BASE}/reviews/${encodeURIComponent(incidentId)}/submit`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to submit review" }));
+      throw new Error(err.detail || "Failed to submit review");
+    }
+    return res.json();
+  },
+
+  async adjudicateAnalystReview(reviewId: string, finalVerdict: string, rationale: string) {
+    const res = await fetchWithAuth(`${API_BASE}/reviews/${encodeURIComponent(reviewId)}/adjudicate`, {
+      method: "POST",
+      body: JSON.stringify({ final_verdict: finalVerdict, rationale }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to adjudicate review" }));
+      throw new Error(err.detail || "Failed to adjudicate review");
+    }
+    return res.json();
+  },
+
+  async requestRulePromotion(profileId: string, targetStage: string, justification: string, evaluationRunId?: string) {
+    const res = await fetchWithAuth(`${API_BASE}/governance/promotion/request?profile_id=${encodeURIComponent(profileId)}`, {
+      method: "POST",
+      body: JSON.stringify({
+        target_stage: targetStage,
+        justification,
+        evaluation_run_id: evaluationRunId,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to request promotion" }));
+      throw new Error(err.detail || "Failed to request promotion");
+    }
+    return res.json();
+  },
+
+  async decideRulePromotion(requestId: string, action: string, decisionNotes = "", signature = "") {
+    const res = await fetchWithAuth(`${API_BASE}/governance/promotion/decide?request_id=${encodeURIComponent(requestId)}`, {
+      method: "POST",
+      body: JSON.stringify({
+        action,
+        decision_notes: decisionNotes,
+        signature,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to decide promotion" }));
+      throw new Error(err.detail || "Failed to decide promotion");
+    }
+    return res.json();
+  },
+
+  async emergencyDisableAutomation(reason: string) {
+    const res = await fetchWithAuth(`${API_BASE}/governance/automation/emergency-disable`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to emergency disable automation" }));
+      throw new Error(err.detail || "Failed to emergency disable automation");
+    }
+    return res.json();
+  },
 };
 
 export interface DryRunConfig {
