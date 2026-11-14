@@ -2,7 +2,8 @@ import hashlib
 import ipaddress
 import json
 import logging
-from typing import Dict, Any, List, Optional
+import re
+from typing import Dict, Any, List, Optional, Tuple
 
 from app.schemas.canonical_evidence import CanonicalEvidenceRecord, EvidenceNormalizationResult
 from app.schemas.evidence_contract import RuleEvidenceContract
@@ -176,60 +177,161 @@ class IndependentVerdictValidator:
                 action_directive = "High-confidence malicious attack confirmed with verified evidence. Escalate to IR team."
 
         elif clean_prop_verdict == "FALSE_POSITIVE":
-            # For FP: must have verified telemetry, at least one grounded claim, and affirmative verifiable authorization
+            # For FP: must have verified telemetry, at least one grounded claim, and independently verifiable authorization
             reason_lower = (model_reason or "").lower()
-            affirmative_benign_terms = (
-                "authorized", "approved", "backup", "maintenance", "legitimate", "scheduled",
-                "verified vendor", "change ticket", "change request", "scanner", "healthcheck",
-                "signed by corporate pki", "approved enterprise deployment", "corporate pki",
-            )
-            superficial_or_negative_fp_indicators = (
-                "no evidence of compromise", "rfc-1918", "rfc1918", "internal ip", "internal network",
-                "nothing suspicious", "service account", "service user", "admin user", "admin account",
-                "appears normal", "routine activity", "routine execution", "expected behavior", "harmless",
-            )
-            has_affirmative_authorization = any(term in reason_lower for term in affirmative_benign_terms)
-            has_superficial_or_negative_fp = any(term in reason_lower for term in superficial_or_negative_fp_indicators)
 
-            # Check if any grounded claim directly substantiates affirmative authorization
-            has_grounded_authorization = False
-            for c in claim_grounding.claims:
-                if c.is_grounded:
-                    c_txt = f"{c.field or ''} {c.asserted_value or ''} {c.claim_type or ''}".lower()
-                    if any(term in c_txt for term in affirmative_benign_terms):
-                        has_grounded_authorization = True
-                        break
+            # 1. Check for Invented Change Tickets in model rationale (excluding networking RFC standards like RFC-1918)
+            ticket_patterns = set(re.findall(
+                r'\b(?:CHG|CR|TICKET|WO|REQ)[-_]?[0-9]{3,}\b|\bRFC[-_]?(?!1918|5737|3330)[0-9]{3,}\b',
+                model_reason,
+                re.IGNORECASE,
+            ))
+            invented_tickets = []
+            for tp in ticket_patterns:
+                # Must be present in canonical evidence records belonging to this incident
+                if not any(tp.lower() in str(r.observed_value).lower() or tp.lower() in str(r.source_field).lower() for r in normalization_result.records):
+                    invented_tickets.append(tp)
 
-            # If all grounded claims only reference internal IP or user account names without affirmative authorization:
-            grounded_fields = {c.field for c in claim_grounding.claims if c.is_grounded and c.field}
+            # 2. Check for Unsupported Maintenance Window Claims in model rationale
+            has_maintenance_claim = bool(re.search(
+                r'\b(?:maintenance window|scheduled maintenance|maintenance mode|authorized maintenance)\b',
+                reason_lower
+            ))
+            maintenance_fields = {
+                "maintenance.window", "authorization.maintenance_window", "is_maintenance",
+                "maintenance.active", "scheduled_task.name", "scheduled_maintenance",
+                "authorization.status", "itsm.maintenance_active"
+            }
+            has_grounded_maintenance = any(
+                r.source_field in maintenance_fields
+                or "maintenance" in str(r.observed_value).lower()
+                or "scheduled" in str(r.observed_value).lower()
+                for r in normalization_result.records
+            )
+
+            # 3. Check for Unverified Digital Signature / PKI Claims in model rationale
+            has_pki_claim = bool(re.search(
+                r'\b(?:signed by corporate pki|corporate code-signing|valid digital signature|verified vendor signature|trusted certificate)\b',
+                reason_lower
+            ))
+            signature_fields = {
+                "code_signature.status", "code_signature.signer", "file.signature_status",
+                "signature.valid", "certificate.issuer"
+            }
+            has_grounded_signature = any(
+                r.source_field in signature_fields
+                or "signed" in str(r.observed_value).lower()
+                or "pki" in str(r.observed_value).lower()
+                for r in normalization_result.records
+            )
+
+            # 4. Check for Contradictory Adversary Tradecraft (e.g. Obfuscated LOLBins or Credential Dumping)
+            adversary_patterns = [
+                r"\bpowershell(?:\.exe)?\s+.*(?:-enc\b|-encodedcommand\b)",
+                r"\b(?:mimikatz|sekurlsa|privilege::debug)\b",
+                r"\bvssadmin(?:\.exe)?\s+delete\s+shadows\b",
+                r"\bcertutil(?:\.exe)?\s+.*-urlcache\b",
+                r"\b(?:downloadstring|iex\s*\(|invoke-expression)\b",
+            ]
+            has_adversary_tradecraft = False
+            for r in normalization_result.records:
+                if r.source_field in ("process.command_line", "process.name", "rawmsg", "cmdline"):
+                    val_str = str(r.observed_value).lower()
+                    for ap in adversary_patterns:
+                        if re.search(ap, val_str, re.IGNORECASE):
+                            has_adversary_tradecraft = True
+                            break
+                if has_adversary_tradecraft:
+                    break
+
+            # 5. Check Grounded Claims Substance: Cannot rely solely on internal IP or user account existence
+            grounded_claims = [c for c in claim_grounding.claims if c.is_grounded]
+            grounded_fields = {c.field for c in grounded_claims if c.field}
             only_unprivileged_identities = bool(grounded_fields and grounded_fields.issubset({
                 "network.source_ip", "network.destination_ip", "source_ip", "dest_ip", "user.name", "user"
             }))
 
-            is_unsupported_fp = (
-                (has_superficial_or_negative_fp and not has_affirmative_authorization)
-                or (only_unprivileged_identities and not has_affirmative_authorization and not has_grounded_authorization)
-            )
+            # 6. Check for Grounded Affirmative Authorization or Approved Management Software
+            auth_fields = {
+                "authorization.ticket_id", "authorization.change_ticket", "authorization.change_request",
+                "authorization.maintenance_window", "authorization.status", "itsm.ticket_id",
+                "code_signature.status", "policy.approved_baseline", "scheduled_task.name",
+            }
+            has_grounded_authorization = False
+            for c in grounded_claims:
+                c_field_lower = str(c.field or "").lower()
+                c_val_lower = str(c.asserted_value or "").lower()
+                # A: Explicit authorization / maintenance / PKI field
+                if c_field_lower in auth_fields:
+                    has_grounded_authorization = True
+                    break
+                # B: Command line contains verified ticket or scheduled parameter
+                if c_field_lower in ("process.command_line", "cmdline") and any(
+                    tok in c_val_lower for tok in ("--ticket", "--scheduled", "--maintenance", "ticket", "scheduled")
+                ):
+                    has_grounded_authorization = True
+                    break
+                # C: Approved enterprise administrative binary (e.g. SCCM ccmexec.exe, archive_agent.exe, tanclient.exe)
+                if c_field_lower in ("process.name", "process.file_name") and c_val_lower in (
+                    "ccmexec.exe", "archive_agent.exe", "tanclient.exe", "qualysagent.exe",
+                    "nessusagent.exe", "endpointagent.exe"
+                ):
+                    has_grounded_authorization = True
+                    break
+                # D: Legitimate benign term in grounded claim value
+                if any(w in c_val_lower for w in ("authorized", "approved", "scheduled", "backup", "maintenance", "signed")):
+                    has_grounded_authorization = True
+                    break
 
+            # Evaluate Gates:
             if preflight.preflight_status == "INSUFFICIENT" or preflight.evidence_completeness < 0.5 or claim_grounding.grounded_claims == 0:
                 final_verdict = "REQUIRES_ATTENTION"
                 if validation_status not in ("REJECTED", "ABSTAINED"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
                 if "FP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("FP_CRITERIA_UNSATISFIED")
-                if "Model fabricated" not in action_directive:
-                    action_directive = "Missing grounded claim or benign evidence prevents confirming false positive. Human verification required."
-            elif is_unsupported_fp:
+                action_directive = "Missing grounded claim or benign evidence prevents confirming false positive. Human verification required."
+
+            elif invented_tickets:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "INVENTED_CHANGE_TICKET" not in reason_codes:
+                    reason_codes.append("INVENTED_CHANGE_TICKET")
+                action_directive = f"False positive rejected: Model asserted invented or unverified change ticket(s) ({', '.join(invented_tickets)}) not present in canonical evidence."
+
+            elif has_maintenance_claim and not has_grounded_maintenance:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "UNSUPPORTED_MAINTENANCE_CLAIM" not in reason_codes:
+                    reason_codes.append("UNSUPPORTED_MAINTENANCE_CLAIM")
+                action_directive = "False positive rejected: Model asserted maintenance window or scheduled activity, but no maintenance record or parameter exists in canonical telemetry."
+
+            elif has_pki_claim and not has_grounded_signature:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "UNVERIFIED_SIGNATURE_CLAIM" not in reason_codes:
+                    reason_codes.append("UNVERIFIED_SIGNATURE_CLAIM")
+                action_directive = "False positive rejected: Model asserted corporate PKI code signing, but no digital signature telemetry exists in canonical evidence."
+
+            elif has_adversary_tradecraft:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "EVIDENCE_CONTRADICTION" not in reason_codes:
+                    reason_codes.append("EVIDENCE_CONTRADICTION")
+                action_directive = "False positive rejected: active adversary attack tradecraft (e.g. obfuscated LOLBin execution) contradicts benign authorization."
+
+            elif only_unprivileged_identities or not has_grounded_authorization:
                 final_verdict = "REQUIRES_ATTENTION"
                 if validation_status not in ("REJECTED", "ABSTAINED"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
                 if "FP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("FP_CRITERIA_UNSATISFIED")
-                action_directive = "False positive rejected: requires affirmative verifiable authorization (e.g. approved change ticket, maintenance window, or verified business process). Internal IP, service accounts, or routine assertions alone cannot justify False Positive."
+                action_directive = "False positive rejected: requires independently verified affirmative authorization evidence. Internal IP, service accounts, or routine assertions alone cannot justify False Positive."
+
             elif not reason_codes and final_verdict == "FALSE_POSITIVE":
                 is_decisive = True
                 reason_codes.append("EVIDENCE_VALIDATED")
-                action_directive = "Activity verified benign against approved detection baseline."
+                action_directive = "Activity verified benign against approved detection baseline and verified authorization evidence."
 
         elif clean_prop_verdict == "REQUIRES_ATTENTION":
             final_verdict = "REQUIRES_ATTENTION"

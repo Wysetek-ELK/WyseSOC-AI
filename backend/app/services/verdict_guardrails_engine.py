@@ -173,16 +173,19 @@ class VerdictGuardrailsEngine:
         # Guardrail 6: Negative/Blanket FP Assumptions Prohibition
         # -------------------------------------------------------------
         if clean_prop == "FALSE_POSITIVE":
-            # Check if there is affirmative benign justification (admin/routine alone is prohibited)
+            # Check if there is independently verified affirmative benign justification (admin/routine alone is prohibited)
             has_affirmative_benign = False
             for c in claim_verification.claims:
                 if c.is_grounded:
-                    c_lower = c.claim_text.lower()
-                    if any(w in c_lower for w in ("backup", "authorized", "scheduled", "approved", "maintenance", "cdn", "sync", "change ticket", "change request", "scanner", "healthcheck", "pki")):
+                    c_txt = f"{getattr(c, 'field', '')} {getattr(c, 'asserted_value', '')} {c.claim_text}".lower()
+                    is_auth_field = any(af in str(getattr(c, 'field', '')).lower() for af in ("authorization", "ticket", "maintenance", "signature", "policy"))
+                    is_approved_binary = any(b in c_txt for b in ("ccmexec.exe", "archive_agent.exe", "tanclient.exe", "qualysagent.exe", "nessusagent.exe"))
+                    has_auth_kw = any(w in c_txt for w in ("backup", "authorized", "scheduled", "approved", "maintenance", "cdn", "sync", "change ticket", "change request", "scanner", "healthcheck", "pki"))
+                    if is_auth_field or is_approved_binary or has_auth_kw:
                         has_affirmative_benign = True
                         break
 
-            # If incident context is available, check for affirmative justification
+            # If incident context is available, check for affirmative justification from verified telemetry
             if incident_context and (
                 incident_context.get("is_authorized_backup")
                 or incident_context.get("business_authorization_verified")

@@ -118,3 +118,4 @@ The branding implementation strictly adhered to the constraint of modifying pres
 > In accordance with testing guidelines, **no claim of live physical GPU/vLLM inference validation is made**. The local environment did not have direct access to physical NVIDIA GPU hardware running `vLLM` on `verdictum-cortex-01:8000`.  
 > 
 > All inference endpoints, health probes, timeout policies, circuit breakers, and graceful offline degradation banners (`Cortex Offline` / `LLM_OFFLINE_ADVISORY`) were verified using deterministic mock test fixtures and validated through unit test suites. Physical GPU integration must be validated when connecting to the live `Verdictum Cortex` host.
+

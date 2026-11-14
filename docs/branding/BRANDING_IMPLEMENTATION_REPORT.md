@@ -161,3 +161,4 @@ Backend modifications maintain 100% backward compatibility for API consumers, da
 2. **Database Identifiers:** Database columns, primary keys, audit logs, and historical records remain unaltered.
 3. **Infrastructure Configuration:** Physical hostnames, DNS entries, IP settings, environment variable keys (`LOCAL_LLM_HOST`, `LOCAL_LLM_PORT`, `FORTISIEM_HOST`), systemd unit files, and SSH keys were not modified.
 4. **Dual-Compatibility Strings:** Where legacy test harnesses or external monitors rely on substrings (e.g. `Server 2`), strings were composed with both approved names and legacy qualifiers (e.g., `"Verdictum Cortex (Server 2)"`).
+
