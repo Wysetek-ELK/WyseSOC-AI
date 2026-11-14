@@ -77,3 +77,4 @@ python backend/app/scripts/run_empirical_benchmark.py --mode live --endpoint htt
 * **Schema Compliance**: Must be $\ge 95\%$.
 * **Claim Grounding Ratio**: Must be $\ge 90\%$.
 * **Abstention Rate**: Should reflect appropriate caution on ambiguous alerts without over-abstaining on obvious TPs.
+

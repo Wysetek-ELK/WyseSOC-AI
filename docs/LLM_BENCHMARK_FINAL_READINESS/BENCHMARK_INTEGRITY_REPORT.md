@@ -125,3 +125,4 @@ Where $z = 1.95996$ for 95% confidence.
   * Real measured tokens from vLLM/Ollama response metadata are accumulated.
   * Real wall-clock latency (P50 and P95) is recorded.
   * Real estimated GPU inference cost is computed at standard rate ($0.0004 / 1k tokens).
+

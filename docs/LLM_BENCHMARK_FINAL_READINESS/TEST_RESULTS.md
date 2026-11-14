@@ -142,3 +142,4 @@ python backend/app/scripts/run_empirical_benchmark.py --mode offline --source un
 * **Unsafe False Positive Rate**: **0.0%** ($0 / 5$, 95% Wilson CI: $[0.00\%, 43.45\%]$)
 * **Mean Claim Grounding Ratio**: **100.0%**
 * **Data Leakage Detected**: **0 cases** (0.0%)
+

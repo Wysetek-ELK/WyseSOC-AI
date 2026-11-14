@@ -240,6 +240,48 @@ class HistoricalGroundTruthValidator:
         return bool(any(m in note for m in containment_markers) and not any(b in note for b in benign_markers))
 
     @classmethod
+    def is_escalation_or_notification_only(
+        cls,
+        raw_resolution: Optional[str] = None,
+        cleared_reason: Optional[str] = None,
+        analyst_comments: Optional[str] = None,
+        cleared_user: Optional[str] = None,
+    ) -> bool:
+        """
+        Determines whether the resolution comments merely represent an operational escalation,
+        ticketing action, or client email notification, rather than substantive forensic adjudication.
+        """
+        combined = f"{raw_resolution or ''} {cleared_reason or ''} {analyst_comments or ''}".lower()
+        notification_markers = (
+            "mail has been sent",
+            "mail sent",
+            "email sent",
+            "informed to client",
+            "case has been raised",
+            "case raised",
+            "ticket raised",
+            "ticket created",
+            "notified client",
+            "escalated to client",
+        )
+        forensic_confirmation_markers = (
+            "confirmed attack",
+            "malware confirmed",
+            "malicious activity confirmed",
+            "c2 connection",
+            "compromised",
+            "credential theft",
+            "threat actor",
+            "ransomware",
+            "unauthorized access confirmed",
+            "exploit confirmed",
+            "lateral movement",
+        )
+        has_notification = any(m in combined for m in notification_markers)
+        has_forensic = any(m in combined for m in forensic_confirmation_markers)
+        return bool(has_notification and not has_forensic)
+
+    @classmethod
     def compute_duplicate_cluster_key(
         cls,
         incident: Any,
@@ -269,6 +311,7 @@ class HistoricalGroundTruthValidator:
         provenance: str = "HISTORICAL_IMPORT",
         cleared_reason: Optional[str] = None,
         cleared_user: Optional[str] = None,
+        strict_forensic_only: bool = False,
     ) -> Tuple[GroundTruthLabel, float, str]:
         """
         Adjudicates a raw incident resolution into a verified ground truth label.
@@ -309,6 +352,17 @@ class HistoricalGroundTruthValidator:
 
         # Check for True Positive variants
         if any(term in clean_res for term in ("TRUE POSITIVE", "TRUE_POSITIVE", "MALICIOUS", "ATTACK", "INCIDENT")):
+            if strict_forensic_only and cls.is_escalation_or_notification_only(
+                raw_resolution=clean_res,
+                cleared_reason=reason_txt,
+                analyst_comments=comments,
+                cleared_user=user_txt,
+            ):
+                return (
+                    GroundTruthLabel.UNVERIFIED,
+                    0.6,
+                    f"Operational escalation or notification note '{combined_rationale[:80]}' alone without forensic attack confirmation cannot prove True Positive.",
+                )
             if len(combined_rationale) >= 10:
                 return GroundTruthLabel.VERIFIED_TP, 1.0, f"Verified TP with analyst rationale: {combined_rationale[:80]}"
             else:

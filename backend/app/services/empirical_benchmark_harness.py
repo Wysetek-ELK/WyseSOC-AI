@@ -92,7 +92,7 @@ class BenchmarkIncidentResult:
     raw_proposed_verdict: str  # TRUE_POSITIVE, FALSE_POSITIVE, REQUIRES_ATTENTION
     raw_proposed_confidence: float
     raw_proposed_reason: str
-    final_authoritative_verdict: str  # TRUE_POSITIVE, FALSE_POSITIVE, REQUIRES_ATTENTION
+    final_authoritative_verdict: str  # TRUE_POSITIVE, FALSE_POSITIVE, REQUIRES_ATTENTION (Advisory Triage)
     is_decisive_accepted: bool
     validation_status: str
     validation_reason_codes: List[str]
@@ -108,6 +108,11 @@ class BenchmarkIncidentResult:
     auto_incident_closure_allowed: bool = False
     execution_provenance: str = "OFFLINE_SIMULATION"
     is_live_measurement: bool = False
+    autonomous_verdict: str = "REQUIRES_ATTENTION"
+    is_autonomous_eligible: bool = False
+    guardrails_triggered: List[str] = field(default_factory=list)
+    cluster_key: Optional[str] = None
+    is_duplicate: bool = False
 
 
 @dataclass
@@ -185,6 +190,10 @@ class BenchmarkMetrics:
     leakage_detected_count: int = 0
     duplicate_incident_count: int = 0
     duplicate_cluster_count: int = 0
+    unique_clusters_count: int = 0
+    autonomous_decisive_count: int = 0
+    autonomous_abstention_count: int = 0
+    unique_cluster_metrics: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -275,7 +284,11 @@ class EmpiricalBenchmarkHarness:
         )
 
     @classmethod
-    def load_dataset_from_zip(cls, zip_path: Optional[str] = None) -> List[BenchmarkIncidentRecord]:
+    def load_dataset_from_zip(
+        cls,
+        zip_path: Optional[str] = None,
+        strict_forensic_only: bool = False,
+    ) -> List[BenchmarkIncidentRecord]:
         """
         Loads and validates historical FortiSIEM incident JSON files from zip archive.
         Applies sanitization and blinding upfront.
@@ -320,6 +333,7 @@ class EmpiricalBenchmarkHarness:
                     cleared_user=cleared_user,
                     is_ml_generated=False,
                     provenance="FORTISIEM_FIXTURE",
+                    strict_forensic_only=strict_forensic_only,
                 )
                 label_str = label_enum.value if hasattr(label_enum, "value") else str(label_enum)
 
@@ -378,7 +392,12 @@ class EmpiricalBenchmarkHarness:
         return records
 
     @classmethod
-    def load_dataset_from_db(cls, db_path: Optional[str] = None) -> List[BenchmarkIncidentRecord]:
+    def load_dataset_from_db(
+        cls,
+        db_path: Optional[str] = None,
+        include_synthetic: bool = False,
+        strict_forensic_only: bool = False,
+    ) -> List[BenchmarkIncidentRecord]:
         """
         Loads and validates historical FortiSIEM incidents from SQLite database (read-only).
         Applies sanitization and blinding upfront.
@@ -406,8 +425,12 @@ class EmpiricalBenchmarkHarness:
             for row in rows:
                 db_id, inc_id, r_id, title, ev_type, raw_p, created_epoch, first_seen, res_raw, cleared_reason, comments, user, is_ml, cleared_epoch = row
                 
-                # Exclude purely synthetic debug incidents if they lack SIEM telemetry
-                if str(inc_id).startswith("INC-DEBUG-") and not raw_p:
+                # Exclude purely synthetic debug/test incidents from empirical accuracy evaluation cohorts
+                if not include_synthetic and (
+                    str(inc_id).startswith("INC-DEBUG-")
+                    or str(inc_id).startswith("INC-TEST-")
+                    or str(inc_id).startswith("SYNTHETIC-")
+                ):
                     continue
 
                 try:
@@ -432,6 +455,7 @@ class EmpiricalBenchmarkHarness:
                     cleared_user=user,
                     is_ml_generated=bool(is_ml),
                     provenance="DATABASE",
+                    strict_forensic_only=strict_forensic_only,
                 )
                 label_str = label_enum.value if hasattr(label_enum, "value") else str(label_enum)
 
@@ -496,6 +520,8 @@ class EmpiricalBenchmarkHarness:
         cls,
         zip_path: Optional[str] = None,
         db_path: Optional[str] = None,
+        include_synthetic: bool = False,
+        strict_forensic_only: bool = False,
     ) -> List[BenchmarkIncidentRecord]:
         """
         Loads from both ZIP fixtures and SQLite DB, merges and deduplicates incidents by ID.
@@ -503,13 +529,17 @@ class EmpiricalBenchmarkHarness:
         """
         zip_records = []
         try:
-            zip_records = cls.load_dataset_from_zip(zip_path)
+            zip_records = cls.load_dataset_from_zip(zip_path, strict_forensic_only=strict_forensic_only)
         except Exception as e:
             logger.warning(f"Could not load ZIP dataset: {e}")
 
         db_records = []
         try:
-            db_records = cls.load_dataset_from_db(db_path)
+            db_records = cls.load_dataset_from_db(
+                db_path,
+                include_synthetic=include_synthetic,
+                strict_forensic_only=strict_forensic_only,
+            )
         except Exception as e:
             logger.warning(f"Could not load DB dataset: {e}")
 
@@ -695,14 +725,16 @@ class EmpiricalBenchmarkHarness:
 
         if is_live and model_endpoint:
             # Production-Equivalent Live Inference Pipeline
-            from app.services.model_provider.openai_compatible_provider import OpenAICompatibleModelProvider
+            from app.services.model_provider.openai_compatible import OpenAICompatibleProvider
             
             # 3a: Policy Compilation
             mock_rule = Rule(
                 id=incident_rec.rule_id,
+                rule_id=incident_rec.rule_id,
                 name=incident_rec.rule_name,
                 event_type=incident_rec.rule_id,
                 severity=inc_obj.severity,
+                description=f"Empirical benchmark rule for {incident_rec.rule_name}",
             )
             compiled_policy = PolicyCompilerService.compile_policy(
                 rule=mock_rule,
@@ -716,30 +748,79 @@ class EmpiricalBenchmarkHarness:
             payload_dict["canonical_evidence"] = [r.model_dump() for r in norm_result.records]
             payload_dict["evidence_contract"] = {
                 "contract_id": contract.contract_id,
+                "version": contract.version_number,
                 "required_fields": [r.field for r in contract.required_evidence],
             }
+            rule_spec = {
+                "id": mock_rule.id,
+                "rule_id": mock_rule.rule_id,
+                "name": mock_rule.name,
+                "severity": mock_rule.severity,
+                "description": mock_rule.description or "",
+            }
+            rule_overhead_tokens = TokenBudgetService.estimate_tokens(rule_spec)
             budgeted = TokenBudgetService.budget_prompt(
                 compiled_policy=compiled_policy,
                 incident_payload=payload_dict,
                 rag_block="",
                 max_context_tokens=16384,
                 max_completion_tokens=1024,
+                reserved_overhead_tokens=rule_overhead_tokens,
+                model_name="Qwen/Qwen2.5-7B-Instruct-AWQ",
             )
 
-            # 3c: Invoke Live Provider
-            provider = OpenAICompatibleModelProvider(base_url=model_endpoint)
+            if not budgeted.can_proceed_to_inference:
+                return BenchmarkIncidentResult(
+                    incident_id=incident_rec.incident_id,
+                    rule_id=incident_rec.rule_id,
+                    rule_name=incident_rec.rule_name,
+                    ground_truth_label=incident_rec.ground_truth_label,
+                    raw_proposed_verdict="REQUIRES_ATTENTION",
+                    raw_proposed_confidence=0.0,
+                    raw_proposed_reason=budgeted.abstention_reason or "CONTEXT_WINDOW_EXCEEDED",
+                    final_authoritative_verdict="REQUIRES_ATTENTION",
+                    is_decisive_accepted=False,
+                    validation_status="CONTEXT_WINDOW_EXCEEDED",
+                    validation_reason_codes=["CONTEXT_WINDOW_EXCEEDED"],
+                    trust_score=0,
+                    raw_trust_score=0.0,
+                    schema_compliant=True,
+                    grounding_ratio=0.0,
+                    latency_ms=0,
+                    prompt_tokens=budgeted.breakdown.total_prompt_tokens,
+                    completion_tokens=0,
+                    total_tokens=budgeted.breakdown.total_prompt_tokens,
+                    is_unsafe_fp=False,
+                    auto_incident_closure_allowed=False,
+                    execution_provenance="REAL_LOCAL_LLM",
+                    is_live_measurement=True,
+                    autonomous_verdict="REQUIRES_ATTENTION",
+                    is_autonomous_eligible=False,
+                    guardrails_triggered=["CONTEXT_WINDOW_EXCEEDED"],
+                    cluster_key=incident_rec.cluster_key,
+                    is_duplicate=incident_rec.is_duplicate,
+                )
+
+            # 3c: Invoke Live Provider (Byte-for-byte Parity with Production Pipeline)
+            provider = OpenAICompatibleProvider(base_url=model_endpoint)
+            prompt_text = budgeted.budgeted_system_prompt
+            if budgeted.budgeted_rag_block:
+                prompt_text += f"\n\n{budgeted.budgeted_rag_block}"
+
             live_start = time.perf_counter()
-            raw_resp = await provider.generate_verdict(
-                system_prompt=compiled_policy.compiled_system_prompt,
-                user_prompt=budgeted.final_prompt_text,
+            verdict_obj = await provider.analyze_incident(
+                incident_payload=budgeted.budgeted_incident_payload,
+                rule_spec=rule_spec,
+                prompt_text=prompt_text,
+                prompt_version_number=compiled_policy.version_number or 1,
             )
             elapsed_ms = int((time.perf_counter() - live_start) * 1000)
-            model_output = raw_resp.raw_json or {}
-            p_tokens = raw_resp.prompt_tokens or 0
-            c_tokens = raw_resp.completion_tokens or 0
-            t_tokens = p_tokens + c_tokens
-            schema_compliant = raw_resp.is_schema_compliant
-            model_identifier = raw_resp.model_identifier or "Qwen/Qwen2.5-7B-Instruct-AWQ"
+            model_output = verdict_obj.model_dump()
+            p_tokens = getattr(verdict_obj, "prompt_tokens", 0) or 0
+            c_tokens = getattr(verdict_obj, "completion_tokens", 0) or 0
+            t_tokens = getattr(verdict_obj, "total_tokens", 0) or (p_tokens + c_tokens)
+            schema_compliant = bool(getattr(verdict_obj, "validation_status", "VALID") != "INVALID_SCHEMA")
+            model_identifier = getattr(verdict_obj, "model_identifier", "Qwen/Qwen2.5-7B-Instruct-AWQ")
         else:
             # Offline Simulation
             if simulated_output_fn:
@@ -774,20 +855,65 @@ class EmpiricalBenchmarkHarness:
             contract=contract,
         )
 
-        # Step 6: Trustworthiness Assessment
-        trust_res = VerdictTrustworthinessEngine.calculate_trust_score(
-            incident_id=incident_rec.incident_id,
-            rule_id=incident_rec.rule_id,
-            raw_model_confidence=raw_proposed_confidence,
-            preflight=preflight,
-            claim_grounding=grounding,
-            validation=val_res,
-            historical_stats=None,
+        # Step 6: Trustworthiness Assessment & Guardrails Evaluation
+        trust_payload = copy.deepcopy(incident_rec.sanitized_payload)
+        trust_payload["incident_id"] = incident_rec.incident_id
+        trust_payload["rule_id"] = incident_rec.rule_id
+        trust_res = VerdictTrustworthinessEngine.evaluate_verdict_trust(
+            incident_payload=trust_payload,
+            model_output=model_output,
+            contract=contract,
         )
 
-        # Step 7: Final Guardrails & Autonomous Action Gating
-        is_unsafe_fp = (incident_rec.ground_truth_label == "VERIFIED_TP" and val_res.final_verdict == "FALSE_POSITIVE")
-        auto_closure_allowed = bool(val_res.is_decisive_accepted and val_res.final_verdict == "FALSE_POSITIVE")
+        guardrails_triggered = []
+        if trust_res.escalation_reason:
+            esc_u = trust_res.escalation_reason.upper()
+            if "MANDATORY" in esc_u:
+                guardrails_triggered.append("G1_MISSING_MANDATORY_EVIDENCE")
+            if "CONTRADICTION" in esc_u:
+                guardrails_triggered.append("G2_CONTRADICTORY_EVIDENCE")
+            if "ZERO GROUNDED" in esc_u or "WITHOUT ANY VERIFIED" in esc_u:
+                guardrails_triggered.append("G3_EMPTY_DECISIVE_CLAIMS")
+            if "THRESHOLD" in esc_u:
+                guardrails_triggered.append("G4_INCOMPLETE_DETECTION_SEMANTICS")
+            if "BELOW THE AUTOMATED DECISION THRESHOLD" in esc_u or (trust_res.trust_score is not None and trust_res.trust_score < 7):
+                guardrails_triggered.append("G5_LOW_TRUST_SCORE")
+            if "BUSINESS AUTHORIZATION" in esc_u or "BENIGN" in esc_u:
+                guardrails_triggered.append("G6_NEGATIVE_FP_PROHIBITION")
+            if "ALERT FIRING ALONE" in esc_u:
+                guardrails_triggered.append("G7_ALERT_FIRING_ALONE")
+
+        # Guardrail G5 strictly enforces trust_score >= 7 and empirical calibration for autonomous decisions
+        is_autonomous_eligible = bool(
+            trust_res.trust_score is not None
+            and trust_res.trust_score >= 7
+            and trust_res.raw_trust_score >= 70.0
+            and trust_res.is_calibrated
+            and "G5_LOW_TRUST_SCORE" not in guardrails_triggered
+        )
+        autonomous_verdict = (
+            val_res.final_verdict
+            if (is_autonomous_eligible and val_res.is_decisive_accepted)
+            else "REQUIRES_ATTENTION"
+        )
+
+        # Decisive FP acceptance and auto-closure strictly require:
+        # 1. Independent validation acceptance (val_res.is_decisive_accepted)
+        # 2. Final decisive FP classification (val_res.final_verdict == "FALSE_POSITIVE")
+        # 3. Autonomous eligibility with trust_score >= 7 (Guardrail G5 passed)
+        # 4. Verified affirmative authorization evidence (Guardrail G6 passed)
+        # 5. Non-simulated empirical certification / calibration
+        auto_closure_allowed = bool(
+            is_autonomous_eligible
+            and val_res.is_decisive_accepted
+            and val_res.final_verdict == "FALSE_POSITIVE"
+            and trust_res.effective_verdict == UserVisibleVerdict.FALSE_POSITIVE
+        )
+
+        is_unsafe_fp = bool(
+            incident_rec.ground_truth_label == "VERIFIED_TP"
+            and val_res.final_verdict == "FALSE_POSITIVE"
+        )
 
         return BenchmarkIncidentResult(
             incident_id=incident_rec.incident_id,
@@ -813,6 +939,11 @@ class EmpiricalBenchmarkHarness:
             auto_incident_closure_allowed=auto_closure_allowed,
             execution_provenance="REAL_LOCAL_LLM" if is_live else "OFFLINE_SIMULATION",
             is_live_measurement=is_live,
+            autonomous_verdict=autonomous_verdict,
+            is_autonomous_eligible=is_autonomous_eligible,
+            guardrails_triggered=guardrails_triggered,
+            cluster_key=incident_rec.cluster_key,
+            is_duplicate=incident_rec.is_duplicate,
         )
 
     @classmethod
@@ -970,6 +1101,36 @@ class EmpiricalBenchmarkHarness:
                 f"INSUFFICIENT_SAMPLE_SIZE: Verified incident cohort (N={m.verified_ground_truth_count}) < 30. "
                 "Confidence intervals are wide. Results reflect sample limitations and must not be confused with poor performance."
             )
+
+        # Cluster-Deduplicated Metrics (Independent Samples)
+        unique_results = [r for r in results if not r.is_duplicate]
+        m.unique_clusters_count = len(unique_results)
+        m.duplicate_incident_count = len(results) - len(unique_results)
+        m.duplicate_cluster_count = len({r.cluster_key for r in results if r.is_duplicate and r.cluster_key})
+
+        if unique_results and len(unique_results) < len(results):
+            cluster_verified = [r for r in unique_results if r.ground_truth_label in ("VERIFIED_TP", "VERIFIED_FP")]
+            c_tp = sum(1 for r in cluster_verified if r.ground_truth_label == "VERIFIED_TP" and r.final_authoritative_verdict == "TRUE_POSITIVE")
+            c_tn = sum(1 for r in cluster_verified if r.ground_truth_label == "VERIFIED_FP" and r.final_authoritative_verdict == "FALSE_POSITIVE")
+            c_fp = sum(1 for r in cluster_verified if r.ground_truth_label == "VERIFIED_FP" and r.final_authoritative_verdict == "TRUE_POSITIVE")
+            c_fn = sum(1 for r in cluster_verified if r.ground_truth_label == "VERIFIED_TP" and r.final_authoritative_verdict == "FALSE_POSITIVE")
+            c_decisive = c_tp + c_tn + c_fp + c_fn
+            c_abstained = len(cluster_verified) - c_decisive
+            c_acc = round((c_tp + c_tn) / c_decisive, 4) if c_decisive > 0 else None
+            m.unique_cluster_metrics = {
+                "total_unique_clusters": len(unique_results),
+                "verified_ground_truth_clusters": len(cluster_verified),
+                "decisive_decisions": c_decisive,
+                "abstained_decisions": c_abstained,
+                "tp": c_tp,
+                "tn": c_tn,
+                "fp": c_fp,
+                "fn": c_fn,
+                "accuracy": c_acc,
+            }
+
+        m.autonomous_decisive_count = sum(1 for r in results if r.is_autonomous_eligible and r.autonomous_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"))
+        m.autonomous_abstention_count = m.total_incidents - m.autonomous_decisive_count
 
         return m
 
@@ -1156,7 +1317,31 @@ class EmpiricalBenchmarkHarness:
             f"- **Analyst Label Leakage Detected**: `{m.leakage_detected_count}` cases",
             f"- **Duplicate Incidents Flagged**: `{m.duplicate_incident_count}` cases",
             f"- **Near-Duplicate Clusters**: `{m.duplicate_cluster_count}` clusters",
+            f"- **Unique Independent Incident Clusters**: `{m.unique_clusters_count}` clusters",
             f"- **Blinding Integrity**: Strict recursive sanitization verified via `HistoricalGroundTruthValidator.sanitize_incident_for_inference`.",
+        ])
+
+        if m.unique_cluster_metrics:
+            uc = m.unique_cluster_metrics
+            lines.extend([
+                f"",
+                f"### 6.1 Independent Sample (Cluster-Deduplicated) Evaluation",
+                f"",
+                f"| Metric | Incident-Level (All) | Cluster-Level (Independent) |",
+                f"|---|---|---|",
+                f"| **Total Evaluated** | {m.total_incidents} | {uc['total_unique_clusters']} |",
+                f"| **Verified Ground Truth** | {m.verified_ground_truth_count} | {uc['verified_ground_truth_clusters']} |",
+                f"| **Decisive Decisions** | {m.decisive_decisions_count} | {uc['decisive_decisions']} |",
+                f"| **Abstained Decisions** | {m.total_abstained} | {uc['abstained_decisions']} |",
+                f"| **Empirical Accuracy** | {pct(m.overall_accuracy)} | {pct(uc['accuracy'])} |",
+            ])
+
+        lines.extend([
+            f"",
+            f"### 6.2 Autonomous Governance vs Advisory Triage Parity",
+            f"- **Advisory Decisive Accepted**: `{m.decisive_decisions_count}` decisions (Human-in-the-Loop Triage)",
+            f"- **Autonomous Decisive Allowed**: `{m.autonomous_decisive_count}` decisions (Guardrail G5 >= 7 & Empirical Calibration required)",
+            f"- **Autonomous Actions Blocked / Demoted**: `{m.autonomous_abstention_count}` decisions (Safety Fail-Closed)",
             f"",
             f"---",
             f"*Generated by Verdictum AI Empirical Benchmark Harness v2.1*",

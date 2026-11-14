@@ -98,3 +98,4 @@ All incidents passed recursive sanitization via `HistoricalGroundTruthValidator.
 * **Resolution Stripping**: Fields `resolution`, `clearedReason`, `clearedTime`, `clearedUser`, `cmsClearUser`, `comments`, `analyst_verdict`, `ground_truth` are 100% stripped.
 * **Leakage Detected**: **0 cases** (0.0%).
 * **Verification**: All 20 incident payloads were confirmed clean; the model receives only raw telemetry attributes, timestamps, and network/process observables inside `<UNTRUSTED_INCIDENT_DATA>`.
+

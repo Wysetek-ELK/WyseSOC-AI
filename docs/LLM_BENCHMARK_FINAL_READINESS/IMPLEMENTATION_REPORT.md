@@ -129,3 +129,4 @@ flowchart TD
 - [x] Negative FP rejection verified (unsupported FP demoted to `REQUIRES_ATTENTION`).
 - [x] Negative fabrication rejection verified (`EVIDENCE_VALUE_MISMATCH` demoted to `REQUIRES_ATTENTION`).
 - [x] Full regression test suite passing: **91/91 tests green in 18.78s**.
+
