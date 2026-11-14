@@ -58,11 +58,21 @@ import {
   type QualityExportFormat,
 } from "@/lib/qualityExport";
 import { RuleLearningDashboard } from "@/components/learning/RuleLearningDashboard";
+import { AgentIntelligenceStudioOverview } from "@/components/compact/AgentIntelligenceStudioOverview";
+import { CompactPageHeader } from "@/components/compact/CompactDesignSystem";
+import { deriveOperationalStatus } from "@/lib/diagnostics";
 
-export default function AgentIntelligenceStudioPage() {
+function AgentIntelligenceStudioContent() {
   // Navigation / View mode
   const [viewMode, setViewMode] = useState<"table" | "studio">("table");
   const [studioTab, setStudioTab] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "learning">("editor");
+
+  // Compact 3-Tab Architecture State
+  const [primaryTab, setPrimaryTab] = useState<"overview" | "learning" | "advanced">("overview");
+  const [advancedSection, setAdvancedSection] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift">("editor");
+  const [compactUi, setCompactUi] = useState(true);
+  const [learningProfile, setLearningProfile] = useState<any | null>(null);
+  const [llmOnline, setLlmOnline] = useState<boolean | null>(null);
 
   // Rules & Summaries State
   const [rules, setRules] = useState<RuleItem[]>([]);
@@ -249,18 +259,70 @@ export default function AgentIntelligenceStudioPage() {
     }
   };
 
+  const fetchLearningProfile = async (ruleId: string) => {
+    if (!ruleId) {
+      setLearningProfile(null);
+      return;
+    }
+    try {
+      const data = await api.getRuleLearningProfileDetail(ruleId);
+      setLearningProfile(data);
+    } catch {
+      setLearningProfile(null);
+    }
+  };
+
+  const handleNavigateTab = (tab: "overview" | "learning" | "advanced", section?: string) => {
+    setPrimaryTab(tab);
+    if (tab === "learning") {
+      setStudioTab("learning");
+    } else if (tab === "advanced" && section) {
+      setAdvancedSection(section as any);
+      setStudioTab(section as any);
+    }
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", section || tab);
+      window.history.pushState({}, "", url.toString());
+    }
+  };
+
   // Initial data loading & URL query parameter check
   useEffect(() => {
     async function init() {
       api.getMe().then(setCurrentUser).catch(() => null);
+      api.getLlmStatus().then((s) => setLlmOnline(Boolean(s?.is_healthy))).catch(() => setLlmOnline(false));
+
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("VERDICTUM_COMPACT_UI_ENABLED");
+        if (saved !== null) {
+          setCompactUi(saved === "true");
+        }
+      }
+
       await Promise.all([loadRules(), loadSummaries()]);
 
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         const ruleParam = params.get("rule_id") || params.get("ruleId");
+        const tabParam = params.get("tab");
+
         if (ruleParam) {
           setSelectedRuleId(ruleParam);
           setViewMode("studio");
+        }
+
+        if (tabParam) {
+          if (tabParam === "overview") {
+            setPrimaryTab("overview");
+          } else if (tabParam === "learning") {
+            setPrimaryTab("learning");
+            setStudioTab("learning");
+          } else if (["editor", "intelligence", "contract", "quality", "simulation", "drift"].includes(tabParam)) {
+            setPrimaryTab("advanced");
+            setAdvancedSection(tabParam as any);
+            setStudioTab(tabParam as any);
+          }
         }
       }
     }
@@ -366,6 +428,7 @@ export default function AgentIntelligenceStudioPage() {
       fetchPrompt(selectedRuleId);
       fetchIntelligence(selectedRuleId);
       fetchDriftEvents(selectedRuleId);
+      fetchLearningProfile(selectedRuleId);
     }
   }, [viewMode, selectedRuleId]);
 
@@ -592,10 +655,12 @@ export default function AgentIntelligenceStudioPage() {
     setSelectedRuleId(ruleId);
     clearForm();
     setViewMode("studio");
+    setPrimaryTab("overview");
     setStudioTab("editor");
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.set("rule_id", ruleId);
+      url.searchParams.set("tab", "overview");
       window.history.pushState({}, "", url.toString());
     }
   };
@@ -690,6 +755,8 @@ export default function AgentIntelligenceStudioPage() {
       });
       setSimulationResult(res);
       setStudioTab("simulation");
+      setAdvancedSection("simulation");
+      setPrimaryTab("advanced");
       const stat = res.status || res.simulation_status || "COMPLETED";
       setFeedback({
         type: stat === "FAILED" || stat === "EVALUATED_FAILED" ? "warning" : stat === "SIMULATED_ONLY" ? "warning" : "success",
@@ -1399,329 +1466,557 @@ export default function AgentIntelligenceStudioPage() {
       ? Math.max(0, Math.min(20, Math.round((studioQualityScore / 100) * 20)))
       : 0;
   const passedGatesCount = gateList.filter((g) => g.status === "PASSED").length;
+  const selectedRule = rules.find((r) => r.id === selectedRuleId);
+  const operationalStatus = deriveOperationalStatus({
+    lifecycleStage: learningProfile?.lifecycle_stage,
+    isApprovalEligible,
+    isIncompleteDefinition,
+    activeVersionStatus: selectedVersion?.status,
+    hasHardGateFailure,
+    totalAnalystReviews: learningProfile?.total_analyst_reviews || 0,
+    qualityScore: qualityAssessment?.quality_score,
+  });
 
   return (
-    <div className="space-y-2.5">
-      {/* Page Header with Back Navigation & Rule Switcher */}
-      <div className="p-2.5 sm:px-3 rounded-xl theme-glass-panel flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={handleBackToTable}
-            className="px-2.5 py-1.5 rounded-lg theme-secondary-btn text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-cyan-400" />
-            <Table className="w-3.5 h-3.5 text-slate-400" />
-            Rules List
-          </button>
-
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100">
-                Agent Intelligence Studio 2.0
-              </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-950/80 text-slate-300 border border-slate-700/80 font-mono uppercase tracking-wide">
-                {intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Governed policy generation, 8-gate quality validation, evidence contract alignment, and simulation regression checks.
-            </p>
-          </div>
-        </div>
-
-        {/* SIEM Rule Selector */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
-            Select Rule:
-          </label>
-          <select
-            value={selectedRuleId}
-            onChange={(e) => handleSwitchRuleInStudio(e.target.value)}
-            disabled={loadingRules}
-            className="px-2.5 py-1.5 text-xs rounded-lg border border-cyan-500/40 bg-slate-950/90 text-slate-200 font-medium focus:outline-none focus:border-cyan-400 min-w-[240px] max-w-[380px] truncate w-full sm:w-auto"
-          >
-            {rules.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name} ({r.severity})
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* AIS 2.0 Hero Policy Governance Banner: Score Meter & Action Stack */}
-      <div className="p-3 sm:p-3.5 rounded-xl theme-hero-score-card flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 min-w-0">
-          {/* Large Hero Quality Score Readout */}
-          <div className="flex items-baseline gap-0.5 shrink-0">
-            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-sky-400 tabular-nums drop-shadow-sm">
-              {studioQualityScore !== null ? studioQualityScore : "—"}
-            </span>
-            <span className="text-base sm:text-lg font-bold text-slate-400">/100</span>
-          </div>
-
-          {/* Eligibility Pill + Segmented Progress Meter + Structural Telemetry */}
-          <div className="space-y-2 min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              {isApprovalEligible ? (
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-950/80 text-sky-300 border border-sky-500/50 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" /> APPROVAL ELIGIBLE
-                </span>
-              ) : selectedVersion?.status === "APPROVED" ? (
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/70 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ACTIVE PRODUCTION
-                </span>
-              ) : (
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-700/70 flex items-center gap-1.5">
-                  <XCircle className="w-3.5 h-3.5 text-rose-400" /> REWORK REQUIRED
-                </span>
-              )}
-
-              {isIncompleteDefinition ? (
-                <span
-                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/70 flex items-center gap-1"
-                  title="Authoritative threshold is missing. Draft remains provisional."
+    <div className="space-y-3">
+      {compactUi ? (
+        /* =========================================================================
+           COMPACT MODE (3 TABS): SIMPLE BY DEFAULT — ADVANCED ON DEMAND
+           ========================================================================= */
+        <>
+          <CompactPageHeader
+            title={selectedRule?.name || selectedRuleId}
+            subtitle={
+              intelligenceData?.semantics?.detection_objective ||
+              "Governed policy generation, quality validation, evidence contract alignment, and simulation regression testing."
+            }
+            archetype={intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
+            lifecycleStatus={operationalStatus}
+            backAction={{
+              label: "Rules List",
+              onClick: handleBackToTable,
+            }}
+            selector={
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
+                  Rule:
+                </label>
+                <select
+                  value={selectedRuleId}
+                  onChange={(e) => handleSwitchRuleInStudio(e.target.value)}
+                  disabled={loadingRules}
+                  className="px-2.5 py-1.5 text-xs rounded-lg border border-cyan-500/40 bg-slate-950/90 text-slate-200 font-medium focus:outline-none focus:border-cyan-400 min-w-[200px] max-w-[320px] truncate"
                 >
-                  <AlertCircle className="w-3 h-3 text-amber-400" /> DEFINITION: INCOMPLETE
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-700/60">
-                  DEFINITION: VERIFIED
-                </span>
-              )}
-            </div>
+                  {rules.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} ({r.severity})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            }
+            actions={
+              <button
+                type="button"
+                onClick={() => {
+                  setCompactUi(false);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("VERDICTUM_COMPACT_UI_ENABLED", "false");
+                  }
+                }}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-mono"
+                title="Switch to detailed legacy 7-tab layout"
+              >
+                Legacy 7-Tab View
+              </button>
+            }
+          />
 
-            {/* 20-Segment Progress Bar */}
-            <div className="flex items-center gap-1 max-w-md" aria-hidden="true">
-              {Array.from({ length: 20 }).map((_, idx) => {
-                const active = idx < filledSegments;
-                return (
-                  <span
-                    key={idx}
-                    className={`h-2 flex-1 rounded-full transition-all ${active
-                      ? idx < 10
-                        ? "bg-sky-400 shadow-[0_0_8px_rgba(251,191,36,0.45)]"
-                        : "bg-cyan-500 shadow-[0_0_8px_rgba(249,115,22,0.45)]"
-                      : "bg-slate-800/80 border border-slate-700/50"
-                      }`}
-                  />
-                );
-              })}
-            </div>
+          {/* Primary 3-Tab Bar */}
+          <div className="flex items-center justify-between border-b border-slate-800/90 pb-0 text-xs">
+            <div className="flex space-x-1">
+              <button
+                onClick={() => handleNavigateTab("overview")}
+                className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${
+                  primaryTab === "overview"
+                    ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                }`}
+              >
+                <FileCode2 className="w-4 h-4 text-cyan-400" />
+                Overview
+              </button>
 
-            <div className="text-[11px] font-mono text-slate-300 flex flex-wrap items-center gap-2">
-              <span className="text-slate-400 uppercase">Quality Score:</span>
-              <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold border ${getScoreBadge(qualityAssessment?.quality_score)}`}>
-                {qualityAssessment ? `${qualityAssessment.quality_score}/100` : "Pending"}
-              </span>
-              <span className="text-slate-600">•</span>
-              <span>
-                GATES PASSED:{" "}
-                <strong className="text-slate-100">
-                  {gateList.length > 0 ? `${passedGatesCount}/${gateList.length}` : "—"}
-                </strong>
-              </span>
-              {selectedVersion && (
-                <>
-                  <span className="text-slate-600">•</span>
-                  <span className="text-emerald-400 font-semibold">
-                    VERSION {selectedVersion.version_number} ({selectedVersion.status})
+              <button
+                onClick={() => handleNavigateTab("learning")}
+                className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${
+                  primaryTab === "learning"
+                    ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                }`}
+              >
+                <Shield className="w-4 h-4 text-emerald-400" />
+                Analyst Review &amp; Learning
+                {learningProfile?.total_analyst_reviews !== undefined && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
+                    {learningProfile.total_analyst_reviews}
                   </span>
-                </>
-              )}
+                )}
+              </button>
+
+              <button
+                onClick={() => handleNavigateTab("advanced")}
+                className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${
+                  primaryTab === "advanced"
+                    ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                }`}
+              >
+                <Sliders className="w-4 h-4 text-sky-400" />
+                Advanced Configuration
+                {blockingIssuesList.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-950 text-amber-300 border border-amber-800">
+                    {blockingIssuesList.length}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
-        </div>
-
-        {/* Action Controls Stack */}
-        <div className="flex flex-col sm:flex-row lg:flex-col gap-1.5 lg:min-w-[220px] shrink-0">
-          <button
-            type="button"
-            disabled={actionLoading || loadingPrompt}
-            onClick={handleGenerateIntelligentDraft}
-            className="px-3.5 py-1.5 text-xs rounded-lg theme-primary-btn font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Synthesize Intelligent Draft
-          </button>
-
-          <button
-            type="button"
-            disabled={loadingQuality || !selectedVersionId || isViewer}
-            onClick={() => fetchQualityValidation(selectedRuleId, selectedVersionId)}
-            title={isViewer ? "Requires SOC Analyst or Administrator role to persist validation scores" : "Persist validated quality score & audit log"}
-            className="px-3.5 py-1.5 text-xs rounded-lg theme-secondary-btn disabled:opacity-50 font-medium flex items-center justify-center gap-1.5 transition-colors"
-          >
-            <Award className="w-3.5 h-3.5 text-sky-400" />
-            Validate Quality
-          </button>
-
-          <button
-            type="button"
-            disabled={loadingSimulation || !selectedVersionId}
-            onClick={handleRunSimulation}
-            className="px-3.5 py-1.5 text-xs rounded-lg theme-secondary-btn disabled:opacity-50 font-medium flex items-center justify-center gap-1.5 transition-colors"
-          >
-            <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-            Run Simulation
-          </button>
-
-          <div className="flex items-center gap-1.5 empty:hidden">
-            {/* Approve Button */}
-            {selectedVersion && selectedVersion.status !== "APPROVED" && (
+        </>
+      ) : (
+        /* =========================================================================
+           LEGACY 7-TAB MODE (PRESERVED FOR FULL BACKWARD COMPATIBILITY)
+           ========================================================================= */
+        <>
+          <div className="p-2.5 sm:px-3 rounded-xl theme-glass-panel flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <button
                 type="button"
-                disabled={actionLoading || !selectedVersionId || !isApprovalEligible}
-                onClick={() => setShowApprovalModal(true)}
-                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition-colors ${isApprovalEligible
-                  ? "bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500/60"
-                  : "bg-slate-900/70 text-slate-500 cursor-not-allowed border border-slate-800"
-                  }`}
-                title={
-                  !isApprovalEligible
-                    ? "Approval blocked by hard quality gate failures or incomplete rule specifications."
-                    : "Approve policy for production active baseline"
-                }
+                onClick={handleBackToTable}
+                className="px-2.5 py-1.5 rounded-lg theme-secondary-btn text-xs font-semibold flex items-center gap-1.5 transition-colors"
               >
-                <Check className="w-3.5 h-3.5" /> Approve &amp; Activate
+                <ArrowLeft className="w-3.5 h-3.5 text-cyan-400" />
+                <Table className="w-3.5 h-3.5 text-slate-400" />
+                Rules List
               </button>
-            )}
 
-            {/* Rollback Button */}
-            {!isSelectedActive && selectedVersion && (
-              <button
-                type="button"
-                disabled={actionLoading || !selectedVersionId}
-                onClick={handleRollback}
-                className="flex-1 px-2.5 py-1.5 bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-800/70 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
-              >
-                <RotateCcw className="w-3 h-3" /> Rollback to This
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Critical Incomplete Definition Alert (e.g. PH_RULE_LARGE_OUTBOUND_XFER) */}
-      {isIncompleteDefinition && (
-        <div className="p-3 rounded-lg border border-amber-800/80 bg-amber-950/30 text-xs text-amber-200 flex items-start gap-2.5">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <div className="font-bold text-amber-300">
-              Rule Definition Incomplete — Approval Gate 1 (G1) Blocked
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100">
+                    Agent Intelligence Studio 2.0
+                  </h1>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-950/80 text-slate-300 border border-slate-700/80 font-mono uppercase tracking-wide">
+                    {intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Governed policy generation, 8-gate quality validation, evidence contract alignment, and simulation regression checks.
+                </p>
+              </div>
             </div>
-            <p className="text-[11px] text-amber-200/90 leading-relaxed">
-              Authoritative SIEM detection rule specifications are missing or unverified. Observed telemetry fields (such as byte counts) are not assumed to be detection thresholds.
-              The synthesized policy remains a <strong>provisional draft</strong> with explicit unresolved requirements. It cannot be approved for autonomous production use until authoritative criteria are supplied.
-            </p>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
+                Select Rule:
+              </label>
+              <select
+                value={selectedRuleId}
+                onChange={(e) => handleSwitchRuleInStudio(e.target.value)}
+                disabled={loadingRules}
+                className="px-2.5 py-1.5 text-xs rounded-lg border border-cyan-500/40 bg-slate-950/90 text-slate-200 font-medium focus:outline-none focus:border-cyan-400 min-w-[240px] max-w-[380px] truncate w-full sm:w-auto"
+              >
+                {rules.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.severity})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  setCompactUi(true);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("VERDICTUM_COMPACT_UI_ENABLED", "true");
+                  }
+                }}
+                className="px-2.5 py-1.5 rounded-lg border border-cyan-700 bg-cyan-950/50 text-cyan-300 text-xs font-mono"
+              >
+                Compact View
+              </button>
+            </div>
           </div>
-        </div>
+
+          <div className="p-3 sm:p-3.5 rounded-xl theme-hero-score-card flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 min-w-0">
+              <div className="flex items-baseline gap-0.5 shrink-0">
+                <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-sky-400 tabular-nums drop-shadow-sm">
+                  {studioQualityScore !== null ? studioQualityScore : "—"}
+                </span>
+                <span className="text-base sm:text-lg font-bold text-slate-400">/100</span>
+              </div>
+
+              <div className="space-y-2 min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  {isApprovalEligible ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-950/80 text-sky-300 border border-sky-500/50 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" /> APPROVAL ELIGIBLE
+                    </span>
+                  ) : selectedVersion?.status === "APPROVED" ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/70 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ACTIVE PRODUCTION
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-700/70 flex items-center gap-1.5">
+                      <XCircle className="w-3.5 h-3.5 text-rose-400" /> REWORK REQUIRED
+                    </span>
+                  )}
+
+                  {isIncompleteDefinition ? (
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/70 flex items-center gap-1"
+                      title="Authoritative threshold is missing. Draft remains provisional."
+                    >
+                      <AlertCircle className="w-3 h-3 text-amber-400" /> DEFINITION: INCOMPLETE
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-700/60">
+                      DEFINITION: VERIFIED
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 max-w-md" aria-hidden="true">
+                  {Array.from({ length: 20 }).map((_, idx) => {
+                    const active = idx < filledSegments;
+                    return (
+                      <span
+                        key={idx}
+                        className={`h-2 flex-1 rounded-full transition-all ${
+                          active
+                            ? idx < 10
+                              ? "bg-sky-400 shadow-[0_0_8px_rgba(251,191,36,0.45)]"
+                              : "bg-cyan-500 shadow-[0_0_8px_rgba(249,115,22,0.45)]"
+                            : "bg-slate-800/80 border border-slate-700/50"
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+
+                <div className="text-[11px] font-mono text-slate-300 flex flex-wrap items-center gap-2">
+                  <span className="text-slate-400 uppercase">Quality Score:</span>
+                  <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold border ${getScoreBadge(qualityAssessment?.quality_score)}`}>
+                    {qualityAssessment ? `${qualityAssessment.quality_score}/100` : "Pending"}
+                  </span>
+                  <span className="text-slate-600">•</span>
+                  <span>
+                    GATES PASSED:{" "}
+                    <strong className="text-slate-100">
+                      {gateList.length > 0 ? `${passedGatesCount}/${gateList.length}` : "—"}
+                    </strong>
+                  </span>
+                  {selectedVersion && (
+                    <>
+                      <span className="text-slate-600">•</span>
+                      <span className="text-emerald-400 font-semibold">
+                        VERSION {selectedVersion.version_number} ({selectedVersion.status})
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-1.5 lg:min-w-[220px] shrink-0">
+              <button
+                type="button"
+                disabled={actionLoading || loadingPrompt}
+                onClick={handleGenerateIntelligentDraft}
+                className="px-3.5 py-1.5 text-xs rounded-lg theme-primary-btn font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Synthesize Intelligent Draft
+              </button>
+
+              <button
+                type="button"
+                disabled={loadingQuality || !selectedVersionId || isViewer}
+                onClick={() => fetchQualityValidation(selectedRuleId, selectedVersionId)}
+                title={isViewer ? "Requires SOC Analyst or Administrator role to persist validation scores" : "Persist validated quality score & audit log"}
+                className="px-3.5 py-1.5 text-xs rounded-lg theme-secondary-btn disabled:opacity-50 font-medium flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Award className="w-3.5 h-3.5 text-sky-400" />
+                Validate Quality
+              </button>
+
+              <button
+                type="button"
+                disabled={loadingSimulation || !selectedVersionId}
+                onClick={handleRunSimulation}
+                className="px-3.5 py-1.5 text-xs rounded-lg theme-secondary-btn disabled:opacity-50 font-medium flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                Run Simulation
+              </button>
+
+              <div className="flex items-center gap-1.5 empty:hidden">
+                {selectedVersion && selectedVersion.status !== "APPROVED" && (
+                  <button
+                    type="button"
+                    disabled={actionLoading || !selectedVersionId || !isApprovalEligible}
+                    onClick={() => setShowApprovalModal(true)}
+                    className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition-colors ${
+                      isApprovalEligible
+                        ? "bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500/60"
+                        : "bg-slate-900/70 text-slate-500 cursor-not-allowed border border-slate-800"
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5" /> Approve &amp; Activate
+                  </button>
+                )}
+
+                {!isSelectedActive && selectedVersion && (
+                  <button
+                    type="button"
+                    disabled={actionLoading || !selectedVersionId}
+                    onClick={handleRollback}
+                    className="flex-1 px-2.5 py-1.5 bg-amber-950/80 hover:bg-amber-900/80 text-amber-300 border border-amber-800/70 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Rollback to This
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {isIncompleteDefinition && (
+            <div className="p-3 rounded-lg border border-amber-800/80 bg-amber-950/30 text-xs text-amber-200 flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <div className="font-bold text-amber-300">
+                  Rule Definition Incomplete — Approval Gate 1 (G1) Blocked
+                </div>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                  Authoritative SIEM detection rule specifications are missing or unverified. Observed telemetry fields (such as byte counts) are not assumed to be detection thresholds.
+                  The synthesized policy remains a <strong>provisional draft</strong> with explicit unresolved requirements. It cannot be approved for autonomous production use until authoritative criteria are supplied.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap border-b border-slate-800/90 space-x-1 text-xs">
+            <button
+              onClick={() => setStudioTab("editor")}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
+                studioTab === "editor" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <FileCode className="w-3.5 h-3.5" />
+              Policy Editor (9 Sections)
+            </button>
+            <button
+              onClick={() => setStudioTab("quality")}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
+                studioTab === "quality" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Award className="w-3.5 h-3.5" />
+              Quality Gates (G1–G8)
+            </button>
+            <button
+              onClick={() => setStudioTab("intelligence")}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
+                studioTab === "intelligence" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5" />
+              SIEM Semantics &amp; Archetype
+            </button>
+            <button
+              onClick={() => setStudioTab("contract")}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
+                studioTab === "contract" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Database className="w-3.5 h-3.5" />
+              Evidence Contract
+            </button>
+            <button
+              onClick={() => setStudioTab("simulation")}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
+                studioTab === "simulation" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Simulation Lab
+            </button>
+            <button
+              onClick={() => setStudioTab("drift")}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
+                studioTab === "drift" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <GitBranch className="w-3.5 h-3.5" />
+              Drift &amp; Monitoring
+            </button>
+            <button
+              onClick={() => setStudioTab("learning")}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
+                studioTab === "learning" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5" />
+              Rule Learning &amp; Production Gating
+            </button>
+          </div>
+        </>
       )}
 
-      {/* Feedback Alert */}
+      {/* Shared Feedback Alert */}
       {feedback && (
-        <div className={`p-2.5 rounded-md text-xs border ${feedback.type === "success"
-          ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
-          : feedback.type === "warning"
-            ? "bg-amber-950/60 border-amber-800 text-amber-300"
-            : "bg-rose-950/60 border-rose-800 text-rose-300"
-          }`}>
+        <div
+          className={`p-2.5 rounded-md text-xs border ${
+            feedback.type === "success"
+              ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
+              : feedback.type === "warning"
+              ? "bg-amber-950/60 border-amber-800 text-amber-300"
+              : "bg-rose-950/60 border-rose-800 text-rose-300"
+          }`}
+        >
           {feedback.text}
         </div>
       )}
 
-      {/* Sub-Navigation Tabs */}
-      <div className="flex flex-wrap border-b border-slate-800/90 space-x-1 text-xs">
-        <button
-          onClick={() => setStudioTab("editor")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "editor"
-            ? "theme-tab-active"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-        >
-          <FileCode className="w-3.5 h-3.5" />
-          Policy Editor (9 Sections)
-        </button>
+      {/* COMPACT MODE: TAB 1 (OVERVIEW) */}
+      {compactUi && primaryTab === "overview" && (
+        <AgentIntelligenceStudioOverview
+          ruleId={selectedRuleId}
+          ruleName={rulePrompt?.rule_name || selectedRule?.name}
+          archetype={intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
+          qualityAssessment={qualityAssessment}
+          learningProfile={learningProfile}
+          intelligenceData={intelligenceData}
+          selectedVersion={selectedVersion || null}
+          versions={rulePrompt?.versions || []}
+          activeVersionId={rulePrompt?.active_version_id}
+          isApprovalEligible={isApprovalEligible}
+          isIncompleteDefinition={isIncompleteDefinition}
+          hasHardGateFailure={hasHardGateFailure}
+          llmOnline={llmOnline}
+          actionLoading={actionLoading}
+          loadingQuality={loadingQuality}
+          loadingSimulation={loadingSimulation}
+          isViewer={isViewer}
+          onSelectVersion={handleSelectVersion}
+          onRollback={handleRollback}
+          onGenerateIntelligentDraft={handleGenerateIntelligentDraft}
+          onValidateQuality={() => selectedVersionId && fetchQualityValidation(selectedRuleId, selectedVersionId)}
+          onRunSimulation={handleRunSimulation}
+          onApproveClick={() => setShowApprovalModal(true)}
+          onNavigateTab={handleNavigateTab}
+        />
+      )}
 
-        <button
-          onClick={() => setStudioTab("quality")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "quality"
-            ? "theme-tab-active"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-        >
-          <Award className="w-3.5 h-3.5" />
-          Quality Gates (G1–G8)
-          {blockingIssuesList.length > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
-              {blockingIssuesList.length}
-            </span>
-          )}
-        </button>
+      {/* COMPACT MODE: TAB 2 (ANALYST REVIEW & LEARNING) */}
+      {compactUi && primaryTab === "learning" && (
+        <div className="space-y-4">
+          <RuleLearningDashboard
+            ruleId={selectedRuleId}
+            ruleName={rulePrompt?.rule_name || selectedRule?.name}
+            onProfileUpdate={(p) => setLearningProfile(p)}
+          />
+        </div>
+      )}
 
-        <button
-          onClick={() => setStudioTab("intelligence")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "intelligence"
-            ? "theme-tab-active"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-        >
-          <Cpu className="w-3.5 h-3.5" />
-          SIEM Semantics &amp; Archetype
-        </button>
+      {/* COMPACT MODE: TAB 3 (ADVANCED CONFIGURATION SUB-NAV) */}
+      {compactUi && primaryTab === "advanced" && (
+        <div className="p-2 rounded-xl border border-slate-800/80 bg-slate-950/70 mb-1 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1 text-xs">
+            <button
+              onClick={() => { setAdvancedSection("editor"); setStudioTab("editor"); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
+                advancedSection === "editor"
+                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <FileCode className="w-3.5 h-3.5" />
+              Policy Editor (9 Sections)
+            </button>
+            <button
+              onClick={() => { setAdvancedSection("quality"); setStudioTab("quality"); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
+                advancedSection === "quality"
+                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Award className="w-3.5 h-3.5" />
+              Quality Gates (G1–G8)
+              {blockingIssuesList.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
+                  {blockingIssuesList.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => { setAdvancedSection("intelligence"); setStudioTab("intelligence"); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
+                advancedSection === "intelligence"
+                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5" />
+              SIEM Semantics
+            </button>
+            <button
+              onClick={() => { setAdvancedSection("contract"); setStudioTab("contract"); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
+                advancedSection === "contract"
+                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Database className="w-3.5 h-3.5" />
+              Evidence Contract
+            </button>
+            <button
+              onClick={() => { setAdvancedSection("simulation"); setStudioTab("simulation"); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
+                advancedSection === "simulation"
+                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Simulation Lab
+            </button>
+            <button
+              onClick={() => { setAdvancedSection("drift"); setStudioTab("drift"); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
+                advancedSection === "drift"
+                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <GitBranch className="w-3.5 h-3.5" />
+              Drift &amp; Monitoring
+              {driftEvents.filter((d) => !d.acknowledged).length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
+                  {driftEvents.filter((d) => !d.acknowledged).length}
+                </span>
+              )}
+            </button>
+          </div>
+          <span className="text-[10px] text-slate-500 font-mono">Advanced Technical Controls</span>
+        </div>
+      )}
 
-        <button
-          onClick={() => setStudioTab("contract")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "contract"
-            ? "theme-tab-active"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-        >
-          <Database className="w-3.5 h-3.5" />
-          Evidence Contract
-        </button>
-
-        <button
-          onClick={() => setStudioTab("simulation")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "simulation"
-            ? "theme-tab-active"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-        >
-          <Activity className="w-3.5 h-3.5" />
-          Simulation Lab
-        </button>
-
-        <button
-          onClick={() => setStudioTab("drift")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "drift"
-            ? "theme-tab-active"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-        >
-          <GitBranch className="w-3.5 h-3.5" />
-          Drift &amp; Monitoring
-          {driftEvents.filter((d) => !d.acknowledged).length > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
-              {driftEvents.filter((d) => !d.acknowledged).length}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setStudioTab("learning")}
-          className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "learning"
-            ? "theme-tab-active"
-            : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
-        >
-          <Shield className="w-3.5 h-3.5" />
-          Rule Learning &amp; Production Gating
-        </button>
-      </div>
-
-      {loadingPrompt ? (
+      {/* WORKSPACE CONTENT: RENDERED FOR LEGACY OR WHEN IN ADVANCED TAB */}
+      {(!compactUi || primaryTab === "advanced") && (
+        <>
+          {loadingPrompt ? (
         <div className="py-12 text-center text-slate-500 text-xs">
           <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-cyan-400" />
           Loading agent policy and intelligence specifications...
@@ -3221,11 +3516,13 @@ export default function AgentIntelligenceStudioPage() {
         </div>
       )}
 
-      {/* TAB 7: RULE LEARNING & GOVERNANCE */}
-      {studioTab === "learning" && (
+      {/* TAB 7: RULE LEARNING & GOVERNANCE (LEGACY MODE) */}
+      {!compactUi && studioTab === "learning" && (
         <div className="space-y-4">
-          <RuleLearningDashboard ruleId={selectedRuleId} ruleName={rulePrompt?.rule_name} />
+          <RuleLearningDashboard ruleId={selectedRuleId} ruleName={rulePrompt?.rule_name} onProfileUpdate={(p) => setLearningProfile(p)} />
         </div>
+      )}
+        </>
       )}
 
       {/* Simulation Diagnostic Drilldown Modal */}
@@ -3544,5 +3841,13 @@ export default function AgentIntelligenceStudioPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AgentIntelligenceStudioPage() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-slate-500 text-xs">Loading Agent Intelligence Studio...</div>}>
+      <AgentIntelligenceStudioContent />
+    </React.Suspense>
   );
 }

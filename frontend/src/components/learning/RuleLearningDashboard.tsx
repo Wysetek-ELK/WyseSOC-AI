@@ -30,9 +30,10 @@ interface RuleLearningDashboardProps {
   ruleId: string;
   ruleName?: string;
   customer?: string;
+  onProfileUpdate?: (profile: any) => void;
 }
 
-export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearningDashboardProps) {
+export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpdate }: RuleLearningDashboardProps) {
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
@@ -77,6 +78,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
     try {
       const data = await api.getRuleLearningProfileDetail(ruleId, customer);
       setProfile(data);
+      onProfileUpdate?.(data);
     } catch (err: any) {
       console.error(err);
       setFeedback({ type: "error", text: formatApiErrorMessage(err, "Failed to load learning profile") });

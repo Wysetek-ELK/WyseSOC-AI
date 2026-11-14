@@ -27,6 +27,7 @@ import {
   DryRunResult,
   RuleItem,
 } from "@/lib/api";
+import { MetricSummaryCard, NextActionCard, AdvancedDetailsPanel } from "@/components/compact/CompactDesignSystem";
 
 export default function AgentSimulationLabPage() {
   const [configs, setConfigs] = useState<DryRunConfig[]>([]);
@@ -176,6 +177,55 @@ export default function AgentSimulationLabPage() {
           </button>
         </div>
       </div>
+
+      {/* Compact Simulation Metrics Row */}
+      {(() => {
+        const totalItemsEvaluated = jobs.reduce((acc, j) => acc + (j.processed_items || 0), 0);
+        const verifiedCases = jobResults.filter((r) => r.ground_truth_verdict && r.ground_truth_verdict !== "Unlabeled");
+        const agreedCases = verifiedCases.filter((r) => r.is_agreement).length;
+        const accuracyText = verifiedCases.length > 0
+          ? `${Math.round((agreedCases / verifiedCases.length) * 100)}%`
+          : "N/A (Pending Ground Truth)";
+
+        return (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <MetricSummaryCard
+                label="Replay Engine"
+                value={llmStatus?.is_healthy ? "Local LLM" : "Heuristic Sim"}
+                subtext={llmStatus?.is_healthy ? `${llmStatus.model || "Qwen 2.5"}` : "Deterministic Fallback"}
+                status={llmStatus?.is_healthy ? "success" : "normal"}
+              />
+              <MetricSummaryCard
+                label="Replay Batches"
+                value={jobs.length}
+                subtext={`${configs.length} active configurations`}
+                status="normal"
+              />
+              <MetricSummaryCard
+                label="Scanned Incidents"
+                value={totalItemsEvaluated}
+                subtext="Total items processed across jobs"
+                status="normal"
+              />
+              <MetricSummaryCard
+                label="Empirical Accuracy"
+                value={accuracyText}
+                subtext={verifiedCases.length > 0 ? `${verifiedCases.length} verified ground truth cases` : "Requires verified analyst cases"}
+                status={verifiedCases.length > 0 ? "success" : "neutral"}
+              />
+            </div>
+
+            <NextActionCard
+              title={selectedJob ? `Inspecting Replay Batch: ${selectedJob.config_name || selectedJob.id}` : "Configure and Launch Replay Batch"}
+              description={selectedJob ? "Examine predicted verdicts and reasoning below, or open statistical evaluation reports in Verdict Intelligence." : "Select a detection rule and partition strategy to benchmark agent policies against historical incidents."}
+              actionLabel={selectedJob ? "View Evaluation Report" : "Launch Replay"}
+              onAction={selectedJob ? () => { window.location.href = `/verdict-intelligence?jobId=${selectedJob.id}`; } : handleLaunch}
+              status="primary"
+            />
+          </>
+        );
+      })()}
 
       {/* Prominent Simulation Guard Warning */}
       <div className="p-2.5 sm:p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5">
@@ -579,30 +629,39 @@ export default function AgentSimulationLabPage() {
                       </div>
                     )}
 
-                    {selectedResult.missing_evidence.length > 0 && (
-                      <div className="space-y-1">
-                        <div className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider">
-                          Missing Telemetry / Information Gaps
-                        </div>
-                        <ul className="list-disc list-inside text-[11px] text-muted-foreground space-y-0.5">
-                          {selectedResult.missing_evidence.map((gap, i) => (
-                            <li key={i}>{gap}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    {(selectedResult.missing_evidence.length > 0 || selectedResult.analyst_questions.length > 0) && (
+                      <AdvancedDetailsPanel
+                        title={`Investigation Diagnostics (${selectedResult.missing_evidence.length} gaps, ${selectedResult.analyst_questions.length} questions)`}
+                        defaultOpen={false}
+                      >
+                        <div className="space-y-3 pt-1">
+                          {selectedResult.missing_evidence.length > 0 && (
+                            <div className="space-y-1">
+                              <div className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider">
+                                Missing Telemetry / Information Gaps
+                              </div>
+                              <ul className="list-disc list-inside text-[11px] text-muted-foreground space-y-0.5">
+                                {selectedResult.missing_evidence.map((gap, i) => (
+                                  <li key={i}>{gap}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
 
-                    {selectedResult.analyst_questions.length > 0 && (
-                      <div className="space-y-1">
-                        <div className="text-[10px] font-semibold text-primary uppercase tracking-wider">
-                          Recommended Analyst Clarification Questions
+                          {selectedResult.analyst_questions.length > 0 && (
+                            <div className="space-y-1">
+                              <div className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+                                Recommended Analyst Clarification Questions
+                              </div>
+                              <ul className="list-disc list-inside text-[11px] text-muted-foreground space-y-0.5">
+                                {selectedResult.analyst_questions.map((q, i) => (
+                                  <li key={i}>{q}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
-                        <ul className="list-disc list-inside text-[11px] text-muted-foreground space-y-0.5">
-                          {selectedResult.analyst_questions.map((q, i) => (
-                            <li key={i}>{q}</li>
-                          ))}
-                        </ul>
-                      </div>
+                      </AdvancedDetailsPanel>
                     )}
                   </>
                 ) : (

@@ -33,6 +33,8 @@ import { api, IncidentDetail, IncidentAiVerdictResponse } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import { HistoricalTelemetryTimeline } from "@/components/telemetry/HistoricalTelemetryTimeline";
 import { formatExecutionProvenanceBadge } from "@/lib/provenance";
+import { IncidentVerdictMatrix } from "@/components/compact/IncidentVerdictMatrix";
+import { NextActionCard, AdvancedDetailsPanel } from "@/components/compact/CompactDesignSystem";
 
 export default function AITriageWorkbenchDetailPage({
   params,
@@ -283,6 +285,55 @@ export default function AITriageWorkbenchDetailPage({
           </div>
         </div>
       )}
+
+      {/* 4-Dimension Incident Verdict Clarity Matrix */}
+      <IncidentVerdictMatrix
+        proposedVerdict={aiVerdict?.proposed_verdict || aiVerdict?.verdict}
+        validatedVerdict={aiVerdict?.verdict}
+        analystVerdict={incident.ground_truth?.resolution}
+        operationalStatus={incident.status_name}
+        confidence={aiVerdict?.confidence}
+        validationStatus={aiVerdict?.validation_status}
+        groundingRatio={aiVerdict?.grounding_ratio}
+        trustScore={aiVerdict?.trust_score}
+        isBlindMode={blindReviewMode}
+      />
+
+      {/* Operational Next Action Card */}
+      {(() => {
+        let actionTitle = "Review Evidence Telemetry";
+        let actionDesc = "Examine raw event logs, entity indicators, and rule context before assigning disposition.";
+        let actionBtnText: string | undefined = undefined;
+        let onAction: (() => void) | undefined = undefined;
+
+        if (!aiVerdict) {
+          actionTitle = "Generate Automated AI Verdict";
+          actionDesc = "Run the local LLM Triage Agent against canonical evidence to evaluate threat disposition.";
+          actionBtnText = "Run AI Verdict";
+          onAction = handleRequestAiVerdict;
+        } else if (aiVerdict.verdict === "REQUIRES_ATTENTION") {
+          actionTitle = "Investigate Flagged Inconsistencies";
+          actionDesc = aiVerdict.analyst_action_directive || "Model proposed verdict was withheld due to ungrounded claims or missing required evidence. Analyst validation required.";
+        } else if (!incident.ground_truth?.resolution) {
+          actionTitle = "Record Analyst Ground Truth";
+          actionDesc = `AI classified as ${aiVerdict.verdict.replace(/_/g, " ")} (${Math.round(aiVerdict.confidence)}% confidence). Confirm or override in Human Review Queue.`;
+          actionBtnText = "Submit Human Review";
+          onAction = () => { setActiveTab("ground_truth"); };
+        } else {
+          actionTitle = "Review Synchronized Ground Truth";
+          actionDesc = `Ground truth resolution recorded as '${incident.ground_truth.resolution}'. FortiSIEM status is '${incident.status_name}'.`;
+        }
+
+        return (
+          <NextActionCard
+            title={actionTitle}
+            description={actionDesc}
+            actionLabel={actionBtnText}
+            onAction={onAction}
+            status={aiVerdict?.verdict === "REQUIRES_ATTENTION" ? "warning" : "primary"}
+          />
+        );
+      })()}
 
       {/* AI Verdict Result Box */}
       {verdictError && (
@@ -604,166 +655,174 @@ export default function AITriageWorkbenchDetailPage({
             </p>
           </div>
 
-          {/* Validation Reason Codes */}
-          {aiVerdict.validation_reason_codes && aiVerdict.validation_reason_codes.length > 0 && (
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
-                Validation Assessment Codes ({aiVerdict.validation_reason_codes.length}):
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {aiVerdict.validation_reason_codes.map((code, idx) => (
-                  <span
-                    key={idx}
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                      code.includes("PASSED")
-                        ? "bg-emerald-950/70 text-emerald-300 border-emerald-800"
-                        : code.includes("CLAIM_UNGROUNDED") || code.includes("CONTRADICTION")
-                        ? "bg-rose-950/80 text-rose-300 border-rose-800"
-                        : "bg-amber-950/70 text-amber-300 border-amber-800"
-                    }`}
-                  >
-                    {code}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Unsupported Claims Alert (if any hallucinated claims detected) */}
-          {aiVerdict.unsupported_claims && aiVerdict.unsupported_claims.length > 0 && (
-            <div className="rounded-lg border border-rose-800/80 bg-rose-950/40 p-3 space-y-2 text-xs">
-              <div className="flex items-center gap-2 text-rose-300 font-semibold">
-                <AlertTriangle className="h-4 w-4 text-rose-400" />
-                <span>Unsupported / Fabricated Claims Detected ({aiVerdict.unsupported_claims.length})</span>
-              </div>
-              <p className="text-[11px] text-rose-200/90 leading-relaxed">
-                The model cited facts not present in verified incident telemetry. Independent verification flagged and neutralized these claims:
-              </p>
-              <div className="space-y-1 font-mono text-[11px]">
-                {aiVerdict.unsupported_claims.map((claim, idx) => (
-                  <div key={idx} className="p-1.5 rounded bg-rose-950 border border-rose-800/60 flex items-center justify-between">
-                    <div>
-                      <span className="text-rose-400 font-bold">{claim.claim_type}: </span>
-                      <span className="text-slate-200">{String(claim.asserted_value)} </span>
-                      <span className="text-slate-500">({claim.field})</span>
-                    </div>
-                    <span className="text-[9px] bg-rose-900 text-rose-200 px-1 py-0.2 rounded uppercase">
-                      {claim.grounding_status || "UNGROUNDED"}
-                    </span>
+          {/* Advanced Technical Diagnostics & Evidence Validation (Collapsible on demand) */}
+          <AdvancedDetailsPanel
+            title={`Technical Diagnostics & Evidence Validation (${(aiVerdict.validation_reason_codes?.length || 0) + (aiVerdict.unsupported_claims?.length || 0) + (aiVerdict.missing_evidence?.length || 0)} indicators)`}
+            defaultOpen={aiVerdict.verdict === "REQUIRES_ATTENTION"}
+          >
+            <div className="space-y-3 pt-1">
+              {/* Validation Reason Codes */}
+              {aiVerdict.validation_reason_codes && aiVerdict.validation_reason_codes.length > 0 && (
+                <div className="space-y-1">
+                  <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                    Validation Assessment Codes ({aiVerdict.validation_reason_codes.length}):
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Missing Required Telemetry & Field Mapping Diagnostics */}
-          {aiVerdict.missing_evidence && aiVerdict.missing_evidence.length > 0 && (
-            <div className="rounded-lg border border-slate-800/80 bg-slate-900/40 p-3 space-y-1.5">
-              <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
-                <AlertCircle className="h-3 w-3" />
-                Missing Required Evidence Telemetry ({aiVerdict.missing_evidence.length})
-              </div>
-              <ul className="text-xs space-y-1.5 text-slate-300">
-                {aiVerdict.missing_evidence.map((item, idx) => {
-                  const status = (aiVerdict as any).field_validation_status?.[item];
-                  return (
-                    <li key={idx} className="text-[11px] leading-tight flex items-center justify-between font-mono">
-                      <span className="text-amber-200/90">{item}</span>
-                      {status && (
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold ${
-                          status === "NOT_MAPPED"
-                            ? "bg-rose-950 text-rose-300 border border-rose-800"
-                            : status === "CONTEXT_OMITTED"
-                            ? "bg-purple-950 text-purple-300 border border-purple-800"
-                            : status === "NOT_IN_SOURCE"
-                            ? "bg-slate-800 text-slate-300 border border-slate-700"
-                            : "bg-amber-950 text-amber-300 border border-amber-800"
-                        }`}>
-                          {status === "NOT_MAPPED" ? "Field Mapping Error" : status === "NOT_IN_SOURCE" ? "Not In Source" : status}
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
-          {/* Unmapped Raw Attributes Detected */}
-          {(aiVerdict as any).unmapped_fields && (aiVerdict as any).unmapped_fields.length > 0 && (
-            <div className="rounded-lg border border-amber-900/60 bg-amber-950/20 p-2.5 space-y-1 text-xs">
-              <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
-                <AlertTriangle className="h-3 w-3 text-amber-400" />
-                Unmapped Source Event Attributes ({(aiVerdict as any).unmapped_fields.length})
-              </div>
-              <p className="text-[11px] text-amber-300/80 leading-relaxed font-sans">
-                Source telemetry contains unmapped raw attributes. Normalization fell back safely without data corruption:
-              </p>
-              <div className="flex flex-wrap gap-1 font-mono text-[10px] pt-1">
-                {(aiVerdict as any).unmapped_fields.slice(0, 10).map((field: string, idx: number) => (
-                  <span key={idx} className="bg-slate-900 text-slate-300 px-1.5 py-0.5 rounded border border-slate-800">
-                    {field}
-                  </span>
-                ))}
-                {(aiVerdict as any).unmapped_fields.length > 10 && (
-                  <span className="text-slate-500 self-center">+{(aiVerdict as any).unmapped_fields.length - 10} more</span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Supporting Evidence Attributes */}
-          {aiVerdict.supporting_evidence && aiVerdict.supporting_evidence.length > 0 && (
-            <div className="rounded-lg border border-slate-800/80 bg-slate-900/40 p-3 space-y-1.5">
-              <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
-                Supporting Evidence Attributes ({aiVerdict.supporting_evidence.length})
-              </div>
-              <ul className="text-xs space-y-1 text-slate-300 list-disc list-inside">
-                {aiVerdict.supporting_evidence.map((ev, idx) => (
-                  <li key={idx} className="text-[11px] font-mono leading-tight">
-                    {ev}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Phase 3 Verified Historical Precedents (Semantic RAG) */}
-          {aiVerdict.retrieved_precedents && aiVerdict.retrieved_precedents.length > 0 && (
-            <div className="rounded-lg border border-indigo-900/60 bg-indigo-950/20 p-3 space-y-2 text-xs">
-              <div className="flex items-center justify-between text-indigo-300 font-semibold">
-                <div className="flex items-center gap-2">
-                  <Database className="h-4 w-4 text-indigo-400" />
-                  <span>Verified Historical Precedents ({aiVerdict.retrieved_precedents.length})</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {aiVerdict.validation_reason_codes.map((code, idx) => (
+                      <span
+                        key={idx}
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                          code.includes("PASSED")
+                            ? "bg-emerald-950/70 text-emerald-300 border-emerald-800"
+                            : code.includes("CLAIM_UNGROUNDED") || code.includes("CONTRADICTION")
+                            ? "bg-rose-950/80 text-rose-300 border-rose-800"
+                            : "bg-amber-950/70 text-amber-300 border-amber-800"
+                        }`}
+                      >
+                        {code}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <span className="text-[10px] font-mono text-indigo-400/80">
-                  Tenant-Isolated & Exact-Rule Scoped
-                </span>
-              </div>
-              <div className="space-y-2">
-                {aiVerdict.retrieved_precedents.map((prec, idx) => (
-                  <div key={idx} className="p-2.5 rounded bg-slate-900/90 border border-indigo-900/40 text-[11px] font-mono space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-indigo-300 font-bold">{prec.incident_title || prec.incident_id}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-400">Similarity: {(prec.similarity_score * 100).toFixed(0)}%</span>
-                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                          prec.verified_verdict === "TRUE_POSITIVE"
-                            ? "bg-rose-950 text-rose-300 border border-rose-800"
-                            : "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                        }`}>
-                          {prec.verified_verdict}
+              )}
+
+              {/* Unsupported Claims Alert (if any hallucinated claims detected) */}
+              {aiVerdict.unsupported_claims && aiVerdict.unsupported_claims.length > 0 && (
+                <div className="rounded-lg border border-rose-800/80 bg-rose-950/40 p-3 space-y-2 text-xs">
+                  <div className="flex items-center gap-2 text-rose-300 font-semibold">
+                    <AlertTriangle className="h-4 w-4 text-rose-400" />
+                    <span>Unsupported / Fabricated Claims Detected ({aiVerdict.unsupported_claims.length})</span>
+                  </div>
+                  <p className="text-[11px] text-rose-200/90 leading-relaxed">
+                    The model cited facts not present in verified incident telemetry. Independent verification flagged and neutralized these claims:
+                  </p>
+                  <div className="space-y-1 font-mono text-[11px]">
+                    {aiVerdict.unsupported_claims.map((claim, idx) => (
+                      <div key={idx} className="p-1.5 rounded bg-rose-950 border border-rose-800/60 flex items-center justify-between">
+                        <div>
+                          <span className="text-rose-400 font-bold">{claim.claim_type}: </span>
+                          <span className="text-slate-200">{String(claim.asserted_value)} </span>
+                          <span className="text-slate-500">({claim.field})</span>
+                        </div>
+                        <span className="text-[9px] bg-rose-900 text-rose-200 px-1 py-0.2 rounded uppercase">
+                          {claim.grounding_status || "UNGROUNDED"}
                         </span>
                       </div>
-                    </div>
-                    <p className="text-slate-300 font-sans text-xs">
-                      {prec.analyst_explanation}
-                    </p>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+
+              {/* Missing Required Telemetry & Field Mapping Diagnostics */}
+              {aiVerdict.missing_evidence && aiVerdict.missing_evidence.length > 0 && (
+                <div className="rounded-lg border border-slate-800/80 bg-slate-900/40 p-3 space-y-1.5">
+                  <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                    <AlertCircle className="h-3 w-3" />
+                    Missing Required Evidence Telemetry ({aiVerdict.missing_evidence.length})
+                  </div>
+                  <ul className="text-xs space-y-1.5 text-slate-300">
+                    {aiVerdict.missing_evidence.map((item, idx) => {
+                      const status = (aiVerdict as any).field_validation_status?.[item];
+                      return (
+                        <li key={idx} className="text-[11px] leading-tight flex items-center justify-between font-mono">
+                          <span className="text-amber-200/90">{item}</span>
+                          {status && (
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold ${
+                              status === "NOT_MAPPED"
+                                ? "bg-rose-950 text-rose-300 border border-rose-800"
+                                : status === "CONTEXT_OMITTED"
+                                ? "bg-purple-950 text-purple-300 border border-purple-800"
+                                : status === "NOT_IN_SOURCE"
+                                ? "bg-slate-800 text-slate-300 border border-slate-700"
+                                : "bg-amber-950 text-amber-300 border border-amber-800"
+                            }`}>
+                              {status === "NOT_MAPPED" ? "Field Mapping Error" : status === "NOT_IN_SOURCE" ? "Not In Source" : status}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {/* Unmapped Raw Attributes Detected */}
+              {(aiVerdict as any).unmapped_fields && (aiVerdict as any).unmapped_fields.length > 0 && (
+                <div className="rounded-lg border border-amber-900/60 bg-amber-950/20 p-2.5 space-y-1 text-xs">
+                  <div className="text-[10px] font-mono uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                    <AlertTriangle className="h-3 w-3 text-amber-400" />
+                    Unmapped Source Event Attributes ({(aiVerdict as any).unmapped_fields.length})
+                  </div>
+                  <p className="text-[11px] text-amber-300/80 leading-relaxed font-sans">
+                    Source telemetry contains unmapped raw attributes. Normalization fell back safely without data corruption:
+                  </p>
+                  <div className="flex flex-wrap gap-1 font-mono text-[10px] pt-1">
+                    {(aiVerdict as any).unmapped_fields.slice(0, 10).map((field: string, idx: number) => (
+                      <span key={idx} className="bg-slate-900 text-slate-300 px-1.5 py-0.5 rounded border border-slate-800">
+                        {field}
+                      </span>
+                    ))}
+                    {(aiVerdict as any).unmapped_fields.length > 10 && (
+                      <span className="text-slate-500 self-center">+{(aiVerdict as any).unmapped_fields.length - 10} more</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Supporting Evidence Attributes */}
+              {aiVerdict.supporting_evidence && aiVerdict.supporting_evidence.length > 0 && (
+                <div className="rounded-lg border border-slate-800/80 bg-slate-900/40 p-3 space-y-1.5">
+                  <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+                    Supporting Evidence Attributes ({aiVerdict.supporting_evidence.length})
+                  </div>
+                  <ul className="text-xs space-y-1 text-slate-300 list-disc list-inside">
+                    {aiVerdict.supporting_evidence.map((ev, idx) => (
+                      <li key={idx} className="text-[11px] font-mono leading-tight">
+                        {ev}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Phase 3 Verified Historical Precedents (Semantic RAG) */}
+              {aiVerdict.retrieved_precedents && aiVerdict.retrieved_precedents.length > 0 && (
+                <div className="rounded-lg border border-indigo-900/60 bg-indigo-950/20 p-3 space-y-2 text-xs">
+                  <div className="flex items-center justify-between text-indigo-300 font-semibold">
+                    <div className="flex items-center gap-2">
+                      <Database className="h-4 w-4 text-indigo-400" />
+                      <span>Verified Historical Precedents ({aiVerdict.retrieved_precedents.length})</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-indigo-400/80">
+                      Tenant-Isolated & Exact-Rule Scoped
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {aiVerdict.retrieved_precedents.map((prec, idx) => (
+                      <div key={idx} className="p-2.5 rounded bg-slate-900/90 border border-indigo-900/40 text-[11px] font-mono space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-indigo-300 font-bold">{prec.incident_title || prec.incident_id}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-slate-400">Similarity: {(prec.similarity_score * 100).toFixed(0)}%</span>
+                            <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                              prec.verified_verdict === "TRUE_POSITIVE"
+                                ? "bg-rose-950 text-rose-300 border border-rose-800"
+                                : "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                            }`}>
+                              {prec.verified_verdict}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-slate-300 font-sans text-xs">
+                          {prec.analyst_explanation}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </AdvancedDetailsPanel>
         </div>
       )}
 

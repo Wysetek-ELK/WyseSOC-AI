@@ -15,6 +15,7 @@ import {
   Plus,
   Send,
   Eye,
+  EyeOff,
   X,
   RefreshCw,
   Tag,
@@ -28,7 +29,7 @@ import { useApp } from "@/context/AppContext";
 import { formatExecutionProvenanceBadge } from "@/lib/provenance";
 
 export default function HumanReviewQueuePage() {
-  const { user } = useApp();
+  const { user, blindReviewMode, setBlindReviewMode } = useApp();
   const canMutate = user?.role === "Administrator" || user?.role === "SOC Analyst";
 
   const [items, setItems] = useState<InvestigationListItem[]>([]);
@@ -271,13 +272,44 @@ export default function HumanReviewQueuePage() {
             Human-in-the-loop decision validation, escalation workflow, and verified verdict recording.
           </p>
         </div>
-        <button
-          onClick={fetchQueue}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors"
-        >
-          <RefreshCw className="w-3 h-3" /> Refresh Queue
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setBlindReviewMode(!blindReviewMode)}
+            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold transition-all ${
+              blindReviewMode
+                ? "border-amber-500/80 bg-amber-950/80 text-amber-300 shadow-sm"
+                : "border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {blindReviewMode ? (
+              <>
+                <EyeOff className="h-3.5 w-3.5 text-amber-400" />
+                <span>Blind Review: ON</span>
+              </>
+            ) : (
+              <>
+                <Eye className="h-3.5 w-3.5 text-slate-400" />
+                <span>Blind Review: OFF</span>
+              </>
+            )}
+          </button>
+          <button
+            onClick={fetchQueue}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors"
+          >
+            <RefreshCw className="w-3 h-3" /> Refresh Queue
+          </button>
+        </div>
       </div>
+
+      {blindReviewMode && (
+        <div className="rounded-lg border border-amber-800/80 bg-amber-950/40 p-2.5 text-xs text-amber-300 flex items-center gap-2.5">
+          <EyeOff className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+          <div className="text-[11px] leading-tight">
+            <strong className="font-semibold text-amber-200">Double-Blind Review Active:</strong> AI verdicts, confidence, and model justifications are masked in the investigation workspace until your independent human verdict is submitted.
+          </div>
+        </div>
+      )}
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
@@ -609,8 +641,42 @@ export default function HumanReviewQueuePage() {
             {/* Stage 4: AI Verdict Assurance & Provenance */}
             {selectedInvestigation.ai_assurance && (() => {
               const a = selectedInvestigation.ai_assurance;
+              const isUnreviewed = selectedInvestigation.status !== "REVIEWED" && !selectedInvestigation.analyst_verdict;
+
+              if (blindReviewMode && isUnreviewed) {
+                return (
+                  <div className="p-3 rounded-lg border border-amber-900/60 bg-amber-950/20 space-y-2 text-xs">
+                    <div className="flex items-center gap-2 text-amber-300 font-bold">
+                      <EyeOff className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Double-Blind Review Active: AI Recommendation Masked</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      The AI model's proposed verdict, confidence score, and justification are withheld to prevent cognitive bias during independent analyst assessment.
+                    </p>
+                    <div className="text-[10px] text-amber-400/90 font-mono">
+                      AI recommendations and validation assessment will be revealed immediately after your verified verdict is saved.
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div className="p-3 rounded-lg border border-indigo-900/60 bg-indigo-950/15 space-y-2.5 text-xs" data-testid="drawer-ai-assurance">
+                  {/* Post-submission reveal comparison banner */}
+                  {selectedInvestigation.analyst_verdict && (
+                    <div className={`p-2 rounded text-xs font-semibold flex items-center justify-between border ${
+                      selectedInvestigation.analyst_verdict === a.validated_verdict
+                        ? "bg-emerald-950/60 text-emerald-300 border-emerald-800"
+                        : "bg-amber-950/60 text-amber-300 border-amber-800"
+                    }`}>
+                      <span>Post-Submission Comparison:</span>
+                      <span>
+                        {selectedInvestigation.analyst_verdict === a.validated_verdict
+                          ? "✓ Analyst Agreed with AI Validated Verdict"
+                          : `⚠ Analyst Overrode AI (${selectedInvestigation.analyst_verdict} vs AI ${a.validated_verdict})`}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-900/40 pb-1.5">
                     <h3 className="font-bold text-indigo-300 flex items-center gap-1.5">
                       <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
