@@ -27,6 +27,7 @@ export default function DetectionIntelligencePage() {
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("");
   const [status, setStatus] = useState("");
+  const [readinessFilter, setReadinessFilter] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [ruleStats, setRuleStats] = useState<RuleStatsResponse | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -54,6 +55,7 @@ export default function DetectionIntelligencePage() {
         search: search || undefined,
         severity: severity || undefined,
         status: status || undefined,
+        readiness: readinessFilter || undefined,
       });
       setRules(data.items);
       setTotal(data.total);
@@ -70,7 +72,7 @@ export default function DetectionIntelligencePage() {
 
   useEffect(() => {
     loadRules();
-  }, [page, pageSize, severity, status]);
+  }, [page, pageSize, severity, status, readinessFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +111,47 @@ export default function DetectionIntelligencePage() {
         return "bg-amber-950 text-amber-300 border-amber-800";
       default:
         return "bg-blue-950 text-blue-300 border-blue-800";
+    }
+  };
+
+  const getReadinessBadge = (status?: string) => {
+    switch (status?.toUpperCase()) {
+      case "ACTIVE":
+        return {
+          label: "ACTIVE",
+          classes: "bg-emerald-950 text-emerald-300 border-emerald-800",
+        };
+      case "APPROVED":
+        return {
+          label: "APPROVED",
+          classes: "bg-teal-950 text-teal-300 border-teal-800",
+        };
+      case "READY_FOR_APPROVAL":
+        return {
+          label: "READY FOR APPROVAL",
+          classes: "bg-cyan-950 text-cyan-300 border-cyan-800 animate-pulse",
+        };
+      case "VALIDATING":
+        return {
+          label: "VALIDATING",
+          classes: "bg-blue-950 text-blue-300 border-blue-800",
+        };
+      case "LEARNING":
+        return {
+          label: "LEARNING",
+          classes: "bg-amber-950 text-amber-300 border-amber-800",
+        };
+      case "BLOCKED":
+        return {
+          label: "BLOCKED",
+          classes: "bg-rose-950 text-rose-300 border-rose-800",
+        };
+      case "INCOMPLETE":
+      default:
+        return {
+          label: status ? status.replace(/_/g, " ") : "INCOMPLETE",
+          classes: "bg-slate-900 text-slate-400 border-slate-800",
+        };
     }
   };
 
@@ -259,7 +302,7 @@ export default function DetectionIntelligencePage() {
           </button>
         </form>
 
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <select
             value={severity}
             onChange={(e) => {
@@ -283,9 +326,26 @@ export default function DetectionIntelligencePage() {
             }}
             className="rounded-md border border-slate-800 bg-slate-900 px-2 py-1 text-xs text-slate-300 focus:border-cyan-500 focus:outline-none"
           >
-            <option value="">All Statuses</option>
+            <option value="">All Baseline Statuses</option>
+            <option value="ACTIVE">Active Baseline</option>
+            <option value="INACTIVE">Inactive Baseline</option>
+          </select>
+
+          <select
+            value={readinessFilter}
+            onChange={(e) => {
+              setReadinessFilter(e.target.value);
+              setPage(1);
+            }}
+            className="rounded-md border border-slate-800 bg-slate-900 px-2 py-1 text-xs text-slate-300 focus:border-cyan-500 focus:outline-none"
+          >
+            <option value="">All Production Readiness</option>
+            <option value="BLOCKED">Blocked / Incomplete</option>
+            <option value="LEARNING">Learning</option>
+            <option value="VALIDATING">Validating</option>
+            <option value="READY_FOR_APPROVAL">Ready for Approval</option>
+            <option value="APPROVED">Approved</option>
             <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
           </select>
         </div>
       </div>
@@ -298,7 +358,8 @@ export default function DetectionIntelligencePage() {
               <tr className="border-b border-slate-800 bg-slate-900/60 text-[10px] font-mono text-slate-400">
                 <th className="py-2 px-2.5 font-medium">Rule Name / Event Type</th>
                 <th className="py-2 px-2.5 font-medium">Severity</th>
-                <th className="py-2 px-2.5 font-medium">Status</th>
+                <th className="py-2 px-2.5 font-medium">Baseline Status</th>
+                <th className="py-2 px-2.5 font-medium">Production Readiness</th>
                 <th className="py-2 px-2.5 font-medium">Data Source</th>
                 <th className="py-2 px-2.5 font-medium">Linked Incidents</th>
                 <th className="py-2 px-2.5 font-medium text-right">Action</th>
@@ -307,69 +368,96 @@ export default function DetectionIntelligencePage() {
             <tbody className="divide-y divide-slate-800/60 font-mono">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400 font-sans text-xs">
+                  <td colSpan={7} className="py-8 text-center text-slate-400 font-sans text-xs">
                     Loading detection rules from database...
                   </td>
                 </tr>
               ) : rules.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500 font-sans text-xs">
+                  <td colSpan={7} className="py-8 text-center text-slate-500 font-sans text-xs">
                     No rules found in registry. Ingest a SIEM ZIP archive to automatically register rules.
                   </td>
                 </tr>
               ) : (
-                rules.map((rule) => (
-                  <tr key={rule.id} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-1.5 px-2.5 font-semibold text-slate-200">
-                      <Link href={`/detection-intelligence/${rule.id}`} className="text-cyan-400 hover:underline">
-                        {rule.name}
-                      </Link>
-                      <div className="text-[10px] text-slate-400 font-normal">
-                        Event Type: <span className="text-slate-300">{rule.event_type}</span>
-                      </div>
-                    </td>
-                    <td className="py-1.5 px-2.5">
-                      <span
-                        className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${getSeverityBadge(
-                          rule.severity
-                        )}`}
-                      >
-                        {rule.severity}
-                      </span>
-                    </td>
-                    <td className="py-1.5 px-2.5">
-                      <span
-                        className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${
-                          rule.status === "ACTIVE"
-                            ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                            : "bg-slate-900 text-slate-400 border-slate-800"
-                        }`}
-                      >
-                        {rule.status}
-                      </span>
-                    </td>
-                    <td className="py-1.5 px-2.5 text-slate-300 truncate max-w-[200px]" title={rule.data_source}>
-                      {rule.data_source || "SIEM Telemetry"}
-                    </td>
-                    <td className="py-1.5 px-2.5">
-                      <Link
-                        href={`/ai-triage-workbench?rule_id=${encodeURIComponent(rule.event_type)}`}
-                        className="rounded bg-slate-900 px-2 py-0.5 text-[10px] text-cyan-300 border border-slate-800 hover:bg-slate-800 hover:border-cyan-800 transition-colors"
-                      >
-                        {rule.incident_count} Incidents →
-                      </Link>
-                    </td>
-                    <td className="py-1.5 px-2.5 text-right font-sans">
-                      <Link
-                        href={`/detection-intelligence/${rule.id}`}
-                        className="inline-flex items-center gap-1 rounded bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-cyan-400 hover:bg-slate-800 hover:text-cyan-300 border border-slate-800"
-                      >
-                        Details
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                rules.map((rule) => {
+                  const rBadge = getReadinessBadge(rule.production_readiness_status);
+                  const gates = rule.gates_passed_count ?? 0;
+                  const missing = rule.missing_requirements_count ?? 0;
+
+                  return (
+                    <tr key={rule.id} className="hover:bg-slate-900/40 transition-colors">
+                      <td className="py-1.5 px-2.5 font-semibold text-slate-200">
+                        <Link href={`/agent-intelligence-studio?rule_id=${rule.id}`} className="text-cyan-400 hover:underline">
+                          {rule.name}
+                        </Link>
+                        <div className="text-[10px] text-slate-400 font-normal">
+                          Event Type: <span className="text-slate-300">{rule.event_type}</span>
+                        </div>
+                      </td>
+                      <td className="py-1.5 px-2.5">
+                        <span
+                          className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${getSeverityBadge(
+                            rule.severity
+                          )}`}
+                        >
+                          {rule.severity}
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2.5">
+                        <span
+                          className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${
+                            rule.status === "ACTIVE"
+                              ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                              : "bg-slate-900 text-slate-400 border-slate-800"
+                          }`}
+                        >
+                          {rule.status}
+                        </span>
+                      </td>
+                      <td className="py-1.5 px-2.5">
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`inline-block px-1.5 py-0.5 rounded border text-[9px] font-bold ${rBadge.classes} w-fit`}>
+                            {rBadge.label}
+                          </span>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            Gates: <span className="text-slate-300">{gates}/8</span>
+                            {missing > 0 && (
+                              <span className="ml-1.5 text-amber-400">({missing} missing)</span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-1.5 px-2.5 text-slate-300 truncate max-w-[200px]" title={rule.data_source}>
+                        {rule.data_source || "SIEM Telemetry"}
+                      </td>
+                      <td className="py-1.5 px-2.5">
+                        <Link
+                          href={`/ai-triage-workbench?rule_id=${encodeURIComponent(rule.event_type)}`}
+                          className="rounded bg-slate-900 px-2 py-0.5 text-[10px] text-cyan-300 border border-slate-800 hover:bg-slate-800 hover:border-cyan-800 transition-colors"
+                        >
+                          {rule.incident_count} Incidents →
+                        </Link>
+                      </td>
+                      <td className="py-1.5 px-2.5 text-right font-sans">
+                        <div className="inline-flex items-center gap-1.5 justify-end">
+                          <Link
+                            href={`/agent-intelligence-studio?rule_id=${rule.id}`}
+                            className="inline-flex items-center gap-1 rounded bg-cyan-950/80 px-2 py-0.5 text-[11px] font-medium text-cyan-300 hover:bg-cyan-900 border border-cyan-800 shadow-sm"
+                          >
+                            Studio
+                          </Link>
+                          <Link
+                            href={`/detection-intelligence/${rule.id}`}
+                            className="inline-flex items-center gap-1 rounded bg-slate-900 px-2 py-0.5 text-[11px] font-medium text-slate-400 hover:bg-slate-800 hover:text-cyan-300 border border-slate-800"
+                            title="View Detection Semantics & Context"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

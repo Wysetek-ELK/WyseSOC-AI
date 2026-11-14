@@ -33,6 +33,7 @@ from app.services.policy_quality_validator import PolicyQualityValidator
 from app.services.policy_simulation_service import PolicySimulationService
 from app.services.bulk_quality_audit_service import BulkQualityAuditService
 from app.services.policy_lifecycle_monitor import PolicyLifecycleMonitor
+from app.services.production_readiness_service import ProductionReadinessService
 from app.schemas.prompt import (
     RulePromptResponse,
     PromptVersionResponse,
@@ -51,6 +52,7 @@ from app.schemas.policy_quality import (
     QualitySummaryItem,
     SimulationStatus,
 )
+from app.schemas.production_readiness import ProductionReadinessResponse
 
 logger = logging.getLogger("ai_verdict.prompts")
 
@@ -105,9 +107,16 @@ async def get_rule_prompts_summary(
         target_v = active_v or (versions[0] if versions else None)
         has_approved = any(v.status == "APPROVED" for v in versions)
 
-        snap = snaps_by_rule_id.get(r.id)
-        archetype = snap.primary_archetype if snap else "UNKNOWN"
-        completeness = snap.definition_status if snap else "UNKNOWN"
+        snap = snaps_by_rule_id.get(r.id) or snaps_by_rule_id.get(r.rule_id)
+        if snap:
+            archetype = snap.primary_archetype
+            completeness = snap.definition_status
+        else:
+            sem = RuleIntelligenceAnalyzer.analyze_rule(r)
+            cls_res = DetectionArchetypeRegistry.classify_rule(sem, r)
+            archetype = cls_res.primary_archetype
+            completeness = sem.definition_status.value if hasattr(sem.definition_status, "value") else str(sem.definition_status)
+
         q_score = target_v.quality_score if target_v else None
         q_status = target_v.quality_status if target_v else "NOT_EVALUATED"
 
@@ -122,7 +131,40 @@ async def get_rule_prompts_summary(
             1 if (completeness == "INCOMPLETE" and not has_approved) else 0
         )
 
-        revalidation_req = (r.id in drift_rule_ids) or (target_v and target_v.quality_status == "REVIEW_REQUIRED")
+        revalidation_req = bool((r.id in drift_rule_ids) or (bool(target_v) and getattr(target_v, "quality_status", None) == "REVIEW_REQUIRED"))
+
+        is_def_incomplete = (completeness in ("INCOMPLETE", "UNKNOWN")) or (
+            latest_qa and any("G1" in str(b) or "DEFINITION" in str(b) for b in (latest_qa.blocking_issues or []))
+        )
+        if is_def_incomplete:
+            readiness_status = "INCOMPLETE"
+            action_title = "Verify FortiSIEM Detection Semantics"
+        elif blocker_cnt > 0 or revalidation_req:
+            readiness_status = "BLOCKED"
+            action_title = "Resolve Quality Gate Blockers"
+        elif has_approved and r.status == "ACTIVE":
+            readiness_status = "ACTIVE"
+            action_title = "Monitor Production Performance"
+        elif has_approved:
+            readiness_status = "APPROVED"
+            action_title = "Activate Production Automation"
+        elif q_status == "APPROVAL_ELIGIBLE" or (latest_qa and latest_qa.approval_eligible):
+            readiness_status = "READY_FOR_APPROVAL"
+            action_title = "Request Production Approval"
+        else:
+            readiness_status = "LEARNING"
+            action_title = "Review Pending Incidents"
+
+        gates_passed_count = 0
+        if latest_qa and latest_qa.gate_results:
+            gates_passed_count = sum(
+                1 for g in latest_qa.gate_results.values()
+                if (g.get("status") if isinstance(g, dict) else getattr(g, "status", "")) == "PASSED"
+            )
+        elif has_approved:
+            gates_passed_count = 8
+        elif not is_def_incomplete and q_score and q_score > 50:
+            gates_passed_count = 2
 
         items.append(
             RulePromptSummaryItem(
@@ -146,10 +188,39 @@ async def get_rule_prompts_summary(
                 simulation_status=real_sim_status,
                 last_validated_date=(latest_qa.evaluated_at if latest_qa else (snap.updated_at if snap else None)),
                 revalidation_required=revalidation_req,
+                production_readiness_status=readiness_status,
+                gates_passed_count=gates_passed_count,
+                missing_requirements_count=blocker_cnt,
+                recommended_action_title=action_title,
             )
         )
 
     return items
+
+
+@router.get("/rule/{rule_id}/readiness", response_model=ProductionReadinessResponse)
+async def get_rule_production_readiness(
+    rule_id: str,
+    version_id: Optional[str] = Query(None),
+    customer: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    REQ: Production Readiness Evaluation Endpoint.
+    Returns authoritative, evidence-based production readiness evaluation for a detection rule.
+    Separates Production Readiness from SIEM baseline deployment status.
+    Maps technical quality criteria into 6 human-readable stages and one Smart Next Action.
+    """
+    try:
+        return await ProductionReadinessService.evaluate_readiness(
+            db=db,
+            rule_identifier=rule_id,
+            version_id=version_id,
+            customer=customer or "DEFAULT",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/export")

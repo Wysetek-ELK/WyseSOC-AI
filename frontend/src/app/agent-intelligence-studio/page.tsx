@@ -87,6 +87,7 @@ function AgentIntelligenceStudioContent() {
   const [baselineFilter, setBaselineFilter] = useState("");
   const [archetypeFilter, setArchetypeFilter] = useState("");
   const [completenessFilter, setCompletenessFilter] = useState("");
+  const [readinessFilter, setReadinessFilter] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 15;
 
@@ -895,6 +896,47 @@ function AgentIntelligenceStudioContent() {
     return "bg-rose-950/80 text-rose-300 border-rose-800";
   };
 
+  const getReadinessBadge = (status?: string) => {
+    switch (status?.toUpperCase()) {
+      case "ACTIVE":
+        return {
+          label: "ACTIVE",
+          classes: "bg-emerald-950 text-emerald-300 border-emerald-800",
+        };
+      case "APPROVED":
+        return {
+          label: "APPROVED",
+          classes: "bg-teal-950 text-teal-300 border-teal-800",
+        };
+      case "READY_FOR_APPROVAL":
+        return {
+          label: "READY FOR APPROVAL",
+          classes: "bg-cyan-950 text-cyan-300 border-cyan-800 animate-pulse",
+        };
+      case "VALIDATING":
+        return {
+          label: "VALIDATING",
+          classes: "bg-blue-950 text-blue-300 border-blue-800",
+        };
+      case "LEARNING":
+        return {
+          label: "LEARNING",
+          classes: "bg-amber-950 text-amber-300 border-amber-800",
+        };
+      case "BLOCKED":
+        return {
+          label: "BLOCKED",
+          classes: "bg-rose-950 text-rose-300 border-rose-800",
+        };
+      case "INCOMPLETE":
+      default:
+        return {
+          label: status ? status.replace(/_/g, " ") : "INCOMPLETE",
+          classes: "bg-slate-900 text-slate-400 border-slate-800",
+        };
+    }
+  };
+
   // Filter summaries for table
   const filteredSummaries = summaries.filter((item) => {
     if (searchFilter) {
@@ -922,6 +964,14 @@ function AgentIntelligenceStudioContent() {
     }
     if (completenessFilter && item.definition_completeness !== completenessFilter) {
       return false;
+    }
+    if (readinessFilter) {
+      const r = item.production_readiness_status;
+      if (readinessFilter === "BLOCKED" && r !== "BLOCKED" && r !== "INCOMPLETE") {
+        return false;
+      } else if (readinessFilter !== "BLOCKED" && r !== readinessFilter) {
+        return false;
+      }
     }
     return true;
   });
@@ -1196,6 +1246,23 @@ function AgentIntelligenceStudioContent() {
               <option value="DRAFT">Template Draft</option>
               <option value="NONE">No Baseline</option>
             </select>
+
+            <select
+              value={readinessFilter}
+              onChange={(e) => {
+                setReadinessFilter(e.target.value);
+                setPage(1);
+              }}
+              className="px-2.5 py-1 text-xs rounded border border-slate-800 bg-slate-950 text-slate-300 focus:outline-none focus:border-cyan-500"
+            >
+              <option value="">All Readiness States</option>
+              <option value="BLOCKED">Blocked / Incomplete</option>
+              <option value="LEARNING">Learning</option>
+              <option value="VALIDATING">Validating</option>
+              <option value="READY_FOR_APPROVAL">Ready for Approval</option>
+              <option value="APPROVED">Approved</option>
+              <option value="ACTIVE">Active</option>
+            </select>
           </div>
         </div>
 
@@ -1211,6 +1278,7 @@ function AgentIntelligenceStudioContent() {
                   <th className="py-2.5 px-2 font-semibold">Definition</th>
                   <th className="py-2.5 px-2 font-semibold">Quality Score</th>
                   <th className="py-2.5 px-3 font-semibold">Baseline Status</th>
+                  <th className="py-2.5 px-3 font-semibold">Production Readiness</th>
                   <th className="py-2.5 px-2 font-semibold">Drift Flag</th>
                   <th className="py-2.5 px-3 font-semibold text-right">Action</th>
                 </tr>
@@ -1218,14 +1286,14 @@ function AgentIntelligenceStudioContent() {
               <tbody className="divide-y divide-slate-800/60">
                 {loadingSummaries ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
+                    <td colSpan={9} className="py-12 text-center text-slate-400 text-xs">
                       <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-cyan-400" />
                       Loading Agent Intelligence Studio rule directory...
                     </td>
                   </tr>
                 ) : paginatedSummaries.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-500 text-xs">
+                    <td colSpan={9} className="py-12 text-center text-slate-500 text-xs">
                       No detection rules match the specified search or filter criteria.
                     </td>
                   </tr>
@@ -1234,6 +1302,9 @@ function AgentIntelligenceStudioContent() {
                     const isApproved = item.has_approved_prompt;
                     const hasDraft = !isApproved && item.total_versions > 0;
                     const isIncomplete = item.definition_completeness === "INCOMPLETE";
+                    const rBadge = getReadinessBadge(item.production_readiness_status);
+                    const gates = item.gates_passed_count ?? 0;
+                    const missing = item.missing_requirements_count ?? 0;
 
                     return (
                       <tr
@@ -1305,6 +1376,20 @@ function AgentIntelligenceStudioContent() {
                               No Baseline
                             </span>
                           )}
+                        </td>
+
+                        <td className="py-2 px-3">
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`inline-block px-1.5 py-0.5 rounded border text-[9px] font-bold ${rBadge.classes} w-fit`}>
+                              {rBadge.label}
+                            </span>
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              Gates: <span className="text-slate-300">{gates}/8</span>
+                              {missing > 0 && (
+                                <span className="ml-1.5 text-amber-400">({missing} missing)</span>
+                              )}
+                            </div>
+                          </div>
                         </td>
 
                         <td className="py-2 px-2">

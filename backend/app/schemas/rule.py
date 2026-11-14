@@ -26,6 +26,9 @@ class RuleCreate(RuleBase):
 class RuleResponse(RuleBase):
     id: str
     incident_count: Optional[int] = 0
+    production_readiness_status: Optional[str] = "INCOMPLETE"
+    gates_passed_count: Optional[int] = 0
+    missing_requirements_count: Optional[int] = 0
     created_at: datetime
     updated_at: datetime
 

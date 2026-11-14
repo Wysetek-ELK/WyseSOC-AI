@@ -649,6 +649,7 @@ export interface EvidenceCompletenessIndicatorProps {
   availableCount: number;
   missingCount: number;
   missingFields?: string[];
+  isSemanticsVerified?: boolean;
 }
 
 export function EvidenceCompletenessIndicator({
@@ -656,30 +657,45 @@ export function EvidenceCompletenessIndicator({
   availableCount,
   missingCount,
   missingFields = [],
+  isSemanticsVerified = true,
 }: EvidenceCompletenessIndicatorProps) {
-  const ratio = requiredCount > 0 ? Math.min(100, Math.round((availableCount / requiredCount) * 100)) : 100;
+  // If semantics are unverified or missingCount > 0, field presence alone does NOT constitute 100% completeness
+  const verifiedCount = Math.max(0, requiredCount - missingCount);
+  const ratio =
+    !isSemanticsVerified && missingCount === 0
+      ? 50 // Unverified semantics cap at 50%
+      : requiredCount > 0
+      ? Math.min(100, Math.round((verifiedCount / requiredCount) * 100))
+      : 100;
+
+  const isFullyComplete = missingCount === 0 && isSemanticsVerified && verifiedCount >= requiredCount;
 
   return (
     <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 space-y-1.5 text-xs">
       <div className="flex items-center justify-between text-[11px]">
         <span className="text-slate-400 font-medium">Evidence Field Completeness:</span>
-        <span className={`font-bold ${missingCount === 0 ? "text-emerald-400" : "text-amber-400"}`}>
-          {availableCount} / {requiredCount} ({ratio}%)
+        <span className={`font-bold ${isFullyComplete ? "text-emerald-400" : "text-amber-400"}`}>
+          {verifiedCount} / {requiredCount} ({ratio}%)
         </span>
       </div>
 
       <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden flex">
         <div
-          className={`h-full transition-all ${missingCount === 0 ? "bg-emerald-500" : "bg-amber-500"}`}
+          className={`h-full transition-all ${isFullyComplete ? "bg-emerald-500" : "bg-amber-500"}`}
           style={{ width: `${ratio}%` }}
         />
       </div>
 
-      {missingCount > 0 && (
+      {!isSemanticsVerified ? (
+        <p className="text-[10px] text-amber-300/90 truncate flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+          <span>Evidence Semantics Unverified (Raw telemetry fields present but unvalidated)</span>
+        </p>
+      ) : missingCount > 0 ? (
         <p className="text-[10px] text-amber-300/90 truncate">
           Missing: {missingFields.join(", ")}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

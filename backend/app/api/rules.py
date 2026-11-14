@@ -3,11 +3,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, desc
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.user import User
 from app.models.rule import Rule
 from app.models.incident import Incident
+from app.models.prompt import RulePrompt, PromptVersion
+from app.models.rule_intelligence import RuleIntelligenceSnapshot
+from app.models.policy_quality import PolicyQualityAssessmentRecord
+from app.models.rule_learning import RuleLearningProfile
 from app.schemas.rule import RuleResponse, RuleDetailResponse, RuleListResponse, RuleStatsResponse
 from app.schemas.fortisiem import FortiSIEMRuleSyncResponse
 from app.services.rule_parser import RuleParser
@@ -23,6 +28,7 @@ async def list_rules(
     search: Optional[str] = Query(None),
     severity: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
+    readiness: Optional[str] = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -82,8 +88,89 @@ async def list_rules(
     result = await db.execute(query)
     rows = result.all()
 
+    rule_ids = [rule.id for rule, _ in rows]
+    prompts_map: Dict[str, RulePrompt] = {}
+    snaps_map: Dict[str, RuleIntelligenceSnapshot] = {}
+    qa_map: Dict[str, PolicyQualityAssessmentRecord] = {}
+    profiles_map: Dict[str, RuleLearningProfile] = {}
+
+    if rule_ids:
+        p_res = await db.execute(
+            select(RulePrompt).where(RulePrompt.rule_id.in_(rule_ids)).options(selectinload(RulePrompt.versions))
+        )
+        for rp in p_res.scalars().all():
+            prompts_map[rp.rule_id] = rp
+
+        s_res = await db.execute(
+            select(RuleIntelligenceSnapshot).where(RuleIntelligenceSnapshot.rule_id.in_(rule_ids))
+        )
+        for snap in s_res.scalars().all():
+            snaps_map[snap.rule_id] = snap
+
+        qa_res = await db.execute(
+            select(PolicyQualityAssessmentRecord)
+            .where(PolicyQualityAssessmentRecord.rule_id.in_(rule_ids))
+            .order_by(desc(PolicyQualityAssessmentRecord.evaluated_at))
+        )
+        for qa in qa_res.scalars().all():
+            if qa.rule_id not in qa_map:
+                qa_map[qa.rule_id] = qa
+
+        prof_res = await db.execute(
+            select(RuleLearningProfile).where(RuleLearningProfile.rule_id.in_(rule_ids))
+        )
+        for prof in prof_res.scalars().all():
+            if prof.rule_id not in profiles_map:
+                profiles_map[prof.rule_id] = prof
+
     items: List[RuleResponse] = []
     for rule, inc_count in rows:
+        rp = prompts_map.get(rule.id)
+        versions = rp.versions if (rp and rp.versions) else []
+        has_approved = any(v.status == "APPROVED" for v in versions)
+        snap = snaps_map.get(rule.id)
+        latest_qa = qa_map.get(rule.id)
+        prof = profiles_map.get(rule.id)
+
+        is_incomplete = (
+            (snap and snap.definition_status in ("INCOMPLETE", "UNKNOWN"))
+            or (latest_qa and any("G1" in str(b) or "DEFINITION" in str(b) for b in (latest_qa.blocking_issues or [])))
+        )
+
+        if is_incomplete:
+            readiness_status = "INCOMPLETE"
+        elif latest_qa and latest_qa.blocking_issues and len(latest_qa.blocking_issues) > 0:
+            readiness_status = "BLOCKED"
+        elif has_approved and rule.status == "ACTIVE":
+            readiness_status = "ACTIVE"
+        elif has_approved:
+            readiness_status = "APPROVED"
+        elif latest_qa and latest_qa.approval_eligible:
+            readiness_status = "READY_FOR_APPROVAL"
+        elif prof and prof.total_analyst_reviews > 0:
+            readiness_status = "LEARNING"
+        else:
+            readiness_status = "INCOMPLETE"
+
+        gates_passed = 0
+        if latest_qa and latest_qa.gate_results:
+            gates_passed = sum(
+                1 for g in latest_qa.gate_results.values()
+                if (g.get("status") if isinstance(g, dict) else getattr(g, "status", "")) == "PASSED"
+            )
+        elif has_approved:
+            gates_passed = 8
+
+        missing_cnt = len(latest_qa.blocking_issues) if latest_qa and latest_qa.blocking_issues else (1 if is_incomplete else 0)
+
+        # Apply readiness filter if requested
+        if readiness and readiness.upper() != "ALL":
+            target_r = readiness.upper().strip()
+            if target_r == "BLOCKED" and readiness_status not in ("BLOCKED", "INCOMPLETE"):
+                continue
+            elif target_r != "BLOCKED" and readiness_status != target_r:
+                continue
+
         items.append(
             RuleResponse(
                 id=rule.id,
@@ -101,6 +188,9 @@ async def list_rules(
                 raw_rule_text=rule.raw_rule_text,
                 parsed_metadata=rule.parsed_metadata,
                 incident_count=inc_count,
+                production_readiness_status=readiness_status,
+                gates_passed_count=gates_passed,
+                missing_requirements_count=missing_cnt,
                 created_at=rule.created_at,
                 updated_at=rule.updated_at,
             )

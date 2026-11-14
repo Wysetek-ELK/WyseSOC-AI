@@ -7,9 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test tests/admin-guide.test.mjs && node --experimental-strip-types --test tests/phase3-compact-ui.test.mjs",
+    "test": "node --experimental-strip-types --test tests/admin-guide.test.mjs && node --experimental-strip-types --test tests/phase3-compact-ui.test.mjs && node --experimental-strip-types --test tests/production-readiness.test.mjs",
     "test:admin-guide": "node --experimental-strip-types --test tests/admin-guide.test.mjs",
-    "test:phase3": "node --experimental-strip-types --test tests/phase3-compact-ui.test.mjs"
+    "test:phase3": "node --experimental-strip-types --test tests/phase3-compact-ui.test.mjs",
+    "test:readiness": "node --experimental-strip-types --test tests/production-readiness.test.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

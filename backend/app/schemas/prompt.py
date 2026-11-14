@@ -94,5 +94,9 @@ class RulePromptSummaryItem(BaseModel):
     simulation_status: Optional[str] = "NOT_EVALUATED"
     last_validated_date: Optional[datetime] = None
     revalidation_required: bool = False
+    production_readiness_status: Optional[str] = "INCOMPLETE"
+    gates_passed_count: int = 0
+    missing_requirements_count: int = 0
+    recommended_action_title: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -602,6 +602,72 @@ export interface RulePromptSummaryItem {
   simulation_status?: string;
   last_validated_date?: string | null;
   revalidation_required?: boolean;
+  production_readiness_status?: string;
+  gates_passed_count?: number;
+  missing_requirements_count?: number;
+  recommended_action_title?: string;
+}
+
+export interface ActionButton {
+  label: string;
+  action: string;
+  target_tab?: "overview" | "learning" | "advanced";
+  target_section?: string;
+}
+
+export interface ReadinessStageItem {
+  stage_id: string;
+  stage_name: string;
+  stage_number: number;
+  status: "COMPLETED" | "NEEDS_ACTION" | "BLOCKED" | "PENDING";
+  simple_explanation: string;
+  missing_requirement?: string | null;
+  next_action: string;
+  action_button: ActionButton;
+  technical_details: Record<string, any>;
+}
+
+export interface SmartNextAction {
+  title: string;
+  description: string;
+  label: string;
+  target_tab: "overview" | "learning" | "advanced";
+  target_section?: string;
+  action_type: string;
+  status: "primary" | "warning" | "success" | "danger" | "normal";
+}
+
+export interface ProductionReadinessResponse {
+  rule_id: string;
+  rule_name: string;
+  rule_identifier: string;
+  severity: string;
+  detection_archetype: string;
+  detection_description: string;
+  version_id?: string | null;
+  version_number?: number | null;
+  version_status: string;
+  rule_deployment_status: string;
+  active_version_number?: number | null;
+  active_version_status?: string | null;
+  readiness_status: "BLOCKED" | "INCOMPLETE" | "LEARNING" | "VALIDATING" | "READY_FOR_APPROVAL" | "APPROVED" | "ACTIVE";
+  readiness_label: string;
+  readiness_progress: number;
+  quality_score?: number | null;
+  quality_gates_passed: number;
+  total_quality_gates: number;
+  verified_reviews_count: number;
+  required_reviews_count: number;
+  production_reviews_target: number;
+  approval_eligible: boolean;
+  last_evaluated_at?: string | null;
+  stages: ReadinessStageItem[];
+  recommended_action: SmartNextAction;
+  gate_results: Record<string, QualityGateResult>;
+  blocking_requirements: string[];
+  warnings: string[];
+  supporting_evidence_references: string[];
+  metrics: Record<string, any>;
 }
 
 export interface QualityGateResult {
@@ -899,6 +965,9 @@ export interface RuleItem {
   raw_rule_text: string;
   parsed_metadata?: Record<string, any>;
   incident_count: number;
+  production_readiness_status?: string;
+  gates_passed_count?: number;
+  missing_requirements_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -1152,13 +1221,14 @@ export const api = {
   },
 
   // Rules
-  async getRules(params: { page?: number; page_size?: number; search?: string; severity?: string; status?: string } = {}) {
+  async getRules(params: { page?: number; page_size?: number; search?: string; severity?: string; status?: string; readiness?: string } = {}) {
     const q = new URLSearchParams();
     if (params.page) q.set("page", params.page.toString());
     if (params.page_size) q.set("page_size", params.page_size.toString());
     if (params.search) q.set("search", params.search);
     if (params.severity) q.set("severity", params.severity);
     if (params.status) q.set("status", params.status);
+    if (params.readiness) q.set("readiness", params.readiness);
 
     const res = await fetchWithAuth(`${API_BASE}/rules?${q.toString()}`);
     if (!res.ok) throw new Error("Failed to fetch rules");
@@ -1556,6 +1626,13 @@ export const api = {
   async getRulePromptsSummary(): Promise<RulePromptSummaryItem[]> {
     const res = await fetchWithAuth(`${API_BASE}/prompts/summary`);
     if (!res.ok) throw new Error("Failed to fetch rule prompts summary");
+    return res.json();
+  },
+
+  async getRuleProductionReadiness(ruleId: string, versionId?: string): Promise<ProductionReadinessResponse> {
+    const query = versionId ? `?version_id=${encodeURIComponent(versionId)}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/readiness${query}`);
+    if (!res.ok) throw new Error("Failed to fetch production readiness evaluation");
     return res.json();
   },
 

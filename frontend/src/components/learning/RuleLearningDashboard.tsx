@@ -22,7 +22,8 @@ import {
   Radio,
   FileCheck2,
   AlertOctagon,
-  Award
+  Award,
+  Info,
 } from "lucide-react";
 import { api, formatApiErrorMessage } from "@/lib/api";
 
@@ -595,6 +596,32 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                 </ul>
               </div>
             )}
+          </div>
+
+          {/* Statistical Evidence vs Eligibility Explanation */}
+          <div className="p-3.5 rounded-xl border border-cyan-900/40 bg-cyan-950/20 text-xs text-slate-300 space-y-2">
+            <div className="flex items-center gap-2 font-semibold text-cyan-300">
+              <Info className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>Understanding Ground Truth &amp; Statistical Production Eligibility</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-[11px] text-slate-400 pt-1">
+              <div className="p-2.5 rounded-lg bg-slate-950/40 border border-slate-800 space-y-1">
+                <div className="font-bold text-slate-200">1. Reviews Collected</div>
+                <div>Raw count of completed analyst reviews. Raw feedback does not automatically qualify as certified ground truth until verified.</div>
+              </div>
+              <div className="p-2.5 rounded-lg bg-slate-950/40 border border-slate-800 space-y-1">
+                <div className="font-bold text-slate-200">2. Verified Ground Truth</div>
+                <div>Independently verified, double-blind or senior-adjudicated reviews with documented rationale, evidence references, and non-repudiated audit records.</div>
+              </div>
+              <div className="p-2.5 rounded-lg bg-slate-950/40 border border-slate-800 space-y-1">
+                <div className="font-bold text-slate-200">3. Sufficient Statistical Evidence</div>
+                <div>Minimum empirical sample size threshold (≥30 reviews for Supervised Pilot, ≥100 reviews for Controlled Production) ensuring mathematical significance.</div>
+              </div>
+              <div className="p-2.5 rounded-lg bg-slate-950/40 border border-slate-800 space-y-1">
+                <div className="font-bold text-slate-200">4. Production Accuracy Eligibility</div>
+                <div>Mandates all empirical criteria simultaneously: sample threshold, FP Precision ≥98%, Wilson Lower Bound ≥96%, and TP Recall ≥95%. When sample size is insufficient, accuracy is marked N/A, never PASS.</div>
+              </div>
+            </div>
           </div>
         </div>
       )}
