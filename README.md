@@ -34,15 +34,17 @@ The complete five-phase engineering and governance program has been completed an
 
 ## Architecture Overview (Two-Server Model)
 
-- **Server 1 — Application Server (Developed Now)**:
+- **Verdictum Core (`verdictum-core-01`) — Application Server (Server 1)**:
   - **Frontend**: Next.js 15+ App Router, TypeScript, Tailwind CSS, Dark SOC Theme.
   - **Backend**: Python 3.12/3.13 FastAPI REST API.
   - **Database**: PostgreSQL (production) with SQLAlchemy 2.x async ORM and Alembic migrations.
   - **Security**: Argon2id/Bcrypt password hashing, HttpOnly session cookies, role-based access control.
   - **Process Management**: Ubuntu systemd services & Nginx reverse proxy.
-- **Server 2 — Future Local LLM (Server Planned for Later Stage)**:
-  - AWS instance `g4dn.2xlarge` serving local quantized models (e.g., Qwen3-8B) via private OpenAI-compatible API.
-  - **Completely disconnected and uninstalled during Phase 1.**
+- **Verdictum Cortex (`verdictum-cortex-01`) — AI Inference Server (Server 2)**:
+  - Dedicated GPU server (e.g. AWS `g4dn.2xlarge`) serving local quantized models (e.g., Qwen 2.5 7B AWQ) via private OpenAI-compatible API.
+  - Hardened with concurrent GPU workload limiter and circuit breaker protection.
+- **Verdictum Sentinel — AI SOC Investigation Copilot (`/soc-chatbot`)**:
+  - Interactive conversational copilot powered by Verdictum Cortex for rapid incident investigation, MITRE ATT&CK mapping, and payload deobfuscation.
 
 ---
 

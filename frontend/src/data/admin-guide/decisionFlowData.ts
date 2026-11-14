@@ -201,12 +201,12 @@ export const DECISION_STEPS: WorkflowStepSpec[] = [
     lane: "decision",
     laneLabel: "Reasoning Inference",
     accent: "sky",
-    componentName: "Server 2 OpenAI-Compatible Provider & GPUWorkloadManager",
+    componentName: "Verdictum Cortex OpenAI-Compatible Provider & GPUWorkloadManager",
     serviceModule: "backend/app/services/ai_verdict_service.py · gpu_manager.py",
     uiRoute: "/inference-control",
     uiLabel: "Inference Control",
     summary:
-      "Sends the compiled 9-section prompt, verified precedents, and sanitized canonical evidence to Server 2 Local LLM (Qwen 2.5 7B) to propose a verdict and cited claims.",
+      "Sends the compiled 9-section prompt, verified precedents, and sanitized canonical evidence to Verdictum Cortex (Server 2 Qwen 2.5 7B) to propose a verdict and cited claims.",
     inputData: [
       "Budgeted 9-section policy prompt + up to 2 rule-scoped precedents",
       "Allowlisted canonical evidence payload",
@@ -220,7 +220,7 @@ export const DECISION_STEPS: WorkflowStepSpec[] = [
       "Raw subjective model confidence (NOT a calibrated probability) + supporting_claims",
     ],
     requiredConfig: [
-      "Local LLM Server 2 healthy and reachable",
+      "Verdictum Cortex (Server 2) healthy and reachable",
       "Model endpoint configured in Agent Configuration",
     ],
     failureOrAbstention: [

@@ -263,7 +263,7 @@ export function RequirementsSection() {
               )}
               {liveStatus.llm && (
                 <span className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-300">
-                  Server 2 LLM:{" "}
+                  Verdictum Cortex LLM:{" "}
                   <strong className={liveStatus.llm.is_healthy ? "text-emerald-300" : "text-amber-300"}>
                     {liveStatus.llm.is_healthy ? "HEALTHY" : "OFFLINE"}
                   </strong>

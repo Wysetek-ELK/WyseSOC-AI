@@ -7,7 +7,7 @@ export const REQUIREMENT_DOMAINS: RequirementDomain[] = [
     title: "FortiSIEM Connectivity & Authorized Ingestion",
     stageTag: "Stage 1 · Telemetry Hub",
     summary:
-      "Establishes authenticated, network-reachable communication between Server 1 and the FortiSIEM supervisor for incident and rule synchronization.",
+      "Establishes authenticated, network-reachable communication between Verdictum Core (Server 1) and the FortiSIEM supervisor for incident and rule synchronization.",
     items: [
       {
         id: "fortisiem-host-creds",
@@ -47,7 +47,7 @@ export const REQUIREMENT_DOMAINS: RequirementDomain[] = [
         route: "/telemetry-hub",
         routeLabel: "Telemetry Hub",
         consequenceIfMissing:
-          "Manual pulls or file imports are required to bring new incidents into Server 1.",
+          "Manual pulls or file imports are required to bring new incidents into Verdictum Core.",
         verificationCheck: "Inspect scheduler status in Telemetry Hub.",
       },
     ],
@@ -274,17 +274,17 @@ export const REQUIREMENT_DOMAINS: RequirementDomain[] = [
     id: "req-llm-inference",
     domainNumber: 8,
     title: "Local LLM Connectivity & Inference Configuration",
-    stageTag: "Stage 8 · Server 2 Inference",
+    stageTag: "Stage 8 · Verdictum Cortex Inference",
     summary:
-      "Connects Server 1 orchestration to Server 2 GPU inference (OpenAI-compatible endpoint serving Qwen 2.5 7B) with circuit-breaker safety.",
+      "Connects Verdictum Core orchestration to Verdictum Cortex GPU inference (OpenAI-compatible endpoint serving Qwen 2.5 7B) with circuit-breaker safety.",
     items: [
       {
         id: "llm-endpoint-config",
-        title: "Server 2 Host, Port, Protocol & Model Name",
+        title: "Verdictum Cortex Host, Port, Protocol & Model Name",
         criticality: "REQUIRED",
         description:
-          "Configure LOCAL_LLM_HOST, port, protocol, timeout, and model identifier (e.g. Qwen/Qwen2.5-7B-Instruct-AWQ) and verify reachability from Server 1.",
-        whereToConfigure: "Agent Configuration → Local LLM Server 2 Connector",
+          "Configure LOCAL_LLM_HOST, port, protocol, timeout, and model identifier (e.g. Qwen/Qwen2.5-7B-Instruct-AWQ) and verify reachability from Verdictum Core.",
+        whereToConfigure: "Agent Configuration → Verdictum Cortex Connector",
         route: "/agent-configuration",
         routeLabel: "Agent Configuration",
         consequenceIfMissing:
@@ -303,7 +303,7 @@ export const REQUIREMENT_DOMAINS: RequirementDomain[] = [
         routeLabel: "Agent Configuration",
         consequenceIfMissing:
           "If enabled in dev/dry-run environments, simulated heuristic outputs carry is_simulated=true and must never be confused with live LLM reasoning.",
-        verificationCheck: "Inspect is_simulated flag on verdicts and Server 2 health in Inference Control.",
+        verificationCheck: "Inspect is_simulated flag on verdicts and Verdictum Cortex health in Inference Control.",
       },
     ],
   },
@@ -390,10 +390,10 @@ export const REQUIREMENT_DOMAINS: RequirementDomain[] = [
     items: [
       {
         id: "health-gpu-telemetry",
-        title: "Server 1 & Server 2 Health / Token Ledger / Timeline Telemetry",
+        title: "Verdictum Core & Verdictum Cortex Health / Token Ledger / Timeline Telemetry",
         criticality: "REQUIRED",
         description:
-          "Monitor /api/health, database connectivity, Redis/Celery queue depth, Server 2 GPU VRAM/latency, and bifurcated prompt/completion token usage.",
+          "Monitor /api/health, database connectivity, Redis/Celery queue depth, Verdictum Cortex GPU VRAM/latency, and bifurcated prompt/completion token usage.",
         whereToConfigure: "Inference Control & Agent Mission Control",
         route: "/inference-control",
         routeLabel: "Inference Control",

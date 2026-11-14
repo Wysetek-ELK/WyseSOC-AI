@@ -25,7 +25,7 @@ async def health_check(
 ) -> Dict[str, Any]:
     """
     Comprehensive Component-Level Health Check Endpoint (P4-REQ-07).
-    Inspects real infrastructure health across Server 1 and Server 2:
+    Inspects real infrastructure health across Verdictum Core and Verdictum Cortex:
     - Database connectivity, query latency, connection pool utilization.
     - Redis & Celery task broker status.
     - Local LLM GPU inference status and circuit breaker state.
@@ -57,7 +57,7 @@ async def health_check(
         if overall_status == "healthy":
             overall_status = "degraded"
 
-    # 3. Local LLM Server 2 & Circuit Breaker Health Check (bounded <= 2s so /api/health never times out)
+    # 3. Verdictum Cortex (Server 2) & Circuit Breaker Health Check (bounded <= 2s so /api/health never times out)
     try:
         llm_online = await asyncio.wait_for(AIVerdictService.is_local_llm_available(), timeout=2.0)
     except Exception:
@@ -84,6 +84,8 @@ async def health_check(
         "endpoint_configured": bool(settings.LOCAL_LLM_BASE_URL),
         "base_url_redacted": redacted_llm_url,
         "model_name": settings.LOCAL_LLM_MODEL_NAME,
+        "server_name": "Verdictum Cortex",
+        "logical_hostname": "verdictum-cortex-01",
         "configured_provider": llm_prov["configured_provider"],
         "endpoint_provenance": llm_prov["endpoint_provenance"],
         "current_s2_health": llm_prov["current_s2_health"],
@@ -101,6 +103,8 @@ async def health_check(
         mem = psutil.virtual_memory()
         disk = psutil.disk_usage("/") if hasattr(psutil, "disk_usage") else None
         components["system"] = {
+            "server_name": "Verdictum Core",
+            "logical_hostname": "verdictum-core-01",
             "cpu_percent": psutil.cpu_percent(interval=None),
             "memory_percent": mem.percent,
             "memory_used_gb": round(mem.used / (1024 ** 3), 2),
@@ -108,7 +112,7 @@ async def health_check(
             "disk_percent": disk.percent if disk else None,
         }
     except Exception as e:
-        components["system"] = {"error": str(e)}
+        components["system"] = {"error": str(e), "server_name": "Verdictum Core", "logical_hostname": "verdictum-core-01"}
 
     return {
         "status": overall_status,
@@ -197,7 +201,7 @@ async def get_prometheus_metrics(
         "# TYPE ai_verdict_queue_depth gauge",
         f"ai_verdict_queue_depth {queue_depth}",
         "",
-        "# HELP ai_verdict_circuit_breaker_trips_total Total times GPU Server 2 circuit breaker tripped OPEN",
+        "# HELP ai_verdict_circuit_breaker_trips_total Total times GPU Verdictum Cortex circuit breaker tripped OPEN",
         "# TYPE ai_verdict_circuit_breaker_trips_total counter",
         f"ai_verdict_circuit_breaker_trips_total {cb_trips}",
         "",

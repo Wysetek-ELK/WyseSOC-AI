@@ -98,7 +98,7 @@ export function HistoricalTelemetryTimeline({ incidentId }: Props) {
     return (
       <div className="flex h-64 items-center justify-center text-slate-400 text-xs font-mono">
         <RefreshCw className="h-4 w-4 animate-spin text-cyan-400 mr-2" />
-        Loading historical telemetry timeline from Server 1...
+        Loading historical telemetry timeline from Verdictum Core...
       </div>
     );
   }
@@ -121,14 +121,14 @@ export function HistoricalTelemetryTimeline({ incidentId }: Props) {
             Historical Telemetry Timeline
           </h2>
           <p className="text-[10px] text-slate-400 mt-0.5">
-            Chronological audit trail of all raw security telemetry, correlation bursts, and triage stages persistently stored on Server 1
+            Chronological audit trail of all raw security telemetry, correlation bursts, and triage stages persistently stored on Verdictum Core
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-800 text-emerald-300">
             <Database className="h-3 w-3 text-emerald-400" />
-            Server 1 Stored
+            Verdictum Core Stored
           </span>
 
           <button

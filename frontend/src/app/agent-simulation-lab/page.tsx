@@ -157,7 +157,7 @@ export default function AgentSimulationLabPage() {
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/40 border border-border text-xs text-muted-foreground">
             <Server className={`w-3 h-3 ${llmStatus?.is_healthy ? "text-emerald-400" : "text-amber-400"}`} />
             <span>
-              Server 2 LLM:{" "}
+              Verdictum Cortex LLM:{" "}
               {llmStatus?.endpoint_provenance === "HTTP_MOCK" ? (
                 <strong className="text-cyan-300">HTTP_MOCK ({llmStatus.model || "Test Endpoint"})</strong>
               ) : llmStatus?.is_healthy ? (
@@ -312,7 +312,7 @@ export default function AgentSimulationLabPage() {
                   className="w-full px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary font-mono text-[11px]"
                 >
                   <option value="OPENAI_COMPATIBLE">
-                    OPENAI_COMPATIBLE ({llmStatus?.endpoint_provenance === "HTTP_MOCK" ? "HTTP_MOCK Test Endpoint" : llmStatus?.is_healthy ? "Server 2 Configured Endpoint — Online" : "Server 2 vLLM Node"})
+                    OPENAI_COMPATIBLE ({llmStatus?.endpoint_provenance === "HTTP_MOCK" ? "HTTP_MOCK Test Endpoint" : llmStatus?.is_healthy ? "Verdictum Cortex Configured Endpoint — Online" : "Verdictum Cortex Node"})
                   </option>
                   <option value="SIMULATED">SIMULATED (Deterministic Heuristics - Fallback)</option>
                   <option value="DISABLED">DISABLED (Safe Provider Default)</option>

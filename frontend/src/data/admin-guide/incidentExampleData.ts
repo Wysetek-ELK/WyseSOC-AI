@@ -63,7 +63,7 @@ export const INCIDENT_165233_STEPS: IncidentWalkthroughStep[] = [
     stepNumber: 3,
     id: "inc-165233-investigation",
     stageName: "3. Local LLM Investigation & Authorization Gate",
-    componentName: "Server 2 Local LLM & Compiled 9-Section Policy",
+    componentName: "Verdictum Cortex Local LLM & Compiled 9-Section Policy",
     statusBadge: "NO ASSUMED BENIGN FP",
     statusTone: "cyan",
     whatHappens:

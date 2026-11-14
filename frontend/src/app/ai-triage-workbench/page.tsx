@@ -646,7 +646,7 @@ function AITriageWorkbenchContent() {
                             onClick={() => handleRequestAiVerdict(inc.incident_id)}
                             disabled={analyzingId === inc.incident_id}
                             className="inline-flex items-center gap-1 rounded bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 px-2 py-0.5 text-[11px] font-medium transition-all shadow-sm disabled:opacity-50"
-                            title="Send to Server 2 Local LLM for instant AI security verdict"
+                            title="Send to Verdictum Cortex Local LLM for instant AI security verdict"
                           >
                             {analyzingId === inc.incident_id ? (
                               <>
@@ -716,7 +716,7 @@ function AITriageWorkbenchContent() {
                 <div className="flex items-center gap-2">
                   <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Server 2 AI Verdict
+                    Verdictum Cortex AI Verdict
                   </span>
                   {aiVerdict && (
                     <span className="text-xs font-mono text-slate-400">
@@ -859,9 +859,9 @@ function AITriageWorkbenchContent() {
                             ? `• Deterministic Guard (${aiVerdict.model_identifier || pb.label})`
                             : pb.label === "LIVE_PROVIDER"
                             ? llmOnline
-                              ? `• LIVE_PROVIDER (${aiVerdict.model_identifier || "Server 2"}) • S2 Online`
-                              : `• Historical Live Record (S2 Offline Now) • LIVE_PROVIDER`
-                            : `• ${pb.label} (${aiVerdict.model_identifier || "Model"}) • S2: ${llmOnline ? "ONLINE" : "OFFLINE"}`;
+                              ? `• LIVE_PROVIDER (${aiVerdict.model_identifier || "Verdictum Cortex"}) • Cortex Online`
+                              : `• Historical Live Record (Cortex Offline Now) • LIVE_PROVIDER`
+                            : `• ${pb.label} (${aiVerdict.model_identifier || "Model"}) • Cortex: ${llmOnline ? "ONLINE" : "OFFLINE"}`;
                         return (
                           <span
                             className={`px-1.5 py-0.5 rounded border font-semibold ${pb.className}`}
@@ -907,7 +907,7 @@ function AITriageWorkbenchContent() {
                     onClick={() => handleRequestAiVerdict(aiVerdict.incident_id)}
                     disabled={analyzingId === aiVerdict.incident_id}
                     className="inline-flex items-center gap-1.5 rounded-md border border-emerald-700/80 bg-emerald-950/80 hover:bg-emerald-900 px-2.5 py-1 text-xs font-semibold text-emerald-300 shadow-sm transition-all disabled:opacity-50"
-                    title="Re-run inference on Server 2 GPU"
+                    title="Re-run inference on Verdictum Cortex GPU"
                   >
                     {analyzingId === aiVerdict.incident_id ? (
                       <>

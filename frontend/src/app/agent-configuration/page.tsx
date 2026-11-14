@@ -50,7 +50,7 @@ export default function AgentConfigurationPage() {
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Local LLM Server 2 States
+  // Verdictum Cortex (Server 2) States
   const [llmHost, setLlmHost] = useState("");
   const [llmPort, setLlmPort] = useState(8000);
   const [llmProtocol, setLlmProtocol] = useState("http");
@@ -138,7 +138,7 @@ export default function AgentConfigurationPage() {
   const handleTestLLMConnection = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!llmHost.trim()) {
-      setLlmSaveError("LLM Server IP address or hostname is required to test connection.");
+      setLlmSaveError("Verdictum Cortex IP address or hostname is required to test connection.");
       return;
     }
 
@@ -177,7 +177,7 @@ export default function AgentConfigurationPage() {
     } catch (err: any) {
       setLlmTestResult({
         success: false,
-        message: err.message || "Failed to reach LLM Server 2",
+        message: err.message || "Failed to reach Verdictum Cortex",
         models: [],
         tested_url: `${llmProtocol}://${llmHost.trim()}:${llmPort}/v1/models`,
       });
@@ -189,7 +189,7 @@ export default function AgentConfigurationPage() {
   const handleSaveLLMConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!llmHost.trim()) {
-      setLlmSaveError("LLM Server IP address or hostname is required.");
+      setLlmSaveError("Verdictum Cortex IP address or hostname is required.");
       return;
     }
 
@@ -222,7 +222,7 @@ export default function AgentConfigurationPage() {
       setLlmVerifiedModelLen(updated.verified_max_model_len ?? null);
       setLlmContextBudgetWarning(updated.context_budget_warning ?? null);
       setLlmAllowMockFallback(updated.allow_mock_fallback);
-      setLlmSaveSuccess(`LLM Server configuration saved! Target base URL updated to ${updated.base_url}`);
+      setLlmSaveSuccess(`Verdictum Cortex configuration saved! Target base URL updated to ${updated.base_url}`);
       setLlmTestResult(null);
       if (typeof window !== "undefined") {
         window.dispatchEvent(
@@ -569,16 +569,16 @@ export default function AgentConfigurationPage() {
           )}
         </div>
 
-        {/* 2. Local LLM Inference Engine (Server 2) Integration Panel */}
+        {/* 2. Verdictum Cortex Inference Engine Integration Panel */}
         <div id="llm-server" className="rounded-xl border border-indigo-900/60 bg-gradient-to-br from-slate-950 via-slate-900/90 to-indigo-950/20 p-3.5 sm:p-4 space-y-3 shadow-lg shadow-indigo-950/10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800">
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-2">
                 <Cpu className="h-4 w-4 text-indigo-400" />
-                Local LLM Inference Engine (Server 2) Integration
+                Verdictum Cortex Inference Engine Integration
               </h2>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Configure LLM Server IP address, inference port, and OpenAI-compatible endpoint parameters
+                Configure Verdictum Cortex IP address, inference port, and OpenAI-compatible endpoint parameters (logical host: verdictum-cortex-01)
               </p>
             </div>
 
@@ -587,12 +587,12 @@ export default function AgentConfigurationPage() {
               {llmIsOnline ? (
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Online &amp; Reachable
+                  Cortex Online &amp; Reachable
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-950 text-amber-300 border border-amber-800 font-mono">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                  Offline / Standby
+                  Cortex Offline / Standby
                 </span>
               )}
             </div>
@@ -601,7 +601,7 @@ export default function AgentConfigurationPage() {
           {!isAdmin && (
             <div className="rounded-lg border border-amber-800/80 bg-amber-950/30 p-2.5 text-xs text-amber-300 flex items-center gap-2">
               <Lock className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-              <span>You are viewing in read-only mode. Administrator permissions are required to update LLM Server IP.</span>
+              <span>You are viewing in read-only mode. Administrator permissions are required to update Verdictum Cortex IP.</span>
             </div>
           )}
 
@@ -616,7 +616,7 @@ export default function AgentConfigurationPage() {
                 {/* Host IP / FQDN */}
                 <div className="space-y-1 sm:col-span-2">
                   <label className="text-[11px] font-semibold text-slate-300 block">
-                    LLM Server IP Address / FQDN <span className="text-rose-400">*</span>
+                    Verdictum Cortex IP Address / FQDN <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -627,7 +627,7 @@ export default function AgentConfigurationPage() {
                     className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
                   />
                   <span className="text-[10px] text-slate-400 block">
-                    Target IP of Server 2 hosting vLLM or OpenAI-compatible inference.
+                    Target IP of Verdictum Cortex (verdictum-cortex-01) hosting vLLM or OpenAI-compatible inference.
                   </span>
                 </div>
 
@@ -696,7 +696,7 @@ export default function AgentConfigurationPage() {
                 {server1OutboundIp && (
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-1.5 border-t border-slate-800/80">
                     <span className="text-slate-400 font-sans">
-                      Server 1 Outbound Public IP (for AWS Security Group):
+                      Verdictum Core Outbound Public IP (for AWS Security Group):
                     </span>
                     <span className="text-emerald-400 font-mono font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800 flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
@@ -804,7 +804,7 @@ export default function AgentConfigurationPage() {
                   <div>
                     <span className="font-semibold block text-[11px]">Allow Offline Heuristic Fallback</span>
                     <span className="text-[10px] text-slate-400 block">
-                      Enables simulated fallback if Server 2 is undergoing maintenance
+                      Enables simulated fallback if Verdictum Cortex is undergoing maintenance
                     </span>
                   </div>
                 </label>
@@ -840,7 +840,7 @@ export default function AgentConfigurationPage() {
                     ) : (
                       <AlertCircle className="h-3.5 w-3.5 text-rose-400" />
                     )}
-                    {llmTestResult.success ? "LLM Server Connection Successful" : "LLM Server Connection Failed"}
+                    {llmTestResult.success ? "Verdictum Cortex Connection Successful" : "Verdictum Cortex Connection Failed"}
                   </div>
                   <p className="text-[11px] font-sans text-slate-300">{llmTestResult.message}</p>
                   <div className="flex flex-wrap gap-4 text-[10px] text-slate-400 pt-0.5">
@@ -955,7 +955,7 @@ export default function AgentConfigurationPage() {
           <div className="space-y-1.5 text-[11px] pt-0.5">
             <div className="flex justify-between py-1 border-b border-slate-800/80">
               <span className="text-slate-400">Active Node:</span>
-              <span className="text-slate-200 font-bold">Server 1 — Application Server</span>
+              <span className="text-slate-200 font-bold">Verdictum Core (Application Server · verdictum-core-01)</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-800/80">
               <span className="text-slate-400">Target Operating System:</span>
@@ -966,7 +966,7 @@ export default function AgentConfigurationPage() {
               <span className="text-slate-200">PostgreSQL (Production) / SQLite (Local Dev)</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-800/80">
-              <span className="text-slate-400">Local LLM Host (Server 2):</span>
+              <span className="text-slate-400">Local LLM Host (Verdictum Cortex · verdictum-cortex-01):</span>
               <span className={llmIsOnline ? "text-emerald-400 font-mono" : "text-amber-400 font-mono"}>
                 {llmBaseUrl || `${llmHost || "Not Configured"}:${llmPort}`} ({llmIsOnline ? "ONLINE" : "STANDBY / OFFLINE"})
               </span>

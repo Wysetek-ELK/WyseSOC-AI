@@ -113,7 +113,7 @@ export function GuidedTourSection({ onNavigateMode }: GuidedTourSectionProps) {
             </div>
             <div className="font-bold text-slate-100">Admin Prerequisites</div>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              FortiSIEM sync, Server 2 LLM, RBAC approvals, label provenance, and calibration thresholds.
+              FortiSIEM sync, Verdictum Cortex LLM, RBAC approvals, label provenance, and calibration thresholds.
             </p>
           </button>
         </div>

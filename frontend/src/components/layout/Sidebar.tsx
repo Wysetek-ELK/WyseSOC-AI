@@ -63,10 +63,10 @@ const NAV_GROUPS: NavGroup[] = [
         icon: UserCheck,
       },
       {
-        title: "SOC AI Chatbot",
+        title: "Verdictum Sentinel",
         href: "/soc-chatbot",
         icon: MessageSquareCode,
-        badge: "LLM",
+        badge: "COPILOT",
         badgeColor: "bg-indigo-950 text-indigo-300 border border-indigo-800",
       },
     ],

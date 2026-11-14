@@ -234,6 +234,8 @@ class TelemetryTimelineService:
             "incident_id": incident.incident_id,
             "title": incident.title,
             "storage_node": "Server 1 Persistent Storage",
+            "logical_hostname": "verdictum-core-01",
+            "server_name": "Verdictum Core",
             "token_summary": {
                 "total_tokens": total_tokens_used or (incident.ai_verdict or {}).get("total_tokens", 0),
                 "prompt_tokens": total_prompt_tokens or (incident.ai_verdict or {}).get("prompt_tokens", 0),
@@ -281,6 +283,8 @@ class TelemetryTimelineService:
         return {
             "success": True,
             "storage_node": "Server 1 Database",
+            "logical_hostname": "verdictum-core-01",
+            "server_name": "Verdictum Core",
             "total_records": len(items),
             "timeline": items,
         }

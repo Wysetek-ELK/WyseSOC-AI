@@ -93,8 +93,8 @@ export function formatExecutionProvenanceBadge(opts: {
         label: "LIVE_PROVIDER",
         sublabel:
           opts.currentS2Health === "OFFLINE"
-            ? "Historical Live Provider (S2 Offline Now)"
-            : "Remote Server 2 Inference",
+            ? "Historical Live Provider (Cortex Offline Now)"
+            : "Remote Verdictum Cortex Inference",
         className: "bg-emerald-950/70 text-emerald-300 border-emerald-700/70",
         isMock: false,
         isLiveProvider: true,
@@ -112,7 +112,7 @@ export function formatServer2HealthSummary(opts?: {
   if (!opts) {
     return {
       statusLabel: "CHECKING",
-      archLabel: "Server 1",
+      archLabel: "Verdictum Core",
       modelStatusText: "Checking...",
       badgeClass: "bg-slate-900 border-slate-800 text-slate-400",
       dotClass: "bg-slate-500",
@@ -126,7 +126,7 @@ export function formatServer2HealthSummary(opts?: {
   if (prov === "HTTP_MOCK" || s2h === "HTTP_MOCK") {
     return {
       statusLabel: "HTTP_MOCK",
-      archLabel: "S1 + HTTP_MOCK (Test)",
+      archLabel: "Core + HTTP_MOCK (Test)",
       modelStatusText: "Mock HTTP (Non-GPU)",
       badgeClass: "bg-teal-950/60 border-teal-700/70 text-teal-300",
       dotClass: "bg-teal-400",
@@ -137,7 +137,7 @@ export function formatServer2HealthSummary(opts?: {
   if (opts.is_healthy || s2h === "ONLINE" || s2h === "HEALTHY") {
     return {
       statusLabel: "ACTIVE",
-      archLabel: opts.gpu_telemetry_verified ? "S1 + S2 (GPU)" : "S1 + S2 (HTTP API)",
+      archLabel: opts.gpu_telemetry_verified ? "Core + Cortex (GPU)" : "Core + Cortex (HTTP API)",
       modelStatusText: opts.gpu_telemetry_verified ? "vLLM GPU Active" : "HTTP API Active",
       badgeClass: "bg-emerald-950/60 border-emerald-700/70 text-emerald-300",
       dotClass: "bg-emerald-400 animate-pulse",
@@ -148,8 +148,8 @@ export function formatServer2HealthSummary(opts?: {
   if (s2h === "DEGRADED") {
     return {
       statusLabel: "DEGRADED",
-      archLabel: "S1 (S2 Degraded)",
-      modelStatusText: "S2 Degraded",
+      archLabel: "Core (Cortex Degraded)",
+      modelStatusText: "Cortex Degraded",
       badgeClass: "bg-orange-950/60 border-orange-700/70 text-orange-300",
       dotClass: "bg-orange-400",
       isMockEndpoint: false,
@@ -157,9 +157,9 @@ export function formatServer2HealthSummary(opts?: {
   }
 
   return {
-    statusLabel: "S2 OFFLINE",
-    archLabel: "Server 1",
-    modelStatusText: "S2 Offline",
+    statusLabel: "CORTEX OFFLINE",
+    archLabel: "Verdictum Core",
+    modelStatusText: "Cortex Offline",
     badgeClass: "bg-rose-950/80 border-rose-700/80 text-rose-300",
     dotClass: "bg-rose-400",
     isMockEndpoint: false,

@@ -81,7 +81,7 @@ export default function InferenceControlPage() {
           ) : (
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/40 border border-amber-800/60 text-amber-200">
               <span className="h-2 w-2 rounded-full bg-amber-400"></span>
-              Cluster Status: <strong className="text-amber-300">DEGRADED (S2 OFFLINE)</strong>
+              Cluster Status: <strong className="text-amber-300">DEGRADED (CORTEX OFFLINE)</strong>
             </span>
           )}
         </div>
@@ -90,7 +90,7 @@ export default function InferenceControlPage() {
       {/* Main Inference Health Monitor */}
       <ServerInfrastructureMonitor />
 
-      {/* Token Consumption & Bifurcation Ledger on Server 1 */}
+      {/* Token Consumption & Bifurcation Ledger on Verdictum Core */}
       <TokenBifurcationWidget />
     </div>
   );

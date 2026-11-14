@@ -48,7 +48,7 @@ export const WORKFLOW_STAGES: WorkflowStageDetail[] = [
       "Raw unstructured logs are parsed into standardized canonical fields (Source IP, Destination IP, Port, Protocol, Action, Process Name, User). Context compaction algorithms prune repetitive lines to fit within the AI context window.",
     targetUIPage: { title: "Telemetry Hub", route: "/telemetry-hub" },
     offlineBehavior:
-      "Processing and normalization run completely on Server 1 CPU using deterministic regex and schema catalogs without external API requirements.",
+      "Processing and normalization run completely on Verdictum Core (Server 1) CPU using deterministic regex and schema catalogs without external API requirements.",
     exampleWalkthrough:
       "Incident #176061 raw events are normalized into canonical fields: src_ip=192.0.2.45, dest_ip=203.0.113.88, dest_port=22, proto=TCP, action=PERMIT.",
   },
@@ -69,10 +69,10 @@ export const WORKFLOW_STAGES: WorkflowStageDetail[] = [
     title: "Local LLM Reasoning & Triage",
     shortDescription: "Private, on-premises AI inference evaluating TP vs. FP likelihood.",
     detailedExplanation:
-      "The compiled prompt is dispatched to the locally hosted Qwen 2.5 7B model running on Server 2 (or local mock if offline). The LLM evaluates indicators, cross-references SOP rules, and returns a proposed verdict with a confidence score and factual claims.",
+      "The compiled prompt is dispatched to the locally hosted Qwen 2.5 7B model running on Verdictum Cortex (Server 2) (or local mock if offline). The LLM evaluates indicators, cross-references SOP rules, and returns a proposed verdict with a confidence score and factual claims.",
     targetUIPage: { title: "AI Triage Workbench", route: "/ai-triage-workbench" },
     offlineBehavior:
-      "If the Server 2 GPU LLM is offline or unreachable, the system automatically falls back to an advisory status: incidents remain open and are routed directly to the human analyst queue with an 'LLM Offline' tag.",
+      "If the Verdictum Cortex GPU LLM is offline or unreachable, the system automatically falls back to an advisory status: incidents remain open and are routed directly to the human analyst queue with an 'LLM Offline' tag.",
     exampleWalkthrough:
       "The Qwen model analyzes the SSH transfer and proposes 'FALSE_POSITIVE' (confidence 0.94), claiming the destination IP matches a scheduled nightly backup replication server.",
   },
@@ -84,7 +84,7 @@ export const WORKFLOW_STAGES: WorkflowStageDetail[] = [
       "Before an AI verdict is accepted, an independent non-LLM validation engine extracts all factual claims made by the model and cross-examines them against the raw evidence. If any hallucination or contradiction is found, the verdict is rejected.",
     targetUIPage: { title: "Verdict Intelligence", route: "/verdict-intelligence" },
     offlineBehavior:
-      "Runs deterministically on Server 1; no external network or LLM connectivity required.",
+      "Runs deterministically on Verdictum Core (Server 1); no external network or LLM connectivity required.",
     exampleWalkthrough:
       "The validator verifies that destination IP '203.0.113.88' exists in raw firewall events. Contradictions: 0. Trust Score calculated as 9/10 (Strong Support).",
   },
@@ -127,15 +127,15 @@ export const ALL_GUIDE_PAGES: GuidePageDetail[] = [
     implementationStatus: "FULLY_AVAILABLE",
     statusDescription: "Fully operational executive dashboard with live telemetry and cluster health monitoring.",
     whatIsThis:
-      "Agent Mission Control is the primary operational dashboard for Verdictum AI. It provides real-time visibility into overall security posture, automated triage throughput, and live cluster health across Server 1 and Server 2.",
+      "Agent Mission Control is the primary operational dashboard for Verdictum AI. It provides real-time visibility into overall security posture, automated triage throughput, and live cluster health across Verdictum Core and Verdictum Cortex.",
     whyDoWeNeedIt:
       "SOC managers and lead analysts need a single pane of glass to monitor incident inflow, automation status, and system capacity without digging through multiple queues.",
     practicalUseCase:
-      "During a shift handover, the SOC Lead reviews the 24-hour True Positive vs. False Positive ratio and checks Server 2 cluster health before assigning escalations to Tier 1 analysts.",
+      "During a shift handover, the SOC Lead reviews the 24-hour True Positive vs. False Positive ratio and checks Verdictum Cortex cluster health before assigning escalations to Tier 1 analysts.",
     howToUse: [
       "Open Agent Mission Control from the top of the sidebar.",
       "Review the top KPI cards for Ingested Incidents, AI Triage Coverage, and TP/FP breakdown.",
-      "Inspect the Server Infrastructure Monitor for Server 1 and Server 2 health status.",
+      "Inspect the Server Infrastructure Monitor for Verdictum Core and Verdictum Cortex health status.",
       "Check the Recent Triage Activity stream for high-severity alerts.",
       "If new incidents are pending reconciliation, click 'Reconcile Pending' to trigger background processing.",
     ],
@@ -258,28 +258,28 @@ export const ALL_GUIDE_PAGES: GuidePageDetail[] = [
   {
     id: "soc-chatbot",
     slug: "soc-chatbot",
-    title: "SOC AI Chatbot",
+    title: "Verdictum Sentinel",
     groupTitle: "SOC OPERATIONS",
     route: "/soc-chatbot",
-    badge: "LLM",
+    badge: "COPILOT",
     badgeColor: "bg-indigo-950 text-indigo-300 border border-indigo-800",
     implementationStatus: "AVAILABLE_WITH_OFFLINE_MODE",
-    statusDescription: "Operational when Server 2 Qwen LLM is online; graceful advisory fallback when offline.",
+    statusDescription: "Operational when Verdictum Cortex Qwen LLM is online; graceful advisory fallback when offline.",
     whatIsThis:
-      "The SOC AI Chatbot is a conversational SOC copilot that allows analysts to query security concepts, deobfuscate malicious scripts, map incidents to MITRE ATT&CK techniques, and draft containment playbooks using natural language.",
+      "Verdictum Sentinel is an AI SOC Investigation Copilot that allows analysts to query security concepts, deobfuscate malicious scripts, map incidents to MITRE ATT&CK techniques, and draft containment playbooks using natural language powered by Verdictum Cortex.",
     whyDoWeNeedIt:
       "Accelerates tactical investigation by providing on-demand guidance, threat intelligence summaries, and script analysis directly within the analyst's workflow.",
     practicalUseCase:
-      "An analyst pastes an obfuscated Base64 PowerShell one-liner from an alert, and the chatbot deobfuscates the script, extracts the malicious C2 domain, and recommends containment steps.",
+      "An analyst pastes an obfuscated Base64 PowerShell one-liner from an alert, and Sentinel deobfuscates the script, extracts the malicious C2 domain, and recommends containment steps.",
     howToUse: [
-      "Navigate to SOC AI Chatbot from the sidebar.",
+      "Navigate to Verdictum Sentinel from the sidebar.",
       "(Optional) Select an active incident from the dropdown to attach its telemetry context.",
       "Click a Quick Prompt (e.g., 'MITRE ATT&CK Mapping' or 'Deobfuscate PowerShell') or type a custom query.",
       "Click 'Send' and inspect the streamed response with latency and token analytics.",
-      "If Server 2 LLM is offline, review the offline fallback banner.",
+      "If Verdictum Cortex LLM is offline, review the offline fallback banner.",
     ],
     prerequisites: [
-      "Active Server 2 Qwen LLM cluster for live inference (graceful advisory message when offline).",
+      "Active Verdictum Cortex Qwen LLM cluster for live inference (graceful advisory message when offline).",
       "User authenticated with SOC Analyst or Administrator role.",
     ],
     expectedResult:
@@ -481,23 +481,23 @@ export const ALL_GUIDE_PAGES: GuidePageDetail[] = [
     whyDoWeNeedIt:
       "Provides operational visibility into GPU VRAM, KV cache usage, CPU/memory loads, token budgets, and historical latency to ensure high availability and prevent performance bottlenecks.",
     practicalUseCase:
-      "A platform administrator checks the Server 2 GPU status after a high-volume incident burst, observing that VRAM is at 62%, KV cache is healthy, and average response latency is 1,240 ms.",
+      "A platform administrator checks the Verdictum Cortex GPU status after a high-volume incident burst, observing that VRAM is at 62%, KV cache is healthy, and average response latency is 1,240 ms.",
     howToUse: [
       "Navigate to Inference Control from the sidebar.",
-      "Inspect Server 1 (Backend API) CPU, RAM, and Disk metrics.",
-      "Inspect Server 2 (vLLM / Qwen GPU) status, model name, and KV cache utilization.",
+      "Inspect Verdictum Core (Backend API) CPU, RAM, and Disk metrics.",
+      "Inspect Verdictum Cortex (vLLM / Qwen GPU) status, model name, and KV cache utilization.",
       "Review the Token Bifurcation widget: Breakdown of tokens across Incident Triage, Batch Triage, Simulation Replay, and Policy Testing.",
-      "Check cluster status alerts if Server 2 is offline or unreachable.",
+      "Check cluster status alerts if Verdictum Cortex is offline or unreachable.",
     ],
     prerequisites: [
-      "System monitoring service active; Server 1 & Server 2 telemetry accessible.",
+      "System monitoring service active; Verdictum Core & Verdictum Cortex telemetry accessible.",
     ],
     expectedResult:
       "Full situational awareness of AI cluster health, token costs, and processing latency.",
     relatedPages: [
       { title: "Agent Mission Control", route: "/agent-mission-control" },
       { title: "Agent Configuration", route: "/agent-configuration" },
-      { title: "SOC AI Chatbot", route: "/soc-chatbot" },
+      { title: "Verdictum Sentinel", route: "/soc-chatbot" },
     ],
   },
   {
@@ -507,9 +507,9 @@ export const ALL_GUIDE_PAGES: GuidePageDetail[] = [
     groupTitle: "PLATFORM CONTROL",
     route: "/agent-configuration",
     implementationStatus: "FULLY_AVAILABLE",
-    statusDescription: "Fully operational settings panel for FortiSIEM, Server 2 LLM, and double-blind mode.",
+    statusDescription: "Fully operational settings panel for FortiSIEM, Verdictum Cortex LLM, and double-blind mode.",
     whatIsThis:
-      "Agent Configuration is the master integration settings and environmental preferences panel for FortiSIEM and the local Qwen LLM server.",
+      "Agent Configuration is the master integration settings and environmental preferences panel for FortiSIEM and the Verdictum Cortex LLM server.",
     whyDoWeNeedIt:
       "Centralizes API endpoints, authentication credentials, network timeouts, context window budgets, and operational flags in one secure interface.",
     practicalUseCase:
@@ -517,7 +517,7 @@ export const ALL_GUIDE_PAGES: GuidePageDetail[] = [
     howToUse: [
       "Open Agent Configuration from the sidebar.",
       "FortiSIEM Section: Enter Host URL, Username, Password, and timeout; click 'Test Connection'; click 'Save Configuration'.",
-      "Local LLM Section: Configure Server 2 Host, Port, Model Name ('Qwen/Qwen2.5-7B-Instruct-AWQ'), and context budget; click 'Test LLM Connection'.",
+      "Local LLM Section: Configure Verdictum Cortex Host, Port, Model Name ('Qwen/Qwen2.5-7B-Instruct-AWQ'), and context budget; click 'Test LLM Connection'.",
       "Preferences Section: Toggle 'Blind Review Mode' (hides AI verdicts across analysts) and switch themes.",
     ],
     prerequisites: [

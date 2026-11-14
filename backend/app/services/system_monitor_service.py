@@ -97,7 +97,8 @@ class InferenceHealthMonitor:
 
         return {
             "server_id": "server-1",
-            "server_name": "Server 1 (Platform & SIEM Core)",
+            "server_name": "Verdictum Core (Platform & SIEM Engine)",
+            "logical_hostname": "verdictum-core-01",
             "timestamp": now.isoformat() + "Z",
             "status": "ONLINE",
             "cpu_percent": cpu_percent,
@@ -116,6 +117,8 @@ class InferenceHealthMonitor:
             "active_requests": 1,
             "details": {
                 "role": "FastAPI App Backend, Next.js UI, Database",
+                "component": "Verdictum Core",
+                "logical_hostname": "verdictum-core-01",
                 "load_avg": load_avg,
                 "uptime_seconds": uptime_sec,
                 "uptime_formatted": self._format_uptime(uptime_sec),
@@ -218,10 +221,13 @@ class InferenceHealthMonitor:
         details["current_s2_health"] = prov["current_s2_health"]
         details["gpu_telemetry_verified"] = prov["gpu_telemetry_verified"]
         details["test_environment"] = prov["test_environment"]
+        details["logical_hostname"] = "verdictum-cortex-01"
+        details["component"] = "Verdictum Cortex"
 
         return {
             "server_id": "server-2",
-            "server_name": "Mock HTTP Endpoint (Non-GPU Test Target)" if mock_endpoint else "Server 2 (vLLM AI & GPU Inference)",
+            "server_name": "Mock HTTP Endpoint (Non-GPU Test Target)" if mock_endpoint else "Verdictum Cortex (AI & GPU Inference Engine)",
+            "logical_hostname": "verdictum-cortex-01",
             "timestamp": now.isoformat() + "Z",
             "status": status,
             "cpu_percent": None,

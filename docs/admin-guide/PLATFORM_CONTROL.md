@@ -13,17 +13,17 @@ Inference Control is a real-time hardware health, resource utilization, and toke
 It provides operational visibility into GPU VRAM, KV cache usage, CPU/memory loads, token budgets, and historical latency to ensure high availability and prevent performance bottlenecks.
 
 ### 3. Practical Use Case
-A platform administrator checks the Server 2 GPU status after a high-volume incident burst, observing that VRAM is at 62%, KV cache is healthy, and average response latency is 1,240 ms.
+A platform administrator checks the Verdictum Cortex GPU status after a high-volume incident burst, observing that VRAM is at 62%, KV cache is healthy, and average response latency is 1,240 ms.
 
 ### 4. How to Use
 1. Navigate to **Inference Control** from the sidebar.
-2. Inspect **Server 1** (Backend API) CPU, RAM, and Disk metrics.
-3. Inspect **Server 2** (vLLM / Qwen GPU) status, model name, and KV cache utilization.
+2. Inspect **Verdictum Core** (Backend API & Platform Engine, `verdictum-core-01`) CPU, RAM, and Disk metrics.
+3. Inspect **Verdictum Cortex** (vLLM / Qwen GPU Inference Engine, `verdictum-cortex-01`) status, model name, and KV cache utilization.
 4. Review the **Token Bifurcation** widget: Breakdown of tokens across Incident Triage, Batch Triage, Simulation Replay, and Policy Testing.
-5. Check cluster status alerts if Server 2 is offline or unreachable.
+5. Check cluster status alerts if Verdictum Cortex is offline or unreachable.
 
 ### 5. Prerequisites
-- System monitoring service active; Server 1 & Server 2 telemetry accessible.
+- System monitoring service active; Verdictum Core & Verdictum Cortex telemetry accessible.
 
 ### 6. Expected Result
 Full situational awareness of AI cluster health, token costs, and processing latency.
@@ -31,14 +31,14 @@ Full situational awareness of AI cluster health, token costs, and processing lat
 ### 7. Related Pages
 - [Agent Mission Control](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/docs/admin-guide/SOC_OPERATIONS.md#1-agent-mission-control-agent-mission-control) (`/agent-mission-control`)
 - [Agent Configuration](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/docs/admin-guide/PLATFORM_CONTROL.md#2-agent-configuration-agent-configuration) (`/agent-configuration`)
-- [SOC AI Chatbot](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/docs/admin-guide/SOC_OPERATIONS.md#5-soc-ai-chatbot-soc-chatbot) (`/soc-chatbot`)
+- [Verdictum Sentinel](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/docs/admin-guide/SOC_OPERATIONS.md#5-verdictum-sentinel-soc-chatbot) (`/soc-chatbot`)
 
 ---
 
 ## 2. Agent Configuration (`/agent-configuration`)
 
 ### 1. What is this page?
-Agent Configuration is the master integration settings and environmental preferences panel for FortiSIEM and the local Qwen LLM server.
+Agent Configuration is the master integration settings and environmental preferences panel for FortiSIEM and the Verdictum Cortex LLM server.
 
 ### 2. Why do we need it?
 It centralizes API endpoints, authentication credentials, network timeouts, context window budgets, and operational flags in one secure interface.
@@ -49,7 +49,7 @@ An administrator updates the FortiSIEM hostname, tests the connection successful
 ### 4. How to Use
 1. Open **Agent Configuration** from the sidebar.
 2. **FortiSIEM Section:** Enter Host URL, Username, Password, and timeout; click **Test Connection**; click **Save Configuration**.
-3. **Local LLM Section:** Configure Server 2 Host, Port, Model Name (`Qwen/Qwen2.5-7B-Instruct-AWQ`), and context budget; click **Test LLM Connection**.
+3. **Local LLM Section:** Configure Verdictum Cortex Host, Port, Model Name (`Qwen/Qwen2.5-7B-Instruct-AWQ`), and context budget; click **Test LLM Connection**.
 4. **Preferences Section:** Toggle **Blind Review Mode** (hides AI verdicts across analysts) and switch themes.
 
 ### 5. Prerequisites

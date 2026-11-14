@@ -2,19 +2,20 @@
 
 ## 1. Architectural Philosophy & Governance
 
-Verdictum AI is designed under a two-server enterprise topology:
-- **Server 1 — Application Server**: Hosts the Next.js frontend, Python FastAPI backend, PostgreSQL relational database, and secure ingestion pipelines.
-- **Server 2 — Inference Server (Future)**: Hosts the local LLM running on dedicated GPU infrastructure (AWS `g4dn.2xlarge`) served via a private OpenAI-compatible API.
+Verdictum AI is designed under a two-server enterprise topology with approved component naming:
+- **Verdictum Core (`verdictum-core-01`) — Application Server (Server 1)**: Hosts the Next.js frontend, Python FastAPI backend, PostgreSQL relational database, and secure ingestion pipelines.
+- **Verdictum Cortex (`verdictum-cortex-01`) — AI Inference Server (Server 2)**: Hosts the local LLM running on dedicated GPU infrastructure (e.g. AWS `g4dn.2xlarge`) served via a private OpenAI-compatible API (vLLM / PyTorch CUDA).
+- **Verdictum Sentinel — AI SOC Investigation Copilot (`/soc-chatbot`)**: Interactive conversational copilot connecting directly to Verdictum Cortex for threat intelligence, MITRE ATT&CK mapping, and payload deobfuscation.
 
-During Phase 1, **Server 1 is developed exclusively**. No model runtime, external API, or GPU dependency exists. All system metrics reflect genuine database records.
+During Phase 1, **Verdictum Core (Server 1) was developed exclusively**. All system metrics reflect genuine database records.
 
 ---
 
-## 2. Server 1 Component Diagram
+## 2. Verdictum Core (Server 1) Component Diagram
 
 ```
 +-----------------------------------------------------------------------------------+
-|                                  SERVER 1                                         |
+|                        VERDICTUM CORE (verdictum-core-01)                         |
 |                                                                                   |
 |  +-----------------------------------------------------------------------------+  |
 |  |                            Nginx Reverse Proxy                              |  |
@@ -102,9 +103,9 @@ The ingestion pipeline protects against common archive and file-based vulnerabil
 
 ---
 
-## 5. Future Inference Server Interface (Phase 3+)
+## 5. Inference Server Interface (Verdictum Cortex · Server 2)
 
-When Server 2 (AWS `g4dn.2xlarge`) is integrated in future stages, it will connect using a provider-independent contract:
+When Verdictum Cortex (`verdictum-cortex-01`, Server 2 AWS `g4dn.2xlarge`) is integrated, it connects using a provider-independent contract:
 
 ```python
 class ModelProvider(ABC):

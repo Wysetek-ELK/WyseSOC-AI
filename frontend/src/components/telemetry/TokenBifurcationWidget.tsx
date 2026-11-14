@@ -73,7 +73,7 @@ export function TokenBifurcationWidget() {
             Token Consumption &amp; Bifurcation Analysis
           </h2>
           <p className="text-[10px] text-slate-400 mt-0.5">
-            Full ledger of input context vs output reasoning tokens across all agentic processes · Persistently archived on Server 1
+            Full ledger of input context vs output reasoning tokens across all agentic processes · Persistently archived on Verdictum Core
           </p>
         </div>
 
@@ -81,7 +81,7 @@ export function TokenBifurcationWidget() {
           {/* Storage node badge */}
           <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-emerald-400">
             <Database className="h-3 w-3 text-emerald-400" />
-            Server 1 Ledger
+            Verdictum Core Ledger
           </span>
 
           {/* Time window selector */}
@@ -173,7 +173,7 @@ export function TokenBifurcationWidget() {
             {data?.totals.avg_latency_ms || 0} ms
           </div>
           <div className="text-[10px] font-mono text-slate-500">
-            Server 2 vLLM Engine
+            Verdictum Cortex (vLLM Engine)
           </div>
         </div>
       </div>
@@ -254,7 +254,7 @@ export function TokenBifurcationWidget() {
               Bifurcation by Model Identifier
             </h3>
             <span className="text-[10px] font-mono text-slate-500">
-              Active Server 2 Providers
+              Active Verdictum Cortex Providers
             </span>
           </div>
 
@@ -293,7 +293,7 @@ export function TokenBifurcationWidget() {
           <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5 text-cyan-400" />
-              Recent Token Ledger Transactions (Server 1)
+              Recent Token Ledger Transactions (Verdictum Core)
             </h3>
             <span className="text-[10px] font-mono text-slate-500">
               Showing last {data.recent_ledger.length} operations

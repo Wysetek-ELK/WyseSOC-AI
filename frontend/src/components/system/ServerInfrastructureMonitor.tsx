@@ -207,13 +207,13 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
           preserveAspectRatio="none"
         >
           <defs>
-            {/* Server 1 Gradient */}
+            {/* Verdictum Core Gradient */}
             <linearGradient id="s1Grad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-cyan-500, #06b6d4)" stopOpacity="0.35" />
               <stop offset="100%" stopColor="var(--color-cyan-500, #06b6d4)" stopOpacity="0.0" />
             </linearGradient>
 
-            {/* Server 2 Gradient (Purple/Indigo) */}
+            {/* Verdictum Cortex Gradient (Purple/Indigo) */}
             <linearGradient id="s2Grad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#a855f7" stopOpacity="0.35" />
               <stop offset="100%" stopColor="#a855f7" stopOpacity="0.0" />
@@ -355,7 +355,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
             </div>
             <div className="flex items-center gap-2 text-cyan-300">
               <span className="h-2 w-2 rounded-full bg-cyan-400"></span>
-              <span>Server 1: </span>
+              <span>Verdictum Core: </span>
               <strong>
                 {s1Points[hoveredPointIdx].val}
                 {activeMetricTab === "latency" ? " ms" : "%"}
@@ -364,7 +364,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
             {s2Points[hoveredPointIdx] && (
               <div className="flex items-center gap-2 text-purple-300">
                 <span className="h-2 w-2 rounded-full bg-purple-400"></span>
-                <span>Server 2: </span>
+                <span>Verdictum Cortex: </span>
                 <strong>
                   {s2Points[hoveredPointIdx].val}
                   {activeMetricTab === "latency" ? " ms" : "%"}
@@ -394,7 +394,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
               </span>
             </h2>
             <p className="text-[10px] text-slate-400">
-              Real-time resource utilization & historical analytics across Server 1 (Platform) & Server 2 (vLLM AI)
+              Real-time resource utilization & historical analytics across Verdictum Core (Platform) & Verdictum Cortex (vLLM AI)
             </p>
           </div>
         </div>
@@ -436,14 +436,14 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
 
       {/* Dual Server Live Utilization Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* ================= SERVER 1 (Platform Host) ================= */}
+        {/* ================= VERDICTUM CORE (Platform Host) ================= */}
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 space-y-2.5">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
             <div className="flex items-center gap-2">
               <Server className="h-4 w-4 text-cyan-400" />
               <div>
-                <span className="text-xs font-bold text-slate-100">Server 1 (Platform Core)</span>
-                <span className="text-[10px] text-slate-500 block font-mono">App / SIEM Ingestion / DB</span>
+                <span className="text-xs font-bold text-slate-100">Verdictum Core (Platform Engine)</span>
+                <span className="text-[10px] text-slate-500 block font-mono">verdictum-core-01 · App / SIEM Ingestion / DB</span>
               </div>
             </div>
             <span
@@ -531,15 +531,15 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
           </div>
         </div>
 
-        {/* ================= SERVER 2 (GPU Inference Engine) ================= */}
+        {/* ================= VERDICTUM CORTEX (GPU Inference Engine) ================= */}
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 space-y-2.5">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-purple-400" />
               <div>
-                <span className="text-xs font-bold text-slate-100">Server 2 (vLLM AI Engine)</span>
+                <span className="text-xs font-bold text-slate-100">Verdictum Cortex (AI Inference Engine)</span>
                 <span className="text-[10px] text-purple-400 block font-mono">
-                  {s2?.details?.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ"}
+                  verdictum-cortex-01 · {s2?.details?.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ"}
                 </span>
               </div>
             </div>
@@ -704,11 +704,11 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
         <div className="flex items-center gap-4 text-[10px] font-mono text-slate-400">
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-cyan-400"></span>
-            <span>Server 1 ({activeMetricTab === "compute" ? "CPU %" : activeMetricTab === "memory" ? "RAM %" : "Platform Ping"})</span>
+            <span>Verdictum Core ({activeMetricTab === "compute" ? "CPU %" : activeMetricTab === "memory" ? "RAM %" : "Platform Ping"})</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-purple-400"></span>
-            <span>Server 2 ({activeMetricTab === "compute" ? "GPU Compute %" : activeMetricTab === "memory" ? "VRAM %" : "vLLM Latency ms"})</span>
+            <span>Verdictum Cortex ({activeMetricTab === "compute" ? "GPU Compute %" : activeMetricTab === "memory" ? "VRAM %" : "vLLM Latency ms"})</span>
           </div>
         </div>
 
@@ -728,25 +728,25 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
         {historyData?.stats && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px] font-mono">
             <div className="rounded border border-slate-800/80 bg-slate-900/60 p-1.5">
-              <span className="text-slate-400 text-[10px] block">Server 1 Avg CPU</span>
+              <span className="text-slate-400 text-[10px] block">Verdictum Core Avg CPU</span>
               <strong className="text-cyan-300 text-xs">{historyData.stats.server_1.cpu.avg}%</strong>{" "}
               <span className="text-[10px] text-slate-500">(Peak: {historyData.stats.server_1.cpu.max}%)</span>
             </div>
 
             <div className="rounded border border-slate-800/80 bg-slate-900/60 p-1.5">
-              <span className="text-slate-400 text-[10px] block">Server 1 Avg RAM</span>
+              <span className="text-slate-400 text-[10px] block">Verdictum Core Avg RAM</span>
               <strong className="text-blue-300 text-xs">{historyData.stats.server_1.memory.avg}%</strong>{" "}
               <span className="text-[10px] text-slate-500">(Peak: {historyData.stats.server_1.memory.max}%)</span>
             </div>
 
             <div className="rounded border border-slate-800/80 bg-slate-900/60 p-1.5">
-              <span className="text-slate-400 text-[10px] block">Server 2 Avg GPU</span>
+              <span className="text-slate-400 text-[10px] block">Verdictum Cortex Avg GPU</span>
               <strong className="text-purple-300 text-xs">{historyData.stats.server_2.gpu.avg}%</strong>{" "}
               <span className="text-[10px] text-slate-500">(Peak: {historyData.stats.server_2.gpu.max}%)</span>
             </div>
 
             <div className="rounded border border-slate-800/80 bg-slate-900/60 p-1.5">
-              <span className="text-slate-400 text-[10px] block">Server 2 Avg Latency</span>
+              <span className="text-slate-400 text-[10px] block">Verdictum Cortex Avg Latency</span>
               <strong className="text-emerald-300 text-xs">{historyData.stats.server_2.latency.avg} ms</strong>{" "}
               <span className="text-[10px] text-slate-500">(Min: {historyData.stats.server_2.latency.min} ms)</span>
             </div>

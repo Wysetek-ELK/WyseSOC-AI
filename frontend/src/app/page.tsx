@@ -230,7 +230,7 @@ export default function AgentMissionControlPage() {
             )}
             <span className="text-slate-400 font-mono text-[11px]">
               Evaluated: <strong className="text-white">{pilotMetrics.operational.incidents_evaluated}</strong> • Backlog:{" "}
-              <strong className="text-slate-200">{pilotMetrics.operational.queue_backlog}</strong> • Server 2:{" "}
+              <strong className="text-slate-200">{pilotMetrics.operational.queue_backlog}</strong> • Verdictum Cortex:{" "}
               <strong className={pilotMetrics.operational.endpoint_provenance === "HTTP_MOCK" ? "text-cyan-300" : pilotMetrics.operational.provider_available ? "text-emerald-300" : "text-rose-300"}>
                 {pilotMetrics.operational.endpoint_provenance === "HTTP_MOCK"
                   ? "HTTP_MOCK (TEST)"
@@ -305,7 +305,7 @@ export default function AgentMissionControlPage() {
                       onClick={handleReconcilePending}
                       disabled={isReconcilingPending}
                       className="rounded border border-cyan-700/70 bg-cyan-950/80 px-1.5 py-0.5 text-[9px] font-mono font-semibold text-cyan-200 hover:bg-cyan-900/80 disabled:opacity-50 transition-colors"
-                      title="Process remaining pending incidents with Server 2 Local LLM"
+                      title="Process remaining pending incidents with Verdictum Cortex Local LLM"
                     >
                       {isReconcilingPending
                         ? "Starting..."

@@ -366,7 +366,7 @@ export function AdminGuideInteractiveReader() {
               <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <div className="flex flex-col gap-1.5 text-xs text-slate-300 leading-relaxed">
                 <span className="font-bold text-amber-300 text-sm">
-                  What happens when the Server 2 LLM server is offline?
+                  What happens when Verdictum Cortex is offline?
                 </span>
                 <p>
                   Verdictum AI never produces hallucinations or unverified automated closures during an

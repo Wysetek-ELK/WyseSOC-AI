@@ -141,7 +141,7 @@ async def request_incident_ai_verdict(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    On-demand single incident AI evaluation against Server 2 Local LLM.
+    On-demand single incident AI evaluation against Verdictum Cortex (Server 2 Local LLM).
     Strictly sanitizes telemetry through the ground-truth isolation allowlist.
     """
     ai_service = AIVerdictService(db)
@@ -155,7 +155,7 @@ async def request_incident_ai_verdict(
     except LocalLLMUnavailableError as llm_err:
         raise HTTPException(
             status_code=503,
-            detail=f"Local LLM (Server 2) is offline: {str(llm_err)}. Incident is queued for automatic processing once Local LLM comes online.",
+            detail=f"Verdictum Cortex (Server 2) is offline: {str(llm_err)}. Incident is queued for automatic processing once Verdictum Cortex comes online.",
         )
     except ValueError as ve:
         raise HTTPException(status_code=404, detail=str(ve))
@@ -170,7 +170,7 @@ async def get_incident_historical_timeline(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Returns the complete Historical Telemetry Timeline for an incident from Server 1 persistent storage,
+    Returns the complete Historical Telemetry Timeline for an incident from Verdictum Core (Server 1) persistent storage,
     including raw event progression, SIEM correlation, and bifurcated token metrics.
     """
     from app.services.telemetry_timeline_service import TelemetryTimelineService

@@ -7,18 +7,18 @@ This guide covers the five primary operational pages used daily by Security Oper
 ## 1. Agent Mission Control (`/agent-mission-control`)
 
 ### 1. What is this page?
-Agent Mission Control is the executive and operational dashboard for Verdictum AI. It provides real-time visibility into overall security posture, automated triage throughput, and live cluster health across Server 1 (Backend API) and Server 2 (vLLM / Qwen LLM).
+Agent Mission Control is the executive and operational dashboard for Verdictum AI. It provides real-time visibility into overall security posture, automated triage throughput, and live cluster health across Verdictum Core (Server 1 / Platform API, logical hostname `verdictum-core-01`) and Verdictum Cortex (Server 2 / vLLM AI Engine, logical hostname `verdictum-cortex-01`).
 
 ### 2. Why do we need it?
 SOC managers and lead analysts need a single pane of glass to monitor incident inflow, automation status, and system capacity without digging through multiple queues or running manual database queries.
 
 ### 3. Practical Use Case
-During a morning shift handover, the SOC Lead reviews the 24-hour True Positive vs. False Positive ratio and checks Server 2 cluster health before assigning escalations to Tier 1 analysts.
+During a morning shift handover, the SOC Lead reviews the 24-hour True Positive vs. False Positive ratio and checks Verdictum Cortex cluster health before assigning escalations to Tier 1 analysts.
 
 ### 4. How to Use
 1. Open **Agent Mission Control** from the top of the sidebar.
 2. Review the top KPI cards: Ingested Incidents, AI Triage Coverage, and TP/FP breakdown.
-3. Inspect the Server Infrastructure Monitor for Server 1 (API) and Server 2 (LLM) health status.
+3. Inspect the Server Infrastructure Monitor for Verdictum Core (API/DB) and Verdictum Cortex (LLM) health status.
 4. Check the Recent Triage Activity stream for high-severity alerts.
 5. If new incidents are pending reconciliation, click **Reconcile Pending** to trigger background processing.
 
@@ -137,26 +137,26 @@ Investigation updated, ticket resolution recorded, and verified ground-truth pre
 
 ---
 
-## 5. SOC AI Chatbot (`/soc-chatbot`)
+## 5. Verdictum Sentinel (`/soc-chatbot`)
 
 ### 1. What is this page?
-The SOC AI Chatbot is a conversational SOC copilot that allows analysts to query security concepts, deobfuscate malicious scripts, map incidents to MITRE ATT&CK techniques, and draft containment playbooks using natural language.
+Verdictum Sentinel is an **AI SOC Investigation Copilot** powered directly by **Verdictum Cortex** that allows analysts to query security concepts, deobfuscate malicious scripts, map incidents to MITRE ATT&CK techniques, interpret threat intelligence, and draft containment playbooks using natural language.
 
 ### 2. Why do we need it?
-It accelerates tactical investigation by providing on-demand guidance, threat intelligence summaries, and script analysis directly within the analyst's workflow.
+It accelerates tactical investigation by providing on-demand guidance, threat intelligence summaries, and script analysis directly within the analyst's workflow without leaving the platform.
 
 ### 3. Practical Use Case
-An analyst pastes an obfuscated Base64 PowerShell one-liner from an alert, and the chatbot deobfuscates the script, extracts the malicious C2 domain, and recommends containment steps.
+An analyst pastes an obfuscated Base64 PowerShell one-liner from an alert, and Sentinel deobfuscates the script, extracts the malicious C2 domain, and recommends containment steps.
 
 ### 4. How to Use
-1. Navigate to **SOC AI Chatbot** from the sidebar.
+1. Navigate to **Verdictum Sentinel** from the sidebar.
 2. *(Optional)* Select an active incident from the dropdown to attach its telemetry context.
 3. Click a Quick Prompt (e.g., "MITRE ATT&CK Mapping" or "Deobfuscate PowerShell") or type a custom query.
 4. Click **Send** and inspect the streamed response with latency and token analytics.
-5. If Server 2 LLM is offline, review the offline fallback banner.
+5. If Verdictum Cortex LLM is offline, review the offline fallback banner.
 
 ### 5. Prerequisites
-- Active Server 2 Qwen LLM cluster for live inference (graceful advisory message when offline).
+- Active Verdictum Cortex Qwen LLM cluster for live inference (graceful advisory message when offline).
 - User authenticated with SOC Analyst or Administrator role.
 
 ### 6. Expected Result

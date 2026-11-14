@@ -15,7 +15,7 @@ Verdictum AI Platform
 │   ├── AI Triage Workbench (/ai-triage-workbench)
 │   ├── Telemetry Hub (/telemetry-hub)
 │   ├── Human Review Queue (/human-review-queue)
-│   └── SOC AI Chatbot (/soc-chatbot)
+│   └── Verdictum Sentinel (/soc-chatbot)
 │
 ├── 2. AGENT INTELLIGENCE
 │   ├── Agent Intelligence Studio (/agent-intelligence-studio)
@@ -49,7 +49,20 @@ Verdictum AI Platform
 
 ---
 
-## 3. Operational Guarantees
+## 3. Component Architecture & Server Naming
+
+Verdictum AI operates across a robust enterprise architecture with clearly separated concerns and logical host identifiers:
+
+| Component | Logical Hostname | Role & Responsibilities | Key Technologies |
+|---|---|---|---|
+| **Verdictum AI** | — | Master agentic SOC intelligence platform. | Next.js 15, FastAPI, PostgreSQL |
+| **Verdictum Core** | `verdictum-core-01` | **Application Server (Server 1)**: Ingests SIEM incidents, runs deterministic evidence extraction, normalizes fields, executes trust validations, and persists historical ledgers. | FastAPI REST API, Next.js UI, PostgreSQL, Redis/Celery |
+| **Verdictum Cortex** | `verdictum-cortex-01` | **AI Inference Server (Server 2)**: Dedicated GPU inference node executing private local LLM reasoning (Qwen 2.5 7B AWQ) guarded by circuit breakers and concurrent GPU slot limiting. | vLLM / PyTorch CUDA, OpenAI-compatible API |
+| **Verdictum Sentinel** | — | **AI SOC Investigation Copilot (`/soc-chatbot`)**: Tier-2/3 conversational copilot powered by Verdictum Cortex for attack reconstruction, MITRE ATT&CK mapping, and payload deobfuscation. | Streaming SSE, Incident context binding, Cortex LLM |
+
+---
+
+## 4. Operational Guarantees
 
 1. **Deterministic Claim Validation:** AI predictions are never trusted blindly. An independent validator verifies all factual claims against raw source telemetry.
 2. **Double-Blind Analyst Review:** Analysts evaluate incidents without seeing AI predictions to eliminate confirmation bias and create verified ground truth.

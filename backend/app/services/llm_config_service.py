@@ -471,6 +471,9 @@ class LLMConfigService:
             allow_mock_fallback=settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK,
             is_online=is_online,
             server1_outbound_ip=server1_ip,
+            core_outbound_ip=server1_ip,
+            logical_hostname="verdictum-cortex-01",
+            core_logical_hostname="verdictum-core-01",
             model_profiles=ctx_info["model_profiles"],
         )
 
@@ -572,6 +575,9 @@ class LLMConfigService:
             allow_mock_fallback=settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK,
             is_online=False,
             server1_outbound_ip=cls._cached_server1_ip,
+            core_outbound_ip=cls._cached_server1_ip,
+            logical_hostname="verdictum-cortex-01",
+            core_logical_hostname="verdictum-core-01",
             model_profiles=ctx_info["model_profiles"],
         )
 
@@ -692,7 +698,7 @@ class LLMConfigService:
                         success=True,
                         status_code=200,
                         latency_ms=latency_ms,
-                        message=f"Connection successful! Models loaded on Server 2: {model_str}{capacity_note}",
+                        message=f"Connection successful! Models loaded on Verdictum Cortex (Server 2): {model_str}{capacity_note}",
                         models=models,
                         tested_url=models_url,
                         server_max_model_len=server_max_len,
@@ -714,7 +720,7 @@ class LLMConfigService:
             return LLMTestConnectionResponse(
                 success=False,
                 latency_ms=latency_ms,
-                message=f"Connection timed out after {timeout_sec}s. Verify that port {parsed['port']} is open in Server 2 firewall/AWS Security Group and that Server 1's IP is whitelisted.",
+                message=f"Connection timed out after {timeout_sec}s. Verify that port {parsed['port']} is open in Verdictum Cortex (Server 2) firewall/AWS Security Group and that Verdictum Core's (Server 1) IP is whitelisted.",
                 tested_url=models_url,
             )
         except httpx.ConnectError as ce:
@@ -722,7 +728,7 @@ class LLMConfigService:
             return LLMTestConnectionResponse(
                 success=False,
                 latency_ms=latency_ms,
-                message=f"Connection refused ({ce}). Verify that the vLLM / model server is running on Server 2 and listening on 0.0.0.0:{parsed['port']}.",
+                message=f"Connection refused ({ce}). Verify that the vLLM / model server is running on Verdictum Cortex (Server 2) and listening on 0.0.0.0:{parsed['port']}.",
                 tested_url=models_url,
             )
         except Exception as e:
@@ -730,6 +736,6 @@ class LLMConfigService:
             return LLMTestConnectionResponse(
                 success=False,
                 latency_ms=latency_ms,
-                message=f"Error connecting to LLM server: {str(e)}",
+                message=f"Error connecting to Verdictum Cortex LLM server: {str(e)}",
                 tested_url=models_url,
             )

@@ -10,9 +10,9 @@ This guide explains how security incidents flow through Verdictum AI from initia
 flowchart TD
     A["1. FortiSIEM Incident Ingestion\n(Live REST API or Offline JSON/CSV)"] --> B["2. Telemetry Processing & Normalization\n(Canonical schema, context compaction)"]
     B --> C["3. Detection Rule & Policy Evaluation\n(Rule catalog, archetype matching, AIS 2.0 prompts)"]
-    C --> D{"Is Server 2 LLM Online?"}
+    C --> D{"Is Verdictum Cortex Online?"}
     
-    D -- Yes --> E["4. Local LLM Reasoning\n(vLLM / Qwen 2.5 7B, private on-prem)"]
+    D -- Yes --> E["4. Local LLM Reasoning\n(Verdictum Cortex / Qwen 2.5 7B, private on-prem)"]
     D -- No / Unreachable --> F["4b. Offline Advisory Fallback\n(Auto-flagged LLM_OFFLINE, no hallucination)"]
     
     E --> G["5. Trust & Evidence Claim Validation\n(Deterministic validator: 0-10 Trust Score)"]
@@ -44,7 +44,7 @@ flowchart TD
 ### Stage 2: Telemetry Processing & Normalization
 - **What happens:** Raw unstructured event payloads are parsed into canonical schema fields (`src_ip`, `dest_ip`, `dest_port`, `proto`, `action`, `process_name`, `user`). Repetitive log lines are compacted to optimize context budget.
 - **UI Page to Open:** [Telemetry Hub](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/docs/admin-guide/SOC_OPERATIONS.md#3-telemetry-hub-telemetry-hub) (`/telemetry-hub`)
-- **Offline Behavior:** Runs deterministically on Server 1 CPU without external network or LLM dependencies.
+- **Offline Behavior:** Runs deterministically on Verdictum Core (Server 1) CPU without external network or LLM dependencies.
 - **Incident #176061 Example:** Events are parsed into canonical evidence: `src_ip=192.0.2.45`, `dest_ip=203.0.113.88`, `dest_port=22`, `proto=TCP`, `action=PERMIT`.
 
 ---
@@ -58,9 +58,9 @@ flowchart TD
 ---
 
 ### Stage 4: Local LLM Reasoning & Triage
-- **What happens:** The compiled prompt is sent to the locally hosted Qwen 2.5 7B model running on Server 2 GPU. The model reviews evidence, checks SOP logic, and returns a proposed verdict (`TRUE_POSITIVE`, `FALSE_POSITIVE`, or `INCONCLUSIVE`) with confidence and reasoning.
+- **What happens:** The compiled prompt is sent to the locally hosted Qwen 2.5 7B model running on Verdictum Cortex (Server 2 GPU / `verdictum-cortex-01`). The model reviews evidence, checks SOP logic, and returns a proposed verdict (`TRUE_POSITIVE`, `FALSE_POSITIVE`, or `INCONCLUSIVE`) with confidence and reasoning.
 - **UI Page to Open:** [AI Triage Workbench](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/docs/admin-guide/SOC_OPERATIONS.md#2-ai-triage-workbench-ai-triage-workbench) (`/ai-triage-workbench`)
-- **Offline Behavior:** If Server 2 GPU is offline or unreachable, the system automatically marks the incident as `LLM_OFFLINE_ADVISORY`, leaves the incident open, and routes it directly to the human analyst queue. No fabricated verdicts are produced.
+- **Offline Behavior:** If Verdictum Cortex GPU is offline or unreachable, the system automatically marks the incident as `LLM_OFFLINE_ADVISORY`, leaves the incident open, and routes it directly to the human analyst queue. No fabricated verdicts are produced.
 - **Incident #176061 Example:** Qwen model analyzes the SSH transfer and proposes `FALSE_POSITIVE` (confidence 0.94), claiming the destination IP matches a scheduled nightly backup replication server.
 
 ---
@@ -68,7 +68,7 @@ flowchart TD
 ### Stage 5: Trust & Evidence Claim Validation
 - **What happens:** An independent deterministic non-LLM validation engine inspects every factual claim made by the AI model. It verifies IP addresses, file paths, ports, and timestamps against raw telemetry. If any claim is contradicted or unsubstantiated, the trust score is penalized.
 - **UI Page to Open:** [Verdict Intelligence](file:///c:/Users/amit/OneDrive/Documents/SOC-AI-Agent/docs/admin-guide/VALIDATION_AND_TRUST.md#2-verdict-intelligence-verdict-intelligence) (`/verdict-intelligence`)
-- **Offline Behavior:** Runs 100% deterministically on Server 1.
+- **Offline Behavior:** Runs 100% deterministically on Verdictum Core (Server 1).
 - **Incident #176061 Example:** The validator verifies that destination IP `203.0.113.88` exists in raw firewall events. Contradictions: 0. Trust Score calculated as 9/10 (Strong Support).
 
 ---
@@ -99,7 +99,7 @@ flowchart TD
 
 ## 3. System Behavior During LLM Outage
 
-When Server 2 (the local Qwen 2.5 7B LLM cluster) is unreachable or powered down:
+When Verdictum Cortex (Server 2 / local Qwen 2.5 7B LLM cluster) is unreachable or powered down:
 
 1. **No Incident Drops:** Incidents continue to ingest normally from FortiSIEM and Telemetry Hub.
 2. **Deterministic Triage Available:** Heuristic and regex-based evidence parsing continues uninterrupted.

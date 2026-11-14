@@ -28,7 +28,10 @@ class LLMConfigResponse(BaseModel):
     operating_mode: str = Field("development", description="Resolved platform operating mode")
     allow_mock_fallback: bool = Field(False, description="Whether fallback to heuristic/mock is allowed when offline")
     is_online: bool = Field(False, description="Cached online reachability status")
+    logical_hostname: str = Field("verdictum-cortex-01", description="Logical hostname for Verdictum Cortex (Server 2)")
+    core_logical_hostname: str = Field("verdictum-core-01", description="Logical hostname for Verdictum Core (Server 1)")
     server1_outbound_ip: Optional[str] = Field(None, description="Outbound public IP of Server 1 (for security group whitelisting)")
+    core_outbound_ip: Optional[str] = Field(None, description="Outbound public IP of Verdictum Core")
     model_profiles: Dict[str, Dict[str, int]] = Field(default_factory=dict, description="Configurable per-model context window, completion, and input budget limits")
 
 

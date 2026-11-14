@@ -18,7 +18,7 @@ All **14 sidebar pages** across the **4 core operational groups** have been full
 | **SOC OPERATIONS** | AI Triage Workbench | `/ai-triage-workbench` | Fully Available | Local triage with evidence inspection; mock fallback mode |
 | **SOC OPERATIONS** | Telemetry Hub | `/telemetry-hub` | Fully Available | Live FortiSIEM sync or offline JSON/CSV archive drag-and-drop |
 | **SOC OPERATIONS** | Human Review Queue | `/human-review-queue` | Fully Available | Double-blind analyst evaluation & collaboration drawer |
-| **SOC OPERATIONS** | SOC AI Chatbot | `/soc-chatbot` | Available (Offline Fallback) | Live Qwen inference or graceful advisory banner when offline |
+| **SOC OPERATIONS** | Verdictum Sentinel | `/soc-chatbot` | Available (Offline Fallback) | Live Cortex Qwen inference or graceful advisory banner when offline |
 | **AGENT INTELLIGENCE** | Agent Intelligence Studio | `/agent-intelligence-studio` | Fully Available | 7-tab detection & prompt engineering IDE; Wilson score gating |
 | **AGENT INTELLIGENCE** | Detection Intelligence | `/detection-intelligence` | Fully Available | Rule catalog and FortiSIEM rule synchronization |
 | **AGENT INTELLIGENCE** | Agent Memory | `/agent-memory` | Fully Available | Verified analyst precedents and similar case search |
@@ -69,7 +69,7 @@ Agent Memory Precedent Retention
 
 ### Operational Integrity Checks:
 - **No Fabricated Automation:** Documentation clearly states that automated false-positive closure is disabled by default (`ENABLE_AUTO_CLOSURE = False`).
-- **Offline Resilience:** Clarified that during LLM outages, Server 1 continues deterministic parsing, incidents are tagged `LLM_OFFLINE_ADVISORY`, and no incidents are dropped or prematurely closed.
+- **Offline Resilience:** Clarified that during LLM outages, Verdictum Core continues deterministic parsing, incidents are tagged `LLM_OFFLINE_ADVISORY`, and no incidents are dropped or prematurely closed.
 - **Walkthrough Grounding:** Stage-by-stage example follows real-world Incident #176061 (SSH Tunneling rule `PH_RULE_CS_SUSPICIOUS_ACTIVITY`).
 
 ---

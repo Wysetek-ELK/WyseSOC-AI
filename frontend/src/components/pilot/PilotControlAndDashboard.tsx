@@ -486,7 +486,7 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
                   >
                     {s2Health.isMockEndpoint
                       ? "Endpoint: HTTP_MOCK (Test)"
-                      : `Server 2: ${metrics.operational.current_s2_health || (metrics.operational.provider_available ? "ONLINE" : "OFFLINE")}`}
+                      : `Cortex: ${metrics.operational.current_s2_health || (metrics.operational.provider_available ? "ONLINE" : "OFFLINE")}`}
                   </span>
                 );
               })()}
@@ -845,7 +845,7 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
             Controlled Pilot Batch Execution
           </h4>
           <p className="text-xs text-slate-400">
-            Runs eligible incidents under active pilot rules &amp; budgets. Live batches strictly reject simulated fallbacks when Server 2 is offline.
+            Runs eligible incidents under active pilot rules &amp; budgets. Live batches strictly reject simulated fallbacks when Verdictum Cortex is offline.
           </p>
           <div className="space-y-3 text-xs">
             <div>
@@ -860,7 +860,7 @@ export default function PilotControlAndDashboard({ onError, onSuccess }: PilotCo
                 }}
                 className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-700 text-white"
               >
-                <option value="LIVE">LIVE (Real Server 2 Required)</option>
+                <option value="LIVE">LIVE (Real Verdictum Cortex Required)</option>
                 <option value="HISTORICAL">HISTORICAL Replay</option>
               </select>
             </div>

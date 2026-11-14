@@ -298,20 +298,20 @@ export const TROUBLESHOOTING_SCENARIOS: TroubleshootingScenario[] = [
   },
   {
     id: "ts-llm-offline-deferred",
-    question: "Why does AI triage defer or refuse evaluation when Server 2 Local LLM is offline?",
+    question: "Why does AI triage defer or refuse evaluation when Verdictum Cortex (Server 2) is offline?",
     category: "Operations",
     shortAnswer:
-      "In live/production execution, VerdictTriageAgent checks Local LLM reachability and GPU circuit breaker state and refuses to fabricate simulated verdicts when Server 2 is unavailable.",
+      "In live/production execution, VerdictTriageAgent checks Verdictum Cortex reachability and GPU circuit breaker state and refuses to fabricate simulated verdicts when Verdictum Cortex is unavailable.",
     rootCauses: [
-      "Server 2 GPU endpoint is unreachable, timed out, or GPUServerCircuitBreaker tripped OPEN after consecutive inference failures.",
+      "Verdictum Cortex GPU endpoint is unreachable, timed out, or GPUServerCircuitBreaker tripped OPEN after consecutive inference failures.",
       "Production mode sets LOCAL_LLM_ALLOW_MOCK_FALLBACK=false so synthetic simulator outputs cannot masquerade as live AI decisions.",
     ],
     howSystemBehaves: [
       "Raises LocalLLMUnavailableError; pending incidents remain queued safely without bogus TP/FP tags.",
-      "Once Server 2 recovers, Inference Control / Telemetry Hub can process pending verdicts.",
+      "Once Verdictum Cortex recovers, Inference Control / Telemetry Hub can process pending verdicts.",
     ],
     adminResolutionSteps: [
-      "Check Server 2 GPU status and circuit breaker state in Inference Control.",
+      "Check Verdictum Cortex GPU status and circuit breaker state in Inference Control.",
       "Verify host/port/model configuration in Agent Configuration and run Test Connection.",
     ],
     relatedRoute: "/inference-control",
@@ -392,7 +392,7 @@ export const GUIDED_TOUR_STOPS: GuidedTourStop[] = [
     targetMode: "requirements",
     estimatedMinutes: "2 min",
     keyTakeaways: [
-      "Required integrations: FortiSIEM credentials, authoritative rule XML definitions, canonical evidence fields, Administrator approval RBAC, and Server 2 Local LLM.",
+      "Required integrations: FortiSIEM credentials, authoritative rule XML definitions, canonical evidence fields, Administrator approval RBAC, and Verdictum Cortex.",
       "Statistical thresholds: N >= 5 verified human labels per rule for Gate G8 simulation; N >= 30 balanced labels for Calibration (Brier / ECE).",
       "Read-only status checks verify live reachability when authenticated without mutating any records.",
     ],
@@ -428,7 +428,7 @@ export const PLATFORM_PAGE_LINKS = [
   { title: "Agent Memory", href: "/agent-memory", category: "Agent Intelligence", summary: "Verified LearningRecords powering rule-scoped semantic RAG precedents." },
   { title: "Agent Simulation Lab", href: "/agent-simulation-lab", category: "Validation & Trust", summary: "Controlled dry-run replay benchmarking without production impact." },
   { title: "Verdict Intelligence", href: "/verdict-intelligence", category: "Validation & Trust", summary: "Trustworthiness 1–10 scores, empirical accuracy, Wilson CIs, calibration bins, and McNemar regression." },
-  { title: "Inference Control", href: "/inference-control", category: "Platform Control", summary: "Server 1 CPU/RAM & Server 2 GPU VRAM, latency, and circuit-breaker telemetry." },
-  { title: "Agent Configuration", href: "/agent-configuration", category: "Platform Control", summary: "FortiSIEM supervisor credentials, Local LLM Server 2 settings, and connection tests." },
+  { title: "Inference Control", href: "/inference-control", category: "Platform Control", summary: "Verdictum Core CPU/RAM & Verdictum Cortex GPU VRAM, latency, and circuit-breaker telemetry." },
+  { title: "Agent Configuration", href: "/agent-configuration", category: "Platform Control", summary: "FortiSIEM supervisor credentials, Verdictum Cortex settings, and connection tests." },
   { title: "Governance & Access", href: "/governance-access", category: "Platform Control", summary: "RBAC user management (Administrator / SOC Analyst / Read-Only) and Audit Logs." },
 ];

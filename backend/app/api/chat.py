@@ -30,16 +30,17 @@ from app.schemas.chat import (
 
 logger = logging.getLogger("ai_verdict.chat")
 
-router = APIRouter(prefix="/chat", tags=["SOC AI Chatbot (Local LLM Server 2)"])
+router = APIRouter(prefix="/chat", tags=["Verdictum Sentinel (Verdictum Cortex)"])
 
-DEFAULT_SOC_SYSTEM_PROMPT = """You are Verdictum AI SOC Copilot, an advanced agentic cybersecurity assistant powered directly by the on-premise Local LLM running on Server 2.
+DEFAULT_SOC_SYSTEM_PROMPT = """You are Verdictum Sentinel, an AI SOC Investigation Copilot and advanced cybersecurity assistant powered directly by Verdictum Cortex (on-premise inference engine).
 
 Your mission is to assist SOC Tier 1/2/3 Analysts, Incident Responders, and Threat Hunters with:
-- Security Alert Triage & Attack Vector Reconstruction
+- Incident triage and investigation (Security Alert Triage & Attack Vector Reconstruction)
+- FortiSIEM detection rule analysis, correlation logic review, and false-positive vs true-positive adjudication
 - MITRE ATT&CK Framework Mapping (Tactics, Techniques, and Sub-Techniques with explicit IDs e.g. T1059.001)
-- Log and Command-Line Deobfuscation (PowerShell, Base64, Bash, CMD, VBScript)
-- FortiSIEM correlation rules, detection logic review, and false-positive vs true-positive adjudication
-- Practical containment, host isolation, artifact preservation, and eradication guidance
+- Suspicious script and payload analysis (PowerShell, Base64, Bash, CMD, VBScript)
+- Threat intelligence interpretation, IOC identification, and behavioral correlation
+- Containment and response recommendations (host isolation, artifact preservation, eradication playbooks)
 
 Guidelines:
 1. Ground your analysis strictly in verified evidence, logs, and telemetry.
@@ -54,7 +55,7 @@ async def get_chat_llm_status(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Checks reachability, latency, and model availability of Local LLM Server 2 for the Chatbot.
+    Checks reachability, latency, and model availability of Verdictum Cortex (Server 2) for Sentinel.
     """
     cfg = await LLMConfigService.get_config()
     parsed = LLMConfigService.parse_llm_url(settings.LOCAL_LLM_BASE_URL)
@@ -63,7 +64,7 @@ async def get_chat_llm_status(
     available_models: List[str] = [settings.LOCAL_LLM_MODEL_NAME]
     is_online = False
     latency_ms: Optional[float] = None
-    status_msg = "Server 2 offline"
+    status_msg = "Verdictum Cortex (Server 2) offline"
 
     t0 = time.perf_counter()
     try:
@@ -79,14 +80,14 @@ async def get_chat_llm_status(
                 models_list = [m.get("id") for m in data.get("data", []) if m.get("id")]
                 if models_list:
                     available_models = models_list
-                status_msg = f"Connected to Local LLM on Server 2 ({latency_ms}ms)"
+                status_msg = f"Connected to Verdictum Cortex (Server 2) ({latency_ms}ms)"
             else:
-                status_msg = f"Server 2 returned HTTP {res.status_code}"
+                status_msg = f"Verdictum Cortex (Server 2) returned HTTP {res.status_code}"
     except httpx.TimeoutException:
         latency_ms = round((time.perf_counter() - t0) * 1000, 1)
-        status_msg = f"Connection to Server 2 timed out after {latency_ms}ms"
+        status_msg = f"Connection to Verdictum Cortex (Server 2) timed out after {latency_ms}ms"
     except Exception as exc:
-        status_msg = f"Cannot reach Server 2 ({type(exc).__name__}: {str(exc)})"
+        status_msg = f"Cannot reach Server 2 (Verdictum Cortex) ({type(exc).__name__}: {str(exc)})"
 
     prov = classify_endpoint_status(
         is_healthy=is_online,
@@ -105,6 +106,8 @@ async def get_chat_llm_status(
         available_models=available_models,
         latency_ms=latency_ms,
         status_message=status_msg,
+        logical_hostname="verdictum-cortex-01",
+        server_name="Verdictum Cortex",
         configured_provider=prov["configured_provider"],
         endpoint_provenance=prov["endpoint_provenance"],
         current_s2_health=prov["current_s2_health"],
@@ -226,9 +229,11 @@ async def _record_chat_token_usage(
             executed_by_user=username,
             timestamp=utc_now(),
             details={
-                "role": "SOC AI Chatbot",
+                "role": "Verdictum Sentinel",
+                "component": "Sentinel — AI SOC Investigation Copilot",
                 "attached_incident": bool(attached_incident_data),
                 "server_url": base_url,
+                "logical_hostname": "verdictum-cortex-01",
             },
         )
 
@@ -282,10 +287,10 @@ async def send_chat_message(
 
             if res.status_code != 200:
                 err_text = res.text[:400]
-                logger.error(f"Server 2 returned HTTP {res.status_code}: {err_text}")
+                logger.error(f"Verdictum Cortex (Server 2) returned HTTP {res.status_code}: {err_text}")
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"Local LLM (Server 2) error ({res.status_code}): {err_text}",
+                    detail=f"Verdictum Cortex (Server 2) error ({res.status_code}): {err_text}",
                 )
 
             data = res.json()
@@ -293,7 +298,7 @@ async def send_chat_message(
             if not choices:
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail="Server 2 returned an empty choices array.",
+                    detail="Verdictum Cortex (Server 2) returned an empty choices array.",
                 )
 
             reply_content = choices[0].get("message", {}).get("content", "")
@@ -337,12 +342,12 @@ async def send_chat_message(
         latency_ms = round((time.perf_counter() - t0) * 1000, 1)
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail=f"Inference request to Server 2 timed out after {latency_ms}ms ({read_timeout_sec}s limit). Check Server 2 GPU load or network connectivity.",
+            detail=f"Inference request to Verdictum Cortex (Server 2) timed out after {latency_ms}ms ({read_timeout_sec}s limit). Check Verdictum Cortex GPU load or network connectivity.",
         )
     except httpx.ConnectError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Cannot connect to Local LLM on Server 2 at {completion_url}. Please ensure vLLM is running on Server 2 and firewall allows port {parsed['port']}.",
+            detail=f"Cannot connect to Local LLM on Server 2 (Verdictum Cortex) at {completion_url}. Please ensure vLLM is running on Verdictum Cortex (verdictum-cortex-01) and firewall allows port {parsed['port']}.",
         )
     except HTTPException:
         raise
@@ -421,13 +426,13 @@ async def stream_chat_message(
                 await line_queue.put((
                     "error",
                     504,
-                    f"Inference request to Server 2 timed out after {elapsed_ms}ms ({read_timeout_sec}s limit). Check Server 2 GPU load or network connectivity.",
+                    f"Inference request to Verdictum Cortex (Server 2) timed out after {elapsed_ms}ms ({read_timeout_sec}s limit). Check Verdictum Cortex GPU load or network connectivity.",
                 ))
             except httpx.ConnectError:
                 await line_queue.put((
                     "error",
                     503,
-                    f"Cannot connect to Local LLM on Server 2 at {completion_url}. Please ensure vLLM is running on Server 2 and firewall allows port {parsed['port']}.",
+                    f"Cannot connect to Local LLM on Server 2 (Verdictum Cortex) at {completion_url}. Please ensure vLLM is running on Verdictum Cortex (verdictum-cortex-01) and firewall allows port {parsed['port']}.",
                 ))
             except Exception as exc:
                 await line_queue.put((

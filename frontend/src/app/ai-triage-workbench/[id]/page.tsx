@@ -413,9 +413,9 @@ export default function AITriageWorkbenchDetailPage({
                     ? `• Deterministic Guard (${aiVerdict.model_identifier || pb.label})`
                     : pb.label === "LIVE_PROVIDER"
                     ? llmOnline
-                      ? `• LIVE_PROVIDER (${aiVerdict.model_identifier || "Server 2"}) • S2 Online`
-                      : `• Historical Live Record (S2 Offline Now) • LIVE_PROVIDER`
-                    : `• Provenance: ${pb.label} (${aiVerdict.model_identifier || "Model"}) • S2 Now: ${llmOnline ? "ONLINE" : "OFFLINE"}`;
+                      ? `• LIVE_PROVIDER (${aiVerdict.model_identifier || "Verdictum Cortex"}) • Cortex Online`
+                      : `• Historical Live Record (Cortex Offline Now) • LIVE_PROVIDER`
+                    : `• Provenance: ${pb.label} (${aiVerdict.model_identifier || "Model"}) • Cortex Now: ${llmOnline ? "ONLINE" : "OFFLINE"}`;
                 return (
                   <span
                     className={`px-1.5 py-0.5 rounded border font-semibold ${pb.className}`}

@@ -53,7 +53,7 @@ export const ARCHITECTURE_STEPS: WorkflowStepSpec[] = [
     ],
     requiredConfig: [
       "FORTISIEM_HOST, FORTISIEM_USERNAME, FORTISIEM_PASSWORD configured",
-      "Network reachability from Server 1 to FortiSIEM supervisor",
+      "Network reachability from Verdictum Core (Server 1) to FortiSIEM supervisor",
       "Authorized read-only SIEM integration account",
     ],
     failureOrAbstention: [
@@ -76,7 +76,7 @@ export const ARCHITECTURE_STEPS: WorkflowStepSpec[] = [
     uiRoute: "/telemetry-hub",
     uiLabel: "Telemetry Hub",
     summary:
-      "Continuously synchronizes incidents, rules, and historical resolutions into Server 1 storage while decoupling rule metadata from live incident queues.",
+      "Continuously synchronizes incidents, rules, and historical resolutions into Verdictum Core (Server 1) storage while decoupling rule metadata from live incident queues.",
     inputData: [
       "FortiSIEM scheduled or on-demand pull batches",
       "Uploaded CSV/JSON incident & rule fixtures",
@@ -85,7 +85,7 @@ export const ARCHITECTURE_STEPS: WorkflowStepSpec[] = [
     processingLogic: [
       "Deduplicates incoming incidents by vendor incident_id",
       "Persists Incident, IncidentEvent, Rule, and HistoricalGroundTruth records",
-      "Routes live incidents to Verdict Triage queue when auto_ai_verdict is enabled and Server 2 LLM is healthy",
+      "Routes live incidents to Verdict Triage queue when auto_ai_verdict is enabled and Verdictum Cortex LLM is healthy",
     ],
     outputData: [
       "Persisted Rule catalog records in SQLite/PostgreSQL",
@@ -93,14 +93,14 @@ export const ARCHITECTURE_STEPS: WorkflowStepSpec[] = [
       "HistoricalGroundTruth rows linked to incidents",
     ],
     requiredConfig: [
-      "Database connection active on Server 1",
+      "Database connection active on Verdictum Core (Server 1)",
       "SentinelIngestWorker scheduler interval & auto_ai_verdict toggle",
       "Optional Redis/Celery broker for async live_triage queue",
     ],
     failureOrAbstention: [
       "Corrupt or empty JSON payloads are rejected or flagged CORRUPT_OR_EMPTY_PAYLOAD in simulations",
       "Auto-synced placeholder rules from incident cache-miss are tagged AUTO_SYNCED_FROM_INCIDENT",
-      "When Server 2 LLM is offline, newly ingested incidents stay pending rather than receiving fabricated verdicts",
+      "When Verdictum Cortex LLM is offline, newly ingested incidents stay pending rather than receiving fabricated verdicts",
     ],
     position: { x: 296, y: 84 },
   },
@@ -424,7 +424,7 @@ export const ARCHITECTURE_STEPS: WorkflowStepSpec[] = [
     processingLogic: [
       "Constructs allowlisted model-facing payload via build_model_facing_payload (strips historical resolutions & analyst notes)",
       "Refuses live inference with POLICY_NOT_APPROVED if no APPROVED policy exists",
-      "Enforces TokenBudgetService context limits before dispatching to Server 2 Local LLM",
+      "Enforces TokenBudgetService context limits before dispatching to Verdictum Cortex Local LLM",
     ],
     outputData: [
       "Budgeted system prompt + sanitized incident payload",
@@ -432,7 +432,7 @@ export const ARCHITECTURE_STEPS: WorkflowStepSpec[] = [
     ],
     requiredConfig: [
       "Approved PromptVersion for matched rule",
-      "Local LLM Server 2 online (unless development simulation fallback enabled)",
+      "Verdictum Cortex (Server 2) online (unless development simulation fallback enabled)",
     ],
     failureOrAbstention: [
       "POLICY_NOT_APPROVED → immediate REQUIRES_ATTENTION (confidence 0.0)",
@@ -482,16 +482,16 @@ export const ARCHITECTURE_STEPS: WorkflowStepSpec[] = [
     id: "local-llm-reasoning",
     stepNumber: 13,
     title: "Local LLM Reasoning",
-    shortLabel: "Local LLM (Server 2)",
+    shortLabel: "Verdictum Cortex (LLM)",
     lane: "runtime",
     laneLabel: "Runtime Investigation",
     accent: "sky",
-    componentName: "Server 2 OpenAI-Compatible Inference & GPUWorkloadManager",
+    componentName: "Verdictum Cortex OpenAI-Compatible Inference & GPUWorkloadManager",
     serviceModule: "backend/app/services/gpu_manager.py · llm_config_service.py",
     uiRoute: "/inference-control",
     uiLabel: "Inference Control",
     summary:
-      "Executes structured JSON reasoning on Local LLM Server 2 (e.g. Qwen 2.5 7B) behind a GPU slot limiter and circuit breaker, citing canonical evidence IDs.",
+      "Executes structured JSON reasoning on Verdictum Cortex (Server 2) (e.g. Qwen 2.5 7B) behind a GPU slot limiter and circuit breaker, citing canonical evidence IDs.",
     inputData: [
       "Compiled 9-section policy prompt & budgeted canonical evidence payload",
       "JSON schema enforcing verdict, raw confidence, reason, supporting_claims, missing_evidence, analyst_questions",
@@ -506,7 +506,7 @@ export const ARCHITECTURE_STEPS: WorkflowStepSpec[] = [
       "Raw uncalibrated model confidence (0–100) and structured supporting_claims",
     ],
     requiredConfig: [
-      "Server 2 Local LLM endpoint configured (host, port, protocol, model_name)",
+      "Verdictum Cortex endpoint configured (host, port, protocol, model_name)",
       "GPUWorkloadManager circuit breaker CLOSED",
     ],
     failureOrAbstention: [

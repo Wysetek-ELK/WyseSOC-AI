@@ -38,6 +38,8 @@ class ChatStatusResponse(BaseModel):
     available_models: List[str] = Field(default_factory=list)
     latency_ms: Optional[float] = None
     status_message: str
+    logical_hostname: str = "verdictum-cortex-01"
+    server_name: str = "Verdictum Cortex"
     configured_provider: str = "OPENAI_COMPATIBLE"
     endpoint_provenance: str = "OFFLINE"
     current_s2_health: str = "OFFLINE"

@@ -221,7 +221,7 @@ async def process_pending_verdicts(
                 "processed": 0,
                 "failed": 0,
                 "pending_remaining": pending_total,
-                "message": f"Local LLM (Server 2) is currently offline. {pending_total} incidents pending in queue.",
+                "message": f"Verdictum Cortex (Server 2) is currently offline. {pending_total} incidents pending in queue.",
             }
 
         if pending_total == 0:

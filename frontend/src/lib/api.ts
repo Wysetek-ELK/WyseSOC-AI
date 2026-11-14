@@ -997,7 +997,7 @@ async function parseChatHttpError(res: Response): Promise<string> {
     if (parsed?.detail) return parsed.detail;
   } catch {
     if (res.status === 504) {
-      return "Gateway Timeout (504): Reverse proxy or Server 2 timed out waiting for LLM response.";
+      return "Gateway Timeout (504): Reverse proxy or Verdictum Cortex timed out waiting for LLM response.";
     }
   }
   return detail;
@@ -2016,10 +2016,10 @@ export const api = {
     return { blob, filename };
   },
 
-  // =================== SOC AI CHATBOT (LOCAL LLM SERVER 2) ===================
+  // =================== VERDICTUM SENTINEL (VERDICTUM CORTEX) ===================
   async getChatStatus(): Promise<ChatStatusResponse> {
     const res = await fetchWithAuth(`${API_BASE}/chat/status`);
-    if (!res.ok) throw new Error("Failed to check Server 2 Chatbot status");
+    if (!res.ok) throw new Error("Failed to check Verdictum Cortex status");
     return res.json();
   },
 
@@ -2081,7 +2081,7 @@ export const api = {
           accumulated += evt.content;
           callbacks.onDelta(evt.content);
         } else if (evt.type === "error") {
-          throw new Error(evt.detail || "Server 2 LLM stream error");
+          throw new Error(evt.detail || "Verdictum Cortex stream error");
         } else if (evt.type === "done") {
           metaHolder.done = evt;
         }

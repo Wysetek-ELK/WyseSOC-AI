@@ -827,22 +827,22 @@ export default function TelemetryHubPage() {
         </div>
       </div>
 
-      {/* 5. Historical Telemetry Timeline (Server 1 Storage) */}
+      {/* 5. Historical Telemetry Timeline (Verdictum Core Storage) */}
       <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:p-3.5 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
           <div>
             <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
               <Database className="h-3.5 w-3.5 text-cyan-400" />
-              Historical Telemetry Timeline (Server 1 Storage)
+              Historical Telemetry Timeline (Verdictum Core Storage)
             </h2>
             <p className="text-[10px] text-slate-400 mt-0.5">
-              Persistent chronological telemetry log stored on Server 1 for future auditing and analysis
+              Persistent chronological telemetry log stored on Verdictum Core for future auditing and analysis
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-800 text-emerald-300">
-              Server 1 Persistent DB
+              Verdictum Core Persistent DB
             </span>
             <button
               onClick={loadGlobalTimeline}
@@ -857,7 +857,7 @@ export default function TelemetryHubPage() {
 
         {globalTimeline.length === 0 ? (
           <div className="py-6 text-center text-slate-500 font-mono text-xs">
-            No global telemetry timeline milestones recorded yet. Telemetry batches will appear here as they are ingested on Server 1.
+            No global telemetry timeline milestones recorded yet. Telemetry batches will appear here as they are ingested on Verdictum Core.
           </div>
         ) : (
           <div className="relative border-l border-slate-800 pl-4 space-y-3 text-xs font-mono">
