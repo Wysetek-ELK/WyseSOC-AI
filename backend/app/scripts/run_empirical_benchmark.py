@@ -1,7 +1,7 @@
 """
 CLI runner for the Verdictum AI Empirical Benchmark Harness.
 Usage:
-    python backend/app/scripts/run_empirical_benchmark.py --mode offline
+    python backend/app/scripts/run_empirical_benchmark.py --mode offline --source unified
     python backend/app/scripts/run_empirical_benchmark.py --mode live --endpoint http://<SERVER_2_IP>:8000/v1
 """
 
@@ -23,22 +23,27 @@ from app.services.empirical_benchmark_harness import EmpiricalBenchmarkHarness
 async def main():
     parser = argparse.ArgumentParser(description="Verdictum AI Empirical Benchmark Harness")
     parser.add_argument("--mode", choices=["offline", "live"], default="offline", help="Evaluation mode (offline simulation vs live local LLM)")
+    parser.add_argument("--source", choices=["unified", "zip", "db"], default="unified", help="Incident dataset source (unified merge, zip fixtures, or sqlite db)")
     parser.add_argument("--zip-path", default=None, help="Path to FortiSIEM incident zip archive (defaults to fixtures/Incident json.zip)")
+    parser.add_argument("--db-path", default=None, help="Path to SQLite database (defaults to backend/ai_verdict.db)")
     parser.add_argument("--endpoint", default=None, help="Base URL for live OpenAI-compatible LLM endpoint (e.g. http://192.168.1.100:8000/v1)")
-    parser.add_argument("--output-dir", default="docs/LLM_EMPIRICAL_READINESS", help="Directory where reports are saved")
+    parser.add_argument("--output-dir", default="docs/LLM_BENCHMARK_FINAL_READINESS", help="Directory where reports are saved")
     args = parser.parse_args()
 
     print(f"=== Verdictum AI Empirical Benchmark Runner ===")
     print(f"Mode: {args.mode}")
+    print(f"Source: {args.source}")
     print(f"Zip Path: {args.zip_path or 'fixtures/Incident json.zip'}")
+    print(f"DB Path: {args.db_path or 'backend/ai_verdict.db'}")
     if args.mode == "live":
         print(f"Model Endpoint: {args.endpoint}")
     print(f"Output Directory: {args.output_dir}")
     print("-----------------------------------------------")
 
     report = await EmpiricalBenchmarkHarness.run_benchmark(
-        source="fixtures",
+        source=args.source,
         zip_path=args.zip_path,
+        db_path=args.db_path,
         mode=args.mode,
         model_endpoint=args.endpoint,
     )
@@ -73,19 +78,24 @@ async def main():
 
     # Print summary
     m = report.overall_metrics
+    cov_str = f"{m.coverage_rate:.1%}" if m.coverage_rate is not None else "0.0%"
+    abst_str = f"{m.abstention_rate:.1%}" if m.abstention_rate is not None else "0.0%"
     print("\n--- BENCHMARK SUMMARY ---")
     print(f"Total Incidents Evaluated: {m.total_incidents}")
-    print(f"Verified Ground Truth:     {m.verified_ground_truth_count}")
-    print(f"Decisive Decisions:        {m.decisive_decisions_count} ({m.coverage_rate:.1%})")
-    print(f"Abstentions:               {m.total_abstained} ({m.abstention_rate:.1%})")
+    print(f"Verified Ground Truth:     {m.verified_ground_truth_count} (TP={m.verified_tp_count}, FP={m.verified_fp_count})")
+    print(f"Unverified Incidents:      {m.unverified_count}")
+    print(f"Decisive Decisions:        {m.decisive_decisions_count} ({cov_str})")
+    print(f"Abstentions:               {m.total_abstained} ({abst_str})")
     print(f"Confusion Matrix:          TP={m.tp}, TN={m.tn}, FP={m.fp}, FN={m.fn}")
     print(f"TP Recall / Precision:     {m.tp_recall:.1%} / {m.tp_precision:.1%}" if (m.tp_recall and m.tp_precision) else "TP Recall / Precision: N/A")
     print(f"FP Recall / Precision:     {m.fp_recall:.1%} / {m.fp_precision:.1%}" if (m.fp_recall and m.fp_precision) else "FP Recall / Precision: N/A")
-    print(f"Unsafe FP Rate (Safety):   {m.unsafe_fp_rate:.1%} ({m.unsafe_fp_count}/{m.verified_tp_count})")
+    print(f"Unsafe FP Rate (Safety):   {m.unsafe_fp_rate:.1%} ({m.unsafe_fp_count}/{m.verified_tp_count})" if m.unsafe_fp_rate is not None else "Unsafe FP Rate: 0.0%")
+    print(f"Mean Grounding Ratio:      {m.mean_grounding_ratio:.1%}")
+    print(f"Duplicate Incidents:       {m.duplicate_incident_count}")
+    print(f"Duplicate Clusters:        {m.duplicate_cluster_count}")
     print(f"Data Leakage Detected:     {m.leakage_detected_count}")
     print("===============================================")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-

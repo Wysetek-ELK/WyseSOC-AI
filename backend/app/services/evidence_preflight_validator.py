@@ -72,7 +72,17 @@ class EvidencePreflightValidator:
         def _is_field_present(field_name: str) -> bool:
             if field_name in available_fields:
                 return True
-            if field_name == "process.name" and ("process.file_name" in available_fields or "process.file_path" in available_fields):
+            if field_name in ("process.name", "process.file_name") and (
+                "process.file_name" in available_fields
+                or "process.file_path" in available_fields
+                or "process.name" in available_fields
+            ):
+                return True
+            if field_name in ("file.name", "process.file_name") and (
+                "file.name" in available_fields
+                or "process.file_name" in available_fields
+                or "process.file_path" in available_fields
+            ):
                 return True
             if field_name == "network.destination_ip" and (
                 "dns.domain" in available_fields
