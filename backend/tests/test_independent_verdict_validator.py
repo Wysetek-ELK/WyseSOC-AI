@@ -123,6 +123,7 @@ def test_scenario_22_verified_fp_accepted():
 
     records = [
         create_record("INC-22", "process.name", "ccmexec.exe", "PROCESS_EXECUTION"),
+        create_record("INC-22", "process.executable_path", "C:\\Windows\\CCM\\CcmExec.exe", "PROCESS_EXECUTION"),
         create_record("INC-22", "user.name", "NT AUTHORITY\\SYSTEM", "USER_CONTEXT"),
     ]
     norm = build_norm("INC-22", records)
@@ -138,6 +139,12 @@ def test_scenario_22_verified_fp_accepted():
                 "field": "process.name",
                 "asserted_value": "ccmexec.exe",
                 "evidence_ids": [records[0].evidence_id],
+            },
+            {
+                "claim_type": "PROCESS_EXECUTION",
+                "field": "process.executable_path",
+                "asserted_value": "C:\\Windows\\CCM\\CcmExec.exe",
+                "evidence_ids": [records[1].evidence_id],
             }
         ]
     }

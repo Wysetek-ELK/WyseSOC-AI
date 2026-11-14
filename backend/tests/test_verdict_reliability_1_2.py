@@ -575,6 +575,7 @@ def test_valid_approved_administrative_binary_accepted():
 
     records = [
         create_record("INC-ADMIN-01", "process.name", "ccmexec.exe", "PROCESS_EXECUTION"),
+        create_record("INC-ADMIN-01", "process.executable_path", "C:\\Windows\\CCM\\CcmExec.exe", "PROCESS_EXECUTION"),
         create_record("INC-ADMIN-01", "user.name", "NT AUTHORITY\\SYSTEM", "USER_CONTEXT"),
     ]
     norm = build_norm("INC-ADMIN-01", records)
@@ -590,6 +591,12 @@ def test_valid_approved_administrative_binary_accepted():
                 "field": "process.name",
                 "asserted_value": "ccmexec.exe",
                 "evidence_ids": [records[0].evidence_id],
+            },
+            {
+                "claim_type": "PROCESS_EXECUTION",
+                "field": "process.executable_path",
+                "asserted_value": "C:\\Windows\\CCM\\CcmExec.exe",
+                "evidence_ids": [records[1].evidence_id],
             }
         ]
     }
@@ -610,3 +617,4 @@ def test_valid_approved_administrative_binary_accepted():
     assert res.is_decisive_accepted is True
     assert res.validation_status == "VALIDATED"
     assert "EVIDENCE_VALIDATED" in res.validation_reason_codes
+

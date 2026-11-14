@@ -52,7 +52,11 @@ class VerdictGuardrailResult:
 
     def __eq__(self, other):
         if isinstance(other, (str, UserVisibleVerdict)):
-            return self.effective_verdict == other
+            other_str = str(getattr(other, "value", other)).upper().strip()
+            my_str = str(getattr(self.effective_verdict, "value", self.effective_verdict)).upper().strip()
+            if my_str in ("REQUIRES_ATTENTION", "REQUIRES_ANALYST_ATTENTION") and other_str in ("REQUIRES_ATTENTION", "REQUIRES_ANALYST_ATTENTION"):
+                return True
+            return my_str == other_str
         return super().__eq__(other)
 
     def __repr__(self):
@@ -175,23 +179,36 @@ class VerdictGuardrailsEngine:
         if clean_prop == "FALSE_POSITIVE":
             # Check if there is independently verified affirmative benign justification (admin/routine alone is prohibited)
             has_affirmative_benign = False
-            for c in claim_verification.claims:
-                if c.is_grounded:
-                    c_txt = f"{getattr(c, 'field', '')} {getattr(c, 'asserted_value', '')} {c.claim_text}".lower()
-                    is_auth_field = any(af in str(getattr(c, 'field', '')).lower() for af in ("authorization", "ticket", "maintenance", "signature", "policy"))
-                    is_approved_binary = any(b in c_txt for b in ("ccmexec.exe", "archive_agent.exe", "tanclient.exe", "qualysagent.exe", "nessusagent.exe"))
-                    has_auth_kw = any(w in c_txt for w in ("backup", "authorized", "scheduled", "approved", "maintenance", "cdn", "sync", "change ticket", "change request", "scanner", "healthcheck", "pki"))
-                    if is_auth_field or is_approved_binary or has_auth_kw:
-                        has_affirmative_benign = True
-                        break
 
-            # If incident context is available, check for affirmative justification from verified telemetry
-            if incident_context and (
-                incident_context.get("is_authorized_backup")
-                or incident_context.get("business_authorization_verified")
-                or (isinstance(incident_context.get("raw_payload"), dict) and incident_context["raw_payload"].get("business_service"))
-            ):
-                has_affirmative_benign = True
+            # Explicit negative security flags in incident context override any benign assertion
+            has_explicit_fp_blocker = bool(incident_context and (
+                incident_context.get("unverified_binary_provenance")
+                or incident_context.get("signature_invalid")
+                or incident_context.get("authorization_scope_mismatch")
+                or incident_context.get("authorization_state_unapproved")
+                or incident_context.get("spoofed_admin_binary")
+            ))
+
+            if not has_explicit_fp_blocker:
+                for c in claim_verification.claims:
+                    if c.is_grounded:
+                        c_txt = f"{getattr(c, 'field', '')} {getattr(c, 'asserted_value', '')} {c.claim_text}".lower()
+                        is_auth_field = any(af in str(getattr(c, 'field', '')).lower() for af in ("authorization.ticket", "authorization.status", "itsm.ticket", "code_signature.status", "policy.approved_baseline"))
+                        is_approved_binary = any(b in c_txt for b in ("ccmexec.exe", "archive_agent.exe", "tanclient.exe", "qualysagent.exe", "nessusagent.exe"))
+                        has_trusted_path = any(p in c_txt for p in ("\\windows\\ccm", "\\program files\\", "system32")) and not any(sp in c_txt for sp in ("\\users\\", "\\temp\\", "\\tmp\\", "\\appdata\\", "/tmp/"))
+                        has_auth_kw = any(w in c_txt for w in ("change ticket", "change request", "pki", "signed_verified", "approved_baseline"))
+                        # Solely executable name is not accepted; requires auth field, trusted path, or verified signature
+                        if is_auth_field or (is_approved_binary and has_trusted_path) or has_auth_kw:
+                            has_affirmative_benign = True
+                            break
+
+                # If incident context is available, check for affirmative justification from verified telemetry
+                if incident_context and (
+                    incident_context.get("is_authorized_backup")
+                    or incident_context.get("business_authorization_verified")
+                    or (isinstance(incident_context.get("raw_payload"), dict) and incident_context["raw_payload"].get("business_service"))
+                ):
+                    has_affirmative_benign = True
 
             if not has_affirmative_benign:
                 escalation_reason = (

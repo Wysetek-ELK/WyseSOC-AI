@@ -110,3 +110,4 @@ backend\tests\test_verdict_reliability_1_2.py ..........                 [100%]
 1. **Zero Hallucinated Ticket Bypass:** In all 10 test executions, not a single hallucinated ticket, fabricated maintenance window, or unverified signature was permitted to achieve decisive `FALSE_POSITIVE`.
 2. **Zero Inadvertent Regressions:** All 49 existing test cases in core services (policy compilation, evidence contracts, token budgeting, normalization, and reliability 1.1) passed with zero modifications required to their contracts.
 3. **Fail-Closed Security Maintained:** Every failure mode properly degraded the verdict to `REQUIRES_ATTENTION` and set `is_decisive_accepted = False`, preserving human-in-the-loop oversight.
+

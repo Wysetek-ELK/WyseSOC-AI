@@ -32,6 +32,14 @@ class UserVisibleVerdict(str, Enum):
     TRUE_POSITIVE = "TRUE_POSITIVE"
     FALSE_POSITIVE = "FALSE_POSITIVE"
     REQUIRES_ANALYST_ATTENTION = "REQUIRES_ANALYST_ATTENTION"
+    REQUIRES_ATTENTION = "REQUIRES_ANALYST_ATTENTION"  # Canonical alias for validator/pipeline compatibility
+
+    @classmethod
+    def _missing_(cls, value):
+        v = str(value).upper().strip()
+        if v in ("REQUIRES_ATTENTION", "ATTENTION", "ABSTAIN", "INSUFFICIENT_EVIDENCE"):
+            return cls.REQUIRES_ANALYST_ATTENTION
+        return super()._missing_(value)
 
 
 class GroundTruthLabel(str, Enum):

@@ -42,7 +42,12 @@ class IndependentVerdictValidator:
         """
         Executes the 8 mandatory deterministic checks and determines the final authoritative verdict.
         """
-        clean_prop_verdict = str(proposed_verdict or "REQUIRES_ATTENTION").upper().strip()
+        raw_prop = str(proposed_verdict or "REQUIRES_ATTENTION").upper().strip()
+        if raw_prop == "REQUIRES_ANALYST_ATTENTION":
+            clean_prop_verdict = "REQUIRES_ATTENTION"
+        else:
+            clean_prop_verdict = raw_prop
+
         reason_codes: List[str] = []
         contradictions: List[str] = list(preflight.detected_contradictions)
         if contradictory_evidence:
@@ -192,7 +197,21 @@ class IndependentVerdictValidator:
                 if not any(tp.lower() in str(r.observed_value).lower() or tp.lower() in str(r.source_field).lower() for r in normalization_result.records):
                     invented_tickets.append(tp)
 
-            # 2. Check for Unsupported Maintenance Window Claims in model rationale
+            # 2. Check for Untrusted Command-Line Ticket Assertions (Reliability 1.3 - Requirement 3)
+            # Ticket IDs, --ticket parameters, and maintenance flags in command lines are untrusted assertions, NOT proof of approval.
+            authoritative_auth_fields = {
+                "authorization.ticket_id", "authorization.change_ticket", "authorization.change_request",
+                "itsm.ticket_id", "change_management.ticket", "policy.approved_baseline",
+                "authorization.ticket", "itsm.change_id"
+            }
+            untrusted_cmdline_tickets = []
+            for tp in ticket_patterns:
+                in_cmdline = any(tp.lower() in str(r.observed_value).lower() for r in normalization_result.records if r.source_field in ("process.command_line", "cmdline", "rawmsg"))
+                in_authoritative = any(tp.lower() in str(r.observed_value).lower() for r in normalization_result.records if r.source_field in authoritative_auth_fields)
+                if in_cmdline and not in_authoritative:
+                    untrusted_cmdline_tickets.append(tp)
+
+            # 3. Check for Unsupported Maintenance Window Claims in model rationale
             has_maintenance_claim = bool(re.search(
                 r'\b(?:maintenance window|scheduled maintenance|maintenance mode|authorized maintenance)\b',
                 reason_lower
@@ -209,23 +228,54 @@ class IndependentVerdictValidator:
                 for r in normalization_result.records
             )
 
-            # 3. Check for Unverified Digital Signature / PKI Claims in model rationale
+            # 4. Check for Maintenance Window Expiration or Inactivity (Reliability 1.3 - Requirement 4)
+            maintenance_expired = False
+            for r in normalization_result.records:
+                if r.source_field in ("maintenance.active", "authorization.maintenance_active", "authorization.window_active", "maintenance.is_active"):
+                    if str(r.observed_value).strip().lower() in ("false", "0", "inactive", "expired", "closed", "no"):
+                        maintenance_expired = True
+                        break
+                elif r.source_field in ("authorization.is_expired", "maintenance.is_expired"):
+                    if str(r.observed_value).strip().lower() in ("true", "1", "yes", "expired"):
+                        maintenance_expired = True
+                        break
+                elif r.source_field in ("authorization.status", "itsm.status") and str(r.observed_value).strip().lower() == "expired":
+                    maintenance_expired = True
+                    break
+
+            # 5. Check Digital Signature Validity vs Metadata (Reliability 1.3 - Requirement 6)
+            # Ensure signature fields indicate successful validation, not merely metadata presence.
+            invalid_sig_values = {
+                "invalid", "unsigned", "revoked", "expired", "failed", "untrusted",
+                "malformed", "self_signed_untrusted", "signature_verification_failed"
+            }
+            valid_sig_values = {"valid", "trusted", "verified", "signed_verified"}
+
+            has_invalid_signature = False
+            invalid_sig_detail = ""
+            for r in normalization_result.records:
+                if r.source_field in ("code_signature.status", "signature.status", "file.signature_status"):
+                    val_clean = str(r.observed_value).strip().lower()
+                    if val_clean in invalid_sig_values:
+                        has_invalid_signature = True
+                        invalid_sig_detail = str(r.observed_value)
+                        break
+                elif r.source_field == "signature.valid" and str(r.observed_value).strip().lower() in ("false", "0", "no"):
+                    has_invalid_signature = True
+                    invalid_sig_detail = "signature.valid=False"
+                    break
+
             has_pki_claim = bool(re.search(
                 r'\b(?:signed by corporate pki|corporate code-signing|valid digital signature|verified vendor signature|trusted certificate)\b',
                 reason_lower
             ))
-            signature_fields = {
-                "code_signature.status", "code_signature.signer", "file.signature_status",
-                "signature.valid", "certificate.issuer"
-            }
-            has_grounded_signature = any(
-                r.source_field in signature_fields
-                or "signed" in str(r.observed_value).lower()
-                or "pki" in str(r.observed_value).lower()
+            has_verified_valid_signature = any(
+                (r.source_field in ("code_signature.status", "file.signature_status", "signature.status") and str(r.observed_value).strip().lower() in valid_sig_values)
+                or (r.source_field == "signature.valid" and str(r.observed_value).strip().lower() in ("true", "1", "yes", "valid", "verified"))
                 for r in normalization_result.records
             )
 
-            # 4. Check for Contradictory Adversary Tradecraft (e.g. Obfuscated LOLBins or Credential Dumping)
+            # 6. Check for Contradictory Adversary Tradecraft (e.g. Obfuscated LOLBins or Credential Dumping)
             adversary_patterns = [
                 r"\bpowershell(?:\.exe)?\s+.*(?:-enc\b|-encodedcommand\b)",
                 r"\b(?:mimikatz|sekurlsa|privilege::debug)\b",
@@ -244,44 +294,129 @@ class IndependentVerdictValidator:
                 if has_adversary_tradecraft:
                     break
 
-            # 5. Check Grounded Claims Substance: Cannot rely solely on internal IP or user account existence
+            # 7. Check Process-Name Spoofing & Trusted Binary Evidence (Reliability 1.3 - Requirements 1 & 2)
+            # Do NOT accept a process solely because its executable name is allowlisted.
+            # Require rule-appropriate trusted binary evidence (path, signature, hash, or management agent).
+            approved_management_binaries = {
+                "ccmexec.exe", "tanclient.exe", "qualysagent.exe", "nessusagent.exe",
+                "archive_agent.exe", "endpointagent.exe"
+            }
+            suspicious_path_patterns = (
+                r"\\temp\\", r"\\tmp\\", r"\\users\\", r"\\appdata\\",
+                r"\\downloads\\", r"\\perflogs\\", r"\\programdata\\",
+                r"/tmp/", r"/var/tmp/", r"/dev/shm/"
+            )
+            approved_path_patterns = {
+                "ccmexec.exe": (r"\\windows\\ccm\\", r"\\system32\\"),
+                "tanclient.exe": (r"\\program files\\tanium\\", r"\\program files \(x86\)\\tanium\\"),
+                "qualysagent.exe": (r"\\program files\\qualys\\", r"\\program files \(x86\)\\qualys\\"),
+                "nessusagent.exe": (r"\\program files\\tenable\\",),
+                "archive_agent.exe": (r"\\program files\\", r"/opt/"),
+                "endpointagent.exe": (r"\\program files\\", r"/opt/"),
+            }
+
+            has_spoofed_admin_binary = False
+            spoofed_detail = ""
+            unverified_binary_provenance = False
+            unverified_binary_detail = ""
+
+            proc_names = [str(r.observed_value).strip().lower() for r in normalization_result.records if r.source_field in ("process.name", "process.file_name")]
+            exec_paths = [str(r.observed_value).strip().lower() for r in normalization_result.records if r.source_field in ("process.executable_path", "process.path", "file.path")]
+            cmdlines = [str(r.observed_value).strip().lower() for r in normalization_result.records if r.source_field in ("process.command_line", "cmdline")]
+
+            has_admin_binary_in_telemetry = any(p in approved_management_binaries for p in proc_names)
+            if has_admin_binary_in_telemetry:
+                all_paths_to_check = exec_paths + cmdlines
+                for path_str in all_paths_to_check:
+                    for sp in suspicious_path_patterns:
+                        if re.search(sp, path_str, re.IGNORECASE):
+                            has_spoofed_admin_binary = True
+                            spoofed_detail = f"Executable executing from suspicious path ({path_str})"
+                            break
+                    if has_spoofed_admin_binary:
+                        break
+
+                has_trusted_path = False
+                for p in proc_names:
+                    if p in approved_path_patterns:
+                        for app_pattern in approved_path_patterns[p]:
+                            if any(re.search(app_pattern, path_str, re.IGNORECASE) for path_str in all_paths_to_check):
+                                has_trusted_path = True
+                                break
+                    elif any(re.search(r"\\program files\\|\\system32\\|/opt/", path_str, re.IGNORECASE) for path_str in all_paths_to_check):
+                        has_trusted_path = True
+
+                has_trusted_hash = any(r.source_field in ("file.sha256", "process.sha256", "hash") for r in normalization_result.records)
+                has_mgmt_agent = any(r.source_field in ("system.management_agent", "endpoint.management_status", "edr.managed") for r in normalization_result.records)
+
+                has_trusted_binary_evidence = (
+                    has_verified_valid_signature
+                    or (has_trusted_path and not has_spoofed_admin_binary)
+                    or has_trusted_hash
+                    or has_mgmt_agent
+                )
+                if not has_trusted_binary_evidence:
+                    unverified_binary_provenance = True
+                    unverified_binary_detail = "Allowlisted binary name lacks rule-appropriate trusted binary evidence (path, signature, hash, or management confirmation)."
+
+            # 8. Check Authoritative Authorization State, Scope, and Provenance (Reliability 1.3 - Requirement 4)
+            unapproved_auth_state = False
+            auth_state_detail = ""
+            unapproved_states = {
+                "draft", "pending", "pending_approval", "rejected", "denied",
+                "cancelled", "canceled", "expired", "closed", "revoked"
+            }
+            approved_states = {"approved", "active", "implemented", "implementing", "authorized", "validated"}
+            for r in normalization_result.records:
+                if r.source_field in ("authorization.status", "authorization.approval_state", "authorization.state", "itsm.status", "itsm.state", "change_ticket.status"):
+                    val_clean = str(r.observed_value).strip().lower()
+                    if val_clean in unapproved_states or (val_clean not in approved_states and not any(s in val_clean for s in ("approv", "authoriz", "valid", "active"))):
+                        unapproved_auth_state = True
+                        auth_state_detail = str(r.observed_value)
+                        break
+
+            # Scope / Hostname validation
+            scope_mismatch = False
+            scope_mismatch_detail = ""
+            auth_target_hosts = [str(r.observed_value).strip().lower() for r in normalization_result.records if r.source_field in ("authorization.target_host", "authorization.hostname", "authorization.scope", "itsm.target_host", "authorization.target_asset")]
+            inc_hosts = [str(r.observed_value).strip().lower() for r in normalization_result.records if r.source_field in ("host.name", "endpoint.hostname", "source_host", "destination_host", "host")]
+            if auth_target_hosts and inc_hosts:
+                auth_h = auth_target_hosts[0]
+                inc_h = inc_hosts[0]
+                if auth_h != inc_h and auth_h not in inc_h and inc_h not in auth_h:
+                    scope_mismatch = True
+                    scope_mismatch_detail = f"Ticket target '{auth_target_hosts[0]}' does not match incident host '{inc_hosts[0]}'"
+
+            # 9. Check Grounded Claims Substance: Cannot rely solely on internal IP or user account existence
             grounded_claims = [c for c in claim_grounding.claims if c.is_grounded]
             grounded_fields = {c.field for c in grounded_claims if c.field}
             only_unprivileged_identities = bool(grounded_fields and grounded_fields.issubset({
                 "network.source_ip", "network.destination_ip", "source_ip", "dest_ip", "user.name", "user"
             }))
 
-            # 6. Check for Grounded Affirmative Authorization or Approved Management Software
-            auth_fields = {
-                "authorization.ticket_id", "authorization.change_ticket", "authorization.change_request",
-                "authorization.maintenance_window", "authorization.status", "itsm.ticket_id",
-                "code_signature.status", "policy.approved_baseline", "scheduled_task.name",
-            }
+            # 10. Check for Grounded Affirmative Authorization or Trusted Administrative Software
             has_grounded_authorization = False
             for c in grounded_claims:
                 c_field_lower = str(c.field or "").lower()
                 c_val_lower = str(c.asserted_value or "").lower()
-                # A: Explicit authorization / maintenance / PKI field
-                if c_field_lower in auth_fields:
+                # A: Authoritative authorization / maintenance / PKI field (verified in-scope and approved)
+                if c_field_lower in authoritative_auth_fields and not unapproved_auth_state and not scope_mismatch:
                     has_grounded_authorization = True
                     break
-                # B: Command line contains verified ticket or scheduled parameter
-                if c_field_lower in ("process.command_line", "cmdline") and any(
-                    tok in c_val_lower for tok in ("--ticket", "--scheduled", "--maintenance", "ticket", "scheduled")
-                ):
+                # B: Verified code signature field
+                if c_field_lower in ("code_signature.status", "signature.status", "file.signature_status", "signature.valid") and has_verified_valid_signature:
                     has_grounded_authorization = True
                     break
-                # C: Approved enterprise administrative binary (e.g. SCCM ccmexec.exe, archive_agent.exe, tanclient.exe)
-                if c_field_lower in ("process.name", "process.file_name") and c_val_lower in (
-                    "ccmexec.exe", "archive_agent.exe", "tanclient.exe", "qualysagent.exe",
-                    "nessusagent.exe", "endpointagent.exe"
-                ):
-                    has_grounded_authorization = True
-                    break
-                # D: Legitimate benign term in grounded claim value
-                if any(w in c_val_lower for w in ("authorized", "approved", "scheduled", "backup", "maintenance", "signed")):
-                    has_grounded_authorization = True
-                    break
+                # C: Approved enterprise administrative binary WITH verified trusted binary evidence and NOT spoofed
+                if c_field_lower in ("process.name", "process.file_name") and c_val_lower in approved_management_binaries:
+                    if not has_spoofed_admin_binary and not unverified_binary_provenance:
+                        has_grounded_authorization = True
+                        break
+                # D: Executable path in approved management directory
+                if c_field_lower in ("process.executable_path", "process.path", "file.path") and not has_spoofed_admin_binary:
+                    if any(re.search(r"\\windows\\ccm\\|\\program files\\|system32|/opt/", c_val_lower, re.IGNORECASE)):
+                        has_grounded_authorization = True
+                        break
 
             # Evaluate Gates:
             if preflight.preflight_status == "INSUFFICIENT" or preflight.evidence_completeness < 0.5 or claim_grounding.grounded_claims == 0:
@@ -292,12 +427,40 @@ class IndependentVerdictValidator:
                     reason_codes.append("FP_CRITERIA_UNSATISFIED")
                 action_directive = "Missing grounded claim or benign evidence prevents confirming false positive. Human verification required."
 
+            elif has_adversary_tradecraft:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "EVIDENCE_CONTRADICTION" not in reason_codes:
+                    reason_codes.append("EVIDENCE_CONTRADICTION")
+                action_directive = "False positive rejected: active adversary attack tradecraft (e.g. obfuscated LOLBin execution) contradicts benign authorization."
+
             elif invented_tickets:
                 final_verdict = "REQUIRES_ATTENTION"
                 validation_status = "REJECTED"
                 if "INVENTED_CHANGE_TICKET" not in reason_codes:
                     reason_codes.append("INVENTED_CHANGE_TICKET")
                 action_directive = f"False positive rejected: Model asserted invented or unverified change ticket(s) ({', '.join(invented_tickets)}) not present in canonical evidence."
+
+            elif untrusted_cmdline_tickets:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "UNVERIFIED_COMMAND_LINE_TICKET" not in reason_codes:
+                    reason_codes.append("UNVERIFIED_COMMAND_LINE_TICKET")
+                action_directive = f"False positive rejected: Ticket reference(s) ({', '.join(untrusted_cmdline_tickets)}) originate solely from untrusted command-line parameters without authoritative ITSM authorization."
+
+            elif has_invalid_signature:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "INVALID_DIGITAL_SIGNATURE" not in reason_codes:
+                    reason_codes.append("INVALID_DIGITAL_SIGNATURE")
+                action_directive = f"False positive rejected: Digital signature verification failed ({invalid_sig_detail})."
+
+            elif has_pki_claim and not has_verified_valid_signature:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "UNVERIFIED_SIGNATURE_CLAIM" not in reason_codes:
+                    reason_codes.append("UNVERIFIED_SIGNATURE_CLAIM")
+                action_directive = "False positive rejected: Model asserted corporate PKI code signing, but canonical evidence lacks verified valid signature status."
 
             elif has_maintenance_claim and not has_grounded_maintenance:
                 final_verdict = "REQUIRES_ATTENTION"
@@ -306,19 +469,40 @@ class IndependentVerdictValidator:
                     reason_codes.append("UNSUPPORTED_MAINTENANCE_CLAIM")
                 action_directive = "False positive rejected: Model asserted maintenance window or scheduled activity, but no maintenance record or parameter exists in canonical telemetry."
 
-            elif has_pki_claim and not has_grounded_signature:
+            elif maintenance_expired:
                 final_verdict = "REQUIRES_ATTENTION"
                 validation_status = "REJECTED"
-                if "UNVERIFIED_SIGNATURE_CLAIM" not in reason_codes:
-                    reason_codes.append("UNVERIFIED_SIGNATURE_CLAIM")
-                action_directive = "False positive rejected: Model asserted corporate PKI code signing, but no digital signature telemetry exists in canonical evidence."
+                if "MAINTENANCE_WINDOW_EXPIRED" not in reason_codes:
+                    reason_codes.append("MAINTENANCE_WINDOW_EXPIRED")
+                action_directive = "False positive rejected: Scheduled maintenance window is inactive or expired."
 
-            elif has_adversary_tradecraft:
+            elif unapproved_auth_state:
                 final_verdict = "REQUIRES_ATTENTION"
                 validation_status = "REJECTED"
-                if "EVIDENCE_CONTRADICTION" not in reason_codes:
-                    reason_codes.append("EVIDENCE_CONTRADICTION")
-                action_directive = "False positive rejected: active adversary attack tradecraft (e.g. obfuscated LOLBin execution) contradicts benign authorization."
+                if "AUTHORIZATION_STATE_UNAPPROVED" not in reason_codes:
+                    reason_codes.append("AUTHORIZATION_STATE_UNAPPROVED")
+                action_directive = f"False positive rejected: Authoritative authorization status '{auth_state_detail}' is unapproved or inactive."
+
+            elif scope_mismatch:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "AUTHORIZATION_SCOPE_MISMATCH" not in reason_codes:
+                    reason_codes.append("AUTHORIZATION_SCOPE_MISMATCH")
+                action_directive = f"False positive rejected: Authorization scope mismatch ({scope_mismatch_detail})."
+
+            elif has_spoofed_admin_binary:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "SPOOFED_ADMIN_BINARY" not in reason_codes:
+                    reason_codes.append("SPOOFED_ADMIN_BINARY")
+                action_directive = f"False positive rejected: Process-name spoofing detected ({spoofed_detail})."
+
+            elif unverified_binary_provenance:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "UNVERIFIED_BINARY_PROVENANCE" not in reason_codes:
+                    reason_codes.append("UNVERIFIED_BINARY_PROVENANCE")
+                action_directive = f"False positive rejected: {unverified_binary_detail}"
 
             elif only_unprivileged_identities or not has_grounded_authorization:
                 final_verdict = "REQUIRES_ATTENTION"

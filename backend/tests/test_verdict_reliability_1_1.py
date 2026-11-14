@@ -229,6 +229,7 @@ def test_accept_fp_with_affirmative_verifiable_authorization():
     records = [
         create_record("INC-FP-02", "process.name", "backup_agent.exe", "PROCESS_EXECUTION"),
         create_record("INC-FP-02", "process.command_line", "backup_agent.exe --scheduled --ticket CHG-9842", "PROCESS_EXECUTION"),
+        create_record("INC-FP-02", "authorization.ticket_id", "CHG-9842", "SECURITY_EVENT"),
     ]
     norm = build_norm("INC-FP-02", records)
     preflight = EvidencePreflightValidator.validate_preflight("INC-FP-02", contract, norm)
@@ -249,6 +250,12 @@ def test_accept_fp_with_affirmative_verifiable_authorization():
                 "field": "process.command_line",
                 "asserted_value": "backup_agent.exe --scheduled --ticket CHG-9842",
                 "evidence_ids": [records[1].evidence_id],
+            },
+            {
+                "claim_type": "SECURITY_EVENT",
+                "field": "authorization.ticket_id",
+                "asserted_value": "CHG-9842",
+                "evidence_ids": [records[2].evidence_id],
             }
         ]
     }

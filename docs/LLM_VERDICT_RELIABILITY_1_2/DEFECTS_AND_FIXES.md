@@ -141,3 +141,4 @@ Six specific defects were identified where an unsupported or adversarial False P
 | **Defect 4** | Prompt injection in telemetry arguments | Active tradecraft scan on commands (`EVIDENCE_CONTRADICTION`) | **FIXED** |
 | **Defect 5** | Unprivileged service accounts / internal IPs | Unprivileged identity restriction (`FP_CRITERIA_UNSATISFIED`) | **FIXED** |
 | **Defect 6** | Narrative smuggling in claim text | Structured field and binary grounding in Guardrail 6 (`G6_NEGATIVE_FP_PROHIBITION`) | **FIXED** |
+
