@@ -141,30 +141,29 @@ def _repair_truncated_json(text: str) -> Optional[str]:
 
 def _regex_fallback_extract(text: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     """Heuristic extraction of key fields when JSON cannot be parsed syntactically."""
-    verdict_match = re.search(r'"verdict"\s*:\s*"?(TRUE_POSITIVE|FALSE_POSITIVE|REQUIRES_ATTENTION)"?', text, re.IGNORECASE)
+    verdict_match = re.search(r'["\']?verdict["\']?\s*:\s*["\']?(TRUE_POSITIVE|FALSE_POSITIVE|REQUIRES_ATTENTION)["\']?', text, re.IGNORECASE)
     if not verdict_match:
         return None, "No verdict found in model output"
 
     verdict = verdict_match.group(1).upper()
 
-    conf_match = re.search(r'"confidence"\s*:\s*([0-9]+(?:\.[0-9]+)?)', text)
-    confidence = float(conf_match.group(1)) if conf_match else 75.0
+    reason_match = re.search(r'["\']?reason["\']?\s*:\s*["\']([^"\'\\]*(?:\\.[^"\'\\]*)*)', text)
+    reason = reason_match.group(1) if reason_match else ""
 
-    reason_match = re.search(r'"reason"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)', text)
-    reason = reason_match.group(1) if reason_match else "Extracted from model response"
-
-    supporting = re.findall(r'"supporting_evidence"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+    supporting = re.findall(r'["\']?supporting_evidence["\']?\s*:\s*\[(.*?)\]', text, re.DOTALL)
     evidence_list = []
     if supporting:
-        evidence_list = [item.strip(' ",\'\n\r\t') for item in re.findall(r'"([^"]+)"', supporting[0])]
+        evidence_list = [item.strip(' ",\'\n\r\t') for item in re.findall(r'["\']([^"\']+)["\']', supporting[0])]
 
     return {
         "verdict": verdict,
-        "confidence": confidence,
+        "confidence": 0.0,
         "reason": reason,
         "supporting_evidence": evidence_list,
+        "supporting_claims": [],
         "missing_evidence": [],
         "analyst_questions": [],
+        "_schema_recovery_applied": True,
     }, None
 
 
@@ -274,7 +273,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
         if "SECTION 11:" in prompt_text:
             system_instruction = (
                 f"{prompt_text}\n\n"
-                "Note: Populate supporting_claims[].evidence_ids strictly from incident.canonical_evidence[].evidence_id."
+                "Note: Populate supporting_claims[].cited_evidence_ids (or evidence_ids) strictly from incident.canonical_evidence[].evidence_id."
             )
         else:
             system_instruction = (
@@ -286,10 +285,11 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 '  "reason": "<string>",\n'
                 '  "supporting_claims": [\n'
                 '    {\n'
-                '      "claim_type": "PROCESS_EXECUTION" | "NETWORK_CONNECTION" | "FILE_HASH" | "USER_CONTEXT" | "OBSERVED_FACT",\n'
+                '      "claim_type": "OBSERVED_FACT" | "TELEMETRY_OBSERVATION" | "PROCESS_EXECUTION" | "NETWORK_CONNECTION" | "FILE_HASH" | "USER_CONTEXT",\n'
                 '      "field": "<canonical source_field>",\n'
                 '      "asserted_value": "<exact observed value>",\n'
                 '      "claim_text": "<concise grounded observation>",\n'
+                '      "cited_evidence_ids": ["<canonical evidence_id from incident.canonical_evidence>"],\n'
                 '      "evidence_ids": ["<canonical evidence_id from incident.canonical_evidence>"]\n'
                 "    }\n"
                 "  ],\n"
@@ -301,10 +301,13 @@ class OpenAICompatibleProvider(BaseModelProvider):
             )
 
         # Construct compact valid JSON prompt for local LLM (avoids indent bloat inside finite context window)
-        user_content = json.dumps({
+        compact_json = json.dumps({
             "incident": incident_payload,
             "rule": rule_spec,
         }, separators=(",", ":"))
+
+        # Enforce Section 10 instruction boundary delimiters around untrusted telemetry
+        user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
 
         payload = {
             "model": self.model_name,
@@ -401,11 +404,41 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 raw_contra = parsed.get("contradictory_evidence") or []
                 contradictory_ev = [str(c) for c in raw_contra] if isinstance(raw_contra, list) else []
 
+                raw_verdict_str = str(parsed.get("verdict", "REQUIRES_ATTENTION")).upper().strip()
+                is_recovered = bool(parsed.get("_schema_recovery_applied", False))
+
+                # If output required regex recovery from malformed non-JSON response,
+                # decisive TP/FP classifications must NEVER be accepted as valid.
+                if is_recovered and raw_verdict_str in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                    return StructuredModelVerdict(
+                        incident_id=incident_id,
+                        rule_id=rule_id,
+                        verdict="REQUIRES_ATTENTION",
+                        confidence=0.0,
+                        reason=f"Model output required regex recovery from malformed non-JSON response; decisive {raw_verdict_str} rejected: {parsed.get('reason', '')}",
+                        supporting_evidence=[],
+                        supporting_claims=[],
+                        contradictory_evidence=[],
+                        missing_evidence=["Valid structured JSON response"],
+                        analyst_questions=["Review raw LLM output for syntax defects"],
+                        latency_ms=latency_ms,
+                        model_identifier=self.model_name,
+                        prompt_version_number=prompt_version_number,
+                        validation_status="INVALID_SCHEMA",
+                        is_simulated=False,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        total_tokens=total_tokens,
+                    )
+
+                val_status = "INVALID_SCHEMA" if is_recovered else "VALID"
+                resolved_confidence = float(parsed["confidence"]) if parsed.get("confidence") is not None else 0.0
+
                 return StructuredModelVerdict(
                     incident_id=incident_id,
                     rule_id=rule_id,
-                    verdict=parsed["verdict"].upper().strip(),
-                    confidence=float(parsed.get("confidence", 90.0)),
+                    verdict=raw_verdict_str,
+                    confidence=resolved_confidence,
                     reason=str(parsed.get("reason", "")),
                     supporting_evidence=parsed.get("supporting_evidence", []) if isinstance(parsed.get("supporting_evidence"), list) else [],
                     supporting_claims=supporting_claims,
@@ -415,7 +448,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     latency_ms=latency_ms,
                     model_identifier=self.model_name,
                     prompt_version_number=prompt_version_number,
-                    validation_status="VALID",
+                    validation_status=val_status,
                     is_simulated=False,
                     prompt_tokens=prompt_tokens,
                     completion_tokens=completion_tokens,

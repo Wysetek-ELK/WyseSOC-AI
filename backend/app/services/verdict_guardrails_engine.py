@@ -173,12 +173,12 @@ class VerdictGuardrailsEngine:
         # Guardrail 6: Negative/Blanket FP Assumptions Prohibition
         # -------------------------------------------------------------
         if clean_prop == "FALSE_POSITIVE":
-            # Check if there is affirmative benign justification
+            # Check if there is affirmative benign justification (admin/routine alone is prohibited)
             has_affirmative_benign = False
             for c in claim_verification.claims:
                 if c.is_grounded:
                     c_lower = c.claim_text.lower()
-                    if any(w in c_lower for w in ("backup", "authorized", "scheduled", "approved", "admin", "maintenance", "cdn", "sync")):
+                    if any(w in c_lower for w in ("backup", "authorized", "scheduled", "approved", "maintenance", "cdn", "sync", "change ticket", "change request", "scanner", "healthcheck", "pki")):
                         has_affirmative_benign = True
                         break
 
@@ -193,7 +193,7 @@ class VerdictGuardrailsEngine:
             if not has_affirmative_benign:
                 escalation_reason = (
                     "False Positive recommendation lacks affirmative evidence of business authorization. "
-                    "Cannot classify as benign merely due to lack of confirmed malware or RFC-1918 addressing."
+                    "Cannot classify as benign merely due to lack of confirmed malware, internal RFC-1918 addressing, or administrative accounts."
                 )
                 confidence_limitations.append("Affirmative benign business justification absent.")
                 guardrails_triggered.append("G6_NEGATIVE_FP_PROHIBITION")
@@ -206,7 +206,11 @@ class VerdictGuardrailsEngine:
             # Must have at least one grounded malicious/observed indicator
             has_grounded_malicious = False
             for c in claim_verification.claims:
-                if c.is_grounded and (c.claim_type == ClaimType.OBSERVED_FACT or getattr(c.claim_type, "value", None) == "OBSERVED_FACT" or str(c.claim_type) == "OBSERVED_FACT"):
+                c_type_val = str(getattr(c.claim_type, "value", c.claim_type)).upper()
+                if c.is_grounded and c_type_val in (
+                    "OBSERVED_FACT", "TELEMETRY_OBSERVATION", "PROCESS_EXECUTION",
+                    "NETWORK_CONNECTION", "FILE_HASH", "USER_CONTEXT", "CORRELATION_ASSERTION"
+                ):
                     has_grounded_malicious = True
                     break
 

@@ -51,7 +51,7 @@ class PolicyCompilerService:
                 "type": "array",
                 "items": {
                     "type": "object",
-                    "required": ["claim_text", "cited_evidence_ids"],
+                    "required": ["claim_text"],
                     "properties": {
                         "claim_text": {
                             "type": "string",
@@ -62,15 +62,30 @@ class PolicyCompilerService:
                             "items": {"type": "string"},
                             "description": "List of Canonical Evidence IDs (e.g. EV-01, EV-02) verifying this claim."
                         },
+                        "evidence_ids": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Standardized alias for cited_evidence_ids."
+                        },
                         "claim_type": {
                             "type": "string",
                             "enum": [
+                                "OBSERVED_FACT",
                                 "TELEMETRY_OBSERVATION",
+                                "PROCESS_EXECUTION",
+                                "NETWORK_CONNECTION",
+                                "FILE_HASH",
+                                "USER_CONTEXT",
                                 "CORRELATION_ASSERTION",
-                                "THREAT_INTEL_MATCH",
-                                "POLICY_MATCH",
-                                "GENERAL_ASSERTION"
+                                "POLICY_MATCH"
                             ]
+                        },
+                        "field": {
+                            "type": "string",
+                            "description": "Canonical telemetry field path, e.g. process.command_line"
+                        },
+                        "asserted_value": {
+                            "description": "Exact observed or asserted value from incident telemetry"
                         }
                     }
                 }

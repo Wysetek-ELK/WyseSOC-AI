@@ -150,8 +150,19 @@ class IndependentVerdictValidator:
 
         # Check 5: Verdict-Specific Decision Criteria
         if clean_prop_verdict == "TRUE_POSITIVE":
-            # For TP: must meet evidence completeness AND provide at least one grounded claim (prevent empty-claim bypass)
-            if preflight.evidence_completeness < 0.6 or claim_grounding.grounded_claims == 0:
+            # For TP: must meet evidence completeness AND provide at least one grounded claim representing security tradecraft
+            has_grounded_security_tradecraft = False
+            for c in claim_grounding.claims:
+                if c.is_grounded:
+                    c_type_str = str(c.claim_type or "").upper()
+                    if c_type_str in (
+                        "PROCESS_EXECUTION", "NETWORK_CONNECTION", "FILE_HASH",
+                        "OBSERVED_FACT", "TELEMETRY_OBSERVATION", "CORRELATION_ASSERTION"
+                    ):
+                        has_grounded_security_tradecraft = True
+                        break
+
+            if preflight.evidence_completeness < 0.6 or claim_grounding.grounded_claims == 0 or not has_grounded_security_tradecraft:
                 final_verdict = "REQUIRES_ATTENTION"
                 if validation_status not in ("REJECTED", "ABSTAINED"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
@@ -165,17 +176,40 @@ class IndependentVerdictValidator:
                 action_directive = "High-confidence malicious attack confirmed with verified evidence. Escalate to IR team."
 
         elif clean_prop_verdict == "FALSE_POSITIVE":
-            # For FP: must have verified telemetry, at least one grounded claim, and cannot rely on blanket negative assumptions
+            # For FP: must have verified telemetry, at least one grounded claim, and affirmative verifiable authorization
             reason_lower = (model_reason or "").lower()
             affirmative_benign_terms = (
                 "authorized", "approved", "backup", "maintenance", "legitimate", "scheduled",
-                "harmless", "routine", "expected", "verified vendor", "business", "change ticket",
-                "service", "admin", "scanner", "healthcheck",
+                "verified vendor", "change ticket", "change request", "scanner", "healthcheck",
+                "signed by corporate pki", "approved enterprise deployment", "corporate pki",
             )
-            has_blanket_negative_fp = any(
-                phrase in reason_lower
-                for phrase in ("no evidence of compromise", "rfc-1918", "rfc1918", "internal ip only", "nothing suspicious found")
-            ) and not any(term in reason_lower for term in affirmative_benign_terms)
+            superficial_or_negative_fp_indicators = (
+                "no evidence of compromise", "rfc-1918", "rfc1918", "internal ip", "internal network",
+                "nothing suspicious", "service account", "service user", "admin user", "admin account",
+                "appears normal", "routine activity", "routine execution", "expected behavior", "harmless",
+            )
+            has_affirmative_authorization = any(term in reason_lower for term in affirmative_benign_terms)
+            has_superficial_or_negative_fp = any(term in reason_lower for term in superficial_or_negative_fp_indicators)
+
+            # Check if any grounded claim directly substantiates affirmative authorization
+            has_grounded_authorization = False
+            for c in claim_grounding.claims:
+                if c.is_grounded:
+                    c_txt = f"{c.field or ''} {c.asserted_value or ''} {c.claim_type or ''}".lower()
+                    if any(term in c_txt for term in affirmative_benign_terms):
+                        has_grounded_authorization = True
+                        break
+
+            # If all grounded claims only reference internal IP or user account names without affirmative authorization:
+            grounded_fields = {c.field for c in claim_grounding.claims if c.is_grounded and c.field}
+            only_unprivileged_identities = bool(grounded_fields and grounded_fields.issubset({
+                "network.source_ip", "network.destination_ip", "source_ip", "dest_ip", "user.name", "user"
+            }))
+
+            is_unsupported_fp = (
+                (has_superficial_or_negative_fp and not has_affirmative_authorization)
+                or (only_unprivileged_identities and not has_affirmative_authorization and not has_grounded_authorization)
+            )
 
             if preflight.preflight_status == "INSUFFICIENT" or preflight.evidence_completeness < 0.5 or claim_grounding.grounded_claims == 0:
                 final_verdict = "REQUIRES_ATTENTION"
@@ -185,13 +219,13 @@ class IndependentVerdictValidator:
                     reason_codes.append("FP_CRITERIA_UNSATISFIED")
                 if "Model fabricated" not in action_directive:
                     action_directive = "Missing grounded claim or benign evidence prevents confirming false positive. Human verification required."
-            elif has_blanket_negative_fp:
+            elif is_unsupported_fp:
                 final_verdict = "REQUIRES_ATTENTION"
                 if validation_status not in ("REJECTED", "ABSTAINED"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
                 if "FP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("FP_CRITERIA_UNSATISFIED")
-                action_directive = "False positive rejected: blanket RFC-1918 or negative-evidence assumption without affirmative benign authorization."
+                action_directive = "False positive rejected: requires affirmative verifiable authorization (e.g. approved change ticket, maintenance window, or verified business process). Internal IP, service accounts, or routine assertions alone cannot justify False Positive."
             elif not reason_codes and final_verdict == "FALSE_POSITIVE":
                 is_decisive = True
                 reason_codes.append("EVIDENCE_VALIDATED")

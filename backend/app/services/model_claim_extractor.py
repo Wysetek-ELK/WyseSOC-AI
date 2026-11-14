@@ -125,11 +125,12 @@ class ModelClaimExtractor:
         claims: List[ModelSupportingClaim] = []
 
         # 1. Parse Explicit Structured Claims if provided (supports P2 and PolicyCompiler V3 formats)
+        has_explicit_claims_key = ("supporting_claims" in raw_verdict_output) or ("claims" in raw_verdict_output)
         structured_claims = raw_verdict_output.get("supporting_claims") or raw_verdict_output.get("claims")
         if isinstance(structured_claims, list) and structured_claims:
             for item in structured_claims:
                 if isinstance(item, dict):
-                    raw_ids = item.get("evidence_ids") if item.get("evidence_ids") is not None else item.get("cited_evidence_ids", [])
+                    raw_ids = item.get("cited_evidence_ids") if item.get("cited_evidence_ids") is not None else item.get("evidence_ids", [])
                     ev_ids = [str(e) for e in raw_ids] if isinstance(raw_ids, list) else []
                     has_explicit_asserted = "asserted_value" in item and item.get("asserted_value") not in (None, "")
                     asserted = item.get("asserted_value") if has_explicit_asserted else (item.get("claim_text") or item.get("claim") or "")
@@ -137,15 +138,17 @@ class ModelClaimExtractor:
                     if field_name == "unknown" and ev_ids and ev_ids[0] in evidence_by_id:
                         field_name = evidence_by_id[ev_ids[0]].source_field
                     claim = ModelSupportingClaim(
-                        claim_type=str(item.get("claim_type", "PROCESS_EXECUTION")),
+                        claim_type=str(item.get("claim_type", "OBSERVED_FACT")),
                         evidence_ids=ev_ids,
+                        cited_evidence_ids=ev_ids,
                         field=field_name,
                         asserted_value=asserted,
                     )
                     claims.append(claim)
 
-        # 2. Extract Claims from Legacy Free-Text supporting_evidence / reason if no structured claims
-        if not claims:
+        # 2. Extract Claims from Legacy Free-Text supporting_evidence / reason ONLY IF no structured claims field was present
+        # If the model explicitly provided supporting_claims=[] or claims=[], respect the empty list and do not synthesize.
+        if not claims and not has_explicit_claims_key:
             free_text_items = raw_verdict_output.get("supporting_evidence", [])
             reason_text = str(raw_verdict_output.get("reason", ""))
             combined_text = "\n".join(str(s) for s in free_text_items) + "\n" + reason_text

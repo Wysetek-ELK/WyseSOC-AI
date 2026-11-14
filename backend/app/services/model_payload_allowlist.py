@@ -40,8 +40,13 @@ PRIORITY_SOC_KEYS = frozenset({
 })
 
 
-def sanitize_event_attributes(attributes: Dict[str, Any], max_str_len: int = 180, max_keys: int = 8) -> Dict[str, Any]:
-    """Filters nested event attributes, dropping forbidden resolution/closure fields, prioritizing high-signal SOC keys, and truncating strings."""
+def sanitize_event_attributes(
+    attributes: Dict[str, Any],
+    max_str_len: int = 500,
+    max_priority_str_len: int = 4096,
+    max_keys: int = 24,
+) -> Dict[str, Any]:
+    """Filters nested event attributes, dropping forbidden resolution/closure fields, prioritizing high-signal SOC keys, and preserving long critical forensic strings."""
     sanitized: Dict[str, Any] = {}
     
     # 1. Filter out forbidden keys and empty/none values
@@ -66,15 +71,24 @@ def sanitize_event_attributes(attributes: Dict[str, Any], max_str_len: int = 180
 
     ordered_items = (priority_items + other_items)[:max_keys]
 
-    # 3. Format and bounded truncation
+    # 3. Format and bounded truncation (preserving long forensic strings for priority SOC attributes)
     for key, val in ordered_items:
+        norm_key = key.lower().strip()
+        is_priority = norm_key in PRIORITY_SOC_KEYS
+        effective_max_len = max_priority_str_len if is_priority else max_str_len
+
         if isinstance(val, str):
-            if len(val) > max_str_len:
-                sanitized[key] = val[:max_str_len] + "... [truncated]"
+            if len(val) > effective_max_len:
+                sanitized[key] = val[:effective_max_len] + "... [truncated]"
             else:
                 sanitized[key] = val
         elif isinstance(val, dict):
-            sanitized[key] = sanitize_event_attributes(val, max_str_len=max_str_len, max_keys=max_keys)
+            sanitized[key] = sanitize_event_attributes(
+                val,
+                max_str_len=max_str_len,
+                max_priority_str_len=max_priority_str_len,
+                max_keys=max_keys,
+            )
         else:
             sanitized[key] = val
 
@@ -93,16 +107,16 @@ def build_model_facing_payload(
     incident: Any,
     rule: Optional[Any] = None,
     events: Optional[List[Any]] = None,
+    max_events: int = 20,
 ) -> Dict[str, Any]:
     """
     Constructs an explicit, strictly allowlisted incident investigation payload.
     Guarantees 100% absence of historical ground-truth resolution or closure fields.
-    Budgets payload size to fit comfortably within LLM context windows.
+    Preserves canonical evidence and relies on downstream TokenBudgetService for model context management.
     """
     sanitized_events: List[Dict[str, Any]] = []
     if events:
-        # Cap to 2 most relevant telemetry events to preserve LLM token budget and fast inference
-        for evt in events[:2]:
+        for evt in events[:max_events]:
             evt_id = _get_field(evt, "event_id", "eventId", "")
             evt_type = _get_field(evt, "event_type", "eventType", "")
             evt_time = _get_field(evt, "event_receive_time", "eventReceiveTime", None)
@@ -110,7 +124,12 @@ def build_model_facing_payload(
             if not isinstance(raw_attrs, dict):
                 raw_attrs = {}
 
-            sanitized_attrs = sanitize_event_attributes(raw_attrs, max_str_len=180, max_keys=8)
+            sanitized_attrs = sanitize_event_attributes(
+                raw_attrs,
+                max_str_len=500,
+                max_priority_str_len=4096,
+                max_keys=24,
+            )
             sanitized_events.append({
                 "event_id": str(evt_id),
                 "event_type": str(evt_type),
@@ -118,7 +137,7 @@ def build_model_facing_payload(
                 "attributes": sanitized_attrs,
             })
 
-    def _trunc(val: Any, max_len: int = 250) -> str:
+    def _trunc(val: Any, max_len: int = 2000) -> str:
         s = str(val or "")
         return s[:max_len] + ("... [truncated]" if len(s) > max_len else "")
 
@@ -149,9 +168,9 @@ def build_model_facing_payload(
     payload: Dict[str, Any] = {
         "incident_id": str(_get_field(incident, "incident_id", "incidentId", "")),
         "event_type": str(_get_field(incident, "event_type", "eventType", "")),
-        "title": _trunc(_get_field(incident, "title", "title", ""), 200),
-        "description": _trunc(_get_field(incident, "description", "description", ""), 250),
-        "detail": _trunc(_get_field(incident, "detail", "detail", ""), 250),
+        "title": _trunc(_get_field(incident, "title", "title", ""), 500),
+        "description": _trunc(_get_field(incident, "description", "description", ""), 2000),
+        "detail": _trunc(_get_field(incident, "detail", "detail", ""), 2000),
         "severity": str(_get_field(incident, "severity", "severity", "MEDIUM")),
         "category": str(_get_field(incident, "category", "category", "")),
         "subcategory": str(_get_field(incident, "subcategory", "subcategory", "")),
@@ -164,7 +183,7 @@ def build_model_facing_payload(
         "events": sanitized_events,
         "rule_id": getattr(rule, "rule_id", None) if rule else None,
         "rule_name": getattr(rule, "name", None) if rule else None,
-        "rule_pattern": _trunc(rule_pattern, 250) if rule_pattern else None,
+        "rule_pattern": _trunc(rule_pattern, 2000) if rule_pattern else None,
     }
 
     # Strict audit verification before returning: assert zero leakage

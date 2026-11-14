@@ -92,27 +92,30 @@ class VerdictClaimValidator:
         # Extract claims from model_output
         raw_claims = model_output.get("claims") or model_output.get("supporting_claims") or []
         parsed_claims: List[ClaimVerificationItem] = []
+        proposed_verdict_str = str(model_output.get("verdict", "")).strip().upper()
+        is_decisive_proposal = proposed_verdict_str in ("TRUE_POSITIVE", "FALSE_POSITIVE")
 
-        # If no explicit structured claims, parse from reason / supporting_evidence
+        # If no explicit structured claims, do NOT synthesize claims for decisive verdicts (prevent schema recovery bypass)
         if not raw_claims:
-            reason = str(model_output.get("reason", ""))
-            evidence_list = model_output.get("supporting_evidence", [])
-            for item in evidence_list:
-                parsed_claims.append(
-                    ClaimVerificationItem(
-                        claim_text=str(item),
-                        claim_type=ClaimType.OBSERVED_FACT,
-                        referenced_evidence_ids=[],
+            if not is_decisive_proposal:
+                reason = str(model_output.get("reason", ""))
+                evidence_list = model_output.get("supporting_evidence", [])
+                for item in evidence_list:
+                    parsed_claims.append(
+                        ClaimVerificationItem(
+                            claim_text=str(item),
+                            claim_type=ClaimType.OBSERVED_FACT,
+                            referenced_evidence_ids=[],
+                        )
                     )
-                )
-            if not parsed_claims and reason:
-                parsed_claims.append(
-                    ClaimVerificationItem(
-                        claim_text=reason,
-                        claim_type=ClaimType.OBSERVED_FACT,
-                        referenced_evidence_ids=[],
+                if not parsed_claims and reason:
+                    parsed_claims.append(
+                        ClaimVerificationItem(
+                            claim_text=reason,
+                            claim_type=ClaimType.OBSERVED_FACT,
+                            referenced_evidence_ids=[],
+                        )
                     )
-                )
         else:
             for c in raw_claims:
                 if isinstance(c, dict):
