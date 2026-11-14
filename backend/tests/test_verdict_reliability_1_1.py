@@ -230,6 +230,7 @@ def test_accept_fp_with_affirmative_verifiable_authorization():
         create_record("INC-FP-02", "process.name", "backup_agent.exe", "PROCESS_EXECUTION"),
         create_record("INC-FP-02", "process.command_line", "backup_agent.exe --scheduled --ticket CHG-9842", "PROCESS_EXECUTION"),
         create_record("INC-FP-02", "authorization.ticket_id", "CHG-9842", "SECURITY_EVENT"),
+        create_record("INC-FP-02", "authorization.status", "APPROVED", "SECURITY_EVENT"),
     ]
     norm = build_norm("INC-FP-02", records)
     preflight = EvidencePreflightValidator.validate_preflight("INC-FP-02", contract, norm)

@@ -102,7 +102,11 @@ def build_sanitized_model_payload(
     return norm_result, payload_dict
 
 
-def _governance_fields(certification: Optional[PolicyRuntimeCertification]) -> Dict[str, Any]:
+def _governance_fields(
+    certification: Optional[PolicyRuntimeCertification],
+    final_verdict: Optional[str] = None,
+    is_decisive: bool = False,
+) -> Dict[str, Any]:
     if not certification:
         return {
             "policy_governance_mode": "ADVISORY_ANALYST_REVIEW_REQUIRED",
@@ -117,15 +121,30 @@ def _governance_fields(certification: Optional[PolicyRuntimeCertification]) -> D
             "active_policy_digest": None,
             "governance_reasons": ["NO_CERTIFICATION_CONTEXT"],
         }
+
+    # Autonomous incident closure is ONLY permitted when all conditions hold:
+    # 1. The policy certification explicitly grants autonomous operation eligibility.
+    # 2. The final verdict is decisive (not abstained / not forced to REQUIRES_ATTENTION).
+    # 3. The final verdict is an independently validated FALSE_POSITIVE.
+    auto_closure_allowed = bool(
+        certification.autonomous_operation_eligible
+        and is_decisive
+        and final_verdict == "FALSE_POSITIVE"
+    )
+
     return {
         "policy_governance_mode": certification.policy_governance_mode,
         "structural_approval_eligible": certification.structural_approval_eligible,
         "empirical_validation_eligible": certification.empirical_validation_eligible,
         "autonomous_operation_eligible": certification.autonomous_operation_eligible,
         "autonomous_action_blocked": not certification.autonomous_operation_eligible,
-        "auto_incident_closure_allowed": bool(certification.autonomous_operation_eligible),
-        "external_writeback_allowed": bool(certification.autonomous_operation_eligible),
-        "requires_human_review": not certification.autonomous_operation_eligible,
+        "auto_incident_closure_allowed": auto_closure_allowed,
+        "external_writeback_allowed": bool(certification.autonomous_operation_eligible and is_decisive),
+        "requires_human_review": bool(
+            not certification.autonomous_operation_eligible
+            or not is_decisive
+            or final_verdict == "REQUIRES_ATTENTION"
+        ),
         "empirical_validation_status": certification.empirical_validation_status,
         "active_policy_digest": certification.active_policy_digest,
         "governance_reasons": list(certification.blocking_reasons),
@@ -901,7 +920,11 @@ async def run_shared_verdict_pipeline(
         base_url=settings.LOCAL_LLM_BASE_URL,
     )
 
-    gov_meta = _governance_fields(certification)
+    gov_meta = _governance_fields(
+        certification,
+        final_verdict=final_auth_verdict,
+        is_decisive=final_is_decisive,
+    )
     verdict_data = {
         "incident_id": incident.incident_id,
         "proposed_verdict": val_res.proposed_verdict,

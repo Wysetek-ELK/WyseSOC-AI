@@ -694,3 +694,4 @@ def test_consistent_verdict_naming_across_validators_and_guardrails():
     # 2. UserVisibleVerdict accepts REQUIRES_ATTENTION alias
     assert UserVisibleVerdict("REQUIRES_ATTENTION") == UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION
     assert UserVisibleVerdict.REQUIRES_ATTENTION == UserVisibleVerdict.REQUIRES_ANALYST_ATTENTION
+

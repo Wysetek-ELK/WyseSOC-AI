@@ -187,17 +187,19 @@ class VerdictGuardrailsEngine:
                 or incident_context.get("authorization_scope_mismatch")
                 or incident_context.get("authorization_state_unapproved")
                 or incident_context.get("spoofed_admin_binary")
+                or incident_context.get("untrusted_authorization_provenance")
+                or incident_context.get("maintenance_window_expired")
             ))
 
             if not has_explicit_fp_blocker:
                 for c in claim_verification.claims:
                     if c.is_grounded:
                         c_txt = f"{getattr(c, 'field', '')} {getattr(c, 'asserted_value', '')} {c.claim_text}".lower()
-                        is_auth_field = any(af in str(getattr(c, 'field', '')).lower() for af in ("authorization.ticket", "authorization.status", "itsm.ticket", "code_signature.status", "policy.approved_baseline"))
+                        is_auth_field = any(af in str(getattr(c, 'field', '')).lower() for af in ("authorization.ticket", "authorization.status", "itsm.ticket", "policy.approved_baseline"))
                         is_approved_binary = any(b in c_txt for b in ("ccmexec.exe", "archive_agent.exe", "tanclient.exe", "qualysagent.exe", "nessusagent.exe"))
-                        has_trusted_path = any(p in c_txt for p in ("\\windows\\ccm", "\\program files\\", "system32")) and not any(sp in c_txt for sp in ("\\users\\", "\\temp\\", "\\tmp\\", "\\appdata\\", "/tmp/"))
-                        has_auth_kw = any(w in c_txt for w in ("change ticket", "change request", "pki", "signed_verified", "approved_baseline"))
-                        # Solely executable name is not accepted; requires auth field, trusted path, or verified signature
+                        has_trusted_path = any(p in c_txt for p in ("\\windows\\ccm", "\\program files\\tanium", "\\program files\\qualys", "\\program files\\tenable", "\\program files\\")) and not any(sp in c_txt for sp in ("\\users\\", "\\temp\\", "\\tmp\\", "\\appdata\\", "/tmp/"))
+                        has_auth_kw = any(w in c_txt for w in ("change ticket", "change request", "approved_baseline"))
+                        # Signed binaries or generic system paths alone never establish authorization; requires verified auth field or approved enterprise management agent with vendor path
                         if is_auth_field or (is_approved_binary and has_trusted_path) or has_auth_kw:
                             has_affirmative_benign = True
                             break

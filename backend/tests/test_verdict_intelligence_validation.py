@@ -1423,6 +1423,7 @@ def test_cs_suspicious_activity_false_positive_authorized_maintenance():
         "File Name": "UltraViewer_Service.exe",
         "first_seen_epoch": now_ms - 60000,
         "last_seen_epoch": now_ms,
+        "business_authorization_verified": True,
     }
 
     suff = EvidenceSufficiencyEngine.evaluate_sufficiency(

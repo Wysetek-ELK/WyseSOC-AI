@@ -24,6 +24,29 @@ class IndependentVerdictValidator:
 
     VALIDATOR_VERSION = "2.0.0"
 
+    @staticmethod
+    def _parse_timestamp(val: Any) -> Optional[float]:
+        if val is None:
+            return None
+        val_str = str(val).strip()
+        if not val_str:
+            return None
+        try:
+            return float(val_str)
+        except (ValueError, TypeError):
+            pass
+        from datetime import datetime
+        for fmt in (
+            "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%SZ", "%Y-%m-%d %H:%M:%S%z",
+            "%Y-%m-%d", "%m/%d/%Y %H:%M:%S"
+        ):
+            try:
+                return datetime.strptime(val_str, fmt).timestamp()
+            except (ValueError, TypeError):
+                continue
+        return None
+
     @classmethod
     def validate_verdict(
         cls,
@@ -228,8 +251,9 @@ class IndependentVerdictValidator:
                 for r in normalization_result.records
             )
 
-            # 4. Check for Maintenance Window Expiration or Inactivity (Reliability 1.3 - Requirement 4)
+            # 4. Check for Maintenance Window Expiration, Inactivity, or Time Bounds (Reliability 1.3 & Phase A - Item 3)
             maintenance_expired = False
+            maintenance_time_detail = ""
             for r in normalization_result.records:
                 if r.source_field in ("maintenance.active", "authorization.maintenance_active", "authorization.window_active", "maintenance.is_active"):
                     if str(r.observed_value).strip().lower() in ("false", "0", "inactive", "expired", "closed", "no"):
@@ -242,6 +266,38 @@ class IndependentVerdictValidator:
                 elif r.source_field in ("authorization.status", "itsm.status") and str(r.observed_value).strip().lower() == "expired":
                     maintenance_expired = True
                     break
+
+            # 4b. Check Maintenance Start / End Window Matching against Incident Timestamp (Phase A - Item 3)
+            inc_times: List[float] = []
+            for r in normalization_result.records:
+                if r.source_field in (
+                    "incident.time", "incident.timestamp", "event.time", "event.timestamp",
+                    "timestamp", "time", "generation_time", "detection_time", "phRecvTime"
+                ):
+                    ts = cls._parse_timestamp(r.observed_value)
+                    if ts is not None:
+                        inc_times.append(ts)
+
+            start_times: List[float] = []
+            end_times: List[float] = []
+            for r in normalization_result.records:
+                if r.source_field in ("maintenance.start_time", "maintenance.start", "authorization.start_time", "itsm.start_time", "window_start"):
+                    ts = cls._parse_timestamp(r.observed_value)
+                    if ts is not None:
+                        start_times.append(ts)
+                elif r.source_field in ("maintenance.end_time", "maintenance.end", "authorization.end_time", "itsm.end_time", "window_end"):
+                    ts = cls._parse_timestamp(r.observed_value)
+                    if ts is not None:
+                        end_times.append(ts)
+
+            if inc_times and (start_times or end_times):
+                inc_ts = inc_times[0]
+                if start_times and inc_ts < min(start_times):
+                    maintenance_expired = True
+                    maintenance_time_detail = f"Incident timestamp ({inc_ts}) occurred before scheduled maintenance start ({min(start_times)})"
+                elif end_times and inc_ts > max(end_times):
+                    maintenance_expired = True
+                    maintenance_time_detail = f"Incident timestamp ({inc_ts}) occurred after scheduled maintenance end ({max(end_times)})"
 
             # 5. Check Digital Signature Validity vs Metadata (Reliability 1.3 - Requirement 6)
             # Ensure signature fields indicate successful validation, not merely metadata presence.
@@ -359,20 +415,64 @@ class IndependentVerdictValidator:
                     unverified_binary_provenance = True
                     unverified_binary_detail = "Allowlisted binary name lacks rule-appropriate trusted binary evidence (path, signature, hash, or management confirmation)."
 
-            # 8. Check Authoritative Authorization State, Scope, and Provenance (Reliability 1.3 - Requirement 4)
+            # 8. Check Authoritative Authorization State, Scope, and Provenance (Reliability 1.3 & Phase A - Items 3, 4, 5)
             unapproved_auth_state = False
             auth_state_detail = ""
             unapproved_states = {
                 "draft", "pending", "pending_approval", "rejected", "denied",
-                "cancelled", "canceled", "expired", "closed", "revoked"
+                "cancelled", "canceled", "expired", "closed", "revoked", "unknown"
             }
             approved_states = {"approved", "active", "implemented", "implementing", "authorized", "validated"}
-            for r in normalization_result.records:
-                if r.source_field in ("authorization.status", "authorization.approval_state", "authorization.state", "itsm.status", "itsm.state", "change_ticket.status"):
+
+            has_ticket_record = any(r.source_field in authoritative_auth_fields for r in normalization_result.records)
+            status_records = [
+                r for r in normalization_result.records
+                if r.source_field in (
+                    "authorization.status", "authorization.approval_state", "authorization.state",
+                    "itsm.status", "itsm.state", "change_ticket.status"
+                )
+            ]
+
+            # Phase A - Item 4: Treat absent authorization attributes as unknown, not approved
+            if has_ticket_record:
+                if not status_records:
+                    unapproved_auth_state = True
+                    auth_state_detail = "UNKNOWN (authorization status attribute absent)"
+                else:
+                    for r in status_records:
+                        val_clean = str(r.observed_value).strip().lower()
+                        if val_clean in unapproved_states or (val_clean not in approved_states and not any(s in val_clean for s in ("approv", "authoriz", "valid", "active"))):
+                            unapproved_auth_state = True
+                            auth_state_detail = str(r.observed_value)
+                            break
+            elif status_records:
+                for r in status_records:
                     val_clean = str(r.observed_value).strip().lower()
                     if val_clean in unapproved_states or (val_clean not in approved_states and not any(s in val_clean for s in ("approv", "authoriz", "valid", "active"))):
                         unapproved_auth_state = True
                         auth_state_detail = str(r.observed_value)
+                        break
+
+            # Phase A - Item 5: Verify authoritative evidence provenance and prevent untrusted SIEM fields from masquerading as validated ITSM approvals
+            untrusted_auth_provenance = False
+            untrusted_auth_detail = ""
+            untrusted_provenance_sources = {
+                "untrusted", "rawsyslog", "userpayload", "telemetrycommandline",
+                "siem_raw", "user_input", "adversary_content"
+            }
+            for r in normalization_result.records:
+                if r.source_field in authoritative_auth_fields or r.source_field in (
+                    "authorization.status", "authorization.approval_state", "authorization.state",
+                    "itsm.status", "itsm.state", "change_ticket.status"
+                ):
+                    src_sys = str(r.source_system or "").strip().lower()
+                    if src_sys in untrusted_provenance_sources or any(u in src_sys for u in ("untrusted", "rawsyslog", "userpayload")):
+                        untrusted_auth_provenance = True
+                        untrusted_auth_detail = f"Record '{r.source_field}' originates from untrusted source '{r.source_system}'"
+                        break
+                    if r.source_field in ("rawmsg", "user_note", "description", "command_line", "untrusted_payload"):
+                        untrusted_auth_provenance = True
+                        untrusted_auth_detail = f"Record '{r.source_field}' is an unverified free-text/raw field"
                         break
 
             # Scope / Hostname validation
@@ -394,27 +494,19 @@ class IndependentVerdictValidator:
                 "network.source_ip", "network.destination_ip", "source_ip", "dest_ip", "user.name", "user"
             }))
 
-            # 10. Check for Grounded Affirmative Authorization or Trusted Administrative Software
+            # 10. Check for Grounded Affirmative Authorization or Trusted Administrative Software (Phase A - Item 2)
+            # Signed binaries and approved paths alone CANNOT establish benign authorization.
             has_grounded_authorization = False
             for c in grounded_claims:
                 c_field_lower = str(c.field or "").lower()
                 c_val_lower = str(c.asserted_value or "").lower()
-                # A: Authoritative authorization / maintenance / PKI field (verified in-scope and approved)
-                if c_field_lower in authoritative_auth_fields and not unapproved_auth_state and not scope_mismatch:
+                # A: Authoritative authorization / maintenance field (verified in-scope, approved, and trusted provenance)
+                if c_field_lower in authoritative_auth_fields and not unapproved_auth_state and not scope_mismatch and not untrusted_auth_provenance:
                     has_grounded_authorization = True
                     break
-                # B: Verified code signature field
-                if c_field_lower in ("code_signature.status", "signature.status", "file.signature_status", "signature.valid") and has_verified_valid_signature:
-                    has_grounded_authorization = True
-                    break
-                # C: Approved enterprise administrative binary WITH verified trusted binary evidence and NOT spoofed
+                # B: Approved enterprise administrative binary WITH verified vendor path and NOT spoofed
                 if c_field_lower in ("process.name", "process.file_name") and c_val_lower in approved_management_binaries:
                     if not has_spoofed_admin_binary and not unverified_binary_provenance:
-                        has_grounded_authorization = True
-                        break
-                # D: Executable path in approved management directory
-                if c_field_lower in ("process.executable_path", "process.path", "file.path") and not has_spoofed_admin_binary:
-                    if any(re.search(r"\\windows\\ccm\\|\\program files\\|system32|/opt/", c_val_lower, re.IGNORECASE)):
                         has_grounded_authorization = True
                         break
 
@@ -448,6 +540,13 @@ class IndependentVerdictValidator:
                     reason_codes.append("UNVERIFIED_COMMAND_LINE_TICKET")
                 action_directive = f"False positive rejected: Ticket reference(s) ({', '.join(untrusted_cmdline_tickets)}) originate solely from untrusted command-line parameters without authoritative ITSM authorization."
 
+            elif untrusted_auth_provenance:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "UNTRUSTED_AUTHORIZATION_PROVENANCE" not in reason_codes:
+                    reason_codes.append("UNTRUSTED_AUTHORIZATION_PROVENANCE")
+                action_directive = f"False positive rejected: Authorization evidence originates from untrusted source ({untrusted_auth_detail})."
+
             elif has_invalid_signature:
                 final_verdict = "REQUIRES_ATTENTION"
                 validation_status = "REJECTED"
@@ -474,7 +573,8 @@ class IndependentVerdictValidator:
                 validation_status = "REJECTED"
                 if "MAINTENANCE_WINDOW_EXPIRED" not in reason_codes:
                     reason_codes.append("MAINTENANCE_WINDOW_EXPIRED")
-                action_directive = "False positive rejected: Scheduled maintenance window is inactive or expired."
+                detail_str = f" ({maintenance_time_detail})" if maintenance_time_detail else ""
+                action_directive = f"False positive rejected: Scheduled maintenance window is inactive, expired, or out of time bounds{detail_str}."
 
             elif unapproved_auth_state:
                 final_verdict = "REQUIRES_ATTENTION"

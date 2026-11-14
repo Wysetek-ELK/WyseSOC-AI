@@ -76,6 +76,7 @@ def test_valid_affirmative_authorization_in_canonical_evidence():
         create_record("INC-VAL-01", "process.name", "backup_agent.exe", "PROCESS_EXECUTION"),
         create_record("INC-VAL-01", "process.command_line", "backup_agent.exe --scheduled --ticket CHG-1020", "PROCESS_EXECUTION"),
         create_record("INC-VAL-01", "authorization.ticket_id", "CHG-1020", "SECURITY_EVENT"),
+        create_record("INC-VAL-01", "authorization.status", "APPROVED", "SECURITY_EVENT"),
     ]
     norm = build_norm("INC-VAL-01", records)
     preflight = EvidencePreflightValidator.validate_preflight("INC-VAL-01", contract, norm)
