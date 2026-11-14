@@ -14,6 +14,7 @@ Historical PolicySimulationService to enforce identical safeguards:
 
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
+import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -81,6 +82,10 @@ class VerdictPipelineResult:
     evidence_status: str = "INSUFFICIENT"
     escalation_reason: Optional[str] = None
     evidence_trace: Dict[str, Any] = field(default_factory=dict)
+    prompt_capture_id: Optional[str] = None
+    prompt_execution_id: Optional[str] = None
+    prompt_sha256: Optional[str] = None
+    prompt_integrity_status: str = "UNVERIFIED"
 
 
 def build_sanitized_model_payload(
@@ -88,14 +93,15 @@ def build_sanitized_model_payload(
     rule: Optional[Rule],
 ) -> Tuple[Any, Dict[str, Any]]:
     """Normalize incident telemetry and construct a leakage-sanitized model payload."""
+    raw_events = incident.__dict__.get("events") or []
     norm_result = EvidenceNormalizationService.normalize_incident_evidence(
         incident=incident,
-        events=getattr(incident, "events", None) or [],
+        events=raw_events,
     )
     payload_dict = build_model_facing_payload(
         incident=incident,
         rule=rule,
-        events=getattr(incident, "events", None) or [],
+        events=raw_events,
     )
     payload_dict = HistoricalGroundTruthValidator.sanitize_incident_for_inference(payload_dict)
     payload_dict["canonical_evidence"] = [r.model_dump() for r in norm_result.records]
@@ -164,13 +170,107 @@ async def _invoke_provider_with_guards(
     simulated_output_fn: Optional[Callable[..., Dict[str, Any]]] = None,
     contract: Optional[Any] = None,
     prompt_version: Optional[PromptVersion] = None,
+    db: Optional[AsyncSession] = None,
+    execution_id: Optional[str] = None,
+    incident_id: Optional[str] = None,
+    rag_precedents: Optional[List[Dict[str, Any]]] = None,
+    policy_source: str = "DATABASE",
 ) -> Tuple[Any, str]:
-    """Invoke OPENAI_COMPATIBLE (with GPU slot protection) or SIMULATED provider safely."""
+    """Invoke OPENAI_COMPATIBLE (with GPU slot protection) or SIMULATED provider safely with provider-boundary prompt capture."""
     ptype = str(chosen_provider_type or "SIMULATED").upper().strip()
+
+    active_capture = None
+
+    async def _make_pre_cb(attempt_num: int, prov_type: str, p_source: str):
+        async def _cb(payload: Dict[str, Any], compiled_system_prompt: str, user_message: str, generation_settings: Dict[str, Any]):
+            nonlocal active_capture
+            if not db or not execution_id or not incident_id:
+                return None
+            from app.services.actual_prompt_capture_service import ActualPromptCaptureService
+            try:
+                ev_reqs = contract.model_dump() if hasattr(contract, "model_dump") else (contract.dict() if hasattr(contract, "dict") else {})
+            except Exception:
+                ev_reqs = {}
+            active_capture = await ActualPromptCaptureService.record_dispatch(
+                db=db,
+                execution_id=execution_id,
+                incident_id=incident_id,
+                rule_id=str(rule_spec.get("id") or rule_spec.get("rule_id") or "UNKNOWN_RULE"),
+                rule_name=str(rule_spec.get("name") or "Unknown Rule"),
+                policy_version_id=getattr(prompt_version, "id", None),
+                policy_version_number=prompt_ver_num,
+                policy_status=getattr(prompt_version, "status", "UNCONFIGURED"),
+                policy_source=p_source,
+                attempt_number=attempt_num,
+                model_name=str(generation_settings.get("model") or prov_type),
+                provider_type=prov_type,
+                generation_settings=generation_settings,
+                compiled_system_prompt=compiled_system_prompt,
+                user_message=user_message,
+                rag_precedents=rag_precedents or [],
+                evidence_requirements=ev_reqs,
+                verdict_schema=PolicyCompilerService.MODEL_RESPONSE_SCHEMA,
+                raw_request_payload=payload,
+            )
+            return active_capture
+        return _cb
+
+    async def _post_cb(capture_meta, status: str, **kw):
+        if not db or not capture_meta:
+            return
+        from app.services.actual_prompt_capture_service import ActualPromptCaptureService
+        if status == "COMPLETED":
+            await ActualPromptCaptureService.record_completed(
+                db=db,
+                capture_id=capture_meta.id,
+                response_raw=kw.get("response_raw"),
+                response_verdict=kw.get("response_verdict"),
+                response_confidence=kw.get("response_confidence"),
+                prompt_tokens=kw.get("prompt_tokens"),
+                completion_tokens=kw.get("completion_tokens"),
+                total_tokens=kw.get("total_tokens"),
+                latency_ms=kw.get("latency_ms"),
+            )
+        else:
+            await ActualPromptCaptureService.record_failed(
+                db=db,
+                capture_id=capture_meta.id,
+                error_message=kw.get("error_message", "Inference error"),
+                latency_ms=kw.get("latency_ms"),
+            )
 
     if ptype == "SIMULATED":
         if simulated_output_fn is not None:
             raw = simulated_output_fn(payload_dict, contract, prompt_version)
+            compact_json = json.dumps({"incident": payload_dict, "rule": rule_spec}, separators=(",", ":"))
+            user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
+            sim_payload = {
+                "model": "simulated-v2.2-policy-aware",
+                "messages": [
+                    {"role": "system", "content": prompt_text},
+                    {"role": "user", "content": user_content},
+                ],
+                "max_tokens": 1024,
+                "temperature": 0.0,
+            }
+            pre_cb = await _make_pre_cb(1, "SIMULATED", policy_source)
+            cap_meta = await pre_cb(sim_payload, prompt_text, user_content, {"model": "simulated-v2.2-policy-aware", "endpoint": "SIMULATED_FN"})
+            p_tok = int(raw.get("prompt_tokens") or max(50, len(prompt_text) // 4))
+            c_tok = int(raw.get("completion_tokens") or max(20, len(str(raw.get("reason", ""))) // 4))
+            t_tok = int(raw.get("total_tokens") or (p_tok + c_tok))
+            lat_ms = int(raw.get("latency_ms") or 5)
+            if cap_meta:
+                await _post_cb(
+                    cap_meta,
+                    "COMPLETED",
+                    response_raw=json.dumps(raw),
+                    response_verdict=str(raw.get("verdict") or "REQUIRES_ATTENTION"),
+                    response_confidence=float(raw.get("confidence") or 50.0),
+                    prompt_tokens=p_tok,
+                    completion_tokens=c_tok,
+                    total_tokens=t_tok,
+                    latency_ms=lat_ms,
+                )
             verdict_obj = StructuredModelVerdict(
                 incident_id=str(payload_dict.get("incident_id") or "INC-SIM"),
                 rule_id=str(rule_spec.get("rule_id") or rule_spec.get("id") or "RULE-SIM"),
@@ -186,19 +286,26 @@ async def _invoke_provider_with_guards(
                 prompt_version_number=int(prompt_ver_num or 1),
                 is_simulated=True,
                 validation_status="SIMULATED",
-                latency_ms=int(raw.get("latency_ms") or 5),
-                prompt_tokens=int(raw.get("prompt_tokens") or 0),
-                completion_tokens=int(raw.get("completion_tokens") or 0),
-                total_tokens=int(raw.get("total_tokens") or 0),
+                latency_ms=lat_ms,
+                prompt_tokens=p_tok,
+                completion_tokens=c_tok,
+                total_tokens=t_tok,
+                prompt_capture_id=getattr(cap_meta, "id", None) if cap_meta else None,
+                prompt_request_sha256=getattr(cap_meta, "request_sha256", None) if cap_meta else None,
+                prompt_integrity_status="VERIFIED",
+                outbound_payload=sim_payload,
             )
             return verdict_obj, "SIMULATED"
 
         provider = provider_factory("SIMULATED")
+        pre_cb = await _make_pre_cb(1, "SIMULATED", policy_source)
         verdict_obj = await provider.analyze_incident(
             incident_payload=payload_dict,
             rule_spec=rule_spec,
             prompt_text=prompt_text,
             prompt_version_number=prompt_ver_num,
+            capture_callback=pre_cb,
+            post_capture_callback=_post_cb,
         )
         return verdict_obj, "SIMULATED"
 
@@ -213,20 +320,26 @@ async def _invoke_provider_with_guards(
             if not allow_mock_fallback:
                 raise PipelineLLMUnavailableError(str(cb_exc)) from cb_exc
             sim_provider = provider_factory("SIMULATED")
+            pre_cb_gpu_fallback = await _make_pre_cb(2, "SIMULATED", "CIRCUIT_BREAKER_FALLBACK")
             verdict_obj = await sim_provider.analyze_incident(
                 incident_payload=payload_dict,
                 rule_spec=rule_spec,
                 prompt_text=prompt_text,
                 prompt_version_number=prompt_ver_num,
+                capture_callback=pre_cb_gpu_fallback,
+                post_capture_callback=_post_cb,
             )
             return verdict_obj, "SIMULATED"
 
     try:
+        pre_cb_1 = await _make_pre_cb(1, "OPENAI_COMPATIBLE", policy_source)
         verdict_obj = await provider.analyze_incident(
             incident_payload=payload_dict,
             rule_spec=rule_spec,
             prompt_text=prompt_text,
             prompt_version_number=prompt_ver_num,
+            capture_callback=pre_cb_1,
+            post_capture_callback=_post_cb,
         )
         raw_status = str(getattr(verdict_obj, "validation_status", "") or "").upper().strip()
         is_connection_error = raw_status in ("CONNECTION_ERROR", "HTTP_ERROR")
@@ -244,11 +357,14 @@ async def _invoke_provider_with_guards(
                 set_llm_online(False)
             if allow_mock_fallback:
                 sim_provider = provider_factory("SIMULATED")
+                pre_cb_2 = await _make_pre_cb(2, "SIMULATED", "FALLBACK")
                 verdict_obj = await sim_provider.analyze_incident(
                     incident_payload=payload_dict,
                     rule_spec=rule_spec,
                     prompt_text=prompt_text,
                     prompt_version_number=prompt_ver_num,
+                    capture_callback=pre_cb_2,
+                    post_capture_callback=_post_cb,
                 )
                 return verdict_obj, "SIMULATED"
             raise PipelineLLMUnavailableError(
@@ -267,11 +383,14 @@ async def _invoke_provider_with_guards(
             set_llm_online(False)
         if allow_mock_fallback and not isinstance(exc, PipelineLLMUnavailableError):
             sim_provider = provider_factory("SIMULATED")
+            pre_cb_2 = await _make_pre_cb(2, "SIMULATED", "FALLBACK")
             verdict_obj = await sim_provider.analyze_incident(
                 incident_payload=payload_dict,
                 rule_spec=rule_spec,
                 prompt_text=prompt_text,
                 prompt_version_number=prompt_ver_num,
+                capture_callback=pre_cb_2,
+                post_capture_callback=_post_cb,
             )
             return verdict_obj, "SIMULATED"
         if isinstance(exc, PipelineLLMUnavailableError):
@@ -307,6 +426,39 @@ async def run_shared_verdict_pipeline(
     """
     prov_factory = provider_factory or get_model_provider
     norm_result, payload_dict = build_sanitized_model_payload(incident, rule)
+
+    execution_id = str(uuid.uuid4())
+    if is_simulation:
+        policy_source = "SIMULATION"
+    elif active_approved_version and getattr(active_approved_version, "status", "") == "APPROVED":
+        policy_source = "DATABASE_APPROVED"
+    elif prompt_version and getattr(prompt_version, "status", "") == "DRAFT":
+        policy_source = "DATABASE_DRAFT"
+    elif getattr(prompt_version, "is_template_draft", False):
+        policy_source = "ARCHETYPE_TEMPLATE"
+    else:
+        policy_source = "FALLBACK"
+
+    async def _record_intercept(v_data: Dict[str, Any], r_text: str):
+        try:
+            from app.services.actual_prompt_capture_service import ActualPromptCaptureService
+            non_disp = await ActualPromptCaptureService.record_non_dispatch(
+                db=db,
+                execution_id=execution_id,
+                incident_id=str(incident.incident_id),
+                rule_id=str(rule.id if rule else incident.rule_id or "UNKNOWN"),
+                rule_name=str(rule.name if rule else incident.title or "Unknown Rule"),
+                policy_version_id=getattr(active_v, "id", None),
+                policy_version_number=getattr(active_v, "version_number", None),
+                policy_status=getattr(active_v, "status", "UNCONFIGURED"),
+                reason=r_text,
+            )
+            v_data["prompt_capture_id"] = getattr(non_disp, "id", None)
+            v_data["prompt_execution_id"] = execution_id
+            v_data["prompt_sha256"] = getattr(non_disp, "request_sha256", "0" * 64)
+            v_data["prompt_integrity_status"] = "UNVERIFIED"
+        except Exception:
+            pass
 
     if is_prod or (pilot_context and str(pilot_context.get("source_type", "")).upper() == "LIVE"):
         allow_mock = False
@@ -375,6 +527,7 @@ async def run_shared_verdict_pipeline(
                 "evaluated_by_user": username,
                 **_governance_fields(cert_empty),
             }
+            await _record_intercept(verdict_data, deferral_detail)
             return VerdictPipelineResult(
                 verdict_data=verdict_data,
                 early_exit=True,
@@ -384,6 +537,10 @@ async def run_shared_verdict_pipeline(
                 is_abstained=True,
                 effective_verdict="REQUIRES_ATTENTION",
                 escalation_reason=deferral_detail,
+                prompt_capture_id=verdict_data.get("prompt_capture_id"),
+                prompt_execution_id=execution_id,
+                prompt_sha256=verdict_data.get("prompt_sha256"),
+                prompt_integrity_status="UNVERIFIED",
             )
         active_v = prompt_version
 
@@ -442,6 +599,7 @@ async def run_shared_verdict_pipeline(
             "evaluated_by_user": username,
             **_governance_fields(certification),
         }
+        await _record_intercept(verdict_data, block_detail)
         return VerdictPipelineResult(
             verdict_data=verdict_data,
             early_exit=True,
@@ -451,6 +609,10 @@ async def run_shared_verdict_pipeline(
             is_abstained=True,
             effective_verdict="REQUIRES_ATTENTION",
             escalation_reason=block_detail,
+            prompt_capture_id=verdict_data.get("prompt_capture_id"),
+            prompt_execution_id=execution_id,
+            prompt_sha256=verdict_data.get("prompt_sha256"),
+            prompt_integrity_status="UNVERIFIED",
         )
 
     # 3. Resolve Shared Detection Semantics & Evidence Contract (honors RuleIntelligenceSnapshot)
@@ -532,6 +694,7 @@ async def run_shared_verdict_pipeline(
             "evaluated_by_user": username,
             **_governance_fields(certification),
         }
+        await _record_intercept(verdict_data, preflight.reason)
         return VerdictPipelineResult(
             verdict_data=verdict_data,
             early_exit=True,
@@ -554,6 +717,10 @@ async def run_shared_verdict_pipeline(
                 "canonical_evidence_count": norm_result.total_evidence_count,
                 "contract_id": contract.contract_id,
             },
+            prompt_capture_id=verdict_data.get("prompt_capture_id"),
+            prompt_execution_id=execution_id,
+            prompt_sha256=verdict_data.get("prompt_sha256"),
+            prompt_integrity_status="UNVERIFIED",
         )
 
     # 5. Compile Unified Nine-Section Policy
@@ -670,6 +837,7 @@ async def run_shared_verdict_pipeline(
             "evaluated_by_user": username,
             **_governance_fields(certification),
         }
+        await _record_intercept(verdict_data, budgeted.abstention_reason or "CONTEXT_WINDOW_EXCEEDED")
         return VerdictPipelineResult(
             verdict_data=verdict_data,
             early_exit=True,
@@ -691,6 +859,10 @@ async def run_shared_verdict_pipeline(
                 "token_budget_breakdown": budgeted.breakdown.model_dump(),
                 "compilation_digest": compiled_policy.compilation_digest,
             },
+            prompt_capture_id=verdict_data.get("prompt_capture_id"),
+            prompt_execution_id=execution_id,
+            prompt_sha256=verdict_data.get("prompt_sha256"),
+            prompt_integrity_status="UNVERIFIED",
         )
 
     prompt_text = budgeted.budgeted_system_prompt
@@ -730,6 +902,11 @@ async def run_shared_verdict_pipeline(
         simulated_output_fn=simulated_output_fn,
         contract=contract,
         prompt_version=active_v,
+        db=db,
+        execution_id=execution_id,
+        incident_id=str(incident.incident_id),
+        rag_precedents=rag_result.precedents if hasattr(rag_result, "precedents") else [],
+        policy_source=policy_source,
     )
 
     # 9. Token Usage Accounting
@@ -1013,6 +1190,10 @@ async def run_shared_verdict_pipeline(
         "pilot_id": pilot_context.get("pilot_id") if pilot_context else None,
         "pilot_mode": pilot_context.get("mode") if pilot_context else None,
         "pilot_version": pilot_context.get("pilot_version") if pilot_context else None,
+        "prompt_capture_id": getattr(verdict_obj, "prompt_capture_id", None),
+        "prompt_execution_id": execution_id,
+        "prompt_sha256": getattr(verdict_obj, "prompt_request_sha256", None),
+        "prompt_integrity_status": getattr(verdict_obj, "prompt_integrity_status", "UNVERIFIED"),
         **gov_meta,
     }
 
@@ -1040,6 +1221,8 @@ async def run_shared_verdict_pipeline(
         "provider_type": actual_provider_type,
         "execution_provenance": verdict_prov["execution_provenance"],
         "model_identifier": verdict_obj.model_identifier,
+        "prompt_capture_id": getattr(verdict_obj, "prompt_capture_id", None),
+        "prompt_sha256": getattr(verdict_obj, "prompt_request_sha256", None),
     }
 
     # Record operational learning profile metrics
@@ -1082,5 +1265,9 @@ async def run_shared_verdict_pipeline(
         evidence_status=trust_res.evidence_status.value,
         escalation_reason=trust_res.escalation_reason or abstention_reason,
         evidence_trace=evidence_trace,
+        prompt_capture_id=getattr(verdict_obj, "prompt_capture_id", None),
+        prompt_execution_id=execution_id,
+        prompt_sha256=getattr(verdict_obj, "prompt_request_sha256", None),
+        prompt_integrity_status=getattr(verdict_obj, "prompt_integrity_status", "UNVERIFIED"),
     )
 

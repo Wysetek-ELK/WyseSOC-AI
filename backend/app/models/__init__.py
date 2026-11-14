@@ -34,6 +34,7 @@ from app.models.production_governance import (
     ProductionAutomationPolicy,
     IncidentAutomationAudit,
 )
+from app.models.actual_prompt_capture import ActualLLMPromptCapture
 
 __all__ = [
     "Base",
@@ -79,4 +80,5 @@ __all__ = [
     "RulePromotionApproval",
     "ProductionAutomationPolicy",
     "IncidentAutomationAudit",
+    "ActualLLMPromptCapture",
 ]

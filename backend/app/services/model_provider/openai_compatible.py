@@ -265,6 +265,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
         rule_spec: Dict[str, Any],
         prompt_text: str,
         prompt_version_number: int = 1,
+        **kwargs,
     ) -> StructuredModelVerdict:
         start_time = time.time()
         incident_id = str(incident_payload.get("incident_id", ""))
@@ -319,6 +320,27 @@ class OpenAICompatibleProvider(BaseModelProvider):
             "temperature": self.temperature,
         }
 
+        # Authoritative Provider-Boundary Prompt Capture Hook (immediately prior to dispatch)
+        capture_cb = kwargs.get("capture_callback")
+        post_capture_cb = kwargs.get("post_capture_callback")
+        capture_meta = None
+        if capture_cb:
+            try:
+                capture_meta = await capture_cb(
+                    payload=payload,
+                    compiled_system_prompt=system_instruction,
+                    user_message=user_content,
+                    generation_settings={
+                        "model": self.model_name,
+                        "max_tokens": self.max_tokens,
+                        "temperature": self.temperature,
+                        "timeout_seconds": self.timeout_seconds,
+                        "endpoint": self.base_url,
+                    },
+                )
+            except Exception:
+                pass
+
         try:
             async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
                 res = await client.post(
@@ -332,12 +354,23 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 latency_ms = int((time.time() - start_time) * 1000)
 
                 if res.status_code != 200:
+                    err_msg = f"Inference HTTP error {res.status_code}: {res.text[:200]}"
+                    if post_capture_cb and capture_meta:
+                        try:
+                            await post_capture_cb(
+                                capture_meta=capture_meta,
+                                status="FAILED",
+                                error_message=err_msg,
+                                latency_ms=latency_ms,
+                            )
+                        except Exception:
+                            pass
                     return StructuredModelVerdict(
                         incident_id=incident_id,
                         rule_id=rule_id,
                         verdict="REQUIRES_ATTENTION",
                         confidence=0.0,
-                        reason=f"Inference HTTP error {res.status_code}: {res.text[:200]}",
+                        reason=err_msg,
                         supporting_evidence=[],
                         missing_evidence=["Complete API response"],
                         analyst_questions=["Check Server 2 inference engine status"],
@@ -346,6 +379,10 @@ class OpenAICompatibleProvider(BaseModelProvider):
                         prompt_version_number=prompt_version_number,
                         validation_status="HTTP_ERROR",
                         is_simulated=False,
+                        prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                        prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                        prompt_integrity_status="UNVERIFIED",
+                        outbound_payload=payload,
                     )
 
                 data = res.json()
@@ -358,12 +395,23 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 parsed, parse_err = robust_parse_model_verdict_json(raw_reply)
 
                 if not parsed:
+                    err_schema = f"Model output format error: {parse_err}. Partial reply: {raw_reply[:200]}"
+                    if post_capture_cb and capture_meta:
+                        try:
+                            await post_capture_cb(
+                                capture_meta=capture_meta,
+                                status="FAILED",
+                                error_message=err_schema,
+                                latency_ms=latency_ms,
+                            )
+                        except Exception:
+                            pass
                     return StructuredModelVerdict(
                         incident_id=incident_id,
                         rule_id=rule_id,
                         verdict="REQUIRES_ATTENTION",
                         confidence=0.0,
-                        reason=f"Model output format error: {parse_err}. Partial reply: {raw_reply[:200]}",
+                        reason=err_schema,
                         supporting_evidence=[],
                         missing_evidence=["Valid schema output"],
                         analyst_questions=["Review raw LLM output format"],
@@ -375,17 +423,33 @@ class OpenAICompatibleProvider(BaseModelProvider):
                         prompt_tokens=prompt_tokens,
                         completion_tokens=completion_tokens,
                         total_tokens=total_tokens,
+                        prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                        prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                        prompt_integrity_status="UNVERIFIED",
+                        raw_model_response=raw_reply,
+                        outbound_payload=payload,
                     )
 
                 # Defensive schema validation
                 is_valid, status, err_msg = self.validate_verdict_schema(parsed)
                 if not is_valid:
+                    schema_fail = f"Model output schema validation failed: {err_msg}"
+                    if post_capture_cb and capture_meta:
+                        try:
+                            await post_capture_cb(
+                                capture_meta=capture_meta,
+                                status="FAILED",
+                                error_message=schema_fail,
+                                latency_ms=latency_ms,
+                            )
+                        except Exception:
+                            pass
                     return StructuredModelVerdict(
                         incident_id=incident_id,
                         rule_id=rule_id,
                         verdict="REQUIRES_ATTENTION",
                         confidence=0.0,
-                        reason=f"Model output schema validation failed: {err_msg}",
+                        reason=schema_fail,
                         supporting_evidence=[],
                         missing_evidence=["Valid schema output"],
                         analyst_questions=[],
@@ -397,6 +461,11 @@ class OpenAICompatibleProvider(BaseModelProvider):
                         prompt_tokens=prompt_tokens,
                         completion_tokens=completion_tokens,
                         total_tokens=total_tokens,
+                        prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                        prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                        prompt_integrity_status="UNVERIFIED",
+                        raw_model_response=raw_reply,
+                        outbound_payload=payload,
                     )
 
                 raw_claims = parsed.get("supporting_claims") or parsed.get("claims") or []
@@ -434,6 +503,22 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 val_status = "INVALID_SCHEMA" if is_recovered else "VALID"
                 resolved_confidence = float(parsed["confidence"]) if parsed.get("confidence") is not None else 0.0
 
+                if post_capture_cb and capture_meta:
+                    try:
+                        await post_capture_cb(
+                            capture_meta=capture_meta,
+                            status="COMPLETED",
+                            response_raw=raw_reply,
+                            response_verdict=raw_verdict_str,
+                            response_confidence=resolved_confidence,
+                            prompt_tokens=prompt_tokens,
+                            completion_tokens=completion_tokens,
+                            total_tokens=total_tokens,
+                            latency_ms=latency_ms,
+                        )
+                    except Exception:
+                        pass
+
                 return StructuredModelVerdict(
                     incident_id=incident_id,
                     rule_id=rule_id,
@@ -453,16 +538,32 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     prompt_tokens=prompt_tokens,
                     completion_tokens=completion_tokens,
                     total_tokens=total_tokens,
+                    prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                    prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                    prompt_integrity_status="VERIFIED" if val_status == "VALID" else "UNVERIFIED",
+                    raw_model_response=raw_reply,
+                    outbound_payload=payload,
                 )
 
         except httpx.TimeoutException as e:
             latency_ms = int((time.time() - start_time) * 1000)
+            timeout_msg = f"Inference request timed out after {latency_ms/1000:.1f}s on Server 2"
+            if post_capture_cb and capture_meta:
+                try:
+                    await post_capture_cb(
+                        capture_meta=capture_meta,
+                        status="FAILED",
+                        error_message=timeout_msg,
+                        latency_ms=latency_ms,
+                    )
+                except Exception:
+                    pass
             return StructuredModelVerdict(
                 incident_id=incident_id,
                 rule_id=rule_id,
                 verdict="REQUIRES_ATTENTION",
                 confidence=0.0,
-                reason=f"Inference request timed out after {latency_ms/1000:.1f}s on Server 2",
+                reason=timeout_msg,
                 supporting_evidence=[],
                 missing_evidence=["Inference response within timeout deadline"],
                 analyst_questions=["Check Server 2 GPU load or increase timeout"],
@@ -471,15 +572,30 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 prompt_version_number=prompt_version_number,
                 validation_status="CONNECTION_ERROR",
                 is_simulated=False,
+                prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                prompt_integrity_status="UNVERIFIED",
+                outbound_payload=payload,
             )
         except Exception as e:
             latency_ms = int((time.time() - start_time) * 1000)
+            exc_msg = f"Inference execution exception: {type(e).__name__} ({str(e) or 'connection failed'})"
+            if post_capture_cb and capture_meta:
+                try:
+                    await post_capture_cb(
+                        capture_meta=capture_meta,
+                        status="FAILED",
+                        error_message=exc_msg,
+                        latency_ms=latency_ms,
+                    )
+                except Exception:
+                    pass
             return StructuredModelVerdict(
                 incident_id=incident_id,
                 rule_id=rule_id,
                 verdict="REQUIRES_ATTENTION",
                 confidence=0.0,
-                reason=f"Inference execution exception: {type(e).__name__} ({str(e) or 'connection failed'})",
+                reason=exc_msg,
                 supporting_evidence=[],
                 missing_evidence=["Successful API response"],
                 analyst_questions=["Verify local LLM connectivity on Server 2"],
@@ -488,5 +604,9 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 prompt_version_number=prompt_version_number,
                 validation_status="CONNECTION_ERROR",
                 is_simulated=False,
+                prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                prompt_integrity_status="UNVERIFIED",
+                outbound_payload=payload,
             )
 

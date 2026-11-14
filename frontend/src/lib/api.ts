@@ -615,6 +615,60 @@ export interface ActionButton {
   target_section?: string;
 }
 
+export interface ActualPromptExecutionSummary {
+  incident_id: string;
+  rule_id: string;
+  rule_name: string;
+  model_name: string;
+  provider_type: string;
+  captured_at: string;
+  policy_version_id?: string | null;
+  policy_version_number?: number | null;
+  policy_status: string;
+  policy_source: string;
+  dispatch_status: string;
+  attempt_number: number;
+  execution_id: string;
+  latency_ms: number;
+}
+
+export interface ActualPromptTechnicalDetails {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  request_sha256: string;
+  generation_settings: Record<string, any>;
+  error_message?: string | null;
+  raw_request_payload: Record<string, any>;
+  response_raw?: string | null;
+}
+
+export interface ActualPromptL1Explanation {
+  headline: string;
+  policy_version_used: string;
+  mandatory_evidence_available: boolean;
+  historical_precedents_included: number;
+  verdict_returned: string;
+  prompt_matches_approved_policy: boolean;
+  key_takeaways: string[];
+}
+
+export interface ActualPromptResponse {
+  capture_status: "CAPTURED_RUNTIME" | "HISTORICAL_CAPTURE_UNAVAILABLE" | "PREVIEW_ONLY";
+  integrity_status: "VERIFIED" | "MISMATCH" | "UNVERIFIED";
+  banner_message: string;
+  execution_summary: ActualPromptExecutionSummary;
+  system_prompt: string;
+  incident_payload: string;
+  rag_precedents: Array<Record<string, any>>;
+  has_rag_precedents: boolean;
+  evidence_requirements: Record<string, any>;
+  verdict_schema: Record<string, any>;
+  technical_details: ActualPromptTechnicalDetails;
+  l1_explanation: ActualPromptL1Explanation;
+  integrity_details: Record<string, any>;
+}
+
 export interface ReadinessStageItem {
   stage_id: string;
   stage_name: string;
@@ -1832,6 +1886,41 @@ export const api = {
     const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/acknowledge-drift`, { method: "POST" });
     if (!res.ok) throw new Error("Failed to acknowledge drift events");
     return res.json();
+  },
+
+  async getActualPromptForIncident(incidentId: string): Promise<ActualPromptResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to fetch actual prompt" }));
+      throw new Error(err.detail || "Failed to fetch actual prompt");
+    }
+    return res.json();
+  },
+
+  async getPromptPreviewForRule(ruleId: string, versionId?: string, incidentId?: string): Promise<ActualPromptResponse> {
+    const params = new URLSearchParams();
+    if (versionId) params.append("version_id", versionId);
+    if (incidentId) params.append("incident_id", incidentId);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/rule/${ruleId}/preview${qs}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to fetch prompt preview" }));
+      throw new Error(err.detail || "Failed to fetch prompt preview");
+    }
+    return res.json();
+  },
+
+  async exportActualPrompt(incidentId: string, format: "json" | "markdown" = "json"): Promise<{ blob: Blob; filename: string }> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}/export?format=${format}`);
+    if (!res.ok) throw new Error("Failed to export actual prompt");
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition");
+    let filename = `actual_prompt_${incidentId}.${format === "json" ? "json" : "md"}`;
+    if (disposition) {
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+    return { blob, filename };
   },
 
   // =================== PHASE 2: LEARNING HISTORY ===================

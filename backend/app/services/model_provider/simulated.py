@@ -34,13 +34,50 @@ class SimulatedModelProvider(BaseModelProvider):
         rule_spec: Dict[str, Any],
         prompt_text: str,
         prompt_version_number: int = 1,
+        **kwargs,
     ) -> StructuredModelVerdict:
+        import json
         start_time = time.time()
 
         incident_id = str(incident_payload.get("incident_id", ""))
         rule_id = str(rule_spec.get("id", rule_spec.get("rule_id", "")))
         title = str(incident_payload.get("title", "")).lower()
         description = str(incident_payload.get("description", "")).lower()
+
+        compact_json = json.dumps({
+            "incident": incident_payload,
+            "rule": rule_spec,
+        }, separators=(",", ":"))
+        user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
+
+        payload = {
+            "model": self.model_name,
+            "messages": [
+                {"role": "system", "content": prompt_text},
+                {"role": "user", "content": user_content},
+            ],
+            "max_tokens": 1024,
+            "temperature": 0.0,
+        }
+
+        capture_cb = kwargs.get("capture_callback")
+        post_capture_cb = kwargs.get("post_capture_callback")
+        capture_meta = None
+        if capture_cb:
+            try:
+                capture_meta = await capture_cb(
+                    payload=payload,
+                    compiled_system_prompt=prompt_text,
+                    user_message=user_content,
+                    generation_settings={
+                        "model": self.model_name,
+                        "max_tokens": 1024,
+                        "temperature": 0.0,
+                        "endpoint": "SIMULATED_PROVIDER",
+                    },
+                )
+            except Exception:
+                pass
 
         # Collect text tokens from events for deterministic heuristics
         events = incident_payload.get("events", [])
@@ -105,6 +142,26 @@ class SimulatedModelProvider(BaseModelProvider):
                         "asserted_value": ce.get("observed_value"),
                     })
 
+        p_tokens = max(50, len(prompt_text) // 4)
+        c_tokens = max(20, len(reason) // 4)
+        t_tokens = p_tokens + c_tokens
+
+        if post_capture_cb and capture_meta:
+            try:
+                await post_capture_cb(
+                    capture_meta=capture_meta,
+                    status="COMPLETED",
+                    response_raw=json.dumps({"verdict": verdict, "confidence": confidence, "reason": reason}),
+                    response_verdict=verdict,
+                    response_confidence=confidence,
+                    prompt_tokens=p_tokens,
+                    completion_tokens=c_tokens,
+                    total_tokens=t_tokens,
+                    latency_ms=latency_ms,
+                )
+            except Exception:
+                pass
+
         return StructuredModelVerdict(
             incident_id=incident_id,
             rule_id=rule_id,
@@ -120,5 +177,12 @@ class SimulatedModelProvider(BaseModelProvider):
             prompt_version_number=prompt_version_number,
             validation_status="VALID",
             is_simulated=True,  # ALWAYS TRUE FOR SIMULATED PROVIDER
+            prompt_tokens=p_tokens,
+            completion_tokens=c_tokens,
+            total_tokens=t_tokens,
+            prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+            prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+            prompt_integrity_status="VERIFIED",
+            outbound_payload=payload,
         )
 

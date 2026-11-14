@@ -31,6 +31,12 @@ class StructuredModelVerdict(BaseModel):
     prompt_tokens: int = Field(0, ge=0, description="Tokens used for input prompt")
     completion_tokens: int = Field(0, ge=0, description="Tokens generated in output")
     total_tokens: int = Field(0, ge=0, description="Total tokens consumed by inference")
+    prompt_capture_id: Optional[str] = Field(None, description="Linked ActualLLMPromptCapture ID")
+    prompt_request_sha256: Optional[str] = Field(None, description="SHA-256 hash of canonical outbound request payload")
+    prompt_integrity_status: Optional[str] = Field(None, description="VERIFIED, MISMATCH, or UNVERIFIED")
+    raw_model_response: Optional[str] = Field(None, description="Exact raw text response from provider")
+    outbound_payload: Optional[Dict[str, Any]] = Field(None, description="Outbound request payload at provider boundary")
+    dispatch_attempt: int = Field(1, ge=1, description="Attempt number for this execution")
 
 
 class BaseModelProvider(ABC):

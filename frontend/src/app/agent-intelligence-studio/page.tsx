@@ -36,7 +36,9 @@ import {
   Award,
   Database,
   GitBranch,
+  Terminal,
 } from "lucide-react";
+import { ActualPromptInspectorModal } from "@/components/prompt-inspector/ActualPromptInspectorModal";
 import {
   api,
   User,
@@ -154,6 +156,12 @@ function AgentIntelligenceStudioContent() {
   // Approval modal state
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalSummary, setApprovalSummary] = useState("Approved by SOC Lead");
+
+  // Actual Prompt Inspector Modal state
+  const [promptInspectorOpen, setPromptInspectorOpen] = useState(false);
+  const [promptInspectorIncidentId, setPromptInspectorIncidentId] = useState<string | null>(null);
+  const [promptInspectorRuleId, setPromptInspectorRuleId] = useState<string | null>(null);
+  const [promptInspectorVersionId, setPromptInspectorVersionId] = useState<string | null>(null);
 
   // Download / Export state
   const [downloadingExport, setDownloadingExport] = useState(false);
@@ -1040,6 +1048,21 @@ function AgentIntelligenceStudioContent() {
             >
               <Layers className="w-3.5 h-3.5 text-indigo-400" />
               Bulk Audit Rules
+            </button>
+
+            {/* View Actual LLM Prompt Inspector Trigger */}
+            <button
+              onClick={() => {
+                setPromptInspectorIncidentId(null);
+                setPromptInspectorRuleId(selectedRuleId || (selectedRule ? selectedRule.id : null));
+                setPromptInspectorVersionId(selectedVersionId || null);
+                setPromptInspectorOpen(true);
+              }}
+              className="px-2.5 py-1 text-xs rounded border border-emerald-800/80 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-200 font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+              title="Inspect the exact prompt sent from Server 1 to Local LLM (Server 2) for an incident or rule"
+            >
+              <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+              View Actual LLM Prompt
             </button>
 
             {/* Download Rule-Wise Prompts */}
@@ -3493,7 +3516,7 @@ function AgentIntelligenceStudioContent() {
                                     {r.trust_score != null ? `${r.trust_score}/10` : "NOT_CALCULABLE"}
                                   </span>
                                 </div>
-                                <div>
+                                <div className="flex items-center justify-end gap-1.5 mt-0.5">
                                   <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold border ${r.is_critical_error
                                     ? "bg-red-950 text-red-300 border-red-800"
                                     : r.is_abstained
@@ -3504,6 +3527,19 @@ function AgentIntelligenceStudioContent() {
                                     }`}>
                                     {r.is_critical_error ? "MISSED TP (FN)" : r.is_abstained ? "ABSTAINED" : r.is_correct ? "CORRECT" : "WRONG"}
                                   </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPromptInspectorIncidentId(r.incident_id);
+                                      setPromptInspectorRuleId(selectedRuleId);
+                                      setPromptInspectorVersionId(selectedVersionId);
+                                      setPromptInspectorOpen(true);
+                                    }}
+                                    className="p-1 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 rounded border border-indigo-900/60 transition"
+                                    title={`View Actual LLM Prompt for ${r.incident_id}`}
+                                  >
+                                    <Terminal className="w-3 h-3" />
+                                  </button>
                                 </div>
                               </div>
                             </div>
@@ -3925,6 +3961,16 @@ function AgentIntelligenceStudioContent() {
           </div>
         </div>
       )}
+
+      {/* Actual LLM Prompt Inspector Modal */}
+      <ActualPromptInspectorModal
+        isOpen={promptInspectorOpen}
+        onClose={() => setPromptInspectorOpen(false)}
+        incidentId={promptInspectorIncidentId}
+        ruleId={promptInspectorRuleId || selectedRuleId || (selectedRule ? selectedRule.id : null)}
+        ruleName={selectedRule ? selectedRule.name : undefined}
+        versionId={promptInspectorVersionId || selectedVersionId || undefined}
+      />
     </div>
   );
 }
