@@ -99,24 +99,31 @@ class AnalystReviewService:
                 cast(Incident.incident_id, String) == str(incident_id)
             )
         )
-        if customer and customer.upper() != "ALL" and customer != "DEFAULT":
-            inc_stmt = inc_stmt.where(Incident.customer == customer)
+        if customer and customer.upper() not in ("ALL", "DEFAULT", "GLOBAL"):
+            inc_stmt = inc_stmt.where(
+                or_(
+                    Incident.customer == customer,
+                    Incident.customer == "DEFAULT",
+                    Incident.customer.is_(None)
+                )
+            )
 
         inc_res = await db.execute(inc_stmt)
         incident = inc_res.scalars().first()
         if not incident:
-            # Fallback search without tenant restriction
-            inc_res = await db.execute(
-                select(Incident).where(
-                    or_(
-                        Incident.id == incident_id,
-                        cast(Incident.incident_id, String) == str(incident_id)
-                    )
+            # Check if incident exists in another customer tenant to reject cross-tenant reviews
+            other_stmt = select(Incident).where(
+                or_(
+                    Incident.id == incident_id,
+                    cast(Incident.incident_id, String) == str(incident_id)
                 )
             )
-            incident = inc_res.scalars().first()
-            if not incident:
-                raise ValueError(f"Incident {incident_id} not found")
+            other_inc = (await db.execute(other_stmt)).scalars().first()
+            if other_inc:
+                raise ValueError(
+                    f"Access denied: Incident {incident_id} belongs to customer '{other_inc.customer}', but user is restricted to '{customer}'."
+                )
+            raise ValueError(f"Incident {incident_id} not found")
 
         effective_customer = incident.customer or customer or "DEFAULT"
 
@@ -130,7 +137,97 @@ class AnalystReviewService:
             ai_verdict=revealed_ai_verdict
         )
 
-        # 4. Check investigation record or create
+        ground_truth_status = "INSUFFICIENT_EVIDENCE" if analyst_verdict == "INSUFFICIENT_EVIDENCE" else "VERIFIED"
+        target_rule = incident.rule_id or incident.event_type or "DEFAULT_RULE"
+
+        # 4. Check for existing review (exact-once metric guarantee and idempotency)
+        rev_stmt = select(AnalystVerdictReview).where(AnalystVerdictReview.incident_id == incident.id)
+        existing_rev = (await db.execute(rev_stmt)).scalars().first()
+
+        if existing_rev:
+            if existing_rev.analyst_verdict == analyst_verdict:
+                # Exact duplicate submission: idempotent return without double-counting metrics
+                return {
+                    "review_id": existing_rev.id,
+                    "incident_id": incident.incident_id,
+                    "analyst_verdict": existing_rev.analyst_verdict,
+                    "revealed_ai_verdict": existing_rev.revealed_ai_verdict,
+                    "revealed_ai_confidence": ai_verdict_data.get("confidence"),
+                    "revealed_ai_rationale": ai_verdict_data.get("reasoning") or ai_verdict_data.get("summary") or ai_verdict_data.get("explanation"),
+                    "comparison_outcome": existing_rev.comparison_outcome,
+                    "disagreement_reason": disagreement_reason,
+                    "ground_truth_status": existing_rev.ground_truth_status,
+                    "reviewed_at": existing_rev.created_at.isoformat(),
+                    "is_duplicate": True,
+                }
+            else:
+                # Analyst updated/corrected determination
+                old_verdict = existing_rev.analyst_verdict
+                old_outcome = existing_rev.comparison_outcome
+                existing_rev.analyst_verdict = analyst_verdict
+                existing_rev.analyst_notes = analyst_notes
+                existing_rev.correction_reason = correction_reason
+                existing_rev.evidence_references = evidence_references or []
+                existing_rev.revealed_ai_verdict = revealed_ai_verdict
+                existing_rev.comparison_outcome = comparison_outcome
+                existing_rev.ground_truth_status = ground_truth_status
+                existing_rev.review_version += 1
+                db.add(existing_rev)
+
+                # Update investigation
+                inv_stmt = select(Investigation).where(Investigation.incident_id == incident.id)
+                inv_res = await db.execute(inv_stmt)
+                investigation = inv_res.scalar_one_or_none()
+                if investigation:
+                    investigation.analyst_verdict = analyst_verdict
+                    investigation.verdict_reason = analyst_notes
+                    db.add(investigation)
+
+                # Update LearningRecord
+                learn_stmt = select(LearningRecord).where(
+                    and_(
+                        LearningRecord.rule_id == target_rule,
+                        LearningRecord.incident_id == incident.id
+                    )
+                )
+                learn_res = await db.execute(learn_stmt)
+                learn_rec = learn_res.scalar_one_or_none()
+                if learn_rec:
+                    learn_rec.verified_verdict = analyst_verdict
+                    learn_rec.analyst_explanation = analyst_notes
+                    learn_rec.verification_status = ground_truth_status
+                    db.add(learn_rec)
+
+                # Recalibrate profile metrics safely
+                profile = await RuleLearningService.get_or_create_profile(
+                    db=db,
+                    rule_id=target_rule,
+                    customer=effective_customer
+                )
+                await RuleLearningService.adjust_analyst_feedback(
+                    db=db,
+                    profile_id=profile.id,
+                    old_verdict=old_verdict,
+                    old_outcome=old_outcome,
+                    new_verdict=analyst_verdict,
+                    new_outcome=comparison_outcome
+                )
+
+                return {
+                    "review_id": existing_rev.id,
+                    "incident_id": incident.incident_id,
+                    "analyst_verdict": analyst_verdict,
+                    "revealed_ai_verdict": revealed_ai_verdict,
+                    "revealed_ai_confidence": ai_verdict_data.get("confidence"),
+                    "revealed_ai_rationale": ai_verdict_data.get("reasoning") or ai_verdict_data.get("summary") or ai_verdict_data.get("explanation"),
+                    "comparison_outcome": comparison_outcome,
+                    "disagreement_reason": disagreement_reason,
+                    "ground_truth_status": ground_truth_status,
+                    "reviewed_at": existing_rev.created_at.isoformat(),
+                    "is_updated": True,
+                }
+
+        # 5. First-time review: check investigation record or create
         inv_stmt = select(Investigation).where(Investigation.incident_id == incident.id)
         inv_res = await db.execute(inv_stmt)
         investigation = inv_res.scalar_one_or_none()
@@ -151,8 +248,7 @@ class AnalystReviewService:
             investigation.is_independently_verified = True
             db.add(investigation)
 
-        # 5. Persist immutable AnalystVerdictReview
-        target_rule = incident.rule_id or incident.event_type or "DEFAULT_RULE"
+        # 6. Persist immutable AnalystVerdictReview
         review = AnalystVerdictReview(
             incident_id=incident.id,
             investigation_id=investigation.id,
@@ -166,12 +262,12 @@ class AnalystReviewService:
             blind_mode_active=blind_mode_active,
             revealed_ai_verdict=revealed_ai_verdict,
             comparison_outcome=comparison_outcome,
-            ground_truth_status="VERIFIED",
+            ground_truth_status=ground_truth_status,
         )
         db.add(review)
         await db.flush()
 
-        # 6. Create / Update verified LearningRecord
+        # 7. Create / Update verified LearningRecord
         if target_rule:
             learn_stmt = select(LearningRecord).where(
                 and_(
@@ -187,17 +283,17 @@ class AnalystReviewService:
                     incident_id=incident.id,
                     verified_verdict=analyst_verdict,
                     analyst_explanation=analyst_notes,
-                    verification_status="VERIFIED",
+                    verification_status=ground_truth_status,
                     evidence_references=evidence_references or [],
                 )
                 db.add(learn_rec)
             else:
                 learn_rec.verified_verdict = analyst_verdict
                 learn_rec.analyst_explanation = analyst_notes
-                learn_rec.verification_status = "VERIFIED"
+                learn_rec.verification_status = ground_truth_status
                 db.add(learn_rec)
 
-            # 7. Update RuleLearningProfile metrics
+            # 8. Update RuleLearningProfile metrics exactly once
             profile = await RuleLearningService.get_or_create_profile(
                 db=db,
                 rule_id=target_rule,
@@ -220,7 +316,7 @@ class AnalystReviewService:
             "revealed_ai_rationale": ai_verdict_data.get("reasoning") or ai_verdict_data.get("summary") or ai_verdict_data.get("explanation"),
             "comparison_outcome": comparison_outcome,
             "disagreement_reason": disagreement_reason,
-            "ground_truth_status": "VERIFIED",
+            "ground_truth_status": ground_truth_status,
             "reviewed_at": review.created_at.isoformat(),
         }
 
@@ -231,11 +327,14 @@ class AnalystReviewService:
         ai_verdict: Optional[str]
     ) -> Tuple[str, Optional[str]]:
         """Determines agreement outcome classification."""
-        if not ai_verdict:
-            return "ANALYST_ONLY_INITIAL_BENCHMARK", None
-
         norm_analyst = analyst_verdict.upper().strip()
-        norm_ai = ai_verdict.upper().strip()
+        norm_ai = ai_verdict.upper().strip() if ai_verdict else None
+
+        if norm_analyst in ("INSUFFICIENT_EVIDENCE", "ABSTAIN"):
+            return "ANALYST_INSUFFICIENT_EVIDENCE", "Analyst determined evidence is insufficient to verify ground truth."
+
+        if not norm_ai:
+            return "ANALYST_ONLY_INITIAL_BENCHMARK", None
 
         if norm_analyst == norm_ai:
             if norm_analyst == "TRUE_POSITIVE":
@@ -251,7 +350,7 @@ class AnalystReviewService:
         if norm_analyst == "TRUE_POSITIVE" and norm_ai == "FALSE_POSITIVE":
             return "CRITICAL_MISSED_TP", "CRITICAL WARNING: AI proposed False Positive on confirmed malicious True Positive."
 
-        if norm_ai == "REQUIRES_ATTENTION":
+        if norm_ai in ("REQUIRES_ATTENTION", "INSUFFICIENT_EVIDENCE"):
             return "ANALYST_RESOLVED_ABSTENTION", f"AI safely abstained; analyst confirmed {norm_analyst}."
 
         return "DISPUTED", f"Analyst ({norm_analyst}) diverged from AI ({norm_ai})."

@@ -33,15 +33,52 @@ class PromotionService:
         """
         Creates a formal promotion request if the profile meets stage prerequisites.
         """
-        profile = (await db.execute(select(RuleLearningProfile).where(RuleLearningProfile.id == profile_id))).scalar_one_or_none()
-        if not profile:
-            raise ValueError(f"Profile {profile_id} not found")
+        from sqlalchemy import or_
 
-        # Check preliminary eligibility if target is CONTROLLED_PRODUCTION
+        clean_id = str(profile_id or "").strip()
+        # 1. Resolve profile by profile.id, rule_id, or rule_identifier
+        stmt = select(RuleLearningProfile).where(
+            or_(
+                RuleLearningProfile.id == clean_id,
+                RuleLearningProfile.rule_id == clean_id,
+                RuleLearningProfile.rule_identifier == clean_id
+            )
+        )
+        profile = (await db.execute(stmt)).scalars().first()
+        if not profile:
+            # Fallback: attempt get_or_create_profile by rule identifier
+            try:
+                profile = await RuleLearningService.get_or_create_profile(db=db, rule_id=clean_id)
+            except Exception:
+                profile = None
+
+        if not profile:
+            raise ValueError(f"Profile or Rule '{profile_id}' not found")
+
+        # 2. Check prerequisites for SUPERVISED_PILOT
+        if target_stage == RuleLearningService.STAGE_SUPERVISED_PILOT:
+            if profile.total_analyst_reviews < RuleLearningService.MIN_PILOT_SAMPLES:
+                raise ValueError(
+                    f"Cannot submit promotion request to SUPERVISED_PILOT: Requires at least {RuleLearningService.MIN_PILOT_SAMPLES} verified reviews (current: {profile.total_analyst_reviews})."
+                )
+
+        # 3. Check prerequisites for CONTROLLED_PRODUCTION
         if target_stage == RuleLearningService.STAGE_CONTROLLED_PRODUCTION:
             is_eligible, reasons = RuleLearningService.check_production_eligibility(profile)
             if not is_eligible:
                 raise ValueError("Cannot submit promotion request: " + "; ".join(reasons))
+
+        # 4. Prevent duplicate pending promotion requests
+        pending_stmt = select(RulePromotionRequest).where(
+            and_(
+                RulePromotionRequest.profile_id == profile.id,
+                RulePromotionRequest.requested_stage == target_stage,
+                RulePromotionRequest.status == "PENDING"
+            )
+        )
+        existing_req = (await db.execute(pending_stmt)).scalars().first()
+        if existing_req:
+            raise ValueError(f"A promotion request for {target_stage} is already pending (ID: {existing_req.id})")
 
         req = RulePromotionRequest(
             profile_id=profile.id,

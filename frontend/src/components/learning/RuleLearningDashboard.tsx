@@ -24,7 +24,7 @@ import {
   AlertOctagon,
   Award
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, formatApiErrorMessage } from "@/lib/api";
 
 interface RuleLearningDashboardProps {
   ruleId: string;
@@ -79,7 +79,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
       setProfile(data);
     } catch (err: any) {
       console.error(err);
-      setFeedback({ type: "error", text: err.message || "Failed to load learning profile" });
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, "Failed to load learning profile") });
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
       setFeedback({ type: "success", text: "Detection rule learning profile successfully initialized in LEARNING mode." });
       await fetchPendingReviews();
     } catch (err: any) {
-      setFeedback({ type: "error", text: err.message || "Failed to initialize learning profile" });
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, "Failed to initialize learning profile") });
     } finally {
       setInitializing(false);
     }
@@ -129,7 +129,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
       setFeedback({ type: "success", text: `Rule successfully transitioned to ${newStage}` });
       await fetchProfile();
     } catch (err: any) {
-      setFeedback({ type: "error", text: err.message || "Transition failed" });
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, "Transition failed") });
     } finally {
       setTransitioning(false);
     }
@@ -158,7 +158,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
       await fetchPendingReviews();
     } catch (err: any) {
       console.error(err);
-      setFeedback({ type: "error", text: err.message || "Failed to submit review" });
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, "Failed to submit review") });
     } finally {
       setSubmittingReview(false);
     }
@@ -177,7 +177,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
       setRevealedResult(null);
       await fetchProfile();
     } catch (err: any) {
-      setFeedback({ type: "error", text: err.message || "Failed to adjudicate review" });
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, "Failed to adjudicate review") });
     } finally {
       setAdjudicating(false);
     }
@@ -197,7 +197,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
       setFeedback({ type: "success", text: `Formal promotion request for ${targetStage} submitted.` });
       setPromotionJustification("");
     } catch (err: any) {
-      setFeedback({ type: "error", text: err.message || "Failed to submit promotion request" });
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, "Failed to submit promotion request") });
     } finally {
       setRequestingPromotion(false);
     }
@@ -213,7 +213,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
       setKillSwitchReason("");
       await fetchProfile();
     } catch (err: any) {
-      setFeedback({ type: "error", text: err.message || "Failed to engage kill-switch" });
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, "Failed to engage kill-switch") });
     } finally {
       setEngagingKillSwitch(false);
     }
@@ -269,6 +269,12 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
   const currentColors = stageColorMap[stage] || stageColorMap.LEARNING;
   const isEligible = profile.is_production_eligible;
   const eligibilityReasons: string[] = profile.eligibility_reasons || [];
+  const isPilotEligible = (profile.total_analyst_reviews || 0) >= 30;
+  const isPromotionTargetEligible = targetStage === "CONTROLLED_PRODUCTION"
+    ? isEligible
+    : targetStage === "SUPERVISED_PILOT"
+    ? isPilotEligible
+    : true;
   const confusion = profile.confusion_matrix || {
     agreed_fp: profile.verified_fp_count || 0,
     critical_missed_tp: 0,
@@ -324,10 +330,18 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
           {stage === "VALIDATION" && (
             <button
               onClick={() => handleTransition("SUPERVISED_PILOT", "Advance to Supervised Pilot following simulation validation")}
-              disabled={transitioning}
+              disabled={transitioning || (profile?.total_analyst_reviews || 0) < 30}
+              title={
+                (profile?.total_analyst_reviews || 0) < 30
+                  ? `Requires at least 30 verified analyst reviews before Supervised Pilot (current: ${profile?.total_analyst_reviews || 0}/30)`
+                  : "Advance to Supervised Pilot"
+              }
               className="px-3 py-1.5 rounded-lg bg-amber-900/50 hover:bg-amber-800 text-amber-200 border border-amber-700 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
             >
               Advance to SUPERVISED PILOT
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-700/60 font-mono">
+                {profile?.total_analyst_reviews || 0}/30
+              </span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
@@ -794,6 +808,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
                             >
                               <option value="FALSE_POSITIVE">Binding FALSE POSITIVE</option>
                               <option value="TRUE_POSITIVE">Binding TRUE POSITIVE</option>
+                              <option value="INSUFFICIENT_EVIDENCE">Binding INSUFFICIENT EVIDENCE</option>
                             </select>
                             <input
                               type="text"
@@ -876,9 +891,21 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer }: RuleLearni
               />
             </div>
 
+            {!isPromotionTargetEligible && (
+              <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-800/80 text-amber-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                <span>
+                  {targetStage === "CONTROLLED_PRODUCTION"
+                    ? `Rule is currently ineligible for CONTROLLED_PRODUCTION (${eligibilityReasons.length} requirements unsatisfied). See Production Eligibility checklist above.`
+                    : `Supervised Pilot requires at least 30 verified analyst reviews (current: ${profile?.total_analyst_reviews || 0}/30).`}
+                </span>
+              </div>
+            )}
+
             <button
               onClick={handleRequestPromotion}
-              disabled={requestingPromotion}
+              disabled={requestingPromotion || !isPromotionTargetEligible}
+              title={!isPromotionTargetEligible ? "Prerequisites for requested target stage not satisfied" : "Submit Formal Promotion Request"}
               className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-slate-100 font-bold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
             >
               {requestingPromotion ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <FileCheck2 className="w-3.5 h-3.5" />}

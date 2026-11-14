@@ -474,6 +474,8 @@ class RuleLearningService:
             profile.verified_tp_count += 1
         elif analyst_verdict == "FALSE_POSITIVE":
             profile.verified_fp_count += 1
+        elif analyst_verdict in ("INSUFFICIENT_EVIDENCE", "ABSTAIN"):
+            profile.abstention_count += 1
 
         # Record distribution in profile error_distribution
         err_dist = dict(profile.error_distribution or {})
@@ -501,6 +503,65 @@ class RuleLearningService:
                     )
 
         # Recalculate statistical metrics
+        cls._recalculate_profile_metrics(profile)
+        db.add(profile)
+        await db.flush()
+        return profile
+
+    @classmethod
+    async def adjust_analyst_feedback(
+        cls,
+        db: AsyncSession,
+        profile_id: str,
+        old_verdict: str,
+        old_outcome: Optional[str],
+        new_verdict: str,
+        new_outcome: str,
+    ) -> RuleLearningProfile:
+        """
+        Adjusts rule learning profile metrics when an analyst updates their previous verdict,
+        maintaining exact-once total reviews and consistent ground truth tallies.
+        """
+        stmt = select(RuleLearningProfile).where(RuleLearningProfile.id == profile_id)
+        profile = (await db.execute(stmt)).scalar_one_or_none()
+        if not profile:
+            raise ValueError(f"Profile {profile_id} not found")
+
+        # Reverse old counts
+        if old_verdict == "TRUE_POSITIVE":
+            profile.verified_tp_count = max(0, profile.verified_tp_count - 1)
+        elif old_verdict == "FALSE_POSITIVE":
+            profile.verified_fp_count = max(0, profile.verified_fp_count - 1)
+        elif old_verdict in ("INSUFFICIENT_EVIDENCE", "ABSTAIN"):
+            profile.abstention_count = max(0, profile.abstention_count - 1)
+
+        err_dist = dict(profile.error_distribution or {})
+        if old_outcome:
+            old_key = old_outcome.lower()
+            if old_key in err_dist and err_dist[old_key] > 0:
+                err_dist[old_key] -= 1
+            if old_outcome in ("AGREEMENT_TP", "AGREEMENT_FP"):
+                profile.ai_correct_count = max(0, profile.ai_correct_count - 1)
+            elif old_outcome in ("AI_FALSE_ALARM", "CRITICAL_MISSED_TP"):
+                profile.ai_incorrect_count = max(0, profile.ai_incorrect_count - 1)
+
+        # Apply new counts (total_analyst_reviews remains constant)
+        if new_verdict == "TRUE_POSITIVE":
+            profile.verified_tp_count += 1
+        elif new_verdict == "FALSE_POSITIVE":
+            profile.verified_fp_count += 1
+        elif new_verdict in ("INSUFFICIENT_EVIDENCE", "ABSTAIN"):
+            profile.abstention_count += 1
+
+        new_key = new_outcome.lower()
+        err_dist[new_key] = err_dist.get(new_key, 0) + 1
+        profile.error_distribution = err_dist
+
+        if new_outcome in ("AGREEMENT_TP", "AGREEMENT_FP"):
+            profile.ai_correct_count += 1
+        elif new_outcome in ("AI_FALSE_ALARM", "CRITICAL_MISSED_TP"):
+            profile.ai_incorrect_count += 1
+
         cls._recalculate_profile_metrics(profile)
         db.add(profile)
         await db.flush()

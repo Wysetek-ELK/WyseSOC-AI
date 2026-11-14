@@ -953,6 +953,24 @@ export interface DashboardMetrics {
   is_empty: boolean;
 }
 
+export function formatApiErrorMessage(errData: any, fallbackMessage: string = "Operation failed"): string {
+  if (!errData) return fallbackMessage;
+  if (typeof errData === "string") return errData;
+  if (typeof errData.detail === "string") return errData.detail;
+  if (Array.isArray(errData.detail)) {
+    const lines = errData.detail.map((item: any) => {
+      if (typeof item === "string") return item;
+      const loc = Array.isArray(item.loc)
+        ? item.loc.filter((p: any) => p !== "body" && p !== "query" && p !== "path").join(".") || item.loc.join(".")
+        : (item.loc || "field");
+      return `${loc}: ${item.msg || "Invalid value"}`;
+    });
+    return lines.join("; ") || fallbackMessage;
+  }
+  if (typeof errData.message === "string") return errData.message;
+  return fallbackMessage;
+}
+
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = typeof window !== "undefined" ? localStorage.getItem("ai_verdict_token") : null;
   const headers = new Headers(options.headers || {});
@@ -2295,7 +2313,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to initialize rule learning profile" }));
-      throw new Error(err.detail || "Failed to initialize rule learning profile");
+      throw new Error(formatApiErrorMessage(err, "Failed to initialize rule learning profile"));
     }
     return res.json();
   },
@@ -2306,7 +2324,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to initialize all rule learning profiles" }));
-      throw new Error(err.detail || "Failed to initialize all rule learning profiles");
+      throw new Error(formatApiErrorMessage(err, "Failed to initialize all rule learning profiles"));
     }
     return res.json();
   },
@@ -2314,11 +2332,15 @@ export const api = {
   async transitionRuleLifecycle(ruleId: string, newStage: string, reason: string) {
     const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/transition`, {
       method: "POST",
-      body: JSON.stringify({ new_stage: newStage, reason }),
+      body: JSON.stringify({
+        new_stage: newStage,
+        target_stage: newStage,
+        reason: reason || "State transition requested",
+      }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to transition rule stage" }));
-      throw new Error(err.detail || "Failed to transition rule stage");
+      throw new Error(formatApiErrorMessage(err, "Failed to transition rule stage"));
     }
     return res.json();
   },
@@ -2329,7 +2351,10 @@ export const api = {
     params.set("limit", limit.toString());
     params.set("offset", offset.toString());
     const res = await fetchWithAuth(`${API_BASE}/reviews/pending?${params.toString()}`);
-    if (!res.ok) throw new Error("Failed to load pending reviews");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to load pending reviews" }));
+      throw new Error(formatApiErrorMessage(err, "Failed to load pending reviews"));
+    }
     return res.json();
   },
 
@@ -2346,7 +2371,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to submit review" }));
-      throw new Error(err.detail || "Failed to submit review");
+      throw new Error(formatApiErrorMessage(err, "Failed to submit review"));
     }
     return res.json();
   },
@@ -2358,7 +2383,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to adjudicate review" }));
-      throw new Error(err.detail || "Failed to adjudicate review");
+      throw new Error(formatApiErrorMessage(err, "Failed to adjudicate review"));
     }
     return res.json();
   },
@@ -2367,6 +2392,7 @@ export const api = {
     const res = await fetchWithAuth(`${API_BASE}/governance/promotion/request?profile_id=${encodeURIComponent(profileId)}`, {
       method: "POST",
       body: JSON.stringify({
+        profile_id: profileId,
         target_stage: targetStage,
         justification,
         evaluation_run_id: evaluationRunId,
@@ -2374,7 +2400,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to request promotion" }));
-      throw new Error(err.detail || "Failed to request promotion");
+      throw new Error(formatApiErrorMessage(err, "Failed to request promotion"));
     }
     return res.json();
   },
@@ -2390,7 +2416,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to decide promotion" }));
-      throw new Error(err.detail || "Failed to decide promotion");
+      throw new Error(formatApiErrorMessage(err, "Failed to decide promotion"));
     }
     return res.json();
   },
@@ -2402,7 +2428,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to emergency disable automation" }));
-      throw new Error(err.detail || "Failed to emergency disable automation");
+      throw new Error(formatApiErrorMessage(err, "Failed to emergency disable automation"));
     }
     return res.json();
   },

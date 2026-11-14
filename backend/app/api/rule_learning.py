@@ -1,9 +1,9 @@
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.database import get_db
 from app.api.deps import get_current_active_user
@@ -27,16 +27,47 @@ router = APIRouter(tags=["Rule-Based Learning & Production Governance"])
 
 # Pydantic Request / Response Schemas
 class TransitionStageRequest(BaseModel):
-    new_stage: str = Field(..., description="Target lifecycle stage")
-    reason: str = Field(..., description="Justification for transition")
+    new_stage: Optional[str] = Field(None, description="Target lifecycle stage")
+    target_stage: Optional[str] = Field(None, description="Target lifecycle stage alias")
+    stage: Optional[str] = Field(None, description="Target lifecycle stage alias")
+    reason: Optional[str] = Field("State transition requested by user", description="Justification for transition")
 
 
 class SubmitReviewRequest(BaseModel):
     analyst_verdict: str = Field(..., description="TRUE_POSITIVE, FALSE_POSITIVE, or INSUFFICIENT_EVIDENCE")
-    analyst_notes: str = Field("", description="Supporting rationale")
+    analyst_notes: Optional[str] = Field("", description="Supporting rationale")
+    verdict_reason: Optional[str] = Field(None, description="Alias for analyst_notes")
+    notes: Optional[str] = Field(None, description="Alias for analyst_notes")
     correction_reason: Optional[str] = Field(None, description="Correction category if overturning AI")
-    evidence_references: List[str] = Field(default_factory=list, description="List of cited evidence IDs")
+    evidence_references: Optional[Union[List[str], str]] = Field(default_factory=list, description="List of cited evidence IDs")
     blind_mode_active: bool = Field(True, description="Whether AI verdict was hidden during assessment")
+
+    @field_validator("analyst_verdict", mode="before")
+    @classmethod
+    def normalize_verdict(cls, v: Any) -> str:
+        if not v or not isinstance(v, str):
+            raise ValueError("analyst_verdict is required and must be a non-empty string")
+        v_clean = v.upper().strip().replace(" ", "_").replace("-", "_")
+        if v_clean in ("TP", "TRUE_POSITIVE", "TRUEPOSITIVE", "MALICIOUS"):
+            return "TRUE_POSITIVE"
+        if v_clean in ("FP", "FALSE_POSITIVE", "FALSEPOSITIVE", "BENIGN"):
+            return "FALSE_POSITIVE"
+        if v_clean in ("INSUFFICIENT_EVIDENCE", "INSUFFICIENT", "ABSTAIN", "REQUIRES_ATTENTION", "UNKNOWN", "UNCERTAIN"):
+            return "INSUFFICIENT_EVIDENCE"
+        return v_clean
+
+    @field_validator("evidence_references", mode="before")
+    @classmethod
+    def normalize_evidence_refs(cls, v: Any) -> List[str]:
+        if v is None:
+            return []
+        if isinstance(v, str):
+            if not v.strip():
+                return []
+            return [x.strip() for x in v.split(",") if x.strip()]
+        if isinstance(v, (list, tuple, set)):
+            return [str(x).strip() for x in v if str(x).strip()]
+        return []
 
 
 class AdjudicateReviewRequest(BaseModel):
@@ -45,8 +76,11 @@ class AdjudicateReviewRequest(BaseModel):
 
 
 class CreatePromotionRequest(BaseModel):
-    target_stage: str = Field(..., description="Requested stage (e.g. SUPERVISED_PILOT, CONTROLLED_PRODUCTION)")
-    justification: str = Field(..., description="Operational justification")
+    profile_id: Optional[str] = Field(None, description="Profile ID or Rule ID")
+    rule_id: Optional[str] = Field(None, description="Alternative Rule ID alias")
+    target_stage: Optional[str] = Field(None, description="Requested stage (e.g. SUPERVISED_PILOT, CONTROLLED_PRODUCTION)")
+    stage: Optional[str] = Field(None, description="Alternative target stage field")
+    justification: Optional[str] = Field("Qualified via evaluation benchmarks", description="Operational justification")
     evaluation_run_id: Optional[str] = Field(None, description="Simulation run ID proving readiness")
 
 
@@ -256,14 +290,22 @@ async def transition_rule_stage(
 ):
     """
     Transitions rule lifecycle state (e.g. suspend or advance to pilot).
+    Supports flexible field mapping (new_stage, target_stage, stage).
     """
+    target_stage = (payload.new_stage or payload.target_stage or payload.stage or "").upper().strip()
+    if not target_stage:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="new_stage (or target_stage) is required."
+        )
+
     profile = await RuleLearningService.get_or_create_profile(db=db, rule_id=rule_id)
     try:
         updated = await RuleLearningService.transition_lifecycle_stage(
             db=db,
             profile=profile,
-            new_stage=payload.new_stage.upper().strip(),
-            reason=payload.reason,
+            new_stage=target_stage,
+            reason=payload.reason or "State transition requested by user",
             user_id=current_user.username
         )
         return {
@@ -315,21 +357,27 @@ async def submit_analyst_review(
     Submits independent analyst determination, reveals stored AI verdict,
     evaluates agreement, updates verified ground truth, and recalibrates rule profile.
     """
+    effective_notes = payload.analyst_notes or payload.verdict_reason or payload.notes or ""
     try:
         res = await AnalystReviewService.submit_analyst_review(
             db=db,
             incident_id=incident_id,
             reviewer_id=current_user.username,
             analyst_verdict=payload.analyst_verdict.upper().strip(),
-            analyst_notes=payload.analyst_notes,
+            analyst_notes=effective_notes,
             correction_reason=payload.correction_reason,
-            evidence_references=payload.evidence_references,
+            evidence_references=payload.evidence_references if isinstance(payload.evidence_references, list) else [],
             blind_mode_active=payload.blind_mode_active,
             customer=getattr(current_user, "customer", None)
         )
         return res
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        err_msg = str(e)
+        if "not found" in err_msg.lower():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=err_msg)
+        elif "access denied" in err_msg.lower() or "unauthorized" in err_msg.lower():
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=err_msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
 
 
 @router.post("/reviews/{review_id}/adjudicate", response_model=Dict[str, Any])
@@ -363,32 +411,51 @@ async def adjudicate_review(
 
 @router.post("/governance/promotion/request", response_model=Dict[str, Any])
 async def request_rule_promotion(
-    profile_id: str,
     payload: CreatePromotionRequest,
+    profile_id: Optional[str] = Query(None, description="Profile ID or Rule ID query parameter"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """
     Submits formal request to promote a rule to a higher lifecycle stage.
+    Accepts profile_id / rule_id via query parameter or JSON request body.
     """
+    target_profile_id = profile_id or payload.profile_id or payload.rule_id
+    if not target_profile_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="profile_id must be provided in query parameters or request body."
+        )
+
+    target_stage = (payload.target_stage or payload.stage or "").upper().strip()
+    if not target_stage:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="target_stage is required."
+        )
+
     try:
         req = await PromotionService.create_promotion_request(
             db=db,
-            profile_id=profile_id,
-            target_stage=payload.target_stage.upper().strip(),
+            profile_id=target_profile_id,
+            target_stage=target_stage,
             requester_id=current_user.username,
-            justification=payload.justification,
+            justification=payload.justification or "Qualified via evaluation benchmarks",
             evaluation_run_id=payload.evaluation_run_id
         )
         return {
             "request_id": req.id,
             "rule_id": req.rule_id,
+            "profile_id": req.profile_id,
             "requested_stage": req.requested_stage,
             "status": req.status,
             "created_at": req.created_at.isoformat()
         }
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        err_msg = str(e)
+        if "not found" in err_msg.lower():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=err_msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
 
 
 @router.post("/governance/promotion/decide", response_model=Dict[str, Any])
