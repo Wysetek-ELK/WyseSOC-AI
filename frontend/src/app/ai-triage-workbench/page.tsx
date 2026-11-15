@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Search,
   Filter,
-  Eye,
   EyeOff,
   ChevronLeft,
   ChevronRight,
@@ -287,27 +286,6 @@ function AITriageWorkbenchContent() {
             <DownloadCloud className="h-3.5 w-3.5 text-cyan-400" />
             <span>Pull Telemetry</span>
           </Link>
-
-          <button
-            onClick={() => setBlindReviewMode(!blindReviewMode)}
-            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold transition-all ${
-              blindReviewMode
-                ? "border-amber-500/80 bg-amber-950/80 text-amber-300 shadow-md shadow-amber-950/50"
-                : "border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            {blindReviewMode ? (
-              <>
-                <EyeOff className="h-3.5 w-3.5 text-amber-400" />
-                <span>Blind Review: ACTIVE</span>
-              </>
-            ) : (
-              <>
-                <Eye className="h-3.5 w-3.5 text-slate-400" />
-                <span>Blind Review: OFF</span>
-              </>
-            )}
-          </button>
         </div>
       </div>
 

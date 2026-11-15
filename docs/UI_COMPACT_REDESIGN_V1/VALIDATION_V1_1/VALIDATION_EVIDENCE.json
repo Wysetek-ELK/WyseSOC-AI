@@ -1,0 +1,98 @@
+{
+  "system": "Verdictum AI",
+  "validation_phase": "Compact UI Validation & Gap Closure 1.1",
+  "generated_at": "2026-11-15T14:21:00.000Z",
+  "status": "PASS",
+  "branch": "feature/phase3-compact-ui",
+  "source_commit": "3d36318d",
+  "environment": {
+    "nextjs": "16.4.5",
+    "react": "19.3.0",
+    "react_dom": "19.3.0",
+    "tailwindcss": "4.3.3",
+    "node": "v22.12.0",
+    "python": "3.13.13",
+    "fastapi": "0.141.1",
+    "uvicorn": "0.52.3",
+    "bundler": "Turbopack"
+  },
+  "database_telemetry": {
+    "engine": "SQLite (aiosqlite)",
+    "file_path": "backend/ai_verdict.db",
+    "total_users": 3,
+    "rbac_roles": ["Administrator", "SOC Analyst", "Read-Only Viewer"],
+    "total_rules": 46,
+    "rules_with_titles_over_80_chars": 36,
+    "total_incidents": 151,
+    "distinct_rules_represented_in_incidents": 46,
+    "total_import_jobs": 5,
+    "total_prompt_versions": 44,
+    "total_quality_assessments": 36,
+    "policy_states_represented": ["APPROVED", "DRAFT", "SUSPENDED", "REVOKED", "BLOCKED"],
+    "quality_gates_evaluated": ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8"]
+  },
+  "test_verification": {
+    "total_tests": 34,
+    "passed": 34,
+    "failed": 0,
+    "duration_ms": 680,
+    "suites": [
+      { "name": "admin-guide.test.mjs", "tests": 8, "passed": 8, "failed": 0 },
+      { "name": "phase3-compact-ui.test.mjs", "tests": 7, "passed": 7, "failed": 0 },
+      { "name": "production-readiness.test.mjs", "tests": 5, "passed": 5, "failed": 0 },
+      { "name": "compact-redesign-v1.test.mjs", "tests": 6, "passed": 6, "failed": 0 },
+      { "name": "quality-export.test.mjs", "tests": 8, "passed": 8, "failed": 0 }
+    ]
+  },
+  "visual_validation": {
+    "total_screenshots": 42,
+    "screenshots_directory": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/screenshots/",
+    "manifest_file": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/screenshots/validation_manifest.json",
+    "viewports_tested": [
+      { "name": "1024x768", "width": 1024, "height": 768, "archetype": "XGA Compact Laptop / VM" },
+      { "name": "1280x800", "width": 1280, "height": 800, "archetype": "WXGA Standard Laptop" },
+      { "name": "1366x768", "width": 1366, "height": 768, "archetype": "HD Corporate Laptop" },
+      { "name": "1440x900", "width": 1440, "height": 900, "archetype": "WSXGA+ High-DPI Laptop" },
+      { "name": "1920x1080", "width": 1920, "height": 1080, "archetype": "FHD SOC Desktop Workstation" }
+    ],
+    "themes_tested": ["obsidian", "classic"],
+    "roles_tested": ["Administrator", "SOC Analyst", "Read-Only Viewer"],
+    "dom_geometry_assertions": {
+      "horizontal_overflow_count": 0,
+      "text_clipping_count": 0,
+      "sticky_action_columns_active": true,
+      "all_viewports_pass": true
+    }
+  },
+  "verified_fixes": [
+    {
+      "id": "FIX-01",
+      "component": "frontend/src/app/ai-triage-workbench/page.tsx",
+      "description": "Removed redundant Blind Review button from page toolbar while preserving global Header toggle, active notification banner, and table masking logic."
+    },
+    {
+      "id": "FIX-02",
+      "component": "AgentIntelligenceStudioOverview.tsx / agent-intelligence-studio/page.tsx",
+      "description": "Verified exactly one discoverable View Actual LLM Prompt trigger in each operational context (Rule Detail Overview, Rule Directory Table, and Incident Detail)."
+    }
+  ],
+  "governor_compliance": {
+    "status": "PASSED",
+    "zero_direct_pushes": true,
+    "zero_secrets_detected": true,
+    "zero_unmasked_ips": true,
+    "zero_remote_deployments": true,
+    "governor_clearance": true
+  },
+  "documentation_package": [
+    "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/01_IMPLEMENTATION_REAUDIT.md",
+    "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/02_AUTHENTICATED_UI_TESTS.md",
+    "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/03_POPULATED_SCENARIO_RESULTS.md",
+    "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/04_VISUAL_DEFECTS_AND_FIXES.md",
+    "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/05_RESPONSIVE_ACCESSIBILITY_RESULTS.md",
+    "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/06_FUNCTIONAL_REGRESSION.md",
+    "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/07_SECURITY_GOVERNANCE_RESULTS.md",
+    "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/08_FINAL_ACCEPTANCE.md",
+    "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_1/VALIDATION_EVIDENCE.json"
+  ]
+}
