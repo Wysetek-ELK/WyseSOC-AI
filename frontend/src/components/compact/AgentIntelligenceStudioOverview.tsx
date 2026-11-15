@@ -493,7 +493,7 @@ export function AgentIntelligenceStudioOverview({
   };
 
   return (
-    <div className="space-y-3.5">
+    <div data-testid="compact-rule-detail" className="space-y-3.5">
       {/* 1. RULE IDENTITY & QUICK ACTION STRIP */}
       <div className="p-3 sm:px-4 rounded-xl border border-slate-800/90 bg-slate-950/80 shadow-sm space-y-3">
         {/* Full-Width Rule Header */}
@@ -757,6 +757,8 @@ export function AgentIntelligenceStudioOverview({
                 return (
                   <div
                     key={stage.stage_id}
+                    data-testid={`readiness-stage-${stage.stage_id}`}
+                    data-stage-status={stage.status}
                     className={`p-3 rounded-xl border transition-all text-xs space-y-2 ${statusColors}`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">

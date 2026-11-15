@@ -150,29 +150,17 @@ async def get_rule_prompts_summary(
             1 if (completeness == "INCOMPLETE" and not has_approved) else 0
         )
 
+        is_target_approved = target_v is not None and target_v.status == "APPROVED"
+        is_revoked = any(v.status == "REVOKED" for v in versions) or bool(active_v and active_v.status == "REVOKED")
+        is_suspended = bool(rp and getattr(rp, "ai_execution_suspended", False))
+
         revalidation_req = bool((r.id in drift_rule_ids) or (bool(target_v) and getattr(target_v, "quality_status", None) == "REVIEW_REQUIRED"))
 
-        is_def_incomplete = (completeness in ("INCOMPLETE", "UNKNOWN")) or (
-            latest_qa and any("G1" in str(b) or "DEFINITION" in str(b) for b in (latest_qa.blocking_issues or []))
+        is_def_incomplete = (
+            archetype in ("UNKNOWN", None, "")
+            or completeness in ("INCOMPLETE", "UNKNOWN")
+            or (latest_qa and any("G1" in str(b) or "DEFINITION" in str(b) for b in (latest_qa.blocking_issues or [])))
         )
-        if is_def_incomplete:
-            readiness_status = "INCOMPLETE"
-            action_title = "Verify FortiSIEM Detection Semantics"
-        elif blocker_cnt > 0 or revalidation_req:
-            readiness_status = "BLOCKED"
-            action_title = "Resolve Quality Gate Blockers"
-        elif has_approved and r.status == "ACTIVE":
-            readiness_status = "ACTIVE"
-            action_title = "Monitor Production Performance"
-        elif has_approved:
-            readiness_status = "APPROVED"
-            action_title = "Activate Production Automation"
-        elif q_status == "APPROVAL_ELIGIBLE" or (latest_qa and latest_qa.approval_eligible):
-            readiness_status = "READY_FOR_APPROVAL"
-            action_title = "Request Production Approval"
-        else:
-            readiness_status = "LEARNING"
-            action_title = "Review Pending Incidents"
 
         gates_passed_count = 0
         if latest_qa and latest_qa.gate_results:
@@ -180,13 +168,35 @@ async def get_rule_prompts_summary(
                 1 for g in latest_qa.gate_results.values()
                 if (g.get("status") if isinstance(g, dict) else getattr(g, "status", "")) == "PASSED"
             )
-        elif has_approved:
+        elif is_target_approved:
             gates_passed_count = 8
         elif not is_def_incomplete and q_score and q_score > 50:
             gates_passed_count = 2
 
-        is_revoked = any(v.status == "REVOKED" for v in versions)
-        is_suspended = bool(rp and getattr(rp, "ai_execution_suspended", False))
+        if is_def_incomplete:
+            readiness_status = "INCOMPLETE"
+            action_title = "Verify FortiSIEM Detection Semantics"
+        elif is_suspended or is_revoked:
+            readiness_status = "BLOCKED"
+            action_title = "Policy Suspended / Revoked"
+        elif blocker_cnt > 0 or revalidation_req:
+            readiness_status = "BLOCKED"
+            action_title = "Resolve Quality Gate Blockers"
+        elif is_target_approved and gates_passed_count == 8 and r.status == "ACTIVE" and not is_suspended:
+            readiness_status = "ACTIVE"
+            action_title = "Monitor Production Performance"
+        elif is_target_approved and gates_passed_count == 8:
+            readiness_status = "APPROVED"
+            action_title = "Activate Production Automation"
+        elif is_target_approved and gates_passed_count < 8:
+            readiness_status = "VALIDATING"
+            action_title = "Revalidate Quality Gates"
+        elif q_status == "APPROVAL_ELIGIBLE" or (latest_qa and latest_qa.approval_eligible):
+            readiness_status = "READY_FOR_APPROVAL"
+            action_title = "Request Production Approval"
+        else:
+            readiness_status = "LEARNING"
+            action_title = "Review Pending Incidents"
 
         ai_exec_status = "BLOCKED"
         if is_suspended or (active_v and active_v.status == "REVOKED"):

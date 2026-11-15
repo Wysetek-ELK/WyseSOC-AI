@@ -221,7 +221,7 @@ function AgentIntelligenceStudioContent() {
     setShowQualityExportMenu(false);
     setFeedback(null);
     try {
-      const activeRule = rules.find((r) => r.id === selectedRuleId);
+      const activeRule = rules.find((r) => r.id === selectedRuleId || r.rule_id === selectedRuleId);
       const activeVersion = rulePrompt?.versions.find((v) => v.id === selectedVersionId);
       const { content, mimeType, filename } = buildQualityGatesExportFile(
         qualityAssessment,
@@ -270,8 +270,10 @@ function AgentIntelligenceStudioContent() {
     try {
       const res = await api.getRules({ page_size: 100 });
       setRules(res.items);
+      return res.items;
     } catch (err: any) {
       console.error("Failed to load rules:", err);
+      return [];
     } finally {
       setLoadingRules(false);
     }
@@ -318,7 +320,7 @@ function AgentIntelligenceStudioContent() {
         }
       }
 
-      await Promise.all([loadRules(), loadSummaries()]);
+      const [fetchedRules] = await Promise.all([loadRules(), loadSummaries()]);
 
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
@@ -326,7 +328,8 @@ function AgentIntelligenceStudioContent() {
         const tabParam = params.get("tab");
 
         if (ruleParam) {
-          setSelectedRuleId(ruleParam);
+          const matched = (fetchedRules || []).find((r: RuleItem) => r.id === ruleParam || r.rule_id === ruleParam);
+          setSelectedRuleId(matched ? matched.id : ruleParam);
           setViewMode("studio");
         }
 
@@ -1047,7 +1050,7 @@ function AgentIntelligenceStudioContent() {
   const incompleteDefinitionCount = summaries.filter((s) => s.definition_completeness === "INCOMPLETE").length;
   const driftAlertCount = summaries.filter((s) => s.revalidation_required).length;
 
-  const selectedRule = rules.find((r) => r.id === selectedRuleId);
+  const selectedRule = rules.find((r) => r.id === selectedRuleId || r.rule_id === selectedRuleId);
   const selectedVersion = rulePrompt?.versions.find((v) => v.id === selectedVersionId);
   const isSelectedActive = selectedVersion?.id === rulePrompt?.active_version_id;
 
@@ -1721,9 +1724,10 @@ function AgentIntelligenceStudioContent() {
           />
 
           {/* Primary 3-Tab Bar */}
-          <div className="flex items-center justify-between border-b border-slate-800/90 pb-0 text-xs">
+          <div data-testid="ais-primary-tabs" className="flex items-center justify-between border-b border-slate-800/90 pb-0 text-xs">
             <div className="flex space-x-1">
               <button
+                data-testid="tab-overview"
                 onClick={() => handleNavigateTab("overview")}
                 className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${
                   primaryTab === "overview"
@@ -1736,6 +1740,7 @@ function AgentIntelligenceStudioContent() {
               </button>
 
               <button
+                data-testid="tab-learning"
                 onClick={() => handleNavigateTab("learning")}
                 className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${
                   primaryTab === "learning"
@@ -1753,6 +1758,7 @@ function AgentIntelligenceStudioContent() {
               </button>
 
               <button
+                data-testid="tab-advanced"
                 onClick={() => handleNavigateTab("advanced")}
                 className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${
                   primaryTab === "advanced"

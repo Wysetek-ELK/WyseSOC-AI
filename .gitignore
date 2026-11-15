@@ -28,6 +28,7 @@ frontend/yarn-error.log*
 .DS_Store
 Thumbs.db
 *.zip
+frontend/AGENTS.md
 
 # Runtime Scheduler & LLM Config State
 scheduler_state.json*

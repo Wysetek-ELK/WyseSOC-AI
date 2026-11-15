@@ -127,30 +127,19 @@ async def list_rules(
     for rule, inc_count in rows:
         rp = prompts_map.get(rule.id)
         versions = rp.versions if (rp and rp.versions) else []
+        active_v = next((v for v in versions if v.id == rp.active_version_id), None) if (rp and rp.active_version_id) else None
+        target_v = active_v or (versions[0] if versions else None)
+        is_target_approved = target_v is not None and target_v.status == "APPROVED"
         has_approved = any(v.status == "APPROVED" for v in versions)
+        is_suspended = bool(rp and getattr(rp, "ai_execution_suspended", False))
+        is_revoked = any(v.status == "REVOKED" for v in versions) or bool(active_v and active_v.status == "REVOKED")
+
         snap = snaps_map.get(rule.id)
         latest_qa = qa_map.get(rule.id)
         prof = profiles_map.get(rule.id)
 
-        is_incomplete = (
-            (snap and snap.definition_status in ("INCOMPLETE", "UNKNOWN"))
-            or (latest_qa and any("G1" in str(b) or "DEFINITION" in str(b) for b in (latest_qa.blocking_issues or [])))
-        )
-
-        if is_incomplete:
-            readiness_status = "INCOMPLETE"
-        elif latest_qa and latest_qa.blocking_issues and len(latest_qa.blocking_issues) > 0:
-            readiness_status = "BLOCKED"
-        elif has_approved and rule.status == "ACTIVE":
-            readiness_status = "ACTIVE"
-        elif has_approved:
-            readiness_status = "APPROVED"
-        elif latest_qa and latest_qa.approval_eligible:
-            readiness_status = "READY_FOR_APPROVAL"
-        elif prof and prof.total_analyst_reviews > 0:
-            readiness_status = "LEARNING"
-        else:
-            readiness_status = "INCOMPLETE"
+        archetype = snap.primary_archetype if snap else "UNKNOWN"
+        completeness = snap.definition_status if snap else "INCOMPLETE"
 
         gates_passed = 0
         if latest_qa and latest_qa.gate_results:
@@ -158,8 +147,33 @@ async def list_rules(
                 1 for g in latest_qa.gate_results.values()
                 if (g.get("status") if isinstance(g, dict) else getattr(g, "status", "")) == "PASSED"
             )
-        elif has_approved:
+        elif is_target_approved:
             gates_passed = 8
+
+        is_incomplete = (
+            archetype in ("UNKNOWN", None, "")
+            or completeness in ("INCOMPLETE", "UNKNOWN")
+            or (latest_qa and any("G1" in str(b) or "DEFINITION" in str(b) for b in (latest_qa.blocking_issues or [])))
+        )
+
+        if is_incomplete:
+            readiness_status = "INCOMPLETE"
+        elif is_suspended or is_revoked:
+            readiness_status = "BLOCKED"
+        elif latest_qa and latest_qa.blocking_issues and len(latest_qa.blocking_issues) > 0:
+            readiness_status = "BLOCKED"
+        elif is_target_approved and gates_passed == 8 and rule.status == "ACTIVE" and not is_suspended:
+            readiness_status = "ACTIVE"
+        elif is_target_approved and gates_passed == 8:
+            readiness_status = "APPROVED"
+        elif is_target_approved and gates_passed < 8:
+            readiness_status = "VALIDATING"
+        elif latest_qa and latest_qa.approval_eligible:
+            readiness_status = "READY_FOR_APPROVAL"
+        elif prof and prof.total_analyst_reviews > 0:
+            readiness_status = "LEARNING"
+        else:
+            readiness_status = "INCOMPLETE"
 
         missing_cnt = len(latest_qa.blocking_issues) if latest_qa and latest_qa.blocking_issues else (1 if is_incomplete else 0)
 

@@ -6,7 +6,7 @@ from sqlalchemy import select, desc
 from pydantic import BaseModel, Field, field_validator
 
 from app.database import get_db
-from app.api.deps import get_current_active_user
+from app.api.deps import get_current_active_user, require_analyst, require_admin
 from app.models.user import User
 from app.models.rule_learning import RuleLearningProfile
 from app.models.analyst_feedback import AnalystVerdictReview
@@ -267,7 +267,7 @@ async def initialize_rule_learning_profile(
 @router.post("/learning/rules/initialize-all", response_model=Dict[str, Any])
 async def initialize_all_rule_profiles(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_admin)
 ):
     """
     Explicit, authenticated bulk initialization of learning profiles for all active detection rules
@@ -286,7 +286,7 @@ async def transition_rule_stage(
     rule_id: str,
     payload: TransitionStageRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_analyst)
 ):
     """
     Transitions rule lifecycle state (e.g. suspend or advance to pilot).
@@ -351,7 +351,7 @@ async def submit_analyst_review(
     incident_id: str,
     payload: SubmitReviewRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_analyst)
 ):
     """
     Submits independent analyst determination, reveals stored AI verdict,
@@ -414,7 +414,7 @@ async def request_rule_promotion(
     payload: CreatePromotionRequest,
     profile_id: Optional[str] = Query(None, description="Profile ID or Rule ID query parameter"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(require_analyst)
 ):
     """
     Submits formal request to promote a rule to a higher lifecycle stage.

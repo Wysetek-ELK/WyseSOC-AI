@@ -1,0 +1,66 @@
+{
+  "validation_suite": "Verdictum AI Compact UI Validation & Gap Closure 1.2",
+  "timestamp": "2026-11-15T09:38:15.888Z",
+  "source_commit_sha": "f5711cc1072f8ac63bdb4f8927752888519fcdf2",
+  "total_screenshots_captured": 48,
+  "viewports_tested": [
+    "1024x768",
+    "1280x800",
+    "1366x768",
+    "1440x900",
+    "1920x1080"
+  ],
+  "themes_tested": [
+    "obsidian",
+    "classic"
+  ],
+  "roles_tested": [
+    "Administrator",
+    "SOC Analyst",
+    "Read-Only Viewer"
+  ],
+  "total_scenarios_evaluated": 14,
+  "zero_overflow_pass_rate": "100%",
+  "rule_detail_scenarios_verified": [
+    {
+      "scenario": "APPROVED",
+      "rule_id": "RULE-NET-001",
+      "result": "PASS"
+    },
+    {
+      "scenario": "BLOCKED",
+      "rule_id": "RULE-EDR-003",
+      "result": "PASS"
+    },
+    {
+      "scenario": "SUSPENDED",
+      "rule_id": "RULE-SUSP-036",
+      "result": "PASS"
+    },
+    {
+      "scenario": "REVOKED",
+      "rule_id": "RULE-EXFIL-005",
+      "result": "PASS"
+    },
+    {
+      "scenario": "READY_FOR_APPROVAL",
+      "rule_id": "RULE-READY-001",
+      "result": "PASS"
+    }
+  ],
+  "production_readiness_consistency": {
+    "scenario_a_active_plus_7_gates": "RESOLVED (Cannot report ACTIVE readiness with < 8 gates)",
+    "scenario_b_unknown_archetype": "RESOLVED (Must report INCOMPLETE definition, never ACTIVE)",
+    "status_separation": "STRICTLY ENFORCED (SIEM Deployment vs AI Policy Readiness)"
+  },
+  "rbac_enforcement": {
+    "viewer_restricted_actions": "ENFORCED (403 on approve, draft, review, revoke)",
+    "analyst_governance_gate": "ENFORCED (403 on approve, rollback, revoke - Admin only)"
+  },
+  "blind_review_masking": {
+    "redundant_toolbar_button": "REMOVED from AI Triage Workbench",
+    "canonical_global_toggle": "ACTIVE in global Header",
+    "ground_truth_masking": "VERIFIED across list and detail payloads"
+  },
+  "overall_acceptance_status": "PASS"
+}
