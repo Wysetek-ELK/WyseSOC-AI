@@ -449,6 +449,7 @@ export interface CompactVersionSelectorProps {
   onSelectVersion: (id: string) => void;
   onRollback?: () => void;
   canRollback?: boolean;
+  onOpenVersionHistory?: () => void;
 }
 
 export function CompactVersionSelector({
@@ -458,6 +459,7 @@ export function CompactVersionSelector({
   onSelectVersion,
   onRollback,
   canRollback,
+  onOpenVersionHistory,
 }: CompactVersionSelectorProps) {
   const [open, setOpen] = useState(false);
   const selected = versions.find((v) => v.id === selectedVersionId) || versions[0];
@@ -477,6 +479,10 @@ export function CompactVersionSelector({
             className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${
               selected?.status === "APPROVED"
                 ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                : selected?.status === "REVOKED"
+                ? "bg-rose-950 text-rose-400 border border-rose-800"
+                : selected?.status === "ARCHIVED"
+                ? "bg-slate-900 text-slate-400 border border-slate-800"
                 : "bg-amber-950 text-amber-400 border border-amber-800"
             }`}
           >
@@ -500,8 +506,9 @@ export function CompactVersionSelector({
 
       {open && (
         <div className="absolute right-0 mt-1 w-64 rounded-xl border border-slate-800 bg-slate-950 shadow-xl z-50 p-1.5 space-y-1">
-          <div className="px-2 py-1 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-800/80">
-            Version History
+          <div className="px-2 py-1 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-800/80 flex items-center justify-between">
+            <span>Version History</span>
+            <span className="text-[9px] text-slate-500 font-normal">{versions.length} versions</span>
           </div>
           <div className="max-h-60 overflow-y-auto space-y-1">
             {versions.map((ver) => {
@@ -527,6 +534,10 @@ export function CompactVersionSelector({
                       className={`px-1.5 py-0.2 rounded text-[9px] uppercase font-bold ${
                         ver.status === "APPROVED"
                           ? "bg-emerald-950 text-emerald-400"
+                          : ver.status === "REVOKED"
+                          ? "bg-rose-950 text-rose-400 border border-rose-800"
+                          : ver.status === "ARCHIVED"
+                          ? "bg-slate-900 text-slate-500"
                           : "bg-slate-900 text-slate-400"
                       }`}
                     >
@@ -543,6 +554,21 @@ export function CompactVersionSelector({
               );
             })}
           </div>
+          {onOpenVersionHistory && (
+            <div className="pt-1.5 border-t border-slate-800/80">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onOpenVersionHistory();
+                }}
+                className="w-full px-2 py-1.5 text-center text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center justify-center gap-1 hover:bg-slate-900 rounded transition-colors"
+              >
+                <span>Advanced Version History &amp; Controls</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

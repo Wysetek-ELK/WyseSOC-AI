@@ -14,6 +14,8 @@ class RulePrompt(Base):
     rule_id: Mapped[str] = mapped_column(String(36), ForeignKey("rules.id", ondelete="CASCADE"), unique=True, index=True, nullable=False)
     title: Mapped[str] = mapped_column(String(256), default="")
     active_version_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    ai_execution_suspended: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    suspension_reason: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
@@ -55,6 +57,10 @@ class PromptVersion(Base):
     created_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    revoked_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    revocation_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    previous_status: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 

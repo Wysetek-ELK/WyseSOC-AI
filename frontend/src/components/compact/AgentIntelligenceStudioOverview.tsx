@@ -45,6 +45,7 @@ import {
   QualityGateResult,
   ProductionReadinessResponse,
   ReadinessStageItem,
+  PolicyEligibilityResponse,
 } from "@/lib/api";
 
 export interface AgentIntelligenceStudioOverviewProps {
@@ -137,25 +138,34 @@ export function AgentIntelligenceStudioOverview({
   onViewActualPrompt,
   onPreviewPrompt,
 }: AgentIntelligenceStudioOverviewProps) {
-  // Authoritative Backend Readiness State
+  // Authoritative Backend Readiness & Eligibility State
   const [readinessData, setReadinessData] = useState<ProductionReadinessResponse | null>(null);
+  const [eligibilityData, setEligibilityData] = useState<PolicyEligibilityResponse | null>(null);
   const [loadingReadiness, setLoadingReadiness] = useState(false);
   const [expandedStageDetails, setExpandedStageDetails] = useState<Record<string, boolean>>({});
 
-  // Fetch backend readiness data whenever rule or version changes
+  // Fetch backend readiness and eligibility data whenever rule or version changes
   useEffect(() => {
     let isMounted = true;
     if (!ruleId) return;
 
-    const fetchReadiness = async () => {
+    const fetchReadinessAndEligibility = async () => {
       setLoadingReadiness(true);
       try {
-        const data = await api.getRuleProductionReadiness(ruleId, selectedVersion?.id);
+        const [readinessRes, eligibilityRes] = await Promise.allSettled([
+          api.getRuleProductionReadiness(ruleId, selectedVersion?.id),
+          api.getRulePolicyEligibility(ruleId, selectedVersion?.id),
+        ]);
         if (isMounted) {
-          setReadinessData(data);
+          if (readinessRes.status === "fulfilled") {
+            setReadinessData(readinessRes.value);
+          }
+          if (eligibilityRes.status === "fulfilled") {
+            setEligibilityData(eligibilityRes.value);
+          }
         }
       } catch (err) {
-        console.warn("Could not fetch authoritative readiness from API, falling back to local calculation:", err);
+        console.warn("Could not fetch authoritative readiness or eligibility from API:", err);
       } finally {
         if (isMounted) {
           setLoadingReadiness(false);
@@ -163,7 +173,7 @@ export function AgentIntelligenceStudioOverview({
       }
     };
 
-    fetchReadiness();
+    fetchReadinessAndEligibility();
     return () => {
       isMounted = false;
     };
@@ -204,6 +214,37 @@ export function AgentIntelligenceStudioOverview({
   const ruleDisplayName = readinessData?.rule_name || ruleName || `Detection Rule ${ruleId.slice(0, 8)}`;
   const plainEnglishDescription = readinessData?.detection_description || intelligenceData?.semantics?.detection_objective || `Monitors security telemetry for ${displayArchetype} activity.`;
   const deploymentStatus = readinessData?.rule_deployment_status || (isSelectedActive && selectedVersion?.status === "APPROVED" ? "ACTIVE" : "NOT_DEPLOYED");
+
+  // Decoupled Policy Governance & AI Execution Status
+  const activeVersion = versions.find((v) => v.id === activeVersionId) || null;
+  const selectedPolicyLabel = selectedVersion
+    ? `V${selectedVersion.version_number} — ${selectedVersion.status}`
+    : "None";
+  const activePolicyLabel = activeVersion
+    ? (activeVersion.status === "REVOKED"
+        ? `V${activeVersion.version_number} — REVOKED`
+        : `V${activeVersion.version_number} — ${activeVersion.status}`)
+    : (eligibilityData?.active_version_number
+        ? `V${eligibilityData.active_version_number} — ${eligibilityData.active_version_status}`
+        : "None (Revoked / Suspended)");
+
+  const isPolicyRevoked = Boolean(
+    eligibilityData?.is_revoked ||
+    selectedVersion?.status === "REVOKED" ||
+    (activeVersion && activeVersion.status === "REVOKED")
+  );
+
+  const aiVerdictExecutionStatus: "Enabled" | "Suspended" | "Blocked" =
+    eligibilityData?.ai_verdict_execution_status === "ENABLED"
+      ? "Enabled"
+      : eligibilityData?.ai_verdict_execution_status === "SUSPENDED" || isPolicyRevoked
+      ? "Suspended"
+      : "Blocked";
+
+  const productionReadinessStatus: "Ready" | "Blocked" =
+    readinessData?.readiness_status === "ACTIVE" || readinessData?.readiness_status === "APPROVED" || readinessData?.readiness_status === "READY_FOR_APPROVAL"
+      ? "Ready"
+      : "Blocked";
 
   // Format accuracy for display
   const accuracyDisplay =
@@ -465,9 +506,74 @@ export function AgentIntelligenceStudioOverview({
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-900 text-cyan-300 border border-cyan-800/60 uppercase">
                 {displayArchetype}
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-900 text-slate-300 border border-slate-700 flex items-center gap-1.5">
+            </div>
+
+            {/* Authoritative Decoupled Governance & Readiness Indicators */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-1">
+              {/* FortiSIEM Detection Rule Status */}
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Underlying FortiSIEM Detection Rule Deployment Status">
+                <span className="text-slate-500 font-mono text-[10px]">SIEM Rule:</span>
                 <span className={`w-1.5 h-1.5 rounded-full ${deploymentStatus === "ACTIVE" ? "bg-emerald-400" : "bg-slate-500"}`} />
-                Deployment: {deploymentStatus}
+                <strong className={deploymentStatus === "ACTIVE" ? "text-emerald-300 font-semibold" : "text-slate-400"}>{deploymentStatus}</strong>
+              </span>
+
+              {/* Selected Policy Version & Status */}
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Candidate Policy Version loaded in Overview & Editor">
+                <span className="text-slate-500 font-mono text-[10px]">Selected Policy:</span>
+                <strong className={
+                  selectedVersion?.status === "APPROVED"
+                    ? "text-emerald-400 font-semibold"
+                    : selectedVersion?.status === "REVOKED"
+                    ? "text-rose-400 font-semibold"
+                    : selectedVersion?.status === "VALIDATED"
+                    ? "text-sky-300 font-semibold"
+                    : "text-amber-400 font-semibold"
+                }>
+                  {selectedPolicyLabel}
+                </strong>
+              </span>
+
+              {/* Active AI Policy */}
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Active Approved Policy assigned for production verdicts">
+                <span className="text-slate-500 font-mono text-[10px]">Active AI Policy:</span>
+                <strong className={
+                  activeVersion?.status === "APPROVED" && !isPolicyRevoked
+                    ? "text-cyan-400 font-semibold"
+                    : "text-rose-400 font-semibold"
+                }>
+                  {activePolicyLabel}
+                </strong>
+              </span>
+
+              {/* AI Verdict Execution Status */}
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Real-time execution eligibility for Local LLM verdicts">
+                <span className="text-slate-500 font-mono text-[10px]">AI Verdict Execution:</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  aiVerdictExecutionStatus === "Enabled"
+                    ? "bg-emerald-400"
+                    : aiVerdictExecutionStatus === "Suspended"
+                    ? "bg-amber-400"
+                    : "bg-rose-400"
+                }`} />
+                <strong className={
+                  aiVerdictExecutionStatus === "Enabled"
+                    ? "text-emerald-300 font-semibold"
+                    : aiVerdictExecutionStatus === "Suspended"
+                    ? "text-amber-300 font-semibold"
+                    : "text-rose-300 font-semibold"
+                }>
+                  {aiVerdictExecutionStatus}
+                </strong>
+              </span>
+
+              {/* Production Readiness */}
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="All 6 validation & governance stages completed">
+                <span className="text-slate-500 font-mono text-[10px]">Production Readiness:</span>
+                <strong className={
+                  productionReadinessStatus === "Ready" ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"
+                }>
+                  {productionReadinessStatus}
+                </strong>
               </span>
             </div>
 
@@ -475,10 +581,28 @@ export function AgentIntelligenceStudioOverview({
               {plainEnglishDescription}
             </p>
 
+            {/* Warning banner when policy is revoked, suspended, or semantic mismatch */}
+            {eligibilityData && !eligibilityData.is_eligible && (
+              <div className="p-2.5 rounded-lg border border-amber-800/80 bg-amber-950/40 text-xs text-amber-200 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <div className="font-semibold text-amber-300 flex items-center gap-2">
+                    <span>AI Execution Suspended: {eligibilityData.reason_code}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-900/80 text-amber-200 border border-amber-700">
+                      Safe Fallback
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                    {eligibilityData.explanation}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="text-[10px] font-mono text-slate-400 flex flex-wrap items-center gap-2 pt-0.5">
               <span>Rule ID: <strong className="text-slate-300">{ruleId}</strong></span>
               <span>·</span>
-              <span>Active Version: <strong className="text-cyan-400">v{readinessData?.active_version_number || 1} ({readinessData?.active_version_status || (isSelectedActive ? selectedVersion?.status : "APPROVED")})</strong></span>
+              <span>Active Policy: <strong className="text-cyan-400">{activePolicyLabel}</strong></span>
             </div>
           </div>
 
@@ -489,8 +613,7 @@ export function AgentIntelligenceStudioOverview({
               selectedVersionId={selectedVersion?.id || ""}
               activeVersionId={activeVersionId}
               onSelectVersion={onSelectVersion}
-              onRollback={onRollback}
-              canRollback={!isSelectedActive && !isViewer}
+              onOpenVersionHistory={() => onNavigateTab("advanced", "history")}
             />
 
             <button

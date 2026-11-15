@@ -265,6 +265,18 @@ class AgentPolicyEngine:
         if not target_version:
             raise ValueError(f"Prompt version {version_id} not found for rule {rule_id}")
 
+        if target_version.status == "REVOKED":
+            raise ValueError(
+                f"Cannot approve Version {target_version.version_number}: Policy is REVOKED. Revoked versions cannot be reactivated or approved. Please create a new draft."
+            )
+
+        from app.services.policy_eligibility_service import PolicyEligibilityService
+        is_mismatch, mismatch_desc = PolicyEligibilityService.detect_semantic_mismatch(rule, target_version)
+        if is_mismatch:
+            raise ValueError(
+                f"Cannot approve Version {target_version.version_number}: Semantic mismatch detected ({mismatch_desc})."
+            )
+
         # Derive semantics and machine-verifiable contract via shared resolver (honors RuleIntelligenceSnapshot)
         semantics, contract, _ = await get_rule_semantics_and_contract(
             self.db, rule, prompt_version=target_version, for_quality_validation=True
@@ -388,8 +400,26 @@ class AgentPolicyEngine:
         if not source_version:
             raise ValueError(f"Target version {target_version_id} not found")
 
+        if source_version.status == "REVOKED":
+            raise ValueError(
+                f"Cannot rollback to Version {source_version.version_number}: Policy is REVOKED (Reason: {source_version.revocation_reason or 'Untrusted'}). Revoked policies cannot be reactivated."
+            )
+
+        if source_version.status not in ("APPROVED", "ARCHIVED"):
+            raise ValueError(
+                f"Cannot rollback to Version {source_version.version_number}: Status is {source_version.status}. Only approved policy versions can be restored."
+            )
+
         # Validate rollback candidate safety against current rule/contract before activating
         rule = await resolve_canonical_rule(self.db, rule_id)
+        if rule:
+            from app.services.policy_eligibility_service import PolicyEligibilityService
+            is_mismatch, mismatch_desc = PolicyEligibilityService.detect_semantic_mismatch(rule, source_version)
+            if is_mismatch:
+                raise ValueError(
+                    f"Cannot rollback to Version {source_version.version_number}: Semantic mismatch detected ({mismatch_desc})."
+                )
+
         rollback_quality_score = source_version.quality_score
         if rule:
             semantics, contract, _ = await get_rule_semantics_and_contract(
@@ -447,6 +477,81 @@ class AgentPolicyEngine:
         await self.db.commit()
         await self.db.refresh(rolled_version)
         return rolled_version
+
+    async def revoke_version(
+        self,
+        rule_id: str,
+        version_id: str,
+        user_id: Optional[str] = None,
+        revocation_reason: str = "",
+    ) -> PromptVersion:
+        """
+        Administrator-only policy revocation.
+        Revokes a policy version, records audit metadata, and if active, immediately clears active_version_id
+        to prevent runtime execution by Local LLM (Server 2).
+        """
+        clean_reason = (revocation_reason or "").strip()
+        if not clean_reason or len(clean_reason) < 5:
+            raise ValueError("A mandatory, substantive revocation reason (minimum 5 characters) is required.")
+
+        rule_prompt = await self.get_or_create_rule_prompt(rule_id)
+        ver_res = await self.db.execute(select(PromptVersion).where(PromptVersion.prompt_id == rule_prompt.id))
+        all_versions = ver_res.scalars().all()
+        target_version = next((v for v in all_versions if v.id == version_id), None)
+
+        if not target_version:
+            raise ValueError(f"Policy version {version_id} not found")
+
+        if target_version.status == "REVOKED":
+            raise ValueError(f"Version {target_version.version_number} is already REVOKED.")
+
+        # Record revocation provenance
+        prev_status = target_version.status
+        target_version.previous_status = prev_status
+        target_version.status = "REVOKED"
+        target_version.revoked_by_user_id = user_id
+        target_version.revoked_at = utc_now()
+        target_version.revocation_reason = clean_reason
+        target_version.change_summary = f"REVOKED: {clean_reason[:100]}"
+
+        # If this was the active version, immediately clear active_version_id and suspend AI execution
+        if rule_prompt.active_version_id == target_version.id:
+            rule_prompt.active_version_id = None
+            rule_prompt.ai_execution_suspended = True
+            rule_prompt.suspension_reason = f"Active policy v{target_version.version_number} was revoked: {clean_reason}"
+            rule_prompt.updated_at = utc_now()
+
+        await self.db.commit()
+        await self.db.refresh(target_version)
+        await self.db.refresh(rule_prompt)
+        return target_version
+
+    async def suspend_ai_execution(
+        self,
+        rule_id: str,
+        reason: str,
+        user_id: Optional[str] = None,
+    ) -> RulePrompt:
+        rule_prompt = await self.get_or_create_rule_prompt(rule_id)
+        rule_prompt.ai_execution_suspended = True
+        rule_prompt.suspension_reason = reason.strip() if reason else "Administrative safety hold"
+        rule_prompt.updated_at = utc_now()
+        await self.db.commit()
+        await self.db.refresh(rule_prompt)
+        return rule_prompt
+
+    async def resume_ai_execution(
+        self,
+        rule_id: str,
+        user_id: Optional[str] = None,
+    ) -> RulePrompt:
+        rule_prompt = await self.get_or_create_rule_prompt(rule_id)
+        rule_prompt.ai_execution_suspended = False
+        rule_prompt.suspension_reason = None
+        rule_prompt.updated_at = utc_now()
+        await self.db.commit()
+        await self.db.refresh(rule_prompt)
+        return rule_prompt
 
     async def _persist_rule_intelligence_snapshot(
         self,

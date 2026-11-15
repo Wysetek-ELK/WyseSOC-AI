@@ -25,6 +25,10 @@ class PromptVersionResponse(BaseModel):
     created_by_user_id: Optional[str] = None
     approved_by_user_id: Optional[str] = None
     approved_at: Optional[datetime] = None
+    revoked_by_user_id: Optional[str] = None
+    revoked_at: Optional[datetime] = None
+    revocation_reason: Optional[str] = None
+    previous_status: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -38,6 +42,8 @@ class RulePromptResponse(BaseModel):
     title: str
     active_version_id: Optional[str] = None
     active_version: Optional[PromptVersionResponse] = None
+    ai_execution_suspended: bool = False
+    suspension_reason: Optional[str] = None
     versions: List[PromptVersionResponse] = []
     created_at: datetime
     updated_at: datetime
@@ -71,6 +77,26 @@ class PromptRollbackRequest(BaseModel):
     target_version_id: str
 
 
+class PromptRevokeRequest(BaseModel):
+    revocation_reason: str = Field(..., min_length=5, max_length=1024, description="Mandatory administrative justification for revoking policy approval")
+
+
+class PolicyEligibilityResponse(BaseModel):
+    rule_id: str
+    rule_name: str
+    is_eligible: bool
+    status: str  # "ELIGIBLE", "POLICY_REVOKED", "POLICY_ARCHIVED", "POLICY_DRAFT", "NO_ELIGIBLE_POLICY", "SEMANTIC_MISMATCH", "RULE_SUSPENDED"
+    reason_code: str
+    explanation: str
+    active_version_number: Optional[int] = None
+    active_version_status: Optional[str] = None
+    selected_version_number: Optional[int] = None
+    selected_version_status: Optional[str] = None
+    ai_verdict_execution_status: str  # "ENABLED", "SUSPENDED", "BLOCKED"
+    is_revoked: bool = False
+    revocation_details: Optional[Dict[str, Any]] = None
+
+
 class RulePromptSummaryItem(BaseModel):
     rule_id: str
     rule_name: str
@@ -98,5 +124,9 @@ class RulePromptSummaryItem(BaseModel):
     gates_passed_count: int = 0
     missing_requirements_count: int = 0
     recommended_action_title: Optional[str] = None
+    ai_verdict_execution_status: str = "BLOCKED"  # "ENABLED", "SUSPENDED", "BLOCKED"
+    selected_policy_version_number: Optional[int] = None
+    selected_policy_version_status: Optional[str] = None
+    is_revoked: bool = False
 
     model_config = ConfigDict(from_attributes=True)

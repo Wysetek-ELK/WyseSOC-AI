@@ -50,12 +50,15 @@ from app.services.policy_simulation_service import PolicySimulationService
 from app.services.bulk_quality_audit_service import BulkQualityAuditService
 from app.services.policy_lifecycle_monitor import PolicyLifecycleMonitor
 from app.services.production_readiness_service import ProductionReadinessService
+from app.services.policy_eligibility_service import PolicyEligibilityService
 from app.schemas.prompt import (
     RulePromptResponse,
     PromptVersionResponse,
     PromptVersionCreate,
     PromptApprovalRequest,
     PromptRollbackRequest,
+    PromptRevokeRequest,
+    PolicyEligibilityResponse,
     RulePromptSummaryItem,
 )
 from app.schemas.rule_intelligence import (
@@ -182,6 +185,18 @@ async def get_rule_prompts_summary(
         elif not is_def_incomplete and q_score and q_score > 50:
             gates_passed_count = 2
 
+        is_revoked = any(v.status == "REVOKED" for v in versions)
+        is_suspended = bool(rp and getattr(rp, "ai_execution_suspended", False))
+
+        ai_exec_status = "BLOCKED"
+        if is_suspended or (active_v and active_v.status == "REVOKED"):
+            ai_exec_status = "SUSPENDED"
+        elif has_approved and active_v and active_v.status == "APPROVED":
+            ai_exec_status = "ENABLED"
+
+        selected_ver_num = versions[0].version_number if versions else None
+        selected_ver_status = versions[0].status if versions else None
+
         items.append(
             RulePromptSummaryItem(
                 rule_id=r.id,
@@ -191,8 +206,8 @@ async def get_rule_prompts_summary(
                 status=r.status or "ACTIVE",
                 data_source=r.data_source,
                 prompt_id=rp.id if rp else None,
-                active_version_number=active_v.version_number if active_v else (versions[0].version_number if versions else None),
-                active_version_status=active_v.status if active_v else (versions[0].status if versions else None),
+                active_version_number=active_v.version_number if active_v else None,
+                active_version_status=active_v.status if active_v else None,
                 total_versions=len(versions),
                 has_approved_prompt=has_approved,
                 last_updated=rp.updated_at if rp else r.updated_at,
@@ -208,6 +223,10 @@ async def get_rule_prompts_summary(
                 gates_passed_count=gates_passed_count,
                 missing_requirements_count=blocker_cnt,
                 recommended_action_title=action_title,
+                ai_verdict_execution_status=ai_exec_status,
+                selected_policy_version_number=selected_ver_num,
+                selected_policy_version_status=selected_ver_status,
+                is_revoked=is_revoked,
             )
         )
 
@@ -354,6 +373,8 @@ async def get_rule_prompt(
         title=prompt.title,
         active_version_id=prompt.active_version_id,
         active_version=active_v,
+        ai_execution_suspended=getattr(prompt, "ai_execution_suspended", False),
+        suspension_reason=getattr(prompt, "suspension_reason", None),
         versions=[PromptVersionResponse.model_validate(v) for v in prompt.versions],
         created_at=prompt.created_at,
         updated_at=prompt.updated_at,
@@ -956,6 +977,124 @@ async def rollback_prompt_version(
     )
 
     return PromptVersionResponse.model_validate(ver)
+
+
+@router.post("/rule/{rule_id}/version/{version_id}/revoke", response_model=PromptVersionResponse)
+async def revoke_prompt_version(
+    rule_id: str,
+    version_id: str,
+    req: PromptRevokeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Administrator-only: Revoke approval for a policy version.
+    Mandatory justification required. Immediately suspends active AI verdict execution
+    for this rule if the revoked version was active.
+    """
+    service = PromptStudioService(db)
+    try:
+        ver = await service.revoke_version(
+            rule_id=rule_id,
+            version_id=version_id,
+            user_id=current_user.id,
+            revocation_reason=req.revocation_reason,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    audit = AuditService(db)
+    await audit.log(
+        action="PROMPT_VERSION_REVOKED",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="RulePrompt",
+        entity_id=rule_id,
+        details={
+            "version_number": ver.version_number,
+            "version_id": ver.id,
+            "revocation_reason": req.revocation_reason,
+            "previous_status": ver.previous_status,
+        },
+    )
+
+    return PromptVersionResponse.model_validate(ver)
+
+
+@router.get("/rule/{rule_id}/eligibility", response_model=PolicyEligibilityResponse)
+async def get_rule_policy_eligibility(
+    rule_id: str,
+    version_id: Optional[str] = Query(None, description="Optional version to evaluate as candidate"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Returns the real-time policy eligibility and governance status for a rule.
+    Separates SIEM detection status from AI verdict execution readiness.
+    """
+    rule = await resolve_canonical_rule(db, rule_id)
+    if not rule:
+        raise HTTPException(status_code=404, detail=f"Rule {rule_id} not found")
+
+    service = PromptStudioService(db)
+    rule_prompt = await service.get_or_create_rule_prompt(rule.id)
+
+    active_v = None
+    selected_v = None
+    if rule_prompt.versions:
+        for v in rule_prompt.versions:
+            if v.id == rule_prompt.active_version_id:
+                active_v = v
+            if version_id and v.id == version_id:
+                selected_v = v
+
+    if not selected_v and rule_prompt.versions:
+        selected_v = rule_prompt.versions[0]
+
+    eligibility = await PolicyEligibilityService.evaluate_eligibility(
+        db=db,
+        rule=rule,
+        candidate_version=selected_v,
+        active_approved_version=active_v,
+        is_simulation=False,
+    )
+
+    ai_exec_status = "BLOCKED"
+    if eligibility.is_eligible and active_v and active_v.status == "APPROVED":
+        ai_exec_status = "ENABLED"
+    elif eligibility.status in ("POLICY_REVOKED", "RULE_SUSPENDED", "SEMANTIC_MISMATCH"):
+        ai_exec_status = "SUSPENDED"
+
+    is_revoked = bool(
+        (active_v and active_v.status == "REVOKED")
+        or (selected_v and selected_v.status == "REVOKED")
+    )
+
+    rev_details = None
+    rev_target = active_v if (active_v and active_v.status == "REVOKED") else (selected_v if (selected_v and selected_v.status == "REVOKED") else None)
+    if rev_target and rev_target.status == "REVOKED":
+        rev_details = {
+            "revoked_at": rev_target.revoked_at.isoformat() if rev_target.revoked_at else None,
+            "revocation_reason": rev_target.revocation_reason,
+            "revoked_by_user_id": rev_target.revoked_by_user_id,
+            "previous_status": rev_target.previous_status,
+        }
+
+    return PolicyEligibilityResponse(
+        rule_id=rule.id,
+        rule_name=rule.name,
+        is_eligible=eligibility.is_eligible,
+        status=eligibility.status,
+        reason_code=eligibility.reason_code,
+        explanation=eligibility.explanation,
+        active_version_number=active_v.version_number if active_v else None,
+        active_version_status=active_v.status if active_v else None,
+        selected_version_number=selected_v.version_number if selected_v else None,
+        selected_version_status=selected_v.status if selected_v else None,
+        ai_verdict_execution_status=ai_exec_status,
+        is_revoked=is_revoked,
+        revocation_details=rev_details,
+    )
 
 
 # =========================================================================

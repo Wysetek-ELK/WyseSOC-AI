@@ -547,7 +547,7 @@ export interface PromptVersion {
   id: string;
   prompt_id: string;
   version_number: number;
-  status: "DRAFT" | "APPROVED" | "ARCHIVED";
+  status: "DRAFT" | "VALIDATED" | "APPROVED" | "REVOKED" | "ARCHIVED" | string;
   is_template_draft: boolean;
   quality_status?: string;
   quality_score?: number | null;
@@ -565,6 +565,10 @@ export interface PromptVersion {
   created_by_user_id?: string;
   approved_by_user_id?: string;
   approved_at?: string;
+  revoked_by_user_id?: string | null;
+  revoked_at?: string | null;
+  revocation_reason?: string | null;
+  previous_status?: string | null;
   created_at: string;
 }
 
@@ -576,9 +580,32 @@ export interface RulePrompt {
   title: string;
   active_version_id?: string;
   active_version?: PromptVersion | null;
+  ai_execution_suspended?: boolean;
+  suspension_reason?: string | null;
   versions: PromptVersion[];
   created_at: string;
   updated_at: string;
+}
+
+export interface PolicyEligibilityResponse {
+  rule_id: string;
+  rule_name: string;
+  is_eligible: boolean;
+  status: string;
+  reason_code: string;
+  explanation: string;
+  active_version_number?: number | null;
+  active_version_status?: string | null;
+  selected_version_number?: number | null;
+  selected_version_status?: string | null;
+  ai_verdict_execution_status: "ENABLED" | "SUSPENDED" | "BLOCKED" | string;
+  is_revoked: boolean;
+  revocation_details?: {
+    revoked_at?: string | null;
+    revocation_reason?: string | null;
+    revoked_by_user_id?: string | null;
+    previous_status?: string | null;
+  } | null;
 }
 
 export interface RulePromptSummaryItem {
@@ -606,6 +633,10 @@ export interface RulePromptSummaryItem {
   gates_passed_count?: number;
   missing_requirements_count?: number;
   recommended_action_title?: string;
+  ai_verdict_execution_status?: "ENABLED" | "SUSPENDED" | "BLOCKED" | string;
+  selected_policy_version_number?: number | null;
+  selected_policy_version_status?: string | null;
+  is_revoked?: boolean;
 }
 
 export interface ActionButton {
@@ -1787,6 +1818,31 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to rollback prompt version" }));
       throw new Error(err.detail || "Failed to rollback prompt version");
+    }
+    return res.json();
+  },
+
+  async revokePromptVersion(ruleId: string, versionId: string, revocationReason: string): Promise<PromptVersion> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/version/${versionId}/revoke`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ revocation_reason: revocationReason }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to revoke prompt version" }));
+      throw new Error(err.detail || "Failed to revoke prompt version");
+    }
+    return res.json();
+  },
+
+  async getRulePolicyEligibility(ruleId: string, versionId?: string): Promise<PolicyEligibilityResponse> {
+    const url = versionId
+      ? `${API_BASE}/prompts/rule/${ruleId}/eligibility?version_id=${encodeURIComponent(versionId)}`
+      : `${API_BASE}/prompts/rule/${ruleId}/eligibility`;
+    const res = await fetchWithAuth(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to fetch policy eligibility" }));
+      throw new Error(err.detail || "Failed to fetch policy eligibility");
     }
     return res.json();
   },

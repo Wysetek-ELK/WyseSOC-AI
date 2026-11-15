@@ -68,11 +68,11 @@ import { copyToClipboard as copyTextToClipboard } from "@/lib/clipboard";
 function AgentIntelligenceStudioContent() {
   // Navigation / View mode
   const [viewMode, setViewMode] = useState<"table" | "studio">("table");
-  const [studioTab, setStudioTab] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "learning">("editor");
+  const [studioTab, setStudioTab] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "learning" | "history">("editor");
 
   // Compact 3-Tab Architecture State
   const [primaryTab, setPrimaryTab] = useState<"overview" | "learning" | "advanced">("overview");
-  const [advancedSection, setAdvancedSection] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift">("editor");
+  const [advancedSection, setAdvancedSection] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "history">("editor");
   const [compactUi, setCompactUi] = useState(true);
   const [learningProfile, setLearningProfile] = useState<any | null>(null);
   const [llmOnline, setLlmOnline] = useState<boolean | null>(null);
@@ -111,6 +111,7 @@ function AgentIntelligenceStudioContent() {
   const [loadingQuality, setLoadingQuality] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const isViewer = currentUser?.role === "Read-Only Viewer";
+  const isAdmin = currentUser?.role === "Administrator";
 
   // Policy Simulation State
   const [simulationResult, setSimulationResult] = useState<PolicySimulationResult | null>(null);
@@ -157,6 +158,12 @@ function AgentIntelligenceStudioContent() {
   // Approval modal state
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalSummary, setApprovalSummary] = useState("Approved by SOC Lead");
+
+  // Revocation modal state
+  const [showRevokeModal, setShowRevokeModal] = useState(false);
+  const [revokeTargetVersion, setRevokeTargetVersion] = useState<PromptVersion | null>(null);
+  const [revocationReason, setRevocationReason] = useState("");
+  const [revoking, setRevoking] = useState(false);
 
   // Actual Prompt Inspector Modal state
   const [promptInspectorOpen, setPromptInspectorOpen] = useState(false);
@@ -329,7 +336,7 @@ function AgentIntelligenceStudioContent() {
           } else if (tabParam === "learning") {
             setPrimaryTab("learning");
             setStudioTab("learning");
-          } else if (["editor", "intelligence", "contract", "quality", "simulation", "drift"].includes(tabParam)) {
+          } else if (["editor", "intelligence", "contract", "quality", "simulation", "drift", "history"].includes(tabParam)) {
             setPrimaryTab("advanced");
             setAdvancedSection(tabParam as any);
             setStudioTab(tabParam as any);
@@ -847,13 +854,29 @@ function AgentIntelligenceStudioContent() {
     }
   };
 
-  const handleRollback = async () => {
-    if (!selectedRuleId || !selectedVersionId) return;
-    if (!confirm(`Are you sure you want to rollback production prompt to Version content from ${selectedVersion?.version_number}? This will create a new approved version.`)) return;
+  const handleRollback = async (targetVerId?: unknown) => {
+    const versionIdToRollback = (typeof targetVerId === "string" ? targetVerId : null) || selectedVersionId;
+    if (!selectedRuleId || !versionIdToRollback) return;
+    const targetVer = rulePrompt?.versions.find((v) => v.id === versionIdToRollback) || selectedVersion;
+    if (targetVer?.status === "REVOKED") {
+      setFeedback({
+        type: "error",
+        text: `Cannot rollback to Version ${targetVer?.version_number} because it has been REVOKED. Revoked policies are permanently retired and cannot be reactivated.`,
+      });
+      return;
+    }
+    if (targetVer?.status !== "APPROVED") {
+      setFeedback({
+        type: "error",
+        text: `Cannot rollback to Version ${targetVer?.version_number} because its status is ${targetVer?.status}. Only APPROVED policy versions can be restored.`,
+      });
+      return;
+    }
+    if (!confirm(`Are you sure you want to rollback production prompt to Version ${targetVer?.version_number}? This will create a new approved baseline based on this snapshot.`)) return;
     setActionLoading(true);
     setFeedback(null);
     try {
-      const rolled = await api.rollbackPromptVersion(selectedRuleId, selectedVersionId);
+      const rolled = await api.rollbackPromptVersion(selectedRuleId, versionIdToRollback);
       await fetchPrompt(selectedRuleId);
       setSelectedVersionId(rolled.id);
       loadVersionIntoForm(rolled);
@@ -866,6 +889,33 @@ function AgentIntelligenceStudioContent() {
       setFeedback({ type: "error", text: err.message });
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleOpenRevoke = (ver: PromptVersion) => {
+    setRevokeTargetVersion(ver);
+    setRevocationReason("");
+    setShowRevokeModal(true);
+  };
+
+  const handleConfirmRevoke = async () => {
+    if (!selectedRuleId || !revokeTargetVersion || !revocationReason.trim()) return;
+    setRevoking(true);
+    try {
+      await api.revokePromptVersion(selectedRuleId, revokeTargetVersion.id, revocationReason.trim());
+      await fetchPrompt(selectedRuleId);
+      setShowRevokeModal(false);
+      setRevokeTargetVersion(null);
+      setRevocationReason("");
+      setFeedback({
+        type: "warning",
+        text: `Policy Version ${revokeTargetVersion.version_number} has been REVOKED. AI verdict execution is suspended until an approved replacement is validated.`,
+      });
+      loadSummaries();
+    } catch (err: any) {
+      setFeedback({ type: "error", text: `Revocation failed: ${err.message}` });
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -1656,22 +1706,6 @@ function AgentIntelligenceStudioContent() {
                 <button
                   type="button"
                   onClick={() => {
-                    setPromptInspectorIncidentId(null);
-                    setPromptInspectorRuleId(selectedRuleId);
-                    setPromptInspectorVersionId(selectedVersionId);
-                    setPromptInspectorInitialMode("capture");
-                    setPromptInspectorOpen(true);
-                  }}
-                  className="px-2.5 py-1.5 rounded-lg border border-emerald-700/80 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 hover:text-emerald-200 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
-                  title="Inspect exact prompt payload sent to Local LLM for this rule"
-                >
-                  <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="hidden sm:inline">View Actual LLM Prompt</span>
-                  <span className="sm:hidden">Actual Prompt</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
                     setCompactUi(false);
                     if (typeof window !== "undefined") {
                       localStorage.setItem("VERDICTUM_COMPACT_UI_ENABLED", "false");
@@ -2208,6 +2242,22 @@ function AgentIntelligenceStudioContent() {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => { setAdvancedSection("history"); setStudioTab("history"); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
+                advancedSection === "history"
+                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <History className="w-3.5 h-3.5 text-sky-400" />
+              Version History
+              {rulePrompt?.versions.some((v) => v.status === "REVOKED") && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
+                  REVOKED
+                </span>
+              )}
+            </button>
           </div>
           <span className="text-[10px] text-slate-500 font-mono">Advanced Technical Controls</span>
         </div>
@@ -2274,12 +2324,17 @@ function AgentIntelligenceStudioContent() {
                               </span>
                             )}
                           </span>
-                          <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${ver.status === "APPROVED"
-                            ? "bg-emerald-950/90 text-emerald-400 border border-emerald-800/80"
-                            : ver.status === "DRAFT"
-                              ? "bg-amber-950/90 text-amber-300 border border-amber-700/80"
-                              : "bg-slate-900 text-slate-400 border border-slate-800"
-                            }`}>
+                          <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${
+                            ver.status === "APPROVED"
+                              ? "bg-emerald-950/90 text-emerald-400 border border-emerald-800/80"
+                              : ver.status === "REVOKED"
+                              ? "bg-rose-950/90 text-rose-400 border border-rose-800/80"
+                              : ver.status === "VALIDATED"
+                              ? "bg-sky-950/90 text-sky-400 border border-sky-800/80"
+                              : ver.status === "ARCHIVED"
+                              ? "bg-slate-900 text-slate-500 border border-slate-800"
+                              : "bg-amber-950/90 text-amber-300 border border-amber-700/80"
+                          }`}>
                             {ver.status}
                           </span>
                         </div>
@@ -3725,6 +3780,225 @@ function AgentIntelligenceStudioContent() {
                 )}
               </div>
             )}
+
+            {/* TAB: VERSION HISTORY & POLICY GOVERNANCE */}
+            {(advancedSection === "history" || studioTab === "history") && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl theme-glass-panel flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <History className="w-5 h-5 text-sky-400" />
+                      <h2 className="text-base font-bold text-slate-100">Policy Version Lifecycle &amp; Governance</h2>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+                      Authoritative policy lifecycle: <code className="text-amber-400">DRAFT</code> → <code className="text-sky-400">VALIDATED</code> → <code className="text-emerald-400">APPROVED</code> → <code className="text-cyan-400">ACTIVE</code>. Revoked policies are permanently retired and blocked from runtime AI execution.
+                    </p>
+                  </div>
+                  {isAdmin && (
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-950/80 border border-indigo-800 text-indigo-300 flex items-center gap-1.5 shrink-0">
+                      <Shield className="w-3.5 h-3.5 text-indigo-400" />
+                      Administrator Controls Active
+                    </span>
+                  )}
+                </div>
+
+                {/* Revocation / Suspension Alert if any version is revoked or AI execution suspended */}
+                {(rulePrompt?.ai_execution_suspended || rulePrompt?.versions.some((v) => v.status === "REVOKED")) && (
+                  <div className="p-3.5 rounded-xl border border-rose-800/80 bg-rose-950/40 text-rose-200 text-xs flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div className="font-bold text-rose-300">
+                        Policy Revocation / Execution Suspension in Effect
+                      </div>
+                      <p className="text-[11px] text-rose-200/90 leading-relaxed">
+                        {rulePrompt?.ai_execution_suspended
+                          ? `AI Verdict Execution is currently SUSPENDED: ${rulePrompt.suspension_reason || "Policy suspended by administrator or automated guard."}`
+                          : "One or more policy versions have been revoked. Revoked versions cannot be rolled back, reactivated, or dispatched to Local LLM."}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Detailed Version List */}
+                <div className="space-y-3">
+                  {rulePrompt?.versions.map((ver) => {
+                    const isActive = ver.id === rulePrompt.active_version_id;
+                    const isSelected = ver.id === selectedVersionId;
+                    const isRevoked = ver.status === "REVOKED";
+                    const isApproved = ver.status === "APPROVED";
+
+                    return (
+                      <div
+                        key={ver.id}
+                        className={`p-4 rounded-xl border transition-all ${
+                          isRevoked
+                            ? "border-rose-900/70 bg-rose-950/20"
+                            : isSelected
+                            ? "border-cyan-500/60 bg-slate-900/90 shadow-lg"
+                            : "border-slate-800/80 bg-slate-950/70 hover:border-slate-700"
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800/70 pb-2.5">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-base font-bold text-slate-100">
+                              Version {ver.version_number}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                ver.status === "APPROVED"
+                                  ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                                  : ver.status === "REVOKED"
+                                  ? "bg-rose-950 text-rose-400 border border-rose-800"
+                                  : ver.status === "VALIDATED"
+                                  ? "bg-sky-950 text-sky-400 border border-sky-800"
+                                  : ver.status === "ARCHIVED"
+                                  ? "bg-slate-900 text-slate-500 border border-slate-800"
+                                  : "bg-amber-950 text-amber-400 border border-amber-800"
+                              }`}
+                            >
+                              {ver.status}
+                            </span>
+                            {isActive && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-cyan-400" />
+                                {isRevoked ? "Active Assignment (REVOKED - Suspended)" : "Active Production Baseline"}
+                              </span>
+                            )}
+                            {ver.is_template_draft && (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-sky-950/60 text-sky-400 border border-sky-800/60">
+                                Template Draft
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+                            <span>Created: {new Date(ver.created_at).toLocaleString()}</span>
+                            {ver.created_by_user_id && (
+                              <span>by <strong className="text-slate-300">{ver.created_by_user_id}</strong></span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Revocation Notice Box */}
+                        {isRevoked && (
+                          <div className="mt-3 p-3 rounded-lg border border-rose-800/80 bg-rose-950/40 text-xs text-rose-200 space-y-1">
+                            <div className="flex items-center justify-between text-rose-300 font-bold">
+                              <span className="flex items-center gap-1.5">
+                                <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                                REVOCATION AUDIT RECORD
+                              </span>
+                              <span className="text-[10px] font-mono text-rose-400">
+                                {ver.revoked_at ? new Date(ver.revoked_at).toLocaleString() : "Date unavailable"}
+                              </span>
+                            </div>
+                            <div className="text-[11px] leading-relaxed">
+                              <strong>Mandatory Reason:</strong> {ver.revocation_reason || "No explicit reason recorded."}
+                            </div>
+                            <div className="text-[10px] text-rose-300/80 flex items-center gap-3 pt-0.5 font-mono">
+                              <span>Revoked By: {ver.revoked_by_user_id || "Administrator"}</span>
+                              <span>·</span>
+                              <span>Previous Status: {ver.previous_status || "APPROVED"}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Approval Info */}
+                        {ver.approved_at && !isRevoked && (
+                          <div className="mt-2 text-[11px] text-emerald-400/90 font-mono flex items-center gap-2">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            <span>Approved by {ver.approved_by_user_id || "SOC Lead"} at {new Date(ver.approved_at).toLocaleString()}</span>
+                          </div>
+                        )}
+
+                        <div className="mt-2.5 text-xs text-slate-300">
+                          <span className="text-slate-500 font-semibold">Change Summary: </span>
+                          <span>{ver.change_summary || "No change notes recorded."}</span>
+                        </div>
+
+                        {/* Actions Toolbar */}
+                        <div className="mt-3.5 pt-2.5 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedVersionId(ver.id);
+                                loadVersionIntoForm(ver);
+                                setAdvancedSection("editor");
+                                setStudioTab("editor");
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                            >
+                              <FileCode className="w-3.5 h-3.5 text-slate-400" />
+                              Inspect in Editor
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPromptInspectorIncidentId(null);
+                                setPromptInspectorRuleId(selectedRuleId);
+                                setPromptInspectorVersionId(ver.id);
+                                setPromptInspectorInitialMode("capture");
+                                setPromptInspectorOpen(true);
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg border border-emerald-800/80 bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+                            >
+                              <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                              View Actual LLM Prompt
+                            </button>
+                          </div>
+
+                          {/* Administrative Controls */}
+                          {isAdmin && (
+                            <div className="flex items-center gap-2">
+                              {/* Revoke Approval Button */}
+                              {isApproved && (
+                                <button
+                                  type="button"
+                                  disabled={actionLoading}
+                                  onClick={() => handleOpenRevoke(ver)}
+                                  className="px-3 py-1.5 rounded-lg border border-rose-800/90 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-rose-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+                                  title="Revoke approval for this version (Mandatory reason required)"
+                                >
+                                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                                  Revoke Approval
+                                </button>
+                              )}
+
+                              {/* Rollback Button */}
+                              {!isActive && (
+                                <button
+                                  type="button"
+                                  disabled={actionLoading || isRevoked || !isApproved}
+                                  onClick={() => handleRollback(ver.id)}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                                    isRevoked
+                                      ? "border border-slate-800 bg-slate-900 text-slate-600 cursor-not-allowed"
+                                      : !isApproved
+                                      ? "border border-slate-800 bg-slate-900 text-slate-600 cursor-not-allowed"
+                                      : "border border-amber-800/80 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 shadow-sm"
+                                  }`}
+                                  title={
+                                    isRevoked
+                                      ? "Revoked versions cannot be reactivated or rolled back to"
+                                      : !isApproved
+                                      ? "Only approved policy versions can be activated via rollback"
+                                      : `Rollback production baseline to Version ${ver.version_number}`
+                                  }
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                                  Rollback to This Version
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -4066,6 +4340,64 @@ function AgentIntelligenceStudioContent() {
                 className="px-3.5 py-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs font-bold"
               >
                 Confirm Approval &amp; Activate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Revocation Confirmation Modal (Admin Only, Mandatory Justification) */}
+      {showRevokeModal && revokeTargetVersion && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-rose-800/80 rounded-xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-2.5 text-rose-400">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <h3 className="text-sm font-bold text-slate-100">Revoke Policy Version Approval</h3>
+            </div>
+            
+            <div className="space-y-2 text-xs text-slate-300">
+              <p>
+                You are revoking approval for <strong>Version {revokeTargetVersion.version_number}</strong> of rule <strong>{rulePrompt?.rule_name}</strong>.
+              </p>
+              <div className="p-3 rounded-lg border border-rose-900/60 bg-rose-950/30 text-rose-200 text-[11px] leading-relaxed">
+                <strong>Governance Warning:</strong> Revoking a policy permanently removes its trusted status and immediately suspends autonomous Local LLM execution if it was active. Revoked policies cannot be selected, restored via rollback, or silently reactivated.
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                <span>Mandatory Revocation Reason / Security Justification:</span>
+                <span className="text-[10px] text-rose-400 font-mono">* Required</span>
+              </label>
+              <textarea
+                value={revocationReason}
+                onChange={(e) => setRevocationReason(e.target.value)}
+                placeholder="Explain why this policy version is no longer trusted (e.g. contains endpoint malware instructions instead of network scan sweep logic)..."
+                className="w-full h-24 p-2.5 text-xs rounded-lg border border-rose-900/70 bg-slate-900 text-slate-200 focus:outline-none focus:border-rose-500 font-mono"
+              />
+            </div>
+
+            <div className="flex justify-end items-center gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                disabled={revoking}
+                onClick={() => {
+                  setShowRevokeModal(false);
+                  setRevokeTargetVersion(null);
+                  setRevocationReason("");
+                }}
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={revoking || !revocationReason.trim()}
+                onClick={handleConfirmRevoke}
+                className="px-4 py-1.5 bg-rose-700 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                {revoking ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+                Confirm Revocation
               </button>
             </div>
           </div>

@@ -484,68 +484,81 @@ async def run_shared_verdict_pipeline(
     if is_simulation:
         active_v = prompt_version or active_approved_version
 
-    # 1. Policy Approval Gate (Live triage requires APPROVED unless mock fallback in dev/test)
-    if not active_v and not is_simulation:
-        if not allow_simulated_fallback or is_prod:
-            deferral_detail = (
-                "DETECTION_POLICY_PENDING_APPROVAL: No approved investigation policy exists for this detection rule. Triage deferred to human analyst."
-                if rule
-                else "DETECTION_POLICY_PENDING_APPROVAL: Incident has no matched approved detection rule policy. Triage deferred to human analyst."
-            )
-            cert_empty = await assess_policy_runtime_certification(db, rule, None)
-            verdict_data = {
-                "incident_id": incident.incident_id,
-                "proposed_verdict": "REQUIRES_ATTENTION",
-                "verdict": "REQUIRES_ATTENTION",
-                "confidence": 0.0,
-                "raw_model_confidence": 0.0,
-                "reason": deferral_detail,
-                "supporting_evidence": [],
-                "missing_evidence": ["Approved detection rule investigation policy (Studio approval required)"],
-                "analyst_questions": ["Please review and approve the detection policy in Agent Intelligence Studio."],
-                "latency_ms": 0,
-                "model_identifier": "POLICY_GUARD",
-                "prompt_tokens": 0,
-                "completion_tokens": 0,
-                "total_tokens": 0,
-                "is_simulated": False,
-                "execution_provenance": "POLICY_GUARD",
-                "configured_provider": "POLICY_GUARD",
-                "test_environment": classify_execution_provenance(model_identifier="POLICY_GUARD")["test_environment"],
-                "validation_status": "POLICY_NOT_APPROVED",
-                "validation_reason_codes": ["POLICY_NOT_APPROVED", "EVIDENCE_CONTRACT_UNVERIFIED"],
-                "is_decisive_accepted": False,
-                "proposal_validation_outcome": "POLICY_NOT_APPROVED",
-                "final_disposition": "DEFERRED_PENDING_POLICY_APPROVAL",
-                "abstention_reason": deferral_detail,
-                "evidence_completeness": 0.0,
-                "grounding_ratio": 0.0,
-                "canonical_evidence_count": norm_result.total_evidence_count,
-                "reevaluation_eligible": True,
-                "deferral_reason": "POLICY_NOT_APPROVED",
-                "reevaluation_attempts": prev_attempts + 1,
-                "rule_name": rule.name if rule else incident.title,
-                "severity": incident.severity,
-                "evaluated_at": utc_now().isoformat(),
-                "evaluated_by_user": username,
-                **_governance_fields(cert_empty),
-            }
-            await _record_intercept(verdict_data, deferral_detail)
-            return VerdictPipelineResult(
-                verdict_data=verdict_data,
-                early_exit=True,
-                early_exit_kind="POLICY_NOT_APPROVED",
-                norm_result=norm_result,
-                certification=cert_empty,
-                is_abstained=True,
-                effective_verdict="REQUIRES_ATTENTION",
-                escalation_reason=deferral_detail,
-                prompt_capture_id=verdict_data.get("prompt_capture_id"),
-                prompt_execution_id=execution_id,
-                prompt_sha256=verdict_data.get("prompt_sha256"),
-                prompt_integrity_status="UNVERIFIED",
-            )
-        active_v = prompt_version
+    # 1. Authoritative Policy Eligibility & Lifecycle Governance Gate
+    from app.services.policy_eligibility_service import PolicyEligibilityService
+    eligibility = await PolicyEligibilityService.evaluate_eligibility(
+        db=db,
+        rule=rule,
+        candidate_version=prompt_version,
+        active_approved_version=active_approved_version,
+        is_simulation=is_simulation,
+    )
+
+    if not eligibility.is_eligible and (not is_simulation or not allow_mock):
+        deferral_detail = f"{eligibility.reason_code}: {eligibility.explanation}"
+        cert_empty = await assess_policy_runtime_certification(db, rule, None)
+        disp = "DEFERRED_PENDING_POLICY_APPROVAL"
+        if eligibility.status == "POLICY_REVOKED":
+            disp = "BLOCKED_POLICY_REVOKED"
+        elif eligibility.status == "SEMANTIC_MISMATCH":
+            disp = "BLOCKED_SEMANTIC_MISMATCH"
+        elif eligibility.status == "RULE_SUSPENDED":
+            disp = "BLOCKED_RULE_SUSPENDED"
+
+        verdict_data = {
+            "incident_id": incident.incident_id,
+            "proposed_verdict": "REQUIRES_ATTENTION",
+            "verdict": "REQUIRES_ATTENTION",
+            "confidence": 0.0,
+            "raw_model_confidence": 0.0,
+            "reason": deferral_detail,
+            "supporting_evidence": [],
+            "missing_evidence": [eligibility.explanation],
+            "analyst_questions": ["Please inspect policy status and governance gates in Agent Intelligence Studio."],
+            "latency_ms": 0,
+            "model_identifier": "POLICY_GUARD",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "is_simulated": False,
+            "execution_provenance": "POLICY_GUARD",
+            "configured_provider": "POLICY_GUARD",
+            "test_environment": classify_execution_provenance(model_identifier="POLICY_GUARD")["test_environment"],
+            "validation_status": eligibility.status,
+            "validation_reason_codes": [eligibility.reason_code],
+            "is_decisive_accepted": False,
+            "proposal_validation_outcome": eligibility.status,
+            "final_disposition": disp,
+            "abstention_reason": deferral_detail,
+            "evidence_completeness": 0.0,
+            "grounding_ratio": 0.0,
+            "canonical_evidence_count": norm_result.total_evidence_count,
+            "reevaluation_eligible": True,
+            "deferral_reason": eligibility.reason_code,
+            "reevaluation_attempts": prev_attempts + 1,
+            "rule_name": rule.name if rule else incident.title,
+            "severity": incident.severity,
+            "evaluated_at": utc_now().isoformat(),
+            "evaluated_by_user": username,
+            **_governance_fields(cert_empty),
+        }
+        await _record_intercept(verdict_data, deferral_detail)
+        return VerdictPipelineResult(
+            verdict_data=verdict_data,
+            early_exit=True,
+            early_exit_kind=eligibility.reason_code,
+            norm_result=norm_result,
+            certification=cert_empty,
+            is_abstained=True,
+            effective_verdict="REQUIRES_ATTENTION",
+            proposed_verdict="REQUIRES_ATTENTION",
+            escalation_reason=deferral_detail,
+            prompt_capture_id=verdict_data.get("prompt_capture_id"),
+            prompt_execution_id=execution_id,
+            prompt_sha256=verdict_data.get("prompt_sha256"),
+            prompt_integrity_status="UNVERIFIED",
+        )
+    active_v = prompt_version
 
     # 2. Runtime Governance / Autonomous Authorization Gate (AIS-F03)
     certification = await assess_policy_runtime_certification(db, rule, active_v)
