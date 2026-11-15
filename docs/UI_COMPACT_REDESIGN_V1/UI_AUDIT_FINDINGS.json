@@ -1,0 +1,190 @@
+{
+  "audit_metadata": {
+    "system_name": "Verdictum AI",
+    "version": "1.0.0",
+    "audit_date": "2026-11-15",
+    "framework": "Next.js 16.4.5 + React 19.3.0 + Tailwind CSS v4",
+    "total_defects_cataloged": 10,
+    "severity_breakdown": {
+      "CRITICAL": 1,
+      "HIGH": 4,
+      "MEDIUM": 4,
+      "LOW": 1
+    }
+  },
+  "findings": [
+    {
+      "id": "DEFECT-01",
+      "severity": "CRITICAL",
+      "title": "Critical Squeeze, Title Clipping, and Dead Right Space in Agent Intelligence Studio Rule Detail",
+      "affected_pages": [
+        "/agent-intelligence-studio",
+        "/prompt-studio"
+      ],
+      "file_path": "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+      "code_locations": [
+        "Lines 499-692 (flex flex-col md:flex-row md:items-center justify-between gap-3)",
+        "Lines 502-505 (h1 truncate)",
+        "Lines 512-578 (5 governance status badge containers)",
+        "Line 580 (max-w-3xl on description)",
+        "Lines 610-692 (flex flex-wrap items-center gap-1.5 shrink-0 on action buttons)"
+      ],
+      "root_cause": "The parent container uses flex-row with md: breakpoint where the left block has min-w-0 and the right action button container has shrink-0 with 7 wide buttons (>750px). On 1024px-1366px screens, the left side is squeezed into 250px-400px, causing the rule title to be aggressively truncated by the truncate class, while 5 governance badges stack awkwardly into 4 vertical rows. On large displays (1440px-1920px), descriptions are hard-capped at max-w-3xl and lower sections are stacked in a single column, creating a massive empty black gutter on the right side.",
+      "user_impact": "Operators cannot read full rule names; key governance statuses are disfigured; screen real estate on large SOC displays is 50% wasted.",
+      "proposed_remediation": "Decouple the Action Ribbon from the Title Header. Remove truncate from h1 and allow title to wrap cleanly up to 2 lines (line-clamp-2). Implement a 12-column balanced grid with 8 columns on the left (Objective, 6-Stage Checklist, Diagnostics) and 4 columns on the right (Readiness Summary, 4 Metric Tiles, Version History, Evidence Feasibility). Remove max-w-3xl.",
+      "target_phase": "Phase B"
+    },
+    {
+      "id": "DEFECT-02",
+      "severity": "HIGH",
+      "title": "Unbounded Multi-Rule Chip Overload in AI Triage Workbench",
+      "affected_pages": [
+        "/ai-triage-workbench",
+        "/incidents"
+      ],
+      "file_path": "frontend/src/app/ai-triage-workbench/page.tsx",
+      "code_locations": [
+        "Lines 468-500 ({combinesMultipleRules && (...)})"
+      ],
+      "root_cause": "When search results match multiple SIEM rules, the component iterates over all matchedRules and renders an individual button chip for every rule. Queries matching 20 to 50 rules generate 20 to 50 chips wrapping across multiple lines.",
+      "user_impact": "Consumes 250px-400px of vertical space, pushing the primary incident table completely below the fold and forcing analysts to scroll.",
+      "proposed_remediation": "Replace raw chip iteration with a CompactRuleScopeBar featuring a 1-line summary alert, a searchable canonical rule popover dropdown, and at most the top 3 high-volume rule chips with a +{n} more toggle.",
+      "target_phase": "Phase C"
+    },
+    {
+      "id": "DEFECT-03",
+      "severity": "HIGH",
+      "title": "Bloated 5-Level Vertical Card Stack in Telemetry Hub",
+      "affected_pages": [
+        "/telemetry-hub",
+        "/imports"
+      ],
+      "file_path": "frontend/src/app/telemetry-hub/page.tsx",
+      "code_locations": [
+        "Lines 276-850 (Sections 1 through 5)"
+      ],
+      "root_cause": "All telemetry features (Continuous Poller, Single Pull, ZIP Upload, Ingestion Jobs, Core Timeline) are rendered as separate, full-width vertical cards with redundant decorative banners, 12 scattered button styles, and multiple status pills.",
+      "user_impact": "Requires >2,400px of vertical scrolling for everyday ingestion operations; creates visual confusion between SIEM network status and Local LLM inference backlog.",
+      "proposed_remediation": "Reorganize into a Dual-Column Ingestion Control Center: top 4 compact KPI tiles, Continuous Poller on left (7 cols), Tabbed On-Demand Ingestion (Single ID + ZIP Upload) on right (5 cols), and Tabbed Ingestion Logs & Core Database Timeline.",
+      "target_phase": "Phase C"
+    },
+    {
+      "id": "DEFECT-04",
+      "severity": "HIGH",
+      "title": "Action Column Clipping in Agent Intelligence Studio Rule Directory Table",
+      "affected_pages": [
+        "/agent-intelligence-studio",
+        "/prompt-studio"
+      ],
+      "file_path": "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "code_locations": [
+        "Lines 1347-1525 (Table Header & Row Action td)"
+      ],
+      "root_cause": "The 9-column table lacks minimum column widths. On standard laptop viewports (1280px-1366px), horizontal auto-layout compresses or clips the Action column containing 3 interactive buttons (Terminal, Download, Open Studio).",
+      "user_impact": "Operators cannot reliably click the primary Open Studio button; horizontal scrollbars frequently appear inside table wrappers.",
+      "proposed_remediation": "Define strict column widths (w-64 min-w-[240px] for Rule Name, w-24 for Severity, etc.) and make the Action column sticky to the right edge (sticky right-0 bg-slate-950/95 shadow-l).",
+      "target_phase": "Phase B"
+    },
+    {
+      "id": "DEFECT-05",
+      "severity": "HIGH",
+      "title": "Brute-Force Tailwind Utility Overrides in Global CSS",
+      "affected_pages": [
+        "ALL_PAGES"
+      ],
+      "file_path": "frontend/src/app/globals.css",
+      "code_locations": [
+        "Lines 171-244 (.theme-main-canvas .p-6, .gap-6, table th/td)"
+      ],
+      "root_cause": "Descendant CSS selectors inside .theme-main-canvas bluntly override standard Tailwind classes (forcing p-6 to 0.75rem, gap-6 to 0.625rem, etc.) while leaving others untouched (e.g. p-8, gap-8).",
+      "user_impact": "Destroys utility predictability, causes erratic density mismatches across nested components, and crushes interactive tap targets below accessibility minimums.",
+      "proposed_remediation": "Completely remove lines 171-244 from globals.css. Establish standard VCDS 1.0 spacing tokens and apply explicit Tailwind utility classes directly to components.",
+      "target_phase": "Phase A"
+    },
+    {
+      "id": "DEFECT-06",
+      "severity": "MEDIUM",
+      "title": "Root text-xs Inheritance Flattening Typographical Hierarchy",
+      "affected_pages": [
+        "ALL_PAGES"
+      ],
+      "file_path": "frontend/src/components/layout/Shell.tsx",
+      "code_locations": [
+        "Line 23 (<div className=\"... font-sans text-xs\">)"
+      ],
+      "root_cause": "Setting text-xs (12px) at the root wrapper forces all child components to inherit 12px, suppressing natural typographical differentiation between headings, body copy, and metadata.",
+      "user_impact": "Flat typographical hierarchy; operators struggle to distinguish secondary labels from primary operational metrics.",
+      "proposed_remediation": "Remove text-xs from Shell.tsx; set root base font size to text-sm (14px) and apply an explicit 5-tier typographical scale (18px Display, 14px H2, 12px H3/Body, 11px Monospace).",
+      "target_phase": "Phase A"
+    },
+    {
+      "id": "DEFECT-07",
+      "severity": "MEDIUM",
+      "title": "Floating Island Margins on Sidebar and Header in Obsidian Theme",
+      "affected_pages": [
+        "ALL_PAGES"
+      ],
+      "file_path": "frontend/src/app/globals.css",
+      "code_locations": [
+        "Lines 143-147, 160-165 (margin: 0.375rem)"
+      ],
+      "root_cause": "The Obsidian theme applies arbitrary 6px outer margins to the sidebar and header to create a floating card effect. When combined with main canvas padding, it produces mismatched outer gutter widths.",
+      "user_impact": "Visual misalignment and jarring window edges on high-resolution displays.",
+      "proposed_remediation": "Anchor sidebar and header edge-to-edge (margin: 0) and standardize main canvas padding to 12px (p-3).",
+      "target_phase": "Phase A"
+    },
+    {
+      "id": "DEFECT-08",
+      "severity": "MEDIUM",
+      "title": "Redundant and Scattered Double-Blind Review Controls",
+      "affected_pages": [
+        "/ai-triage-workbench",
+        "/human-review-queue"
+      ],
+      "file_path": "frontend/src/components/layout/Header.tsx",
+      "code_locations": [
+        "Header.tsx Lines 59-79",
+        "ai-triage-workbench/page.tsx Lines 290-309, 322-329",
+        "human-review-queue/page.tsx Lines 276-295, 305-312"
+      ],
+      "root_cause": "Double-blind review toggle exists in the global Topbar, repeats as a button in individual page headers, and repeats again as a full-width alert banner below the header.",
+      "user_impact": "Wastes screen space and causes confusion about whether the setting is local to the page or global to the user session.",
+      "proposed_remediation": "Centralize the canonical toggle switch exclusively in the global Topbar; replace page banners with a compact 1-line status badge in the page toolbar.",
+      "target_phase": "Phase C"
+    },
+    {
+      "id": "DEFECT-09",
+      "severity": "MEDIUM",
+      "title": "Unconstrained Table Cell Wrapping and Inconsistent Row Heights",
+      "affected_pages": [
+        "/ai-triage-workbench",
+        "/telemetry-hub",
+        "/detection-intelligence"
+      ],
+      "file_path": "frontend/src/app/ai-triage-workbench/page.tsx",
+      "code_locations": [
+        "Table th and td elements without explicit widths or fixed heights"
+      ],
+      "root_cause": "Tables rely on HTML auto-layout without column width percentages or minimum pixel boundaries. Long SIEM event types or usernames trigger arbitrary cell wrapping.",
+      "user_impact": "Table rows vary erratically in height from 32px to 96px, impeding rapid vertical scanning during high-volume triage.",
+      "proposed_remediation": "Standardize fixed row heights (h-9 / 36px) with fixed/min column widths and text tooltips for truncated strings.",
+      "target_phase": "Phase D"
+    },
+    {
+      "id": "DEFECT-10",
+      "severity": "LOW",
+      "title": "GPU Compositing Overhead from Multiple Nested Backdrop Blur Filters",
+      "affected_pages": [
+        "ALL_PAGES"
+      ],
+      "file_path": "frontend/src/app/globals.css",
+      "code_locations": [
+        "Lines 59, 107-125, 249, 256 (backdrop-filter: blur(18px) saturate(135%))"
+      ],
+      "root_cause": "Obsidian theme applies intensive backdrop blur to dozens of nested cards simultaneously over the animated grid canvas.",
+      "user_impact": "Noticeable frame lag and stutter during scrolling on multi-monitor SOC workstations or virtual desktop infrastructure (VDI).",
+      "proposed_remediation": "Confine backdrop-filter blur strictly to the Topbar and sticky headers; use clean, semi-opaque dark surfaces (rgba(18, 15, 21, 0.95)) for interior cards.",
+      "target_phase": "Phase D"
+    }
+  ]
+}

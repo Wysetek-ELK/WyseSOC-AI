@@ -362,7 +362,7 @@ export default function DetectionIntelligencePage() {
                 <th className="py-2 px-2.5 font-medium">Production Readiness</th>
                 <th className="py-2 px-2.5 font-medium">Data Source</th>
                 <th className="py-2 px-2.5 font-medium">Linked Incidents</th>
-                <th className="py-2 px-2.5 font-medium text-right">Action</th>
+                <th className="py-2 px-2.5 font-medium text-right sticky right-0 bg-slate-900/95 backdrop-blur-xs shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.5)] w-28">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono">
@@ -438,7 +438,7 @@ export default function DetectionIntelligencePage() {
                           {rule.incident_count} Incidents →
                         </Link>
                       </td>
-                      <td className="py-1.5 px-2.5 text-right font-sans">
+                      <td className="py-1.5 px-2.5 text-right font-sans sticky right-0 bg-slate-950/95 group-hover:bg-slate-900/95 backdrop-blur-xs shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.5)]">
                         <div className="inline-flex items-center gap-1.5 justify-end">
                           <Link
                             href={`/agent-intelligence-studio?rule_id=${rule.id}`}

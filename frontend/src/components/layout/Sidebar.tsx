@@ -209,8 +209,9 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`relative z-10 flex flex-col theme-sidebar-shell text-slate-200 transition-all duration-200 select-none ${collapsed ? "w-12" : "w-56"
-        }`}
+      className={`relative z-10 flex flex-col theme-sidebar-shell text-slate-200 transition-all duration-200 select-none ${
+        collapsed ? "w-14" : "w-60"
+      }`}
     >
       {/* Brand Header */}
       <div

@@ -1,0 +1,272 @@
+[
+  {
+    "page": "telemetry_hub",
+    "viewport": "1024x768",
+    "width": 1024,
+    "height": 768,
+    "filename": "telemetry_hub_1024x768.png",
+    "size": 346063,
+    "exists": true
+  },
+  {
+    "page": "ai_triage_workbench",
+    "viewport": "1024x768",
+    "width": 1024,
+    "height": 768,
+    "filename": "ai_triage_workbench_1024x768.png",
+    "size": 399511,
+    "exists": true
+  },
+  {
+    "page": "agent_intelligence_studio",
+    "viewport": "1024x768",
+    "width": 1024,
+    "height": 768,
+    "filename": "agent_intelligence_studio_1024x768.png",
+    "size": 422031,
+    "exists": true
+  },
+  {
+    "page": "mission_control",
+    "viewport": "1024x768",
+    "width": 1024,
+    "height": 768,
+    "filename": "mission_control_1024x768.png",
+    "size": 286241,
+    "exists": true
+  },
+  {
+    "page": "human_review_queue",
+    "viewport": "1024x768",
+    "width": 1024,
+    "height": 768,
+    "filename": "human_review_queue_1024x768.png",
+    "size": 417722,
+    "exists": true
+  },
+  {
+    "page": "detection_intelligence",
+    "viewport": "1024x768",
+    "width": 1024,
+    "height": 768,
+    "filename": "detection_intelligence_1024x768.png",
+    "size": 397004,
+    "exists": true
+  },
+  {
+    "page": "telemetry_hub",
+    "viewport": "1280x800",
+    "width": 1280,
+    "height": 800,
+    "filename": "telemetry_hub_1280x800.png",
+    "size": 438081,
+    "exists": true
+  },
+  {
+    "page": "ai_triage_workbench",
+    "viewport": "1280x800",
+    "width": 1280,
+    "height": 800,
+    "filename": "ai_triage_workbench_1280x800.png",
+    "size": 511919,
+    "exists": true
+  },
+  {
+    "page": "agent_intelligence_studio",
+    "viewport": "1280x800",
+    "width": 1280,
+    "height": 800,
+    "filename": "agent_intelligence_studio_1280x800.png",
+    "size": 525686,
+    "exists": true
+  },
+  {
+    "page": "mission_control",
+    "viewport": "1280x800",
+    "width": 1280,
+    "height": 800,
+    "filename": "mission_control_1280x800.png",
+    "size": 324210,
+    "exists": true
+  },
+  {
+    "page": "human_review_queue",
+    "viewport": "1280x800",
+    "width": 1280,
+    "height": 800,
+    "filename": "human_review_queue_1280x800.png",
+    "size": 535305,
+    "exists": true
+  },
+  {
+    "page": "detection_intelligence",
+    "viewport": "1280x800",
+    "width": 1280,
+    "height": 800,
+    "filename": "detection_intelligence_1280x800.png",
+    "size": 517984,
+    "exists": true
+  },
+  {
+    "page": "telemetry_hub",
+    "viewport": "1366x768",
+    "width": 1366,
+    "height": 768,
+    "filename": "telemetry_hub_1366x768.png",
+    "size": 444919,
+    "exists": true
+  },
+  {
+    "page": "ai_triage_workbench",
+    "viewport": "1366x768",
+    "width": 1366,
+    "height": 768,
+    "filename": "ai_triage_workbench_1366x768.png",
+    "size": 528452,
+    "exists": true
+  },
+  {
+    "page": "agent_intelligence_studio",
+    "viewport": "1366x768",
+    "width": 1366,
+    "height": 768,
+    "filename": "agent_intelligence_studio_1366x768.png",
+    "size": 541638,
+    "exists": true
+  },
+  {
+    "page": "mission_control",
+    "viewport": "1366x768",
+    "width": 1366,
+    "height": 768,
+    "filename": "mission_control_1366x768.png",
+    "size": 325203,
+    "exists": true
+  },
+  {
+    "page": "human_review_queue",
+    "viewport": "1366x768",
+    "width": 1366,
+    "height": 768,
+    "filename": "human_review_queue_1366x768.png",
+    "size": 552660,
+    "exists": true
+  },
+  {
+    "page": "detection_intelligence",
+    "viewport": "1366x768",
+    "width": 1366,
+    "height": 768,
+    "filename": "detection_intelligence_1366x768.png",
+    "size": 532211,
+    "exists": true
+  },
+  {
+    "page": "telemetry_hub",
+    "viewport": "1440x900",
+    "width": 1440,
+    "height": 900,
+    "filename": "telemetry_hub_1440x900.png",
+    "size": 548785,
+    "exists": true
+  },
+  {
+    "page": "ai_triage_workbench",
+    "viewport": "1440x900",
+    "width": 1440,
+    "height": 900,
+    "filename": "ai_triage_workbench_1440x900.png",
+    "size": 643731,
+    "exists": true
+  },
+  {
+    "page": "agent_intelligence_studio",
+    "viewport": "1440x900",
+    "width": 1440,
+    "height": 900,
+    "filename": "agent_intelligence_studio_1440x900.png",
+    "size": 650266,
+    "exists": true
+  },
+  {
+    "page": "mission_control",
+    "viewport": "1440x900",
+    "width": 1440,
+    "height": 900,
+    "filename": "mission_control_1440x900.png",
+    "size": 379449,
+    "exists": true
+  },
+  {
+    "page": "human_review_queue",
+    "viewport": "1440x900",
+    "width": 1440,
+    "height": 900,
+    "filename": "human_review_queue_1440x900.png",
+    "size": 669896,
+    "exists": true
+  },
+  {
+    "page": "detection_intelligence",
+    "viewport": "1440x900",
+    "width": 1440,
+    "height": 900,
+    "filename": "detection_intelligence_1440x900.png",
+    "size": 648554,
+    "exists": true
+  },
+  {
+    "page": "telemetry_hub",
+    "viewport": "1920x1080",
+    "width": 1920,
+    "height": 1080,
+    "filename": "telemetry_hub_1920x1080.png",
+    "size": 850722,
+    "exists": true
+  },
+  {
+    "page": "ai_triage_workbench",
+    "viewport": "1920x1080",
+    "width": 1920,
+    "height": 1080,
+    "filename": "ai_triage_workbench_1920x1080.png",
+    "size": 1009322,
+    "exists": true
+  },
+  {
+    "page": "agent_intelligence_studio",
+    "viewport": "1920x1080",
+    "width": 1920,
+    "height": 1080,
+    "filename": "agent_intelligence_studio_1920x1080.png",
+    "size": 996164,
+    "exists": true
+  },
+  {
+    "page": "mission_control",
+    "viewport": "1920x1080",
+    "width": 1920,
+    "height": 1080,
+    "filename": "mission_control_1920x1080.png",
+    "size": 594542,
+    "exists": true
+  },
+  {
+    "page": "human_review_queue",
+    "viewport": "1920x1080",
+    "width": 1920,
+    "height": 1080,
+    "filename": "human_review_queue_1920x1080.png",
+    "size": 1038723,
+    "exists": true
+  },
+  {
+    "page": "detection_intelligence",
+    "viewport": "1920x1080",
+    "width": 1920,
+    "height": 1080,
+    "filename": "detection_intelligence_1920x1080.png",
+    "size": 1009497,
+    "exists": true
+  }
+]

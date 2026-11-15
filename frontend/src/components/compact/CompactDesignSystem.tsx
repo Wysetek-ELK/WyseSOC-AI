@@ -60,7 +60,7 @@ export function CompactPageHeader({
 }: CompactPageHeaderProps) {
   return (
     <div className="p-3 sm:px-4 rounded-xl theme-glass-panel border border-slate-800/80 bg-slate-950/70 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-      <div className="flex items-start sm:items-center gap-3 min-w-0">
+      <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
         {backAction && (
           <button
             type="button"
@@ -72,19 +72,19 @@ export function CompactPageHeader({
           </button>
         )}
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 truncate">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 break-words leading-snug">
               {title}
             </h1>
             {archetype && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-900 text-cyan-300 border border-cyan-800/60 font-mono uppercase tracking-wide">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-900 text-cyan-300 border border-cyan-800/60 font-mono uppercase tracking-wide shrink-0">
                 {archetype}
               </span>
             )}
             {lifecycleStatus && (
               <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1.5 ${lifecycleStatus.badgeClass}`}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1.5 shrink-0 ${lifecycleStatus.badgeClass}`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${lifecycleStatus.dotClass}`} />
                 {lifecycleStatus.label}
@@ -92,12 +92,12 @@ export function CompactPageHeader({
             )}
           </div>
           {subtitle && (
-            <p className="text-[11px] text-slate-400 mt-0.5 truncate">{subtitle}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">{subtitle}</p>
           )}
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 shrink-0">
+      <div className="flex flex-wrap items-center gap-2 shrink-0 self-start md:self-center">
         {selector}
         {actions}
       </div>
@@ -789,4 +789,161 @@ export function ErrorState({
       )}
     </div>
   );
+}
+
+// =============================================================================
+// 11. COMPACT RULE SCOPE BAR (AI TRIAGE WORKBENCH)
+// =============================================================================
+export interface MatchedRuleItem {
+  rule_uuid?: string | null;
+  logical_rule_id: string;
+  incident_count: number;
+  event_type?: string | null;
+}
+
+export interface CompactRuleScopeBarProps {
+  matchedRules: MatchedRuleItem[];
+  distinctRuleCount: number;
+  totalIncidents: number;
+  exactRuleId: string;
+  onSelectExactRule: (ruleId: string) => void;
+  onClearExactRule: () => void;
+  exactRuleLabel?: string | null;
+}
+
+export function CompactRuleScopeBar({
+  matchedRules,
+  distinctRuleCount,
+  totalIncidents,
+  exactRuleId,
+  onSelectExactRule,
+  onClearExactRule,
+  exactRuleLabel,
+}: CompactRuleScopeBarProps) {
+  const [showAllChips, setShowAllChips] = useState(false);
+
+  // If an exact rule is selected, show active filter banner
+  if (exactRuleId) {
+    const activeRule = matchedRules.find(
+      (r) => (r.rule_uuid || r.logical_rule_id) === exactRuleId
+    );
+    const displayName = activeRule
+      ? activeRule.logical_rule_id
+      : exactRuleLabel || exactRuleId;
+
+    return (
+      <div
+        data-testid="exact-rule-filter-banner"
+        className="rounded-lg border border-cyan-800/80 bg-cyan-950/40 p-2.5 text-xs text-cyan-200 flex flex-wrap items-center justify-between gap-2 shadow-sm"
+      >
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4 text-cyan-400 shrink-0" />
+          <span>
+            Scoped to exact canonical rule:{" "}
+            <strong className="text-white font-mono">{displayName}</strong>
+            {activeRule?.rule_uuid && (
+              <span className="text-slate-400 font-mono ml-1">
+                [{activeRule.rule_uuid.slice(0, 8)}]
+              </span>
+            )}
+            {" — "}
+            <strong>{totalIncidents}</strong> matching incident(s) (aligned with AIS canonical rule filter).
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onClearExactRule}
+          className="text-[10px] px-2.5 py-1 rounded border border-cyan-700 bg-slate-900 text-cyan-300 hover:text-white hover:bg-slate-800 transition-colors shrink-0"
+        >
+          Clear Exact Rule Filter
+        </button>
+      </div>
+    );
+  }
+
+  // If multiple distinct rules matched, show compact scoped selector
+  if (distinctRuleCount > 1) {
+    const topRules = matchedRules.slice(0, 3);
+    const hasMore = matchedRules.length > 3;
+
+    return (
+      <div
+        data-testid="multi-rule-search-warning"
+        className="rounded-lg border border-amber-700/80 bg-amber-950/30 p-2.5 text-xs text-amber-200 space-y-2 shadow-sm"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-[11px] font-semibold">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+            <span>
+              Results combine {distinctRuleCount} distinct SIEM rules across {totalIncidents} incidents. Select an exact canonical rule to avoid cross-rule confusion:
+            </span>
+          </div>
+
+          {/* Quick Dropdown for 1-click jump among all rules */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <label htmlFor="canonical-rule-quick-select" className="sr-only">
+              Select Canonical Rule
+            </label>
+            <select
+              id="canonical-rule-quick-select"
+              aria-label="Filter by Canonical Rule"
+              value=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  onSelectExactRule(e.target.value);
+                }
+              }}
+              className="bg-slate-900 border border-amber-800/80 rounded px-2 py-1 text-[11px] text-amber-100 font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            >
+              <option value="">Jump to rule ({distinctRuleCount})...</option>
+              {matchedRules.map((mr) => {
+                const idVal = mr.rule_uuid || mr.logical_rule_id;
+                return (
+                  <option key={idVal} value={idVal}>
+                    {mr.logical_rule_id} ({mr.incident_count})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+
+        {/* Top 3 Frequent Rule Quick-Select Buttons */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] text-amber-400/80 uppercase font-bold tracking-wider mr-1">
+            Top Rules:
+          </span>
+          {(showAllChips ? matchedRules : topRules).map((mr) => (
+            <button
+              key={`${mr.rule_uuid || "unlinked"}-${mr.logical_rule_id}`}
+              type="button"
+              onClick={() => {
+                onSelectExactRule(mr.rule_uuid || mr.logical_rule_id);
+              }}
+              className="px-2 py-0.5 rounded border border-amber-800/70 bg-slate-900/90 hover:bg-slate-800 text-[10px] font-mono text-amber-100 flex items-center gap-1.5 transition-colors"
+              title={`UUID: ${mr.rule_uuid || "unlinked"} | Event: ${mr.event_type || "N/A"}`}
+            >
+              <span className="font-bold text-cyan-300">{mr.logical_rule_id}</span>
+              {mr.rule_uuid && (
+                <span className="text-slate-400">[{mr.rule_uuid.slice(0, 8)}]</span>
+              )}
+              <span className="px-1 rounded bg-amber-900/60 text-amber-200">{mr.incident_count}</span>
+            </button>
+          ))}
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setShowAllChips(!showAllChips)}
+              className="text-[10px] text-cyan-400 hover:text-cyan-300 underline font-medium px-1.5 py-0.5"
+            >
+              {showAllChips ? "Show Fewer" : `+${matchedRules.length - 3} more`}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }

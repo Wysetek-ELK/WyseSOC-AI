@@ -79,6 +79,10 @@ export default function TelemetryHubPage() {
   const [globalTimeline, setGlobalTimeline] = useState<any[]>([]);
   const [loadingTimeline, setLoadingTimeline] = useState(false);
 
+  // Compact Tab State
+  const [onDemandTab, setOnDemandTab] = useState<"single" | "archive">("single");
+  const [historyTab, setHistoryTab] = useState<"jobs" | "timeline">("jobs");
+
   const loadGlobalTimeline = async () => {
     setLoadingTimeline(true);
     try {
@@ -274,190 +278,133 @@ export default function TelemetryHubPage() {
   };
 
   return (
-    <div className="space-y-2.5 w-full">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 flex items-center gap-2">
-          <DownloadCloud className="h-4 w-4 text-cyan-400" />
-          Telemetry Hub
-        </h1>
-        <p className="text-[11px] text-slate-400 mt-0.5">
-          Sentinel Ingest Worker &amp; Continuous Telemetry Pipeline · Pull all incidents automatically and auto-evaluate with Verdict Triage Agent
-        </p>
+    <div className="space-y-3 w-full">
+      {/* 1. COMPACT PAGE HEADER */}
+      <div className="p-3 sm:px-4 rounded-xl border border-slate-800/80 bg-slate-950/70 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 flex items-center gap-2">
+            <DownloadCloud className="h-4 w-4 text-cyan-400" />
+            Telemetry Hub
+          </h1>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Sentinel Ingest Worker &amp; Continuous Telemetry Pipeline · Automated ingestion, queue scheduling, and AI triage
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/rules"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <FileCode2 className="h-3.5 w-3.5 text-cyan-400" />
+            <span>SIEM Rules</span>
+          </Link>
+          <Link
+            href="/agent-configuration#fortisiem"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <Settings className="h-3.5 w-3.5 text-cyan-400" />
+            <span>SIEM Config</span>
+          </Link>
+        </div>
       </div>
 
-      {/* 1. Continuous 3-Minute Sync & Batch Ingestion Banner */}
-      <div className="rounded-lg border border-cyan-800/60 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/30 p-3 sm:p-4 shadow-md space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800">
-          <div>
-            <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
+      {/* 2. TOP 4 COMPACT KPI TILES */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        {/* Poller Status */}
+        <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+            <span>Continuous Poller</span>
+            <span className={`w-2 h-2 rounded-full ${schedulerStatus?.is_running ? "bg-emerald-400 animate-pulse" : "bg-slate-500"}`} />
+          </div>
+          <div className="my-1">
+            <span className={`text-base sm:text-lg font-extrabold tracking-tight ${schedulerStatus?.is_running ? "text-emerald-400" : "text-slate-400"}`}>
+              {schedulerStatus?.is_running ? "Active (Every 3m)" : "Poller Idle"}
+            </span>
+          </div>
+          <div className="text-[10px] text-slate-500 font-mono truncate">
+            {schedulerStatus?.is_running && countdownSeconds !== null
+              ? `Next sync in ${countdownSeconds >= 60 ? `${Math.floor(countdownSeconds / 60)}m ${countdownSeconds % 60}s` : `${countdownSeconds}s`}`
+              : `Interval: ${schedulerStatus?.interval_seconds || 180}s`}
+          </div>
+        </div>
+
+        {/* Total Alerts Ingested */}
+        <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+            <span>Total Pulled</span>
+            <Database className="w-3.5 h-3.5 text-emerald-400" />
+          </div>
+          <div className="my-1">
+            <span className="text-xl sm:text-2xl font-extrabold text-slate-100 font-mono tabular-nums">
+              {schedulerStatus?.total_pulled_count || 0}
+            </span>
+            <span className="text-xs text-slate-400 ml-1">alerts</span>
+          </div>
+          <div className="text-[10px] text-slate-500 font-mono truncate">
+            Status: {schedulerStatus?.last_status || "IDLE"}
+          </div>
+        </div>
+
+        {/* AI Verdicts Generated */}
+        <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+            <span>AI Verdicts</span>
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+          </div>
+          <div className="my-1">
+            <span className="text-xl sm:text-2xl font-extrabold text-cyan-300 font-mono tabular-nums">
+              {schedulerStatus?.total_ai_verdicts_count || 0}
+            </span>
+            <span className="text-xs text-slate-400 ml-1">verdicts</span>
+          </div>
+          <div className="text-[10px] text-slate-500 truncate">
+            {autoTriageWithLLM ? "Auto-Triage Active" : "Manual Execution"}
+          </div>
+        </div>
+
+        {/* LLM Status & Backlog Queue */}
+        <div className={`p-3 rounded-xl border flex flex-col justify-between ${
+          (schedulerStatus?.pending_ai_verdicts_count ?? 0) > 0
+            ? "border-amber-800/60 bg-amber-950/20"
+            : "border-slate-800 bg-slate-900/60"
+        }`}>
+          <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+            <span>Local LLM Engine</span>
+            <span className={`w-2 h-2 rounded-full ${schedulerStatus?.is_llm_online ? "bg-emerald-400" : "bg-amber-400 animate-pulse"}`} />
+          </div>
+          <div className="my-1">
+            <span className={`text-base sm:text-lg font-extrabold tracking-tight ${schedulerStatus?.is_llm_online ? "text-emerald-300" : "text-amber-400"}`}>
+              {schedulerStatus?.is_llm_online ? "Online" : "Offline"}
+            </span>
+          </div>
+          <div className="text-[10px] font-mono truncate text-slate-400">
+            {(schedulerStatus?.pending_ai_verdicts_count ?? 0) > 0 ? (
+              <span className="text-amber-300 font-bold">{schedulerStatus?.pending_ai_verdicts_count} pending in queue</span>
+            ) : (
+              <span className="text-slate-500">Queue clear (0 pending)</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. DUAL-COLUMN INGESTION CONTROL CENTER */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+        {/* LEFT COLUMN (7 COLS): SENTINEL INGEST WORKER & CONTINUOUS POLLER */}
+        <div className="lg:col-span-7 rounded-xl border border-cyan-800/60 bg-slate-950/90 p-3.5 space-y-3 shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div className="flex items-center gap-2">
               <Bot className="h-4 w-4 text-cyan-400" />
-              Sentinel Ingest Worker &amp; Continuous Telemetry Poller
-            </h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              First pull all historical alerts without Incident IDs, then continuously poll every 3 minutes with automatic LLM verdict generation
-            </p>
-          </div>
+              <div>
+                <h2 className="text-xs sm:text-sm font-bold text-slate-100">
+                  Sentinel Ingest Worker &amp; Poller
+                </h2>
+                <p className="text-[10px] text-slate-400">
+                  Continuous automated ingestion &amp; AI triage with Local LLM
+                </p>
+              </div>
+            </div>
 
-          {/* Status Pills */}
-          <div className="flex flex-wrap items-center gap-2">
-            {schedulerStatus?.is_llm_online ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700 font-mono shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                Local LLM Online
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-700 font-mono shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                Local LLM Offline (Queued)
-              </span>
-            )}
-            {schedulerStatus?.is_running ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 font-mono shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                Active Poller (Every 3 Mins)
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-700 font-mono">
-                <span className="h-2 w-2 rounded-full bg-slate-500" />
-                Continuous Poller Idle
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Poller Control Bar & Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs font-mono">
-          <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
-            <span className="text-[10px] text-slate-400 block font-sans">Polling Interval</span>
-            <span className="font-bold text-cyan-300 text-sm">{schedulerStatus?.interval_seconds || 180}s (3m)</span>
-          </div>
-          <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
-            <span className="text-[10px] text-slate-400 block font-sans">Total Pulled</span>
-            <span className="font-bold text-emerald-400 text-sm">{schedulerStatus?.total_pulled_count || 0} alerts</span>
-          </div>
-          <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
-            <span className="text-[10px] text-slate-400 block font-sans">AI Verdicts Generated</span>
-            <span className="font-bold text-sky-400 text-sm">{schedulerStatus?.total_ai_verdicts_count || 0}</span>
-          </div>
-          <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
-            <span className="text-[10px] text-slate-400 block font-sans">Pending LLM Queue</span>
-            <span className={`font-bold text-sm ${(schedulerStatus?.pending_ai_verdicts_count ?? 0) > 0 ? "text-amber-400 animate-pulse" : "text-slate-400"}`}>
-              {schedulerStatus?.pending_ai_verdicts_count ?? 0} pending
-            </span>
-          </div>
-          <div className="p-2 rounded bg-slate-900/80 border border-slate-800">
-            <span className="text-[10px] text-slate-400 block font-sans">Last Cycle Status</span>
-            <span className="font-bold text-slate-200 text-sm">{schedulerStatus?.last_status || "IDLE"}</span>
-          </div>
-        </div>
-
-        {/* Live Continuous Polling Timer & Last Sync Metadata */}
-        {schedulerStatus?.is_running && (
-          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded bg-emerald-950/20 border border-emerald-900/50 text-[11px] font-mono">
-            <span className="flex items-center gap-1.5 text-emerald-300">
-              <Clock className="w-3.5 h-3.5 text-emerald-400" />
-              Continuous Mode Active · Next sync:{" "}
-              <strong className="text-cyan-300">
-                {countdownSeconds !== null
-                  ? countdownSeconds >= 60
-                    ? `${Math.floor(countdownSeconds / 60)}m ${countdownSeconds % 60}s`
-                    : `${countdownSeconds}s`
-                  : "Scheduled..."}
-              </strong>
-            </span>
-            {schedulerStatus.last_sync_time && (
-              <span className="text-slate-400">
-                Last Synced: {new Date(schedulerStatus.last_sync_time).toLocaleTimeString()}
-              </span>
-            )}
-          </div>
-        )}
-
-        {schedulerStatus?.last_error && schedulerStatus?.is_running && (
-          <div className="px-3 py-1.5 rounded bg-amber-950/40 border border-amber-800/60 text-[11px] text-amber-300 flex items-center justify-between gap-2">
-            <span className="truncate">
-              <strong>Last Cycle Warning:</strong> {schedulerStatus.last_error}
-            </span>
-            <span className="text-[10px] text-amber-400 shrink-0 font-mono">Auto-retrying next cycle</span>
-          </div>
-        )}
-
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* 1. Pull All Button */}
-            <button
-              type="button"
-              onClick={handlePullAllIncidents}
-              disabled={isPullingBatch || isPullingSiem}
-              className="inline-flex items-center gap-1.5 rounded-md bg-cyan-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors shadow-sm"
-            >
-              {isPullingBatch ? (
-                <>
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  Pulling All Incidents...
-                </>
-              ) : (
-                <>
-                  <DownloadCloud className="h-3.5 w-3.5" />
-                  Pull All Incidents Now
-                </>
-              )}
-            </button>
-
-            {/* 2. Start/Pause 3-min Poller Button */}
-            <button
-              type="button"
-              onClick={handleToggleScheduler}
-              disabled={isOperatingScheduler}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-bold text-white transition-colors shadow-sm ${schedulerStatus?.is_running
-                  ? "bg-amber-600 hover:bg-amber-500"
-                  : "bg-emerald-600 hover:bg-emerald-500"
-                }`}
-            >
-              {isOperatingScheduler ? (
-                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              ) : schedulerStatus?.is_running ? (
-                <Pause className="h-3.5 w-3.5" />
-              ) : (
-                <Play className="h-3.5 w-3.5" />
-              )}
-              {schedulerStatus?.is_running ? "Pause Continuous Sync" : "Start Continuous 3-Min Sync"}
-            </button>
-
-            {/* 3. Sync Now Button */}
-            <button
-              type="button"
-              onClick={handleTriggerSchedulerNow}
-              disabled={isOperatingScheduler}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-            >
-              <Zap className="h-3.5 w-3.5 text-cyan-400" />
-              Sync Cycle Now
-            </button>
-
-            {/* 4. Process Pending Button */}
-            {(schedulerStatus?.pending_ai_verdicts_count ?? 0) > 0 && (
-              <button
-                type="button"
-                onClick={handleProcessPending}
-                disabled={isProcessingPending || !schedulerStatus?.is_llm_online}
-                className="inline-flex items-center gap-1.5 rounded-md border border-amber-600 bg-amber-950/60 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:text-white hover:bg-amber-900 disabled:opacity-50 transition-colors shadow-sm"
-                title={schedulerStatus?.is_llm_online ? "Process pending incidents with Local LLM one by one" : "Local LLM is offline. Backlog will auto-process once Local LLM comes online."}
-              >
-                {isProcessingPending ? (
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                )}
-                <span>Reconcile Pending ({schedulerStatus?.pending_ai_verdicts_count})</span>
-              </button>
-            )}
-          </div>
-
-          {/* Options: Auto AI Verdict checkbox */}
-          <div className="flex items-center gap-3 text-xs text-slate-300">
             <label className="flex items-center gap-1.5 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -467,434 +414,529 @@ export default function TelemetryHubPage() {
               />
               <span className="flex items-center gap-1 text-[11px] text-cyan-300 font-medium">
                 <Sparkles className="h-3 w-3 text-cyan-400" />
-                Auto AI Verdict (LLM)
+                Auto-Triage LLM
               </span>
             </label>
           </div>
-        </div>
 
-        {/* Scheduler Notification */}
-        {schedulerMsg && (
-          <div className="p-2.5 rounded bg-cyan-950/60 border border-cyan-800 text-xs text-cyan-200 font-mono">
-            {schedulerMsg}
-          </div>
-        )}
-
-        {/* Batch Pull Error */}
-        {batchPullError && (
-          <div className="p-3 rounded bg-rose-950/50 border border-rose-800 text-xs text-rose-300 flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
-            <span>{batchPullError}</span>
-          </div>
-        )}
-
-        {/* Batch Pull Success Banner */}
-        {batchPullResult && (
-          <div className="p-3.5 rounded-lg bg-slate-900/90 border border-emerald-800/80 space-y-2 text-xs font-mono">
-            <div className="flex items-center justify-between text-emerald-400 font-bold">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4" />
-                Batch Pull Complete ({batchPullResult.source})
-              </span>
-              <span className="text-[10px] text-slate-400 font-sans">
-                Watermark Checkpoint: {batchPullResult.checkpoint_epoch}
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2 text-[11px]">
-              <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
-                +{batchPullResult.newly_ingested} Newly Ingested
-              </span>
-              <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                {batchPullResult.already_cached} Already In Database
-              </span>
-              <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-cyan-300" />
-                {batchPullResult.ai_verdicts_generated} AI Verdicts Generated
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-sans">{batchPullResult.message}</p>
-          </div>
-        )}
-      </div>
-
-      {/* 2. FortiSIEM On-Demand Single ID Pull Card */}
-      <div className="rounded-lg border border-cyan-900/60 bg-gradient-to-br from-slate-950 via-slate-900/90 to-cyan-950/20 p-3 sm:p-3.5 shadow-md shadow-cyan-950/10 space-y-2.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
-          <div>
-            <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
-              <Server className="h-3.5 w-3.5 text-cyan-400" />
-              Pull Individual Incident by ID
-            </h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Target a specific FortiSIEM Incident ID for single-incident deep inspection
-            </p>
-          </div>
-
-          {/* Mode & Connection Status Badge */}
-          <div className="flex items-center gap-1.5">
-            {siemStatus?.is_configured ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live FortiSIEM ({siemStatus.host})
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-950 text-sky-300 border border-sky-800 font-mono">
-                <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
-                Fixture Fallback Mode (Ready)
-              </span>
-            )}
-
-            <Link
-              href="/rules"
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-            >
-              <FileCode2 className="h-3 w-3 text-cyan-400" />
-              <span>SIEM Rules</span>
-            </Link>
-
-            <Link
-              href="/agent-configuration#fortisiem"
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-            >
-              <Settings className="h-3 w-3 text-cyan-400" />
-              <span>Configure SIEM</span>
-            </Link>
-          </div>
-        </div>
-
-        {/* Pull Form */}
-        <form onSubmit={handlePullFortiSiem} className="space-y-2">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={siemIncidentId}
-                onChange={(e) => setSiemIncidentId(e.target.value)}
-                placeholder={
-                  siemStatus?.live_incident_ids && siemStatus.live_incident_ids.length > 0
-                    ? `Enter FortiSIEM Incident ID (e.g., ${siemStatus.live_incident_ids.slice(0, 2).join(" or ")})...`
-                    : "Enter FortiSIEM Incident ID (e.g., 171005 or 157803)..."
-                }
-                className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 pl-3 pr-8 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
-              />
-              {siemIncidentId && (
-                <button
-                  type="button"
-                  onClick={() => setSiemIncidentId("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs font-mono"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-
+          {/* Action Toolbar */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Pull All Button */}
             <button
-              type="submit"
-              disabled={!siemIncidentId.trim() || isPullingSiem}
-              className="rounded-md bg-cyan-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 shadow-sm shadow-cyan-900/40"
+              type="button"
+              onClick={handlePullAllIncidents}
+              disabled={isPullingBatch || isPullingSiem}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors shadow-sm"
             >
-              {isPullingSiem ? (
+              {isPullingBatch ? (
                 <>
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  Querying FortiSIEM...
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  Pulling All Incidents...
                 </>
               ) : (
                 <>
-                  <Zap className="h-3 w-3 text-cyan-200" />
-                  Pull Incident
+                  <DownloadCloud className="h-3.5 w-3.5" />
+                  Pull All Incidents
                 </>
               )}
             </button>
+
+            {/* Start/Pause Continuous Sync */}
+            <button
+              type="button"
+              onClick={handleToggleScheduler}
+              disabled={isOperatingScheduler}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white transition-colors shadow-sm ${
+                schedulerStatus?.is_running
+                  ? "bg-amber-600 hover:bg-amber-500"
+                  : "bg-emerald-600 hover:bg-emerald-500"
+              }`}
+            >
+              {isOperatingScheduler ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : schedulerStatus?.is_running ? (
+                <Pause className="h-3.5 w-3.5" />
+              ) : (
+                <Play className="h-3.5 w-3.5" />
+              )}
+              {schedulerStatus?.is_running ? "Pause Poller" : "Start Continuous Sync"}
+            </button>
+
+            {/* Sync Now */}
+            <button
+              type="button"
+              onClick={handleTriggerSchedulerNow}
+              disabled={isOperatingScheduler}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <Zap className="h-3.5 w-3.5 text-cyan-400" />
+              Sync Cycle Now
+            </button>
+
+            {/* Reconcile Pending Queue */}
+            {(schedulerStatus?.pending_ai_verdicts_count ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={handleProcessPending}
+                disabled={isProcessingPending || !schedulerStatus?.is_llm_online}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-600 bg-amber-950/60 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:text-white hover:bg-amber-900 disabled:opacity-50 transition-colors shadow-sm"
+                title={schedulerStatus?.is_llm_online ? "Process pending incidents with Local LLM one by one" : "Local LLM is offline. Backlog will auto-process once Local LLM comes online."}
+              >
+                {isProcessingPending ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                )}
+                <span>Reconcile Queue ({schedulerStatus?.pending_ai_verdicts_count})</span>
+              </button>
+            )}
           </div>
 
-          {/* Quick Select Sample IDs (Offline Fixtures) */}
-          {siemStatus && siemStatus.sample_incident_ids.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              <span className="text-[11px] text-slate-400 font-mono mr-1">Sample Fixture IDs:</span>
-              {siemStatus.sample_incident_ids.slice(0, 6).map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setSiemIncidentId(id);
-                    handlePullFortiSiem(undefined, id);
-                  }}
-                  disabled={isPullingSiem}
-                  className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-900 border border-slate-800 text-sky-300 hover:bg-sky-950/60 hover:border-sky-700 transition-colors"
-                >
-                  #{id}
-                </button>
-              ))}
+          {/* Polling Metadata Strip */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-800/80 text-[11px] font-mono">
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <Clock className="w-3.5 h-3.5 text-cyan-400" />
+              Next Sync:{" "}
+              <strong className="text-cyan-300">
+                {countdownSeconds !== null && schedulerStatus?.is_running
+                  ? countdownSeconds >= 60
+                    ? `${Math.floor(countdownSeconds / 60)}m ${countdownSeconds % 60}s`
+                    : `${countdownSeconds}s`
+                  : schedulerStatus?.is_running
+                  ? "Scheduled..."
+                  : "Poller Idle"}
+              </strong>
+            </span>
+            {schedulerStatus?.last_sync_time && (
+              <span className="text-slate-400">
+                Last Synced: {new Date(schedulerStatus.last_sync_time).toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+
+          {/* Warnings & Result Notifications */}
+          {schedulerStatus?.last_error && schedulerStatus?.is_running && (
+            <div className="px-3 py-1.5 rounded bg-amber-950/40 border border-amber-800/60 text-[11px] text-amber-300 flex items-center justify-between gap-2">
+              <span className="truncate">
+                <strong>Cycle Warning:</strong> {schedulerStatus.last_error}
+              </span>
+              <span className="text-[10px] text-amber-400 shrink-0 font-mono">Auto-retrying</span>
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={forceRefresh}
-                onChange={(e) => setForceRefresh(e.target.checked)}
-                className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0"
-              />
-              Force re-fetch from FortiSIEM if incident already exists locally
-            </label>
-          </div>
-        </form>
+          {schedulerMsg && (
+            <div className="p-2.5 rounded bg-cyan-950/60 border border-cyan-800 text-xs text-cyan-200 font-mono">
+              {schedulerMsg}
+            </div>
+          )}
 
-        {/* Pull Error Message */}
-        {siemError && (
-          <div className="rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-xs text-rose-300 flex items-start justify-between gap-3">
-            <div className="flex items-start gap-2.5">
+          {batchPullError && (
+            <div className="p-3 rounded bg-rose-950/50 border border-rose-800 text-xs text-rose-300 flex items-start gap-2">
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
-              <div className="space-y-1">
-                <span className="font-semibold block text-rose-200">Incident Query Failed</span>
-                <span className="text-slate-300 leading-relaxed block">{siemError}</span>
-              </div>
+              <span>{batchPullError}</span>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Pull Success Result Banner */}
-        {siemResult && (
-          <div className="rounded-xl border border-emerald-800/80 bg-emerald-950/20 p-4 space-y-2.5 font-mono text-xs">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-                <CheckCircle2 className="h-4 w-4" />
-                Incident Retrieved Successfully
-              </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                {siemResult.source}
-              </span>
-            </div>
-
-            <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-slate-200 space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-bold text-slate-100 text-sm">{siemResult.title}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getSeverityBadge(siemResult.severity)}`}>
-                  {siemResult.severity}
+          {batchPullResult && (
+            <div className="p-3 rounded-lg bg-slate-900 border border-emerald-800/80 space-y-1.5 text-xs font-mono">
+              <div className="flex items-center justify-between text-emerald-400 font-bold">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Batch Pull Complete ({batchPullResult.source})
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
-                  ID: #{siemResult.incident_id}
+                <span className="text-[10px] text-slate-400 font-sans">
+                  Checkpoint: {batchPullResult.checkpoint_epoch}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-sans">{siemResult.message}</p>
+              <div className="flex flex-wrap gap-1.5 text-[10px]">
+                <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                  +{batchPullResult.newly_ingested} Newly Ingested
+                </span>
+                <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                  {batchPullResult.already_cached} In DB
+                </span>
+                <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-cyan-300" />
+                  {batchPullResult.ai_verdicts_generated} AI Verdicts
+                </span>
+              </div>
             </div>
+          )}
+        </div>
 
-            <div className="flex items-center gap-2 pt-0.5">
-              {siemResult.db_id && (
-                <Link
-                  href={`/ai-triage-workbench/${siemResult.db_id}`}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-cyan-600 px-3 py-1 text-xs font-bold text-white hover:bg-cyan-500 transition-colors shadow-sm"
+        {/* RIGHT COLUMN (5 COLS): ON-DEMAND INGESTION (TABBED: SINGLE ID vs ARCHIVE UPLOAD) */}
+        <div className="lg:col-span-5 rounded-xl border border-slate-800 bg-slate-950/90 p-3.5 space-y-3 shadow-sm flex flex-col justify-between">
+          <div className="space-y-3">
+            {/* Sub-Tabs: Single ID vs Archive */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setOnDemandTab("single")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
+                    onDemandTab === "single"
+                      ? "bg-cyan-950 text-cyan-300 border border-cyan-800 shadow-sm"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
                 >
-                  View Incident &amp; Investigate
-                  <ArrowRight className="h-3 w-3" />
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+                  Pull by ID
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOnDemandTab("archive")}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${
+                    onDemandTab === "archive"
+                      ? "bg-cyan-950 text-cyan-300 border border-cyan-800 shadow-sm"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  Archive Upload
+                </button>
+              </div>
 
-      {/* 3. Manual ZIP Archive Ingestion Card */}
-      <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:p-3.5 space-y-2.5">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-          <div>
-            <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
-              <FileArchive className="h-3.5 w-3.5 text-cyan-400" />
-              Upload Telemetry Archive (PayloadSanitizationGuard Protected)
-            </h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Bulk upload FortiSIEM JSON export archives with automated ground-truth isolation
-            </p>
-          </div>
-          <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            SanitizationGuard Safe
-          </div>
-        </div>
-
-        <form onSubmit={handleUpload} className="space-y-2.5">
-          <div className="flex flex-col sm:flex-row items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".zip,.json"
-              onChange={handleFileChange}
-              className="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-slate-700 file:text-xs file:font-semibold file:bg-slate-900 file:text-cyan-400 hover:file:bg-slate-800 file:cursor-pointer cursor-pointer border border-slate-800 rounded-md p-1 bg-slate-950/60"
-            />
-            <button
-              type="submit"
-              disabled={!selectedFile || isUploading}
-              className="w-full sm:w-auto rounded-md bg-slate-800 border border-slate-700 px-4 py-1.5 text-xs font-bold text-slate-100 hover:bg-slate-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 shrink-0"
-            >
-              {isUploading ? (
-                <>
-                  <RefreshCw className="h-3 w-3 animate-spin text-cyan-400" />
-                  Ingesting...
-                </>
+              {onDemandTab === "single" ? (
+                siemStatus?.is_configured ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Live SIEM
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-sky-950 text-sky-300 border border-sky-800 font-mono">
+                    <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                    Fixture Mode
+                  </span>
+                )
               ) : (
-                <>
-                  <UploadCloud className="h-3 w-3 text-cyan-400" />
-                  Upload Archive
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-
-        {error && (
-          <div className="rounded border border-rose-800 bg-rose-950/40 p-2.5 text-xs text-rose-300 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {summary && (
-          <div className="rounded border border-emerald-800 bg-emerald-950/30 p-2.5 text-xs text-emerald-300 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-              <span>
-                Processed {summary.total_files} files ({summary.imported_incidents} imported, {summary.duplicate_incidents} duplicates)
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 4. Import Jobs History */}
-      <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:p-3.5 space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-cyan-400" />
-            Ingestion History &amp; Audit Logs
-          </h2>
-          <button
-            onClick={loadJobs}
-            disabled={loadingJobs}
-            className="text-[10px] text-slate-400 hover:text-slate-200 flex items-center gap-1 font-mono"
-          >
-            <RefreshCw className={`h-3 w-3 ${loadingJobs ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-mono">
-            <thead>
-              <tr className="border-b border-slate-800 text-[10px] text-slate-400">
-                <th className="pb-1.5 px-2 font-medium">Filename</th>
-                <th className="pb-1.5 px-2 font-medium">Format</th>
-                <th className="pb-1.5 px-2 font-medium">Status</th>
-                <th className="pb-1.5 px-2 font-medium">Imported</th>
-                <th className="pb-1.5 px-2 font-medium">Duplicates</th>
-                <th className="pb-1.5 px-2 font-medium">Errors</th>
-                <th className="pb-1.5 px-2 font-medium text-right">Timestamp</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {jobs.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-6 text-center text-slate-500 font-sans text-xs">
-                    No import jobs recorded yet.
-                  </td>
-                </tr>
-              ) : (
-                jobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-slate-900/40">
-                    <td className="py-1.5 px-2 font-semibold text-slate-200">{job.filename}</td>
-                    <td className="py-1.5 px-2 text-slate-400">{job.file_type}</td>
-                    <td className="py-1.5 px-2">
-                      <span
-                        className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${job.status === "COMPLETED"
-                            ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                            : "bg-amber-950 text-amber-300 border border-amber-800"
-                          }`}
-                      >
-                        {job.status}
-                      </span>
-                    </td>
-                    <td className="py-1.5 px-2 text-emerald-400 font-bold">{job.imported_count}</td>
-                    <td className="py-1.5 px-2 text-amber-400">{job.duplicate_count}</td>
-                    <td className="py-1.5 px-2 text-rose-400">{job.error_count}</td>
-                    <td className="py-1.5 px-2 text-right text-slate-500 text-[10px]">
-                      {formatEpoch(job.created_at)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* 5. Historical Telemetry Timeline (Verdictum Core Storage) */}
-      <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:p-3.5 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
-          <div>
-            <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
-              <Database className="h-3.5 w-3.5 text-cyan-400" />
-              Historical Telemetry Timeline (Verdictum Core Storage)
-            </h2>
-            <p className="text-[10px] text-slate-400 mt-0.5">
-              Persistent chronological telemetry log stored on Verdictum Core for future auditing and analysis
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-800 text-emerald-300">
-              Verdictum Core Persistent DB
-            </span>
-            <button
-              onClick={loadGlobalTimeline}
-              disabled={loadingTimeline}
-              className="text-[10px] text-slate-400 hover:text-slate-200 flex items-center gap-1 font-mono"
-            >
-              <RefreshCw className={`h-3 w-3 ${loadingTimeline ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
-          </div>
-        </div>
-
-        {globalTimeline.length === 0 ? (
-          <div className="py-6 text-center text-slate-500 font-mono text-xs">
-            No global telemetry timeline milestones recorded yet. Telemetry batches will appear here as they are ingested on Verdictum Core.
-          </div>
-        ) : (
-          <div className="relative border-l border-slate-800 pl-4 space-y-3 text-xs font-mono">
-            {globalTimeline.map((item, idx) => (
-              <div key={item.id || idx} className="relative">
-                <span className="absolute -left-[23px] flex h-3 w-3 items-center justify-center rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 text-[7px]">
-                  ●
+                <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  SanitizationGuard
                 </span>
-                <div className="rounded bg-slate-950 border border-slate-800/80 p-2.5 space-y-1">
-                  <div className="flex items-center justify-between text-[10px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold text-[9px]">
-                        {item.stage || "INGESTION"}
-                      </span>
-                      {item.incident_id && (
-                        <Link
-                          href={`/ai-triage-workbench/${item.incident_id}`}
-                          className="text-cyan-400 hover:underline font-bold"
+              )}
+            </div>
+
+            {/* TAB 1: SINGLE INCIDENT PULL */}
+            {onDemandTab === "single" && (
+              <div className="space-y-2.5">
+                <form onSubmit={handlePullFortiSiem} className="space-y-2">
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        value={siemIncidentId}
+                        onChange={(e) => setSiemIncidentId(e.target.value)}
+                        placeholder={
+                          siemStatus?.live_incident_ids && siemStatus.live_incident_ids.length > 0
+                            ? `Enter Incident ID (e.g. ${siemStatus.live_incident_ids[0]})...`
+                            : "Enter Incident ID (e.g., 171005)..."
+                        }
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900 py-1.5 pl-2.5 pr-8 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                      />
+                      {siemIncidentId && (
+                        <button
+                          type="button"
+                          onClick={() => setSiemIncidentId("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs font-mono"
                         >
-                          Incident #{item.incident_id}
-                        </Link>
+                          ✕
+                        </button>
                       )}
                     </div>
-                    <span className="text-slate-500">{new Date(item.timestamp).toLocaleString()}</span>
+
+                    <button
+                      type="submit"
+                      disabled={!siemIncidentId.trim() || isPullingSiem}
+                      className="rounded-lg bg-cyan-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-cyan-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-1 shrink-0 shadow-sm"
+                    >
+                      {isPullingSiem ? (
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Zap className="h-3.5 w-3.5 text-cyan-200" />
+                      )}
+                      <span>Pull</span>
+                    </button>
                   </div>
-                  <p className="text-slate-300 text-xs font-sans">{item.summary}</p>
-                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5 border-t border-slate-900">
-                    <span>Source: {item.source}</span>
-                    {item.token_count > 0 && (
-                      <span className="text-purple-300 font-bold">
-                        Tokens: {item.token_count.toLocaleString()}
+
+                  {/* Sample Fixtures Quick-Click */}
+                  {siemStatus && siemStatus.sample_incident_ids.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                      <span className="text-[10px] text-slate-400 font-mono mr-1">Fixtures:</span>
+                      {siemStatus.sample_incident_ids.slice(0, 5).map((id) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => {
+                            setSiemIncidentId(id);
+                            handlePullFortiSiem(undefined, id);
+                          }}
+                          disabled={isPullingSiem}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-900 border border-slate-800 text-sky-300 hover:bg-sky-950/60 hover:border-sky-700 transition-colors"
+                        >
+                          #{id}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <label className="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer select-none pt-0.5">
+                    <input
+                      type="checkbox"
+                      checked={forceRefresh}
+                      onChange={(e) => setForceRefresh(e.target.checked)}
+                      className="rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0"
+                    />
+                    Force re-fetch from FortiSIEM if cached
+                  </label>
+                </form>
+
+                {siemError && (
+                  <div className="rounded-lg border border-rose-800 bg-rose-950/40 p-2.5 text-xs text-rose-300 flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
+                    <span className="leading-tight">{siemError}</span>
+                  </div>
+                )}
+
+                {siemResult && (
+                  <div className="rounded-lg border border-emerald-800/80 bg-emerald-950/20 p-3 space-y-1.5 font-mono text-xs">
+                    <div className="flex items-center justify-between text-emerald-400 font-bold">
+                      <span className="flex items-center gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Incident Retrieved
                       </span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                        {siemResult.source}
+                      </span>
+                    </div>
+
+                    <div className="text-slate-200">
+                      <span className="font-bold text-slate-100">{siemResult.title}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5 text-[10px]">
+                        <span className={`px-1.5 py-0.2 rounded border font-bold ${getSeverityBadge(siemResult.severity)}`}>
+                          {siemResult.severity}
+                        </span>
+                        <span className="text-slate-400">#{siemResult.incident_id}</span>
+                      </div>
+                    </div>
+
+                    {siemResult.db_id && (
+                      <div className="pt-1">
+                        <Link
+                          href={`/incidents/${siemResult.db_id}`}
+                          className="inline-flex items-center gap-1 rounded bg-cyan-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-cyan-500 transition-colors shadow-sm"
+                        >
+                          View Incident &amp; Investigate
+                          <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      </div>
                     )}
                   </div>
-                </div>
+                )}
               </div>
-            ))}
+            )}
+
+            {/* TAB 2: ARCHIVE UPLOAD */}
+            {onDemandTab === "archive" && (
+              <div className="space-y-2.5">
+                <form onSubmit={handleUpload} className="space-y-2.5">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".zip,.json"
+                    onChange={handleFileChange}
+                    className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border file:border-slate-700 file:text-[11px] file:font-semibold file:bg-slate-900 file:text-cyan-400 hover:file:bg-slate-800 file:cursor-pointer cursor-pointer border border-slate-800 rounded-lg p-1 bg-slate-900/40"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!selectedFile || isUploading}
+                    className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-100 hover:bg-slate-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    {isUploading ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin text-cyan-400" />
+                        Ingesting Archive...
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="h-3.5 w-3.5 text-cyan-400" />
+                        Upload &amp; Process Archive
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                {error && (
+                  <div className="rounded-lg border border-rose-800 bg-rose-950/40 p-2.5 text-xs text-rose-300 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                {summary && (
+                  <div className="rounded-lg border border-emerald-800 bg-emerald-950/30 p-2.5 text-xs text-emerald-300 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                    <span>
+                      Processed {summary.total_files} files ({summary.imported_incidents} imported, {summary.duplicate_incidents} duplicates)
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 4. TABBED INGESTION HISTORY & TIMELINE SECTION */}
+      <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-3 sm:p-3.5 space-y-3 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          {/* Sub-Tabs: Jobs vs Timeline */}
+          <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setHistoryTab("jobs")}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                historyTab === "jobs"
+                  ? "bg-cyan-950 text-cyan-300 border border-cyan-800 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Ingestion History ({jobs.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryTab("timeline")}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                historyTab === "timeline"
+                  ? "bg-cyan-950 text-cyan-300 border border-cyan-800 shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span>Verdictum Core Timeline ({globalTimeline.length})</span>
+            </button>
+          </div>
+
+          <div>
+            {historyTab === "jobs" ? (
+              <button
+                type="button"
+                onClick={loadJobs}
+                disabled={loadingJobs}
+                className="text-[10px] text-slate-400 hover:text-slate-200 flex items-center gap-1 font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800"
+              >
+                <RefreshCw className={`h-3 w-3 ${loadingJobs ? "animate-spin text-cyan-400" : ""}`} />
+                Refresh Jobs
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={loadGlobalTimeline}
+                disabled={loadingTimeline}
+                className="text-[10px] text-slate-400 hover:text-slate-200 flex items-center gap-1 font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800"
+              >
+                <RefreshCw className={`h-3 w-3 ${loadingTimeline ? "animate-spin text-cyan-400" : ""}`} />
+                Refresh Timeline
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* TAB A: INGESTION JOBS TABLE */}
+        {historyTab === "jobs" && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-slate-800 text-[10px] text-slate-400">
+                  <th className="pb-2 px-2.5 font-medium">Filename</th>
+                  <th className="pb-2 px-2.5 font-medium">Format</th>
+                  <th className="pb-2 px-2.5 font-medium">Status</th>
+                  <th className="pb-2 px-2.5 font-medium">Imported</th>
+                  <th className="pb-2 px-2.5 font-medium">Duplicates</th>
+                  <th className="pb-2 px-2.5 font-medium">Errors</th>
+                  <th className="pb-2 px-2.5 font-medium text-right">Timestamp</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {jobs.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-500 font-sans text-xs">
+                      No import jobs recorded yet.
+                    </td>
+                  </tr>
+                ) : (
+                  jobs.map((job) => (
+                    <tr key={job.id} className="hover:bg-slate-900/40">
+                      <td className="py-2 px-2.5 font-semibold text-slate-200">{job.filename}</td>
+                      <td className="py-2 px-2.5 text-slate-400">{job.file_type}</td>
+                      <td className="py-2 px-2.5">
+                        <span
+                          className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                            job.status === "COMPLETED"
+                              ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                              : "bg-amber-950 text-amber-300 border border-amber-800"
+                          }`}
+                        >
+                          {job.status}
+                        </span>
+                      </td>
+                      <td className="py-2 px-2.5 text-emerald-400 font-bold">{job.imported_count}</td>
+                      <td className="py-2 px-2.5 text-amber-400">{job.duplicate_count}</td>
+                      <td className="py-2 px-2.5 text-rose-400">{job.error_count}</td>
+                      <td className="py-2 px-2.5 text-right text-slate-500 text-[10px]">
+                        {formatEpoch(job.created_at)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* TAB B: CORE STORAGE TIMELINE */}
+        {historyTab === "timeline" && (
+          <div>
+            {globalTimeline.length === 0 ? (
+              <div className="py-8 text-center text-slate-500 font-mono text-xs">
+                No global telemetry timeline milestones recorded yet. Telemetry batches will appear here as they are ingested on Verdictum Core.
+              </div>
+            ) : (
+              <div className="relative border-l border-slate-800 pl-4 space-y-2.5 text-xs font-mono max-h-[400px] overflow-y-auto pr-1">
+                {globalTimeline.map((item, idx) => (
+                  <div key={item.id || idx} className="relative">
+                    <span className="absolute -left-[23px] flex h-3 w-3 items-center justify-center rounded-full bg-cyan-950 border border-cyan-500 text-cyan-300 text-[7px]">
+                      ●
+                    </span>
+                    <div className="rounded-lg bg-slate-900/70 border border-slate-800/80 p-2.5 space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold text-[9px]">
+                            {item.stage || "INGESTION"}
+                          </span>
+                          {item.incident_id && (
+                            <Link
+                              href={`/incidents/${item.incident_id}`}
+                              className="text-cyan-400 hover:underline font-bold"
+                            >
+                              Incident #{item.incident_id}
+                            </Link>
+                          )}
+                        </div>
+                        <span className="text-slate-500">{new Date(item.timestamp).toLocaleString()}</span>
+                      </div>
+                      <p className="text-slate-300 text-xs font-sans">{item.summary}</p>
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5 border-t border-slate-900">
+                        <span>Source: {item.source}</span>
+                        {item.token_count > 0 && (
+                          <span className="text-purple-300 font-bold">
+                            Tokens: {item.token_count.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

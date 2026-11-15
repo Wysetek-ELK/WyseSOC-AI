@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -14,8 +14,20 @@ import { useApp } from "@/context/AppContext";
 
 export function Header() {
   const router = useRouter();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { user, isLoading, logout, blindReviewMode, setBlindReviewMode, theme, toggleTheme } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,12 +57,16 @@ export function Header() {
       <form onSubmit={handleSearch} className="relative w-72 sm:w-80 md:w-96 max-w-md">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
         <input
+          ref={searchInputRef}
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Global Triage Search: Incident ID, Rule, Source IP, Device, File..."
-          className="w-full rounded-md border border-slate-800 bg-slate-950/80 py-1 pl-8 pr-3 text-xs text-slate-200 placeholder-slate-500 transition-colors focus:border-cyan-500/80 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+          className="w-full rounded-md border border-slate-800 bg-slate-950/80 py-1 pl-8 pr-16 text-xs text-slate-200 placeholder-slate-500 transition-colors focus:border-cyan-500/80 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-cyan-500"
         />
+        <kbd className="hidden md:inline-block absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-slate-700/80 bg-slate-900/90 px-1.5 py-0.2 text-[9px] font-mono text-slate-400 select-none">
+          Ctrl+K
+        </kbd>
       </form>
 
       {/* Right Controls */}

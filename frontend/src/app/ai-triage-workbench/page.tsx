@@ -30,6 +30,7 @@ import {
 import { api, IncidentListItem, IncidentAiVerdictResponse, IncidentMatchedRuleSummary } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import { formatExecutionProvenanceBadge } from "@/lib/provenance";
+import { CompactRuleScopeBar } from "@/components/compact/CompactDesignSystem";
 
 function AITriageWorkbenchContent() {
   const router = useRouter();
@@ -431,73 +432,22 @@ function AITriageWorkbenchContent() {
       </div>
 
       {/* Multi-Rule Search Disambiguation & Exact Canonical Rule Status Banners */}
-      {exactRuleId && (
-        <div
-          data-testid="exact-rule-filter-banner"
-          className="rounded-lg border border-cyan-800/80 bg-cyan-950/30 p-2.5 text-xs text-cyan-200 flex flex-wrap items-center justify-between gap-2"
-        >
-          <div className="flex flex-wrap items-center gap-2 text-[11px]">
-            <Shield className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
-            <span>
-              <strong>Exact Rule Scope:</strong>{" "}
-              <code className="font-mono text-cyan-300">
-                {exactRuleMeta?.logical_rule_id || exactRuleId}
-              </code>
-              {exactRuleMeta?.rule_uuid && (
-                <span className="ml-1.5 text-slate-400 font-mono">
-                  (UUID: {exactRuleMeta.rule_uuid})
-                </span>
-              )}
-              {" — "}
-              <strong>{total}</strong> matching incident(s) (aligned with AIS canonical rule filter).
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setExactRuleId("");
-              setPage(1);
-            }}
-            className="text-[10px] px-2 py-0.5 rounded border border-cyan-700 bg-slate-900 text-cyan-300 hover:text-white"
-          >
-            Clear Exact Rule Filter
-          </button>
-        </div>
-      )}
-
-      {combinesMultipleRules && (
-        <div
-          data-testid="multi-rule-search-warning"
-          className="rounded-lg border border-amber-700/80 bg-amber-950/30 p-2.5 text-xs text-amber-200 space-y-1.5"
-        >
-          <div className="flex items-center gap-2 text-[11px] font-semibold">
-            <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-            <span>
-              Results combine {distinctRuleCount} distinct SIEM rules across {total} incidents. Select an exact canonical rule to avoid cross-rule confusion:
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {matchedRules.map((mr) => (
-              <button
-                key={`${mr.rule_uuid || "unlinked"}-${mr.logical_rule_id}`}
-                type="button"
-                onClick={() => {
-                  setExactRuleId(mr.rule_uuid || mr.logical_rule_id);
-                  setPage(1);
-                }}
-                className="px-2 py-1 rounded border border-amber-800/70 bg-slate-900/90 hover:bg-slate-800 text-[10px] font-mono text-amber-100 flex items-center gap-1.5"
-                title={`UUID: ${mr.rule_uuid || "unlinked"} | Event: ${mr.event_type || "N/A"}`}
-              >
-                <span className="font-bold text-cyan-300">{mr.logical_rule_id}</span>
-                {mr.rule_uuid && (
-                  <span className="text-slate-400">[{mr.rule_uuid.slice(0, 8)}]</span>
-                )}
-                <span className="px-1 rounded bg-amber-900/60 text-amber-200">{mr.incident_count}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Compact Canonical Rule Scope & Multi-Rule Warning Bar */}
+      <CompactRuleScopeBar
+        matchedRules={matchedRules}
+        distinctRuleCount={distinctRuleCount}
+        totalIncidents={total}
+        exactRuleId={exactRuleId}
+        onSelectExactRule={(ruleId) => {
+          setExactRuleId(ruleId);
+          setPage(1);
+        }}
+        onClearExactRule={() => {
+          setExactRuleId("");
+          setPage(1);
+        }}
+        exactRuleLabel={exactRuleMeta?.logical_rule_id}
+      />
 
       {/* Incidents Table */}
       <div className="rounded-lg border border-slate-800 bg-slate-950 overflow-hidden shadow-sm">
@@ -505,14 +455,14 @@ function AITriageWorkbenchContent() {
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-900/60 text-[10px] font-mono text-slate-400">
-                <th className="py-2 px-2.5 font-medium">Incident ID</th>
-                <th className="py-2 px-2.5 font-medium">Rule / Event Type</th>
-                <th className="py-2 px-2.5 font-medium">Severity</th>
-                <th className="py-2 px-2.5 font-medium">Source / IP</th>
-                <th className="py-2 px-2.5 font-medium">Occurred Time</th>
-                <th className="py-2 px-2.5 font-medium">Events</th>
-                <th className="py-2 px-2.5 font-medium">Historical Verdict</th>
-                <th className="py-2 px-2.5 font-medium text-right">Action</th>
+                <th className="py-2 px-2.5 font-medium w-28">Incident ID</th>
+                <th className="py-2 px-2.5 font-medium min-w-[200px]">Rule / Event Type</th>
+                <th className="py-2 px-2.5 font-medium w-20">Severity</th>
+                <th className="py-2 px-2.5 font-medium w-28">Source / IP</th>
+                <th className="py-2 px-2.5 font-medium w-36">Occurred Time</th>
+                <th className="py-2 px-2.5 font-medium w-20">Events</th>
+                <th className="py-2 px-2.5 font-medium w-28">Historical Verdict</th>
+                <th className="py-2 px-2.5 font-medium text-right sticky right-0 bg-slate-900/95 backdrop-blur-xs shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.5)] w-36">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-mono">
@@ -627,7 +577,7 @@ function AITriageWorkbenchContent() {
                         )}
                       </div>
                     </td>
-                    <td className="py-1.5 px-2.5 text-right font-sans">
+                    <td className="py-1.5 px-2.5 text-right font-sans sticky right-0 bg-slate-950/95 group-hover:bg-slate-900/95 backdrop-blur-xs shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.5)]">
                       <div className="flex items-center justify-end gap-1.5">
                         {inc.ai_verdict ? (
                           <button

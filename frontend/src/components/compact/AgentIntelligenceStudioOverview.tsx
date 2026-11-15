@@ -495,119 +495,123 @@ export function AgentIntelligenceStudioOverview({
   return (
     <div className="space-y-3.5">
       {/* 1. RULE IDENTITY & QUICK ACTION STRIP */}
-      <div className="p-3 sm:px-4 rounded-xl border border-slate-800/90 bg-slate-950/80 shadow-sm space-y-2.5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="space-y-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-1.5 truncate">
+      <div className="p-3 sm:px-4 rounded-xl border border-slate-800/90 bg-slate-950/80 shadow-sm space-y-3">
+        {/* Full-Width Rule Header */}
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <h1 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2 break-words leading-snug">
                 <Shield className="w-4 h-4 text-cyan-400 shrink-0" />
-                {ruleDisplayName}
+                <span>{ruleDisplayName}</span>
               </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-900 text-cyan-300 border border-cyan-800/60 uppercase">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-900 text-cyan-300 border border-cyan-800/60 uppercase shrink-0">
                 {displayArchetype}
               </span>
             </div>
 
-            {/* Authoritative Decoupled Governance & Readiness Indicators */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-1">
-              {/* FortiSIEM Detection Rule Status */}
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Underlying FortiSIEM Detection Rule Deployment Status">
-                <span className="text-slate-500 font-mono text-[10px]">SIEM Rule:</span>
-                <span className={`w-1.5 h-1.5 rounded-full ${deploymentStatus === "ACTIVE" ? "bg-emerald-400" : "bg-slate-500"}`} />
-                <strong className={deploymentStatus === "ACTIVE" ? "text-emerald-300 font-semibold" : "text-slate-400"}>{deploymentStatus}</strong>
-              </span>
-
-              {/* Selected Policy Version & Status */}
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Candidate Policy Version loaded in Overview & Editor">
-                <span className="text-slate-500 font-mono text-[10px]">Selected Policy:</span>
-                <strong className={
-                  selectedVersion?.status === "APPROVED"
-                    ? "text-emerald-400 font-semibold"
-                    : selectedVersion?.status === "REVOKED"
-                    ? "text-rose-400 font-semibold"
-                    : selectedVersion?.status === "VALIDATED"
-                    ? "text-sky-300 font-semibold"
-                    : "text-amber-400 font-semibold"
-                }>
-                  {selectedPolicyLabel}
-                </strong>
-              </span>
-
-              {/* Active AI Policy */}
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Active Approved Policy assigned for production verdicts">
-                <span className="text-slate-500 font-mono text-[10px]">Active AI Policy:</span>
-                <strong className={
-                  activeVersion?.status === "APPROVED" && !isPolicyRevoked
-                    ? "text-cyan-400 font-semibold"
-                    : "text-rose-400 font-semibold"
-                }>
-                  {activePolicyLabel}
-                </strong>
-              </span>
-
-              {/* AI Verdict Execution Status */}
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Real-time execution eligibility for Local LLM verdicts">
-                <span className="text-slate-500 font-mono text-[10px]">AI Verdict Execution:</span>
-                <span className={`w-1.5 h-1.5 rounded-full ${
-                  aiVerdictExecutionStatus === "Enabled"
-                    ? "bg-emerald-400"
-                    : aiVerdictExecutionStatus === "Suspended"
-                    ? "bg-amber-400"
-                    : "bg-rose-400"
-                }`} />
-                <strong className={
-                  aiVerdictExecutionStatus === "Enabled"
-                    ? "text-emerald-300 font-semibold"
-                    : aiVerdictExecutionStatus === "Suspended"
-                    ? "text-amber-300 font-semibold"
-                    : "text-rose-300 font-semibold"
-                }>
-                  {aiVerdictExecutionStatus}
-                </strong>
-              </span>
-
-              {/* Production Readiness */}
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="All 6 validation & governance stages completed">
-                <span className="text-slate-500 font-mono text-[10px]">Production Readiness:</span>
-                <strong className={
-                  productionReadinessStatus === "Ready" ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"
-                }>
-                  {productionReadinessStatus}
-                </strong>
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
-              {plainEnglishDescription}
-            </p>
-
-            {/* Warning banner when policy is revoked, suspended, or semantic mismatch */}
-            {eligibilityData && !eligibilityData.is_eligible && (
-              <div className="p-2.5 rounded-lg border border-amber-800/80 bg-amber-950/40 text-xs text-amber-200 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <div className="font-semibold text-amber-300 flex items-center gap-2">
-                    <span>AI Execution Suspended: {eligibilityData.reason_code}</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-900/80 text-amber-200 border border-amber-700">
-                      Safe Fallback
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                    {eligibilityData.explanation}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="text-[10px] font-mono text-slate-400 flex flex-wrap items-center gap-2 pt-0.5">
+            <div className="text-[10px] font-mono text-slate-400 flex items-center gap-2 shrink-0">
               <span>Rule ID: <strong className="text-slate-300">{ruleId}</strong></span>
               <span>·</span>
               <span>Active Policy: <strong className="text-cyan-400">{activePolicyLabel}</strong></span>
             </div>
           </div>
 
-          {/* Quick Actions & Version Selector */}
-          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+          {/* Authoritative Decoupled Governance & Readiness Indicators */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {/* FortiSIEM Detection Rule Status */}
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Underlying FortiSIEM Detection Rule Deployment Status">
+              <span className="text-slate-500 font-mono text-[10px]">SIEM Rule:</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${deploymentStatus === "ACTIVE" ? "bg-emerald-400" : "bg-slate-500"}`} />
+              <strong className={deploymentStatus === "ACTIVE" ? "text-emerald-300 font-semibold" : "text-slate-400"}>{deploymentStatus}</strong>
+            </span>
+
+            {/* Selected Policy Version & Status */}
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Candidate Policy Version loaded in Overview & Editor">
+              <span className="text-slate-500 font-mono text-[10px]">Selected Policy:</span>
+              <strong className={
+                selectedVersion?.status === "APPROVED"
+                  ? "text-emerald-400 font-semibold"
+                  : selectedVersion?.status === "REVOKED"
+                  ? "text-rose-400 font-semibold"
+                  : selectedVersion?.status === "VALIDATED"
+                  ? "text-sky-300 font-semibold"
+                  : "text-amber-400 font-semibold"
+              }>
+                {selectedPolicyLabel}
+              </strong>
+            </span>
+
+            {/* Active AI Policy */}
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Active Approved Policy assigned for production verdicts">
+              <span className="text-slate-500 font-mono text-[10px]">Active AI Policy:</span>
+              <strong className={
+                activeVersion?.status === "APPROVED" && !isPolicyRevoked
+                  ? "text-cyan-400 font-semibold"
+                  : "text-rose-400 font-semibold"
+              }>
+                {activePolicyLabel}
+              </strong>
+            </span>
+
+            {/* AI Verdict Execution Status */}
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Real-time execution eligibility for Local LLM verdicts">
+              <span className="text-slate-500 font-mono text-[10px]">AI Verdict Execution:</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                aiVerdictExecutionStatus === "Enabled"
+                  ? "bg-emerald-400"
+                  : aiVerdictExecutionStatus === "Suspended"
+                  ? "bg-amber-400"
+                  : "bg-rose-400"
+              }`} />
+              <strong className={
+                aiVerdictExecutionStatus === "Enabled"
+                  ? "text-emerald-300 font-semibold"
+                  : aiVerdictExecutionStatus === "Suspended"
+                  ? "text-amber-300 font-semibold"
+                  : "text-rose-300 font-semibold"
+              }>
+                {aiVerdictExecutionStatus}
+              </strong>
+            </span>
+
+            {/* Production Readiness */}
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="All 6 validation & governance stages completed">
+              <span className="text-slate-500 font-mono text-[10px]">Production Readiness:</span>
+              <strong className={
+                productionReadinessStatus === "Ready" ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"
+              }>
+                {productionReadinessStatus}
+              </strong>
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-300 leading-relaxed">
+            {plainEnglishDescription}
+          </p>
+
+          {/* Warning banner when policy is revoked, suspended, or semantic mismatch */}
+          {eligibilityData && !eligibilityData.is_eligible && (
+            <div className="p-2.5 rounded-lg border border-amber-800/80 bg-amber-950/40 text-xs text-amber-200 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <div className="font-semibold text-amber-300 flex items-center gap-2">
+                  <span>AI Execution Suspended: {eligibilityData.reason_code}</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-900/80 text-amber-200 border border-amber-700">
+                    Safe Fallback
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                  {eligibilityData.explanation}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Dedicated Quick Action Toolbar Row */}
+        <div className="border-t border-slate-800/80 pt-2.5 flex flex-wrap items-center justify-between gap-2">
+          {/* Version Selector */}
+          <div className="flex items-center gap-2">
             <CompactVersionSelector
               versions={versions}
               selectedVersionId={selectedVersion?.id || ""}
@@ -615,7 +619,10 @@ export function AgentIntelligenceStudioOverview({
               onSelectVersion={onSelectVersion}
               onOpenVersionHistory={() => onNavigateTab("advanced", "history")}
             />
+          </div>
 
+          {/* Primary Operations */}
+          <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
               disabled={actionLoading}
@@ -623,7 +630,7 @@ export function AgentIntelligenceStudioOverview({
               className="px-2.5 py-1.5 rounded-lg theme-primary-btn font-semibold flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Synthesize Draft</span>
+              <span>Synthesize Draft</span>
             </button>
 
             <button
@@ -633,7 +640,7 @@ export function AgentIntelligenceStudioOverview({
               className="px-2.5 py-1.5 rounded-lg theme-secondary-btn font-medium flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50"
             >
               <Award className="w-3.5 h-3.5 text-sky-400" />
-              <span className="hidden sm:inline">Validate Quality</span>
+              <span>Validate Quality</span>
             </button>
 
             <button
@@ -643,7 +650,7 @@ export function AgentIntelligenceStudioOverview({
               className="px-2.5 py-1.5 rounded-lg theme-secondary-btn font-medium flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50"
             >
               <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">Simulation</span>
+              <span>Simulation</span>
             </button>
 
             {/* Location 1: View Actual LLM Prompt */}
@@ -665,7 +672,7 @@ export function AgentIntelligenceStudioOverview({
               title="Preview compiled prompt template without runtime capture"
             >
               <Eye className="w-3.5 h-3.5 text-sky-400" />
-              <span className="hidden lg:inline">Preview Prompt</span>
+              <span className="hidden sm:inline">Preview Prompt</span>
             </button>
 
             {selectedVersion && selectedVersion.status !== "APPROVED" && (
@@ -692,334 +699,341 @@ export function AgentIntelligenceStudioOverview({
         </div>
       </div>
 
-      {/* 2. PRODUCTION READINESS SUMMARY */}
-      <div className="p-3.5 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/60 shadow-sm space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-800/80 pb-3">
-          <div>
-            <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              Production Readiness Summary
-            </div>
-            <div className="flex flex-wrap items-center gap-2 mt-1">
-              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1.5 ${currentReadinessBadge.badge}`}>
-                <span className={`w-2 h-2 rounded-full ${currentReadinessBadge.dot}`} />
-                {currentReadinessBadge.label}
+      {/* 2. BALANCED 12-COLUMN MAIN & CONTEXT WORKSPACE */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+        {/* LEFT 8 COLUMNS: PRIMARY ACTIONABLE WORKFLOW */}
+        <div className="lg:col-span-8 space-y-3.5">
+          {/* Smart Next Action Card */}
+          <NextActionCard
+            title={smartAction.title}
+            description={smartAction.description}
+            actionLabel={smartAction.label}
+            onAction={smartAction.action}
+            status={smartAction.status as any}
+          />
+
+          {/* Guided Production Readiness Checklist (6 Stages) */}
+          <div className="p-3 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-cyan-400" />
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                  Guided Production Readiness Checklist
+                </h2>
+              </div>
+              <span className="text-[10px] text-slate-400">
+                L1-Friendly Validation Cascade · Progressive Technical Disclosure
               </span>
-              <span className="text-xs text-slate-400">
-                {currentReadinessBadge.desc}
-              </span>
             </div>
-          </div>
 
-          <div className="sm:text-right shrink-0">
-            <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              Readiness Progress
-            </div>
-            <div className="text-xl sm:text-2xl font-extrabold text-cyan-300 font-mono tabular-nums">
-              {readinessProgress}%
-            </div>
-          </div>
-        </div>
+            <div className="space-y-2.5">
+              {stages.map((stage) => {
+                const isExpanded = !!expandedStageDetails[stage.stage_id];
+                const isCompleted = stage.status === "COMPLETED";
+                const isBlocked = stage.status === "BLOCKED";
+                const isNeedsAction = stage.status === "NEEDS_ACTION";
 
-        {/* 4 Hero Key Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-          {/* Quality Gates */}
-          <div
-            onClick={() => onNavigateTab("advanced", "quality")}
-            className="p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-cyan-700/60 cursor-pointer transition-colors"
-          >
-            <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-              <span>Quality Gates</span>
-              <Award className="w-3.5 h-3.5 text-sky-400" />
-            </div>
-            <div className="text-xl font-bold font-mono text-slate-100 mt-1">
-              {passedGates} / 8 Passed
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {hasHardGateFailure ? "Hard blockers present" : "Static verification criteria"}
-            </div>
-          </div>
+                const statusColors = {
+                  COMPLETED: "border-emerald-900/60 bg-emerald-950/20 text-emerald-300",
+                  BLOCKED: "border-rose-900/60 bg-rose-950/20 text-rose-300",
+                  NEEDS_ACTION: "border-amber-900/60 bg-amber-950/20 text-amber-300",
+                  PENDING: "border-slate-800 bg-slate-950/40 text-slate-400",
+                }[stage.status];
 
-          {/* Rule Quality Score */}
-          <div
-            onClick={() => onNavigateTab("advanced", "quality")}
-            className="p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-cyan-700/60 cursor-pointer transition-colors"
-          >
-            <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-              <span>Rule Quality</span>
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            </div>
-            <div className="text-xl font-bold font-mono text-sky-300 mt-1">
-              {qualityScore !== null ? `${qualityScore}/100` : "Pending"}
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {qualityScore && qualityScore >= 70 ? "Satisfies ≥70 standard" : "Requires improvement (<70)"}
-            </div>
-          </div>
+                const statusBadgeColors = {
+                  COMPLETED: "bg-emerald-950 text-emerald-300 border-emerald-800",
+                  BLOCKED: "bg-rose-950 text-rose-300 border-rose-800",
+                  NEEDS_ACTION: "bg-amber-950 text-amber-300 border-amber-800",
+                  PENDING: "bg-slate-900 text-slate-400 border-slate-800",
+                }[stage.status];
 
-          {/* Verified Analyst Reviews */}
-          <div
-            onClick={() => onNavigateTab("learning")}
-            className="p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-cyan-700/60 cursor-pointer transition-colors"
-          >
-            <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-              <span>Analyst Reviews</span>
-              <FileCheck2 className="w-3.5 h-3.5 text-emerald-400" />
-            </div>
-            <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
-              {totalReviews} / 30
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {totalReviews >= 30 ? "Pilot threshold met" : `${30 - totalReviews} needed for pilot`}
-            </div>
-          </div>
+                const statusIcon = {
+                  COMPLETED: <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />,
+                  BLOCKED: <XCircle className="w-4 h-4 text-rose-400 shrink-0" />,
+                  NEEDS_ACTION: <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />,
+                  PENDING: <Clock className="w-4 h-4 text-slate-500 shrink-0" />,
+                }[stage.status];
 
-          {/* Empirical Accuracy */}
-          <div
-            onClick={() => onNavigateTab("learning")}
-            className="p-3 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-cyan-700/60 cursor-pointer transition-colors"
-          >
-            <div className="text-[11px] text-slate-400 font-medium flex items-center justify-between">
-              <span>AI Accuracy</span>
-              <Cpu className="w-3.5 h-3.5 text-amber-400" />
-            </div>
-            <div className="text-xl font-bold font-mono text-slate-100 mt-1">
-              {accuracyDisplay}
-            </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {totalReviews === 0 ? "Requires analyst reviews" : "Verified sample accuracy"}
-            </div>
-          </div>
-        </div>
-
-        {/* Progress Bar & Last Evaluated Strip */}
-        <div className="space-y-1.5 pt-1">
-          <div className="flex justify-between text-[11px] text-slate-400">
-            <span>6-Stage Production Gating Progress</span>
-            <span className="font-semibold text-slate-200">
-              {completedStagesCount} of 6 Stages Completed
-            </span>
-          </div>
-          <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden flex">
-            <div
-              className={`h-full transition-all ${
-                readinessProgress === 100 ? "bg-emerald-500" : readinessProgress >= 50 ? "bg-cyan-500" : "bg-amber-500"
-              }`}
-              style={{ width: `${readinessProgress}%` }}
-            />
-          </div>
-          <div className="text-[10px] text-slate-500 font-mono text-right">
-            Last Evaluated: {readinessData?.last_evaluated_at ? new Date(readinessData.last_evaluated_at).toLocaleString() : "Never evaluated"}
-          </div>
-        </div>
-      </div>
-
-      {/* 3. SMART NEXT ACTION CARD */}
-      <NextActionCard
-        title={smartAction.title}
-        description={smartAction.description}
-        actionLabel={smartAction.label}
-        onAction={smartAction.action}
-        status={smartAction.status as any}
-      />
-
-      {/* 4. GUIDED READINESS CHECKLIST (6 STAGES) */}
-      <div className="p-3.5 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/40 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-cyan-400" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">
-              Guided Production Readiness Checklist
-            </h2>
-          </div>
-          <span className="text-[10px] text-slate-400">
-            L1-Friendly Validation Cascade · Progressive Technical Disclosure
-          </span>
-        </div>
-
-        <div className="space-y-2.5">
-          {stages.map((stage) => {
-            const isExpanded = !!expandedStageDetails[stage.stage_id];
-            const isCompleted = stage.status === "COMPLETED";
-            const isBlocked = stage.status === "BLOCKED";
-            const isNeedsAction = stage.status === "NEEDS_ACTION";
-
-            const statusColors = {
-              COMPLETED: "border-emerald-900/60 bg-emerald-950/20 text-emerald-300",
-              BLOCKED: "border-rose-900/60 bg-rose-950/20 text-rose-300",
-              NEEDS_ACTION: "border-amber-900/60 bg-amber-950/20 text-amber-300",
-              PENDING: "border-slate-800 bg-slate-950/40 text-slate-400",
-            }[stage.status];
-
-            const statusBadgeColors = {
-              COMPLETED: "bg-emerald-950 text-emerald-300 border-emerald-800",
-              BLOCKED: "bg-rose-950 text-rose-300 border-rose-800",
-              NEEDS_ACTION: "bg-amber-950 text-amber-300 border-amber-800",
-              PENDING: "bg-slate-900 text-slate-400 border-slate-800",
-            }[stage.status];
-
-            const statusIcon = {
-              COMPLETED: <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />,
-              BLOCKED: <XCircle className="w-4 h-4 text-rose-400 shrink-0" />,
-              NEEDS_ACTION: <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />,
-              PENDING: <Clock className="w-4 h-4 text-slate-500 shrink-0" />,
-            }[stage.status];
-
-            return (
-              <div
-                key={stage.stage_id}
-                className={`p-3 rounded-xl border transition-all text-xs space-y-2 ${statusColors}`}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <span className="w-5 h-5 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300 shrink-0 mt-0.5 font-mono">
-                      {stage.stage_number}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-slate-100 text-xs">
-                          {stage.stage_name}
+                return (
+                  <div
+                    key={stage.stage_id}
+                    className={`p-3 rounded-xl border transition-all text-xs space-y-2 ${statusColors}`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <span className="w-5 h-5 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300 shrink-0 mt-0.5 font-mono">
+                          {stage.stage_number}
                         </span>
-                        <span className={`px-2 py-0.2 rounded text-[9px] font-bold uppercase border flex items-center gap-1 ${statusBadgeColors}`}>
-                          {statusIcon}
-                          {stage.status.replace(/_/g, " ")}
-                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-slate-100 text-xs">
+                              {stage.stage_name}
+                            </span>
+                            <span className={`px-2 py-0.2 rounded text-[9px] font-bold uppercase border flex items-center gap-1 ${statusBadgeColors}`}>
+                              {statusIcon}
+                              {stage.status.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                          <div className="space-y-1 pt-1.5 text-[11px]">
+                            <p className="text-slate-300">
+                              <strong className="text-slate-200">What this check means:</strong> {stage.simple_explanation || STAGE_EXPLANATIONS[stage.stage_id]?.means}
+                            </p>
+                            <p className="text-slate-400">
+                              <strong className="text-slate-300">Why it matters:</strong> {STAGE_EXPLANATIONS[stage.stage_id]?.why}
+                            </p>
+                            <p className="text-slate-400">
+                              <strong className="text-slate-300">What is required to complete it:</strong> {stage.missing_requirement || STAGE_EXPLANATIONS[stage.stage_id]?.required}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-1 pt-1.5 text-[11px]">
-                        <p className="text-slate-300">
-                          <strong className="text-slate-200">What this check means:</strong> {stage.simple_explanation || STAGE_EXPLANATIONS[stage.stage_id]?.means}
-                        </p>
-                        <p className="text-slate-400">
-                          <strong className="text-slate-300">Why it matters:</strong> {STAGE_EXPLANATIONS[stage.stage_id]?.why}
-                        </p>
-                        <p className="text-slate-400">
-                          <strong className="text-slate-300">What is required to complete it:</strong> {stage.missing_requirement || STAGE_EXPLANATIONS[stage.stage_id]?.required}
-                        </p>
+
+                      <div className="flex items-center gap-2 shrink-0 sm:self-center">
+                        {stage.action_button && (
+                          <button
+                            type="button"
+                            onClick={() => handleStageAction(stage)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-[11px] font-semibold inline-flex items-center gap-1 transition-colors"
+                          >
+                            {stage.action_button.label} <ArrowRight className="w-3 h-3 text-cyan-400" />
+                          </button>
+                        )}
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 shrink-0 sm:self-center">
-                    {stage.action_button && (
+                    {/* Missing Requirement Alert */}
+                    {stage.missing_requirement && (
+                      <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[11px] space-y-0.5">
+                        <span className="text-amber-400 font-bold block uppercase text-[9px]">Missing Requirement:</span>
+                        <p className="text-slate-300">{stage.missing_requirement}</p>
+                        <div className="text-[10px] text-cyan-300 pt-0.5">
+                          <strong>Next Action:</strong> {stage.next_action}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Progressive Technical Details Disclosure */}
+                    <div className="pt-1 flex items-center justify-between border-t border-slate-800/50 text-[10px]">
+                      <span className="text-slate-400">
+                        {isCompleted ? "Status: Criteria Verified" : isBlocked ? "Status: Action Required to Unblock" : "Status: Evaluation Pending"}
+                      </span>
                       <button
                         type="button"
-                        onClick={() => handleStageAction(stage)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-[11px] font-semibold inline-flex items-center gap-1 transition-colors"
+                        onClick={() => toggleStageDetails(stage.stage_id)}
+                        className="text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-0.5"
                       >
-                        {stage.action_button.label} <ArrowRight className="w-3 h-3 text-cyan-400" />
+                        {isExpanded ? "Hide Technical Details" : "Show Technical Details (G1–G8 / Evidence)"}
+                        <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                       </button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 font-mono text-[10px] space-y-1.5 text-slate-300">
+                        <span className="text-slate-400 block font-sans font-bold uppercase text-[9px]">Technical Verification Evidence:</span>
+                        <pre className="overflow-x-auto text-[10px] text-slate-300 whitespace-pre-wrap leading-tight">
+                          {JSON.stringify(stage.technical_details, null, 2)}
+                        </pre>
+                      </div>
                     )}
                   </div>
-                </div>
-
-                {/* Missing Requirement Alert */}
-                {stage.missing_requirement && (
-                  <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[11px] space-y-0.5">
-                    <span className="text-amber-400 font-bold block uppercase text-[9px]">Missing Requirement:</span>
-                    <p className="text-slate-300">{stage.missing_requirement}</p>
-                    <div className="text-[10px] text-cyan-300 pt-0.5">
-                      <strong>Next Action:</strong> {stage.next_action}
-                    </div>
-                  </div>
-                )}
-
-                {/* Progressive Technical Details Disclosure */}
-                <div className="pt-1 flex items-center justify-between border-t border-slate-800/50 text-[10px]">
-                  <span className="text-slate-400">
-                    {isCompleted ? "Status: Criteria Verified" : isBlocked ? "Status: Action Required to Unblock" : "Status: Evaluation Pending"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => toggleStageDetails(stage.stage_id)}
-                    className="text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-0.5"
-                  >
-                    {isExpanded ? "Hide Technical Details" : "Show Technical Details (G1–G8 / Evidence)"}
-                    <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                  </button>
-                </div>
-
-                {isExpanded && (
-                  <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 font-mono text-[10px] space-y-1.5 text-slate-300">
-                    <span className="text-slate-400 block font-sans font-bold uppercase text-[9px]">Technical Verification Evidence:</span>
-                    <pre className="overflow-x-auto text-[10px] text-slate-300 whitespace-pre-wrap leading-tight">
-                      {JSON.stringify(stage.technical_details, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 5. "WHAT NEEDS ATTENTION?" CONSOLIDATED DIAGNOSTIC ISSUES */}
-      <IssueSummary
-        issues={consolidatedIssues}
-        onNavigateToSection={(tab, section) => onNavigateTab(tab, section)}
-      />
-
-      {/* 6. QUICK-GLANCE HEALTH GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-        {/* Evidence Contract Quick Glance */}
-        <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-slate-200 flex items-center gap-1.5">
-              <Database className="w-3.5 h-3.5 text-cyan-400" /> Evidence Contract Feasibility
-            </span>
-            <button
-              type="button"
-              onClick={() => onNavigateTab("advanced", "contract")}
-              className="text-[10px] text-cyan-400 hover:underline inline-flex items-center gap-0.5"
-            >
-              Details <ArrowRight className="w-3 h-3" />
-            </button>
+                );
+              })}
+            </div>
           </div>
-          <EvidenceCompletenessIndicator
-            requiredCount={
-              intelligenceData?.candidate_evidence_contract?.core_fields?.length ||
-              intelligenceData?.archetype_definition?.mandatory_core_fields?.length ||
-              5
-            }
-            availableCount={intelligenceData?.semantics?.relevant_fields?.length || 5}
-            missingCount={intelligenceData?.semantics?.missing_requirements?.length || 0}
-            missingFields={intelligenceData?.semantics?.missing_requirements || []}
-            isSemanticsVerified={
-              intelligenceData?.semantics?.definition_status === "VERIFIED" &&
-              (!intelligenceData?.semantics?.missing_requirements || intelligenceData.semantics.missing_requirements.length === 0)
-            }
+
+          {/* Consolidated Diagnostic Issues ("What Needs Attention?") */}
+          <IssueSummary
+            issues={consolidatedIssues}
+            onNavigateToSection={(tab, section) => onNavigateTab(tab, section)}
           />
         </div>
 
-        {/* Ground Truth Learning Progress */}
-        <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-slate-200 flex items-center gap-1.5">
-              <FileCheck2 className="w-3.5 h-3.5 text-emerald-400" /> Ground Truth Calibration
-            </span>
-            <button
-              type="button"
-              onClick={() => onNavigateTab("learning")}
-              className="text-[10px] text-cyan-400 hover:underline inline-flex items-center gap-0.5"
-            >
-              Workbench <ArrowRight className="w-3 h-3" />
-            </button>
+        {/* RIGHT 4 COLUMNS: PRODUCTION READINESS & CONTEXT SIDEBAR */}
+        <div className="lg:col-span-4 space-y-3.5">
+          {/* Production Readiness Summary Card */}
+          <div className="p-3.5 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/60 shadow-sm space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  Production Readiness Summary
+                </div>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <span className={`px-2 py-0.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 ${currentReadinessBadge.badge}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${currentReadinessBadge.dot}`} />
+                    {currentReadinessBadge.label}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-right shrink-0">
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  Readiness
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-cyan-300 font-mono tabular-nums">
+                  {readinessProgress}%
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              {currentReadinessBadge.desc}
+            </p>
+
+            {/* 4 Hero Key Metrics (2x2 Grid) */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* Quality Gates */}
+              <div
+                onClick={() => onNavigateTab("advanced", "quality")}
+                className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-cyan-700/60 cursor-pointer transition-colors"
+              >
+                <div className="text-[10px] text-slate-400 font-medium flex items-center justify-between">
+                  <span>Quality Gates</span>
+                  <Award className="w-3.5 h-3.5 text-sky-400" />
+                </div>
+                <div className="text-base font-bold font-mono text-slate-100 mt-1">
+                  {passedGates} / 8 Passed
+                </div>
+                <div className="text-[9px] text-slate-500 mt-0.5 truncate">
+                  {hasHardGateFailure ? "Blockers present" : "Static gates"}
+                </div>
+              </div>
+
+              {/* Rule Quality Score */}
+              <div
+                onClick={() => onNavigateTab("advanced", "quality")}
+                className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-cyan-700/60 cursor-pointer transition-colors"
+              >
+                <div className="text-[10px] text-slate-400 font-medium flex items-center justify-between">
+                  <span>Rule Quality</span>
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                </div>
+                <div className="text-base font-bold font-mono text-sky-300 mt-1">
+                  {qualityScore !== null ? `${qualityScore}/100` : "Pending"}
+                </div>
+                <div className="text-[9px] text-slate-500 mt-0.5 truncate">
+                  {qualityScore && qualityScore >= 70 ? "≥70 Standard" : "Improve (<70)"}
+                </div>
+              </div>
+
+              {/* Verified Analyst Reviews */}
+              <div
+                onClick={() => onNavigateTab("learning")}
+                className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-cyan-700/60 cursor-pointer transition-colors"
+              >
+                <div className="text-[10px] text-slate-400 font-medium flex items-center justify-between">
+                  <span>Analyst Reviews</span>
+                  <FileCheck2 className="w-3.5 h-3.5 text-emerald-400" />
+                </div>
+                <div className="text-base font-bold font-mono text-emerald-400 mt-1">
+                  {totalReviews} / 30
+                </div>
+                <div className="text-[9px] text-slate-500 mt-0.5 truncate">
+                  {totalReviews >= 30 ? "Target met" : `${30 - totalReviews} to pilot`}
+                </div>
+              </div>
+
+              {/* Empirical Accuracy */}
+              <div
+                onClick={() => onNavigateTab("learning")}
+                className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-cyan-700/60 cursor-pointer transition-colors"
+              >
+                <div className="text-[10px] text-slate-400 font-medium flex items-center justify-between">
+                  <span>AI Accuracy</span>
+                  <Cpu className="w-3.5 h-3.5 text-amber-400" />
+                </div>
+                <div className="text-base font-bold font-mono text-slate-100 mt-1">
+                  {accuracyDisplay}
+                </div>
+                <div className="text-[9px] text-slate-500 mt-0.5 truncate">
+                  {totalReviews === 0 ? "Pending reviews" : "Verified sample"}
+                </div>
+              </div>
+            </div>
+
+            {/* Progress Bar & Last Evaluated Strip */}
+            <div className="space-y-1 pt-1 border-t border-slate-800/60">
+              <div className="flex justify-between text-[11px] text-slate-400">
+                <span>Gating Cascade</span>
+                <span className="font-semibold text-slate-200">
+                  {completedStagesCount} of 6 Completed
+                </span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden flex">
+                <div
+                  className={`h-full transition-all ${
+                    readinessProgress === 100 ? "bg-emerald-500" : readinessProgress >= 50 ? "bg-cyan-500" : "bg-amber-500"
+                  }`}
+                  style={{ width: `${readinessProgress}%` }}
+                />
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono text-right">
+                Last Evaluated: {readinessData?.last_evaluated_at ? new Date(readinessData.last_evaluated_at).toLocaleDateString() : "Never evaluated"}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-300">
-            <span>Verified Reviews:</span>
-            <strong className="text-slate-100">
-              {totalReviews} / 30 <span className="text-slate-400 font-normal">(Pilot target)</span>
-            </strong>
-          </div>
-          <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden flex">
-            <div
-              className={`h-full transition-all ${
-                totalReviews >= 30 ? "bg-emerald-500" : "bg-cyan-500"
-              }`}
-              style={{ width: `${Math.min(100, (totalReviews / 30) * 100)}%` }}
+
+          {/* Evidence Contract Feasibility */}
+          <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-cyan-400" /> Evidence Contract Feasibility
+              </span>
+              <button
+                type="button"
+                onClick={() => onNavigateTab("advanced", "contract")}
+                className="text-[10px] text-cyan-400 hover:underline inline-flex items-center gap-0.5"
+              >
+                Details <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+            <EvidenceCompletenessIndicator
+              requiredCount={
+                intelligenceData?.candidate_evidence_contract?.core_fields?.length ||
+                intelligenceData?.archetype_definition?.mandatory_core_fields?.length ||
+                5
+              }
+              availableCount={intelligenceData?.semantics?.relevant_fields?.length || 5}
+              missingCount={intelligenceData?.semantics?.missing_requirements?.length || 0}
+              missingFields={intelligenceData?.semantics?.missing_requirements || []}
+              isSemanticsVerified={
+                intelligenceData?.semantics?.definition_status === "VERIFIED" &&
+                (!intelligenceData?.semantics?.missing_requirements || intelligenceData.semantics.missing_requirements.length === 0)
+              }
             />
           </div>
-          <p className="text-[10px] text-slate-400">
-            Double-blind evaluations prevent human confirmation bias. Minimum 30 samples required for supervised pilot.
-          </p>
+
+          {/* Ground Truth Calibration Progress */}
+          <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                <FileCheck2 className="w-3.5 h-3.5 text-emerald-400" /> Ground Truth Calibration
+              </span>
+              <button
+                type="button"
+                onClick={() => onNavigateTab("learning")}
+                className="text-[10px] text-cyan-400 hover:underline inline-flex items-center gap-0.5"
+              >
+                Workbench <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-slate-300">
+              <span>Verified Reviews:</span>
+              <strong className="text-slate-100">
+                {totalReviews} / 30 <span className="text-slate-400 font-normal">(Pilot target)</span>
+              </strong>
+            </div>
+            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden flex">
+              <div
+                className={`h-full transition-all ${
+                  totalReviews >= 30 ? "bg-emerald-500" : "bg-cyan-500"
+                }`}
+                style={{ width: `${Math.min(100, (totalReviews / 30) * 100)}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-slate-400">
+              Double-blind evaluations prevent human confirmation bias. Minimum 30 samples required for supervised pilot.
+            </p>
+          </div>
         </div>
       </div>
     </div>

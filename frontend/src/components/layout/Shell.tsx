@@ -20,12 +20,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="relative flex h-screen w-full overflow-hidden theme-body font-sans text-xs">
+    <div className="relative flex h-screen w-full overflow-hidden theme-body font-sans text-xs sm:text-[13px]">
       <div aria-hidden="true" className="theme-ambient-backdrop pointer-events-none fixed inset-0 z-0" />
       <Sidebar />
       <div className="relative z-10 flex flex-1 flex-col overflow-hidden min-w-0">
         <Header />
-        <main className="flex-1 overflow-y-auto theme-main-canvas p-2 sm:p-2.5">
+        <main className="flex-1 overflow-y-auto theme-main-canvas p-2.5 sm:p-3">
           {children}
         </main>
       </div>

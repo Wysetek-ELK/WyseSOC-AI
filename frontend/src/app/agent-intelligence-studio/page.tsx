@@ -1349,15 +1349,15 @@ function AgentIntelligenceStudioContent() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-900/60 text-[10px] font-mono text-slate-400">
-                  <th className="py-2.5 px-3 font-semibold">Rule Name &amp; Event Type</th>
-                  <th className="py-2.5 px-2 font-semibold">Severity</th>
-                  <th className="py-2.5 px-2 font-semibold">Archetype</th>
-                  <th className="py-2.5 px-2 font-semibold">Definition</th>
-                  <th className="py-2.5 px-2 font-semibold">Quality Score</th>
-                  <th className="py-2.5 px-3 font-semibold">Baseline Status</th>
-                  <th className="py-2.5 px-3 font-semibold">Production Readiness</th>
-                  <th className="py-2.5 px-2 font-semibold">Drift Flag</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Action</th>
+                  <th className="py-2.5 px-3 font-semibold min-w-[220px]">Rule Name &amp; Event Type</th>
+                  <th className="py-2.5 px-2 font-semibold w-24">Severity</th>
+                  <th className="py-2.5 px-2 font-semibold w-32">Archetype</th>
+                  <th className="py-2.5 px-2 font-semibold w-28">Definition</th>
+                  <th className="py-2.5 px-2 font-semibold w-28">Quality Score</th>
+                  <th className="py-2.5 px-3 font-semibold w-32">Baseline Status</th>
+                  <th className="py-2.5 px-3 font-semibold w-40">Production Readiness</th>
+                  <th className="py-2.5 px-2 font-semibold w-20">Drift Flag</th>
+                  <th className="py-2.5 px-3 font-semibold text-right sticky right-0 bg-slate-900/95 backdrop-blur-xs shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.5)] w-44">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -1479,7 +1479,7 @@ function AgentIntelligenceStudioContent() {
                           )}
                         </td>
 
-                        <td className="py-2 px-3 text-right">
+                        <td className="py-2 px-3 text-right sticky right-0 bg-slate-950/95 group-hover:bg-slate-900/95 backdrop-blur-xs shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.5)]">
                           <div className="inline-flex items-center gap-1.5 justify-end">
                             <button
                               type="button"

@@ -430,7 +430,7 @@ export default function HumanReviewQueuePage() {
                 <th className="py-2 px-2.5 font-semibold">Assigned Analyst</th>
                 <th className="py-2 px-2.5 font-semibold">Analyst Verdict</th>
                 <th className="py-2 px-2.5 font-semibold text-center">Telemetry</th>
-                <th className="py-2 px-2.5 text-right font-semibold">Action</th>
+                <th className="py-2 px-2.5 text-right font-semibold sticky right-0 bg-slate-900/95 backdrop-blur-xs shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.5)] w-28">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
@@ -514,7 +514,7 @@ export default function HumanReviewQueuePage() {
                         </span>
                       </div>
                     </td>
-                    <td className="py-1.5 px-2.5 text-right">
+                    <td className="py-1.5 px-2.5 text-right sticky right-0 bg-slate-950/95 group-hover:bg-slate-900/95 backdrop-blur-xs shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.5)]">
                       <button
                         onClick={() => openInvestigation(item.id)}
                         className="px-2.5 py-0.5 bg-sky-950/60 hover:bg-sky-900/60 text-sky-300 border border-sky-800/60 rounded text-xs font-medium transition-colors"
