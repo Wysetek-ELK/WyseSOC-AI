@@ -28,13 +28,18 @@ function applyThemeToDocument(nextTheme: AppTheme) {
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [blindReviewMode, setBlindReviewState] = useState<boolean>(false);
+  const [blindReviewMode, setBlindReviewState] = useState<boolean>(true);
   const [theme, setTheme] = useState<AppTheme>("obsidian");
 
   useEffect(() => {
-    // Load stored preferences
+    // Load stored preferences (defaults to true for SOC double-blind integrity)
     const storedBlind = localStorage.getItem("ai_verdict_blind_review");
-    if (storedBlind === "true") setBlindReviewState(true);
+    if (storedBlind !== null) {
+      setBlindReviewState(storedBlind === "true");
+    } else {
+      setBlindReviewState(true);
+      localStorage.setItem("ai_verdict_blind_review", "true");
+    }
 
     const rawStoredTheme = localStorage.getItem("ai_verdict_theme");
     const resolvedTheme: AppTheme =

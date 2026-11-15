@@ -1,0 +1,354 @@
+{
+  "version": "V1.2.2",
+  "timestamp": "2026-11-15T14:15:53.894Z",
+  "commit": "HEAD",
+  "status": "PASS",
+  "summary": {
+    "totalScenarios": 6,
+    "passedScenarios": 6,
+    "failedScenarios": 0,
+    "totalScreenshots": 24,
+    "viewportsTested": [
+      "1024x768",
+      "1280x800",
+      "1440x900",
+      "1920x1080"
+    ]
+  },
+  "testResults": [
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V1",
+      "pageKey": "studio_rule_detail_heavy_tcp_v1",
+      "domResult": {
+        "hasRuleHeader": true,
+        "hasSiemActive": true,
+        "hasV1Status": true,
+        "hasAiSuspended": true,
+        "hasApprovedBaseline": true,
+        "isValid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V3",
+      "pageKey": "studio_rule_detail_heavy_tcp_v3",
+      "domResult": {
+        "hasStage1Blocked": true,
+        "hasStage2Blocked": true,
+        "hasScore77": true,
+        "hasNoContradictionText": true,
+        "isApproveDisabled": true,
+        "isValid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-ACTIVE",
+      "pageKey": "workbench_blind_review_active",
+      "domResult": {
+        "hasHiddenMask": true,
+        "hasBlindOnHeader": true,
+        "isValid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-DISABLED",
+      "pageKey": "workbench_blind_review_disabled",
+      "domResult": {
+        "hasBlindOffHeader": true,
+        "hasVerdicts": true,
+        "isValid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-VIEWER-LOCKOUT",
+      "pageKey": "studio_viewer_lockout",
+      "domResult": {
+        "isSynthDisabled": true,
+        "isSimDisabled": true,
+        "isApproveDisabled": true,
+        "isValid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-CATALOG-INTEGRITY",
+      "pageKey": "studio_catalog_readiness_integrity",
+      "domResult": {
+        "rowCount": 20,
+        "hasTable": true,
+        "hasFalseReady": false,
+        "isValid": true
+      },
+      "status": "PASS"
+    }
+  ],
+  "screenshots": [
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V1",
+      "pageKey": "studio_rule_detail_heavy_tcp_v1",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "studio_rule_detail_heavy_tcp_v1_1024x768.png",
+      "fileSizeBytes": 380864,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v1_1024x768.png",
+      "description": "Historical Approved Baseline: Heavy TCP v1 preserved with revalidation required and decoupled statuses (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V1",
+      "pageKey": "studio_rule_detail_heavy_tcp_v1",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "studio_rule_detail_heavy_tcp_v1_1280x800.png",
+      "fileSizeBytes": 519038,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v1_1280x800.png",
+      "description": "Historical Approved Baseline: Heavy TCP v1 preserved with revalidation required and decoupled statuses (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V1",
+      "pageKey": "studio_rule_detail_heavy_tcp_v1",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "studio_rule_detail_heavy_tcp_v1_1440x900.png",
+      "fileSizeBytes": 628708,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v1_1440x900.png",
+      "description": "Historical Approved Baseline: Heavy TCP v1 preserved with revalidation required and decoupled statuses (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V1",
+      "pageKey": "studio_rule_detail_heavy_tcp_v1",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "studio_rule_detail_heavy_tcp_v1_1920x1080.png",
+      "fileSizeBytes": 943533,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v1_1920x1080.png",
+      "description": "Historical Approved Baseline: Heavy TCP v1 preserved with revalidation required and decoupled statuses (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V3",
+      "pageKey": "studio_rule_detail_heavy_tcp_v3",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "studio_rule_detail_heavy_tcp_v3_1024x768.png",
+      "fileSizeBytes": 366644,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v3_1024x768.png",
+      "description": "Candidate Integrity: Heavy TCP v3 stages 1 & 2 blocked, score 77, no contradiction text, disabled approval (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V3",
+      "pageKey": "studio_rule_detail_heavy_tcp_v3",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "studio_rule_detail_heavy_tcp_v3_1280x800.png",
+      "fileSizeBytes": 515609,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v3_1280x800.png",
+      "description": "Candidate Integrity: Heavy TCP v3 stages 1 & 2 blocked, score 77, no contradiction text, disabled approval (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V3",
+      "pageKey": "studio_rule_detail_heavy_tcp_v3",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "studio_rule_detail_heavy_tcp_v3_1440x900.png",
+      "fileSizeBytes": 632663,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v3_1440x900.png",
+      "description": "Candidate Integrity: Heavy TCP v3 stages 1 & 2 blocked, score 77, no contradiction text, disabled approval (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V3",
+      "pageKey": "studio_rule_detail_heavy_tcp_v3",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "studio_rule_detail_heavy_tcp_v3_1920x1080.png",
+      "fileSizeBytes": 957424,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v3_1920x1080.png",
+      "description": "Candidate Integrity: Heavy TCP v3 stages 1 & 2 blocked, score 77, no contradiction text, disabled approval (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-ACTIVE",
+      "pageKey": "workbench_blind_review_active",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "workbench_blind_review_active_1024x768.png",
+      "fileSizeBytes": 310527,
+      "path": "screenshots/workbench_blind_review_active_1024x768.png",
+      "description": "Blind Review Integrity: Double-blind mode active, verdicts masked as [Hidden - Blind Review] (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-ACTIVE",
+      "pageKey": "workbench_blind_review_active",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "workbench_blind_review_active_1280x800.png",
+      "fileSizeBytes": 367739,
+      "path": "screenshots/workbench_blind_review_active_1280x800.png",
+      "description": "Blind Review Integrity: Double-blind mode active, verdicts masked as [Hidden - Blind Review] (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-ACTIVE",
+      "pageKey": "workbench_blind_review_active",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "workbench_blind_review_active_1440x900.png",
+      "fileSizeBytes": 438813,
+      "path": "screenshots/workbench_blind_review_active_1440x900.png",
+      "description": "Blind Review Integrity: Double-blind mode active, verdicts masked as [Hidden - Blind Review] (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-ACTIVE",
+      "pageKey": "workbench_blind_review_active",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "workbench_blind_review_active_1920x1080.png",
+      "fileSizeBytes": 543572,
+      "path": "screenshots/workbench_blind_review_active_1920x1080.png",
+      "description": "Blind Review Integrity: Double-blind mode active, verdicts masked as [Hidden - Blind Review] (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-DISABLED",
+      "pageKey": "workbench_blind_review_disabled",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "workbench_blind_review_disabled_1024x768.png",
+      "fileSizeBytes": 324995,
+      "path": "screenshots/workbench_blind_review_disabled_1024x768.png",
+      "description": "Blind Review Unmasked: Global control OFF reveals stored AI verdicts (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-DISABLED",
+      "pageKey": "workbench_blind_review_disabled",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "workbench_blind_review_disabled_1280x800.png",
+      "fileSizeBytes": 370022,
+      "path": "screenshots/workbench_blind_review_disabled_1280x800.png",
+      "description": "Blind Review Unmasked: Global control OFF reveals stored AI verdicts (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-DISABLED",
+      "pageKey": "workbench_blind_review_disabled",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "workbench_blind_review_disabled_1440x900.png",
+      "fileSizeBytes": 417610,
+      "path": "screenshots/workbench_blind_review_disabled_1440x900.png",
+      "description": "Blind Review Unmasked: Global control OFF reveals stored AI verdicts (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-DISABLED",
+      "pageKey": "workbench_blind_review_disabled",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "workbench_blind_review_disabled_1920x1080.png",
+      "fileSizeBytes": 522370,
+      "path": "screenshots/workbench_blind_review_disabled_1920x1080.png",
+      "description": "Blind Review Unmasked: Global control OFF reveals stored AI verdicts (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-VIEWER-LOCKOUT",
+      "pageKey": "studio_viewer_lockout",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "studio_viewer_lockout_1024x768.png",
+      "fileSizeBytes": 380433,
+      "path": "screenshots/studio_viewer_lockout_1024x768.png",
+      "description": "RBAC Safety: Read-Only Viewer mutation controls strictly disabled (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-VIEWER-LOCKOUT",
+      "pageKey": "studio_viewer_lockout",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "studio_viewer_lockout_1280x800.png",
+      "fileSizeBytes": 518136,
+      "path": "screenshots/studio_viewer_lockout_1280x800.png",
+      "description": "RBAC Safety: Read-Only Viewer mutation controls strictly disabled (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-VIEWER-LOCKOUT",
+      "pageKey": "studio_viewer_lockout",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "studio_viewer_lockout_1440x900.png",
+      "fileSizeBytes": 627589,
+      "path": "screenshots/studio_viewer_lockout_1440x900.png",
+      "description": "RBAC Safety: Read-Only Viewer mutation controls strictly disabled (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-VIEWER-LOCKOUT",
+      "pageKey": "studio_viewer_lockout",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "studio_viewer_lockout_1920x1080.png",
+      "fileSizeBytes": 942341,
+      "path": "screenshots/studio_viewer_lockout_1920x1080.png",
+      "description": "RBAC Safety: Read-Only Viewer mutation controls strictly disabled (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-CATALOG-INTEGRITY",
+      "pageKey": "studio_catalog_readiness_integrity",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "studio_catalog_readiness_integrity_1024x768.png",
+      "fileSizeBytes": 272326,
+      "path": "screenshots/studio_catalog_readiness_integrity_1024x768.png",
+      "description": "Rule Catalog Integrity: sub-8 gate rules never display false READY FOR APPROVAL (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-CATALOG-INTEGRITY",
+      "pageKey": "studio_catalog_readiness_integrity",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "studio_catalog_readiness_integrity_1280x800.png",
+      "fileSizeBytes": 322721,
+      "path": "screenshots/studio_catalog_readiness_integrity_1280x800.png",
+      "description": "Rule Catalog Integrity: sub-8 gate rules never display false READY FOR APPROVAL (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-CATALOG-INTEGRITY",
+      "pageKey": "studio_catalog_readiness_integrity",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "studio_catalog_readiness_integrity_1440x900.png",
+      "fileSizeBytes": 380536,
+      "path": "screenshots/studio_catalog_readiness_integrity_1440x900.png",
+      "description": "Rule Catalog Integrity: sub-8 gate rules never display false READY FOR APPROVAL (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-CATALOG-INTEGRITY",
+      "pageKey": "studio_catalog_readiness_integrity",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "studio_catalog_readiness_integrity_1920x1080.png",
+      "fileSizeBytes": 504827,
+      "path": "screenshots/studio_catalog_readiness_integrity_1920x1080.png",
+      "description": "Rule Catalog Integrity: sub-8 gate rules never display false READY FOR APPROVAL (1920x1080)"
+    }
+  ]
+}

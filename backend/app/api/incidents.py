@@ -52,6 +52,7 @@ async def list_incidents(
         exact_rule_id=exact_rule_id,
         resolution=resolution,
         blind_review=blind_review,
+        current_user=current_user,
     )
 
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
@@ -74,7 +75,7 @@ async def get_incident_detail(
     db: AsyncSession = Depends(get_db),
 ):
     service = IncidentService(db)
-    incident = await service.get_incident(identifier, blind_review=blind_review)
+    incident = await service.get_incident(identifier, blind_review=blind_review, current_user=current_user)
     if not incident:
         raise HTTPException(status_code=404, detail=f"Incident '{identifier}' not found")
 

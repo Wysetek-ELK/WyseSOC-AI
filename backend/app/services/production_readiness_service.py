@@ -205,6 +205,7 @@ class ProductionReadinessService:
 
         evidence_contract_verified = (
             contract is not None
+            and getattr(contract, "status", None) == "VERIFIED"
             and len(contract.required_evidence) > 0
             and gate_results.get("G3_EVIDENCE_FEASIBILITY") is not None
             and gate_results["G3_EVIDENCE_FEASIBILITY"].status == GateStatus.PASSED
@@ -352,18 +353,26 @@ class ProductionReadinessService:
 
         # Stage 2: Verify Evidence
         s2_status = (
-            StageStatus.COMPLETED if evidence_contract_verified
+            StageStatus.COMPLETED if (evidence_contract_verified and rule_def_verified and contract and getattr(contract, "status", None) == "VERIFIED")
             else StageStatus.BLOCKED if not rule_def_verified
             else StageStatus.NEEDS_ACTION
         )
         s2_missing = (
-            f"Missing mandatory evidence fields: {', '.join(missing_evidence_mappings)}"
-            if missing_evidence_mappings
-            else ("Evidence contract feasibility unverified or missing core bindings" if not evidence_contract_verified else None)
+            "Evidence contract verification blocked: upstream detection logic and trigger thresholds must be verified in Stage 1 first."
+            if not rule_def_verified
+            else (f"Evidence contract status is {getattr(contract, 'status', 'UNBOUND')}. Semantic telemetry bindings must be verified."
+                  if not contract or getattr(contract, "status", None) != "VERIFIED"
+                  else (f"Missing mandatory evidence fields: {', '.join(missing_evidence_mappings)}"
+                        if missing_evidence_mappings
+                        else ("Evidence contract feasibility unverified" if not evidence_contract_verified else None)))
         )
         s2_next = (
-            "Map missing mandatory telemetry fields in the Evidence Contract."
-            if not evidence_contract_verified else "All required telemetry fields are mapped and feasible."
+            "Resolve Stage 1 (Define Detection) to unblock evidence verification."
+            if not rule_def_verified
+            else ("Review field bindings and verify Evidence Contract in the Contract tab."
+                  if not contract or getattr(contract, "status", None) != "VERIFIED"
+                  else ("Map missing mandatory telemetry fields in the Evidence Contract."
+                        if not evidence_contract_verified else "All required telemetry fields are mapped and feasible."))
         )
         stages.append(
             ReadinessStageItem(
@@ -381,7 +390,7 @@ class ProductionReadinessService:
                     target_section="contract"
                 ),
                 technical_details={
-                    "contract_status": contract.status if contract else "UNVERIFIED",
+                    "contract_status": getattr(contract, "status", "UNVERIFIED") if contract else "UNVERIFIED",
                     "core_fields_count": len(contract.required_evidence) if contract else 0,
                     "missing_mappings": missing_evidence_mappings,
                     "g3_gate": gate_results.get("G3_EVIDENCE_FEASIBILITY").model_dump(mode="json") if gate_results.get("G3_EVIDENCE_FEASIBILITY") else None,
@@ -396,11 +405,17 @@ class ProductionReadinessService:
             else StageStatus.NEEDS_ACTION if target_version is not None
             else StageStatus.PENDING
         )
-        s3_missing = (
-            f"Quality score ({quality_score}/100) below 70 requirement; {len(blocking_issues)} blocking findings detected"
-            if not policy_structural_passed and quality_score is not None
-            else ("No policy version created yet" if not target_version else None)
-        )
+        if not target_version:
+            s3_missing = "No policy version created yet"
+        elif quality_score is not None and quality_score < 70.0:
+            s3_missing = f"Quality score ({quality_score}/100) below 70 minimum requirement; {len(blocking_issues)} blocking finding(s) detected"
+        elif len(blocking_issues) > 0:
+            s3_missing = f"Quality score ({quality_score}/100) meets score threshold, but {len(blocking_issues)} blocking finding(s) must be resolved: {'; '.join(blocking_issues[:2])}"
+        elif not policy_structural_passed:
+            s3_missing = "Policy structural quality criteria incomplete"
+        else:
+            s3_missing = None
+
         s3_next = (
             "Validate policy quality criteria (G1–G8) and resolve blocking findings."
             if not policy_structural_passed else "AI prompt satisfies all structural quality criteria."
@@ -614,6 +629,17 @@ class ProductionReadinessService:
                 else:
                     ev_refs.append(str(item))
 
+        if rule_prompt and rule_prompt.ai_execution_suspended:
+            ai_execution_status = "Suspended"
+        elif target_version and target_version.status == "APPROVED" and passed_gates_count == 8 and total_reviews >= 100 and wilson_passed:
+            ai_execution_status = "Enabled"
+        elif target_version and target_version.status == "APPROVED":
+            ai_execution_status = "Suspended"
+        elif target_version and target_version.status == "REVOKED":
+            ai_execution_status = "Blocked"
+        else:
+            ai_execution_status = "Suspended"
+
         return ProductionReadinessResponse(
             rule_id=rule.id,
             rule_name=rule.name,
@@ -628,6 +654,7 @@ class ProductionReadinessService:
             deployment_status=rule.status or "ACTIVE",
             active_version_number=active_version.version_number if active_version else None,
             active_version_status=active_version.status if active_version else "NONE",
+            ai_execution_status=ai_execution_status,
             readiness_status=readiness_status,
             readiness_label=readiness_label,
             readiness_progress=readiness_progress,

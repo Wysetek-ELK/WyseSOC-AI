@@ -538,6 +538,15 @@ function AITriageWorkbenchContent() {
                             {inc.cleared_reason && <span className="text-slate-500 italic truncate">"{inc.cleared_reason}"</span>}
                           </div>
                         )}
+                        {blindReviewMode && !inc.ai_verdict && (
+                          <span
+                            className="px-1.5 py-0.2 rounded border text-[9px] font-mono text-slate-400 italic bg-slate-900/60 border-slate-800 flex items-center gap-1"
+                            title="AI Verdict is masked in double-blind review until an analyst submits an independent determination."
+                          >
+                            <EyeOff className="h-2.5 w-2.5 text-amber-500/80" />
+                            AI: [Hidden - Blind Review]
+                          </span>
+                        )}
                         {inc.ai_verdict && (
                           <span
                             className={`px-1.5 py-0.2 rounded border text-[9px] font-semibold flex items-center gap-1 ${

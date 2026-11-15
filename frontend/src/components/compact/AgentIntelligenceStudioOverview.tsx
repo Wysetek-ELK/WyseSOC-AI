@@ -235,7 +235,9 @@ export function AgentIntelligenceStudioOverview({
   );
 
   const aiVerdictExecutionStatus: "Enabled" | "Suspended" | "Blocked" =
-    eligibilityData?.ai_verdict_execution_status === "ENABLED"
+    readinessData?.ai_execution_status
+      ? (readinessData.ai_execution_status as "Enabled" | "Suspended" | "Blocked")
+      : eligibilityData?.ai_verdict_execution_status === "ENABLED"
       ? "Enabled"
       : eligibilityData?.ai_verdict_execution_status === "SUSPENDED" || isPolicyRevoked
       ? "Suspended"
@@ -253,9 +255,10 @@ export function AgentIntelligenceStudioOverview({
   );
 
   const productionReadinessStatus: "Ready" | "Blocked" =
-    readinessData?.readiness_status === "ACTIVE" ||
-    (readinessData?.readiness_status === "APPROVED" && passedGates === 8) ||
-    readinessData?.readiness_status === "READY_FOR_APPROVAL"
+    readinessData?.approval_eligible
+      ? "Ready"
+      : (readinessData?.readiness_status === "APPROVED" && passedGates === 8) ||
+        readinessData?.readiness_status === "ACTIVE"
       ? "Ready"
       : "Blocked";
 
@@ -545,18 +548,22 @@ export function AgentIntelligenceStudioOverview({
             </div>
           </div>
 
-          {/* Authoritative Decoupled Governance & Readiness Indicators */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            {/* FortiSIEM Detection Rule Status */}
+          {/* Authoritative Decoupled Governance & Readiness Indicators (4-Part Decoupled Lifecycle) */}
+          <div data-testid="ais-decoupled-lifecycle-strip" className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {/* 1. FortiSIEM Detection Rule Status */}
             <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Underlying FortiSIEM Detection Rule Deployment Status">
               <span className="text-slate-500 font-mono text-[10px]">SIEM Rule:</span>
               <span className={`w-1.5 h-1.5 rounded-full ${deploymentStatus === "ACTIVE" ? "bg-emerald-400" : "bg-slate-500"}`} />
-              <strong className={deploymentStatus === "ACTIVE" ? "text-emerald-300 font-semibold" : "text-slate-400"}>{deploymentStatus}</strong>
+              <strong className={deploymentStatus === "ACTIVE" ? "text-emerald-300 font-semibold" : "text-slate-400"}>
+                {deploymentStatus}
+              </strong>
             </span>
 
-            {/* Selected Policy Version & Status */}
+            {/* 2. Selected Policy Version & Status */}
             <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Candidate Policy Version loaded in Overview & Editor">
-              <span className="text-slate-500 font-mono text-[10px]">Selected Policy:</span>
+              <span className="text-slate-500 font-mono text-[10px]">
+                {selectedVersion ? `Policy v${selectedVersion.version_number}:` : "Policy:"}
+              </span>
               <strong className={
                 selectedVersion?.status === "APPROVED"
                   ? "text-emerald-400 font-semibold"
@@ -566,25 +573,23 @@ export function AgentIntelligenceStudioOverview({
                   ? "text-sky-300 font-semibold"
                   : "text-amber-400 font-semibold"
               }>
-                {selectedPolicyLabel}
+                {selectedVersion?.status || "None"}
               </strong>
             </span>
 
-            {/* Active AI Policy */}
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Active Approved Policy assigned for production verdicts">
-              <span className="text-slate-500 font-mono text-[10px]">Active AI Policy:</span>
-              <strong className={
-                activeVersion?.status === "APPROVED" && !isPolicyRevoked
-                  ? "text-cyan-400 font-semibold"
-                  : "text-rose-400 font-semibold"
-              }>
-                {activePolicyLabel}
-              </strong>
-            </span>
+            {/* Active AI Policy Reference (if different from candidate) */}
+            {activeVersion && activeVersion.id !== selectedVersion?.id && (
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Active Approved Policy assigned for production verdicts">
+                <span className="text-slate-500 font-mono text-[10px]">Active Policy:</span>
+                <strong className={activeVersion.status === "APPROVED" && !isPolicyRevoked ? "text-cyan-400 font-semibold" : "text-rose-400 font-semibold"}>
+                  {activePolicyLabel}
+                </strong>
+              </span>
+            )}
 
-            {/* AI Verdict Execution Status */}
+            {/* 3. AI Verdict Execution Status */}
             <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Real-time execution eligibility for Local LLM verdicts">
-              <span className="text-slate-500 font-mono text-[10px]">AI Verdict Execution:</span>
+              <span className="text-slate-500 font-mono text-[10px]">AI Execution:</span>
               <span className={`w-1.5 h-1.5 rounded-full ${
                 aiVerdictExecutionStatus === "Enabled"
                   ? "bg-emerald-400"
@@ -603,13 +608,19 @@ export function AgentIntelligenceStudioOverview({
               </strong>
             </span>
 
-            {/* Production Readiness */}
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="All 6 validation & governance stages completed">
-              <span className="text-slate-500 font-mono text-[10px]">Production Readiness:</span>
+            {/* 4. Authoritative Production Readiness Status */}
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Authoritative production readiness state">
+              <span className="text-slate-500 font-mono text-[10px]">Current Readiness:</span>
               <strong className={
-                productionReadinessStatus === "Ready" ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"
+                readinessStatus === "READY_FOR_APPROVAL" || readinessStatus === "ACTIVE"
+                  ? "text-emerald-400 font-semibold"
+                  : readinessStatus === "APPROVED"
+                  ? "text-emerald-300 font-semibold"
+                  : readinessStatus === "LEARNING"
+                  ? "text-blue-300 font-semibold"
+                  : "text-rose-400 font-semibold"
               }>
-                {productionReadinessStatus}
+                {currentReadinessBadge.label}
               </strong>
             </span>
           </div>

@@ -70,6 +70,7 @@ class ProductionReadinessResponse(BaseModel):
     deployment_status: str = "ACTIVE"
     active_version_number: Optional[int] = None
     active_version_status: Optional[str] = None
+    ai_execution_status: str = "Suspended"
     
     # Authoritative Readiness Summary
     readiness_status: ReadinessStatus

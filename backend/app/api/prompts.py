@@ -205,7 +205,8 @@ async def get_rule_prompts_summary(
             and not is_def_incomplete
             and blocker_cnt == 0
             and prof
-            and prof.total_analyst_reviews >= 30
+            and prof.total_analyst_reviews >= 100
+            and (getattr(prof, "wilson_lower_bound", None) or 0.0) >= 0.96
         ):
             readiness_status = "READY_FOR_APPROVAL"
             action_title = "Request Production Approval"

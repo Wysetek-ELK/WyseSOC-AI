@@ -84,6 +84,7 @@ class IncidentService:
         exact_rule_id: Optional[str] = None,
         resolution: Optional[str] = None,
         blind_review: bool = False,
+        current_user: Optional[Any] = None,
     ) -> Tuple[List[IncidentListItemResponse], int, Dict[str, Any]]:
         all_rules = list((await self.db.execute(select(Rule))).scalars().all())
         rules_by_uuid = {str(r.id): r for r in all_rules}
@@ -217,11 +218,21 @@ class IncidentService:
             incidents = [by_id[pid] for pid in page_ids if pid in by_id]
 
         reviewed_inc_ids = set()
-        if blind_review and incidents:
-            page_ids_all = [inc.id for inc in incidents] + [inc.incident_id for inc in incidents]
-            rev_q = select(AnalystVerdictReview.incident_id).where(AnalystVerdictReview.incident_id.in_(page_ids_all))
-            rev_res = await self.db.execute(rev_q)
-            reviewed_inc_ids = set(rev_res.scalars().all())
+        if blind_review and incidents and current_user:
+            page_ids_all = [str(inc.id) for inc in incidents] + [str(inc.incident_id) for inc in incidents]
+            user_filters = []
+            if hasattr(current_user, "id") and current_user.id:
+                user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.id))
+            if hasattr(current_user, "username") and current_user.username:
+                user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.username))
+
+            if user_filters:
+                rev_q = select(AnalystVerdictReview.incident_id).where(
+                    AnalystVerdictReview.incident_id.in_(page_ids_all),
+                    or_(*user_filters)
+                )
+                rev_res = await self.db.execute(rev_q)
+                reviewed_inc_ids = set(rev_res.scalars().all())
 
         items: List[IncidentListItemResponse] = []
         for inc in incidents:
@@ -299,6 +310,7 @@ class IncidentService:
         exact_rule_id: Optional[str] = None,
         resolution: Optional[str] = None,
         blind_review: bool = False,
+        current_user: Optional[Any] = None,
     ) -> Tuple[List[IncidentListItemResponse], int]:
         items, total, _ = await self.list_incidents_with_rule_summary(
             page=page,
@@ -310,6 +322,7 @@ class IncidentService:
             exact_rule_id=exact_rule_id,
             resolution=resolution,
             blind_review=blind_review,
+            current_user=current_user,
         )
         return items, total
 
@@ -317,6 +330,7 @@ class IncidentService:
         self,
         identifier: str,  # can be UUID id or incident_id (e.g. "132438483")
         blind_review: bool = False,
+        current_user: Optional[Any] = None,
     ) -> Optional[IncidentDetailResponse]:
         query = select(Incident).where(
             or_(Incident.id == identifier, Incident.incident_id == identifier)
@@ -394,14 +408,22 @@ class IncidentService:
                 created_at=inc.ground_truth.created_at,
             )
 
-        # Check if analyst review has already been submitted for this incident
+        # Check if analyst review has already been submitted for this incident by THIS reviewer
         has_analyst_review = False
-        if blind_review:
-            rev_stmt = select(AnalystVerdictReview.id).where(
-                (AnalystVerdictReview.incident_id == inc.id) | (AnalystVerdictReview.incident_id == inc.incident_id)
-            ).limit(1)
-            rev_res = await self.db.execute(rev_stmt)
-            has_analyst_review = rev_res.scalar_one_or_none() is not None
+        if blind_review and current_user:
+            user_filters = []
+            if hasattr(current_user, "id") and current_user.id:
+                user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.id))
+            if hasattr(current_user, "username") and current_user.username:
+                user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.username))
+
+            if user_filters:
+                rev_stmt = select(AnalystVerdictReview.id).where(
+                    or_(AnalystVerdictReview.incident_id == str(inc.id), AnalystVerdictReview.incident_id == str(inc.incident_id)),
+                    or_(*user_filters)
+                ).limit(1)
+                rev_res = await self.db.execute(rev_stmt)
+                has_analyst_review = rev_res.scalar_one_or_none() is not None
 
         sanitized_raw_payload = sanitize_blind_review_payload(inc.raw_payload or {}) if blind_review else (inc.raw_payload or {})
         safe_ai_verdict = (

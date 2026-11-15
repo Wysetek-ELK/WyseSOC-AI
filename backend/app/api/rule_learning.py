@@ -370,6 +370,7 @@ async def submit_analyst_review(
             blind_mode_active=payload.blind_mode_active,
             customer=getattr(current_user, "customer", None)
         )
+        await db.commit()
         return res
     except ValueError as e:
         err_msg = str(e)
