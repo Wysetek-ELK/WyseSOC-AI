@@ -162,6 +162,7 @@ function AgentIntelligenceStudioContent() {
   const [promptInspectorIncidentId, setPromptInspectorIncidentId] = useState<string | null>(null);
   const [promptInspectorRuleId, setPromptInspectorRuleId] = useState<string | null>(null);
   const [promptInspectorVersionId, setPromptInspectorVersionId] = useState<string | null>(null);
+  const [promptInspectorInitialMode, setPromptInspectorInitialMode] = useState<"capture" | "preview">("capture");
 
   // Download / Export state
   const [downloadingExport, setDownloadingExport] = useState(false);
@@ -995,6 +996,7 @@ function AgentIntelligenceStudioContent() {
   const incompleteDefinitionCount = summaries.filter((s) => s.definition_completeness === "INCOMPLETE").length;
   const driftAlertCount = summaries.filter((s) => s.revalidation_required).length;
 
+  const selectedRule = rules.find((r) => r.id === selectedRuleId);
   const selectedVersion = rulePrompt?.versions.find((v) => v.id === selectedVersionId);
   const isSelectedActive = selectedVersion?.id === rulePrompt?.active_version_id;
 
@@ -1056,6 +1058,7 @@ function AgentIntelligenceStudioContent() {
                 setPromptInspectorIncidentId(null);
                 setPromptInspectorRuleId(selectedRuleId || (selectedRule ? selectedRule.id : null));
                 setPromptInspectorVersionId(selectedVersionId || null);
+                setPromptInspectorInitialMode("capture");
                 setPromptInspectorOpen(true);
               }}
               className="px-2.5 py-1 text-xs rounded border border-emerald-800/80 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-200 font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
@@ -1431,6 +1434,21 @@ function AgentIntelligenceStudioContent() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setPromptInspectorIncidentId(null);
+                                setPromptInspectorRuleId(item.rule_id);
+                                setPromptInspectorVersionId(null);
+                                setPromptInspectorInitialMode("capture");
+                                setPromptInspectorOpen(true);
+                              }}
+                              title={`Inspect actual prompt payload for ${item.rule_name}`}
+                              className="p-1 rounded border border-emerald-900/80 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-400 hover:text-emerald-300 transition-colors"
+                            >
+                              <Terminal className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleExportSingleRule(item.rule_id, "json");
                               }}
                               disabled={downloadingExport}
@@ -1553,6 +1571,16 @@ function AgentIntelligenceStudioContent() {
             </div>
           </div>
         )}
+        {/* Actual LLM Prompt Inspector Modal (Table View) */}
+        <ActualPromptInspectorModal
+          isOpen={promptInspectorOpen}
+          onClose={() => setPromptInspectorOpen(false)}
+          incidentId={promptInspectorIncidentId}
+          ruleId={promptInspectorRuleId || selectedRuleId || (selectedRule ? selectedRule.id : null)}
+          ruleName={selectedRule ? selectedRule.name : undefined}
+          versionId={promptInspectorVersionId || selectedVersionId || undefined}
+          initialMode={promptInspectorInitialMode}
+        />
       </div>
     );
   }
@@ -1574,7 +1602,6 @@ function AgentIntelligenceStudioContent() {
       ? Math.max(0, Math.min(20, Math.round((studioQualityScore / 100) * 20)))
       : 0;
   const passedGatesCount = gateList.filter((g) => g.status === "PASSED").length;
-  const selectedRule = rules.find((r) => r.id === selectedRuleId);
   const operationalStatus = deriveOperationalStatus({
     lifecycleStage: learningProfile?.lifecycle_stage,
     isApprovalEligible,
@@ -1624,19 +1651,37 @@ function AgentIntelligenceStudioContent() {
               </div>
             }
             actions={
-              <button
-                type="button"
-                onClick={() => {
-                  setCompactUi(false);
-                  if (typeof window !== "undefined") {
-                    localStorage.setItem("VERDICTUM_COMPACT_UI_ENABLED", "false");
-                  }
-                }}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-mono"
-                title="Switch to detailed legacy 7-tab layout"
-              >
-                Legacy 7-Tab View
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPromptInspectorIncidentId(null);
+                    setPromptInspectorRuleId(selectedRuleId);
+                    setPromptInspectorVersionId(selectedVersionId);
+                    setPromptInspectorInitialMode("capture");
+                    setPromptInspectorOpen(true);
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg border border-emerald-700/80 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 hover:text-emerald-200 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                  title="Inspect exact prompt payload sent to Local LLM for this rule"
+                >
+                  <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="hidden sm:inline">View Actual LLM Prompt</span>
+                  <span className="sm:hidden">Actual Prompt</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCompactUi(false);
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("VERDICTUM_COMPACT_UI_ENABLED", "false");
+                    }
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-mono"
+                  title="Switch to detailed legacy 7-tab layout"
+                >
+                  Legacy 7-Tab View
+                </button>
+              </div>
             }
           />
 
@@ -1867,6 +1912,38 @@ function AgentIntelligenceStudioContent() {
                 Run Simulation
               </button>
 
+              {/* View Actual LLM Prompt */}
+              <button
+                type="button"
+                onClick={() => {
+                  setPromptInspectorIncidentId(null);
+                  setPromptInspectorRuleId(selectedRuleId);
+                  setPromptInspectorVersionId(selectedVersionId);
+                  setPromptInspectorInitialMode("capture");
+                  setPromptInspectorOpen(true);
+                }}
+                className="px-3.5 py-1.5 text-xs rounded-lg border border-emerald-700/80 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-200 font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+              >
+                <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                View Actual LLM Prompt
+              </button>
+
+              {/* Preview Compiled Prompt */}
+              <button
+                type="button"
+                onClick={() => {
+                  setPromptInspectorIncidentId(null);
+                  setPromptInspectorRuleId(selectedRuleId);
+                  setPromptInspectorVersionId(selectedVersionId);
+                  setPromptInspectorInitialMode("preview");
+                  setPromptInspectorOpen(true);
+                }}
+                className="px-3.5 py-1.5 text-xs rounded-lg border border-sky-800/80 bg-sky-950/50 hover:bg-sky-900/70 text-sky-200 font-medium flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Eye className="w-3.5 h-3.5 text-sky-400" />
+                Preview Compiled Prompt
+              </button>
+
               <div className="flex items-center gap-1.5 empty:hidden">
                 {selectedVersion && selectedVersion.status !== "APPROVED" && (
                   <button
@@ -2022,6 +2099,20 @@ function AgentIntelligenceStudioContent() {
           onRunSimulation={handleRunSimulation}
           onApproveClick={() => setShowApprovalModal(true)}
           onNavigateTab={handleNavigateTab}
+          onViewActualPrompt={(incId) => {
+            setPromptInspectorIncidentId(incId || null);
+            setPromptInspectorRuleId(selectedRuleId);
+            setPromptInspectorVersionId(selectedVersionId);
+            setPromptInspectorInitialMode("capture");
+            setPromptInspectorOpen(true);
+          }}
+          onPreviewPrompt={() => {
+            setPromptInspectorIncidentId(null);
+            setPromptInspectorRuleId(selectedRuleId);
+            setPromptInspectorVersionId(selectedVersionId);
+            setPromptInspectorInitialMode("preview");
+            setPromptInspectorOpen(true);
+          }}
         />
       )}
 
@@ -3864,9 +3955,25 @@ function AgentIntelligenceStudioContent() {
                                   {idx + 1}
                                 </td>
                                 <td className="py-2.5 px-3">
-                                  <span className="font-mono font-bold text-cyan-400 bg-cyan-950/30 px-1.5 py-0.5 rounded border border-cyan-900/50">
-                                    {incidentId}
-                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-mono font-bold text-cyan-400 bg-cyan-950/30 px-1.5 py-0.5 rounded border border-cyan-900/50">
+                                      {incidentId}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setPromptInspectorIncidentId(incidentId);
+                                        setPromptInspectorRuleId(item.rule_id || selectedRuleId);
+                                        setPromptInspectorVersionId(selectedVersionId);
+                                        setPromptInspectorInitialMode("capture");
+                                        setPromptInspectorOpen(true);
+                                      }}
+                                      title={`Inspect actual prompt payload for ${incidentId}`}
+                                      className="p-1 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 rounded border border-emerald-900/60 transition"
+                                    >
+                                      <Terminal className="w-3 h-3" />
+                                    </button>
+                                  </div>
                                 </td>
                                 <td className="py-2.5 px-3">
                                   <span className="font-mono text-[11px] text-slate-300 break-all">
@@ -3970,6 +4077,7 @@ function AgentIntelligenceStudioContent() {
         ruleId={promptInspectorRuleId || selectedRuleId || (selectedRule ? selectedRule.id : null)}
         ruleName={selectedRule ? selectedRule.name : undefined}
         versionId={promptInspectorVersionId || selectedVersionId || undefined}
+        initialMode={promptInspectorInitialMode}
       />
     </div>
   );

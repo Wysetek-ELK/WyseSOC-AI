@@ -22,6 +22,8 @@ import {
   Info,
   HelpCircle,
   ExternalLink,
+  Terminal,
+  Eye,
 } from "lucide-react";
 import {
   extractConsolidatedIssues,
@@ -70,6 +72,8 @@ export interface AgentIntelligenceStudioOverviewProps {
   onRunSimulation: () => void;
   onApproveClick: () => void;
   onNavigateTab: (tab: "overview" | "learning" | "advanced", section?: string) => void;
+  onViewActualPrompt?: (incidentId?: string) => void;
+  onPreviewPrompt?: () => void;
 }
 
 const STAGE_EXPLANATIONS: Record<string, { means: string; why: string; required: string }> = {
@@ -130,6 +134,8 @@ export function AgentIntelligenceStudioOverview({
   onRunSimulation,
   onApproveClick,
   onNavigateTab,
+  onViewActualPrompt,
+  onPreviewPrompt,
 }: AgentIntelligenceStudioOverviewProps) {
   // Authoritative Backend Readiness State
   const [readinessData, setReadinessData] = useState<ProductionReadinessResponse | null>(null);
@@ -515,6 +521,28 @@ export function AgentIntelligenceStudioOverview({
             >
               <Cpu className="w-3.5 h-3.5 text-cyan-400" />
               <span className="hidden sm:inline">Simulation</span>
+            </button>
+
+            {/* Location 1: View Actual LLM Prompt */}
+            <button
+              type="button"
+              onClick={() => onViewActualPrompt?.()}
+              className="px-2.5 py-1.5 rounded-lg border border-emerald-600/70 bg-emerald-950/50 hover:bg-emerald-900/70 text-emerald-300 font-semibold flex items-center gap-1.5 text-xs transition-colors shadow-sm"
+              title="Inspect exact prompt payload sent to Local LLM for this rule"
+            >
+              <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+              <span>View Actual LLM Prompt</span>
+            </button>
+
+            {/* Preview Compiled Prompt as explicitly separate action */}
+            <button
+              type="button"
+              onClick={() => onPreviewPrompt?.()}
+              className="px-2.5 py-1.5 rounded-lg border border-sky-800/60 bg-sky-950/40 hover:bg-sky-900/60 text-sky-300 font-medium flex items-center gap-1.5 text-xs transition-colors shadow-sm"
+              title="Preview compiled prompt template without runtime capture"
+            >
+              <Eye className="w-3.5 h-3.5 text-sky-400" />
+              <span className="hidden lg:inline">Preview Prompt</span>
             </button>
 
             {selectedVersion && selectedVersion.status !== "APPROVED" && (

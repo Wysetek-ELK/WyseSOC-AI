@@ -15,6 +15,7 @@ Historical PolicySimulationService to enforce identical safeguards:
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import uuid
+import json
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -211,6 +212,8 @@ async def _invoke_provider_with_guards(
                 evidence_requirements=ev_reqs,
                 verdict_schema=PolicyCompilerService.MODEL_RESPONSE_SCHEMA,
                 raw_request_payload=payload,
+                policy_snapshot_hash=getattr(prompt_version, "compiled_digest", None),
+                is_simulated=(prov_type == "SIMULATED"),
             )
             return active_capture
         return _cb

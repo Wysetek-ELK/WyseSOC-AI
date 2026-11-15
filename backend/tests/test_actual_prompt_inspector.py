@@ -2,6 +2,7 @@ import pytest
 import uuid
 import json
 import hashlib
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -467,3 +468,426 @@ async def test_api_export_json_and_markdown(client, db_session: AsyncSession, ad
     assert "text/markdown" in resp_md.headers["content-type"]
     assert "# Actual LLM Prompt Export" in resp_md.text
     assert "## 2. Compiled System Prompt" in resp_md.text
+
+
+@pytest.mark.asyncio
+async def test_canonical_json_serialization_and_hashing():
+    """Validates that canonical serialization is key-sorted, compact, and whitespace invariant."""
+    payload_a = {"temperature": 0.1, "model": "qwen2.5", "messages": [{"role": "system", "content": "test"}]}
+    payload_b = {"messages": [{"role": "system", "content": "test"}], "model": "qwen2.5", "temperature": 0.1}
+
+    hash_a = ActualPromptCaptureService.canonical_hash(payload_a)
+    hash_b = ActualPromptCaptureService.canonical_hash(payload_b)
+    assert hash_a == hash_b
+
+    ser_a = ActualPromptCaptureService.canonical_serialize(payload_a)
+    assert ' ' not in ser_a or ': ' not in ser_a  # No whitespace around delimiters
+    assert hash_a == hashlib.sha256(ser_a.encode("utf-8")).hexdigest()
+
+
+@pytest.mark.asyncio
+async def test_delivery_status_vs_prompt_integrity_separation(db_session: AsyncSession):
+    """
+    Validates Task 2 requirement:
+    Delivery status (SEND_ATTEMPTED, COMPLETED, FAILED, NOT_DISPATCHED)
+    must remain separate from Prompt Integrity (VERIFIED, MISMATCH, UNVERIFIED).
+    Pre-dispatch capture does not claim Server 2 received the request.
+    """
+    # 1. SEND_ATTEMPTED capture
+    raw_payload = {"messages": [{"role": "user", "content": "<UNTRUSTED_INCIDENT_DATA>{}</UNTRUSTED_INCIDENT_DATA>"}]}
+    cap_attempt = await ActualPromptCaptureService.record_dispatch(
+        db=db_session,
+        incident_id="INC-DISPATCH-01",
+        rule_id="RULE-D01",
+        rule_name="Dispatch Test",
+        policy_version_number=1,
+        policy_status="APPROVED",
+        policy_source="DATABASE",
+        attempt_number=1,
+        model_name="qwen2.5-7b",
+        provider_type="LOCAL_LLM",
+        generation_settings={"temperature": 0.0},
+        compiled_system_prompt="Test directive",
+        user_message="<UNTRUSTED_INCIDENT_DATA>{}</UNTRUSTED_INCIDENT_DATA>",
+        rag_precedents=[],
+        evidence_requirements={},
+        verdict_schema={},
+        raw_request_payload=raw_payload,
+        is_simulated=False,
+    )
+    assert cap_attempt.dispatch_status == "SEND_ATTEMPTED"
+    assert cap_attempt.payload_format == "CANONICAL_JSON"
+    # Pre-dispatch status separates delivery attempt from model execution
+    status_pre, details_pre = ActualPromptCaptureService.verify_integrity(cap_attempt)
+    assert status_pre == "VERIFIED"
+    assert details_pre["hash_match"] is True
+
+    # 2. Record FAILED attempt (e.g. timeout to Server 2)
+    cap_failed = await ActualPromptCaptureService.record_failed(
+        db=db_session,
+        capture_id=cap_attempt.id,
+        error_message="HTTP 504 Gateway Timeout: Server 2 did not respond in 30000ms",
+    )
+    assert cap_failed is not None
+    assert cap_failed.dispatch_status == "FAILED"
+    assert "504 Gateway Timeout" in cap_failed.error_message
+
+    # 3. Verify integrity service differentiates delivery failure from prompt payload integrity
+    status, details = ActualPromptCaptureService.verify_integrity(cap_failed)
+    assert status == "VERIFIED"
+    assert details["hash_match"] is True
+
+
+@pytest.mark.asyncio
+async def test_execution_history_and_retry_traceability(client, db_session: AsyncSession, admin_token: str):
+    """
+    Validates Task 3: Support multiple verdict executions/retries per incident,
+    with /executions list and execution-specific retrieval.
+    """
+    incident_id = f"INC-RETRY-{uuid.uuid4().hex[:8]}"
+    inc = Incident(
+        id=str(uuid.uuid4()),
+        incident_id=incident_id,
+        event_type="RETRY_RULE",
+        title="Retry Trace Incident",
+        severity="HIGH",
+    )
+    db_session.add(inc)
+    await db_session.commit()
+
+    # Attempt 1: Failed
+    payload1 = {"messages": [{"role": "user", "content": "Attempt 1"}]}
+    cap1 = await ActualPromptCaptureService.record_dispatch(
+        db=db_session,
+        incident_id=incident_id,
+        rule_id="RULE-RETRY",
+        rule_name="Retry Rule",
+        policy_version_number=1,
+        policy_status="APPROVED",
+        policy_source="DATABASE",
+        attempt_number=1,
+        model_name="qwen2.5-7b",
+        provider_type="LOCAL_LLM",
+        generation_settings={},
+        compiled_system_prompt="Directive 1",
+        user_message="Attempt 1",
+        rag_precedents=[],
+        evidence_requirements={},
+        verdict_schema={},
+        raw_request_payload=payload1,
+        is_simulated=False,
+    )
+    await ActualPromptCaptureService.record_failed(
+        db=db_session,
+        capture_id=cap1.id,
+        error_message="Connection refused on port 8000",
+    )
+
+    # Attempt 2: Successful retry
+    payload2 = {"messages": [{"role": "user", "content": "Attempt 2"}]}
+    cap2 = await ActualPromptCaptureService.record_dispatch(
+        db=db_session,
+        incident_id=incident_id,
+        rule_id="RULE-RETRY",
+        rule_name="Retry Rule",
+        policy_version_number=1,
+        policy_status="APPROVED",
+        policy_source="DATABASE",
+        attempt_number=2,
+        model_name="qwen2.5-7b",
+        provider_type="LOCAL_LLM",
+        generation_settings={},
+        compiled_system_prompt="Directive 1",
+        user_message="Attempt 2",
+        rag_precedents=[],
+        evidence_requirements={},
+        verdict_schema={},
+        raw_request_payload=payload2,
+        is_simulated=False,
+    )
+    await ActualPromptCaptureService.record_completed(
+        db=db_session,
+        capture_id=cap2.id,
+        response_raw=json.dumps({"verdict": "TRUE_POSITIVE", "confidence": 95.0}),
+        response_verdict="TRUE_POSITIVE",
+        response_confidence=95.0,
+        prompt_tokens=200,
+        completion_tokens=40,
+        latency_ms=350,
+        is_active_verdict=True,
+    )
+
+    # Query executions list endpoint
+    resp_execs = await client.get(
+        f"/api/v1/prompts/actual-prompt/incident/{incident_id}/executions",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp_execs.status_code == 200
+    exec_data = resp_execs.json()
+    assert len(exec_data) == 2
+    assert exec_data[0]["attempt_number"] == 2
+    assert exec_data[0]["dispatch_status"] == "COMPLETED"
+    assert exec_data[0]["is_active_verdict"] is True
+    assert exec_data[1]["attempt_number"] == 1
+    assert exec_data[1]["dispatch_status"] == "FAILED"
+
+    # Query specific execution by capture_id (Attempt 1)
+    resp_att1 = await client.get(
+        f"/api/v1/prompts/actual-prompt/incident/{incident_id}?capture_id={cap1.id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp_att1.status_code == 200
+    data_att1 = resp_att1.json()
+    assert data_att1["capture_id"] == cap1.id
+    assert data_att1["execution_summary"]["attempt_number"] == 1
+    assert data_att1["execution_summary"]["dispatch_status"] == "FAILED"
+    assert data_att1["technical_details"]["error_message"] == "Connection refused on port 8000"
+
+
+@pytest.mark.asyncio
+async def test_rule_prompt_captures_summary(client, db_session: AsyncSession, analyst_token: str):
+    """Validates GET /api/v1/prompts/actual-prompt/rule/{rule_id}/captures endpoint."""
+    rule_id = f"RULE-SUMMARY-{uuid.uuid4().hex[:6]}"
+    rule = Rule(
+        id=rule_id,
+        rule_id=rule_id,
+        name="Summary Rule",
+        event_type=rule_id,
+        severity="MEDIUM",
+    )
+    db_session.add(rule)
+    await db_session.commit()
+
+    for i in range(3):
+        raw_payload = {"messages": [{"role": "user", "content": f"Case {i}"}]}
+        cap = await ActualPromptCaptureService.record_dispatch(
+            db=db_session,
+            incident_id=f"INC-R-{rule_id}-{i}",
+            rule_id=rule_id,
+            rule_name="Summary Rule",
+            policy_version_number=1,
+            policy_status="APPROVED",
+            policy_source="DATABASE",
+            attempt_number=1,
+            model_name="qwen2.5-7b",
+            provider_type="LOCAL_LLM",
+            generation_settings={},
+            compiled_system_prompt="Directive",
+            user_message=f"Case {i}",
+            rag_precedents=[],
+            evidence_requirements={},
+            verdict_schema={},
+            raw_request_payload=raw_payload,
+        )
+        await ActualPromptCaptureService.record_completed(
+            db=db_session,
+            capture_id=cap.id,
+            response_raw=json.dumps({"verdict": "FALSE_POSITIVE"}),
+            response_verdict="FALSE_POSITIVE",
+            response_confidence=90.0,
+            prompt_tokens=100,
+            completion_tokens=20,
+            latency_ms=150,
+        )
+
+    resp = await client.get(
+        f"/api/v1/prompts/actual-prompt/rule/{rule_id}/captures?limit=10",
+        headers={"Authorization": f"Bearer {analyst_token}"},
+    )
+    assert resp.status_code == 200
+    items = resp.json()
+    assert len(items) == 3
+    assert all(item["rule_id"] == rule_id for item in items)
+    assert all(item["dispatch_status"] == "COMPLETED" for item in items)
+
+
+@pytest.mark.asyncio
+async def test_role_based_deep_redaction_and_export_security(
+    client, db_session: AsyncSession, admin_token: str, analyst_token: str, viewer_token: str
+):
+    """
+    Validates Task 4:
+    - SOC Analysts and Viewers receive deep redaction on IP addresses, emails, and generation settings hosts.
+    - Raw request payload messages and user messages are masked.
+    - Export endpoint enforces redaction for non-admins (no bypass).
+    - Administrators receive unredacted access.
+    """
+    incident_id = f"INC-REDACT-{uuid.uuid4().hex[:8]}"
+    raw_payload = {
+        "model": "qwen2.5-7b",
+        "api_base": "http://198.51.100.50:8000/v1",
+        "messages": [
+            {"role": "system", "content": "Investigate alerts. Contact: lead@soc.example."},
+            {"role": "user", "content": "<UNTRUSTED_INCIDENT_DATA>src=192.0.2.105, user=bob@corp.example</UNTRUSTED_INCIDENT_DATA>"}
+        ]
+    }
+    cap = await ActualPromptCaptureService.record_dispatch(
+        db=db_session,
+        incident_id=incident_id,
+        rule_id="RULE-REDACT",
+        rule_name="Redaction Rule",
+        policy_version_number=1,
+        policy_status="APPROVED",
+        policy_source="DATABASE",
+        attempt_number=1,
+        model_name="qwen2.5-7b",
+        provider_type="LOCAL_LLM",
+        generation_settings={"api_base": "http://198.51.100.50:8000/v1", "host": "198.51.100.50"},
+        compiled_system_prompt="Investigate alerts. Contact: lead@soc.example.",
+        user_message="<UNTRUSTED_INCIDENT_DATA>src=192.0.2.105, user=bob@corp.example</UNTRUSTED_INCIDENT_DATA>",
+        rag_precedents=[],
+        evidence_requirements={},
+        verdict_schema={},
+        raw_request_payload=raw_payload,
+    )
+    await ActualPromptCaptureService.record_completed(
+        db=db_session,
+        capture_id=cap.id,
+        response_raw=json.dumps({"verdict": "TRUE_POSITIVE", "reason": "Attack from 192.0.2.105"}),
+        response_verdict="TRUE_POSITIVE",
+        response_confidence=99.0,
+        prompt_tokens=150,
+        completion_tokens=30,
+        latency_ms=200,
+    )
+
+    inc = Incident(
+        id=str(uuid.uuid4()),
+        incident_id=incident_id,
+        event_type="RULE-REDACT",
+        title="Redaction Test Incident",
+        severity="HIGH",
+    )
+    db_session.add(inc)
+    await db_session.commit()
+
+    # 1. SOC Analyst access -> Redacted
+    resp_analyst = await client.get(
+        f"/api/v1/prompts/actual-prompt/incident/{incident_id}",
+        headers={"Authorization": f"Bearer {analyst_token}"},
+    )
+    assert resp_analyst.status_code == 200
+    data_analyst = resp_analyst.json()
+    assert data_analyst["is_redacted"] is True
+    # Verify IP and email redaction in payload & messages
+    assert "192.0.2.105" not in data_analyst["incident_payload"]
+    assert "[REDACTED_IP]" in data_analyst["incident_payload"]
+    assert "lead@soc.example" not in data_analyst["system_prompt"]
+    assert "[REDACTED_EMAIL]" in data_analyst["system_prompt"]
+    # Check generation settings host redaction
+    assert "198.51.100.50" not in str(data_analyst["technical_details"]["generation_settings"])
+
+    # 2. Export with analyst token -> Must also be redacted (no bypass)
+    resp_exp_analyst = await client.get(
+        f"/api/v1/prompts/actual-prompt/incident/{incident_id}/export?format=json",
+        headers={"Authorization": f"Bearer {analyst_token}"},
+    )
+    assert resp_exp_analyst.status_code == 200
+    exp_data = json.loads(resp_exp_analyst.text)
+    assert "192.0.2.105" not in exp_data["incident_payload"]
+    assert "[REDACTED_IP]" in exp_data["incident_payload"]
+
+    # 3. Administrator access -> Full unredacted
+    resp_admin = await client.get(
+        f"/api/v1/prompts/actual-prompt/incident/{incident_id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp_admin.status_code == 200
+    data_admin = resp_admin.json()
+    assert data_admin["is_redacted"] is False
+    assert "192.0.2.105" in data_admin["incident_payload"]
+    assert "lead@soc.example" in data_admin["system_prompt"]
+
+
+@pytest.mark.asyncio
+async def test_retention_cleanup_preserves_active_executions(client, db_session: AsyncSession, admin_token: str, analyst_token: str):
+    """
+    Validates Task 5:
+    - Retention cleanup deletes expired captures (> retention_days).
+    - NEVER deletes active verdict captures (is_active_verdict_capture=True).
+    - Only administrators can trigger manual cleanup endpoint.
+    - Emits PROMPT_CAPTURE_RETENTION_CLEANUP audit log.
+    """
+    now = datetime.now(timezone.utc)
+    old_time = now - timedelta(days=45)
+
+    # Old inactive capture (eligible for deletion)
+    cap_old_inactive = ActualLLMPromptCapture(
+        id=str(uuid.uuid4()),
+        execution_id=str(uuid.uuid4()),
+        incident_id="INC-OLD-INACTIVE",
+        rule_id="RULE-CLEAN",
+        rule_name="Clean Rule",
+        policy_version_number=1,
+        policy_status="APPROVED",
+        policy_source="DATABASE",
+        dispatch_status="FAILED",
+        attempt_number=1,
+        model_name="qwen2.5-7b",
+        provider_type="LOCAL_LLM",
+        generation_settings={},
+        compiled_system_prompt="Old prompt",
+        user_message="Old msg",
+        rag_precedents=[],
+        has_rag_precedents=False,
+        evidence_requirements={},
+        verdict_schema={},
+        raw_request_payload={},
+        request_sha256="hash1",
+        captured_at=old_time,
+        is_active_verdict_capture=False,
+    )
+    db_session.add(cap_old_inactive)
+
+    # Old active verdict capture (MUST BE PRESERVED)
+    cap_old_active = ActualLLMPromptCapture(
+        id=str(uuid.uuid4()),
+        execution_id=str(uuid.uuid4()),
+        incident_id="INC-OLD-ACTIVE",
+        rule_id="RULE-CLEAN",
+        rule_name="Clean Rule",
+        policy_version_number=1,
+        policy_status="APPROVED",
+        policy_source="DATABASE",
+        dispatch_status="COMPLETED",
+        attempt_number=2,
+        model_name="qwen2.5-7b",
+        provider_type="LOCAL_LLM",
+        generation_settings={},
+        compiled_system_prompt="Active prompt",
+        user_message="Active msg",
+        rag_precedents=[],
+        has_rag_precedents=False,
+        evidence_requirements={},
+        verdict_schema={},
+        raw_request_payload={},
+        request_sha256="hash2",
+        captured_at=old_time,
+        is_active_verdict_capture=True,
+    )
+    db_session.add(cap_old_active)
+    await db_session.commit()
+
+    # Analyst cannot trigger retention cleanup (403)
+    resp_forbidden = await client.post(
+        "/api/v1/prompts/actual-prompt/retention/cleanup?retention_days=30",
+        headers={"Authorization": f"Bearer {analyst_token}"},
+    )
+    assert resp_forbidden.status_code == 403
+
+    # Admin triggers cleanup
+    resp_admin = await client.post(
+        "/api/v1/prompts/actual-prompt/retention/cleanup?retention_days=30",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp_admin.status_code == 200
+    res_data = resp_admin.json()
+    assert res_data["deleted_count"] >= 1
+
+    # Verify database state
+    check_inactive = await db_session.get(ActualLLMPromptCapture, cap_old_inactive.id)
+    assert check_inactive is None  # Deleted
+
+    check_active = await db_session.get(ActualLLMPromptCapture, cap_old_active.id)
+    assert check_active is not None  # Preserved!
+

@@ -1,4 +1,5 @@
 import logging
+import hashlib
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Response, BackgroundTasks
 from sqlalchemy import select, desc, or_
@@ -29,6 +30,9 @@ from app.schemas.prompt_inspector import (
     PromptExecutionSummary,
     PromptTechnicalDetails,
     PromptL1Explanation,
+    ExecutionHistoryItem,
+    RuleCaptureSummaryItem,
+    RetentionCleanupResponse,
 )
 from app.services.policy_governance import (
     SIMULATED_PROVIDER_TOKENS,
@@ -961,12 +965,15 @@ async def rollback_prompt_version(
 @router.get("/actual-prompt/incident/{incident_id}", response_model=ActualPromptResponse)
 async def get_actual_prompt_for_incident(
     incident_id: str,
+    capture_id: Optional[str] = Query(None, description="Specific capture UUID to inspect"),
+    execution_id: Optional[str] = Query(None, description="Specific execution UUID to inspect"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_analyst),
 ):
     """
     Returns the exact outbound prompt and request payload captured at the provider boundary
     immediately prior to Server 2 dispatch for an incident verdict.
+    Supports historical execution selection and individual attempt inspection.
     """
     import json
     # 1. Fetch incident
@@ -976,11 +983,13 @@ async def get_actual_prompt_for_incident(
     if not incident:
         raise HTTPException(status_code=404, detail=f"Incident {incident_id} not found")
 
-    # 2. Query captured records
+    # 2. Query captured records and execution history
+    available_executions = await ActualPromptCaptureService.get_executions_for_incident(db, incident_id)
+
     stmt = (
         select(ActualLLMPromptCapture)
         .where(ActualLLMPromptCapture.incident_id == incident_id)
-        .order_by(desc(ActualLLMPromptCapture.captured_at))
+        .order_by(desc(ActualLLMPromptCapture.captured_at), desc(ActualLLMPromptCapture.attempt_number))
     )
     captures = (await db.execute(stmt)).scalars().all()
 
@@ -992,7 +1001,7 @@ async def get_actual_prompt_for_incident(
             rule_name=incident.title or "Unknown Detection Alert",
             model_name="N/A (Historical - Not Captured)",
             provider_type="N/A",
-            captured_at=incident.created_at,
+            captured_at=incident.created_at or utc_now(),
             policy_version_id=None,
             policy_version_number=None,
             policy_status="HISTORICAL_UNRECORDED",
@@ -1001,12 +1010,15 @@ async def get_actual_prompt_for_incident(
             attempt_number=0,
             execution_id="HISTORICAL",
             latency_ms=0,
+            is_active_verdict_capture=True,
+            is_simulated=False,
         )
         tech_details = PromptTechnicalDetails(
             prompt_tokens=0,
             completion_tokens=0,
             total_tokens=0,
             request_sha256="0" * 64,
+            payload_format="CANONICAL_JSON",
             generation_settings={},
             integrity_status="UNVERIFIED",
             integrity_details={"notice": "No provider boundary capture record exists for this historical incident."},
@@ -1022,11 +1034,17 @@ async def get_actual_prompt_for_incident(
             prompt_matches_approved_policy=False,
             prompt_integrity_status="UNVERIFIED",
             summary_text="Historical record. To inspect what instructions would be sent for this rule, open Policy Preview.",
+            key_takeaways=[
+                "Evaluated prior to runtime capture deployment",
+                "Outbound HTTP request was not stored in audit database",
+                "Use Preview Compiled Prompt to inspect the active policy template",
+            ],
         )
         return ActualPromptResponse(
             capture_id=None,
             capture_status="HISTORICAL_CAPTURE_UNAVAILABLE",
             integrity_status="UNVERIFIED",
+            delivery_status="HISTORICAL_UNAVAILABLE",
             execution_summary=summary,
             system_prompt="[HISTORICAL CAPTURE UNAVAILABLE: This incident verdict was evaluated prior to the deployment of the Actual LLM Prompt Capture engine. Outbound prompt payload was not recorded in runtime storage.]",
             incident_payload=json.dumps(incident.raw_payload or {}, indent=2),
@@ -1039,10 +1057,23 @@ async def get_actual_prompt_for_incident(
             raw_model_response=(incident.ai_verdict or {}).get("reason"),
             raw_request_payload=None,
             is_redacted=False,
+            available_executions=[],
         )
 
-    # 4. Use latest captured attempt
-    cap = captures[0]
+    # 4. Resolve exact capture target: by capture_id, execution_id, linked ai_verdict, or latest
+    cap = None
+    if capture_id:
+        cap = next((c for c in captures if c.id == capture_id), None)
+    elif execution_id:
+        cap = next((c for c in captures if c.execution_id == execution_id), None)
+
+    if not cap:
+        linked_cap_id = (incident.ai_verdict or {}).get("prompt_capture_id")
+        if linked_cap_id:
+            cap = next((c for c in captures if c.id == linked_cap_id), None)
+
+    if not cap:
+        cap = captures[0]
 
     # Verify rule and active policy version provenance
     rule = await db.get(Rule, cap.rule_id) if cap.rule_id else None
@@ -1068,6 +1099,8 @@ async def get_actual_prompt_for_incident(
         details={
             "incident_id": cap.incident_id,
             "rule_id": cap.rule_id,
+            "execution_id": cap.execution_id,
+            "attempt_number": cap.attempt_number,
             "dispatch_status": cap.dispatch_status,
             "integrity_status": integrity_status,
             "sha256": cap.request_sha256,
@@ -1085,10 +1118,14 @@ async def get_actual_prompt_for_incident(
         policy_version_number=cap.policy_version_number,
         policy_status=cap.policy_status,
         policy_source=cap.policy_source,
+        policy_snapshot_hash=getattr(cap, "policy_snapshot_hash", None),
         dispatch_status=cap.dispatch_status,
         attempt_number=cap.attempt_number,
+        retry_count=getattr(cap, "retry_count", 0),
         execution_id=cap.execution_id,
         latency_ms=cap.latency_ms,
+        is_active_verdict_capture=getattr(cap, "is_active_verdict_capture", True),
+        is_simulated=getattr(cap, "is_simulated", False),
     )
 
     tech_details = PromptTechnicalDetails(
@@ -1096,15 +1133,20 @@ async def get_actual_prompt_for_incident(
         completion_tokens=cap.completion_tokens,
         total_tokens=cap.total_tokens,
         request_sha256=cap.request_sha256,
+        canonical_serialized_payload=getattr(cap, "canonical_serialized_payload", None),
+        payload_format=getattr(cap, "payload_format", "CANONICAL_JSON"),
         generation_settings=cap.generation_settings or {},
         integrity_status=integrity_status,
         integrity_details=integrity_details,
         execution_trace={
             "total_attempts": len(captures),
             "current_attempt": cap.attempt_number,
+            "retry_count": getattr(cap, "retry_count", 0),
             "dispatch_status": cap.dispatch_status,
+            "delivery_state": integrity_details.get("delivery_state", cap.dispatch_status),
             "error_message": cap.error_message,
         },
+        error_message=cap.error_message,
     )
 
     l1_raw = cap.l1_explanation or {}
@@ -1114,16 +1156,22 @@ async def get_actual_prompt_for_incident(
         mandatory_evidence_available=bool(l1_raw.get("mandatory_evidence_available", True)),
         mandatory_evidence_summary=l1_raw.get("mandatory_evidence_summary", "Core telemetry requirements verified"),
         historical_precedents_included=len(cap.rag_precedents or []),
-        verdict_returned=cap.response_verdict or "REQUIRES_ATTENTION",
+        verdict_returned=cap.response_verdict or (incident.ai_verdict or {}).get("verdict", "REQUIRES_ATTENTION"),
         prompt_matches_approved_policy=(cap.policy_status == "APPROVED"),
         prompt_integrity_status=integrity_status,
         summary_text=l1_raw.get("summary_text", f"Grounded under {cap.rule_name} specification."),
+        key_takeaways=l1_raw.get("key_takeaways") or [
+            f"Execution #{cap.attempt_number} ({cap.dispatch_status}) via {cap.provider_type}",
+            f"Evaluated with Policy v{cap.policy_version_number or 1} ({cap.policy_status})",
+            f"Cryptographic hash {cap.request_sha256[:12]}... verified",
+        ],
     )
 
     res_dict = {
         "capture_id": cap.id,
         "capture_status": "CAPTURED_RUNTIME",
         "integrity_status": integrity_status,
+        "delivery_status": cap.dispatch_status,
         "execution_summary": summary.model_dump(),
         "system_prompt": cap.compiled_system_prompt,
         "incident_payload": cap.user_message,
@@ -1136,10 +1184,41 @@ async def get_actual_prompt_for_incident(
         "raw_model_response": cap.response_raw,
         "raw_request_payload": cap.raw_request_payload,
         "is_redacted": False,
+        "available_executions": [e.model_dump() for e in available_executions],
     }
 
     redacted_dict = ActualPromptCaptureService.apply_role_redaction(res_dict, current_user)
     return ActualPromptResponse.model_validate(redacted_dict)
+
+
+@router.get("/actual-prompt/incident/{incident_id}/executions", response_model=List[ExecutionHistoryItem])
+async def get_incident_actual_prompt_executions(
+    incident_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+):
+    """
+    Returns the list of all historical provider execution attempts and retries for an incident.
+    """
+    return await ActualPromptCaptureService.get_executions_for_incident(db, incident_id)
+
+
+@router.get("/actual-prompt/rule/{rule_id}/captures", response_model=List[RuleCaptureSummaryItem])
+async def get_rule_prompt_captures(
+    rule_id: str,
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+):
+    """
+    Returns recent captures associated with a detection rule, allowing analysts to pick recent incidents.
+    """
+    rule = await resolve_canonical_rule(db, rule_id)
+    if not rule:
+        raise HTTPException(status_code=404, detail=f"Rule {rule_id} not found")
+
+    items = await ActualPromptCaptureService.get_captures_for_rule(db, rule.id, limit=limit)
+    return [RuleCaptureSummaryItem.model_validate(item) for item in items]
 
 
 @router.get("/actual-prompt/rule/{rule_id}/preview", response_model=ActualPromptResponse)
@@ -1201,7 +1280,8 @@ async def get_prompt_preview_for_rule(
         "max_tokens": 1024,
         "temperature": 0.1,
     }
-    req_hash = ActualPromptCaptureService.canonical_hash(raw_req)
+    canonical_ser = ActualPromptCaptureService.canonical_serialize(raw_req)
+    req_hash = hashlib.sha256(canonical_ser.encode("utf-8")).hexdigest()
 
     summary = PromptExecutionSummary(
         incident_id=incident_id or "INC-PREVIEW-SAMPLE",
@@ -1214,10 +1294,14 @@ async def get_prompt_preview_for_rule(
         policy_version_number=target_v.version_number if target_v else 0,
         policy_status=target_v.status if target_v else "UNCONFIGURED",
         policy_source="PREVIEW_COMPILER",
+        policy_snapshot_hash=getattr(target_v, "compiled_digest", None),
         dispatch_status="PREVIEW_ONLY",
         attempt_number=1,
+        retry_count=0,
         execution_id="PREVIEW",
         latency_ms=0,
+        is_active_verdict_capture=False,
+        is_simulated=True,
     )
 
     tech_details = PromptTechnicalDetails(
@@ -1225,6 +1309,8 @@ async def get_prompt_preview_for_rule(
         completion_tokens=0,
         total_tokens=compiled.total_estimated_tokens,
         request_sha256=req_hash,
+        canonical_serialized_payload=canonical_ser,
+        payload_format="CANONICAL_JSON",
         generation_settings={"temperature": 0.1, "max_tokens": 1024},
         integrity_status="UNVERIFIED",
         integrity_details={"notice": "Preview compilation only. Not proof of historical runtime dispatch."},
@@ -1241,12 +1327,18 @@ async def get_prompt_preview_for_rule(
         prompt_matches_approved_policy=(target_v.status == "APPROVED" if target_v else False),
         prompt_integrity_status="UNVERIFIED",
         summary_text="Preview Only. This is regenerated from current policy specifications and was not dispatched to Server 2.",
+        key_takeaways=[
+            "Live generated preview based on current policy draft",
+            "Not an actual historical execution capture",
+            "Does not represent network transmission to Server 2",
+        ],
     )
 
-    return ActualPromptResponse(
+    preview_res = ActualPromptResponse(
         capture_id=None,
         capture_status="PREVIEW_ONLY",
         integrity_status="UNVERIFIED",
+        delivery_status="PREVIEW_ONLY",
         execution_summary=summary,
         system_prompt=compiled.compiled_system_prompt,
         incident_payload=sample_user_msg,
@@ -1259,22 +1351,30 @@ async def get_prompt_preview_for_rule(
         raw_model_response=None,
         raw_request_payload=raw_req,
         is_redacted=False,
+        available_executions=[],
     )
+    return preview_res
 
 
 @router.get("/actual-prompt/incident/{incident_id}/export")
 async def export_actual_prompt_for_incident(
     incident_id: str,
+    capture_id: Optional[str] = Query(None),
     format: str = Query("json", pattern="^(json|markdown)$"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_analyst),
 ):
     """
     Exports the captured outbound prompt for an incident as JSON or Markdown.
-    Respects role-based sensitive data redaction.
+    Respects role-based sensitive data redaction across all export formats.
     """
     import json
-    prompt_res = await get_actual_prompt_for_incident(incident_id=incident_id, db=db, current_user=current_user)
+    prompt_res = await get_actual_prompt_for_incident(
+        incident_id=incident_id,
+        capture_id=capture_id,
+        db=db,
+        current_user=current_user,
+    )
 
     audit = AuditService(db)
     await audit.log(
@@ -1283,7 +1383,12 @@ async def export_actual_prompt_for_incident(
         username=current_user.username,
         entity_type="IncidentPromptCapture",
         entity_id=incident_id,
-        details={"format": format, "capture_status": prompt_res.capture_status},
+        details={
+            "format": format,
+            "capture_status": prompt_res.capture_status,
+            "capture_id": prompt_res.capture_id,
+            "is_redacted": prompt_res.is_redacted,
+        },
     )
 
     if format == "json":
@@ -1296,10 +1401,11 @@ async def export_actual_prompt_for_incident(
             f"# Actual LLM Prompt Export — Incident {prompt_res.execution_summary.incident_id}",
             f"**Rule:** {prompt_res.execution_summary.rule_name} (ID: {prompt_res.execution_summary.rule_id})",
             f"**Execution Timestamp:** {prompt_res.execution_summary.captured_at}",
-            f"**Status:** {prompt_res.capture_status} | **Integrity:** {prompt_res.integrity_status}",
+            f"**Status:** {prompt_res.capture_status} | **Delivery:** {prompt_res.delivery_status} | **Integrity:** {prompt_res.integrity_status}",
             f"**Model:** {prompt_res.execution_summary.model_name} | **Provider:** {prompt_res.execution_summary.provider_type}",
             f"**Policy Version:** {prompt_res.execution_summary.policy_version_number} ({prompt_res.execution_summary.policy_status})",
             f"**Request SHA-256:** `{prompt_res.technical_details.request_sha256}`",
+            f"**Redaction State:** {'REDACTED (Analyst/Viewer View)' if prompt_res.is_redacted else 'UNREDACTED (Admin View)'}",
             "",
             "## 1. L1 Investigation Summary",
             f"> {prompt_res.l1_explanation.headline}",
@@ -1340,4 +1446,23 @@ async def export_actual_prompt_for_incident(
 
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return Response(content=content, media_type=media_type, headers=headers)
+
+
+@router.post("/actual-prompt/retention/cleanup", response_model=RetentionCleanupResponse)
+async def cleanup_prompt_captures(
+    retention_days: Optional[int] = Query(None, description="Override retention days threshold (default from settings)"),
+    dry_run: bool = Query(False, description="Preview candidates without deleting"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Administrative retention cleanup for prompt captures.
+    Deletes expired unlinked captures while preserving active incident verdicts and audit trails.
+    """
+    res = await ActualPromptCaptureService.cleanup_expired_captures(
+        db=db,
+        retention_days=retention_days,
+        dry_run=dry_run,
+    )
+    return RetentionCleanupResponse.model_validate(res)
 

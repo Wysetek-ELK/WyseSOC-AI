@@ -130,6 +130,10 @@ class Settings(BaseSettings):
     # Phase 4: Cryptographic Audit Trail Signing
     AUDIT_SIGNING_KEY: str = os.getenv("AUDIT_SIGNING_KEY", "")
 
+    # Actual LLM Prompt Inspector Retention (Task 5)
+    PROMPT_CAPTURE_RETENTION_DAYS: int = int(os.getenv("PROMPT_CAPTURE_RETENTION_DAYS", "0"))  # 0 = indefinite/no auto-delete
+    PROMPT_CAPTURE_AUTO_CLEANUP_ENABLED: bool = os.getenv("PROMPT_CAPTURE_AUTO_CLEANUP_ENABLED", "false").lower() == "true"
+
     @property
     def resolved_operating_mode(self) -> str:
         raw = (self.PLATFORM_OPERATING_MODE or "").strip().lower()

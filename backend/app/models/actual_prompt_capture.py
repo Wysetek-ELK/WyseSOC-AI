@@ -25,9 +25,14 @@ class ActualLLMPromptCapture(Base):
     policy_version_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     policy_status: Mapped[str] = mapped_column(String(32), default="UNCONFIGURED", nullable=False)
     policy_source: Mapped[str] = mapped_column(String(32), default="DATABASE", nullable=False)
+    policy_snapshot_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
-    dispatch_status: Mapped[str] = mapped_column(String(32), default="DISPATCHED", nullable=False)
+    # Delivery status: PREPARED, SEND_ATTEMPTED, COMPLETED, FAILED, NOT_DISPATCHED, PREVIEW_ONLY
+    dispatch_status: Mapped[str] = mapped_column(String(32), default="PREPARED", nullable=False)
     attempt_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_active_verdict_capture: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_simulated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     model_name: Mapped[str] = mapped_column(String(64), default="", nullable=False)
     provider_type: Mapped[str] = mapped_column(String(64), default="OPENAI_COMPATIBLE", nullable=False)
@@ -41,6 +46,8 @@ class ActualLLMPromptCapture(Base):
     evidence_requirements: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     verdict_schema: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     raw_request_payload: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    canonical_serialized_payload: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    payload_format: Mapped[str] = mapped_column(String(32), default="CANONICAL_JSON", nullable=False)
     request_sha256: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
 
     response_raw: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -53,7 +60,8 @@ class ActualLLMPromptCapture(Base):
     latency_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    prompt_integrity_status: Mapped[str] = mapped_column(String(32), default="VERIFIED", nullable=False)
+    # Integrity verification: VERIFIED, MISMATCH, UNVERIFIED (distinct from delivery status)
+    prompt_integrity_status: Mapped[str] = mapped_column(String(32), default="UNVERIFIED", nullable=False)
     integrity_details: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     l1_explanation: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 

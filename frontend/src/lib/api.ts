@@ -615,6 +615,36 @@ export interface ActionButton {
   target_section?: string;
 }
 
+export interface ExecutionHistoryItem {
+  id: string;
+  execution_id: string;
+  incident_id: string;
+  attempt_number: number;
+  retry_count: number;
+  captured_at: string;
+  dispatch_status: string;
+  prompt_integrity_status: string;
+  model_name: string;
+  provider_type: string;
+  policy_version_number?: number | null;
+  latency_ms?: number | null;
+  response_verdict?: string | null;
+  is_active_verdict: boolean;
+  is_simulated: boolean;
+}
+
+export interface RuleCaptureSummaryItem {
+  incident_id: string;
+  capture_id: string;
+  execution_id: string;
+  captured_at: string;
+  verdict?: string | null;
+  dispatch_status: string;
+  integrity_status: string;
+  policy_version_number?: number | null;
+  is_simulated: boolean;
+}
+
 export interface ActualPromptExecutionSummary {
   incident_id: string;
   rule_id: string;
@@ -626,10 +656,14 @@ export interface ActualPromptExecutionSummary {
   policy_version_number?: number | null;
   policy_status: string;
   policy_source: string;
+  policy_snapshot_hash?: string | null;
   dispatch_status: string;
   attempt_number: number;
+  retry_count: number;
   execution_id: string;
   latency_ms: number;
+  is_active_verdict_capture: boolean;
+  is_simulated: boolean;
 }
 
 export interface ActualPromptTechnicalDetails {
@@ -637,6 +671,8 @@ export interface ActualPromptTechnicalDetails {
   completion_tokens: number;
   total_tokens: number;
   request_sha256: string;
+  canonical_serialized_payload?: string | null;
+  payload_format?: string;
   generation_settings: Record<string, any>;
   error_message?: string | null;
   raw_request_payload: Record<string, any>;
@@ -654,9 +690,11 @@ export interface ActualPromptL1Explanation {
 }
 
 export interface ActualPromptResponse {
+  capture_id?: string | null;
   capture_status: "CAPTURED_RUNTIME" | "HISTORICAL_CAPTURE_UNAVAILABLE" | "PREVIEW_ONLY";
   integrity_status: "VERIFIED" | "MISMATCH" | "UNVERIFIED";
-  banner_message: string;
+  delivery_status?: string;
+  banner_message?: string;
   execution_summary: ActualPromptExecutionSummary;
   system_prompt: string;
   incident_payload: string;
@@ -667,6 +705,10 @@ export interface ActualPromptResponse {
   technical_details: ActualPromptTechnicalDetails;
   l1_explanation: ActualPromptL1Explanation;
   integrity_details: Record<string, any>;
+  raw_model_response?: string | null;
+  raw_request_payload?: Record<string, any> | null;
+  is_redacted?: boolean;
+  available_executions?: ExecutionHistoryItem[];
 }
 
 export interface ReadinessStageItem {
@@ -1888,11 +1930,33 @@ export const api = {
     return res.json();
   },
 
-  async getActualPromptForIncident(incidentId: string): Promise<ActualPromptResponse> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}`);
+  async getActualPromptForIncident(incidentId: string, captureId?: string, executionId?: string): Promise<ActualPromptResponse> {
+    const params = new URLSearchParams();
+    if (captureId) params.append("capture_id", captureId);
+    if (executionId) params.append("execution_id", executionId);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}${qs}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to fetch actual prompt" }));
       throw new Error(err.detail || "Failed to fetch actual prompt");
+    }
+    return res.json();
+  },
+
+  async getIncidentActualPromptExecutions(incidentId: string): Promise<ExecutionHistoryItem[]> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}/executions`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to fetch prompt executions" }));
+      throw new Error(err.detail || "Failed to fetch prompt executions");
+    }
+    return res.json();
+  },
+
+  async getRulePromptCaptures(ruleId: string, limit: number = 20): Promise<RuleCaptureSummaryItem[]> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/rule/${ruleId}/captures?limit=${limit}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to fetch rule prompt captures" }));
+      throw new Error(err.detail || "Failed to fetch rule prompt captures");
     }
     return res.json();
   },
@@ -1910,8 +1974,11 @@ export const api = {
     return res.json();
   },
 
-  async exportActualPrompt(incidentId: string, format: "json" | "markdown" = "json"): Promise<{ blob: Blob; filename: string }> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}/export?format=${format}`);
+  async exportActualPrompt(incidentId: string, format: "json" | "markdown" = "json", captureId?: string): Promise<{ blob: Blob; filename: string }> {
+    const params = new URLSearchParams();
+    params.append("format", format);
+    if (captureId) params.append("capture_id", captureId);
+    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}/export?${params.toString()}`);
     if (!res.ok) throw new Error("Failed to export actual prompt");
     const blob = await res.blob();
     const disposition = res.headers.get("Content-Disposition");

@@ -28,6 +28,7 @@ import {
   RefreshCw,
   Scale,
   FileSearch,
+  Terminal,
 } from "lucide-react";
 import { api, IncidentDetail, IncidentAiVerdictResponse } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
@@ -35,6 +36,7 @@ import { HistoricalTelemetryTimeline } from "@/components/telemetry/HistoricalTe
 import { formatExecutionProvenanceBadge } from "@/lib/provenance";
 import { IncidentVerdictMatrix } from "@/components/compact/IncidentVerdictMatrix";
 import { NextActionCard, AdvancedDetailsPanel } from "@/components/compact/CompactDesignSystem";
+import { ActualPromptInspectorModal } from "@/components/prompt-inspector/ActualPromptInspectorModal";
 
 export default function AITriageWorkbenchDetailPage({
   params,
@@ -60,6 +62,7 @@ export default function AITriageWorkbenchDetailPage({
   const [syncingResolution, setSyncingResolution] = useState(false);
   const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
   const [llmOnline, setLlmOnline] = useState<boolean | null>(null);
+  const [promptInspectorOpen, setPromptInspectorOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -425,6 +428,15 @@ export default function AITriageWorkbenchDetailPage({
                   </span>
                 );
               })()}
+              <button
+                type="button"
+                onClick={() => setPromptInspectorOpen(true)}
+                className="px-2 py-0.5 rounded border border-emerald-700 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 text-[10px] font-semibold flex items-center gap-1 shadow-sm transition-colors"
+                title="Inspect exact prompt payload sent to Local LLM for this incident"
+              >
+                <Terminal className="w-3 h-3 text-emerald-400" />
+                <span>View Actual LLM Prompt</span>
+              </button>
               <button
                 onClick={() => setAiVerdict(null)}
                 className="text-slate-400 hover:text-slate-200 text-xs px-1"
@@ -1457,6 +1469,15 @@ export default function AITriageWorkbenchDetailPage({
           )}
         </div>
       )}
+
+      {/* Actual LLM Prompt Inspector Modal */}
+      <ActualPromptInspectorModal
+        isOpen={promptInspectorOpen}
+        onClose={() => setPromptInspectorOpen(false)}
+        incidentId={incidentId}
+        ruleId={incident?.rule_id}
+        initialMode="capture"
+      />
     </div>
   );
 }
