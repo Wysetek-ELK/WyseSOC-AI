@@ -983,7 +983,7 @@ async def rollback_prompt_version(
 async def revoke_prompt_version(
     rule_id: str,
     version_id: str,
-    req: PromptRevokeRequest,
+    req: Optional[PromptRevokeRequest] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -993,15 +993,24 @@ async def revoke_prompt_version(
     for this rule if the revoked version was active.
     """
     service = PromptStudioService(db)
+    reason = (req.get_reason() if req else "").strip()
+    if not reason or len(reason) < 5:
+        raise HTTPException(
+            status_code=400,
+            detail="A mandatory, substantive revocation reason (minimum 5 characters) is required."
+        )
+
     try:
         ver = await service.revoke_version(
             rule_id=rule_id,
             version_id=version_id,
             user_id=current_user.id,
-            revocation_reason=req.revocation_reason,
+            revocation_reason=reason,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    ver_resp = PromptVersionResponse.model_validate(ver)
 
     audit = AuditService(db)
     await audit.log(
@@ -1013,12 +1022,12 @@ async def revoke_prompt_version(
         details={
             "version_number": ver.version_number,
             "version_id": ver.id,
-            "revocation_reason": req.revocation_reason,
+            "revocation_reason": reason,
             "previous_status": ver.previous_status,
         },
     )
 
-    return PromptVersionResponse.model_validate(ver)
+    return ver_resp
 
 
 @router.get("/rule/{rule_id}/eligibility", response_model=PolicyEligibilityResponse)

@@ -78,7 +78,12 @@ class PromptRollbackRequest(BaseModel):
 
 
 class PromptRevokeRequest(BaseModel):
-    revocation_reason: str = Field(..., min_length=5, max_length=1024, description="Mandatory administrative justification for revoking policy approval")
+    revocation_reason: Optional[str] = Field(None, description="Mandatory administrative justification for revoking policy approval")
+    reason: Optional[str] = Field(None, description="Alternative field for revocation reason")
+    revocationReason: Optional[str] = Field(None, description="CamelCase alternative for revocation reason")
+
+    def get_reason(self) -> str:
+        return (self.revocation_reason or self.reason or self.revocationReason or "").strip()
 
 
 class PolicyEligibilityResponse(BaseModel):

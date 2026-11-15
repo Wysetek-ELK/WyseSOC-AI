@@ -357,3 +357,74 @@ async def test_verdict_pipeline_intercepts_suspended_rule(db_session: AsyncSessi
     assert verdict_result.effective_verdict == "REQUIRES_ATTENTION"
     assert "AI verdict execution is suspended" in verdict_result.verdict_data["reason"]
     assert "RULE_AI_EXECUTION_SUSPENDED" in verdict_result.verdict_data["reason"] or "POLICY_REVOKED" in verdict_result.verdict_data["reason"]
+
+
+@pytest.mark.asyncio
+async def test_api_revoke_prompt_version_endpoint(client, db_session: AsyncSession, admin_token: str):
+    """
+    Validates POST /api/v1/prompts/rule/{rule_id}/version/{version_id}/revoke:
+    1. Rejects missing/empty reason with HTTP 400 (not 422).
+    2. Rejects short reason (< 5 chars) with HTTP 400 (not 422).
+    3. Successfully revokes version when substantive reason is provided.
+    """
+    rule = Rule(
+        id=str(uuid.uuid4()),
+        rule_id="PH_RULE_API_REVOKE_TEST",
+        name="API Revoke Test Rule",
+        event_type="PH_RULE_TEST",
+        severity="HIGH",
+        description="Rule to test API revocation",
+        status="ACTIVE",
+    )
+    db_session.add(rule)
+    await db_session.flush()
+
+    prompt = RulePrompt(
+        id=str(uuid.uuid4()),
+        rule_id=rule.id,
+        title=rule.name,
+    )
+    db_session.add(prompt)
+    await db_session.flush()
+
+    v1 = PromptVersion(
+        id=str(uuid.uuid4()),
+        prompt_id=prompt.id,
+        version_number=1,
+        status="APPROVED",
+        rule_specific_prompt="Approved prompt to revoke",
+    )
+    db_session.add(v1)
+    prompt.active_version_id = v1.id
+    await db_session.commit()
+
+    headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # 1. Missing body -> returns HTTP 400 (NOT 422)
+    res_no_body = await client.post(
+        f"/api/v1/prompts/rule/{rule.id}/version/{v1.id}/revoke",
+        headers=headers,
+    )
+    assert res_no_body.status_code == 400
+    assert "minimum 5 characters" in res_no_body.json()["detail"]
+
+    # 2. Short reason (< 5 chars) -> returns HTTP 400 (NOT 422)
+    res_short = await client.post(
+        f"/api/v1/prompts/rule/{rule.id}/version/{v1.id}/revoke",
+        json={"revocation_reason": "bad"},
+        headers=headers,
+    )
+    assert res_short.status_code == 400
+    assert "minimum 5 characters" in res_short.json()["detail"]
+
+    # 3. Valid revocation reason -> returns HTTP 200 and version is REVOKED
+    res_valid = await client.post(
+        f"/api/v1/prompts/rule/{rule.id}/version/{v1.id}/revoke",
+        json={"revocation_reason": "Defective prompt with outdated directives"},
+        headers=headers,
+    )
+    assert res_valid.status_code == 200
+    data = res_valid.json()
+    assert data["status"] == "REVOKED"
+    assert data["revocation_reason"] == "Defective prompt with outdated directives"
+

@@ -1826,11 +1826,17 @@ export const api = {
     const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/version/${versionId}/revoke`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ revocation_reason: revocationReason }),
+      body: JSON.stringify({
+        revocation_reason: revocationReason,
+        reason: revocationReason,
+      }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Failed to revoke prompt version" }));
-      throw new Error(err.detail || "Failed to revoke prompt version");
+      const detailMsg = Array.isArray(err.detail)
+        ? err.detail.map((e: any) => e.msg || JSON.stringify(e)).join(", ")
+        : (typeof err.detail === "string" ? err.detail : "Failed to revoke prompt version");
+      throw new Error(detailMsg);
     }
     return res.json();
   },

@@ -899,7 +899,7 @@ function AgentIntelligenceStudioContent() {
   };
 
   const handleConfirmRevoke = async () => {
-    if (!selectedRuleId || !revokeTargetVersion || !revocationReason.trim()) return;
+    if (!selectedRuleId || !revokeTargetVersion || revocationReason.trim().length < 5) return;
     setRevoking(true);
     try {
       await api.revokePromptVersion(selectedRuleId, revokeTargetVersion.id, revocationReason.trim());
@@ -4367,7 +4367,9 @@ function AgentIntelligenceStudioContent() {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                 <span>Mandatory Revocation Reason / Security Justification:</span>
-                <span className="text-[10px] text-rose-400 font-mono">* Required</span>
+                <span className={`text-[10px] font-mono ${revocationReason.trim().length >= 5 ? "text-emerald-400" : "text-rose-400"}`}>
+                  {revocationReason.trim().length >= 5 ? "✓ Valid (>= 5 chars)" : "* Min 5 characters required"}
+                </span>
               </label>
               <textarea
                 value={revocationReason}
@@ -4375,6 +4377,12 @@ function AgentIntelligenceStudioContent() {
                 placeholder="Explain why this policy version is no longer trusted (e.g. contains endpoint malware instructions instead of network scan sweep logic)..."
                 className="w-full h-24 p-2.5 text-xs rounded-lg border border-rose-900/70 bg-slate-900 text-slate-200 focus:outline-none focus:border-rose-500 font-mono"
               />
+              {revocationReason.trim().length > 0 && revocationReason.trim().length < 5 && (
+                <p className="text-[11px] text-amber-400 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Please provide at least 5 characters explaining the security justification ({revocationReason.trim().length}/5).
+                </p>
+              )}
             </div>
 
             <div className="flex justify-end items-center gap-2 pt-2 border-t border-slate-800">
@@ -4392,7 +4400,7 @@ function AgentIntelligenceStudioContent() {
               </button>
               <button
                 type="button"
-                disabled={revoking || !revocationReason.trim()}
+                disabled={revoking || revocationReason.trim().length < 5}
                 onClick={handleConfirmRevoke}
                 className="px-4 py-1.5 bg-rose-700 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
               >

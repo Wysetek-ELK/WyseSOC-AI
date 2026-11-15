@@ -522,8 +522,8 @@ class AgentPolicyEngine:
             rule_prompt.updated_at = utc_now()
 
         await self.db.commit()
-        await self.db.refresh(target_version)
         await self.db.refresh(rule_prompt)
+        await self.db.refresh(target_version)
         return target_version
 
     async def suspend_ai_execution(
