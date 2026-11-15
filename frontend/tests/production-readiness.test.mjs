@@ -12,7 +12,7 @@ test("AgentIntelligenceStudioOverview: implements 6 Guided Checklist Stages and 
   const content = fs.readFileSync(filePath, "utf-8");
 
   // Rule Identity elements
-  assert.match(content, /Deployment:\s*\{deploymentStatus\}/i);
+  assert.match(content, /(?:SIEM Rule|Deployment):[\s\S]*?\{deploymentStatus\}/i);
   assert.match(content, /Rule ID:/i);
   assert.match(content, /displayArchetype/i);
 

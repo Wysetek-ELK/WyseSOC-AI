@@ -64,6 +64,7 @@ export function ActualPromptInspectorModal({
   const [ruleCaptures, setRuleCaptures] = useState<RuleCaptureSummaryItem[]>([]);
   const [loadingRuleCaptures, setLoadingRuleCaptures] = useState(false);
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"json" | "markdown" | null>(null);
 
   useEffect(() => {
@@ -175,10 +176,19 @@ export function ActualPromptInspectorModal({
 
   const handleCopy = async (text: string, label: string) => {
     if (!text) return;
-    const success = await copyTextToClipboard(text);
-    if (success) {
-      setCopySuccess(label);
-      setTimeout(() => setCopySuccess(null), 2500);
+    setCopyError(null);
+    try {
+      const success = await copyTextToClipboard(text);
+      if (success) {
+        setCopySuccess(label);
+        setTimeout(() => setCopySuccess(null), 2500);
+      } else {
+        setCopyError(label);
+        setTimeout(() => setCopyError(null), 3500);
+      }
+    } catch {
+      setCopyError(label);
+      setTimeout(() => setCopyError(null), 3500);
     }
   };
 
@@ -711,26 +721,63 @@ export function ActualPromptInspectorModal({
                       {copySuccess} copied!
                     </span>
                   )}
+                  {copyError && (
+                    <span className="text-xs text-amber-400 flex items-center gap-1 font-semibold">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Press Ctrl+C to copy
+                    </span>
+                  )}
                   <button
-                    onClick={() =>
-                      handleCopy(data.system_prompt || "", "System Prompt")
-                    }
+                    onClick={() => {
+                      if (activeTab === "incident_payload") {
+                        handleCopy(data.incident_payload || "", "Incident Payload");
+                      } else if (activeTab === "contract") {
+                        handleCopy(
+                          JSON.stringify(data.verdict_schema, null, 2),
+                          "Output Contract Schema"
+                        );
+                      } else if (activeTab === "technical") {
+                        handleCopy(
+                          data.raw_request_payload
+                            ? JSON.stringify(data.raw_request_payload, null, 2)
+                            : data.technical_details.request_sha256 || "",
+                          "Technical Details"
+                        );
+                      } else {
+                        handleCopy(data.system_prompt || "", "System Prompt");
+                      }
+                    }}
                     className={`p-1.5 rounded text-xs flex items-center gap-1.5 border transition cursor-pointer ${
-                      copySuccess === "System Prompt"
+                      copySuccess
                         ? "bg-emerald-950/80 text-emerald-300 border-emerald-700 shadow-sm shadow-emerald-900/40"
+                        : copyError
+                        ? "bg-amber-950/80 text-amber-300 border-amber-700 shadow-sm"
                         : "text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border-slate-700"
                     }`}
-                    title="Copy System Prompt to clipboard"
+                    title="Copy current tab content to clipboard"
                   >
-                    {copySuccess === "System Prompt" ? (
+                    {copySuccess ? (
                       <>
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                         <span className="font-semibold">Copied!</span>
                       </>
+                    ) : copyError ? (
+                      <>
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="font-semibold">Copy Error</span>
+                      </>
                     ) : (
                       <>
                         <Copy className="w-3.5 h-3.5" />
-                        <span>Copy Prompt</span>
+                        <span>
+                          {activeTab === "incident_payload"
+                            ? "Copy Payload"
+                            : activeTab === "contract"
+                            ? "Copy Schema"
+                            : activeTab === "technical"
+                            ? "Copy Details"
+                            : "Copy Prompt"}
+                        </span>
                       </>
                     )}
                   </button>
@@ -929,6 +976,8 @@ export function ActualPromptInspectorModal({
                       className={`flex items-center gap-1.5 font-semibold text-xs px-2.5 py-1 rounded transition border cursor-pointer ${
                         copySuccess === "System Prompt"
                           ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80 shadow-sm shadow-emerald-900/30"
+                          : copyError === "System Prompt"
+                          ? "text-amber-300 bg-amber-950/60 border-amber-700/80"
                           : "text-indigo-400 hover:text-indigo-300 bg-slate-900/80 hover:bg-slate-800 border-slate-800 hover:border-slate-700"
                       }`}
                       title="Copy System Prompt to clipboard"
@@ -938,10 +987,15 @@ export function ActualPromptInspectorModal({
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                           <span>Copied to Clipboard!</span>
                         </>
+                      ) : copyError === "System Prompt" ? (
+                        <>
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Press Ctrl+C to copy</span>
+                        </>
                       ) : (
                         <>
                           <Copy className="w-3 h-3" />
-                          <span>Copy text</span>
+                          <span>Copy Prompt</span>
                         </>
                       )}
                     </button>
@@ -966,6 +1020,8 @@ export function ActualPromptInspectorModal({
                       className={`flex items-center gap-1.5 font-semibold text-xs px-2.5 py-1 rounded transition border cursor-pointer ${
                         copySuccess === "Incident Payload"
                           ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80 shadow-sm shadow-emerald-900/30"
+                          : copyError === "Incident Payload"
+                          ? "text-amber-300 bg-amber-950/60 border-amber-700/80"
                           : "text-indigo-400 hover:text-indigo-300 bg-slate-900/80 hover:bg-slate-800 border-slate-800 hover:border-slate-700"
                       }`}
                       title="Copy Incident Payload to clipboard"
@@ -975,10 +1031,15 @@ export function ActualPromptInspectorModal({
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                           <span>Copied to Clipboard!</span>
                         </>
+                      ) : copyError === "Incident Payload" ? (
+                        <>
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Press Ctrl+C to copy</span>
+                        </>
                       ) : (
                         <>
                           <Copy className="w-3 h-3" />
-                          <span>Copy text</span>
+                          <span>Copy Payload</span>
                         </>
                       )}
                     </button>
@@ -1051,6 +1112,8 @@ export function ActualPromptInspectorModal({
                       className={`flex items-center gap-1.5 font-semibold text-xs px-2.5 py-1 rounded transition border cursor-pointer ${
                         copySuccess === "Output Contract Schema"
                           ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80 shadow-sm shadow-emerald-900/30"
+                          : copyError === "Output Contract Schema"
+                          ? "text-amber-300 bg-amber-950/60 border-amber-700/80"
                           : "text-indigo-400 hover:text-indigo-300 bg-slate-900/80 hover:bg-slate-800 border-slate-800 hover:border-slate-700"
                       }`}
                       title="Copy Output Contract Schema to clipboard"
@@ -1058,12 +1121,17 @@ export function ActualPromptInspectorModal({
                       {copySuccess === "Output Contract Schema" ? (
                         <>
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Copied!</span>
+                          <span>Copied Schema!</span>
+                        </>
+                      ) : copyError === "Output Contract Schema" ? (
+                        <>
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Press Ctrl+C to copy</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3 h-3" />
-                          <span>Copy schema</span>
+                          <span>Copy Schema</span>
                         </>
                       )}
                     </button>
@@ -1113,6 +1181,8 @@ export function ActualPromptInspectorModal({
                         className={`flex items-center gap-1 font-semibold text-xs px-2 py-0.5 rounded transition border cursor-pointer ${
                           copySuccess === "SHA-256 Hash"
                             ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80"
+                            : copyError === "SHA-256 Hash"
+                            ? "text-amber-300 bg-amber-950/60 border-amber-700/80"
                             : "text-indigo-400 hover:text-indigo-300 bg-slate-900 border-slate-800 hover:border-slate-700"
                         }`}
                         title="Copy SHA-256 hash"
@@ -1121,6 +1191,11 @@ export function ActualPromptInspectorModal({
                           <>
                             <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                             <span>Copied Hash!</span>
+                          </>
+                        ) : copyError === "SHA-256 Hash" ? (
+                          <>
+                            <AlertTriangle className="w-3 h-3 text-amber-400" />
+                            <span>Press Ctrl+C</span>
                           </>
                         ) : (
                           <>
@@ -1154,6 +1229,8 @@ export function ActualPromptInspectorModal({
                           className={`flex items-center gap-1 font-semibold text-xs px-2 py-0.5 rounded transition border cursor-pointer ${
                             copySuccess === "Raw Request JSON"
                               ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80"
+                              : copyError === "Raw Request JSON"
+                              ? "text-amber-300 bg-amber-950/60 border-amber-700/80"
                               : "text-indigo-400 hover:text-indigo-300 bg-slate-900 border-slate-800 hover:border-slate-700"
                           }`}
                           title="Copy Outbound Request JSON"
@@ -1162,6 +1239,11 @@ export function ActualPromptInspectorModal({
                             <>
                               <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                               <span>Copied JSON!</span>
+                            </>
+                          ) : copyError === "Raw Request JSON" ? (
+                            <>
+                              <AlertTriangle className="w-3 h-3 text-amber-400" />
+                              <span>Press Ctrl+C</span>
                             </>
                           ) : (
                             <>
@@ -1193,6 +1275,8 @@ export function ActualPromptInspectorModal({
                           className={`flex items-center gap-1 font-semibold text-xs px-2 py-0.5 rounded transition border cursor-pointer ${
                             copySuccess === "Raw Response"
                               ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80"
+                              : copyError === "Raw Response"
+                              ? "text-amber-300 bg-amber-950/60 border-amber-700/80"
                               : "text-indigo-400 hover:text-indigo-300 bg-slate-900 border-slate-800 hover:border-slate-700"
                           }`}
                           title="Copy Raw LLM Response"
@@ -1201,6 +1285,11 @@ export function ActualPromptInspectorModal({
                             <>
                               <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                               <span>Copied Response!</span>
+                            </>
+                          ) : copyError === "Raw Response" ? (
+                            <>
+                              <AlertTriangle className="w-3 h-3 text-amber-400" />
+                              <span>Press Ctrl+C</span>
                             </>
                           ) : (
                             <>
