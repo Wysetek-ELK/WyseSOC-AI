@@ -267,16 +267,40 @@ class ProductionReadinessService:
             blocking_requirements.append(f"Insufficient ground truth reviews ({total_reviews}/{RuleLearningService.MIN_PILOT_SAMPLES} for pilot)")
         if not sim_passed:
             blocking_requirements.append("Non-simulated empirical regression simulation (G8) required on active policy digest")
+        if not fp_precision_passed:
+            if total_reviews == 0:
+                blocking_requirements.append("Empirical FP Precision requires verified analyst reviews (currently 0 reviews)")
+            else:
+                blocking_requirements.append(f"Empirical FP Precision ({fp_precision or 0:.1%}) below 98.0% production requirement")
+        if not wilson_passed:
+            if total_reviews == 0:
+                blocking_requirements.append("Wilson Lower Bound requires verified analyst reviews (currently 0 reviews)")
+            else:
+                blocking_requirements.append(f"Wilson 95% Confidence Lower Bound ({wilson_lower or 0:.1%}) below 96.0% production requirement")
+        if not tp_recall_passed:
+            if total_reviews == 0:
+                blocking_requirements.append("Empirical TP Recall requires verified analyst reviews (currently 0 reviews)")
+            else:
+                blocking_requirements.append(f"Empirical TP Recall ({tp_recall or 0:.1%}) below 95.0% production requirement")
+        if passed_gates_count < 8:
+            failed_gates = [g_name for g_name, g in gate_results.items() if g.status != GateStatus.PASSED]
+            if failed_gates:
+                blocking_requirements.append(f"Mandatory Quality Gates incomplete ({passed_gates_count}/8 passed; failing: {', '.join(failed_gates)})")
         if not blocking_drift_absent:
             blocking_requirements.append(f"{len(unack_drift)} unacknowledged drift event(s) detected")
 
         # Approval eligibility (strict server-side gate)
-        approval_eligible = (
+        approval_eligible = bool(
             rule_def_verified
             and evidence_contract_verified
             and policy_structural_passed
             and pilot_reviews_passed
+            and sim_passed
+            and fp_precision_passed
+            and wilson_passed
+            and tp_recall_passed
             and blocking_drift_absent
+            and passed_gates_count == 8
             and len(blocking_issues) == 0
         )
 
@@ -499,13 +523,13 @@ class ProductionReadinessService:
         # Stage 6: Production Approval
         is_target_approved = target_version is not None and target_version.status == "APPROVED"
         s6_status = (
-            StageStatus.COMPLETED if (is_target_approved and rule.status == "ACTIVE")
+            StageStatus.COMPLETED if (is_target_approved and rule.status == "ACTIVE" and passed_gates_count == 8)
             else StageStatus.NEEDS_ACTION if approval_eligible
             else StageStatus.BLOCKED
         )
         s6_missing = (
             f"Approval blocked by {len(blocking_requirements)} unresolved requirements: {'; '.join(blocking_requirements[:3])}"
-            if not approval_eligible and not is_target_approved
+            if not approval_eligible and not (is_target_approved and passed_gates_count == 8)
             else None
         )
         s6_next = (
@@ -513,7 +537,9 @@ class ProductionReadinessService:
             if approval_eligible and not is_target_approved
             else (
                 "Policy version approved and actively deployed in production."
-                if is_target_approved else "Resolve blocking stages above to enable production approval."
+                if is_target_approved and passed_gates_count == 8
+                else ("Approved baseline requires revalidation to meet current strict governance." if is_target_approved
+                      else "Resolve blocking stages above to enable production approval.")
             )
         )
         stages.append(
@@ -571,6 +597,7 @@ class ProductionReadinessService:
             rule_status=rule.status,
             blocking_drift_absent=blocking_drift_absent,
             definition_status=semantics.definition_status,
+            passed_gates_count=passed_gates_count,
         )
 
         # 12. Calculate Readiness Progress (0-100%)
@@ -772,6 +799,7 @@ class ProductionReadinessService:
         rule_status: str,
         blocking_drift_absent: bool,
         definition_status: Any,
+        passed_gates_count: int = 0,
     ) -> Tuple[ReadinessStatus, str]:
         """Calculates authoritative production readiness status without conflating deployment status."""
         def_val = definition_status.value if hasattr(definition_status, "value") else str(definition_status)
@@ -784,14 +812,14 @@ class ProductionReadinessService:
         if total_reviews < RuleLearningService.MIN_PILOT_SAMPLES:
             return ReadinessStatus.LEARNING, "Supervised Learning"
 
-        if not sim_passed or not fp_precision_passed or not wilson_passed:
+        if not sim_passed or not fp_precision_passed or not wilson_passed or passed_gates_count < 8:
             return ReadinessStatus.VALIDATING, "Validating Accuracy"
 
         if approval_eligible and not is_target_approved:
             return ReadinessStatus.READY_FOR_APPROVAL, "Ready for Approval"
 
         if is_target_approved:
-            if rule_status == "ACTIVE":
+            if rule_status == "ACTIVE" and passed_gates_count == 8:
                 return ReadinessStatus.ACTIVE, "Active in Production"
             return ReadinessStatus.APPROVED, "Approved Baseline"
 

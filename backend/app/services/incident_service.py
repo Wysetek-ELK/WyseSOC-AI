@@ -4,6 +4,7 @@ from sqlalchemy import select, func, or_, desc, delete
 from sqlalchemy.orm import selectinload
 
 from app.models.incident import Incident, IncidentEvent, HistoricalGroundTruth
+from app.models.analyst_feedback import AnalystVerdictReview
 from app.models.rule import Rule
 from app.services.policy_governance import (
     RuleMatchContext,
@@ -215,6 +216,13 @@ class IncidentService:
             by_id = {obj.id: obj for obj in inc_res.scalars().all()}
             incidents = [by_id[pid] for pid in page_ids if pid in by_id]
 
+        reviewed_inc_ids = set()
+        if blind_review and incidents:
+            page_ids_all = [inc.id for inc in incidents] + [inc.incident_id for inc in incidents]
+            rev_q = select(AnalystVerdictReview.incident_id).where(AnalystVerdictReview.incident_id.in_(page_ids_all))
+            rev_res = await self.db.execute(rev_q)
+            reviewed_inc_ids = set(rev_res.scalars().all())
+
         items: List[IncidentListItemResponse] = []
         for inc in incidents:
             hist_res = None
@@ -228,6 +236,13 @@ class IncidentService:
                 cleared_time_epoch = inc.ground_truth.cleared_time_epoch
             elif blind_review:
                 hist_res = "[Hidden - Blind Review]"
+
+            is_reviewed = (inc.id in reviewed_inc_ids) or (inc.incident_id in reviewed_inc_ids)
+            # Mask AI verdict in blind review mode if analyst has not yet submitted their determination
+            safe_ai_verdict = (
+                None if (blind_review and not is_reviewed)
+                else VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict)
+            )
 
             r_uuid, l_rule_id, r_name = _infer_rule_identity(inc)
             items.append(
@@ -253,7 +268,7 @@ class IncidentService:
                     cleared_reason=cleared_reason,
                     cleared_user=cleared_user,
                     cleared_time_epoch=cleared_time_epoch,
-                    ai_verdict=VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict),
+                    ai_verdict=safe_ai_verdict,
                     event_count=len(inc.events),
                     created_at=inc.created_at,
                 )
@@ -379,7 +394,20 @@ class IncidentService:
                 created_at=inc.ground_truth.created_at,
             )
 
+        # Check if analyst review has already been submitted for this incident
+        has_analyst_review = False
+        if blind_review:
+            rev_stmt = select(AnalystVerdictReview.id).where(
+                (AnalystVerdictReview.incident_id == inc.id) | (AnalystVerdictReview.incident_id == inc.incident_id)
+            ).limit(1)
+            rev_res = await self.db.execute(rev_stmt)
+            has_analyst_review = rev_res.scalar_one_or_none() is not None
+
         sanitized_raw_payload = sanitize_blind_review_payload(inc.raw_payload or {}) if blind_review else (inc.raw_payload or {})
+        safe_ai_verdict = (
+            None if (blind_review and not has_analyst_review)
+            else VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict)
+        )
 
         return IncidentDetailResponse(
             id=inc.id,
@@ -412,7 +440,7 @@ class IncidentService:
             raw_payload=sanitized_raw_payload,
             events=events_resp,
             ground_truth=gt_resp,
-            ai_verdict=VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict),
+            ai_verdict=safe_ai_verdict,
             created_at=inc.created_at,
             updated_at=inc.updated_at,
         )

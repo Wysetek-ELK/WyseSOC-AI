@@ -1,0 +1,294 @@
+{
+  "version": "V1.2.1",
+  "timestamp": "2026-11-15T13:19:48.257Z",
+  "commit": "9da03f3b",
+  "status": "PASS",
+  "summary": {
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "totalScreenshots": 20,
+    "viewportsTested": [
+      "1024x768",
+      "1280x800",
+      "1440x900",
+      "1920x1080"
+    ]
+  },
+  "testResults": [
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V1-APPROVED",
+      "pageKey": "studio_rule_detail_heavy_tcp_v1",
+      "domResult": {
+        "ruleTitle": "Heavy TCP Host Scan On Fixed Port",
+        "hasRevalBadge": true,
+        "hasGateScore": false,
+        "hasReviewsCount": true,
+        "isValid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V3-CANDIDATE",
+      "pageKey": "studio_rule_detail_heavy_tcp_v3",
+      "domResult": {
+        "hasBlockedBadge": true,
+        "hasViewRequirements": true,
+        "approveBtnText": "Approval Blocked",
+        "isApproveDisabled": true,
+        "isValid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-VIEWER-LOCKOUT",
+      "pageKey": "studio_rule_detail_viewer_lockout",
+      "domResult": {
+        "isSynthDisabled": true,
+        "synthTitle": "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)",
+        "isValid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-ACTIVE",
+      "pageKey": "workbench_blind_review_active",
+      "domResult": {
+        "hasHiddenMask": true,
+        "isValid": true
+      },
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-CATALOG-INTEGRITY",
+      "pageKey": "catalog_readiness_integrity",
+      "domResult": {
+        "rowCount": 20,
+        "hasTable": true,
+        "isValid": true
+      },
+      "status": "PASS"
+    }
+  ],
+  "screenshots": [
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V1-APPROVED",
+      "pageKey": "studio_rule_detail_heavy_tcp_v1",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "studio_rule_detail_heavy_tcp_v1_1024x768.png",
+      "fileSizeBytes": 374899,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v1_1024x768.png",
+      "description": "Scenario A: Heavy TCP Host Scan Version 1 approved baseline requiring revalidation (2/8 gates, 0/30 reviews) (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V1-APPROVED",
+      "pageKey": "studio_rule_detail_heavy_tcp_v1",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "studio_rule_detail_heavy_tcp_v1_1280x800.png",
+      "fileSizeBytes": 518029,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v1_1280x800.png",
+      "description": "Scenario A: Heavy TCP Host Scan Version 1 approved baseline requiring revalidation (2/8 gates, 0/30 reviews) (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V1-APPROVED",
+      "pageKey": "studio_rule_detail_heavy_tcp_v1",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "studio_rule_detail_heavy_tcp_v1_1440x900.png",
+      "fileSizeBytes": 628232,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v1_1440x900.png",
+      "description": "Scenario A: Heavy TCP Host Scan Version 1 approved baseline requiring revalidation (2/8 gates, 0/30 reviews) (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V1-APPROVED",
+      "pageKey": "studio_rule_detail_heavy_tcp_v1",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "studio_rule_detail_heavy_tcp_v1_1920x1080.png",
+      "fileSizeBytes": 939334,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v1_1920x1080.png",
+      "description": "Scenario A: Heavy TCP Host Scan Version 1 approved baseline requiring revalidation (2/8 gates, 0/30 reviews) (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V3-CANDIDATE",
+      "pageKey": "studio_rule_detail_heavy_tcp_v3",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "studio_rule_detail_heavy_tcp_v3_1024x768.png",
+      "fileSizeBytes": 365519,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v3_1024x768.png",
+      "description": "Scenario B & C: Version 3 candidate draft with 6/8 gates, Blocked readiness, and disabled Approve button with View Requirements action (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V3-CANDIDATE",
+      "pageKey": "studio_rule_detail_heavy_tcp_v3",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "studio_rule_detail_heavy_tcp_v3_1280x800.png",
+      "fileSizeBytes": 513784,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v3_1280x800.png",
+      "description": "Scenario B & C: Version 3 candidate draft with 6/8 gates, Blocked readiness, and disabled Approve button with View Requirements action (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V3-CANDIDATE",
+      "pageKey": "studio_rule_detail_heavy_tcp_v3",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "studio_rule_detail_heavy_tcp_v3_1440x900.png",
+      "fileSizeBytes": 630501,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v3_1440x900.png",
+      "description": "Scenario B & C: Version 3 candidate draft with 6/8 gates, Blocked readiness, and disabled Approve button with View Requirements action (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-HEAVY-TCP-V3-CANDIDATE",
+      "pageKey": "studio_rule_detail_heavy_tcp_v3",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "studio_rule_detail_heavy_tcp_v3_1920x1080.png",
+      "fileSizeBytes": 948020,
+      "path": "screenshots/studio_rule_detail_heavy_tcp_v3_1920x1080.png",
+      "description": "Scenario B & C: Version 3 candidate draft with 6/8 gates, Blocked readiness, and disabled Approve button with View Requirements action (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-VIEWER-LOCKOUT",
+      "pageKey": "studio_rule_detail_viewer_lockout",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "studio_rule_detail_viewer_lockout_1024x768.png",
+      "fileSizeBytes": 374830,
+      "path": "screenshots/studio_rule_detail_viewer_lockout_1024x768.png",
+      "description": "RBAC Safety: Read-Only Viewer session confirms Synthesize Draft and Approve buttons are strictly disabled (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-VIEWER-LOCKOUT",
+      "pageKey": "studio_rule_detail_viewer_lockout",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "studio_rule_detail_viewer_lockout_1280x800.png",
+      "fileSizeBytes": 517750,
+      "path": "screenshots/studio_rule_detail_viewer_lockout_1280x800.png",
+      "description": "RBAC Safety: Read-Only Viewer session confirms Synthesize Draft and Approve buttons are strictly disabled (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-VIEWER-LOCKOUT",
+      "pageKey": "studio_rule_detail_viewer_lockout",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "studio_rule_detail_viewer_lockout_1440x900.png",
+      "fileSizeBytes": 627678,
+      "path": "screenshots/studio_rule_detail_viewer_lockout_1440x900.png",
+      "description": "RBAC Safety: Read-Only Viewer session confirms Synthesize Draft and Approve buttons are strictly disabled (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-VIEWER-LOCKOUT",
+      "pageKey": "studio_rule_detail_viewer_lockout",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "studio_rule_detail_viewer_lockout_1920x1080.png",
+      "fileSizeBytes": 938474,
+      "path": "screenshots/studio_rule_detail_viewer_lockout_1920x1080.png",
+      "description": "RBAC Safety: Read-Only Viewer session confirms Synthesize Draft and Approve buttons are strictly disabled (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-ACTIVE",
+      "pageKey": "workbench_blind_review_active",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "workbench_blind_review_active_1024x768.png",
+      "fileSizeBytes": 326150,
+      "path": "screenshots/workbench_blind_review_active_1024x768.png",
+      "description": "Blind Review Integrity: Double-blind mode masks ground-truth and suppresses unearned AI verdict leakage (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-ACTIVE",
+      "pageKey": "workbench_blind_review_active",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "workbench_blind_review_active_1280x800.png",
+      "fileSizeBytes": 371175,
+      "path": "screenshots/workbench_blind_review_active_1280x800.png",
+      "description": "Blind Review Integrity: Double-blind mode masks ground-truth and suppresses unearned AI verdict leakage (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-ACTIVE",
+      "pageKey": "workbench_blind_review_active",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "workbench_blind_review_active_1440x900.png",
+      "fileSizeBytes": 419912,
+      "path": "screenshots/workbench_blind_review_active_1440x900.png",
+      "description": "Blind Review Integrity: Double-blind mode masks ground-truth and suppresses unearned AI verdict leakage (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-BLIND-REVIEW-ACTIVE",
+      "pageKey": "workbench_blind_review_active",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "workbench_blind_review_active_1920x1080.png",
+      "fileSizeBytes": 524759,
+      "path": "screenshots/workbench_blind_review_active_1920x1080.png",
+      "description": "Blind Review Integrity: Double-blind mode masks ground-truth and suppresses unearned AI verdict leakage (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-CATALOG-INTEGRITY",
+      "pageKey": "catalog_readiness_integrity",
+      "viewport": "1024x768",
+      "width": 1024,
+      "height": 768,
+      "filename": "catalog_readiness_integrity_1024x768.png",
+      "fileSizeBytes": 271796,
+      "path": "screenshots/catalog_readiness_integrity_1024x768.png",
+      "description": "Rule Catalog Integrity: Verifies no rule with sub-8 gates displays false READY FOR APPROVAL status (1024x768)"
+    },
+    {
+      "scenarioId": "SCN-CATALOG-INTEGRITY",
+      "pageKey": "catalog_readiness_integrity",
+      "viewport": "1280x800",
+      "width": 1280,
+      "height": 800,
+      "filename": "catalog_readiness_integrity_1280x800.png",
+      "fileSizeBytes": 322180,
+      "path": "screenshots/catalog_readiness_integrity_1280x800.png",
+      "description": "Rule Catalog Integrity: Verifies no rule with sub-8 gates displays false READY FOR APPROVAL status (1280x800)"
+    },
+    {
+      "scenarioId": "SCN-CATALOG-INTEGRITY",
+      "pageKey": "catalog_readiness_integrity",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "catalog_readiness_integrity_1440x900.png",
+      "fileSizeBytes": 380536,
+      "path": "screenshots/catalog_readiness_integrity_1440x900.png",
+      "description": "Rule Catalog Integrity: Verifies no rule with sub-8 gates displays false READY FOR APPROVAL status (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-CATALOG-INTEGRITY",
+      "pageKey": "catalog_readiness_integrity",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "catalog_readiness_integrity_1920x1080.png",
+      "fileSizeBytes": 504827,
+      "path": "screenshots/catalog_readiness_integrity_1920x1080.png",
+      "description": "Rule Catalog Integrity: Verifies no rule with sub-8 gates displays false READY FOR APPROVAL status (1920x1080)"
+    }
+  ]
+}

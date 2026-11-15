@@ -14,6 +14,8 @@ class ReadinessStatus(str, Enum):
     READY_FOR_APPROVAL = "READY_FOR_APPROVAL"
     APPROVED = "APPROVED"
     ACTIVE = "ACTIVE"
+    UNKNOWN = "UNKNOWN"
+    UNAVAILABLE = "UNAVAILABLE"
 
 
 class StageStatus(str, Enum):

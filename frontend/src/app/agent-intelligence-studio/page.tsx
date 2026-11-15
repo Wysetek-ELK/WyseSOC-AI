@@ -376,7 +376,14 @@ function AgentIntelligenceStudioContent() {
       const rp = await api.getRulePrompt(ruleId);
       setRulePrompt(rp);
       if (rp.versions && rp.versions.length > 0) {
-        const targetId = rp.active_version_id || rp.versions[0].id;
+        let targetId = rp.active_version_id || rp.versions[0].id;
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const urlVer = params.get("version_id") || params.get("versionId");
+          if (urlVer && rp.versions.some((v) => v.id === urlVer)) {
+            targetId = urlVer;
+          }
+        }
         setSelectedVersionId(targetId);
         loadVersionIntoForm(rp.versions.find((v) => v.id === targetId) || rp.versions[0]);
       } else {
@@ -1645,17 +1652,22 @@ function AgentIntelligenceStudioContent() {
   const isIncompleteDefinition = intelligenceData?.semantics?.definition_status === "INCOMPLETE";
   const blockingIssuesList = qualityAssessment?.blocking_issues || qualityAssessment?.blocking_findings || [];
   const hasHardGateFailure = blockingIssuesList.length > 0;
-  const isApprovalEligible = (qualityAssessment?.approval_eligible ?? false) && !isIncompleteDefinition && !hasHardGateFailure;
   const gateList: QualityGateResult[] = qualityAssessment?.gate_results
     ? Object.values(qualityAssessment.gate_results)
     : qualityAssessment?.gates || [];
+  const passedGatesCount = gateList.filter((g) => g.status === "PASSED").length;
+  const isApprovalEligible =
+    (qualityAssessment?.approval_eligible ?? false) &&
+    !isIncompleteDefinition &&
+    !hasHardGateFailure &&
+    passedGatesCount === 8 &&
+    (learningProfile?.total_analyst_reviews || 0) >= 30;
 
   const studioQualityScore = qualityAssessment?.quality_score ?? null;
   const filledSegments =
     studioQualityScore !== null
       ? Math.max(0, Math.min(20, Math.round((studioQualityScore / 100) * 20)))
       : 0;
-  const passedGatesCount = gateList.filter((g) => g.status === "PASSED").length;
   const operationalStatus = deriveOperationalStatus({
     lifecycleStage: learningProfile?.lifecycle_stage,
     isApprovalEligible,
@@ -1855,9 +1867,17 @@ function AgentIntelligenceStudioContent() {
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-950/80 text-sky-300 border border-sky-500/50 flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-sky-400" /> APPROVAL ELIGIBLE
                     </span>
-                  ) : selectedVersion?.status === "APPROVED" ? (
+                  ) : selectedVersion?.status === "APPROVED" && passedGatesCount === 8 ? (
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/70 flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ACTIVE PRODUCTION
+                    </span>
+                  ) : selectedVersion?.status === "APPROVED" ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/70 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-400" /> APPROVED BASELINE (REVALIDATION REQUIRED)
+                    </span>
+                  ) : (learningProfile?.total_analyst_reviews || 0) < 30 && passedGatesCount > 0 ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-950/80 text-blue-300 border border-blue-700/70 flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-blue-400" /> SUPERVISED LEARNING
                     </span>
                   ) : (
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-700/70 flex items-center gap-1.5">
@@ -1924,8 +1944,9 @@ function AgentIntelligenceStudioContent() {
             <div className="flex flex-col sm:flex-row lg:flex-col gap-1.5 lg:min-w-[220px] shrink-0">
               <button
                 type="button"
-                disabled={actionLoading || loadingPrompt}
+                disabled={actionLoading || loadingPrompt || isViewer}
                 onClick={handleGenerateIntelligentDraft}
+                title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent draft policy"}
                 className="px-3.5 py-1.5 text-xs rounded-lg theme-primary-btn font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -1945,8 +1966,9 @@ function AgentIntelligenceStudioContent() {
 
               <button
                 type="button"
-                disabled={loadingSimulation || !selectedVersionId}
+                disabled={loadingSimulation || !selectedVersionId || isViewer}
                 onClick={handleRunSimulation}
+                title={isViewer ? "Read-Only Viewer cannot trigger simulation replay" : "Run empirical simulation replay on historical incidents"}
                 className="px-3.5 py-1.5 text-xs rounded-lg theme-secondary-btn disabled:opacity-50 font-medium flex items-center justify-center gap-1.5 transition-colors"
               >
                 <Cpu className="w-3.5 h-3.5 text-cyan-400" />
@@ -1989,15 +2011,22 @@ function AgentIntelligenceStudioContent() {
                 {selectedVersion && selectedVersion.status !== "APPROVED" && (
                   <button
                     type="button"
-                    disabled={actionLoading || !selectedVersionId || !isApprovalEligible}
+                    disabled={actionLoading || !selectedVersionId || !isApprovalEligible || isViewer}
                     onClick={() => setShowApprovalModal(true)}
+                    title={
+                      isViewer
+                        ? "Read-Only Viewer cannot approve policies (requires Administrator role)"
+                        : isApprovalEligible
+                        ? "Approve policy for production baseline"
+                        : "Approval blocked — mandatory quality gates or ground truth reviews incomplete"
+                    }
                     className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition-colors ${
-                      isApprovalEligible
+                      isApprovalEligible && !isViewer
                         ? "bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500/60"
                         : "bg-slate-900/70 text-slate-500 cursor-not-allowed border border-slate-800"
                     }`}
                   >
-                    <Check className="w-3.5 h-3.5" /> Approve &amp; Activate
+                    <Check className="w-3.5 h-3.5" /> {isApprovalEligible && !isViewer ? "Approve & Activate" : "Approval Blocked"}
                   </button>
                 )}
 
@@ -2366,9 +2395,10 @@ function AgentIntelligenceStudioContent() {
               {/* Action: Generate Intelligent Draft */}
               <button
                 type="button"
-                disabled={actionLoading}
+                disabled={actionLoading || isViewer}
                 onClick={handleGenerateIntelligentDraft}
-                className="w-full py-2 px-2.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent policy draft"}
+                className="w-full py-2 px-2.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
               >
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Generate Intelligent Draft
               </button>
@@ -2389,9 +2419,10 @@ function AgentIntelligenceStudioContent() {
                     </p>
                     <button
                       type="button"
-                      disabled={actionLoading}
+                      disabled={actionLoading || isViewer}
                       onClick={handleGenerateIntelligentDraft}
-                      className="px-4 py-2 theme-primary-btn rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all"
+                      title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent policy draft"}
+                      className="px-4 py-2 theme-primary-btn rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all disabled:opacity-50"
                     >
                       <Sparkles className="w-3.5 h-3.5" /> Synthesize Intelligent Draft Now
                     </button>

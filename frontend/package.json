@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test tests/admin-guide.test.mjs && node --experimental-strip-types --test tests/phase3-compact-ui.test.mjs && node --experimental-strip-types --test tests/production-readiness.test.mjs && node --experimental-strip-types --test tests/compact-redesign-v1.test.mjs && node --experimental-strip-types --test tests/quality-export.test.mjs && node --experimental-strip-types --test tests/v1_2_targeted_ui.test.mjs",
+    "test": "node --experimental-strip-types --test tests/admin-guide.test.mjs && node --experimental-strip-types --test tests/phase3-compact-ui.test.mjs && node --experimental-strip-types --test tests/production-readiness.test.mjs && node --experimental-strip-types --test tests/compact-redesign-v1.test.mjs && node --experimental-strip-types --test tests/quality-export.test.mjs && node --experimental-strip-types --test tests/v1_2_targeted_ui.test.mjs && node --experimental-strip-types --test tests/v1_2_1_ui_safety.test.mjs",
     "test:admin-guide": "node --experimental-strip-types --test tests/admin-guide.test.mjs",
     "test:phase3": "node --experimental-strip-types --test tests/phase3-compact-ui.test.mjs",
     "test:readiness": "node --experimental-strip-types --test tests/production-readiness.test.mjs",

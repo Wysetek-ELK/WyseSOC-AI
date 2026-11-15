@@ -588,20 +588,16 @@ class RuleLearningService:
                 successes=agreed_fp,
                 total=total_fp_pred
             )
-        elif profile.verified_fp_count > 0:
-            successes = max(0, profile.verified_fp_count - (1 if profile.empirical_accuracy and profile.empirical_accuracy < 1.0 else 0))
-            profile.fp_precision = round(float(successes) / float(profile.verified_fp_count), 4)
-            profile.wilson_lower_bound = WilsonScoreEvaluator.calculate_lower_bound(
-                successes=successes,
-                total=profile.verified_fp_count
-            )
+        else:
+            profile.fp_precision = None
+            profile.wilson_lower_bound = None
 
         # Recall of actual True Positives: correctly escalated TP / total verified TP
         total_actual_tp = agreed_tp + missed_tp
         if total_actual_tp > 0:
             profile.tp_recall = round(float(agreed_tp) / float(total_actual_tp), 4)
-        elif profile.verified_tp_count > 0:
-            profile.tp_recall = round(float(max(0, profile.verified_tp_count - profile.ai_incorrect_count)) / float(profile.verified_tp_count), 4)
+        else:
+            profile.tp_recall = None
 
     @classmethod
     def check_production_eligibility(cls, profile: RuleLearningProfile) -> Tuple[bool, List[str]]:

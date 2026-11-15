@@ -338,6 +338,24 @@ class AgentPolicyEngine:
                 f"Policy approval rejected by Quality Validation Gates ({len(quality_res.blocking_issues)} blockers): {blocker_text}"
             )
 
+        # Revocation check
+        if target_version.status == "REVOKED":
+            raise ValueError(
+                f"Cannot approve Version {target_version.version_number}: Policy is REVOKED (Reason: {target_version.revocation_reason or 'Untrusted'}). Revoked policies cannot be approved."
+            )
+
+        # Unacknowledged drift check
+        from app.models.policy_drift import PolicyDriftEvent
+        drift_stmt = select(PolicyDriftEvent).where(
+            PolicyDriftEvent.rule_id == rule.id,
+            PolicyDriftEvent.acknowledged == False,
+        )
+        unack_drift = (await self.db.execute(drift_stmt)).scalars().all()
+        if unack_drift:
+            raise ValueError(
+                f"Policy approval rejected: {len(unack_drift)} unacknowledged drift event(s) detected for rule '{rule.name}'. Acknowledge drift before approving new policy baseline."
+            )
+
         # Persist Assessment Record
         assessment_record = PolicyQualityAssessmentRecord(
             id=quality_res.assessment_id,

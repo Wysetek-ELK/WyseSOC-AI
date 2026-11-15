@@ -13,6 +13,7 @@ from app.models.user import User
 from app.models.rule import Rule
 from app.models.prompt import RulePrompt, PromptVersion
 from app.models.rule_intelligence import RuleIntelligenceSnapshot
+from app.models.rule_learning import RuleLearningProfile
 from app.models.policy_quality import PolicyQualityAssessmentRecord
 from app.models.policy_drift import PolicyDriftEvent
 from app.models.bulk_audit import BulkQualityAuditJobRecord
@@ -118,6 +119,12 @@ async def get_rule_prompts_summary(
         if qa.rule_id and qa.rule_id not in qa_by_rule:
             qa_by_rule[qa.rule_id] = qa
 
+    prof_res = await db.execute(select(RuleLearningProfile))
+    prof_by_rule: Dict[str, RuleLearningProfile] = {}
+    for p in prof_res.scalars().all():
+        if p.rule_id and p.rule_id not in prof_by_rule:
+            prof_by_rule[p.rule_id] = p
+
     items = []
     for r in rules:
         rp = prompts_by_rule_id.get(r.id)
@@ -173,6 +180,7 @@ async def get_rule_prompts_summary(
         elif not is_def_incomplete and q_score and q_score > 50:
             gates_passed_count = 2
 
+        prof = prof_by_rule.get(r.id) or prof_by_rule.get(r.rule_id)
         if is_def_incomplete:
             readiness_status = "INCOMPLETE"
             action_title = "Verify FortiSIEM Detection Semantics"
@@ -191,9 +199,22 @@ async def get_rule_prompts_summary(
         elif is_target_approved and gates_passed_count < 8:
             readiness_status = "VALIDATING"
             action_title = "Revalidate Quality Gates"
-        elif q_status == "APPROVAL_ELIGIBLE" or (latest_qa and latest_qa.approval_eligible):
+        elif (
+            (q_status == "APPROVAL_ELIGIBLE" or (latest_qa and latest_qa.approval_eligible))
+            and gates_passed_count == 8
+            and not is_def_incomplete
+            and blocker_cnt == 0
+            and prof
+            and prof.total_analyst_reviews >= 30
+        ):
             readiness_status = "READY_FOR_APPROVAL"
             action_title = "Request Production Approval"
+        elif prof and prof.total_analyst_reviews > 0 and prof.total_analyst_reviews < 30:
+            readiness_status = "LEARNING"
+            action_title = "Review Pending Incidents"
+        elif gates_passed_count > 0 or (q_score is not None and q_score > 0):
+            readiness_status = "VALIDATING"
+            action_title = "Complete Quality Validation"
         else:
             readiness_status = "LEARNING"
             action_title = "Review Pending Incidents"

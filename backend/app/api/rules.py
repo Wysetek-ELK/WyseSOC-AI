@@ -168,10 +168,18 @@ async def list_rules(
             readiness_status = "APPROVED"
         elif is_target_approved and gates_passed < 8:
             readiness_status = "VALIDATING"
-        elif latest_qa and latest_qa.approval_eligible:
+        elif (
+            latest_qa
+            and latest_qa.approval_eligible
+            and gates_passed == 8
+            and not is_incomplete
+            and (prof and prof.total_analyst_reviews >= 30)
+        ):
             readiness_status = "READY_FOR_APPROVAL"
         elif prof and prof.total_analyst_reviews > 0:
             readiness_status = "LEARNING"
+        elif gates_passed > 0:
+            readiness_status = "VALIDATING"
         else:
             readiness_status = "INCOMPLETE"
 

@@ -241,8 +241,21 @@ export function AgentIntelligenceStudioOverview({
       ? "Suspended"
       : "Blocked";
 
+  // Decoupled Statuses: Authoritative Backend Readiness & Eligibility
+  const effectiveApprovalEligible = Boolean(
+    readinessData
+      ? readinessData.approval_eligible
+      : (isApprovalEligible && passedGates === 8 && totalReviews >= 30)
+  );
+
+  const blockingReqCount = readinessData?.blocking_requirements?.length ?? (
+    (8 - passedGates > 0 ? (8 - passedGates) : 0) + (totalReviews < 30 ? 1 : 0)
+  );
+
   const productionReadinessStatus: "Ready" | "Blocked" =
-    readinessData?.readiness_status === "ACTIVE" || readinessData?.readiness_status === "APPROVED" || readinessData?.readiness_status === "READY_FOR_APPROVAL"
+    readinessData?.readiness_status === "ACTIVE" ||
+    (readinessData?.readiness_status === "APPROVED" && passedGates === 8) ||
+    readinessData?.readiness_status === "READY_FOR_APPROVAL"
       ? "Ready"
       : "Blocked";
 
@@ -256,11 +269,13 @@ export function AgentIntelligenceStudioOverview({
 
   // Production Readiness Status & Visual Badges
   const readinessStatus = readinessData?.readiness_status ?? (
-    isIncompleteDefinition || hasHardGateFailure
+    loadingReadiness
+      ? "VALIDATING"
+      : isIncompleteDefinition || hasHardGateFailure
       ? "BLOCKED"
       : totalReviews < 30
       ? "LEARNING"
-      : isApprovalEligible
+      : effectiveApprovalEligible
       ? "READY_FOR_APPROVAL"
       : "VALIDATING"
   );
@@ -307,6 +322,18 @@ export function AgentIntelligenceStudioOverview({
       badge: "bg-emerald-950/90 border-emerald-700 text-emerald-300 shadow-sm shadow-emerald-900/30",
       dot: "bg-emerald-400 animate-pulse",
       desc: "Active in production monitoring with verified policy enforcement.",
+    },
+    UNKNOWN: {
+      label: "STATUS UNKNOWN",
+      badge: "bg-slate-900/80 border-slate-700 text-slate-400",
+      dot: "bg-slate-500",
+      desc: "Authoritative production readiness evaluation unavailable. Check backend service status.",
+    },
+    UNAVAILABLE: {
+      label: "SERVICE UNAVAILABLE",
+      badge: "bg-slate-900/80 border-slate-700 text-slate-400",
+      dot: "bg-slate-500",
+      desc: "Readiness service could not evaluate this policy specification.",
     },
   };
 
@@ -464,15 +491,17 @@ export function AgentIntelligenceStudioOverview({
         stage_id: "production_approval",
         stage_name: "Production Approval",
         stage_number: 6,
-        status: selectedVersion?.status === "APPROVED" ? "COMPLETED" : isApprovalEligible ? "NEEDS_ACTION" : "BLOCKED",
+        status: (selectedVersion?.status === "APPROVED" && passedGates === 8) ? "COMPLETED" : effectiveApprovalEligible ? "NEEDS_ACTION" : "BLOCKED",
         simple_explanation: "Formal governance gate: verifies that all quality criteria pass before an authorized administrator signs off on production deployment.",
-        missing_requirement: !isApprovalEligible && selectedVersion?.status !== "APPROVED" ? "Approval blocked by unresolved prerequisites above." : null,
-        next_action: isApprovalEligible ? "Ready for administrator sign-off." : "Resolve blocking stages above to enable approval.",
-        action_button: { label: "Approve Policy", action: "request_approval", target_tab: "overview" },
+        missing_requirement: !effectiveApprovalEligible && selectedVersion?.status !== "APPROVED" ? `Approval blocked — ${blockingReqCount} mandatory checks incomplete.` : null,
+        next_action: effectiveApprovalEligible ? "All prerequisite quality criteria satisfied. Ready for administrator sign-off." : "Resolve blocking stages above to enable approval.",
+        action_button: effectiveApprovalEligible
+          ? { label: "Approve Policy", action: "request_approval", target_tab: "overview" }
+          : { label: "Approval Blocked", action: "request_approval", target_tab: "overview" },
         technical_details: {},
       },
     ];
-  }, [readinessData, isIncompleteDefinition, intelligenceData, qualityScore, hasHardGateFailure, totalReviews, selectedVersion?.status, isApprovalEligible]);
+  }, [readinessData, isIncompleteDefinition, intelligenceData, qualityScore, hasHardGateFailure, totalReviews, selectedVersion?.status, isApprovalEligible, effectiveApprovalEligible, passedGates, blockingReqCount]);
 
   const completedStagesCount = stages.filter((s) => s.status === "COMPLETED").length;
   const readinessProgress = readinessData?.readiness_progress ?? Math.round((completedStagesCount / 6) * 100);
@@ -625,8 +654,13 @@ export function AgentIntelligenceStudioOverview({
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
-              disabled={actionLoading}
+              disabled={actionLoading || isViewer}
               onClick={onGenerateIntelligentDraft}
+              title={
+                isViewer
+                  ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)"
+                  : "Synthesize draft policy using detection semantics"
+              }
               className="px-2.5 py-1.5 rounded-lg theme-primary-btn font-semibold flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -637,6 +671,11 @@ export function AgentIntelligenceStudioOverview({
               type="button"
               disabled={loadingQuality || isViewer}
               onClick={onValidateQuality}
+              title={
+                isViewer
+                  ? "Read-Only Viewer cannot run quality validation"
+                  : "Validate policy quality criteria G1–G8"
+              }
               className="px-2.5 py-1.5 rounded-lg theme-secondary-btn font-medium flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50"
             >
               <Award className="w-3.5 h-3.5 text-sky-400" />
@@ -645,8 +684,13 @@ export function AgentIntelligenceStudioOverview({
 
             <button
               type="button"
-              disabled={loadingSimulation}
+              disabled={loadingSimulation || isViewer}
               onClick={onRunSimulation}
+              title={
+                isViewer
+                  ? "Read-Only Viewer cannot trigger simulation replay"
+                  : "Run empirical simulation replay on historical incidents"
+              }
               className="px-2.5 py-1.5 rounded-lg theme-secondary-btn font-medium flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50"
             >
               <Cpu className="w-3.5 h-3.5 text-cyan-400" />
@@ -676,24 +720,41 @@ export function AgentIntelligenceStudioOverview({
             </button>
 
             {selectedVersion && selectedVersion.status !== "APPROVED" && (
-              <button
-                type="button"
-                disabled={actionLoading || !isApprovalEligible}
-                onClick={onApproveClick}
-                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 text-xs transition-colors ${
-                  isApprovalEligible
-                    ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
-                    : "bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed"
-                }`}
-                title={
-                  isApprovalEligible
-                    ? "Approve policy for production baseline"
-                    : "Approval blocked by hard quality gate failures or incomplete rule specifications."
-                }
-              >
-                <Check className="w-3.5 h-3.5" />
-                Approve
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={actionLoading || !effectiveApprovalEligible || isViewer}
+                  onClick={onApproveClick}
+                  className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 text-xs transition-colors ${
+                    effectiveApprovalEligible && !isViewer
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
+                      : "bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed"
+                  }`}
+                  title={
+                    isViewer
+                      ? "Read-Only Viewer cannot approve policies (requires Administrator role)"
+                      : effectiveApprovalEligible
+                      ? "Approve policy for production baseline"
+                      : `Approval blocked — ${blockingReqCount} mandatory checks incomplete`
+                  }
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {effectiveApprovalEligible && !isViewer ? "Approve" : "Approval Blocked"}
+                </button>
+                {(!effectiveApprovalEligible || isViewer) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById("guided-readiness-checklist");
+                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="text-[11px] text-amber-400 hover:text-amber-300 underline font-medium cursor-pointer"
+                    title="View incomplete requirements in checklist"
+                  >
+                    View Requirements
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -713,7 +774,7 @@ export function AgentIntelligenceStudioOverview({
           />
 
           {/* Guided Production Readiness Checklist (6 Stages) */}
-          <div className="p-3 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/40 space-y-3">
+          <div id="guided-readiness-checklist" className="p-3 sm:p-4 rounded-xl border border-slate-800 bg-slate-900/40 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-cyan-400" />
@@ -794,8 +855,22 @@ export function AgentIntelligenceStudioOverview({
                         {stage.action_button && (
                           <button
                             type="button"
+                            disabled={stage.stage_id === "production_approval" ? (!effectiveApprovalEligible || isViewer) : false}
                             onClick={() => handleStageAction(stage)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-[11px] font-semibold inline-flex items-center gap-1 transition-colors"
+                            title={
+                              stage.stage_id === "production_approval"
+                                ? isViewer
+                                  ? "Read-Only Viewer cannot approve policies (requires Administrator role)"
+                                  : !effectiveApprovalEligible
+                                  ? `Approval blocked — ${blockingReqCount} mandatory checks incomplete`
+                                  : "Approve policy for production baseline"
+                                : undefined
+                            }
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 transition-colors ${
+                              stage.stage_id === "production_approval" && (!effectiveApprovalEligible || isViewer)
+                                ? "bg-slate-900/60 text-slate-500 border border-slate-800 cursor-not-allowed opacity-60"
+                                : "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700"
+                            }`}
                           >
                             {stage.action_button.label} <ArrowRight className="w-3 h-3 text-cyan-400" />
                           </button>
