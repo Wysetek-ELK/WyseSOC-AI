@@ -14,6 +14,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { api, RuleItem } from "@/lib/api";
+import { copyToClipboard as copyTextToClipboard } from "@/lib/clipboard";
 
 export default function DetectionIntelligenceDetailPage({
   params,
@@ -43,10 +44,13 @@ export default function DetectionIntelligenceDetailPage({
     loadRule();
   }, [ruleId]);
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async (text: string) => {
+    if (!text) return;
+    const success = await copyTextToClipboard(text);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   if (isLoading) {

@@ -63,6 +63,7 @@ import { RuleLearningDashboard } from "@/components/learning/RuleLearningDashboa
 import { AgentIntelligenceStudioOverview } from "@/components/compact/AgentIntelligenceStudioOverview";
 import { CompactPageHeader } from "@/components/compact/CompactDesignSystem";
 import { deriveOperationalStatus } from "@/lib/diagnostics";
+import { copyToClipboard as copyTextToClipboard } from "@/lib/clipboard";
 
 function AgentIntelligenceStudioContent() {
   // Navigation / View mode
@@ -3768,15 +3769,17 @@ function AgentIntelligenceStudioContent() {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     const ids = (drilldownModal.items || [])
                       .map((it: any) => it.incident_id || it.id)
                       .filter(Boolean)
                       .join("\n");
                     if (ids) {
-                      navigator.clipboard.writeText(ids);
-                      setDrilldownCopied(true);
-                      setTimeout(() => setDrilldownCopied(false), 2000);
+                      const success = await copyTextToClipboard(ids);
+                      if (success) {
+                        setDrilldownCopied(true);
+                        setTimeout(() => setDrilldownCopied(false), 2000);
+                      }
                     }
                   }}
                   className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 flex items-center gap-1.5 transition-colors"

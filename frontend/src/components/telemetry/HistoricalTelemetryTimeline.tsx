@@ -20,6 +20,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { api, IncidentTimelineResponse, TimelineMilestone } from "@/lib/api";
+import { copyToClipboard as copyTextToClipboard } from "@/lib/clipboard";
 
 interface Props {
   incidentId: string;
@@ -52,10 +53,13 @@ export function HistoricalTelemetryTimeline({ incidentId }: Props) {
     }
   }, [incidentId]);
 
-  const copyText = (text: string, idx: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIdx(idx);
-    setTimeout(() => setCopiedIdx(null), 2000);
+  const copyText = async (text: string, idx: number) => {
+    if (!text) return;
+    const success = await copyTextToClipboard(text);
+    if (success) {
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    }
   };
 
   const getStageColor = (stage: string) => {

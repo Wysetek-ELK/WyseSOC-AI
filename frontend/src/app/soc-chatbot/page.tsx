@@ -28,6 +28,7 @@ import {
   ChatStatusResponse,
   IncidentListItem,
 } from "@/lib/api";
+import { copyToClipboard as copyTextToClipboard } from "@/lib/clipboard";
 import { BrandLogo } from "@/components/common/BrandLogo";
 
 interface RichChatMessage extends ChatMessage {
@@ -121,10 +122,12 @@ function FormattedMessageContent({ content }: { content: string }) {
                 </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(codeBody);
-                    setCopiedBlockIdx(idx);
-                    setTimeout(() => setCopiedBlockIdx(null), 1500);
+                  onClick={async () => {
+                    const success = await copyTextToClipboard(codeBody);
+                    if (success) {
+                      setCopiedBlockIdx(idx);
+                      setTimeout(() => setCopiedBlockIdx(null), 1500);
+                    }
                   }}
                   className="flex items-center gap-1 text-slate-400 hover:text-cyan-300 transition-colors"
                 >
@@ -618,10 +621,12 @@ export default function SocChatbotPage() {
                         {!isUser && (
                           <button
                             type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(msg.content);
-                              setCopiedMsgId(msg.id);
-                              setTimeout(() => setCopiedMsgId(null), 1500);
+                            onClick={async () => {
+                              const success = await copyTextToClipboard(msg.content);
+                              if (success) {
+                                setCopiedMsgId(msg.id);
+                                setTimeout(() => setCopiedMsgId(null), 1500);
+                              }
                             }}
                             className="text-slate-400 hover:text-slate-200 flex items-center gap-1"
                             title="Copy response"

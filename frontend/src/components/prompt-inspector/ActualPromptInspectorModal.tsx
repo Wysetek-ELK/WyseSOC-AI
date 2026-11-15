@@ -31,6 +31,7 @@ import {
   ExecutionHistoryItem,
   RuleCaptureSummaryItem,
 } from "@/lib/api";
+import { copyToClipboard as copyTextToClipboard } from "@/lib/clipboard";
 
 interface ActualPromptInspectorModalProps {
   isOpen: boolean;
@@ -172,10 +173,13 @@ export function ActualPromptInspectorModal({
     loadCapture(exec.incident_id, exec.id);
   };
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopySuccess(label);
-    setTimeout(() => setCopySuccess(null), 2500);
+  const handleCopy = async (text: string, label: string) => {
+    if (!text) return;
+    const success = await copyTextToClipboard(text);
+    if (success) {
+      setCopySuccess(label);
+      setTimeout(() => setCopySuccess(null), 2500);
+    }
   };
 
   const handleExport = async (format: "json" | "markdown") => {
@@ -702,20 +706,33 @@ export function ActualPromptInspectorModal({
                 {/* Quick Copy & Export Bar */}
                 <div className="flex items-center gap-2 pb-1 shrink-0">
                   {copySuccess && (
-                    <span className="text-xs text-emerald-400 flex items-center gap-1 font-semibold">
+                    <span className="text-xs text-emerald-400 flex items-center gap-1 font-semibold animate-pulse">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       {copySuccess} copied!
                     </span>
                   )}
                   <button
                     onClick={() =>
-                      copyToClipboard(data.system_prompt, "System Prompt")
+                      handleCopy(data.system_prompt || "", "System Prompt")
                     }
-                    className="p-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded text-xs flex items-center gap-1 border border-slate-700 transition"
-                    title="Copy System Prompt"
+                    className={`p-1.5 rounded text-xs flex items-center gap-1.5 border transition cursor-pointer ${
+                      copySuccess === "System Prompt"
+                        ? "bg-emerald-950/80 text-emerald-300 border-emerald-700 shadow-sm shadow-emerald-900/40"
+                        : "text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border-slate-700"
+                    }`}
+                    title="Copy System Prompt to clipboard"
                   >
-                    <Copy className="w-3.5 h-3.5" />
-                    Copy Prompt
+                    {copySuccess === "System Prompt" ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="font-semibold">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Prompt</span>
+                      </>
+                    )}
                   </button>
                   {data.capture_status === "CAPTURED_RUNTIME" && (
                     <>
@@ -907,12 +924,26 @@ export function ActualPromptInspectorModal({
                     </span>
                     <button
                       onClick={() =>
-                        copyToClipboard(data.system_prompt, "System Prompt")
+                        handleCopy(data.system_prompt || "", "System Prompt")
                       }
-                      className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold"
+                      className={`flex items-center gap-1.5 font-semibold text-xs px-2.5 py-1 rounded transition border cursor-pointer ${
+                        copySuccess === "System Prompt"
+                          ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80 shadow-sm shadow-emerald-900/30"
+                          : "text-indigo-400 hover:text-indigo-300 bg-slate-900/80 hover:bg-slate-800 border-slate-800 hover:border-slate-700"
+                      }`}
+                      title="Copy System Prompt to clipboard"
                     >
-                      <Copy className="w-3 h-3" />
-                      Copy text
+                      {copySuccess === "System Prompt" ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Copied to Clipboard!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Copy text</span>
+                        </>
+                      )}
                     </button>
                   </div>
                   <pre className="bg-slate-950 p-4 rounded-lg border border-slate-800 text-slate-200 text-xs font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap max-h-[500px]">
@@ -930,12 +961,26 @@ export function ActualPromptInspectorModal({
                     </span>
                     <button
                       onClick={() =>
-                        copyToClipboard(data.incident_payload, "Incident Payload")
+                        handleCopy(data.incident_payload || "", "Incident Payload")
                       }
-                      className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold"
+                      className={`flex items-center gap-1.5 font-semibold text-xs px-2.5 py-1 rounded transition border cursor-pointer ${
+                        copySuccess === "Incident Payload"
+                          ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80 shadow-sm shadow-emerald-900/30"
+                          : "text-indigo-400 hover:text-indigo-300 bg-slate-900/80 hover:bg-slate-800 border-slate-800 hover:border-slate-700"
+                      }`}
+                      title="Copy Incident Payload to clipboard"
                     >
-                      <Copy className="w-3 h-3" />
-                      Copy text
+                      {copySuccess === "Incident Payload" ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Copied to Clipboard!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Copy text</span>
+                        </>
+                      )}
                     </button>
                   </div>
                   <pre className="bg-slate-950 p-4 rounded-lg border border-slate-800 text-slate-200 text-xs font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap max-h-[500px]">
@@ -992,9 +1037,37 @@ export function ActualPromptInspectorModal({
               {/* Tab 5: Output Contract */}
               {activeTab === "contract" && (
                 <div className="space-y-3">
-                  <p className="text-xs text-slate-400">
-                    Mandatory JSON schema and verdict requirements enforced on Server 2 (Local LLM).
-                  </p>
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>
+                      Mandatory JSON schema and verdict requirements enforced on Server 2 (Local LLM).
+                    </span>
+                    <button
+                      onClick={() =>
+                        handleCopy(
+                          JSON.stringify(data.verdict_schema, null, 2),
+                          "Output Contract Schema"
+                        )
+                      }
+                      className={`flex items-center gap-1.5 font-semibold text-xs px-2.5 py-1 rounded transition border cursor-pointer ${
+                        copySuccess === "Output Contract Schema"
+                          ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80 shadow-sm shadow-emerald-900/30"
+                          : "text-indigo-400 hover:text-indigo-300 bg-slate-900/80 hover:bg-slate-800 border-slate-800 hover:border-slate-700"
+                      }`}
+                      title="Copy Output Contract Schema to clipboard"
+                    >
+                      {copySuccess === "Output Contract Schema" ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Copy schema</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <pre className="bg-slate-950 p-4 rounded-lg border border-slate-800 text-emerald-400 text-xs font-mono leading-relaxed overflow-x-auto max-h-[500px]">
                     {JSON.stringify(data.verdict_schema, null, 2)}
                   </pre>
@@ -1026,9 +1099,37 @@ export function ActualPromptInspectorModal({
                   </div>
 
                   <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-lg space-y-1.5 text-xs">
-                    <span className="text-[11px] text-slate-400 uppercase font-bold tracking-wide">
-                      Outbound Canonical Request Hash (SHA-256)
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-400 uppercase font-bold tracking-wide">
+                        Outbound Canonical Request Hash (SHA-256)
+                      </span>
+                      <button
+                        onClick={() =>
+                          handleCopy(
+                            data.technical_details.request_sha256 || "",
+                            "SHA-256 Hash"
+                          )
+                        }
+                        className={`flex items-center gap-1 font-semibold text-xs px-2 py-0.5 rounded transition border cursor-pointer ${
+                          copySuccess === "SHA-256 Hash"
+                            ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80"
+                            : "text-indigo-400 hover:text-indigo-300 bg-slate-900 border-slate-800 hover:border-slate-700"
+                        }`}
+                        title="Copy SHA-256 hash"
+                      >
+                        {copySuccess === "SHA-256 Hash" ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            <span>Copied Hash!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copy Hash</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                     <p className="font-mono text-slate-300 break-all bg-slate-900 p-2.5 rounded border border-slate-800">
                       {data.technical_details.request_sha256}
                     </p>
@@ -1039,9 +1140,37 @@ export function ActualPromptInspectorModal({
 
                   {data.raw_request_payload && (
                     <div className="space-y-1.5">
-                      <span className="text-xs font-bold text-slate-300">
-                        Canonical Outbound Request JSON
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-300">
+                          Canonical Outbound Request JSON
+                        </span>
+                        <button
+                          onClick={() =>
+                            handleCopy(
+                              JSON.stringify(data.raw_request_payload, null, 2),
+                              "Raw Request JSON"
+                            )
+                          }
+                          className={`flex items-center gap-1 font-semibold text-xs px-2 py-0.5 rounded transition border cursor-pointer ${
+                            copySuccess === "Raw Request JSON"
+                              ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80"
+                              : "text-indigo-400 hover:text-indigo-300 bg-slate-900 border-slate-800 hover:border-slate-700"
+                          }`}
+                          title="Copy Outbound Request JSON"
+                        >
+                          {copySuccess === "Raw Request JSON" ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <span>Copied JSON!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy JSON</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                       <pre className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-mono text-slate-300 overflow-x-auto max-h-60 leading-tight">
                         {JSON.stringify(data.raw_request_payload, null, 2)}
                       </pre>
@@ -1050,9 +1179,37 @@ export function ActualPromptInspectorModal({
 
                   {data.raw_model_response && (
                     <div className="space-y-1.5">
-                      <span className="text-xs font-bold text-slate-300">
-                        Raw LLM Response String
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-300">
+                          Raw LLM Response String
+                        </span>
+                        <button
+                          onClick={() =>
+                            handleCopy(
+                              data.raw_model_response || "",
+                              "Raw Response"
+                            )
+                          }
+                          className={`flex items-center gap-1 font-semibold text-xs px-2 py-0.5 rounded transition border cursor-pointer ${
+                            copySuccess === "Raw Response"
+                              ? "text-emerald-300 bg-emerald-950/60 border-emerald-700/80"
+                              : "text-indigo-400 hover:text-indigo-300 bg-slate-900 border-slate-800 hover:border-slate-700"
+                          }`}
+                          title="Copy Raw LLM Response"
+                        >
+                          {copySuccess === "Raw Response" ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <span>Copied Response!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy Response</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                       <pre className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-mono text-slate-300 overflow-x-auto max-h-40 leading-tight">
                         {data.raw_model_response}
                       </pre>

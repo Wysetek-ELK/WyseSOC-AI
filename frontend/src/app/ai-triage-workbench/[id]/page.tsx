@@ -31,6 +31,7 @@ import {
   Terminal,
 } from "lucide-react";
 import { api, IncidentDetail, IncidentAiVerdictResponse } from "@/lib/api";
+import { copyToClipboard as copyTextToClipboard } from "@/lib/clipboard";
 import { useApp } from "@/context/AppContext";
 import { HistoricalTelemetryTimeline } from "@/components/telemetry/HistoricalTelemetryTimeline";
 import { formatExecutionProvenanceBadge } from "@/lib/provenance";
@@ -147,10 +148,13 @@ export default function AITriageWorkbenchDetailPage({
     loadData();
   }, [incidentId, blindReviewMode]);
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async (text: string) => {
+    if (!text) return;
+    const success = await copyTextToClipboard(text);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const formatEpoch = (epoch?: number, fallbackIso?: string) => {
