@@ -71,6 +71,8 @@ class ProductionReadinessResponse(BaseModel):
     active_version_number: Optional[int] = None
     active_version_status: Optional[str] = None
     ai_execution_status: str = "Suspended"
+    automation_configured: bool = False
+    runtime_availability: str = "Unknown"
     
     # Authoritative Readiness Summary
     readiness_status: ReadinessStatus

@@ -140,8 +140,11 @@ class AnalystReviewService:
         ground_truth_status = "INSUFFICIENT_EVIDENCE" if analyst_verdict == "INSUFFICIENT_EVIDENCE" else "VERIFIED"
         target_rule = incident.rule_id or incident.event_type or "DEFAULT_RULE"
 
-        # 4. Check for existing review (exact-once metric guarantee and idempotency)
-        rev_stmt = select(AnalystVerdictReview).where(AnalystVerdictReview.incident_id == incident.id)
+        # 4. Check for existing review by THIS reviewer (exact-once metric guarantee and idempotency per reviewer)
+        rev_stmt = select(AnalystVerdictReview).where(
+            AnalystVerdictReview.incident_id == incident.id,
+            AnalystVerdictReview.reviewer_id == str(reviewer_id)
+        )
         existing_rev = (await db.execute(rev_stmt)).scalars().first()
 
         if existing_rev:

@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Search,
   Filter,
+  Eye,
   EyeOff,
   ChevronLeft,
   ChevronRight,
@@ -306,6 +307,19 @@ function AITriageWorkbenchContent() {
           </div>
         </div>
       )}
+      {!blindReviewMode && (
+        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-2.5 text-xs text-slate-300 flex items-center justify-between gap-2.5" data-testid="blind-review-off-banner">
+          <div className="flex items-center gap-2">
+            <Eye className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+            <span className="text-[11px] leading-tight">
+              <strong className="font-semibold text-slate-200">Blind Review UI Preference: OFF</strong> — Server-enforced double-blind isolation remains active for unreviewed incidents.
+            </span>
+          </div>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+            Server Isolation Active
+          </span>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col md:flex-row gap-2 rounded-lg border border-slate-800 bg-slate-950 p-2 sm:p-2.5">
@@ -538,10 +552,10 @@ function AITriageWorkbenchContent() {
                             {inc.cleared_reason && <span className="text-slate-500 italic truncate">"{inc.cleared_reason}"</span>}
                           </div>
                         )}
-                        {blindReviewMode && !inc.ai_verdict && (
+                        {!inc.ai_verdict && (
                           <span
                             className="px-1.5 py-0.2 rounded border text-[9px] font-mono text-slate-400 italic bg-slate-900/60 border-slate-800 flex items-center gap-1"
-                            title="AI Verdict is masked in double-blind review until an analyst submits an independent determination."
+                            title="AI Verdict is protected by server-enforced double-blind review until an independent determination is submitted."
                           >
                             <EyeOff className="h-2.5 w-2.5 text-amber-500/80" />
                             AI: [Hidden - Blind Review]

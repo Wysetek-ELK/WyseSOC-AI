@@ -777,7 +777,9 @@ export interface ProductionReadinessResponse {
   rule_deployment_status: string;
   active_version_number?: number | null;
   active_version_status?: string | null;
-  ai_execution_status?: "Enabled" | "Suspended" | "Blocked" | string | null;
+  ai_execution_status?: "Enabled" | "Disabled" | "Suspended" | "Offline" | "Unknown" | "Blocked" | string | null;
+  automation_configured?: boolean;
+  runtime_availability?: "Healthy" | "Offline" | "Unknown" | string | null;
   readiness_status: "BLOCKED" | "INCOMPLETE" | "LEARNING" | "VALIDATING" | "READY_FOR_APPROVAL" | "APPROVED" | "ACTIVE";
   readiness_label: string;
   readiness_progress: number;

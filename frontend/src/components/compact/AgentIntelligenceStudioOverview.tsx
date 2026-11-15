@@ -234,9 +234,9 @@ export function AgentIntelligenceStudioOverview({
     (activeVersion && activeVersion.status === "REVOKED")
   );
 
-  const aiVerdictExecutionStatus: "Enabled" | "Suspended" | "Blocked" =
+  const aiVerdictExecutionStatus: "Enabled" | "Disabled" | "Suspended" | "Offline" | "Unknown" | "Blocked" =
     readinessData?.ai_execution_status
-      ? (readinessData.ai_execution_status as "Enabled" | "Suspended" | "Blocked")
+      ? (readinessData.ai_execution_status as "Enabled" | "Disabled" | "Suspended" | "Offline" | "Unknown" | "Blocked")
       : eligibilityData?.ai_verdict_execution_status === "ENABLED"
       ? "Enabled"
       : eligibilityData?.ai_verdict_execution_status === "SUSPENDED" || isPolicyRevoked
@@ -588,13 +588,19 @@ export function AgentIntelligenceStudioOverview({
             )}
 
             {/* 3. AI Verdict Execution Status */}
-            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Real-time execution eligibility for Local LLM verdicts">
+            <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title={`Real-time execution state: ${aiVerdictExecutionStatus} (Runtime: ${readinessData?.runtime_availability || "Unknown"}, Automation Configured: ${readinessData?.automation_configured ? "Yes" : "No"})`}>
               <span className="text-slate-500 font-mono text-[10px]">AI Execution:</span>
               <span className={`w-1.5 h-1.5 rounded-full ${
                 aiVerdictExecutionStatus === "Enabled"
                   ? "bg-emerald-400"
                   : aiVerdictExecutionStatus === "Suspended"
                   ? "bg-amber-400"
+                  : aiVerdictExecutionStatus === "Offline"
+                  ? "bg-rose-500"
+                  : aiVerdictExecutionStatus === "Disabled"
+                  ? "bg-slate-400"
+                  : aiVerdictExecutionStatus === "Unknown"
+                  ? "bg-slate-500"
                   : "bg-rose-400"
               }`} />
               <strong className={
@@ -602,6 +608,12 @@ export function AgentIntelligenceStudioOverview({
                   ? "text-emerald-300 font-semibold"
                   : aiVerdictExecutionStatus === "Suspended"
                   ? "text-amber-300 font-semibold"
+                  : aiVerdictExecutionStatus === "Offline"
+                  ? "text-rose-400 font-semibold"
+                  : aiVerdictExecutionStatus === "Disabled"
+                  ? "text-slate-400 font-semibold"
+                  : aiVerdictExecutionStatus === "Unknown"
+                  ? "text-slate-400 font-semibold"
                   : "text-rose-300 font-semibold"
               }>
                 {aiVerdictExecutionStatus}

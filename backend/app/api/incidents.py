@@ -2,7 +2,7 @@ from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, desc
+from sqlalchemy import select, update, desc, or_
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
@@ -145,6 +145,30 @@ async def request_incident_ai_verdict(
     On-demand single incident AI evaluation against Verdictum Cortex (Server 2 Local LLM).
     Strictly sanitizes telemetry through the ground-truth isolation allowlist.
     """
+    # Guard against double-blind review bypass:
+    if current_user.role == "SOC Analyst":
+        from app.models.analyst_feedback import AnalystVerdictReview
+        inc_stmt = select(Incident).where((Incident.id == identifier) | (Incident.incident_id == identifier))
+        inc_obj = (await db.execute(inc_stmt)).scalar_one_or_none()
+        if inc_obj:
+            user_filters = [
+                AnalystVerdictReview.reviewer_id == str(current_user.id),
+                AnalystVerdictReview.reviewer_id == str(current_user.username)
+            ]
+            rev_stmt = select(AnalystVerdictReview.id).where(
+                or_(
+                    AnalystVerdictReview.incident_id == str(inc_obj.id),
+                    AnalystVerdictReview.incident_id == str(inc_obj.incident_id)
+                ),
+                or_(*user_filters)
+            ).limit(1)
+            has_rev = (await db.execute(rev_stmt)).scalar_one_or_none() is not None
+            if not has_rev:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Access denied: Cannot invoke direct on-demand AI verdict for an unreviewed incident in double-blind mode. Submit your independent analyst determination first."
+                )
+
     ai_service = AIVerdictService(db)
     try:
         verdict_data = await ai_service.evaluate_incident(
@@ -176,7 +200,7 @@ async def get_incident_historical_timeline(
     """
     from app.services.telemetry_timeline_service import TelemetryTimelineService
     svc = TelemetryTimelineService(db)
-    result = await svc.get_incident_timeline(identifier)
+    result = await svc.get_incident_timeline(identifier, current_user=current_user)
     if not result.get("success"):
         raise HTTPException(status_code=404, detail=result.get("error", "Incident timeline not found"))
     return result

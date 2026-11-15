@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
-from sqlalchemy import select, and_, desc
+from sqlalchemy import select, and_, or_, desc
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -629,16 +629,58 @@ class ProductionReadinessService:
                 else:
                     ev_refs.append(str(item))
 
-        if rule_prompt and rule_prompt.ai_execution_suspended:
-            ai_execution_status = "Suspended"
-        elif target_version and target_version.status == "APPROVED" and passed_gates_count == 8 and total_reviews >= 100 and wilson_passed:
-            ai_execution_status = "Enabled"
-        elif target_version and target_version.status == "APPROVED":
-            ai_execution_status = "Suspended"
-        elif target_version and target_version.status == "REVOKED":
+        # Authoritative Execution State Derivation (P1):
+        from app.models.production_governance import ProductionAutomationPolicy
+        possible_rule_keys = [semantics.rule_identifier, str(rule.id)]
+        if rule.rule_id:
+            possible_rule_keys.append(str(rule.rule_id))
+        if rule.event_type:
+            possible_rule_keys.append(str(rule.event_type))
+
+        pol_stmt = select(ProductionAutomationPolicy).where(
+            ProductionAutomationPolicy.rule_id.in_(possible_rule_keys)
+        )
+        pol_res = await db.execute(pol_stmt)
+        automation_policy = pol_res.scalars().first()
+
+        automation_configured = bool(automation_policy and automation_policy.is_enabled)
+        emergency_disable = bool(automation_policy and automation_policy.emergency_disable)
+        kill_switch = bool(rule_prompt and rule_prompt.ai_execution_suspended) or emergency_disable
+
+        # Check runtime inference service health (VerdictTriageAgent)
+        runtime_availability = "Unknown"
+        is_llm_online: Optional[bool] = None
+        try:
+            from app.services.ai_verdict_service import VerdictTriageAgent
+            is_llm_online = await VerdictTriageAgent.is_local_llm_available()
+            if is_llm_online is True:
+                runtime_availability = "Healthy"
+            elif is_llm_online is False:
+                runtime_availability = "Offline"
+            else:
+                runtime_availability = "Unknown"
+        except Exception:
+            runtime_availability = "Unknown"
+            is_llm_online = None
+
+        effective_exec_version = active_version if (active_version and active_version.status == "APPROVED") else (
+            target_version if (target_version and target_version.status == "APPROVED") else None
+        )
+
+        if target_version and target_version.status == "REVOKED":
             ai_execution_status = "Blocked"
-        else:
+        elif kill_switch:
             ai_execution_status = "Suspended"
+        elif not effective_exec_version:
+            ai_execution_status = "Suspended" if (target_version and target_version.status == "APPROVED") else "Disabled"
+        elif not automation_configured:
+            ai_execution_status = "Disabled"
+        elif is_llm_online is False:
+            ai_execution_status = "Offline"
+        elif is_llm_online is None or runtime_availability == "Unknown":
+            ai_execution_status = "Unknown"
+        else:
+            ai_execution_status = "Enabled"
 
         return ProductionReadinessResponse(
             rule_id=rule.id,
@@ -655,6 +697,8 @@ class ProductionReadinessService:
             active_version_number=active_version.version_number if active_version else None,
             active_version_status=active_version.status if active_version else "NONE",
             ai_execution_status=ai_execution_status,
+            automation_configured=automation_configured,
+            runtime_availability=runtime_availability,
             readiness_status=readiness_status,
             readiness_label=readiness_label,
             readiness_progress=readiness_progress,

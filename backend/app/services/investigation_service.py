@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.investigation import Investigation, InvestigationQuestion, InvestigationEvidence
 from app.models.incident import Incident
+from app.models.analyst_feedback import AnalystVerdictReview
 from app.models.rule import Rule
 from app.models.user import User
 from app.models.learning import LearningRecord
@@ -68,6 +69,7 @@ class ReviewOrchestrator:
         is_disputed: Optional[bool] = None,
         rule_id: Optional[str] = None,
         search: Optional[str] = None,
+        current_user: Optional[Any] = None,
     ) -> Tuple[List[InvestigationListItem], int]:
         # Ensure queue is populated
         await self.ensure_all_incidents_have_investigations()
@@ -120,12 +122,39 @@ class ReviewOrchestrator:
         result = await self.db.execute(query)
         invs = result.scalars().all()
 
+        user_role = getattr(current_user, "role", "")
+        is_admin = user_role in ("Administrator", "SuperAdmin")
+        reviewed_inc_ids = set()
+        if not is_admin and current_user and invs:
+            all_inc_ids = [str(inv.incident_id) for inv in invs if inv.incident_id] + [str(inv.incident.id) for inv in invs if inv.incident]
+            user_filters = []
+            if hasattr(current_user, "id") and current_user.id:
+                user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.id))
+            if hasattr(current_user, "username") and current_user.username:
+                user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.username))
+
+            if user_filters and all_inc_ids:
+                rev_q = select(AnalystVerdictReview.incident_id).where(
+                    AnalystVerdictReview.incident_id.in_(all_inc_ids),
+                    or_(*user_filters)
+                )
+                rev_res = await self.db.execute(rev_q)
+                reviewed_inc_ids = set(rev_res.scalars().all())
+
         items = []
         for inv in invs:
             inc = inv.incident
             rule = inc.rule if inc else None
             user = inv.assigned_user
-            norm_av = VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict) if inc else None
+
+            can_see = True
+            if not is_admin:
+                if user_role == "SOC Analyst":
+                    can_see = (str(inv.incident_id) in reviewed_inc_ids) or (inc and str(inc.id) in reviewed_inc_ids)
+                else:
+                    can_see = False
+
+            norm_av = (VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict) if inc else None) if can_see else None
 
             items.append(
                 InvestigationListItem(
@@ -286,11 +315,48 @@ class ReviewOrchestrator:
         await self.db.refresh(ev)
         return ev
 
-    async def build_ai_assurance(self, inv: Investigation) -> Optional[AIAssuranceSummary]:
+    async def build_ai_assurance(self, inv: Investigation, current_user: Optional[Any] = None) -> Optional[AIAssuranceSummary]:
         """Builds read-only AI verdict assurance & pilot provenance snapshot for Human Review Queue."""
         inc = inv.incident
         if not inc:
             return None
+
+        user_role = getattr(current_user, "role", "")
+        is_admin = user_role in ("Administrator", "SuperAdmin")
+        if not is_admin:
+            has_reviewed = False
+            if current_user and user_role == "SOC Analyst":
+                user_filters = []
+                if hasattr(current_user, "id") and current_user.id:
+                    user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.id))
+                if hasattr(current_user, "username") and current_user.username:
+                    user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.username))
+                if user_filters:
+                    rev_q = select(AnalystVerdictReview.id).where(
+                        or_(
+                            AnalystVerdictReview.incident_id == str(inv.incident_id),
+                            AnalystVerdictReview.incident_id == str(inc.id),
+                            AnalystVerdictReview.incident_id == str(inc.incident_id),
+                        ),
+                        or_(*user_filters)
+                    ).limit(1)
+                    rev_res = await self.db.execute(rev_q)
+                    has_reviewed = rev_res.scalar_one_or_none() is not None
+            if not has_reviewed:
+                rule = inc.rule
+                return AIAssuranceSummary(
+                    incident_summary=inc.description or inc.title or "",
+                    rule_id=rule.rule_id if rule else inc.rule_id,
+                    rule_name=rule.name if rule else inc.event_type,
+                    proposed_verdict=None,
+                    validated_verdict=None,
+                    trust_score=None,
+                    abstention_reason=None,
+                    supporting_evidence=[],
+                    contradictory_evidence=[],
+                    missing_evidence=[],
+                )
+
         rule = inc.rule
         norm_av = VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict) or {}
 

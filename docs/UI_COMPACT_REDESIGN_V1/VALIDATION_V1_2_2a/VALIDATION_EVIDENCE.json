@@ -1,0 +1,349 @@
+{
+  "version": "V1.2.2a",
+  "timestamp": "2026-11-15T15:18:51.837Z",
+  "commitSha": "0c2cd0f3239ad7b7ce46d3588a08df5c3564449d",
+  "status": "PASS",
+  "summary": {
+    "totalScenarios": 8,
+    "passedScenarios": 8,
+    "failedScenarios": 0,
+    "totalScreenshots": 16,
+    "viewportsTested": [
+      "1440x900",
+      "1920x1080"
+    ]
+  },
+  "testResults": [
+    {
+      "scenarioId": "SCN-V122A-01-BLIND-ON",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "SOC Analyst (Analyst A)",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "backendPayloadSummary": "items: 5",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasHiddenMask": true,
+        "hasBlindOnHeader": true,
+        "hasBlindActiveBanner": true
+      },
+      "evidenceTimestamp": "2026-11-15T15:18:11.047Z",
+      "exactCommitSha": "0c2cd0f3239ad7b7ce46d3588a08df5c3564449d",
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-V122A-02-BLIND-OFF",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "SOC Analyst (Analyst A)",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "backendPayloadSummary": "items: 5",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasBlindOffHeader": true,
+        "hasServerIsolationBanner": true,
+        "hasHiddenMask": true
+      },
+      "evidenceTimestamp": "2026-11-15T15:18:16.172Z",
+      "exactCommitSha": "0c2cd0f3239ad7b7ce46d3588a08df5c3564449d",
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-V122A-03-ANALYST-A-POST-SUBMISSION",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "SOC Analyst (Analyst A)",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "backendPayloadSummary": "readiness: undefined, ai_exec: undefined",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasRevealedBadge": true,
+        "hasIncident132": true
+      },
+      "evidenceTimestamp": "2026-11-15T15:18:21.155Z",
+      "exactCommitSha": "0c2cd0f3239ad7b7ce46d3588a08df5c3564449d",
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-V122A-04-ANALYST-B-PRE-SUBMISSION",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "SOC Analyst (Analyst B)",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "backendPayloadSummary": "readiness: undefined, ai_exec: undefined",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasHiddenMask": true,
+        "hasIncident132": true
+      },
+      "evidenceTimestamp": "2026-11-15T15:18:26.756Z",
+      "exactCommitSha": "0c2cd0f3239ad7b7ce46d3588a08df5c3564449d",
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-V122A-05-VIEWER-RESTRICTED",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "Read-Only Viewer",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "backendPayloadSummary": "items: 5",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasHiddenMask": true
+      },
+      "evidenceTimestamp": "2026-11-15T15:18:32.168Z",
+      "exactCommitSha": "0c2cd0f3239ad7b7ce46d3588a08df5c3564449d",
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-V122A-06-HEAVY-TCP-V1-HISTORICAL",
+      "ruleId": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v1 (8a460ab8-5f06-4a90-b2d4-db958199d644)",
+      "authenticatedRole": "Administrator",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 404,
+      "backendPayloadSummary": "readiness: undefined, ai_exec: undefined",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasRuleHeader": true,
+        "hasSiemActive": true,
+        "hasPolicyV1Approved": true,
+        "hasAiExecutionSuspended": true,
+        "hasReadinessBlocked": true,
+        "hasScore54": true
+      },
+      "evidenceTimestamp": "2026-11-15T15:18:37.069Z",
+      "exactCommitSha": "0c2cd0f3239ad7b7ce46d3588a08df5c3564449d",
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-V122A-07-HEAVY-TCP-V3-CANDIDATE",
+      "ruleId": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v3 (ec0cc351-8dd1-4026-9dc3-586387bb324c)",
+      "authenticatedRole": "Administrator",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 404,
+      "backendPayloadSummary": "readiness: undefined, ai_exec: undefined",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasStage1Blocked": true,
+        "hasStage2Blocked": true,
+        "hasScore77": true,
+        "hasNoContradictionText": true,
+        "hasSmartNextAction": true,
+        "isApproveDisabled": true
+      },
+      "evidenceTimestamp": "2026-11-15T15:18:42.346Z",
+      "exactCommitSha": "0c2cd0f3239ad7b7ce46d3588a08df5c3564449d",
+      "status": "PASS"
+    },
+    {
+      "scenarioId": "SCN-V122A-08-AI-EXECUTION-RUNTIME-OFFLINE",
+      "ruleId": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v1 (8a460ab8-5f06-4a90-b2d4-db958199d644)",
+      "authenticatedRole": "Administrator",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 404,
+      "backendPayloadSummary": "readiness: undefined, ai_exec: undefined",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasAiExecutionOffline": true,
+        "hasPolicyV1Approved": true
+      },
+      "evidenceTimestamp": "2026-11-15T15:18:48.938Z",
+      "exactCommitSha": "0c2cd0f3239ad7b7ce46d3588a08df5c3564449d",
+      "status": "PASS"
+    }
+  ],
+  "screenshots": [
+    {
+      "scenarioId": "SCN-V122A-01-BLIND-ON",
+      "pageKey": "workbench_blind_review_on",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "workbench_blind_review_on_1440x900.png",
+      "fileSizeBytes": 437949,
+      "path": "screenshots/workbench_blind_review_on_1440x900.png",
+      "description": "Blind Review ON: Double-blind review active, AI verdicts masked as [Hidden - Blind Review] (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-V122A-01-BLIND-ON",
+      "pageKey": "workbench_blind_review_on",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "workbench_blind_review_on_1920x1080.png",
+      "fileSizeBytes": 542777,
+      "path": "screenshots/workbench_blind_review_on_1920x1080.png",
+      "description": "Blind Review ON: Double-blind review active, AI verdicts masked as [Hidden - Blind Review] (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-V122A-02-BLIND-OFF",
+      "pageKey": "workbench_blind_review_off",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "workbench_blind_review_off_1440x900.png",
+      "fileSizeBytes": 436007,
+      "path": "screenshots/workbench_blind_review_off_1440x900.png",
+      "description": "Blind Review OFF: Client preference OFF shows server isolation banner and retains masked verdicts for unreviewed items (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-V122A-02-BLIND-OFF",
+      "pageKey": "workbench_blind_review_off",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "workbench_blind_review_off_1920x1080.png",
+      "fileSizeBytes": 539153,
+      "path": "screenshots/workbench_blind_review_off_1920x1080.png",
+      "description": "Blind Review OFF: Client preference OFF shows server isolation banner and retains masked verdicts for unreviewed items (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-V122A-03-ANALYST-A-POST-SUBMISSION",
+      "pageKey": "workbench_analyst_a_post_submission",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "workbench_analyst_a_post_submission_1440x900.png",
+      "fileSizeBytes": 621698,
+      "path": "screenshots/workbench_analyst_a_post_submission_1440x900.png",
+      "description": "Analyst A Post-Submission: Permitted comparison revealed for submitting reviewer (AI verdict badge with Sparkles) (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-V122A-03-ANALYST-A-POST-SUBMISSION",
+      "pageKey": "workbench_analyst_a_post_submission",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "workbench_analyst_a_post_submission_1920x1080.png",
+      "fileSizeBytes": 972722,
+      "path": "screenshots/workbench_analyst_a_post_submission_1920x1080.png",
+      "description": "Analyst A Post-Submission: Permitted comparison revealed for submitting reviewer (AI verdict badge with Sparkles) (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-V122A-04-ANALYST-B-PRE-SUBMISSION",
+      "pageKey": "workbench_analyst_b_pre_submission",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "workbench_analyst_b_pre_submission_1440x900.png",
+      "fileSizeBytes": 623323,
+      "path": "screenshots/workbench_analyst_b_pre_submission_1440x900.png",
+      "description": "Reviewer A/B Isolation: Analyst A submission does NOT unmask incident 132438483 for Analyst B (retains [Hidden - Blind Review]) (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-V122A-04-ANALYST-B-PRE-SUBMISSION",
+      "pageKey": "workbench_analyst_b_pre_submission",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "workbench_analyst_b_pre_submission_1920x1080.png",
+      "fileSizeBytes": 974379,
+      "path": "screenshots/workbench_analyst_b_pre_submission_1920x1080.png",
+      "description": "Reviewer A/B Isolation: Analyst A submission does NOT unmask incident 132438483 for Analyst B (retains [Hidden - Blind Review]) (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-V122A-05-VIEWER-RESTRICTED",
+      "pageKey": "workbench_viewer_restricted",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "workbench_viewer_restricted_1440x900.png",
+      "fileSizeBytes": 436261,
+      "path": "screenshots/workbench_viewer_restricted_1440x900.png",
+      "description": "RBAC Safety: Read-Only Viewer receives safely redacted verdicts with zero unmasked disclosure (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-V122A-05-VIEWER-RESTRICTED",
+      "pageKey": "workbench_viewer_restricted",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "workbench_viewer_restricted_1920x1080.png",
+      "fileSizeBytes": 539320,
+      "path": "screenshots/workbench_viewer_restricted_1920x1080.png",
+      "description": "RBAC Safety: Read-Only Viewer receives safely redacted verdicts with zero unmasked disclosure (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-V122A-06-HEAVY-TCP-V1-HISTORICAL",
+      "pageKey": "studio_heavy_tcp_v1_historical",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "studio_heavy_tcp_v1_historical_1440x900.png",
+      "fileSizeBytes": 626870,
+      "path": "screenshots/studio_heavy_tcp_v1_historical_1440x900.png",
+      "description": "Historical Approved Baseline: Heavy TCP v1 policy status APPROVED distinct from current readiness BLOCKED / INCOMPLETE (score 54.0, gates 2/8) (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-V122A-06-HEAVY-TCP-V1-HISTORICAL",
+      "pageKey": "studio_heavy_tcp_v1_historical",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "studio_heavy_tcp_v1_historical_1920x1080.png",
+      "fileSizeBytes": 942202,
+      "path": "screenshots/studio_heavy_tcp_v1_historical_1920x1080.png",
+      "description": "Historical Approved Baseline: Heavy TCP v1 policy status APPROVED distinct from current readiness BLOCKED / INCOMPLETE (score 54.0, gates 2/8) (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-V122A-07-HEAVY-TCP-V3-CANDIDATE",
+      "pageKey": "studio_heavy_tcp_v3_candidate",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "studio_heavy_tcp_v3_candidate_1440x900.png",
+      "fileSizeBytes": 630867,
+      "path": "screenshots/studio_heavy_tcp_v3_candidate_1440x900.png",
+      "description": "Candidate Integrity: Heavy TCP v3 stages 1 & 2 blocked, score 77.0, smart action 'Verify FortiSIEM Detection Semantics', approval disabled (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-V122A-07-HEAVY-TCP-V3-CANDIDATE",
+      "pageKey": "studio_heavy_tcp_v3_candidate",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "studio_heavy_tcp_v3_candidate_1920x1080.png",
+      "fileSizeBytes": 956129,
+      "path": "screenshots/studio_heavy_tcp_v3_candidate_1920x1080.png",
+      "description": "Candidate Integrity: Heavy TCP v3 stages 1 & 2 blocked, score 77.0, smart action 'Verify FortiSIEM Detection Semantics', approval disabled (1920x1080)"
+    },
+    {
+      "scenarioId": "SCN-V122A-08-AI-EXECUTION-RUNTIME-OFFLINE",
+      "pageKey": "studio_ai_execution_runtime_offline",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "filename": "studio_ai_execution_runtime_offline_1440x900.png",
+      "fileSizeBytes": 639634,
+      "path": "screenshots/studio_ai_execution_runtime_offline_1440x900.png",
+      "description": "Authoritative Status: Configured enablement distinguished from runtime availability (AI Execution: Offline) (1440x900)"
+    },
+    {
+      "scenarioId": "SCN-V122A-08-AI-EXECUTION-RUNTIME-OFFLINE",
+      "pageKey": "studio_ai_execution_runtime_offline",
+      "viewport": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "filename": "studio_ai_execution_runtime_offline_1920x1080.png",
+      "fileSizeBytes": 939039,
+      "path": "screenshots/studio_ai_execution_runtime_offline_1920x1080.png",
+      "description": "Authoritative Status: Configured enablement distinguished from runtime availability (AI Execution: Offline) (1920x1080)"
+    }
+  ]
+}

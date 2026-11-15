@@ -47,6 +47,7 @@ async def list_investigations_queue(
         is_disputed=is_disputed,
         rule_id=rule_id,
         search=search,
+        current_user=current_user,
     )
 
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
@@ -74,7 +75,7 @@ async def get_investigation(
     inc = inv.incident
     rule = inc.rule if inc else None
     user = inv.assigned_user
-    ai_assurance = await service.build_ai_assurance(inv)
+    ai_assurance = await service.build_ai_assurance(inv, current_user=current_user)
 
     return InvestigationDetailResponse(
         id=inv.id,
@@ -118,7 +119,7 @@ async def get_investigation_by_incident(
     inc = inv.incident
     rule = inc.rule if inc else None
     user = inv.assigned_user
-    ai_assurance = await service.build_ai_assurance(inv)
+    ai_assurance = await service.build_ai_assurance(inv, current_user=current_user)
 
     return InvestigationDetailResponse(
         id=inv.id,

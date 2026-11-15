@@ -218,7 +218,10 @@ class IncidentService:
             incidents = [by_id[pid] for pid in page_ids if pid in by_id]
 
         reviewed_inc_ids = set()
-        if blind_review and incidents and current_user:
+        user_role = getattr(current_user, "role", "")
+        is_admin = user_role in ("Administrator", "SuperAdmin")
+
+        if incidents and current_user:
             page_ids_all = [str(inc.id) for inc in incidents] + [str(inc.incident_id) for inc in incidents]
             user_filters = []
             if hasattr(current_user, "id") and current_user.id:
@@ -226,7 +229,7 @@ class IncidentService:
             if hasattr(current_user, "username") and current_user.username:
                 user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.username))
 
-            if user_filters:
+            if user_filters and page_ids_all:
                 rev_q = select(AnalystVerdictReview.incident_id).where(
                     AnalystVerdictReview.incident_id.in_(page_ids_all),
                     or_(*user_filters)
@@ -236,24 +239,33 @@ class IncidentService:
 
         items: List[IncidentListItemResponse] = []
         for inc in incidents:
+            is_reviewed = (str(inc.id) in reviewed_inc_ids) or (str(inc.incident_id) in reviewed_inc_ids)
+            # Server-enforced double-blind review isolation (P0):
+            # 1. Admin: Can view unmasked unless explicitly passing ?blind_review=true
+            # 2. SOC Analyst: Strictly double-blind. Client ?blind_review=false CANNOT bypass server protection.
+            #    Only revealed IF this analyst has submitted an independent determination for this incident.
+            # 3. Read-Only Viewer / others: Always masked / safely redacted.
+            if is_admin:
+                can_see_verdict = is_reviewed if blind_review else True
+            elif user_role == "SOC Analyst":
+                can_see_verdict = is_reviewed
+            else:
+                can_see_verdict = False
+
             hist_res = None
             cleared_reason = None
             cleared_user = None
             cleared_time_epoch = None
-            if not blind_review and inc.ground_truth:
-                hist_res = inc.ground_truth.resolution
-                cleared_reason = inc.ground_truth.cleared_reason
-                cleared_user = inc.ground_truth.cleared_user
-                cleared_time_epoch = inc.ground_truth.cleared_time_epoch
-            elif blind_review:
+            if can_see_verdict:
+                if inc.ground_truth:
+                    hist_res = inc.ground_truth.resolution
+                    cleared_reason = inc.ground_truth.cleared_reason
+                    cleared_user = inc.ground_truth.cleared_user
+                    cleared_time_epoch = inc.ground_truth.cleared_time_epoch
+                safe_ai_verdict = VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict)
+            else:
                 hist_res = "[Hidden - Blind Review]"
-
-            is_reviewed = (inc.id in reviewed_inc_ids) or (inc.incident_id in reviewed_inc_ids)
-            # Mask AI verdict in blind review mode if analyst has not yet submitted their determination
-            safe_ai_verdict = (
-                None if (blind_review and not is_reviewed)
-                else VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict)
-            )
+                safe_ai_verdict = None
 
             r_uuid, l_rule_id, r_name = _infer_rule_identity(inc)
             items.append(
@@ -380,37 +392,11 @@ class IncidentService:
                 await self.db.commit()
                 inc.events = repaired
 
-        # Build events response (purging ground-truth leakage in blind review mode)
-        events_resp = [
-            IncidentEventResponse(
-                id=evt.id,
-                event_id=evt.event_id,
-                event_receive_time=evt.event_receive_time or inc.first_seen_epoch,
-                event_type=evt.event_type,
-                raw_log=evt.raw_log,
-                attributes=sanitize_blind_review_payload(evt.attributes or {}) if blind_review else (evt.attributes or {}),
-            )
-            for evt in inc.events
-        ]
-
-        # Ground truth (suppressed in blind review)
-        gt_resp = None
-        if not blind_review and inc.ground_truth:
-            gt_resp = HistoricalGroundTruthResponse(
-                id=inc.ground_truth.id,
-                resolution=inc.ground_truth.resolution,
-                cleared_reason=inc.ground_truth.cleared_reason,
-                comments=inc.ground_truth.comments,
-                cleared_user=inc.ground_truth.cleared_user,
-                cleared_time_epoch=inc.ground_truth.cleared_time_epoch,
-                resolved_at_epoch=inc.ground_truth.resolved_at_epoch,
-                is_ml_generated=inc.ground_truth.is_ml_generated,
-                created_at=inc.ground_truth.created_at,
-            )
-
         # Check if analyst review has already been submitted for this incident by THIS reviewer
+        user_role = getattr(current_user, "role", "")
+        is_admin = user_role in ("Administrator", "SuperAdmin")
         has_analyst_review = False
-        if blind_review and current_user:
+        if current_user:
             user_filters = []
             if hasattr(current_user, "id") and current_user.id:
                 user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.id))
@@ -425,10 +411,50 @@ class IncidentService:
                 rev_res = await self.db.execute(rev_stmt)
                 has_analyst_review = rev_res.scalar_one_or_none() is not None
 
-        sanitized_raw_payload = sanitize_blind_review_payload(inc.raw_payload or {}) if blind_review else (inc.raw_payload or {})
+        # Server-enforced double-blind review isolation (P0):
+        # 1. Admin: Can view unmasked unless explicitly passing ?blind_review=true
+        # 2. SOC Analyst: Strictly double-blind. Client ?blind_review=false CANNOT bypass server protection.
+        #    Only revealed IF this analyst has submitted an independent determination for this incident.
+        # 3. Read-Only Viewer / others: Always masked / safely redacted.
+        if is_admin:
+            can_see_verdict = has_analyst_review if blind_review else True
+        elif user_role == "SOC Analyst":
+            can_see_verdict = has_analyst_review
+        else:
+            can_see_verdict = False
+
+        # Build events response (purging ground-truth leakage in blind review mode)
+        events_resp = [
+            IncidentEventResponse(
+                id=evt.id,
+                event_id=evt.event_id,
+                event_receive_time=evt.event_receive_time or inc.first_seen_epoch,
+                event_type=evt.event_type,
+                raw_log=evt.raw_log,
+                attributes=(evt.attributes or {}) if can_see_verdict else sanitize_blind_review_payload(evt.attributes or {}),
+            )
+            for evt in inc.events
+        ]
+
+        # Ground truth (suppressed in blind review)
+        gt_resp = None
+        if can_see_verdict and inc.ground_truth:
+            gt_resp = HistoricalGroundTruthResponse(
+                id=inc.ground_truth.id,
+                resolution=inc.ground_truth.resolution,
+                cleared_reason=inc.ground_truth.cleared_reason,
+                comments=inc.ground_truth.comments,
+                cleared_user=inc.ground_truth.cleared_user,
+                cleared_time_epoch=inc.ground_truth.cleared_time_epoch,
+                resolved_at_epoch=inc.ground_truth.resolved_at_epoch,
+                is_ml_generated=inc.ground_truth.is_ml_generated,
+                created_at=inc.ground_truth.created_at,
+            )
+
+        sanitized_raw_payload = (inc.raw_payload or {}) if can_see_verdict else sanitize_blind_review_payload(inc.raw_payload or {})
         safe_ai_verdict = (
-            None if (blind_review and not has_analyst_review)
-            else VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict)
+            VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict) if can_see_verdict
+            else None
         )
 
         return IncidentDetailResponse(
