@@ -79,6 +79,15 @@ async def lifespan(app: FastAPI):
                 await session.commit()
                 print("Default Administrator created (username: admin, development environment only)")
 
+        # Self-healing migration: Ensure 'customer' column exists on users table
+        try:
+            from sqlalchemy import text
+            await session.execute(text("ALTER TABLE users ADD COLUMN customer VARCHAR(128)"))
+            await session.commit()
+            print("[Startup Migration] Added 'customer' column to users table.")
+        except Exception:
+            await session.rollback()
+
         # Self-healing migration: Backfill missing incident timestamps for existing records
         try:
             from app.models.incident import Incident

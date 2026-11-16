@@ -54,6 +54,7 @@ async def login(
         "sub": user.id,
         "username": user.username,
         "role": user.role,
+        "customer": getattr(user, "customer", None),
     }
     access_token = create_access_token(token_data)
 

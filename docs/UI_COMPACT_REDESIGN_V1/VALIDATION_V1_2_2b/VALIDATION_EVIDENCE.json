@@ -1,0 +1,347 @@
+{
+  "schemaVersion": "1.2.2b",
+  "title": "Verdictum AI — Validation V1.2.2b Final Evidence Integrity & Security Acceptance",
+  "generatedAt": "2026-11-16T03:50:06.077Z",
+  "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+  "summary": {
+    "totalScenarios": 10,
+    "passedScenarios": 10,
+    "failedScenarios": 0,
+    "totalScreenshotsCaptured": 20
+  },
+  "results": [
+    {
+      "scenarioId": "SCN-V122B-01-HEAVY-TCP-V1",
+      "ruleId": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v1 (8a460ab8-5f06-4a90-b2d4-db958199d644)",
+      "authenticatedRole": "Administrator",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "apiValidationPassed": true,
+      "backendPayloadSummary": "readiness: BLOCKED, score: undefined",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasActivePolicyBadge": true,
+        "hasSiemRule": true,
+        "hasBlockedReadiness": true,
+        "hasHeavyTcp": true
+      },
+      "evidenceTimestamp": "2026-11-16T03:48:55.772Z",
+      "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "resolution": "1440x900",
+          "filename": "v1_2_2b_scn01_heavy_tcp_v1_1440x900.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn01_heavy_tcp_v1_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "resolution": "1920x1080",
+          "filename": "v1_2_2b_scn01_heavy_tcp_v1_1920x1080.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn01_heavy_tcp_v1_1920x1080.png"
+        }
+      ]
+    },
+    {
+      "scenarioId": "SCN-V122B-02-HEAVY-TCP-V3",
+      "ruleId": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v3 (ec0cc351-8dd1-4026-9dc3-586387bb324c)",
+      "authenticatedRole": "Administrator",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "apiValidationPassed": true,
+      "backendPayloadSummary": "readiness: BLOCKED, score: undefined",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasCandidateV3": true,
+        "hasSixGates": true,
+        "hasHeavyTcp": true
+      },
+      "evidenceTimestamp": "2026-11-16T03:49:05.489Z",
+      "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "resolution": "1440x900",
+          "filename": "v1_2_2b_scn02_heavy_tcp_v3_1440x900.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn02_heavy_tcp_v3_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "resolution": "1920x1080",
+          "filename": "v1_2_2b_scn02_heavy_tcp_v3_1920x1080.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn02_heavy_tcp_v3_1920x1080.png"
+        }
+      ]
+    },
+    {
+      "scenarioId": "SCN-V122B-03-AI-RUNTIME-OFFLINE",
+      "ruleId": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v1 (8a460ab8-5f06-4a90-b2d4-db958199d644)",
+      "authenticatedRole": "Administrator",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "apiValidationPassed": true,
+      "backendPayloadSummary": "readiness: BLOCKED, score: undefined",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasAiExecution": true,
+        "hasSiemRule": true,
+        "hasReadiness": true
+      },
+      "evidenceTimestamp": "2026-11-16T03:49:15.334Z",
+      "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "resolution": "1440x900",
+          "filename": "v1_2_2b_scn03_ai_runtime_offline_1440x900.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn03_ai_runtime_offline_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "resolution": "1920x1080",
+          "filename": "v1_2_2b_scn03_ai_runtime_offline_1920x1080.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn03_ai_runtime_offline_1920x1080.png"
+        }
+      ]
+    },
+    {
+      "scenarioId": "SCN-V122B-04-BLIND-ON",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "SOC Analyst (Analyst A)",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "apiValidationPassed": true,
+      "backendPayloadSummary": "items: 8",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasBlindIndicator": true,
+        "hasWorkbench": true
+      },
+      "evidenceTimestamp": "2026-11-16T03:49:22.012Z",
+      "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "resolution": "1440x900",
+          "filename": "v1_2_2b_scn04_blind_on_1440x900.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn04_blind_on_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "resolution": "1920x1080",
+          "filename": "v1_2_2b_scn04_blind_on_1920x1080.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn04_blind_on_1920x1080.png"
+        }
+      ]
+    },
+    {
+      "scenarioId": "SCN-V122B-05-BLIND-OFF",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "SOC Analyst (Analyst B)",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "apiValidationPassed": true,
+      "backendPayloadSummary": "items: 8",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasHiddenMask": true,
+        "hasWorkbench": true
+      },
+      "evidenceTimestamp": "2026-11-16T03:49:28.714Z",
+      "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "resolution": "1440x900",
+          "filename": "v1_2_2b_scn05_blind_off_1440x900.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn05_blind_off_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "resolution": "1920x1080",
+          "filename": "v1_2_2b_scn05_blind_off_1920x1080.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn05_blind_off_1920x1080.png"
+        }
+      ]
+    },
+    {
+      "scenarioId": "SCN-V122B-06-ANALYST-A-SUBMITTED",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "SOC Analyst (Analyst A)",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "apiValidationPassed": true,
+      "backendPayloadSummary": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasRevealedBadge": true,
+        "hasIncident132": true
+      },
+      "evidenceTimestamp": "2026-11-16T03:49:36.292Z",
+      "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "resolution": "1440x900",
+          "filename": "v1_2_2b_scn06_analyst_a_submitted_1440x900.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn06_analyst_a_submitted_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "resolution": "1920x1080",
+          "filename": "v1_2_2b_scn06_analyst_a_submitted_1920x1080.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn06_analyst_a_submitted_1920x1080.png"
+        }
+      ]
+    },
+    {
+      "scenarioId": "SCN-V122B-07-ANALYST-B-UNSUBMITTED",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "SOC Analyst (Analyst B)",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "apiValidationPassed": true,
+      "backendPayloadSummary": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasHiddenMask": true,
+        "hasIncident132": true
+      },
+      "evidenceTimestamp": "2026-11-16T03:49:43.883Z",
+      "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "resolution": "1440x900",
+          "filename": "v1_2_2b_scn07_analyst_b_unsubmitted_1440x900.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn07_analyst_b_unsubmitted_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "resolution": "1920x1080",
+          "filename": "v1_2_2b_scn07_analyst_b_unsubmitted_1920x1080.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn07_analyst_b_unsubmitted_1920x1080.png"
+        }
+      ]
+    },
+    {
+      "scenarioId": "SCN-V122B-08-VIEWER-RESTRICTED",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "Read-Only Viewer",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "apiValidationPassed": true,
+      "backendPayloadSummary": "items: 5",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasHiddenMask": true
+      },
+      "evidenceTimestamp": "2026-11-16T03:49:50.558Z",
+      "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "resolution": "1440x900",
+          "filename": "v1_2_2b_scn08_viewer_restricted_1440x900.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn08_viewer_restricted_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "resolution": "1920x1080",
+          "filename": "v1_2_2b_scn08_viewer_restricted_1920x1080.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn08_viewer_restricted_1920x1080.png"
+        }
+      ]
+    },
+    {
+      "scenarioId": "SCN-V122B-09-CROSS-TENANT-DENIAL",
+      "ruleId": "PH_RULE_BETA_EXFIL",
+      "version": "N/A",
+      "authenticatedRole": "SOC Analyst (Analyst A, Tenant Alpha)",
+      "expectedBackendStatus": 403,
+      "actualBackendStatus": 403,
+      "apiValidationPassed": true,
+      "backendPayloadSummary": "Access denied: Incident INC-TENANT-BETA-001 belongs to customer 'TENANT_BETA', but user is restricted to 'TENANT_ALPHA'.",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "noBetaInTable": true,
+        "hasZeroOrNoMatch": true
+      },
+      "evidenceTimestamp": "2026-11-16T03:49:58.166Z",
+      "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "resolution": "1440x900",
+          "filename": "v1_2_2b_scn09_cross_tenant_denial_1440x900.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn09_cross_tenant_denial_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "resolution": "1920x1080",
+          "filename": "v1_2_2b_scn09_cross_tenant_denial_1920x1080.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn09_cross_tenant_denial_1920x1080.png"
+        }
+      ]
+    },
+    {
+      "scenarioId": "SCN-V122B-10-ALTERNATE-ENDPOINT-PROTECTION",
+      "ruleId": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "authenticatedRole": "SOC Analyst (Analyst B)",
+      "expectedBackendStatus": 200,
+      "actualBackendStatus": 200,
+      "apiValidationPassed": true,
+      "backendPayloadSummary": "json response",
+      "expectedUiStatus": "COMPLIANT_RENDER",
+      "actualUiStatus": "COMPLIANT_RENDER",
+      "mandatoryAssertions": {
+        "hasHiddenMask": true,
+        "hasIncident132": true
+      },
+      "evidenceTimestamp": "2026-11-16T03:50:06.077Z",
+      "exactCommitSha": "be3670d883d650f5f761cf7dbe193d8f24532033",
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "resolution": "1440x900",
+          "filename": "v1_2_2b_scn10_alternate_endpoint_protection_1440x900.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn10_alternate_endpoint_protection_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "resolution": "1920x1080",
+          "filename": "v1_2_2b_scn10_alternate_endpoint_protection_1920x1080.png",
+          "absolutePath": "C:\\Users\\amit\\OneDrive\\Documents\\SOC-AI-Agent\\docs\\UI_COMPACT_REDESIGN_V1\\VALIDATION_V1_2_2b\\screenshots\\v1_2_2b_scn10_alternate_endpoint_protection_1920x1080.png"
+        }
+      ]
+    }
+  ]
+}

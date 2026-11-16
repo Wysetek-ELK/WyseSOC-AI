@@ -77,6 +77,16 @@ async def get_incident_detail(
     service = IncidentService(db)
     incident = await service.get_incident(identifier, blind_review=blind_review, current_user=current_user)
     if not incident:
+        user_customer = getattr(current_user, "customer", None)
+        user_role = getattr(current_user, "role", "")
+        if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
+            other_stmt = select(Incident).where(or_(Incident.id == identifier, Incident.incident_id == identifier))
+            other_inc = (await db.execute(other_stmt)).scalars().first()
+            if other_inc and other_inc.customer and other_inc.customer not in (user_customer, "DEFAULT", ""):
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Access denied: Incident {identifier} belongs to customer '{other_inc.customer}', but user is restricted to '{user_customer}'."
+                )
         raise HTTPException(status_code=404, detail=f"Incident '{identifier}' not found")
 
     # Audit incident inspection
@@ -202,6 +212,8 @@ async def get_incident_historical_timeline(
     svc = TelemetryTimelineService(db)
     result = await svc.get_incident_timeline(identifier, current_user=current_user)
     if not result.get("success"):
+        if result.get("access_denied"):
+            raise HTTPException(status_code=403, detail=result.get("error"))
         raise HTTPException(status_code=404, detail=result.get("error", "Incident timeline not found"))
     return result
 

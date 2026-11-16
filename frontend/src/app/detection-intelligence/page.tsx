@@ -358,7 +358,7 @@ export default function DetectionIntelligencePage() {
               <tr className="border-b border-slate-800 bg-slate-900/60 text-[10px] font-mono text-slate-400">
                 <th className="py-2 px-2.5 font-medium">Rule Name / Event Type</th>
                 <th className="py-2 px-2.5 font-medium">Severity</th>
-                <th className="py-2 px-2.5 font-medium">Baseline Status</th>
+                <th className="py-2 px-2.5 font-medium">SIEM Status</th>
                 <th className="py-2 px-2.5 font-medium">Production Readiness</th>
                 <th className="py-2 px-2.5 font-medium">Data Source</th>
                 <th className="py-2 px-2.5 font-medium">Linked Incidents</th>
@@ -405,13 +405,14 @@ export default function DetectionIntelligencePage() {
                       </td>
                       <td className="py-1.5 px-2.5">
                         <span
+                          title="FortiSIEM Detection Deployment Status"
                           className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${
                             rule.status === "ACTIVE"
                               ? "bg-emerald-950 text-emerald-300 border-emerald-800"
                               : "bg-slate-900 text-slate-400 border-slate-800"
                           }`}
                         >
-                          {rule.status}
+                          {rule.status === "ACTIVE" ? "SIEM ACTIVE" : rule.status}
                         </span>
                       </td>
                       <td className="py-1.5 px-2.5">

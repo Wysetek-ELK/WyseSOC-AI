@@ -554,7 +554,7 @@ export function AgentIntelligenceStudioOverview({
             <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title="Underlying FortiSIEM Detection Rule Deployment Status">
               <span className="text-slate-500 font-mono text-[10px]">SIEM Rule:</span>
               <span className={`w-1.5 h-1.5 rounded-full ${deploymentStatus === "ACTIVE" ? "bg-emerald-400" : "bg-slate-500"}`} />
-              <strong className={deploymentStatus === "ACTIVE" ? "text-emerald-300 font-semibold" : "text-slate-400"}>
+              <strong className={deploymentStatus === "ACTIVE" ? "text-emerald-300 font-semibold" : "text-slate-400"} title="SIEM Rule Deployment Status">
                 {deploymentStatus}
               </strong>
             </span>

@@ -118,6 +118,19 @@ class IncidentService:
 
         base_query = select(Incident).outerjoin(Rule, Incident.rule_id == Rule.id)
 
+        # Multi-Tenant Isolation: Restrict analysts/viewers to their assigned customer tenant
+        user_customer = getattr(current_user, "customer", None)
+        user_role = getattr(current_user, "role", "")
+        if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
+            base_query = base_query.where(
+                or_(
+                    Incident.customer == user_customer,
+                    Incident.customer == "DEFAULT",
+                    Incident.customer == "",
+                    Incident.customer.is_(None),
+                )
+            )
+
         # Filters
         if severity:
             base_query = base_query.where(Incident.severity == severity.upper())
@@ -356,6 +369,13 @@ class IncidentService:
         inc = result.scalar_one_or_none()
         if not inc:
             return None
+
+        # Multi-Tenant Isolation Check: Restrict analysts/viewers from cross-tenant incident retrieval
+        user_customer = getattr(current_user, "customer", None)
+        user_role = getattr(current_user, "role", "")
+        if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
+            if inc.customer and inc.customer not in (user_customer, "DEFAULT", ""):
+                return None
 
         # Self-healing: if events in database lack attributes or raw_log, re-extract from raw_payload
         needs_repair = False

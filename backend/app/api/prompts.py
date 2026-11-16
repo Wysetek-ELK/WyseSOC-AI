@@ -1163,6 +1163,37 @@ async def get_actual_prompt_for_incident(
     if not incident:
         raise HTTPException(status_code=404, detail=f"Incident {incident_id} not found")
 
+    user_customer = getattr(current_user, "customer", None)
+    user_role = getattr(current_user, "role", "")
+    if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
+        if incident.customer and incident.customer not in (user_customer, "DEFAULT", ""):
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access denied: Incident {incident_id} belongs to customer '{incident.customer}', but user is restricted to '{user_customer}'."
+            )
+
+    can_see_verdict = True
+    if user_role == "SOC Analyst":
+        from app.models.analyst_feedback import AnalystVerdictReview
+        user_filters = []
+        if hasattr(current_user, "id") and current_user.id:
+            user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.id))
+        if hasattr(current_user, "username") and current_user.username:
+            user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.username))
+        if user_filters:
+            rev_q = select(AnalystVerdictReview.id).where(
+                or_(
+                    AnalystVerdictReview.incident_id == str(incident.id),
+                    AnalystVerdictReview.incident_id == str(incident.incident_id)
+                ),
+                or_(*user_filters)
+            ).limit(1)
+            can_see_verdict = (await db.execute(rev_q)).scalar_one_or_none() is not None
+        else:
+            can_see_verdict = False
+    elif user_role not in ("Administrator", "SuperAdmin"):
+        can_see_verdict = False
+
     # 2. Query captured records and execution history
     available_executions = await ActualPromptCaptureService.get_executions_for_incident(db, incident_id)
 
@@ -1210,7 +1241,7 @@ async def get_actual_prompt_for_incident(
             mandatory_evidence_available=False,
             mandatory_evidence_summary="Historical record — telemetry not recorded at provider boundary",
             historical_precedents_included=0,
-            verdict_returned=(incident.ai_verdict or {}).get("verdict", "UNKNOWN"),
+            verdict_returned=(incident.ai_verdict or {}).get("verdict", "UNKNOWN") if can_see_verdict else "[Hidden - Blind Review]",
             prompt_matches_approved_policy=False,
             prompt_integrity_status="UNVERIFIED",
             summary_text="Historical record. To inspect what instructions would be sent for this rule, open Policy Preview.",
@@ -1220,7 +1251,7 @@ async def get_actual_prompt_for_incident(
                 "Use Preview Compiled Prompt to inspect the active policy template",
             ],
         )
-        return ActualPromptResponse(
+        resp_obj = ActualPromptResponse(
             capture_id=None,
             capture_status="HISTORICAL_CAPTURE_UNAVAILABLE",
             integrity_status="UNVERIFIED",
@@ -1234,11 +1265,18 @@ async def get_actual_prompt_for_incident(
             verdict_schema=PolicyCompilerService.MODEL_RESPONSE_SCHEMA,
             technical_details=tech_details,
             l1_explanation=l1_exp,
-            raw_model_response=(incident.ai_verdict or {}).get("reason"),
+            raw_model_response=((incident.ai_verdict or {}).get("reason") if can_see_verdict else "[Hidden - Blind Review]"),
             raw_request_payload=None,
-            is_redacted=False,
+            is_redacted=not can_see_verdict,
             available_executions=[],
         )
+        redacted_dict = ActualPromptCaptureService.apply_role_redaction(resp_obj.model_dump(), current_user)
+        if not can_see_verdict:
+            redacted_dict["raw_model_response"] = "[Hidden - Blind Review]"
+            if isinstance(redacted_dict.get("l1_explanation"), dict):
+                redacted_dict["l1_explanation"]["verdict_returned"] = "[Hidden - Blind Review]"
+            redacted_dict["is_redacted"] = True
+        return ActualPromptResponse.model_validate(redacted_dict)
 
     # 4. Resolve exact capture target: by capture_id, execution_id, linked ai_verdict, or latest
     cap = None
@@ -1336,7 +1374,7 @@ async def get_actual_prompt_for_incident(
         mandatory_evidence_available=bool(l1_raw.get("mandatory_evidence_available", True)),
         mandatory_evidence_summary=l1_raw.get("mandatory_evidence_summary", "Core telemetry requirements verified"),
         historical_precedents_included=len(cap.rag_precedents or []),
-        verdict_returned=cap.response_verdict or (incident.ai_verdict or {}).get("verdict", "REQUIRES_ATTENTION"),
+        verdict_returned=(cap.response_verdict or (incident.ai_verdict or {}).get("verdict", "REQUIRES_ATTENTION")) if can_see_verdict else "[Hidden - Blind Review]",
         prompt_matches_approved_policy=(cap.policy_status == "APPROVED"),
         prompt_integrity_status=integrity_status,
         summary_text=l1_raw.get("summary_text", f"Grounded under {cap.rule_name} specification."),
@@ -1367,6 +1405,12 @@ async def get_actual_prompt_for_incident(
         "available_executions": [e.model_dump() for e in available_executions],
     }
 
+    if not can_see_verdict:
+        res_dict["raw_model_response"] = "[Hidden - Blind Review]"
+        if isinstance(res_dict.get("l1_explanation"), dict):
+            res_dict["l1_explanation"]["verdict_returned"] = "[Hidden - Blind Review]"
+        res_dict["is_redacted"] = True
+
     redacted_dict = ActualPromptCaptureService.apply_role_redaction(res_dict, current_user)
     return ActualPromptResponse.model_validate(redacted_dict)
 
@@ -1380,6 +1424,20 @@ async def get_incident_actual_prompt_executions(
     """
     Returns the list of all historical provider execution attempts and retries for an incident.
     """
+    inc_stmt = select(Incident).where(Incident.incident_id == incident_id)
+    inc_res = await db.execute(inc_stmt)
+    incident = inc_res.scalar_one_or_none()
+    if not incident:
+        raise HTTPException(status_code=404, detail=f"Incident {incident_id} not found")
+    user_customer = getattr(current_user, "customer", None)
+    user_role = getattr(current_user, "role", "")
+    if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
+        if incident.customer and incident.customer not in (user_customer, "DEFAULT", ""):
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access denied: Incident {incident_id} belongs to customer '{incident.customer}', but user is restricted to '{user_customer}'."
+            )
+
     return await ActualPromptCaptureService.get_executions_for_incident(db, incident_id)
 
 

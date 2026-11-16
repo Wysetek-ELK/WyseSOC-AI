@@ -2437,8 +2437,8 @@ function AgentIntelligenceStudioContent() {
                             Version {selectedVersion.version_number}
                           </span>
                           {isSelectedActive && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> Production Active
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 flex items-center gap-1" title="Currently assigned policy version for this rule">
+                              <CheckCircle2 className="w-3 h-3" /> Active Policy v{selectedVersion.version_number}
                             </span>
                           )}
                           {selectedVersion.is_template_draft && (
