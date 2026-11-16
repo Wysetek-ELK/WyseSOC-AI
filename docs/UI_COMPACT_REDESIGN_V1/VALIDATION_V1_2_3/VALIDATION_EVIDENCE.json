@@ -1,0 +1,500 @@
+{
+  "validation_suite": "VERDICTUM_AI_VALIDATION_V1_2_3",
+  "timestamp": "2026-11-16T14:35:54.182Z",
+  "git_commit_sha": "7eedf4b3ac3e8e33b9f369d7ee96eb674fc43eca",
+  "summary": {
+    "total_scenarios": 12,
+    "passed_scenarios": 12,
+    "failed_scenarios": 0,
+    "total_screenshots": 24,
+    "acceptance_status": "ACCEPTANCE_PASSED",
+    "quality_gate_passed": true
+  },
+  "system_readiness_metrics": {
+    "heavy_tcp_v1_historical": {
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version_id": "8a460ab8-5f06-4a90-b2d4-db958199d644",
+      "version_status": "ACTIVE",
+      "siem_rule_status": "ACTIVE",
+      "readiness_status": "BLOCKED",
+      "quality_score": 54,
+      "readiness_score": 54,
+      "quality_gates_passed": 2,
+      "total_quality_gates": 8,
+      "approval_eligible": false
+    },
+    "heavy_tcp_v3_candidate": {
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version_id": "ec0cc351-8dd1-4026-9dc3-586387bb324c",
+      "version_status": "DRAFT",
+      "siem_rule_status": "ACTIVE",
+      "readiness_status": "BLOCKED",
+      "quality_score": 77,
+      "readiness_score": 77,
+      "quality_gates_passed": 6,
+      "total_quality_gates": 8,
+      "approval_eligible": false
+    }
+  },
+  "results": [
+    {
+      "scenario_id": "SCN-V123-01-HEAVY-TCP-V1",
+      "page_key": "v1_2_3_scn01_heavy_tcp_v1",
+      "description": "Heavy TCP Host Scan Rule v1: Canonical readiness route, score 54.0, gates 2/8, readiness BLOCKED, SIEM Rule Active",
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v1 (8a460ab8-5f06-4a90-b2d4-db958199d644)",
+      "role": "Administrator",
+      "user": "admin",
+      "tenant": "DEFAULT",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=40498741-ee6b-4a71-9101-0d6d3f77154c&version_id=8a460ab8-5f06-4a90-b2d4-db958199d644&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/40498741-ee6b-4a71-9101-0d6d3f77154c/readiness?version_id=8a460ab8-5f06-4a90-b2d4-db958199d644",
+      "api_expected_status": 200,
+      "api_actual_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasActivePolicyBadge": true,
+        "hasSiemRule": true,
+        "hasBlockedReadiness": true,
+        "hasHeavyTcp": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn01_heavy_tcp_v1_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn01_heavy_tcp_v1_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn01_heavy_tcp_v1_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn01_heavy_tcp_v1_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:34:46.206Z"
+    },
+    {
+      "scenario_id": "SCN-V123-02-HEAVY-TCP-V3",
+      "page_key": "v1_2_3_scn02_heavy_tcp_v3",
+      "description": "Heavy TCP Host Scan Rule v3 Candidate: Canonical readiness route, score 77.0, gates 6/8, sub-8 gate lockout",
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v3 (ec0cc351-8dd1-4026-9dc3-586387bb324c)",
+      "role": "Administrator",
+      "user": "admin",
+      "tenant": "DEFAULT",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=40498741-ee6b-4a71-9101-0d6d3f77154c&version_id=ec0cc351-8dd1-4026-9dc3-586387bb324c&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/40498741-ee6b-4a71-9101-0d6d3f77154c/readiness?version_id=ec0cc351-8dd1-4026-9dc3-586387bb324c",
+      "api_expected_status": 200,
+      "api_actual_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasCandidateV3": true,
+        "hasSixGates": true,
+        "hasHeavyTcp": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn02_heavy_tcp_v3_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn02_heavy_tcp_v3_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn02_heavy_tcp_v3_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn02_heavy_tcp_v3_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:34:51.970Z"
+    },
+    {
+      "scenario_id": "SCN-V123-03-APPROVAL-REJECTION",
+      "page_key": "v1_2_3_scn03_approval_rejection",
+      "description": "BLOCKED Candidate Approval Rejection: Server-side validation rejects promotion of ineligible candidate with HTTP 400/403",
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v3 (ec0cc351-8dd1-4026-9dc3-586387bb324c)",
+      "role": "Administrator",
+      "user": "admin",
+      "tenant": "DEFAULT",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=40498741-ee6b-4a71-9101-0d6d3f77154c&version_id=ec0cc351-8dd1-4026-9dc3-586387bb324c&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/40498741-ee6b-4a71-9101-0d6d3f77154c/approve/ec0cc351-8dd1-4026-9dc3-586387bb324c",
+      "api_expected_status": 400,
+      "api_actual_status": 400,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasBlockedStatus": true,
+        "hasHeavyTcp": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn03_approval_rejection_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn03_approval_rejection_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn03_approval_rejection_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn03_approval_rejection_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:34:57.785Z"
+    },
+    {
+      "scenario_id": "SCN-V123-04-READINESS-PAYLOAD",
+      "page_key": "v1_2_3_scn04_readiness_payload",
+      "description": "Authoritative Readiness Payload Integrity: quality_score and readiness_score both defined numbers, blocking requirements populated",
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v3 (ec0cc351-8dd1-4026-9dc3-586387bb324c)",
+      "role": "Administrator",
+      "user": "admin",
+      "tenant": "DEFAULT",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=40498741-ee6b-4a71-9101-0d6d3f77154c&version_id=ec0cc351-8dd1-4026-9dc3-586387bb324c&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/40498741-ee6b-4a71-9101-0d6d3f77154c/readiness?version_id=ec0cc351-8dd1-4026-9dc3-586387bb324c",
+      "api_expected_status": 200,
+      "api_actual_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasScore": true,
+        "hasGates": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn04_readiness_payload_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn04_readiness_payload_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn04_readiness_payload_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn04_readiness_payload_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:35:05.502Z"
+    },
+    {
+      "scenario_id": "SCN-V123-05-BLIND-ON",
+      "page_key": "v1_2_3_scn05_blind_on",
+      "description": "Blind Review Enabled (Client ON): Masked AI determinations for unreviewed items, active blind review indicators",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "role": "SOC Analyst (Analyst A)",
+      "user": "analyst",
+      "tenant": "TENANT_ALPHA",
+      "url": "http://127.0.0.1:3000/ai-triage-workbench",
+      "api_endpoint": "http://127.0.0.1:8000/api/incidents?page=1&page_size=10&blind_review=true",
+      "api_expected_status": 200,
+      "api_actual_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasBlindIndicator": true,
+        "hasWorkbench": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn05_blind_on_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn05_blind_on_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn05_blind_on_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn05_blind_on_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:35:11.332Z"
+    },
+    {
+      "scenario_id": "SCN-V123-06-BLIND-OFF",
+      "page_key": "v1_2_3_scn06_blind_off",
+      "description": "Blind Review Client OFF: Server-side isolation overrides client toggle, retaining [Hidden - Blind Review] for unreviewed",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "role": "SOC Analyst (Analyst B)",
+      "user": "analyst_b",
+      "tenant": "TENANT_ALPHA",
+      "url": "http://127.0.0.1:3000/ai-triage-workbench",
+      "api_endpoint": "http://127.0.0.1:8000/api/incidents?page=1&page_size=10&blind_review=false",
+      "api_expected_status": 200,
+      "api_actual_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasHiddenMask": true,
+        "hasWorkbench": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn06_blind_off_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn06_blind_off_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn06_blind_off_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn06_blind_off_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:35:17.270Z"
+    },
+    {
+      "scenario_id": "SCN-V123-07-ANALYST-AB-ISOLATION",
+      "page_key": "v1_2_3_scn07_analyst_ab_isolation",
+      "description": "Analyst A/B Isolation: Analyst A submitted review reveals AI determination; Analyst B unsubmitted remains strictly masked",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "role": "SOC Analyst (Analyst A)",
+      "user": "analyst",
+      "tenant": "TENANT_ALPHA",
+      "url": "http://127.0.0.1:3000/ai-triage-workbench?search=132438483",
+      "api_endpoint": "http://127.0.0.1:8000/api/incidents/132438483?blind_review=false",
+      "api_expected_status": 200,
+      "api_actual_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasRevealedBadge": true,
+        "hasIncident132": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn07_analyst_ab_isolation_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn07_analyst_ab_isolation_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn07_analyst_ab_isolation_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn07_analyst_ab_isolation_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:35:23.224Z"
+    },
+    {
+      "scenario_id": "SCN-V123-08-VIEWER-RESTRICTED",
+      "page_key": "v1_2_3_scn08_viewer_restricted",
+      "description": "Read-Only Viewer: Masked determinations and restricted interactive controls across workbench",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "role": "Read-Only Viewer",
+      "user": "viewer",
+      "tenant": "TENANT_ALPHA",
+      "url": "http://127.0.0.1:3000/ai-triage-workbench",
+      "api_endpoint": "http://127.0.0.1:8000/api/incidents?page=1&page_size=5",
+      "api_expected_status": 200,
+      "api_actual_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasHiddenMask": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn08_viewer_restricted_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn08_viewer_restricted_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn08_viewer_restricted_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn08_viewer_restricted_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:35:29.177Z"
+    },
+    {
+      "scenario_id": "SCN-V123-09-CROSS-TENANT-DENIAL",
+      "page_key": "v1_2_3_scn09_cross_tenant_denial",
+      "description": "Cross-Tenant Access Denial: Analyst A (Tenant Alpha) accessing Tenant Beta incident yields HTTP 403 and zero table rows",
+      "rule_id": "PH_RULE_BETA_EXFIL",
+      "version": "N/A",
+      "role": "SOC Analyst (Analyst A, Tenant Alpha)",
+      "user": "analyst",
+      "tenant": "TENANT_ALPHA",
+      "url": "http://127.0.0.1:3000/ai-triage-workbench?search=INC-TENANT-BETA-001",
+      "api_endpoint": "http://127.0.0.1:8000/api/incidents/INC-TENANT-BETA-001",
+      "api_expected_status": 403,
+      "api_actual_status": 403,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "noBetaInTable": true,
+        "hasZeroOrNoMatch": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn09_cross_tenant_denial_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn09_cross_tenant_denial_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn09_cross_tenant_denial_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn09_cross_tenant_denial_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:35:35.005Z"
+    },
+    {
+      "scenario_id": "SCN-V123-10-AI-RUNTIME-OFFLINE",
+      "page_key": "v1_2_3_scn10_ai_runtime_offline",
+      "description": "AI Runtime Offline State: Server 2 unavailable, UI reflects decoupled execution state cleanly without crashing",
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "v1 (8a460ab8-5f06-4a90-b2d4-db958199d644)",
+      "role": "Administrator",
+      "user": "admin",
+      "tenant": "DEFAULT",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=40498741-ee6b-4a71-9101-0d6d3f77154c&version_id=8a460ab8-5f06-4a90-b2d4-db958199d644&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/40498741-ee6b-4a71-9101-0d6d3f77154c/readiness?version_id=8a460ab8-5f06-4a90-b2d4-db958199d644",
+      "api_expected_status": 200,
+      "api_actual_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasAiExecution": true,
+        "hasSiemRule": true,
+        "hasReadiness": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn10_ai_runtime_offline_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn10_ai_runtime_offline_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn10_ai_runtime_offline_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn10_ai_runtime_offline_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:35:42.628Z"
+    },
+    {
+      "scenario_id": "SCN-V123-11-MISSING-READINESS-FALLBACK",
+      "page_key": "v1_2_3_scn11_missing_readiness_fallback",
+      "description": "Graceful Fallback on Missing Rule / Readiness: UI handles 404 cleanly with actionable notice, no white screen crash",
+      "rule_id": "nonexistent-rule-id-12345",
+      "version": "N/A",
+      "role": "Administrator",
+      "user": "admin",
+      "tenant": "DEFAULT",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=nonexistent-rule-id-12345&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/nonexistent-rule-id-12345/readiness",
+      "api_expected_status": 404,
+      "api_actual_status": 404,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "noCrash": true,
+        "hasNoticeOrStudio": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn11_missing_readiness_fallback_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn11_missing_readiness_fallback_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn11_missing_readiness_fallback_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn11_missing_readiness_fallback_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:35:48.421Z"
+    },
+    {
+      "scenario_id": "SCN-V123-12-VERSION-MISMATCH",
+      "page_key": "v1_2_3_scn12_version_mismatch",
+      "description": "Version Mismatch Resilience: Invalid version request yields 404, studio displays warning or falls back safely without unhandled exception",
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "invalid-version-uuid-999",
+      "role": "Administrator",
+      "user": "admin",
+      "tenant": "DEFAULT",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=40498741-ee6b-4a71-9101-0d6d3f77154c&version_id=invalid-version-uuid-999&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/40498741-ee6b-4a71-9101-0d6d3f77154c/readiness?version_id=invalid-version-uuid-999",
+      "api_expected_status": 404,
+      "api_actual_status": 404,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "noCrash": true,
+        "hasStudio": true
+      },
+      "status": "PASS",
+      "screenshots": [
+        {
+          "viewport": "1440x900",
+          "width": 1440,
+          "height": 900,
+          "filename": "v1_2_3_scn12_version_mismatch_1440x900.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn12_version_mismatch_1440x900.png"
+        },
+        {
+          "viewport": "1920x1080",
+          "width": 1920,
+          "height": 1080,
+          "filename": "v1_2_3_scn12_version_mismatch_1920x1080.png",
+          "path": "docs/UI_COMPACT_REDESIGN_V1/VALIDATION_V1_2_3/screenshots/v1_2_3_scn12_version_mismatch_1920x1080.png"
+        }
+      ],
+      "timestamp": "2026-11-16T14:35:54.182Z"
+    }
+  ]
+}

@@ -110,18 +110,20 @@ class ReviewOrchestrator:
                 )
             )
 
-        # Multi-Tenant Isolation: Restrict queue to user's assigned customer tenant
+        # Multi-Tenant Isolation (P1): Restrict queue strictly to user's assigned customer tenant
         user_customer = getattr(current_user, "customer", None)
         user_role = getattr(current_user, "role", "")
-        if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
-            query = query.join(Investigation.incident).where(
-                or_(
-                    Incident.customer == user_customer,
-                    Incident.customer == "DEFAULT",
-                    Incident.customer == "",
-                    Incident.customer.is_(None),
+        if user_customer and user_role not in ("Administrator", "SuperAdmin"):
+            if user_customer != "DEFAULT":
+                query = query.join(Investigation.incident).where(Incident.customer == user_customer)
+            else:
+                query = query.join(Investigation.incident).where(
+                    or_(
+                        Incident.customer == "DEFAULT",
+                        Incident.customer == "",
+                        Incident.customer.is_(None),
+                    )
                 )
-            )
 
         # Count
         count_query = select(func.count()).select_from(query.subquery())

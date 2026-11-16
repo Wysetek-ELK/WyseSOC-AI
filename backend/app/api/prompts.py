@@ -1165,12 +1165,19 @@ async def get_actual_prompt_for_incident(
 
     user_customer = getattr(current_user, "customer", None)
     user_role = getattr(current_user, "role", "")
-    if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
-        if incident.customer and incident.customer not in (user_customer, "DEFAULT", ""):
-            raise HTTPException(
-                status_code=403,
-                detail=f"Access denied: Incident {incident_id} belongs to customer '{incident.customer}', but user is restricted to '{user_customer}'."
-            )
+    if user_customer and user_role not in ("Administrator", "SuperAdmin"):
+        if user_customer != "DEFAULT":
+            if incident.customer != user_customer:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Access denied: Incident {incident_id} belongs to customer '{incident.customer or 'DEFAULT'}', but user is restricted to '{user_customer}'."
+                )
+        else:
+            if incident.customer and incident.customer not in ("DEFAULT", ""):
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Access denied: Incident {incident_id} belongs to customer '{incident.customer}', but user is restricted to platform default scope."
+                )
 
     can_see_verdict = True
     if user_role == "SOC Analyst":
@@ -1431,12 +1438,19 @@ async def get_incident_actual_prompt_executions(
         raise HTTPException(status_code=404, detail=f"Incident {incident_id} not found")
     user_customer = getattr(current_user, "customer", None)
     user_role = getattr(current_user, "role", "")
-    if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
-        if incident.customer and incident.customer not in (user_customer, "DEFAULT", ""):
-            raise HTTPException(
-                status_code=403,
-                detail=f"Access denied: Incident {incident_id} belongs to customer '{incident.customer}', but user is restricted to '{user_customer}'."
-            )
+    if user_customer and user_role not in ("Administrator", "SuperAdmin"):
+        if user_customer != "DEFAULT":
+            if incident.customer != user_customer:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Access denied: Incident {incident_id} belongs to customer '{incident.customer or 'DEFAULT'}', but user is restricted to '{user_customer}'."
+                )
+        else:
+            if incident.customer and incident.customer not in ("DEFAULT", ""):
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Access denied: Incident {incident_id} belongs to customer '{incident.customer}', but user is restricted to platform default scope."
+                )
 
     return await ActualPromptCaptureService.get_executions_for_incident(db, incident_id)
 

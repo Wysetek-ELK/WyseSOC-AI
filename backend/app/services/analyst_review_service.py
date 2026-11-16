@@ -42,9 +42,13 @@ class AnalystReviewService:
             .outerjoin(Investigation, Incident.id == Investigation.incident_id)
         )
 
-        if customer and customer.upper() != "ALL" and customer != "DEFAULT":
-            query = query.where(Incident.customer == customer)
-            count_q = count_q.where(Incident.customer == customer)
+        if customer and customer.upper() not in ("ALL", "GLOBAL"):
+            if customer == "DEFAULT":
+                query = query.where(or_(Incident.customer == "DEFAULT", Incident.customer == "", Incident.customer.is_(None)))
+                count_q = count_q.where(or_(Incident.customer == "DEFAULT", Incident.customer == "", Incident.customer.is_(None)))
+            else:
+                query = query.where(Incident.customer == customer)
+                count_q = count_q.where(Incident.customer == customer)
 
         if rule_id:
             query = query.where(or_(Incident.rule_id == rule_id, Incident.event_type == rule_id))
@@ -99,14 +103,17 @@ class AnalystReviewService:
                 cast(Incident.incident_id, String) == str(incident_id)
             )
         )
-        if customer and customer.upper() not in ("ALL", "DEFAULT", "GLOBAL"):
-            inc_stmt = inc_stmt.where(
-                or_(
-                    Incident.customer == customer,
-                    Incident.customer == "DEFAULT",
-                    Incident.customer.is_(None)
+        if customer and customer.upper() not in ("ALL", "GLOBAL"):
+            if customer == "DEFAULT":
+                inc_stmt = inc_stmt.where(
+                    or_(
+                        Incident.customer == "DEFAULT",
+                        Incident.customer == "",
+                        Incident.customer.is_(None)
+                    )
                 )
-            )
+            else:
+                inc_stmt = inc_stmt.where(Incident.customer == customer)
 
         inc_res = await db.execute(inc_stmt)
         incident = inc_res.scalars().first()

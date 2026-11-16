@@ -551,6 +551,7 @@ export interface PromptVersion {
   is_template_draft: boolean;
   quality_status?: string;
   quality_score?: number | null;
+  readiness_score?: number | null;
   quality_assessment_id?: string | null;
   common_prompt: string;
   rule_specific_prompt: string;
@@ -624,6 +625,7 @@ export interface RulePromptSummaryItem {
   detection_archetype?: string;
   definition_completeness?: string;
   quality_score?: number | null;
+  readiness_score?: number | null;
   quality_validation_status?: string;
   blocking_issue_count?: number;
   simulation_status?: string;
@@ -784,6 +786,7 @@ export interface ProductionReadinessResponse {
   readiness_label: string;
   readiness_progress: number;
   quality_score?: number | null;
+  readiness_score?: number | null;
   quality_gates_passed: number;
   total_quality_gates: number;
   verified_reviews_count: number;

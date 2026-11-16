@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 from app.utils.datetime_utils import utc_now
 from app.schemas.policy_quality import QualityGateResult
@@ -79,6 +79,7 @@ class ProductionReadinessResponse(BaseModel):
     readiness_label: str
     readiness_progress: int = Field(0, ge=0, le=100)
     quality_score: Optional[float] = None
+    readiness_score: Optional[float] = None
     quality_gates_passed: int = 0
     total_quality_gates: int = 8
     verified_reviews_count: int = 0
@@ -86,6 +87,18 @@ class ProductionReadinessResponse(BaseModel):
     production_reviews_target: int = 100
     approval_eligible: bool = False
     last_evaluated_at: Optional[datetime] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_readiness_metrics(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            q_score = data.get("quality_score")
+            r_score = data.get("readiness_score")
+            if q_score is not None and r_score is None:
+                data["readiness_score"] = float(q_score)
+            elif r_score is not None and q_score is None:
+                data["quality_score"] = float(r_score)
+        return data
     
     # The 6 Human-Readable Guided Checklist Stages
     stages: List[ReadinessStageItem] = Field(default_factory=list)

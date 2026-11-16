@@ -353,7 +353,7 @@ export function deriveOperationalStatus(input: {
   if (input.activeVersionStatus === "APPROVED" || stage === "CONTROLLED_PRODUCTION") {
     return {
       status: "PRODUCTION_ACTIVE",
-      label: "Production Active",
+      label: "SIEM Rule Active",
       badgeClass: "bg-emerald-950/70 border-emerald-800 text-emerald-300",
       dotClass: "bg-emerald-400",
     };

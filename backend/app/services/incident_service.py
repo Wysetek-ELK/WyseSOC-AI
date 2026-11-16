@@ -118,18 +118,23 @@ class IncidentService:
 
         base_query = select(Incident).outerjoin(Rule, Incident.rule_id == Rule.id)
 
-        # Multi-Tenant Isolation: Restrict analysts/viewers to their assigned customer tenant
+        # Multi-Tenant Isolation (P1): Restrict analysts/viewers strictly to their assigned customer tenant.
+        # Legacy DEFAULT, empty, and NULL records are restricted to users with customer == "DEFAULT" or Administrators.
         user_customer = getattr(current_user, "customer", None)
         user_role = getattr(current_user, "role", "")
-        if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
-            base_query = base_query.where(
-                or_(
-                    Incident.customer == user_customer,
-                    Incident.customer == "DEFAULT",
-                    Incident.customer == "",
-                    Incident.customer.is_(None),
+        if user_customer and user_role not in ("Administrator", "SuperAdmin"):
+            if user_customer != "DEFAULT":
+                # Tenant-specific user can ONLY access incidents belonging strictly to their customer tenant
+                base_query = base_query.where(Incident.customer == user_customer)
+            else:
+                # Platform default analyst with customer == "DEFAULT": restricted to legacy platform DEFAULT scope
+                base_query = base_query.where(
+                    or_(
+                        Incident.customer == "DEFAULT",
+                        Incident.customer == "",
+                        Incident.customer.is_(None),
+                    )
                 )
-            )
 
         # Filters
         if severity:
@@ -370,12 +375,18 @@ class IncidentService:
         if not inc:
             return None
 
-        # Multi-Tenant Isolation Check: Restrict analysts/viewers from cross-tenant incident retrieval
+        # Multi-Tenant Isolation Check (P1): Fail-closed cross-tenant protection
         user_customer = getattr(current_user, "customer", None)
         user_role = getattr(current_user, "role", "")
-        if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
-            if inc.customer and inc.customer not in (user_customer, "DEFAULT", ""):
-                return None
+        if user_customer and user_role not in ("Administrator", "SuperAdmin"):
+            if user_customer != "DEFAULT":
+                # Tenant-specific user can ONLY access incidents strictly belonging to their customer tenant
+                if inc.customer != user_customer:
+                    return None
+            else:
+                # Platform default analyst with customer == "DEFAULT": restricted to platform DEFAULT scope
+                if inc.customer and inc.customer not in ("DEFAULT", ""):
+                    return None
 
         # Self-healing: if events in database lack attributes or raw_log, re-extract from raw_payload
         needs_repair = False

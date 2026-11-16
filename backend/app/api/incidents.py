@@ -79,14 +79,22 @@ async def get_incident_detail(
     if not incident:
         user_customer = getattr(current_user, "customer", None)
         user_role = getattr(current_user, "role", "")
-        if user_customer and user_customer != "DEFAULT" and user_role not in ("Administrator", "SuperAdmin"):
+        if user_customer and user_role not in ("Administrator", "SuperAdmin"):
             other_stmt = select(Incident).where(or_(Incident.id == identifier, Incident.incident_id == identifier))
             other_inc = (await db.execute(other_stmt)).scalars().first()
-            if other_inc and other_inc.customer and other_inc.customer not in (user_customer, "DEFAULT", ""):
-                raise HTTPException(
-                    status_code=403,
-                    detail=f"Access denied: Incident {identifier} belongs to customer '{other_inc.customer}', but user is restricted to '{user_customer}'."
-                )
+            if other_inc:
+                if user_customer != "DEFAULT":
+                    if other_inc.customer != user_customer:
+                        raise HTTPException(
+                            status_code=403,
+                            detail=f"Access denied: Incident {identifier} belongs to customer '{other_inc.customer or 'DEFAULT'}', but user is restricted to '{user_customer}'."
+                        )
+                else:
+                    if other_inc.customer and other_inc.customer not in ("DEFAULT", ""):
+                        raise HTTPException(
+                            status_code=403,
+                            detail=f"Access denied: Incident {identifier} belongs to customer '{other_inc.customer}', but user has DEFAULT platform scope."
+                        )
         raise HTTPException(status_code=404, detail=f"Incident '{identifier}' not found")
 
     # Audit incident inspection

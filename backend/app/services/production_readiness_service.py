@@ -83,6 +83,8 @@ class ProductionReadinessService:
         target_version: Optional[PromptVersion] = None
         if version_id:
             target_version = next((v for v in all_versions if str(v.id) == str(version_id)), None)
+            if not target_version:
+                raise ValueError(f"PromptVersion '{version_id}' not found for rule '{rule_identifier}'")
 
         if not target_version:
             # Prefer candidate draft version if exists (newer than active), otherwise active, otherwise newest
@@ -703,6 +705,7 @@ class ProductionReadinessService:
             readiness_label=readiness_label,
             readiness_progress=readiness_progress,
             quality_score=quality_score,
+            readiness_score=quality_score,
             quality_gates_passed=passed_gates_count,
             total_quality_gates=8,
             verified_reviews_count=total_reviews,

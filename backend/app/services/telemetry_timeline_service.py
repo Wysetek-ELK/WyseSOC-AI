@@ -57,15 +57,24 @@ class TelemetryTimelineService:
         is_admin = user_role in ("Administrator", "SuperAdmin")
         user_customer = getattr(current_user, "customer", None)
 
-        # Multi-Tenant Isolation Check
-        if user_customer and user_customer != "DEFAULT" and not is_admin:
-            if incident.customer and incident.customer not in (user_customer, "DEFAULT", ""):
-                return {
-                    "success": False,
-                    "error": f"Access denied: Incident {incident_id} belongs to customer '{incident.customer}', but user is restricted to '{user_customer}'.",
-                    "milestones": [],
-                    "access_denied": True,
-                }
+        # Multi-Tenant Isolation Check (P1): Fail-closed cross-tenant timeline protection
+        if not is_admin and user_customer:
+            if user_customer != "DEFAULT":
+                if incident.customer != user_customer:
+                    return {
+                        "success": False,
+                        "error": f"Access denied: Incident {incident_id} belongs to customer '{incident.customer or 'DEFAULT'}', but user is restricted to '{user_customer}'.",
+                        "milestones": [],
+                        "access_denied": True,
+                    }
+            else:
+                if incident.customer and incident.customer not in ("DEFAULT", ""):
+                    return {
+                        "success": False,
+                        "error": f"Access denied: Incident {incident_id} belongs to customer '{incident.customer}', but user has DEFAULT platform scope.",
+                        "milestones": [],
+                        "access_denied": True,
+                    }
         can_see_verdict = True
         if not is_admin:
             has_reviewed = False
