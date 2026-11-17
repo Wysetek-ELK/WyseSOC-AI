@@ -41,6 +41,11 @@ export interface CompactPageHeaderProps {
     badgeClass: string;
     dotClass: string;
   };
+  siemStatus?: {
+    label: string;
+    badgeClass: string;
+    dotClass: string;
+  };
   backAction?: {
     label: string;
     onClick: () => void;
@@ -54,6 +59,7 @@ export function CompactPageHeader({
   subtitle,
   archetype,
   lifecycleStatus,
+  siemStatus,
   backAction,
   actions,
   selector,
@@ -82,9 +88,21 @@ export function CompactPageHeader({
                 {archetype}
               </span>
             )}
+            {siemStatus && (
+              <span
+                data-testid="header-siem-rule-status"
+                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1.5 shrink-0 ${siemStatus.badgeClass}`}
+                title="Authoritative FortiSIEM detection rule deployment status"
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${siemStatus.dotClass}`} />
+                {siemStatus.label}
+              </span>
+            )}
             {lifecycleStatus && (
               <span
+                data-testid="header-policy-lifecycle-status"
                 className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1.5 shrink-0 ${lifecycleStatus.badgeClass}`}
+                title="AI policy lifecycle and readiness state"
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${lifecycleStatus.dotClass}`} />
                 {lifecycleStatus.label}

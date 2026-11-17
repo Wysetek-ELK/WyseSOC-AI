@@ -323,6 +323,7 @@ export type OperationalSummaryStatus =
   | "READY_FOR_VALIDATION"
   | "PRODUCTION_APPROVAL_PENDING"
   | "PRODUCTION_ACTIVE"
+  | "POLICY_APPROVED"
   | "SUSPENDED";
 
 export function deriveOperationalStatus(input: {
@@ -333,6 +334,7 @@ export function deriveOperationalStatus(input: {
   hasHardGateFailure?: boolean;
   totalAnalystReviews?: number;
   qualityScore?: number | null;
+  siemRuleStatus?: string;
 }): {
   status: OperationalSummaryStatus;
   label: string;
@@ -353,7 +355,7 @@ export function deriveOperationalStatus(input: {
   if (input.activeVersionStatus === "APPROVED" || stage === "CONTROLLED_PRODUCTION") {
     return {
       status: "PRODUCTION_ACTIVE",
-      label: "SIEM Rule Active",
+      label: input.siemRuleStatus === "ACTIVE" ? "SIEM Rule Active" : "Policy Approved",
       badgeClass: "bg-emerald-950/70 border-emerald-800 text-emerald-300",
       dotClass: "bg-emerald-400",
     };
@@ -400,6 +402,41 @@ export function deriveOperationalStatus(input: {
     label: "Ready for Learning",
     badgeClass: "bg-slate-900 border-slate-700 text-slate-300",
     dotClass: "bg-slate-400",
+  };
+}
+
+/**
+ * Authoritatively derives SIEM Rule Deployment Status strictly from the SIEM record.
+ * Never infers SIEM status from AI policy approval or AI execution readiness.
+ */
+export function deriveSiemRuleStatus(status?: string | null): {
+  status: "ACTIVE" | "INACTIVE" | "UNKNOWN";
+  label: string;
+  badgeClass: string;
+  dotClass: string;
+} {
+  const norm = (status || "").trim().toUpperCase();
+  if (norm === "ACTIVE") {
+    return {
+      status: "ACTIVE",
+      label: "SIEM Rule Active",
+      badgeClass: "bg-emerald-950/70 border-emerald-800 text-emerald-300",
+      dotClass: "bg-emerald-400",
+    };
+  }
+  if (norm === "INACTIVE" || norm === "DISABLED") {
+    return {
+      status: "INACTIVE",
+      label: "SIEM Rule Inactive",
+      badgeClass: "bg-slate-900 border-slate-700 text-slate-400",
+      dotClass: "bg-slate-500",
+    };
+  }
+  return {
+    status: "UNKNOWN",
+    label: "SIEM Status Unknown",
+    badgeClass: "bg-slate-900 border-slate-700 text-slate-400",
+    dotClass: "bg-slate-500",
   };
 }
 

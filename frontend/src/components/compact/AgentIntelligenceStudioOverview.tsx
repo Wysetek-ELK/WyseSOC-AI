@@ -52,6 +52,7 @@ export interface AgentIntelligenceStudioOverviewProps {
   ruleId: string;
   ruleName?: string;
   archetype?: string;
+  ruleStatus?: string;
   qualityAssessment: PolicyQualityAssessmentResponse | null;
   learningProfile: any | null;
   intelligenceData: RuleIntelligenceData | null;
@@ -114,6 +115,7 @@ export function AgentIntelligenceStudioOverview({
   ruleId,
   ruleName,
   archetype,
+  ruleStatus,
   qualityAssessment,
   learningProfile,
   intelligenceData,
@@ -142,41 +144,52 @@ export function AgentIntelligenceStudioOverview({
   const [readinessData, setReadinessData] = useState<ProductionReadinessResponse | null>(null);
   const [eligibilityData, setEligibilityData] = useState<PolicyEligibilityResponse | null>(null);
   const [loadingReadiness, setLoadingReadiness] = useState(false);
+  const [readinessError, setReadinessError] = useState<string | null>(null);
   const [expandedStageDetails, setExpandedStageDetails] = useState<Record<string, boolean>>({});
 
   // Fetch backend readiness and eligibility data whenever rule or version changes
-  useEffect(() => {
-    let isMounted = true;
-    if (!ruleId) return;
-
-    const fetchReadinessAndEligibility = async () => {
-      setLoadingReadiness(true);
-      try {
-        const [readinessRes, eligibilityRes] = await Promise.allSettled([
-          api.getRuleProductionReadiness(ruleId, selectedVersion?.id),
-          api.getRulePolicyEligibility(ruleId, selectedVersion?.id),
-        ]);
-        if (isMounted) {
-          if (readinessRes.status === "fulfilled") {
-            setReadinessData(readinessRes.value);
-          }
-          if (eligibilityRes.status === "fulfilled") {
-            setEligibilityData(eligibilityRes.value);
-          }
-        }
-      } catch (err) {
-        console.warn("Could not fetch authoritative readiness or eligibility from API:", err);
-      } finally {
-        if (isMounted) {
-          setLoadingReadiness(false);
-        }
+  const fetchReadinessAndEligibility = async () => {
+    if (!ruleId) {
+      setReadinessData(null);
+      setEligibilityData(null);
+      setReadinessError(null);
+      return;
+    }
+    setLoadingReadiness(true);
+    setReadinessError(null);
+    try {
+      const [readinessRes, eligibilityRes] = await Promise.allSettled([
+        api.getRuleProductionReadiness(ruleId, selectedVersion?.id),
+        api.getRulePolicyEligibility(ruleId, selectedVersion?.id),
+      ]);
+      if (readinessRes.status === "fulfilled") {
+        setReadinessData(readinessRes.value);
+        setReadinessError(null);
+      } else {
+        setReadinessData(null);
+        setReadinessError(readinessRes.reason?.message || "Readiness Unavailable");
       }
-    };
+      if (eligibilityRes.status === "fulfilled") {
+        setEligibilityData(eligibilityRes.value);
+      } else {
+        setEligibilityData(null);
+      }
+    } catch (err: any) {
+      console.warn("Could not fetch authoritative readiness or eligibility from API:", err);
+      setReadinessData(null);
+      setEligibilityData(null);
+      setReadinessError(err.message || "Readiness Unavailable");
+    } finally {
+      setLoadingReadiness(false);
+    }
+  };
 
+  useEffect(() => {
+    // Clear stale readiness immediately on selection change
+    setReadinessData(null);
+    setEligibilityData(null);
+    setReadinessError(null);
     fetchReadinessAndEligibility();
-    return () => {
-      isMounted = false;
-    };
   }, [ruleId, selectedVersion?.id]);
 
   // Extract consolidated diagnostic issues
@@ -201,19 +214,20 @@ export function AgentIntelligenceStudioOverview({
   }, [ruleId, ruleName, intelligenceData, qualityAssessment, learningProfile, llmOnline]);
 
   // Metrics from readinessData or props fallback
-  const qualityScore = readinessData?.quality_score ?? qualityAssessment?.quality_score ?? null;
-  const passedGates = readinessData?.quality_gates_passed ?? (
+  const qualityScore = readinessError ? null : (readinessData?.quality_score ?? qualityAssessment?.quality_score ?? null);
+  const passedGates = readinessError ? 0 : (readinessData?.quality_gates_passed ?? (
     qualityAssessment?.gate_results
       ? Object.values(qualityAssessment.gate_results).filter((g) => g.status === "PASSED").length
       : qualityAssessment?.gates?.filter((g) => g.status === "PASSED").length ?? 0
-  );
-  const totalReviews = readinessData?.verified_reviews_count ?? learningProfile?.total_analyst_reviews ?? 0;
-  const empiricalAccuracy = readinessData?.metrics?.empirical_accuracy ?? learningProfile?.empirical_accuracy;
+  ));
+  const totalReviews = readinessError ? 0 : (readinessData?.verified_reviews_count ?? learningProfile?.total_analyst_reviews ?? 0);
+  const empiricalAccuracy = readinessError ? null : (readinessData?.metrics?.empirical_accuracy ?? learningProfile?.empirical_accuracy);
   const isSelectedActive = selectedVersion?.id === activeVersionId;
   const displayArchetype = readinessData?.detection_archetype || archetype || intelligenceData?.classification?.primary_archetype || "UNKNOWN";
   const ruleDisplayName = readinessData?.rule_name || ruleName || `Detection Rule ${ruleId.slice(0, 8)}`;
   const plainEnglishDescription = readinessData?.detection_description || intelligenceData?.semantics?.detection_objective || `Monitors security telemetry for ${displayArchetype} activity.`;
-  const deploymentStatus = readinessData?.rule_deployment_status || (isSelectedActive && selectedVersion?.status === "APPROVED" ? "ACTIVE" : "NOT_DEPLOYED");
+  // Authoritative SIEM status strictly from SIEM records or readiness service; never inferred from AI approval
+  const deploymentStatus = readinessData?.rule_deployment_status || (ruleStatus === "ACTIVE" ? "ACTIVE" : ruleStatus ? ruleStatus : "NOT_DEPLOYED");
 
   // Decoupled Policy Governance & AI Execution Status
   const activeVersion = versions.find((v) => v.id === activeVersionId) || null;
@@ -244,10 +258,11 @@ export function AgentIntelligenceStudioOverview({
       : "Blocked";
 
   // Decoupled Statuses: Authoritative Backend Readiness & Eligibility
+  // Fail-closed: Never permit approval when readiness data is absent or errored
   const effectiveApprovalEligible = Boolean(
-    readinessData
+    !readinessError && readinessData
       ? readinessData.approval_eligible
-      : (isApprovalEligible && passedGates === 8 && totalReviews >= 30)
+      : false
   );
 
   const blockingReqCount = readinessData?.blocking_requirements?.length ?? (
@@ -271,19 +286,22 @@ export function AgentIntelligenceStudioOverview({
       : "Pending";
 
   // Production Readiness Status & Visual Badges
-  const readinessStatus = readinessData?.readiness_status ?? (
-    loadingReadiness
-      ? "VALIDATING"
-      : isIncompleteDefinition || hasHardGateFailure
-      ? "BLOCKED"
-      : totalReviews < 30
-      ? "LEARNING"
-      : effectiveApprovalEligible
-      ? "READY_FOR_APPROVAL"
-      : "VALIDATING"
-  );
+  // Fail-closed: Never fall back to LEARNING if readiness service errored or data is missing
+  const readinessStatus = readinessError
+    ? "READINESS_UNAVAILABLE"
+    : readinessData?.readiness_status ?? (
+      loadingReadiness
+        ? "VALIDATING"
+        : "READINESS_UNAVAILABLE"
+    );
 
   const readinessBadgeMap: Record<string, { label: string; badge: string; dot: string; desc: string }> = {
+    READINESS_UNAVAILABLE: {
+      label: "READINESS UNAVAILABLE",
+      badge: "bg-slate-900 border-amber-800 text-amber-300",
+      dot: "bg-amber-400",
+      desc: "Authoritative production readiness evaluation unavailable. Check backend service status or rule ID.",
+    },
     BLOCKED: {
       label: "BLOCKED / INCOMPLETE",
       badge: "bg-rose-950/80 border-rose-800 text-rose-300",
@@ -640,6 +658,26 @@ export function AgentIntelligenceStudioOverview({
           <p className="text-xs text-slate-300 leading-relaxed">
             {plainEnglishDescription}
           </p>
+
+          {/* Warning banner when readiness evaluation fails */}
+          {readinessError && (
+            <div data-testid="ais-readiness-unavailable-card" className="p-2.5 rounded-lg border border-amber-800/80 bg-amber-950/40 text-xs text-amber-200 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <div>
+                  <span className="font-semibold text-amber-300">Readiness Unavailable: </span>
+                  <span>{readinessError}. Authoritative quality score and gate checks cannot be determined.</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => fetchReadinessAndEligibility()}
+                className="px-2.5 py-1 rounded border border-amber-700 bg-amber-900/80 hover:bg-amber-900 text-amber-200 text-[11px] font-semibold shrink-0"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
           {/* Warning banner when policy is revoked, suspended, or semantic mismatch */}
           {eligibilityData && !eligibilityData.is_eligible && (

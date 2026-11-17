@@ -1,0 +1,191 @@
+{
+  "schema_version": "1.2.3a",
+  "phase": "VERDICTUM_AI_VALIDATION_V1_2_3A",
+  "title": "Post-Deployment Acceptance Corrections & Server 1 Verification",
+  "timestamp": "2026-11-17T03:07:17.579Z",
+  "git": {
+    "commit_sha": "8d81e3d30ec659a02f6fbaf43ffcabf4b8e9bdb0",
+    "branch": "feature/phase3-compact-ui"
+  },
+  "executive_summary": {
+    "total_scenarios": 6,
+    "passed_scenarios": 6,
+    "failed_scenarios": 0,
+    "overall_verdict": "ACCEPTED",
+    "p1_fixes_verified": [
+      {
+        "id": "P1.1",
+        "name": "Missing Rule / Invalid Version Fail-Safe",
+        "status": "VERIFIED",
+        "evidence": "ais-rule-not-found and ais-version-unavailable explicit blocks rendered without fallback to LEARNING IN PROGRESS"
+      },
+      {
+        "id": "P1.2",
+        "name": "Correct SIEM Status Source",
+        "status": "VERIFIED",
+        "evidence": "Header and overview derive SIEM status strictly from rule.status ('SIEM Rule Active'); decoupled from AI policy approval"
+      },
+      {
+        "id": "P1.3",
+        "name": "Quality Score & Gate Results Reconciliation",
+        "status": "VERIFIED",
+        "evidence": "Exact mathematical parity: quality_score == readiness_score == sum(gate_scores). G1 2.0 vs 3.0 explained by source_provenance."
+      },
+      {
+        "id": "P1.4",
+        "name": "PostgreSQL Non-Destructive Recovery Verification",
+        "status": "VERIFIED",
+        "evidence": "Live Server 1 database dumped (437MB, sha256: ba90dd93...) and restored into isolated DB: 44 tables, 5601 incidents, 38 rules, users.customer column intact"
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "scenario_id": "SCN-V123A-01-FAILSAFE-RULE-404",
+      "page_key": "v1_2_3a_scn01_failsafe_rule_404",
+      "description": "Nonexistent Rule Fail-Safe: Explicit Rule Not Found UI, zero fallback to 'LEARNING IN PROGRESS', actionable 'Back to Rules' control",
+      "rule_id": "00000000-0000-0000-0000-000000000000",
+      "version": "N/A",
+      "role": "Administrator",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=00000000-0000-0000-0000-000000000000&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/00000000-0000-0000-0000-000000000000",
+      "backend_status": 404,
+      "expected_status": 404,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasFailSafeCard": true,
+        "hasTitle": true,
+        "hasDesc": true,
+        "hasBackBtn": true,
+        "noFalseLearning": true
+      },
+      "screenshots": {
+        "1440x900": "v1_2_3a_scn01_failsafe_rule_404_1440x900.png",
+        "1920x1080": "v1_2_3a_scn01_failsafe_rule_404_1920x1080.png"
+      },
+      "status": "PASSED"
+    },
+    {
+      "scenario_id": "SCN-V123A-02-FAILSAFE-VERSION-404",
+      "page_key": "v1_2_3a_scn02_failsafe_version_404",
+      "description": "Invalid Version Fail-Safe: Explicit Version Unavailable UI, version isolation guarantee, zero silent fallback to v1 in editor",
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+      "role": "Administrator",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=40498741-ee6b-4a71-9101-0d6d3f77154c&version_id=ffffffff-ffff-ffff-ffff-ffffffffffff&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/40498741-ee6b-4a71-9101-0d6d3f77154c/readiness?version_id=ffffffff-ffff-ffff-ffff-ffffffffffff",
+      "backend_status": 404,
+      "expected_status": 404,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasFailSafeCard": true,
+        "hasTitle": true,
+        "hasDesc": true,
+        "hasGuarantee": true,
+        "hasLoadActive": true
+      },
+      "screenshots": {
+        "1440x900": "v1_2_3a_scn02_failsafe_version_404_1440x900.png",
+        "1920x1080": "v1_2_3a_scn02_failsafe_version_404_1920x1080.png"
+      },
+      "status": "PASSED"
+    },
+    {
+      "scenario_id": "SCN-V123A-03-DECOUPLED-SIEM-STATUS",
+      "page_key": "v1_2_3a_scn03_decoupled_siem_status",
+      "description": "Decoupled SIEM Status: Header displays SIEM Rule Active and Policy Draft v3 independently, overview derives SIEM status only from rule record",
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "ec0cc351-8dd1-4026-9dc3-586387bb324c (v3)",
+      "role": "Administrator",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=40498741-ee6b-4a71-9101-0d6d3f77154c&version_id=ec0cc351-8dd1-4026-9dc3-586387bb324c&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/40498741-ee6b-4a71-9101-0d6d3f77154c/readiness?version_id=ec0cc351-8dd1-4026-9dc3-586387bb324c",
+      "backend_status": 200,
+      "expected_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasSiemActive": true,
+        "hasOverviewSiem": true,
+        "hasPolicyCandidate": true,
+        "hasActivePolicyRef": true
+      },
+      "screenshots": {
+        "1440x900": "v1_2_3a_scn03_decoupled_siem_status_1440x900.png",
+        "1920x1080": "v1_2_3a_scn03_decoupled_siem_status_1920x1080.png"
+      },
+      "status": "PASSED"
+    },
+    {
+      "scenario_id": "SCN-V123A-04-SCORE-MATHEMATICAL-PARITY",
+      "page_key": "v1_2_3a_scn04_score_mathematical_parity",
+      "description": "Mathematical Parity: quality_score equals readiness_score equals sum of all gate scores (77.0 local / 78.0 remote), 6/8 gates passed, BLOCKED status",
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "version": "ec0cc351-8dd1-4026-9dc3-586387bb324c (v3)",
+      "role": "Administrator",
+      "url": "http://127.0.0.1:3000/agent-intelligence-studio?rule_id=40498741-ee6b-4a71-9101-0d6d3f77154c&version_id=ec0cc351-8dd1-4026-9dc3-586387bb324c&tab=overview",
+      "api_endpoint": "http://127.0.0.1:8000/api/prompts/rule/40498741-ee6b-4a71-9101-0d6d3f77154c/readiness?version_id=ec0cc351-8dd1-4026-9dc3-586387bb324c",
+      "backend_status": 200,
+      "expected_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasScore": true,
+        "hasGatesPassed": true,
+        "hasBlocked": true
+      },
+      "screenshots": {
+        "1440x900": "v1_2_3a_scn04_score_mathematical_parity_1440x900.png",
+        "1920x1080": "v1_2_3a_scn04_score_mathematical_parity_1920x1080.png"
+      },
+      "status": "PASSED"
+    },
+    {
+      "scenario_id": "SCN-V123A-05-TENANT-ISOLATION-BOUNDARY",
+      "page_key": "v1_2_3a_scn05_tenant_isolation_boundary",
+      "description": "Cross-Tenant Security Boundary: Analyst A (Tenant Alpha) querying Tenant Beta incident receives HTTP 403 Access Denied and zero table leakage",
+      "rule_id": "PH_RULE_BETA_EXFIL",
+      "version": "N/A",
+      "role": "SOC Analyst (Analyst A, Tenant Alpha)",
+      "url": "http://127.0.0.1:3000/ai-triage-workbench?search=INC-TENANT-BETA-001",
+      "api_endpoint": "http://127.0.0.1:8000/api/incidents/INC-TENANT-BETA-001",
+      "backend_status": 403,
+      "expected_status": 403,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "noBetaInTable": true,
+        "hasZero": true
+      },
+      "screenshots": {
+        "1440x900": "v1_2_3a_scn05_tenant_isolation_boundary_1440x900.png",
+        "1920x1080": "v1_2_3a_scn05_tenant_isolation_boundary_1920x1080.png"
+      },
+      "status": "PASSED"
+    },
+    {
+      "scenario_id": "SCN-V123A-06-BLIND-REVIEW-ISOLATION",
+      "page_key": "v1_2_3a_scn06_blind_review_isolation",
+      "description": "Blind Review Default ON: AI determinations strictly masked by default with [Hidden - Blind Review] tags",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "version": "N/A",
+      "role": "SOC Analyst (Analyst A)",
+      "url": "http://127.0.0.1:3000/ai-triage-workbench",
+      "api_endpoint": "http://127.0.0.1:8000/api/incidents?page=1&page_size=10&blind_review=true",
+      "backend_status": 200,
+      "expected_status": 200,
+      "api_valid": true,
+      "dom_valid": true,
+      "dom_assertions": {
+        "hasBlindIndicator": true,
+        "hasWorkbench": true
+      },
+      "screenshots": {
+        "1440x900": "v1_2_3a_scn06_blind_review_isolation_1440x900.png",
+        "1920x1080": "v1_2_3a_scn06_blind_review_isolation_1920x1080.png"
+      },
+      "status": "PASSED"
+    }
+  ]
+}

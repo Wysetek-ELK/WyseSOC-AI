@@ -1765,13 +1765,21 @@ export const api = {
   async getRuleProductionReadiness(ruleId: string, versionId?: string): Promise<ProductionReadinessResponse> {
     const query = versionId ? `?version_id=${encodeURIComponent(versionId)}` : "";
     const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/readiness${query}`);
-    if (!res.ok) throw new Error("Failed to fetch production readiness evaluation");
+    if (!res.ok) {
+      const err: any = new Error(res.status === 404 ? `Readiness for rule '${ruleId}' not found (404)` : "Failed to fetch production readiness evaluation");
+      err.status = res.status;
+      throw err;
+    }
     return res.json();
   },
 
   async getRulePrompt(ruleId: string): Promise<RulePrompt> {
     const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}`);
-    if (!res.ok) throw new Error("Failed to fetch rule prompt");
+    if (!res.ok) {
+      const err: any = new Error(res.status === 404 ? `Rule '${ruleId}' not found (404)` : "Failed to fetch rule prompt");
+      err.status = res.status;
+      throw err;
+    }
     return res.json();
   },
 

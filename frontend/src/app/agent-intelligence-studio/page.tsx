@@ -62,7 +62,7 @@ import {
 import { RuleLearningDashboard } from "@/components/learning/RuleLearningDashboard";
 import { AgentIntelligenceStudioOverview } from "@/components/compact/AgentIntelligenceStudioOverview";
 import { CompactPageHeader } from "@/components/compact/CompactDesignSystem";
-import { deriveOperationalStatus } from "@/lib/diagnostics";
+import { deriveOperationalStatus, deriveSiemRuleStatus } from "@/lib/diagnostics";
 import { copyToClipboard as copyTextToClipboard } from "@/lib/clipboard";
 
 function AgentIntelligenceStudioContent() {
@@ -101,6 +101,9 @@ function AgentIntelligenceStudioContent() {
   const [loadingPrompt, setLoadingPrompt] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error" | "warning"; text: string } | null>(null);
+  const [ruleError, setRuleError] = useState<{ code: number; title: string; message: string } | null>(null);
+  const [versionError, setVersionError] = useState<{ code: number; title: string; message: string; requestedVersionId: string } | null>(null);
+  const promptRequestIdRef = useRef<number>(0);
 
   // Rule Intelligence & Semantics State
   const [intelligenceData, setIntelligenceData] = useState<RuleIntelligenceData | null>(null);
@@ -366,35 +369,78 @@ function AgentIntelligenceStudioContent() {
     setQualityAssessment(null);
     setSimulationResult(null);
     setDriftEvents([]);
+    setLearningProfile(null);
   };
 
-  const fetchPrompt = async (ruleId: string) => {
+  const fetchPrompt = async (ruleId: string, explicitVersionId?: string) => {
     if (!ruleId) return;
+    const reqId = ++promptRequestIdRef.current;
     setLoadingPrompt(true);
     setFeedback(null);
+    setRuleError(null);
+    setVersionError(null);
+
     try {
       const rp = await api.getRulePrompt(ruleId);
+      if (reqId !== promptRequestIdRef.current) return;
       setRulePrompt(rp);
+      setRuleError(null);
+
       if (rp.versions && rp.versions.length > 0) {
-        let targetId = rp.active_version_id || rp.versions[0].id;
-        if (typeof window !== "undefined") {
+        let requestedVer = explicitVersionId;
+        if (!requestedVer && typeof window !== "undefined") {
           const params = new URLSearchParams(window.location.search);
-          const urlVer = params.get("version_id") || params.get("versionId");
-          if (urlVer && rp.versions.some((v) => v.id === urlVer)) {
-            targetId = urlVer;
-          }
+          requestedVer = params.get("version_id") || params.get("versionId") || undefined;
         }
-        setSelectedVersionId(targetId);
-        loadVersionIntoForm(rp.versions.find((v) => v.id === targetId) || rp.versions[0]);
+
+        if (requestedVer) {
+          const matchingVer = rp.versions.find((v) => v.id === requestedVer);
+          if (matchingVer) {
+            setSelectedVersionId(matchingVer.id);
+            loadVersionIntoForm(matchingVer);
+            setVersionError(null);
+          } else {
+            // Explicitly requested version does not exist! Do NOT silently fall back to historical v1!
+            setVersionError({
+              code: 404,
+              title: "Version Unavailable",
+              requestedVersionId: requestedVer,
+              message: `The requested prompt policy version '${requestedVer}' does not exist for this rule.`,
+            });
+            setSelectedVersionId("");
+            clearForm();
+          }
+        } else {
+          const targetId = rp.active_version_id || rp.versions[0].id;
+          const targetVer = rp.versions.find((v) => v.id === targetId) || rp.versions[0];
+          setSelectedVersionId(targetId);
+          loadVersionIntoForm(targetVer);
+          setVersionError(null);
+        }
       } else {
         clearForm();
       }
     } catch (err: any) {
-      console.error(err);
+      if (reqId !== promptRequestIdRef.current) return;
+      console.error("fetchPrompt error:", err);
       clearForm();
-      setFeedback({ type: "error", text: err.message });
+      setRulePrompt(null);
+      const is404 =
+        err?.status === 404 ||
+        err?.response?.status === 404 ||
+        (err?.message && (err.message.includes("404") || err.message.toLowerCase().includes("not found")));
+      setRuleError({
+        code: is404 ? 404 : 500,
+        title: is404 ? "Rule Not Found" : "Failed to Load Rule",
+        message: is404
+          ? `The requested detection rule could not be found or has been deleted (rule ID: '${ruleId}').`
+          : (err.message || "An unexpected error occurred while loading this detection rule."),
+      });
+      setFeedback({ type: "error", text: err.message || "Rule not found" });
     } finally {
-      setLoadingPrompt(false);
+      if (reqId === promptRequestIdRef.current) {
+        setLoadingPrompt(false);
+      }
     }
   };
 
@@ -673,14 +719,30 @@ function AgentIntelligenceStudioContent() {
 
   const handleSelectVersion = (versionId: string) => {
     setSelectedVersionId(versionId);
+    setVersionError(null);
     const v = rulePrompt?.versions.find((item) => item.id === versionId);
     if (v) {
       loadVersionIntoForm(v);
+    } else if (versionId) {
+      setVersionError({
+        code: 404,
+        title: "Version Unavailable",
+        requestedVersionId: versionId,
+        message: `The requested prompt policy version '${versionId}' does not exist for this rule.`,
+      });
+      clearForm();
+    }
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("version_id", versionId);
+      window.history.pushState({}, "", url.toString());
     }
   };
 
   const handleOpenStudioForRule = (ruleId: string) => {
     setSelectedRuleId(ruleId);
+    setRuleError(null);
+    setVersionError(null);
     clearForm();
     setViewMode("studio");
     setPrimaryTab("overview");
@@ -688,6 +750,8 @@ function AgentIntelligenceStudioContent() {
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.set("rule_id", ruleId);
+      url.searchParams.delete("version_id");
+      url.searchParams.delete("versionId");
       url.searchParams.set("tab", "overview");
       window.history.pushState({}, "", url.toString());
     }
@@ -695,10 +759,17 @@ function AgentIntelligenceStudioContent() {
 
   const handleBackToTable = () => {
     setViewMode("table");
+    setSelectedRuleId("");
+    setSelectedVersionId("");
+    setRuleError(null);
+    setVersionError(null);
+    clearForm();
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.delete("rule_id");
       url.searchParams.delete("ruleId");
+      url.searchParams.delete("version_id");
+      url.searchParams.delete("versionId");
       window.history.pushState({}, "", url.toString());
     }
     loadSummaries();
@@ -706,10 +777,14 @@ function AgentIntelligenceStudioContent() {
 
   const handleSwitchRuleInStudio = (ruleId: string) => {
     setSelectedRuleId(ruleId);
+    setRuleError(null);
+    setVersionError(null);
     clearForm();
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.set("rule_id", ruleId);
+      url.searchParams.delete("version_id");
+      url.searchParams.delete("versionId");
       window.history.pushState({}, "", url.toString());
     }
   };
@@ -1692,6 +1767,7 @@ function AgentIntelligenceStudioContent() {
               "Governed policy generation, quality validation, evidence contract alignment, and simulation regression testing."
             }
             archetype={intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
+            siemStatus={deriveSiemRuleStatus(selectedRule?.status)}
             lifecycleStatus={operationalStatus}
             backAction={{
               label: "Rules List",
@@ -1735,7 +1811,94 @@ function AgentIntelligenceStudioContent() {
             }
           />
 
-          {/* Primary 3-Tab Bar */}
+          {/* Fail-Safe Handling: Rule Not Found (404) */}
+          {ruleError ? (
+            <div data-testid="ais-rule-not-found" className="p-6 rounded-xl border border-rose-800/80 bg-rose-950/40 text-slate-200 space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-lg bg-rose-900/60 border border-rose-700/80 text-rose-300 shrink-0">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-bold text-rose-200">{ruleError.title}</h2>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-900/90 text-rose-300 border border-rose-700">
+                        HTTP {ruleError.code}
+                      </span>
+                    </div>
+                    <p className="text-xs text-rose-300/90 mt-1">{ruleError.message}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleBackToTable}
+                    className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Back to Rules
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fetchPrompt(selectedRuleId)}
+                    className="px-3 py-1.5 rounded-lg border border-rose-700 bg-rose-900/60 hover:bg-rose-900 text-rose-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Retry
+                  </button>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[11px] text-slate-400 space-y-1">
+                <div className="font-semibold text-slate-300">Fail-Safe Security Policy:</div>
+                <p>Detection rule specification could not be located in the SIEM registry. All policy evaluations, production approval gates, and autonomous execution are blocked.</p>
+              </div>
+            </div>
+          ) : versionError ? (
+            /* Fail-Safe Handling: Version Unavailable (404) */
+            <div data-testid="ais-version-unavailable" className="p-6 rounded-xl border border-amber-800/80 bg-amber-950/40 text-slate-200 space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-lg bg-amber-900/60 border border-amber-700/80 text-amber-300 shrink-0">
+                    <AlertTriangle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-bold text-amber-200">{versionError.title}</h2>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-900/90 text-amber-300 border border-amber-700">
+                        HTTP {versionError.code}
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-300/90 mt-1">{versionError.message}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleBackToTable}
+                    className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Back to Rules
+                  </button>
+                  {rulePrompt?.active_version_id && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVersion(rulePrompt.active_version_id!)}
+                      className="px-3 py-1.5 rounded-lg border border-cyan-700 bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                    >
+                      Load Active Policy v{rulePrompt.active_version?.version_number || 1}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800/80 text-[11px] text-slate-400 space-y-1">
+                <div className="font-semibold text-slate-300">Version Isolation Guarantee:</div>
+                <p>The system will not silently display or promote an alternative policy version. To continue, select a valid policy version or return to the rules catalog.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Primary 3-Tab Bar */}
           <div data-testid="ais-primary-tabs" className="flex items-center justify-between border-b border-slate-800/90 pb-0 text-xs">
             <div className="flex space-x-1">
               <button
@@ -1788,6 +1951,8 @@ function AgentIntelligenceStudioContent() {
               </button>
             </div>
           </div>
+            </>
+          )}
         </>
       ) : (
         /* =========================================================================
@@ -2143,10 +2308,11 @@ function AgentIntelligenceStudioContent() {
       )}
 
       {/* COMPACT MODE: TAB 1 (OVERVIEW) */}
-      {compactUi && primaryTab === "overview" && (
+      {!ruleError && !versionError && compactUi && primaryTab === "overview" && (
         <AgentIntelligenceStudioOverview
           ruleId={selectedRuleId}
           ruleName={rulePrompt?.rule_name || selectedRule?.name}
+          ruleStatus={selectedRule?.status}
           archetype={intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
           qualityAssessment={qualityAssessment}
           learningProfile={learningProfile}
@@ -2187,7 +2353,7 @@ function AgentIntelligenceStudioContent() {
       )}
 
       {/* COMPACT MODE: TAB 2 (ANALYST REVIEW & LEARNING) */}
-      {compactUi && primaryTab === "learning" && (
+      {!ruleError && !versionError && compactUi && primaryTab === "learning" && (
         <div className="space-y-4">
           <RuleLearningDashboard
             ruleId={selectedRuleId}
@@ -2198,7 +2364,7 @@ function AgentIntelligenceStudioContent() {
       )}
 
       {/* COMPACT MODE: TAB 3 (ADVANCED CONFIGURATION SUB-NAV) */}
-      {compactUi && primaryTab === "advanced" && (
+      {!ruleError && !versionError && compactUi && primaryTab === "advanced" && (
         <div className="p-2 rounded-xl border border-slate-800/80 bg-slate-950/70 mb-1 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1 text-xs">
             <button
@@ -2299,7 +2465,7 @@ function AgentIntelligenceStudioContent() {
       )}
 
       {/* WORKSPACE CONTENT: RENDERED FOR LEGACY OR WHEN IN ADVANCED TAB */}
-      {(!compactUi || primaryTab === "advanced") && (
+      {!ruleError && !versionError && (!compactUi || primaryTab === "advanced") && (
         <>
           {loadingPrompt ? (
         <div className="py-12 text-center text-slate-500 text-xs">
