@@ -1,0 +1,76 @@
+{
+  "project": "Verdictum AI",
+  "acceptance_milestone": "FINAL_SERVER1_ACCEPTANCE",
+  "decision": "SERVER 1 ACCEPTED",
+  "timestamp": "2026-11-17T09:48:30+05:30",
+  "deployed_commit": {
+    "sha": "5a0f6461a6d7c8d05e28f57efa2478023ed4ab23",
+    "short_sha": "5a0f646",
+    "branch": "feature/phase3-compact-ui",
+    "message": "fix(ais): suppress error-state readiness badges, clear stale data, and guard fetchers against race conditions"
+  },
+  "governor_gates": {
+    "gate_1_github_push": {
+      "approved": true,
+      "token_id": "6cab685ecb2112aad0746e3ddebcb56a2d8111c1d33022df",
+      "destination": "origin/feature/phase3-compact-ui"
+    },
+    "gate_2_server1_deployment": {
+      "approved": true,
+      "token_id": "265f0579c7c518dd5c32095aaf6cbd3f7b06ee3df25d673e",
+      "destination": "remote-server",
+      "rollback_point": "001b705c"
+    }
+  },
+  "server1_infrastructure": {
+    "host_os": "Rocky Linux 9",
+    "disk_total_gb": 70.0,
+    "disk_used_gb": 6.4,
+    "disk_avail_gb": 63.6,
+    "disk_utilization_percent": 9.3,
+    "memory_used_gb": 1.82,
+    "memory_total_gb": 15.36,
+    "database": {
+      "type": "PostgreSQL 16.4",
+      "status": "healthy",
+      "latency_ms": 2.49,
+      "alembic_version": "013_user_tenant_customer",
+      "tables_count": 43,
+      "recovery_rto_target_minutes": 15,
+      "recovery_rpo_target_hours": 1,
+      "empirical_restore_duration_seconds": 2.43
+    },
+    "server2_cortex": {
+      "endpoint": "http://<server-2-cortex>:8000/v1",
+      "status": "offline",
+      "circuit_breaker": "CLOSED",
+      "allow_mock_fallback": false,
+      "probe_error": "TimeoutError: timed out"
+    }
+  },
+  "local_regression": {
+    "frontend_suites_passed": 11,
+    "frontend_tests_passed": 51,
+    "frontend_failures": 0,
+    "nextjs_build_routes": 32,
+    "backend_pytest_scenarios_passed": 30,
+    "backend_pytest_failures": 0
+  },
+  "remote_acceptance_15_scenarios": {
+    "scenario_01_system_health": { "passed": true, "http_code": 200, "database": "healthy", "s2_status": "offline" },
+    "scenario_02_rbac_hierarchy": { "passed": true, "roles": ["Administrator", "SOC Analyst", "Read-Only Viewer"] },
+    "scenario_03_siem_decoupling": { "passed": true, "siem_status": "ACTIVE", "policy_status": "Decoupled" },
+    "scenario_04_v1_baseline_preserved": { "passed": true, "v1_version_number": 1, "record_preserved": true },
+    "scenario_05_v3_candidate_ineligible": { "passed": true, "approval_eligible": false, "quality_score": 78.0, "approval_blocked_code": 404 },
+    "scenario_06_score_parity": { "passed": true, "overall_readiness_score": 78.0, "gate_sum": 78.0, "parity_proven": true },
+    "scenario_07_strict_rule_404": { "passed": true, "http_code": 404, "no_false_readiness": true },
+    "scenario_08_strict_version_404": { "passed": true, "http_code": 404, "silent_fallback_prevented": true },
+    "scenario_09_ui_error_suppression": { "passed": true, "lifecycle_badge_suppressed": true, "dropdown_fallback_rendered": true },
+    "scenario_10_blind_review_unreviewed": { "passed": true, "ai_verdict_masked": true },
+    "scenario_11_blind_review_post_submission": { "passed": true, "unmasked_post_submission": true },
+    "scenario_12_second_analyst_isolation": { "passed": true, "analyst_b_masked": true },
+    "scenario_13_viewer_lockout": { "passed": true, "viewer_masked": true, "write_blocked_code": 404 },
+    "scenario_14_cross_tenant_denial": { "passed": true, "cross_tenant_http_code": 403, "cross_tenant_denied": true },
+    "scenario_15_database_immutability": { "passed": true, "orm_mutations_observed": 0, "byte_for_byte_preserved": true }
+  }
+}
