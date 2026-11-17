@@ -77,3 +77,54 @@ test("V1.2.3a SIEM Status Source: CompactPageHeader displays decoupled SIEM and 
   assert.ok(diagContent.includes("SIEM Rule Active"), "deriveSiemRuleStatus must return SIEM Rule Active on ACTIVE");
   assert.ok(diagContent.includes("SIEM Rule Inactive"), "deriveSiemRuleStatus must return SIEM Rule Inactive on INACTIVE");
 });
+
+test("V1.2.3a UI Error-State Invariants: Header badge suppression, stale data clearing, race-guards & fallback dropdown", () => {
+  const pagePath = path.resolve(__dirname, "../src/app/agent-intelligence-studio/page.tsx");
+  const content = fs.readFileSync(pagePath, "utf-8");
+
+  // 1. Race condition guards across all fetchers
+  assert.ok(content.includes("fetchIntelligence = async"), "fetchIntelligence defined");
+  assert.ok(content.includes("fetchDriftEvents = async"), "fetchDriftEvents defined");
+  assert.ok(content.includes("fetchQualityPreview = async"), "fetchQualityPreview defined");
+  assert.ok(content.includes("fetchLearningProfile = async"), "fetchLearningProfile defined");
+
+  // All fetchers check promptRequestIdRef
+  const fetchIntelMatch = content.match(/fetchIntelligence[\s\S]*?reqId !== promptRequestIdRef\.current/);
+  assert.ok(fetchIntelMatch, "fetchIntelligence must guard against race condition using promptRequestIdRef");
+
+  const fetchQualityMatch = content.match(/fetchQualityPreview[\s\S]*?reqId !== promptRequestIdRef\.current/);
+  assert.ok(fetchQualityMatch, "fetchQualityPreview must guard against race condition using promptRequestIdRef");
+
+  const fetchDriftMatch = content.match(/fetchDriftEvents[\s\S]*?reqId !== promptRequestIdRef\.current/);
+  assert.ok(fetchDriftMatch, "fetchDriftEvents must guard against race condition using promptRequestIdRef");
+
+  const fetchLearningMatch = content.match(/fetchLearningProfile[\s\S]*?reqId !== promptRequestIdRef\.current/);
+  assert.ok(fetchLearningMatch, "fetchLearningProfile must guard against race condition using promptRequestIdRef");
+
+  // 2. Stale data cleared immediately on rule / version error
+  assert.ok(content.includes("setIntelligenceData(null)"), "Must clear intelligenceData on error");
+  assert.ok(content.includes("setLearningProfile(null)"), "Must clear learningProfile on error");
+  assert.ok(content.includes("setQualityAssessment(null)"), "Must clear qualityAssessment on error");
+  assert.ok(content.includes("setDriftEvents([])"), "Must clear driftEvents on error");
+  assert.ok(content.includes("setSimulationResult(null)"), "Must clear simulationResult on error");
+
+  // 3. Header badge suppression on error (no false 'Ready for Learning')
+  assert.ok(
+    content.includes("ruleError ? undefined : deriveSiemRuleStatus(selectedRule?.status)"),
+    "Must suppress siemStatus in header when ruleError is active"
+  );
+  assert.ok(
+    content.includes("title={ruleError ? \"Rule Not Found\" : (selectedRule?.name || selectedRuleId)}"),
+    "Must render 'Rule Not Found' in title on ruleError"
+  );
+  assert.ok(
+    /lifecycleStatus=\{[\s\S]*?ruleError[\s\S]*?\? undefined[\s\S]*?: versionError/.test(content),
+    "Must suppress lifecycle readiness badges when ruleError is active"
+  );
+
+  // 4. Dropdown fallback for invalid rule_id
+  assert.ok(
+    content.includes("-- Rule Not Found ("),
+    "Dropdown must render '-- Rule Not Found ({selectedRuleId}) --' disabled option when rule_id is not in catalog"
+  );
+});

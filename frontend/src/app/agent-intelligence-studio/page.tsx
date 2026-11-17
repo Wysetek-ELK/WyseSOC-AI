@@ -287,10 +287,13 @@ function AgentIntelligenceStudioContent() {
       setLearningProfile(null);
       return;
     }
+    const reqId = promptRequestIdRef.current;
     try {
       const data = await api.getRuleLearningProfileDetail(ruleId);
+      if (reqId !== promptRequestIdRef.current) return;
       setLearningProfile(data);
     } catch {
+      if (reqId !== promptRequestIdRef.current) return;
       setLearningProfile(null);
     }
   };
@@ -409,6 +412,8 @@ function AgentIntelligenceStudioContent() {
             });
             setSelectedVersionId("");
             clearForm();
+            setQualityAssessment(null);
+            setSimulationResult(null);
           }
         } else {
           const targetId = rp.active_version_id || rp.versions[0].id;
@@ -425,6 +430,12 @@ function AgentIntelligenceStudioContent() {
       console.error("fetchPrompt error:", err);
       clearForm();
       setRulePrompt(null);
+      setIntelligenceData(null);
+      setLearningProfile(null);
+      setQualityAssessment(null);
+      setDriftEvents([]);
+      setSimulationResult(null);
+      setSelectedVersionId("");
       const is404 =
         err?.status === 404 ||
         err?.response?.status === 404 ||
@@ -446,54 +457,77 @@ function AgentIntelligenceStudioContent() {
 
   const fetchIntelligence = async (ruleId: string) => {
     if (!ruleId) return;
+    const reqId = promptRequestIdRef.current;
     setLoadingIntelligence(true);
     try {
       const intel = await api.getRuleIntelligence(ruleId);
+      if (reqId !== promptRequestIdRef.current) return;
       setIntelligenceData(intel);
     } catch (err: any) {
+      if (reqId !== promptRequestIdRef.current) return;
       console.error("Failed to load rule intelligence:", err);
+      setIntelligenceData(null);
     } finally {
-      setLoadingIntelligence(false);
+      if (reqId === promptRequestIdRef.current) {
+        setLoadingIntelligence(false);
+      }
     }
   };
 
   const fetchQualityPreview = async (ruleId: string, versionId?: string) => {
     if (!ruleId) return;
+    const reqId = promptRequestIdRef.current;
     setLoadingQuality(true);
     try {
       const qRes = await api.previewPolicyQuality(ruleId, versionId);
+      if (reqId !== promptRequestIdRef.current) return;
       setQualityAssessment(qRes);
     } catch (err: any) {
+      if (reqId !== promptRequestIdRef.current) return;
       console.error("Failed to preview policy quality:", err);
+      setQualityAssessment(null);
     } finally {
-      setLoadingQuality(false);
+      if (reqId === promptRequestIdRef.current) {
+        setLoadingQuality(false);
+      }
     }
   };
 
   const fetchQualityValidation = async (ruleId: string, versionId?: string) => {
     if (!ruleId) return;
+    const reqId = promptRequestIdRef.current;
     setLoadingQuality(true);
     try {
       const qRes = await api.validatePolicyQuality(ruleId, versionId);
+      if (reqId !== promptRequestIdRef.current) return;
       setQualityAssessment(qRes);
     } catch (err: any) {
+      if (reqId !== promptRequestIdRef.current) return;
       console.error("Failed to validate policy quality:", err);
       setFeedback({ type: "error", text: err.message || "Failed to validate policy quality" });
     } finally {
-      setLoadingQuality(false);
+      if (reqId === promptRequestIdRef.current) {
+        setLoadingQuality(false);
+      }
     }
   };
 
   const fetchDriftEvents = async (ruleId: string) => {
     if (!ruleId) return;
+    const reqId = promptRequestIdRef.current;
     setLoadingDrift(true);
     try {
       const evs = await api.getRuleDriftEvents(ruleId);
+      if (reqId !== promptRequestIdRef.current) return;
       setDriftEvents(evs);
     } catch (err: any) {
+      if (reqId !== promptRequestIdRef.current) return;
       console.error("Failed to load drift events:", err);
+      setDriftEvents([]);
     } finally {
-      setLoadingDrift(false);
+      if (reqId === promptRequestIdRef.current) {
+        setLoadingDrift(false);
+      }
     }
   };
 
@@ -1743,15 +1777,17 @@ function AgentIntelligenceStudioContent() {
     studioQualityScore !== null
       ? Math.max(0, Math.min(20, Math.round((studioQualityScore / 100) * 20)))
       : 0;
-  const operationalStatus = deriveOperationalStatus({
-    lifecycleStage: learningProfile?.lifecycle_stage,
-    isApprovalEligible,
-    isIncompleteDefinition,
-    activeVersionStatus: selectedVersion?.status,
-    hasHardGateFailure,
-    totalAnalystReviews: learningProfile?.total_analyst_reviews || 0,
-    qualityScore: qualityAssessment?.quality_score,
-  });
+  const operationalStatus = (ruleError || versionError)
+    ? null
+    : deriveOperationalStatus({
+        lifecycleStage: learningProfile?.lifecycle_stage,
+        isApprovalEligible,
+        isIncompleteDefinition,
+        activeVersionStatus: selectedVersion?.status,
+        hasHardGateFailure,
+        totalAnalystReviews: learningProfile?.total_analyst_reviews || 0,
+        qualityScore: qualityAssessment?.quality_score,
+      });
 
   return (
     <div className="space-y-3">
@@ -1761,14 +1797,26 @@ function AgentIntelligenceStudioContent() {
            ========================================================================= */
         <>
           <CompactPageHeader
-            title={selectedRule?.name || selectedRuleId}
+            title={ruleError ? "Rule Not Found" : (selectedRule?.name || selectedRuleId)}
             subtitle={
-              intelligenceData?.semantics?.detection_objective ||
-              "Governed policy generation, quality validation, evidence contract alignment, and simulation regression testing."
+              ruleError
+                ? "The requested detection rule could not be found in the SIEM registry."
+                : (intelligenceData?.semantics?.detection_objective ||
+                  "Governed policy generation, quality validation, evidence contract alignment, and simulation regression testing.")
             }
-            archetype={intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
-            siemStatus={deriveSiemRuleStatus(selectedRule?.status)}
-            lifecycleStatus={operationalStatus}
+            archetype={ruleError ? undefined : (intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE")}
+            siemStatus={ruleError ? undefined : deriveSiemRuleStatus(selectedRule?.status)}
+            lifecycleStatus={
+              ruleError
+                ? undefined
+                : versionError
+                ? {
+                    label: "Version Unavailable",
+                    badgeClass: "bg-amber-950/70 border-amber-800 text-amber-300",
+                    dotClass: "bg-amber-400",
+                  }
+                : operationalStatus || undefined
+            }
             backAction={{
               label: "Rules List",
               onClick: handleBackToTable,
@@ -1784,6 +1832,11 @@ function AgentIntelligenceStudioContent() {
                   disabled={loadingRules}
                   className="px-2.5 py-1.5 text-xs rounded-lg border border-cyan-500/40 bg-slate-950/90 text-slate-200 font-medium focus:outline-none focus:border-cyan-400 min-w-[200px] max-w-[320px] truncate"
                 >
+                  {selectedRuleId && !rules.some((r) => r.id === selectedRuleId) && (
+                    <option value={selectedRuleId} disabled>
+                      -- Rule Not Found ({selectedRuleId}) --
+                    </option>
+                  )}
                   {rules.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.name} ({r.severity})
@@ -1996,6 +2049,11 @@ function AgentIntelligenceStudioContent() {
                 disabled={loadingRules}
                 className="px-2.5 py-1.5 text-xs rounded-lg border border-cyan-500/40 bg-slate-950/90 text-slate-200 font-medium focus:outline-none focus:border-cyan-400 min-w-[240px] max-w-[380px] truncate w-full sm:w-auto"
               >
+                {selectedRuleId && !rules.some((r) => r.id === selectedRuleId) && (
+                  <option value={selectedRuleId} disabled>
+                    -- Rule Not Found ({selectedRuleId}) --
+                  </option>
+                )}
                 {rules.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name} ({r.severity})
