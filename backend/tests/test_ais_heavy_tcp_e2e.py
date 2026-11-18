@@ -757,3 +757,89 @@ async def test_09_high_cardinality_scan_token_budget_fits_4096_context(db_sessio
     assert "scan.unique_destination_hosts" in kept_fields
     assert "scan.tcp_behavior_summary" in kept_fields
     assert "scan.destination_scope" in kept_fields
+    assert "network.protocol" in kept_fields
+    assert "event.timestamp" in kept_fields
+
+
+@pytest.mark.asyncio
+async def test_10_v8_evidence_alignment_fortigate_contract_and_label_reversal(db_session: AsyncSession):
+    """V8 Phases 2, 3, 6 & 7: FortiGate evidence alignment, appctrl_pass_events, NOT MEASURABLE, and label correction reversal."""
+    from app.services.rule_intelligence_analyzer import RuleIntelligenceAnalyzer
+    from app.services.detection_archetype_registry import DetectionArchetypeRegistry
+    from app.services.evidence_requirement_mapper import EvidenceRequirementMapper
+
+    rule = await _seed_target_rule(db_session)
+    sem = RuleIntelligenceAnalyzer.analyze_rule(rule)
+    cls_res = DetectionArchetypeRegistry.classify_rule(sem, rule)
+    arch_def = DetectionArchetypeRegistry.get_archetype_definition(cls_res.primary_archetype)
+    contract = EvidenceRequirementMapper.map_evidence_contract(rule=rule, semantics=sem, archetype_def=arch_def)
+
+    req_by_field = {r.field: r for r in contract.required_evidence}
+    assert req_by_field["network.tcp_flags"].requirement_level == "OPTIONAL"
+    assert req_by_field["scan.tcp_behavior_summary"].requirement_level == "CONDITIONAL"
+    assert req_by_field["scan.destination_scope"].requirement_level == "CONDITIONAL"
+    if "detection.threshold" in req_by_field:
+        assert req_by_field["detection.threshold"].requirement_level == "RULE_METADATA"
+        assert req_by_field["detection.threshold"].critical is False
+
+    # FortiGate appctrl-ips-pass normalization (no sentbyte/rcvdbyte -> appctrl_pass_events)
+    inc_mix = Incident(
+        id=str(uuid.uuid4()), incident_id="167157", rule_id=rule.id, event_type=TARGET_EVENT_TYPE,
+        title=TARGET_RULE_NAME, severity="MEDIUM", customer="Demo-SOC",
+        raw_payload={"incidentSrc": "srcIpAddr:172.27.29.67", "incidentTarget": "destIpPort:443"},
+    )
+    evts_mix = [
+        IncidentEvent(
+            id=str(uuid.uuid4()), incident_id=inc_mix.id, event_id="e-pass-1", event_receive_time=1794476056000,
+            event_type="FortiGate-appctrl-ips-pass",
+            raw_log='<189>devname="FG" srcip=172.27.29.67 dstip=23.212.254.104 dstport=443 proto=6 action="pass" policyname="user Internet" service="SSL"',
+            attributes={"Source IP": "172.27.29.67", "Destination TCP/UDP Port": 443, "Firewall Action": "pass"},
+        ),
+        IncidentEvent(
+            id=str(uuid.uuid4()), incident_id=inc_mix.id, event_id="e-end-1", event_receive_time=1794476058000,
+            event_type="FortiGate-traffic-end-forward-close",
+            raw_log='<189>devname="FG" srcip=172.27.29.67 dstip=74.226.64.245 dstport=443 proto=6 action="close" policyname="user Internet" service="Browsing" sentbyte=1200 rcvdbyte=3400',
+            attributes={"Source IP": "172.27.29.67", "Destination TCP/UDP Port": 443, "Firewall Action": "close"},
+        ),
+    ]
+    norm_mix = EvidenceNormalizationService.normalize_incident_evidence(inc_mix, events=evts_mix)
+    fields_mix = {r.source_field: r.observed_value for r in norm_mix.records}
+    assert "bidirectional_sessions=1" in fields_mix["scan.tcp_behavior_summary"]
+    assert "appctrl_pass_events=1" in fields_mix["scan.tcp_behavior_summary"]
+
+    # Phase 7: 0 eligible evaluations must report NOT MEASURABLE, never 0.0% accuracy
+    prof = await RuleLearningService.get_or_create_profile(db_session, TARGET_RULE_UUID, "GDC_NOC")
+    elig_0, reasons_0, meta_0 = await RuleLearningService.evaluate_full_production_readiness(db_session, prof)
+    assert elig_0 is False
+    assert meta_0["accuracy_status"] == "NOT_MEASURABLE"
+    assert any("NOT MEASURABLE" in r for r in reasons_0)
+
+    # Phase 6: Analyst label correction properly reverses previous metric contributions
+    inc_rev = Incident(
+        id=str(uuid.uuid4()), incident_id="900010", rule_id=rule.id, event_type=TARGET_EVENT_TYPE,
+        title=TARGET_RULE_NAME, severity="MEDIUM", customer="GDC_NOC",
+        ai_verdict={"verdict": "FALSE_POSITIVE", "confidence": 85.0, "reason": "AI proposed FP"},
+    )
+    db_session.add(inc_rev)
+    await db_session.commit()
+
+    await AnalystReviewService.submit_analyst_review(
+        db=db_session, incident_id="900010", reviewer_id=ANALYST_A.username,
+        analyst_verdict="FALSE_POSITIVE", analyst_notes="Initial FP", customer="GDC_NOC",
+    )
+    await db_session.commit()
+    p1 = await RuleLearningService.get_profile(db_session, TARGET_RULE_UUID, "GDC_NOC")
+    assert p1.verified_fp_count == 1 and p1.verified_tp_count == 0 and p1.ai_correct_count == 1 and p1.ai_incorrect_count == 0
+
+    # Same analyst corrects verdict from FALSE_POSITIVE -> TRUE_POSITIVE (must reverse FP & ai_correct!)
+    await AnalystReviewService.submit_analyst_review(
+        db=db_session, incident_id="900010", reviewer_id=ANALYST_A.username,
+        analyst_verdict="TRUE_POSITIVE", analyst_notes="Corrected to TP after ticket check", customer="GDC_NOC",
+    )
+    await db_session.commit()
+    p2 = await RuleLearningService.get_profile(db_session, TARGET_RULE_UUID, "GDC_NOC")
+    assert p2.total_analyst_reviews == 1
+    assert p2.verified_fp_count == 0 and p2.verified_tp_count == 1
+    assert p2.ai_correct_count == 0 and p2.ai_incorrect_count == 1
+    assert p2.error_distribution.get("agreement_fp", 0) == 0
+    assert p2.error_distribution.get("critical_missed_tp", 0) == 1

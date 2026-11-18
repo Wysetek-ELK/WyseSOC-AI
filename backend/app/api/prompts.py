@@ -770,6 +770,7 @@ async def evaluate_policy_simulation(
     provider_type: str = Query("SIMULATED"),
     sample_limit: Optional[int] = Query(500),
     include_unlabeled_replay: bool = Query(False),
+    incident_ids: Optional[str] = Query(None, description="Optional comma-separated incident_id list for controlled A/B benchmarking"),
     async_execution: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_analyst),
@@ -802,6 +803,12 @@ async def evaluate_policy_simulation(
 
     baseline_ver = next((v for v in rule_prompt.versions if v.id == rule_prompt.active_version_id), None)
 
+    parsed_incident_ids = (
+        [x.strip() for x in str(incident_ids).split(",") if x.strip()]
+        if incident_ids
+        else None
+    )
+
     try:
         return await dispatch_policy_simulation(
             db=db,
@@ -811,6 +818,7 @@ async def evaluate_policy_simulation(
             provider_type=provider_type,
             sample_limit=sample_limit,
             include_unlabeled_replay=include_unlabeled_replay,
+            incident_ids=parsed_incident_ids,
             async_execution=async_execution,
         )
     except Exception as exc:

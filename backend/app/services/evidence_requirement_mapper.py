@@ -139,9 +139,31 @@ class EvidenceRequirementMapper:
             )
 
         # 2. Map Conditional Requirements
+        # For NETWORK_SCAN firewall telemetry (e.g. FortiGate session-end & appctrl logs),
+        # raw TCP flags are not exposed in flow logs; mark network.tcp_flags OPTIONAL and
+        # register deterministic scan.* aggregates as CONDITIONAL so models never abstain
+        # solely for absent raw TCP flags when equivalent connection-behavior evidence exists.
+        network_scan_agg_fields = [
+            "scan.raw_events_count",
+            "scan.unique_destination_hosts",
+            "scan.destination_scope",
+            "scan.tcp_behavior_summary",
+            "scan.firewall_action_summary",
+            "scan.window_seconds",
+            "scan.policy_and_service",
+        ]
+        existing_field_names = {r.field for r in reqs}
         for field in archetype_def.conditional_fields:
             is_avail = field in available_set or field in semantics.relevant_fields
-            req_lvl = "CONDITIONAL" if is_avail else "UNAVAILABLE"
+            if archetype_def.archetype_id == ArchetypeId.NETWORK_SCAN and field == "network.tcp_flags":
+                req_lvl = "OPTIONAL"
+                desc = (
+                    "Observed TCP control flags (OPTIONAL — unavailable in FortiGate session-end/appctrl logs; "
+                    "use scan.tcp_behavior_summary and scan.firewall_action_summary instead; never infer unobserved flags)"
+                )
+            else:
+                req_lvl = "CONDITIONAL" if is_avail else "UNAVAILABLE"
+                desc = cls._get_field_description(field, archetype_def.archetype_id)
             reqs.append(
                 EvidenceFieldRequirement(
                     field=field,
@@ -150,22 +172,41 @@ class EvidenceRequirementMapper:
                     required_for_fp=False,
                     critical=False,
                     requirement_level=req_lvl,
-                    description=cls._get_field_description(field, archetype_def.archetype_id),
+                    description=desc,
                 )
             )
+            existing_field_names.add(field)
 
-        # 3. Add Authoritative Rule-Specific Requirements
+        if archetype_def.archetype_id == ArchetypeId.NETWORK_SCAN:
+            for agg_field in network_scan_agg_fields:
+                if agg_field not in existing_field_names:
+                    reqs.append(
+                        EvidenceFieldRequirement(
+                            field=agg_field,
+                            evidence_type=cls._get_evidence_type_for_field(agg_field),
+                            required_for_tp=False,
+                            required_for_fp=False,
+                            critical=False,
+                            requirement_level="CONDITIONAL",
+                            description=cls._get_field_description(agg_field, archetype_def.archetype_id),
+                        )
+                    )
+                    existing_field_names.add(agg_field)
+
+        # 3. Add Authoritative Rule-Specific Metadata Requirements
+        # detection.threshold is rule-definition metadata (Section 3), NOT an incident-event field;
+        # tag it RULE_METADATA so preflight and LLMs never mistake it for missing incident telemetry.
         if semantics.threshold is not None:
             threshold_field = "detection.threshold"
             reqs.append(
                 EvidenceFieldRequirement(
                     field=threshold_field,
                     evidence_type="RULE_THRESHOLD",
-                    required_for_tp=True,
+                    required_for_tp=False,
                     required_for_fp=False,
-                    critical=True,
-                    requirement_level="CORE",
-                    description=f"Authoritative rule threshold ({semantics.threshold} {semantics.threshold_unit or ''})",
+                    critical=False,
+                    requirement_level="RULE_METADATA",
+                    description=f"Authoritative rule threshold from SIEM definition ({semantics.threshold} {semantics.threshold_unit or ''})",
                 )
             )
         elif semantics.definition_status == SemanticsDefinitionStatus.INCOMPLETE:

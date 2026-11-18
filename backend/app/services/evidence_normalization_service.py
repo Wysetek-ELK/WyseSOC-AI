@@ -641,12 +641,14 @@ class EvidenceNormalizationService:
         protocols: Set[str] = set()
         timestamps_sec: List[float] = []
         bidirectional_sessions = 0
+        appctrl_pass_events = 0
         unanswered_probes = 0
         denied_flows = 0
 
         for evt in evts:
             attrs = getattr(evt, "attributes", None) or {}
             raw_log = getattr(evt, "raw_log", None) or ""
+            evt_type_l = str(getattr(evt, "event_type", "") or "").lower()
             kv = parse_key_value_string(raw_log) if isinstance(raw_log, str) and raw_log.strip() else {}
 
             dst_ip = (
@@ -667,6 +669,7 @@ class EvidenceNormalizationService:
                 or attrs.get("action")
                 or ""
             )
+            a_norm = ""
             if act:
                 a_norm = str(act).strip().lower()
                 actions[a_norm] = actions.get(a_norm, 0) + 1
@@ -683,14 +686,20 @@ class EvidenceNormalizationService:
             if proto:
                 protocols.add(str(proto).strip())
 
-            # Evaluate TCP session directionality (bidirectional TLS/data vs unanswered probes)
+            # Evaluate TCP session directionality (bidirectional TLS/data vs unanswered probes vs appctrl pass logs)
             try:
-                sb = int(kv.get("sentbyte") or attrs.get("Sent Bytes64") or 0)
-                rb = int(kv.get("rcvdbyte") or attrs.get("Received Bytes64") or 0)
-                if sb > 0 and rb > 0:
-                    bidirectional_sessions += 1
-                elif sb > 0 and rb == 0:
-                    unanswered_probes += 1
+                sb_raw = kv.get("sentbyte") if "sentbyte" in kv else attrs.get("Sent Bytes64")
+                rb_raw = kv.get("rcvdbyte") if "rcvdbyte" in kv else attrs.get("Received Bytes64")
+                if sb_raw is None and rb_raw is None:
+                    if a_norm == "pass" or "appctrl" in evt_type_l:
+                        appctrl_pass_events += 1
+                else:
+                    sb = int(sb_raw or 0)
+                    rb = int(rb_raw or 0)
+                    if sb > 0 and rb > 0:
+                        bidirectional_sessions += 1
+                    elif sb > 0 and rb == 0:
+                        unanswered_probes += 1
             except Exception:
                 pass
 
@@ -734,9 +743,17 @@ class EvidenceNormalizationService:
             add_fn("scan.firewall_action_summary", act_summary, "SECURITY_EVENT", "SCAN_SUMMARY", obs_time, "action_breakdown", "AGGREGATED")
 
         if len(evts) > 0:
+            tcp_parts = [f"bidirectional_sessions={bidirectional_sessions}"]
+            if appctrl_pass_events > 0:
+                tcp_parts.append(f"appctrl_pass_events={appctrl_pass_events}")
+            tcp_parts.extend([
+                f"unanswered_probes={unanswered_probes}",
+                f"denied_flows={denied_flows}",
+                f"sampled_events={len(evts)}",
+            ])
             add_fn(
                 "scan.tcp_behavior_summary",
-                f"bidirectional_sessions={bidirectional_sessions}, unanswered_probes={unanswered_probes}, denied_flows={denied_flows}, sampled_events={len(evts)}",
+                ", ".join(tcp_parts),
                 "NETWORK_CONNECTION",
                 "SCAN_SUMMARY",
                 obs_time,

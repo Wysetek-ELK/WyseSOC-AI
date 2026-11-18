@@ -229,16 +229,20 @@ class PolicySimulationService:
         after_epoch: Optional[int],
         before_epoch: Optional[int],
         split_partition: Optional[str],
+        incident_ids: Optional[List[str]] = None,
     ) -> Tuple[int, List[Tuple[Incident, Optional[HistoricalGroundTruth]]]]:
         """
         Deterministically paginate rule-scoped incidents (without global top-50 pollution)
         supporting >50 matching records cleanly.
         """
         base_filter = build_rule_incident_sql_filter(rule_ctx) if has_rule_filter else None
+        target_inc_id_set = {str(x).strip() for x in (incident_ids or []) if str(x).strip()} or None
 
         count_q = select(func.count(Incident.id))
         if base_filter is not None:
             count_q = count_q.where(base_filter)
+        if target_inc_id_set:
+            count_q = count_q.where(or_(Incident.incident_id.in_(target_inc_id_set), Incident.id.in_(target_inc_id_set)))
         available_count = int((await self.db.execute(count_q)).scalar() or 0)
 
         target_partition = (
@@ -263,6 +267,8 @@ class PolicySimulationService:
             )
             if base_filter is not None:
                 page_q = page_q.where(base_filter)
+            if target_inc_id_set:
+                page_q = page_q.where(or_(Incident.incident_id.in_(target_inc_id_set), Incident.id.in_(target_inc_id_set)))
 
             batch = (await self.db.execute(page_q)).all()
             if not batch:
@@ -310,6 +316,7 @@ class PolicySimulationService:
         before_epoch: Optional[int] = None,
         include_unlabeled_replay: bool = False,
         existing_run_id: Optional[str] = None,
+        incident_ids: Optional[List[str]] = None,
     ) -> HistoricalEvaluationRunRecord:
         """
         Executes empirical historical evaluation using canonical rule isolation, paginated
@@ -417,6 +424,7 @@ class PolicySimulationService:
             after_epoch=after_epoch,
             before_epoch=before_epoch,
             split_partition=split_partition,
+            incident_ids=incident_ids,
         )
         retrieved_count = len(rows)
         run_record.total_cases = retrieved_count
@@ -1242,6 +1250,7 @@ class PolicySimulationService:
         sample_limit: Optional[int] = 500,
         include_unlabeled_replay: bool = False,
         existing_run_id: Optional[str] = None,
+        incident_ids: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Executes empirical policy simulation on rule-matched historical incidents.
@@ -1294,6 +1303,7 @@ class PolicySimulationService:
             provider_type=provider_upper,
             include_unlabeled_replay=include_unlabeled_replay,
             existing_run_id=existing_run_id,
+            incident_ids=incident_ids,
         )
 
         metrics = run.metrics or {}

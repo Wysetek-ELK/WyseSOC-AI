@@ -165,11 +165,11 @@ class PolicyGenerationService:
         elif archetype_def.archetype_id == ArchetypeId.NETWORK_SCAN:
             if semantics.rule_identifier == "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT":
                 lines.extend([
-                    "1. Scope: Horizontal TCP scan against ONE fixed destination port across many hosts (`PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`; distinct from multi-port `PH_RULE_HEAVY_TCP_HOST_SCAN`).",
-                    "2. Check `network.source_ip`, `network.destination_port`, `scan.unique_destination_hosts`, `scan.connection_count`, `scan.window_seconds`, `scan.firewall_action_summary`, `scan.tcp_behavior_summary`, and `scan.destination_scope`.",
-                    "3. Distinguish denied/unanswered probes (`unanswered_probes`/`denied_flows`) from bidirectional TLS/HTTP sessions (`bidirectional_sessions`).",
-                    "4. Verify authorized scanner/assessment/admin tickets from telemetry only; NEVER classify as FALSE_POSITIVE merely because source is internal, port is common (443/80/22/445), or traffic looks routine.",
-                    "5. Cite exact `EV-*` IDs for every claim; abstain (`INSUFFICIENT_EVIDENCE`/`REQUIRES_ATTENTION`) when `scan.raw_events_count == 0` or evidence conflicts.",
+                    "1. Scope: Horizontal TCP scan on ONE fixed port across >=100 distinct destination hosts within 180s (`PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`; distinct from multi-port `PH_RULE_HEAVY_TCP_HOST_SCAN`).",
+                    "2. Telemetry Alignment: FortiGate session-end & appctrl logs do NOT emit raw `network.tcp_flags`. Do NOT abstain solely for absent `network.tcp_flags` or rule metadata (`detection.threshold`); evaluate `scan.tcp_behavior_summary` (`bidirectional_sessions`, `appctrl_pass_events`, `unanswered_probes`, `denied_flows`) and `scan.firewall_action_summary` instead. NEVER invent unobserved TCP flags.",
+                    "3. Inspect `network.source_ip`, `network.destination_port`, `network.protocol`, `scan.raw_events_count`, `scan.unique_destination_hosts`, `scan.destination_scope`, `scan.policy_and_service`, `scan.window_seconds`, and `scan.rate_per_second`.",
+                    "4. NEVER classify as FALSE_POSITIVE merely because source is internal (RFC-1918) or port is common (443/80/22/445); require verifiable authorization OR conclusive external bidirectional browsing telemetry.",
+                    "5. Cite exact `EV-*` IDs in `supporting_claims` and `supporting_evidence`; abstain (`REQUIRES_ATTENTION`/`INSUFFICIENT_EVIDENCE`) when `scan.raw_events_count == 0`, targets include unverified internal hosts, or telemetry is inconclusive/contradictory.",
                 ])
             else:
                 lines.extend([
@@ -230,7 +230,7 @@ class PolicyGenerationService:
 
         core_reqs = [r for r in contract.required_evidence if getattr(r, "requirement_level", "CORE") == "CORE"]
         cond_reqs = [r for r in contract.required_evidence if getattr(r, "requirement_level", "") == "CONDITIONAL"]
-        opt_reqs = [r for r in contract.required_evidence if getattr(r, "requirement_level", "") in ("OPTIONAL", "UNVERIFIED")]
+        opt_reqs = [r for r in contract.required_evidence if getattr(r, "requirement_level", "") in ("OPTIONAL", "UNVERIFIED", "UNAVAILABLE")]
 
         if core_reqs:
             core_items = [
@@ -240,10 +240,10 @@ class PolicyGenerationService:
             lines.append("Core: " + "; ".join(core_items))
 
         if cond_reqs:
-            lines.append("Conditional: " + "; ".join(r.field for r in cond_reqs))
+            lines.append("Conditional (when raw logs exist): " + "; ".join(r.field for r in cond_reqs))
 
         if opt_reqs:
-            lines.append("Optional: " + "; ".join(r.field for r in opt_reqs))
+            lines.append("Optional (do NOT abstain solely if absent): " + "; ".join(r.field for r in opt_reqs))
 
         return "\n".join(lines)
 
@@ -251,10 +251,10 @@ class PolicyGenerationService:
     def _generate_section5_tp_indicators(cls, semantics: DetectionSemantics, archetype_def: ArchetypeDefinition) -> str:
         if semantics.rule_identifier == "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT":
             return "\n".join([
-                "TRUE_POSITIVE when telemetry verifies unauthorized fixed-port horizontal TCP reconnaissance:",
-                "- Single source probing many destination hosts on one fixed TCP port with predominantly unanswered/RST/denied flows (`unanswered_probes`/`denied_flows`) and no verifiable authorization.",
-                "- Internal horizontal sweep on admin/lateral ports (22,135,139,445,3389,5985,1433,3306) or critical servers, or external perimeter sweep with blocks/timeouts.",
-                "- Corroborating alerts from the same source (brute force, exploit, IDS/IPS, lateral movement).",
+                "TRUE_POSITIVE when observed telemetry verifies unauthorized fixed-port horizontal TCP reconnaissance:",
+                "- Single source probing many destination hosts on one fixed TCP port with predominantly unanswered/RST/denied flows (`unanswered_probes` or `denied_flows`) and no verifiable scanner/change authorization.",
+                "- Unauthorized internal horizontal sweep (`internal > 0`) on admin/lateral ports (22,135,139,445,3389,5985,1433,3306) or targeting critical servers, or external perimeter sweep with blocks/timeouts.",
+                "- Corroborating exploit, brute-force, IDS/IPS, or lateral-movement alerts from the same source.",
             ])
         lines = ["TRUE_POSITIVE only when observed telemetry verifies:"]
         for ind in archetype_def.tp_indicator_candidates:
@@ -265,9 +265,9 @@ class PolicyGenerationService:
     def _generate_section6_fp_indicators(cls, semantics: DetectionSemantics, archetype_def: ArchetypeDefinition) -> str:
         if semantics.rule_identifier == "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT":
             return "\n".join([
-                "FALSE_POSITIVE ONLY when verifiable telemetry confirms authorized activity (internal RFC-1918 traffic is NOT automatically benign; verify explicit authorization):",
-                "- Verifiable authorized vulnerability scanner (Nessus/Qualys/Rapid7/OpenVAS) or scheduled admin/monitoring job with an active approved ticket/exception in telemetry.",
-                "- Verified outbound web/CDN/SaaS browsing where raw firewall logs show predominantly `bidirectional_sessions` (`sentbyte>0` and `rcvdbyte>0`) under an outbound browsing policy to public IPs with zero denied/internal sweep indicators.",
+                "FALSE_POSITIVE when concrete telemetry confirms benign/authorized activity (internal RFC-1918 traffic is NOT automatically benign; verify explicit authorization or complete external browsing telemetry):",
+                "- Verifiable authorized vulnerability scanner (Nessus/Qualys/Rapid7/OpenVAS) or scheduled admin/monitoring job backed by an active approved ticket/exception in telemetry.",
+                "- Evidence-backed legitimate outbound web/CDN/SaaS browsing where ALL of the following hold in raw logs: `scan.raw_events_count >= 10`, `scan.destination_scope` shows `internal=0` (100% public external destinations), `scan.tcp_behavior_summary` shows predominantly `bidirectional_sessions` (>=80% of sampled events) with `denied_flows=0` and minimal `unanswered_probes`, AND `scan.policy_and_service` shows an explicit outbound browsing/internet policy (`Browsing`/`HTTPS`/`SSL`).",
             ])
         lines = ["FALSE_POSITIVE when observed telemetry verifies authorized operations/noise:"]
         for ind in archetype_def.fp_indicator_candidates:
@@ -278,10 +278,10 @@ class PolicyGenerationService:
     def _generate_section7_abstention(cls, semantics: DetectionSemantics, archetype_def: ArchetypeDefinition) -> str:
         if semantics.rule_identifier == "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT":
             lines = [
-                "Abstain (INSUFFICIENT_EVIDENCE / REQUIRES_ATTENTION) when evidence cannot conclusively prove TP or FP:",
+                "Abstain (INSUFFICIENT_EVIDENCE / REQUIRES_ATTENTION) ONLY when material evidence prevents a reliable TP/FP decision (do NOT abstain solely for optional `network.tcp_flags` or rule metadata):",
                 "- Header-only incident with zero raw logs (`scan.raw_events_count == 0`).",
-                "- Missing critical fields (`network.source_ip`, `network.destination_port`, destination scope, or firewall actions).",
-                "- Unverified internal scanner/admin claim lacking CMDB or active change ticket in telemetry, or contradictory telemetry.",
+                "- Missing core fields (`network.source_ip`, `network.destination_port`, `scan.destination_scope`, or `scan.firewall_action_summary`).",
+                "- Mixed/internal targets (`internal > 0`) lacking verifiable scanner/change-ticket authorization, high `appctrl_pass_events` without sufficient bidirectional confirmation (<80%), or contradictory telemetry.",
             ]
             if semantics.definition_status == SemanticsDefinitionStatus.INCOMPLETE:
                 lines.append("- Authoritative SIEM correlation threshold/window unverified.")

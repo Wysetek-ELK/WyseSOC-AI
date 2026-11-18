@@ -369,15 +369,18 @@ class EvidenceCompactionService:
         # dropping the mandatory scan triage core.
         if has_scan_aggregates and core_tokens > max_evidence_budget_tokens:
             essential_scan_fields = frozenset({
+                "security.event_type",
+                "event.timestamp",
                 "network.source_ip",
                 "network.destination_port",
+                "network.protocol",
                 "scan.raw_events_count",
                 "scan.connection_count",
                 "scan.unique_destination_hosts",
                 "scan.destination_scope",
                 "scan.firewall_action_summary",
                 "scan.tcp_behavior_summary",
-                "security.event_type",
+                "scan.policy_and_service",
             })
             essential_core: List[Dict[str, Any]] = []
             demoted_core: List[Dict[str, Any]] = []

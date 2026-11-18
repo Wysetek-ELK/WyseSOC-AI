@@ -4,7 +4,7 @@ import random
 import time
 from datetime import datetime
 from app.utils.datetime_utils import utc_now
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
@@ -285,6 +285,7 @@ async def dispatch_policy_simulation(
     provider_type: str = "SIMULATED",
     sample_limit: Optional[int] = 500,
     include_unlabeled_replay: bool = False,
+    incident_ids: Optional[List[str]] = None,
     async_execution: bool = False,
 ) -> Dict[str, Any]:
     """
@@ -363,6 +364,7 @@ async def dispatch_policy_simulation(
         provider_type=str(provider_type or "SIMULATED").upper(),
         sample_limit=sample_limit,
         include_unlabeled_replay=bool(include_unlabeled_replay),
+        incident_ids=incident_ids,
     )
     if isinstance(result, dict):
         result.setdefault("dispatch_mode", "IN_PROCESS_ASYNC")

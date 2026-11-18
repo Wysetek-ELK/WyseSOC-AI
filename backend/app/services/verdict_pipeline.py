@@ -771,10 +771,25 @@ async def run_shared_verdict_pipeline(
     )
 
     # 7. Evidence-Preserving Token Budgeting
+    # Separate mandatory CORE incident telemetry from CONDITIONAL/OPTIONAL fields and
+    # exclude rule-level metadata (`detection.*`) from required incident fields so models
+    # do not falsely abstain on unavailable optional telemetry (e.g., raw TCP flags on FortiGate).
     payload_dict["evidence_contract"] = {
         "contract_id": contract.contract_id,
         "version": contract.version_number,
-        "required_fields": [r.field for r in contract.required_evidence],
+        "required_fields": [
+            r.field for r in contract.required_evidence
+            if not str(r.field).startswith("detection.")
+            and getattr(r, "requirement_level", "CORE") == "CORE"
+        ],
+        "conditional_fields": [
+            r.field for r in contract.required_evidence
+            if getattr(r, "requirement_level", "") == "CONDITIONAL"
+        ],
+        "optional_fields": [
+            r.field for r in contract.required_evidence
+            if getattr(r, "requirement_level", "") in ("OPTIONAL", "UNAVAILABLE")
+        ],
     }
     # Resolve per-model profile and capacity limits
     active_model = getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ")

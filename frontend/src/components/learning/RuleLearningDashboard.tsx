@@ -580,7 +580,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
             <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40">
               <div className="text-[10px] uppercase font-bold text-slate-400">Verified Rule Accuracy</div>
               <div className="text-xl font-bold text-indigo-300 mt-1">
-                {profile.empirical_accuracy != null ? `${(profile.empirical_accuracy * 100).toFixed(1)}%` : "N/A"}
+                {profile.empirical_accuracy != null ? `${(profile.empirical_accuracy * 100).toFixed(1)}%` : "NOT MEASURABLE"}
               </div>
               <div className="text-[10px] text-slate-500 mt-0.5">Target: ≥95.0%</div>
             </div>
@@ -588,7 +588,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
             <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40">
               <div className="text-[10px] uppercase font-bold text-slate-400">Observed FP Precision</div>
               <div className="text-xl font-bold text-emerald-400 mt-1">
-                {profile.fp_precision !== null ? `${(profile.fp_precision * 100).toFixed(1)}%` : "N/A"}
+                {profile.fp_precision !== null ? `${(profile.fp_precision * 100).toFixed(1)}%` : "NOT MEASURABLE"}
               </div>
               <div className="text-[10px] text-slate-500 mt-0.5">Target: ≥99.0%</div>
             </div>
@@ -599,7 +599,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                 <Scale className="w-3.5 h-3.5 text-cyan-400" />
               </div>
               <div className="text-xl font-bold text-cyan-400 mt-1">
-                {profile.wilson_lower_bound !== null ? `${(profile.wilson_lower_bound * 100).toFixed(1)}%` : "N/A"}
+                {profile.wilson_lower_bound !== null ? `${(profile.wilson_lower_bound * 100).toFixed(1)}%` : "NOT MEASURABLE"}
               </div>
               <div className="text-[10px] text-slate-500 mt-0.5">Production Gate: ≥96.0%</div>
             </div>
@@ -607,7 +607,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
             <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40">
               <div className="text-[10px] uppercase font-bold text-slate-400">TP Recall (Sensitivity)</div>
               <div className="text-xl font-bold text-amber-400 mt-1">
-                {profile.tp_recall !== null ? `${(profile.tp_recall * 100).toFixed(1)}%` : "N/A"}
+                {profile.tp_recall !== null ? `${(profile.tp_recall * 100).toFixed(1)}%` : "NOT MEASURABLE"}
               </div>
               <div className="text-[10px] text-slate-500 mt-0.5">Target: ≥95.0%</div>
             </div>
@@ -773,12 +773,14 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                     : "bg-slate-950/40 border-slate-800 text-slate-400"
                 }`}
               >
-                <span>Approved Policy &amp; Model</span>
-                <span className="font-bold font-mono text-[10px] truncate max-w-[140px]">
+                <span>Active Policy / Candidate Draft</span>
+                <span className="font-bold font-mono text-[10px] truncate max-w-[180px]">
                   {profile.readiness_governance?.approved_prompt_version_number
-                    ? `v${profile.readiness_governance.approved_prompt_version_number}`
-                    : "None"}{" "}
-                  / {profile.active_model_identifier || "Local LLM"}
+                    ? `v${profile.readiness_governance.approved_prompt_version_number} (APPROVED)`
+                    : "None"}
+                  {profile.readiness_governance?.candidate_draft_version_number
+                    ? ` | v${profile.readiness_governance.candidate_draft_version_number} (${profile.readiness_governance.candidate_draft_status || "DRAFT"})`
+                    : ""}
                 </span>
               </div>
 
@@ -792,6 +794,43 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                 <span>Unresolved Disputes (= 0)</span>
                 <span className="font-bold">{profile.readiness_governance?.unresolved_disputes ?? 0}</span>
               </div>
+            </div>
+
+            {/* Verification & Maturity Status Distinction Strip */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[10px]">
+              <span className="px-2 py-0.5 rounded border bg-emerald-950/30 border-emerald-800 text-emerald-300 font-semibold">
+                Implemented
+              </span>
+              <span className="px-2 py-0.5 rounded border bg-emerald-950/30 border-emerald-800 text-emerald-300 font-semibold">
+                Tested (Mocks/Pytest)
+              </span>
+              <span
+                className={`px-2 py-0.5 rounded border font-semibold ${
+                  (profile.total_incidents_processed || 0) > 0 && profile.active_model_identifier
+                    ? "bg-cyan-950/30 border-cyan-800 text-cyan-300"
+                    : "bg-slate-900 border-slate-800 text-slate-500"
+                }`}
+              >
+                Tested with Real LLM ({profile.active_model_identifier || "None"})
+              </span>
+              <span
+                className={`px-2 py-0.5 rounded border font-semibold ${
+                  (profile.eligible_evaluations || 0) > 0
+                    ? "bg-indigo-950/30 border-indigo-800 text-indigo-300"
+                    : "bg-amber-950/30 border-amber-800 text-amber-300"
+                }`}
+              >
+                Verified vs Ground Truth: {(profile.eligible_evaluations || 0) > 0 ? `${profile.eligible_evaluations} verified` : "NOT MEASURABLE (0)"}
+              </span>
+              <span
+                className={`px-2 py-0.5 rounded border font-semibold ${
+                  isEligible
+                    ? "bg-emerald-950/30 border-emerald-700 text-emerald-300"
+                    : "bg-rose-950/30 border-rose-900 text-rose-300"
+                }`}
+              >
+                Production Eligible: {isEligible ? "YES" : "BLOCKED"}
+              </span>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">

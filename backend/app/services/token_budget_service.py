@@ -306,13 +306,30 @@ class TokenBudgetService:
         # without dropping mandatory contract requirements or critical indicators.
         if total_tokens > available_budget and payload_work.get("canonical_evidence"):
             can_ev = payload_work.get("canonical_evidence") or []
-            contract_req = contract_info.get("required_fields") or []
+            has_scan_aggs = any(
+                str((item.get("source_field") if isinstance(item, dict) else getattr(item, "source_field", "")) or "").lower().startswith("scan.")
+                for item in can_ev
+            )
+            # When deterministic scan.* aggregates summarize all raw events, slim noisy per-event
+            # FortiGate metadata (geo/retention/UUID) on events[0] upfront so all essential
+            # canonical fields (including event.timestamp and network.protocol) fit cleanly.
+            if has_scan_aggs and payload_work.get("events"):
+                slim_ev_list = []
+                for ev in payload_work["events"][:1]:
+                    if isinstance(ev, dict):
+                        slim_ev_list.append({
+                            k: ev[k] for k in ("event_id", "event_type", "event_receive_time") if k in ev
+                        })
+                payload_work["events"] = slim_ev_list
+                events_compacted = True
+
+            contract_req = list(contract_info.get("required_fields") or []) + list(contract_info.get("conditional_fields") or [])
             overhead = (
                 cls.estimate_tokens(compiled_policy.compiled_system_prompt)
                 + cls.estimate_tokens(contract_info)
                 + cls.estimate_tokens(payload_work.get("title"))
                 + max(0, int(reserved_overhead_tokens))
-                + 300  # wire margin + incident header fields + slimmed events[0]
+                + 240  # wire margin + incident header fields + slimmed events[0]
             )
             avail_ev_budget = max(400, available_budget - overhead)
 

@@ -702,10 +702,13 @@ class RuleLearningService:
                 f"Insufficient False Positive cases: {profile.verified_fp_count}/{cls.MIN_PRODUCTION_FP} required."
             )
 
-        emp_acc = profile.empirical_accuracy or 0.0
-        if emp_acc < cls.MIN_PRODUCTION_ACCURACY:
+        if profile.empirical_accuracy is None:
             reasons.append(
-                f"Verified Rule Accuracy ({emp_acc*100:.1f}%) below requirement ({cls.MIN_PRODUCTION_ACCURACY*100:.1f}%)."
+                f"Verified Rule Accuracy: NOT MEASURABLE ({eligible_eval_count} eligible evaluations; >={cls.MIN_PRODUCTION_ACCURACY*100:.1f}% required)."
+            )
+        elif profile.empirical_accuracy < cls.MIN_PRODUCTION_ACCURACY:
+            reasons.append(
+                f"Verified Rule Accuracy ({profile.empirical_accuracy*100:.1f}%) below requirement ({cls.MIN_PRODUCTION_ACCURACY*100:.1f}%)."
             )
 
         if missed_tp_count > cls.MAX_CRITICAL_MISSED_TP:
@@ -713,22 +716,31 @@ class RuleLearningService:
                 f"Critical Missed True Positives detected ({missed_tp_count}); promotion strictly requires 0 observed missed TPs."
             )
 
-        fp_prec = profile.fp_precision or 0.0
-        if fp_prec < cls.MIN_PRODUCTION_FP_PRECISION:
+        if profile.fp_precision is None:
             reasons.append(
-                f"Observed FP Precision ({fp_prec*100:.1f}%) below requirement ({cls.MIN_PRODUCTION_FP_PRECISION*100:.1f}%)."
+                f"Observed FP Precision: NOT MEASURABLE (0 AI FP evaluations; >={cls.MIN_PRODUCTION_FP_PRECISION*100:.1f}% required)."
+            )
+        elif profile.fp_precision < cls.MIN_PRODUCTION_FP_PRECISION:
+            reasons.append(
+                f"Observed FP Precision ({profile.fp_precision*100:.1f}%) below requirement ({cls.MIN_PRODUCTION_FP_PRECISION*100:.1f}%)."
             )
 
-        wilson_lb = profile.wilson_lower_bound or 0.0
-        if wilson_lb < cls.MIN_PRODUCTION_WILSON_LOWER:
+        if profile.wilson_lower_bound is None:
             reasons.append(
-                f"Wilson 95% lower confidence bound ({wilson_lb*100:.1f}%) below safety threshold ({cls.MIN_PRODUCTION_WILSON_LOWER*100:.1f}%)."
+                f"Wilson 95% lower confidence bound: NOT MEASURABLE (>={cls.MIN_PRODUCTION_WILSON_LOWER*100:.1f}% required)."
+            )
+        elif profile.wilson_lower_bound < cls.MIN_PRODUCTION_WILSON_LOWER:
+            reasons.append(
+                f"Wilson 95% lower confidence bound ({profile.wilson_lower_bound*100:.1f}%) below safety threshold ({cls.MIN_PRODUCTION_WILSON_LOWER*100:.1f}%)."
             )
 
-        tp_rec = profile.tp_recall or 0.0
-        if tp_rec < cls.MIN_PRODUCTION_TP_RECALL:
+        if profile.tp_recall is None:
             reasons.append(
-                f"TP Recall ({tp_rec*100:.1f}%) below requirement ({cls.MIN_PRODUCTION_TP_RECALL*100:.1f}%)."
+                f"TP Recall: NOT MEASURABLE (0 verified TP evaluations; >={cls.MIN_PRODUCTION_TP_RECALL*100:.1f}% required)."
+            )
+        elif profile.tp_recall < cls.MIN_PRODUCTION_TP_RECALL:
+            reasons.append(
+                f"TP Recall ({profile.tp_recall*100:.1f}%) below requirement ({cls.MIN_PRODUCTION_TP_RECALL*100:.1f}%)."
             )
 
         is_eligible = len(reasons) == 0
@@ -805,15 +817,41 @@ class RuleLearningService:
                     else:
                         g1_g8_passed = True
 
+        candidate_draft_id = None
+        candidate_draft_number = None
+        candidate_draft_status = None
+        if rp:
+            draft_res = await db.execute(
+                select(PromptVersion)
+                .where(
+                    and_(
+                        PromptVersion.prompt_id == rp.id,
+                        PromptVersion.status == "DRAFT",
+                    )
+                )
+                .order_by(PromptVersion.version_number.desc())
+                .limit(1)
+            )
+            latest_draft = draft_res.scalar_one_or_none()
+            if latest_draft:
+                candidate_draft_id = latest_draft.id
+                candidate_draft_number = latest_draft.version_number
+                candidate_draft_status = latest_draft.status
+
+        eligible_eval_count = int((profile.ai_correct_count or 0) + (profile.ai_incorrect_count or 0))
         metadata = {
             "empirical_gates_passed": emp_ok,
             "unresolved_disputes": unresolved_disputes,
             "approved_prompt_version_id": approved_version_id,
             "approved_prompt_version_number": approved_version_number,
+            "candidate_draft_version_id": candidate_draft_id,
+            "candidate_draft_version_number": candidate_draft_number,
+            "candidate_draft_status": candidate_draft_status,
             "active_model_identifier": profile.active_model_identifier,
             "g1_g8_passed": g1_g8_passed,
             "gates_passed_count": gates_passed_count,
             "critical_missed_tp_count": int((profile.error_distribution or {}).get("critical_missed_tp", 0)),
+            "accuracy_status": "MEASURED" if eligible_eval_count > 0 else "NOT_MEASURABLE",
         }
         return (len(reasons) == 0), reasons, metadata
 
