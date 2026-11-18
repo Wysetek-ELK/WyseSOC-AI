@@ -650,7 +650,7 @@ async def run_shared_verdict_pipeline(
     # Determine explicit provider early so preflight simulation allowance matches mode
     if is_simulation:
         chosen_provider_type = str(model_provider_type or "SIMULATED").upper().strip()
-        preflight_allow_sim = chosen_provider_type == "SIMULATED"
+        preflight_allow_sim = True
     elif model_provider_type:
         if is_prod and str(model_provider_type).upper() == "SIMULATED":
             raise ValueError("Simulated model provider is strictly forbidden in production mode.")
@@ -983,7 +983,7 @@ async def run_shared_verdict_pipeline(
         claim_grounding=claim_grounding,
         normalization_result=norm_result,
         contract=contract,
-        allow_simulation=(actual_provider_type == "SIMULATED" or allow_mock),
+        allow_simulation=(is_simulation or actual_provider_type == "SIMULATED" or allow_mock),
         compilation_digest=compiled_policy.compilation_digest,
         model_reason=verdict_obj.reason,
         contradictory_evidence=getattr(verdict_obj, "contradictory_evidence", None),

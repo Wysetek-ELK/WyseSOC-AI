@@ -268,7 +268,7 @@ class PolicyGenerationService:
     def _generate_section6_fp_indicators(cls, semantics: DetectionSemantics, archetype_def: ArchetypeDefinition) -> str:
         if semantics.rule_identifier == "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT":
             return "\n".join([
-                "FALSE_POSITIVE ONLY when verifiable evidence in telemetry confirms authorized or benign non-scanning behavior (NEVER assume FP based solely on RFC-1918 IP, common port, or routine appearance):",
+                "FALSE_POSITIVE ONLY when verifiable evidence in telemetry confirms authorized operations (internal RFC-1918 traffic is NOT automatically benign; verify explicit authorization rather than assuming FP from common ports or routine appearance):",
                 "- Verifiable authorized vulnerability scanner (e.g., documented Nessus/Qualys/Rapid7/OpenVAS asset identity) corroborated by an active, in-scope, approved change/assessment ticket in canonical telemetry.",
                 "- Documented, verifiable scheduled IT/network administration or monitoring service with authoritative exception/authorization metadata.",
                 "- Verified normal outbound web/CDN/SaaS browsing traffic where raw firewall logs prove predominantly bidirectional established TLS/HTTP sessions (`bidirectional_sessions` with substantial `sentbyte` AND `rcvdbyte`) under an explicit outbound browsing firewall policy to diverse public endpoints, with zero denied/internal lateral-sweep indicators.",
