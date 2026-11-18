@@ -329,47 +329,29 @@ class EvidenceCompactionService:
 
         # Partition records into Mandatory Core Anchors vs Auxiliary Telemetry.
         # For high-cardinality multi-valued per-event fields (e.g., 100 distinct dest IPs/ports/bytes
-        # in horizontal scan incidents), keep up to 3 representative anchors in core_records while
-        # preserving ALL deterministic scan.* aggregates, moving the overflow to auxiliary_records.
+        # in horizontal scan incidents), preserve ALL deterministic scan.* aggregates plus 1 representative
+        # anchor per contract field, moving overflow records to relevance-sorted auxiliary_records.
         core_records: List[Dict[str, Any]] = []
         auxiliary_records: List[Dict[str, Any]] = []
         core_field_counts: Dict[str, int] = {}
-        HIGH_CARDINALITY_CORE_CAP: Dict[str, int] = {
-            "network.destination_ip": 3,
-            "network.destination_domain": 3,
-            "network.source_port": 1,
-            "network.bytes_out": 2,
-            "network.bytes_in": 2,
-            "network.packets_out": 1,
-            "network.packets_in": 1,
-            "network.session_duration_sec": 1,
-            "event.timestamp": 2,
-            "security.raw_log": 1,
-        }
+        has_scan_aggregates = any(str(d.get("source_field", "")).lower().startswith("scan.") for d in compacted_dicts)
 
         for r_dict in compacted_dicts:
             f_norm = r_dict["source_field"].lower()
-            rec_obj = CanonicalEvidenceRecord(
-                evidence_id=r_dict["evidence_id"],
-                incident_id=inc_id,
-                source_field=r_dict["source_field"],
-                observed_value=r_dict["observed_value"],
-                evidence_type=r_dict["evidence_type"],
-                integrity_digest="anchor",
-            )
-            # Mandatory contract requirements, scan aggregates, forensic execution indicators, rule triggers & time range
+            is_forensic = f_norm in DO_NOT_COLLAPSE_FIELDS or any(term in f_norm for term in DO_NOT_COLLAPSE_FIELDS)
+            is_scan_agg = f_norm.startswith("scan.") or f_norm == "network.destination_ip_list"
             is_core_candidate = (
-                f_norm.startswith("scan.")
-                or f_norm == "network.destination_ip_list"
+                is_scan_agg
                 or f_norm in contract_fields
-                or f_norm in DO_NOT_COLLAPSE_FIELDS
-                or any(term in f_norm for term in DO_NOT_COLLAPSE_FIELDS)
-                or score_relevance(rec_obj) >= 450
-                or "cluster" in r_dict["evidence_id"].lower()
+                or is_forensic
                 or "time_range" in f_norm
+                or (not has_scan_aggregates and "cluster" in r_dict["evidence_id"].lower())
             )
-            cap = HIGH_CARDINALITY_CORE_CAP.get(f_norm)
-            if cap is None and f_norm not in DO_NOT_COLLAPSE_FIELDS and not f_norm.startswith("scan."):
+            if is_forensic or is_scan_agg:
+                cap = None
+            elif has_scan_aggregates:
+                cap = 1
+            else:
                 cap = 2
             if is_core_candidate and (cap is None or core_field_counts.get(f_norm, 0) < cap):
                 core_records.append(r_dict)
