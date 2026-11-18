@@ -1,0 +1,220 @@
+{
+  "schema_version": "2.0.0",
+  "phase": "AIS_2_0_V8_VALIDATION",
+  "generated_at_utc": "2026-11-18T16:15:00Z",
+  "overall_recommendation": "KEEP_APPROVED_V7_ACTIVE_AND_RETAIN_V8_AS_DRAFT",
+  "empirical_accuracy_status": "NOT_MEASURABLE",
+  "production_readiness_status": "BLOCKED",
+  "target_rule": {
+    "name": "Heavy TCP Host Scan On Fixed Port",
+    "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+    "canonical_uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "authoritative_threshold": "COUNT(DISTINCT destIpAddr) >= 100 AND destIpPort IS NOT NULL AND ipProto = 6",
+    "window_seconds": 180,
+    "group_by": "srcIpAddr,destIpPort"
+  },
+  "sibling_rule_isolation": {
+    "name": "Heavy TCP Host Scan",
+    "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN",
+    "canonical_uuid": "9839fa49-40ac-4676-abcc-4c5581ae9e09",
+    "active_version_number": 2,
+    "active_version_status": "APPROVED",
+    "status": "ELIGIBLE",
+    "modified": false
+  },
+  "deployment": {
+    "server_1_deployed_sha": "10021a3ffcb8fe5af0e5b769d9d725b5e5745c3c",
+    "branch": "feature/phase3-compact-ui",
+    "upla_execution_ids": [
+      "upla-20261118-151625-9cfa67",
+      "upla-20261118-160649-86fcd5"
+    ],
+    "backend_pytest": {
+      "passed": 23,
+      "failed": 0,
+      "duration_seconds": 5.78,
+      "suites": [
+        "tests/test_ais_heavy_tcp_e2e.py",
+        "tests/test_rule_learning_platform.py",
+        "tests/test_api_422_remediation.py"
+      ]
+    },
+    "frontend_next_build": "PASS",
+    "server_1_health": "healthy",
+    "server_2_llm": {
+      "model_name": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "status": "ONLINE",
+      "verified_max_model_len": 4096,
+      "restarted_or_modified": false
+    }
+  },
+  "policies": {
+    "active_approved_v7": {
+      "version_id": "d79fb576-c6b9-4f63-9167-3c7a2419b70a",
+      "version_number": 7,
+      "status": "APPROVED",
+      "policy_digest": "e4d388ee2693e442289ca56f4c349c30540bd2fff393be2a57851881ddcf116c",
+      "modified": false
+    },
+    "candidate_draft_v8": {
+      "version_id": "20d4f788-85a5-437d-afbe-fe7fd80abca1",
+      "version_number": 8,
+      "status": "DRAFT",
+      "policy_digest": "c5e87a1ec6ac82c43ed07e62271850521456719da8800299256a897c91f8352b",
+      "compilation_digest": "a7e3c745e689c076c98c08ba07f6561cc3e84313c21f2b824b91d9a9bafe5460",
+      "quality_score": 85.0,
+      "g1_g7_passed": true,
+      "g8_passed": false,
+      "blocking_issues_count": 0,
+      "warnings_count": 1,
+      "auto_approved": false
+    }
+  },
+  "historical_69_incident_audit": {
+    "total_incidents": 69,
+    "by_customer": {
+      "GDC_NOC": { "total": 41, "rich_logs": 16, "header_only": 25 },
+      "Demo-SOC": { "total": 28, "rich_logs": 16, "header_only": 12 }
+    },
+    "total_raw_fortigate_events_audited": 3197,
+    "any_tcp_flags_in_raw_logs": false,
+    "fortigate_event_types": {
+      "FortiGate-traffic-end-forward-close": 983,
+      "FortiGate-appctrl-ips-pass": 806,
+      "FortiGate-traffic-end-forward-client-rst": 738,
+      "FortiGate-traffic-end-forward-allowed": 313,
+      "FortiGate-traffic-forward": 147,
+      "FortiGate-traffic-end-forward-server-rst": 130,
+      "FortiGate-traffic-end-forward-timeout": 80
+    },
+    "fortigate_actions": {
+      "close": 1144,
+      "client-rst": 847,
+      "pass": 806,
+      "server-rst": 173,
+      "accept": 147,
+      "timeout": 80
+    },
+    "fortisiem_status_open_count": 69,
+    "fortisiem_cleared_reason_present_count": 0,
+    "fortisiem_resolution_present_count": 0,
+    "fortisiem_comments_present_count": 0,
+    "reliable_historical_gt_imported": 0,
+    "synthetic_labels_created": 0,
+    "pending_double_blind_reviews": 69,
+    "double_blind_ai_verdict_exposed": false
+  },
+  "real_llm_ab_benchmark": {
+    "provider_type": "OPENAI_COMPATIBLE",
+    "is_simulated": false,
+    "model_identifier": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "cohort_incident_ids": ["176011", "175129", "164575", "167157", "173449", "176122"],
+    "baseline_v7_run_id": "ca113d0a-114d-4322-99fd-2519bb21a5b5",
+    "candidate_v8_run_id": "9e2ebd30-e039-440a-89fd-0b37700c87c2",
+    "aggregate_comparison": {
+      "v7": {
+        "inferred_count": 6,
+        "scored_ground_truth_count": 0,
+        "decisive_tp_fp_count": 0,
+        "abstention_count": 6,
+        "grounded_claims_total": 0,
+        "unsupported_claims_total": 0,
+        "raw_count_zero_hallucinations_on_rich_logs": 2,
+        "invalid_model_output_count": 1,
+        "mean_rich_raw_trust_score": 60.0,
+        "total_tokens": 21301,
+        "hash_match_verified_count": 6
+      },
+      "v8": {
+        "inferred_count": 6,
+        "scored_ground_truth_count": 0,
+        "decisive_tp_fp_count": 0,
+        "abstention_count": 6,
+        "grounded_claims_total": 16,
+        "unsupported_claims_total": 0,
+        "raw_count_zero_hallucinations_on_rich_logs": 0,
+        "invalid_model_output_count": 0,
+        "mean_rich_raw_trust_score": 81.0,
+        "total_tokens": 22726,
+        "hash_match_verified_count": 6
+      }
+    },
+    "per_incident_runs": [
+      {
+        "incident_id": "176011",
+        "customer": "GDC_NOC",
+        "raw_events": 100,
+        "v7": { "verdict": "REQUIRES_ATTENTION", "claims": "0/0", "raw_trust": 46.0, "trust": 4, "tokens": 3526, "latency_ms": 10931, "validation": "VALIDATED", "kept_fields": 14, "capture_id": "ea694cca-7aee-4e3c-99b2-6fd698723a48", "sha256": "7f19c067123a961fac5ee44baafe69411bdcfe0dee9fae645d89685d5fd735d1" },
+        "v8": { "verdict": "REQUIRES_ATTENTION", "claims": "3/3", "raw_trust": 81.0, "trust": 6, "tokens": 3800, "latency_ms": 16041, "validation": "ABSTAINED", "kept_fields": 11, "capture_id": "7d10bc3f-d9e2-47d5-a05b-d71df3843699" }
+      },
+      {
+        "incident_id": "175129",
+        "customer": "GDC_NOC",
+        "raw_events": 100,
+        "v7": { "verdict": "REQUIRES_ATTENTION", "claims": "0/0", "raw_trust": 81.0, "trust": 6, "tokens": 3563, "latency_ms": 12053, "validation": "VALIDATED", "kept_fields": 14 },
+        "v8": { "verdict": "REQUIRES_ATTENTION", "claims": "3/3", "raw_trust": 81.0, "trust": 6, "tokens": 3848, "latency_ms": 16298, "validation": "ABSTAINED", "kept_fields": 12, "capture_id": "a609a634-4dbc-4167-86d2-08dde51d865c", "sha256": "49d987e1b98e28f6e4f302d6f25cfecafbe988dd9bf7bf40c8686f449f188153" }
+      },
+      {
+        "incident_id": "164575",
+        "customer": "Demo-SOC",
+        "raw_events": 100,
+        "v7": { "verdict": "REQUIRES_ATTENTION", "claims": "0/0", "raw_trust": 81.0, "trust": 2, "tokens": 3725, "latency_ms": 16215, "validation": "INVALID_MODEL_OUTPUT", "kept_fields": 14 },
+        "v8": { "verdict": "REQUIRES_ATTENTION", "claims": "3/3", "raw_trust": 81.0, "trust": 6, "tokens": 3799, "latency_ms": 16104, "validation": "ABSTAINED", "kept_fields": 11, "capture_id": "c4f7baf1-b43e-4917-b3c4-7ea6ebb2749e", "sha256": "eeff81cd5d3f8a1a36016acf4122ffb0dc986b35c4947a56b562ec4cd97e5297" }
+      },
+      {
+        "incident_id": "167157",
+        "customer": "Demo-SOC",
+        "raw_events": 100,
+        "v7": { "verdict": "REQUIRES_ATTENTION", "claims": "0/0", "raw_trust": 46.0, "trust": 4, "tokens": 3542, "latency_ms": 10972, "validation": "VALIDATED", "kept_fields": 14 },
+        "v8": { "verdict": "REQUIRES_ATTENTION", "claims": "3/3", "raw_trust": 81.0, "trust": 6, "tokens": 3798, "latency_ms": 16080, "validation": "ABSTAINED", "kept_fields": 11 }
+      },
+      {
+        "incident_id": "173449",
+        "customer": "GDC_NOC",
+        "raw_events": 100,
+        "v7": { "verdict": "REQUIRES_ATTENTION", "claims": "0/0", "raw_trust": 46.0, "trust": 4, "tokens": 3546, "latency_ms": 11430, "validation": "VALIDATED", "kept_fields": 14 },
+        "v8": { "verdict": "REQUIRES_ATTENTION", "claims": "3/3", "raw_trust": 81.0, "trust": 6, "tokens": 3802, "latency_ms": 16092, "validation": "ABSTAINED", "kept_fields": 11, "capture_id": "70d95ddf-74ee-4a4f-b680-f42e95c8df53", "sha256": "1e7a01b04b1d665fdbc0ba2dbde820f22d8895b4fa6cc5b57509d9d350401d55" }
+      },
+      {
+        "incident_id": "176122",
+        "customer": "GDC_NOC",
+        "raw_events": 0,
+        "v7": { "verdict": "REQUIRES_ATTENTION", "claims": "0/0", "raw_trust": 84.0, "trust": 6, "tokens": 3399, "latency_ms": 13226, "validation": "VALIDATED", "kept_fields": 10, "capture_id": "15b6e2c9-691f-438b-902d-a98b311369ae", "sha256": "8495760a2e5d695e6ed9b6da94126444117716f11614f2eabea6ef0050a48b9b" },
+        "v8": { "verdict": "REQUIRES_ATTENTION", "claims": "1/1", "raw_trust": 84.0, "trust": 6, "tokens": 3679, "latency_ms": 15483, "validation": "ABSTAINED", "kept_fields": 10 }
+      }
+    ]
+  },
+  "empirical_readiness_and_governance": {
+    "lifecycle_stage": "LEARNING",
+    "is_production_eligible": false,
+    "automation_policy_enabled": false,
+    "emergency_disable": false,
+    "live_fortisiem_closures_executed": 0,
+    "eligible_evaluations": 0,
+    "required_minimum_evaluations": 100,
+    "accuracy_status": "NOT_MEASURABLE",
+    "blocking_reasons": [
+      "Insufficient eligible verified TP/FP evaluations: 0/100 required (total reviews: 0).",
+      "Insufficient True Positive cases: 0/25 required.",
+      "Insufficient False Positive cases: 0/50 required.",
+      "Verified Rule Accuracy: NOT MEASURABLE (0 eligible evaluations; >=95.0% required).",
+      "Observed FP Precision: NOT MEASURABLE (0 AI FP evaluations; >=99.0% required).",
+      "Wilson 95% lower confidence bound: NOT MEASURABLE (>=96.0% required).",
+      "TP Recall: NOT MEASURABLE (0 verified TP evaluations; >=95.0% required).",
+      "All G1-G8 quality gates must PASS before production promotion (passed: 7/8)."
+    ]
+  },
+  "deliverables": [
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/01_V7_ROOT_CAUSE_AUDIT.md",
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/02_EVIDENCE_ALIGNMENT_REPORT.md",
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/03_CANDIDATE_V8_POLICY.md",
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/04_REAL_LLM_V7_V8_BENCHMARK.md",
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/05_HISTORICAL_GROUND_TRUTH_AUDIT.md",
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/06_ANALYST_FEEDBACK_VALIDATION.md",
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/07_EMPIRICAL_ACCURACY_G8_REPORT.md",
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/08_UI_AND_SAFETY_VALIDATION.md",
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/09_SERVER_DEPLOYMENT_RESULTS.md",
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/10_FINAL_RECOMMENDATION.md",
+    "docs/AIS_HEAVY_TCP_FIXED_PORT_V8_VALIDATION/FINAL_EVIDENCE.json"
+  ]
+}
