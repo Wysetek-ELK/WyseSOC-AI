@@ -323,13 +323,23 @@ class OpenAICompatibleProvider(BaseModelProvider):
         # Enforce Section 10 instruction boundary delimiters around untrusted telemetry
         user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
 
+        effective_max_tokens = self.max_tokens
+        max_tokens_override = kwargs.get("max_tokens_override")
+        if max_tokens_override is not None:
+            try:
+                override_int = int(max_tokens_override)
+                if override_int > 0:
+                    effective_max_tokens = min(self.max_tokens, override_int)
+            except Exception:
+                pass
+
         payload = {
             "model": self.model_name,
             "messages": [
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_content},
             ],
-            "max_tokens": self.max_tokens,
+            "max_tokens": effective_max_tokens,
             "temperature": self.temperature,
         }
 
@@ -345,7 +355,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     user_message=user_content,
                     generation_settings={
                         "model": self.model_name,
-                        "max_tokens": self.max_tokens,
+                        "max_tokens": effective_max_tokens,
                         "temperature": self.temperature,
                         "timeout_seconds": self.timeout_seconds,
                         "endpoint": self.base_url,

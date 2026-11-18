@@ -179,6 +179,7 @@ async def _invoke_provider_with_guards(
     incident_id: Optional[str] = None,
     rag_precedents: Optional[List[Dict[str, Any]]] = None,
     policy_source: str = "DATABASE",
+    max_tokens_override: Optional[int] = None,
 ) -> Tuple[Any, str]:
     """Invoke OPENAI_COMPATIBLE (with GPU slot protection) or SIMULATED provider safely with provider-boundary prompt capture."""
     ptype = str(chosen_provider_type or "SIMULATED").upper().strip()
@@ -346,6 +347,7 @@ async def _invoke_provider_with_guards(
             prompt_version_number=prompt_ver_num,
             capture_callback=pre_cb_1,
             post_capture_callback=_post_cb,
+            max_tokens_override=max_tokens_override,
         )
         raw_status = str(getattr(verdict_obj, "validation_status", "") or "").upper().strip()
         is_connection_error = raw_status in ("CONNECTION_ERROR", "HTTP_ERROR")
@@ -933,6 +935,7 @@ async def run_shared_verdict_pipeline(
             for p in (rag_result.precedents if hasattr(rag_result, "precedents") and rag_result.precedents else [])
         ],
         policy_source=policy_source,
+        max_tokens_override=reserved_comp_tokens,
     )
 
     # 9. Token Usage Accounting

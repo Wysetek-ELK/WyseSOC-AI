@@ -83,24 +83,26 @@ class ModelTokenizerService:
         for match in tokens_matches:
             match_len = len(match)
             if match.isspace():
-                # Consecutive whitespace: 1 token per 4 spaces or single newline
-                tokens += max(1, match_len // 4)
+                # In Qwen2.5 / cl100k_base BPE, a single inter-word space merges into the next word token.
+                # Only newlines and multi-space indentation consume standalone tokens.
+                if match == " ":
+                    continue
+                newlines = match.count("\n")
+                other_ws = match_len - newlines
+                tokens += newlines + (other_ws // 4)
+            elif match.isdigit():
+                # Qwen2.5 splits digits aggressively (1-2 digits/token); keep conservative
+                tokens += match_len if match_len <= 3 else (match_len + 1) // 2
             elif match.isalnum():
-                # Word or number: subword heuristic
-                # Average BPE subword is ~4 characters for common English words
-                # Long random strings (hashes, base64) split every ~3 characters
-                if match_len <= 4:
+                # Calibrated BPE subword length (common English words up to ~7 chars = 1 token)
+                if match_len <= 7:
                     tokens += 1
-                elif match_len <= 8:
+                elif match_len <= 14:
                     tokens += 2
-                elif match_len <= 12:
-                    tokens += 3
                 else:
-                    # Hex or base64 or long identifier
-                    tokens += (match_len + 2) // 3
+                    tokens += (match_len + 3) // 4
             else:
-                # Punctuation / symbol: almost all symbols are 1 token each in BPE
-                # E.g. {" : , [ ] } . / \ _ - are each separate tokens
+                # Punctuation / symbol: conservative 1 token per symbol (handles JSON/code safely)
                 tokens += match_len
 
         return max(1, tokens)

@@ -714,7 +714,7 @@ class EvidenceNormalizationService:
 
         if dst_ips:
             add_fn("scan.unique_destination_hosts", len(dst_ips), "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "dstip_distinct", "AGGREGATED")
-            sample_str = ", ".join(dst_ips[:10]) + (f" (+{len(dst_ips) - 10} more)" if len(dst_ips) > 10 else "")
+            sample_str = ", ".join(dst_ips[:5]) + (f" (+{len(dst_ips) - 5} more)" if len(dst_ips) > 5 else "")
             add_fn("network.destination_ip_list", sample_str, "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "dstip_list", "AGGREGATED")
 
             internal_dst = sum(1 for ip in dst_ips if cls._is_private_ip(ip) is True)
