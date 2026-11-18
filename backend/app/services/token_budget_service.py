@@ -208,6 +208,18 @@ class TokenBudgetService:
             and "SECTION 3:" in compiled_policy.compiled_system_prompt
         ):
             del payload_work["rule_pattern"]
+        # Avoid duplicating conditional/optional field lists in wire payload when Section 4 already lists them
+        if (
+            isinstance(payload_work.get("evidence_contract"), dict)
+            and compiled_policy.compiled_system_prompt
+            and "SECTION 4:" in compiled_policy.compiled_system_prompt
+        ):
+            ec_orig = payload_work["evidence_contract"]
+            payload_work["evidence_contract"] = {
+                "contract_id": ec_orig.get("contract_id"),
+                "version": ec_orig.get("version"),
+                "required_fields": ec_orig.get("required_fields") or [],
+            }
 
         # Measure Priority 1 & 2 (Compiled System Prompt)
         # Note: sections 1-9 are P2, sections 10-11 are P1

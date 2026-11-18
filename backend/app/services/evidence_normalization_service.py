@@ -734,7 +734,7 @@ class EvidenceNormalizationService:
             add_fn("scan.unique_destination_hosts", len(dst_ips), "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "dstip_distinct", "AGGREGATED")
             add_fn(
                 "scan.sample_context",
-                f"sampled_events={len(evts)}, sample_unique_dst_hosts={len(dst_ips)}, full_window_trigger_count={conn_val} (sample is a subset of SIEM trigger window)",
+                f"sampled_events={len(evts)}, sample_unique_dst_hosts={len(dst_ips)}, trigger_count={conn_val} (subset of SIEM trigger)",
                 "NETWORK_CONNECTION",
                 "SCAN_SUMMARY",
                 obs_time,
