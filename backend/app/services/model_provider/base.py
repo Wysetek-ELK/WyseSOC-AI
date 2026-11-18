@@ -23,6 +23,7 @@ class StructuredModelVerdict(BaseModel):
     missing_evidence: List[str] = Field(default_factory=list)
     contradictory_evidence: List[str] = Field(default_factory=list, description="Any detected contradictory observations")
     analyst_questions: List[str] = Field(default_factory=list)
+    recommended_action: Optional[str] = Field(None, description="Recommended SOC analyst follow-up action")
     latency_ms: int = Field(0, ge=0)
     model_identifier: str = Field("default-model")
     prompt_version_number: int = Field(1, ge=1)
@@ -76,7 +77,7 @@ class BaseModelProvider(ABC):
             return False, "INVALID_SCHEMA", "Response payload is not a JSON object"
 
         verdict = str(raw_verdict.get("verdict", "")).upper().strip()
-        valid_verdicts = {"TRUE_POSITIVE", "FALSE_POSITIVE", "REQUIRES_ATTENTION"}
+        valid_verdicts = {"TRUE_POSITIVE", "FALSE_POSITIVE", "REQUIRES_ATTENTION", "INSUFFICIENT_EVIDENCE"}
 
         if not verdict:
             return False, "INVALID_SCHEMA", "Missing required field: verdict"

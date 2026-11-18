@@ -403,15 +403,15 @@ async def transition_rule_stage(
             reason=payload.reason or "State transition requested by user",
             user_id=current_user.username
         )
-        await db.commit()
-        return {
+        resp_body = {
             "status": "SUCCESS",
             "rule_identifier": updated.rule_identifier,
             "customer": updated.customer,
             "new_stage": updated.lifecycle_stage,
         }
+        await db.commit()
+        return resp_body
     except ValueError as e:
-        await db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -568,8 +568,7 @@ async def request_rule_promotion(
             justification=payload.justification or "Qualified via evaluation benchmarks",
             evaluation_run_id=payload.evaluation_run_id
         )
-        await db.commit()
-        return {
+        resp_body = {
             "request_id": req.id,
             "rule_id": req.rule_id,
             "profile_id": req.profile_id,
@@ -577,10 +576,11 @@ async def request_rule_promotion(
             "requested_stage": req.requested_stage,
             "status": req.status,
             "supporting_metrics": req.supporting_metrics,
-            "created_at": req.created_at.isoformat()
+            "created_at": req.created_at.isoformat() if req.created_at else None,
         }
+        await db.commit()
+        return resp_body
     except ValueError as e:
-        await db.rollback()
         err_msg = str(e)
         if "not found" in err_msg.lower():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=err_msg)

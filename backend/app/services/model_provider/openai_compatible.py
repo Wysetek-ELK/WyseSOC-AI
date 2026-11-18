@@ -141,7 +141,11 @@ def _repair_truncated_json(text: str) -> Optional[str]:
 
 def _regex_fallback_extract(text: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     """Heuristic extraction of key fields when JSON cannot be parsed syntactically."""
-    verdict_match = re.search(r'["\']?verdict["\']?\s*:\s*["\']?(TRUE_POSITIVE|FALSE_POSITIVE|REQUIRES_ATTENTION)["\']?', text, re.IGNORECASE)
+    verdict_match = re.search(
+        r'["\']?verdict["\']?\s*:\s*["\']?(TRUE_POSITIVE|FALSE_POSITIVE|REQUIRES_ATTENTION|INSUFFICIENT_EVIDENCE)["\']?',
+        text,
+        re.IGNORECASE,
+    )
     if not verdict_match:
         return None, "No verdict found in model output"
 
@@ -490,21 +494,75 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 # Reject mismatched incident_id returned by LLM (prevents cross-incident hallucination)
                 returned_inc_id = str(parsed.get("incident_id") or "").strip()
                 if returned_inc_id and str(incident_id).strip() and returned_inc_id != str(incident_id).strip():
+                    mismatch_msg = f"Model returned mismatched incident_id '{returned_inc_id}' (expected '{incident_id}'); verdict rejected and routed to manual review."
+                    if post_capture_cb and capture_meta:
+                        try:
+                            await post_capture_cb(capture_meta=capture_meta, status="FAILED", error_message=mismatch_msg, latency_ms=latency_ms)
+                        except Exception:
+                            pass
                     return StructuredModelVerdict(
                         incident_id=incident_id,
                         rule_id=rule_id,
                         verdict="REQUIRES_ATTENTION",
                         confidence=0.0,
-                        reason=f"Model returned mismatched incident_id '{returned_inc_id}' (expected '{incident_id}'); verdict rejected and routed to manual review.",
+                        reason=mismatch_msg,
                         supporting_evidence=[],
                         supporting_claims=[],
                         contradictory_evidence=[f"incident_id mismatch: returned={returned_inc_id}, expected={incident_id}"],
                         missing_evidence=["Valid incident_id match in model response"],
                         analyst_questions=["Re-run inference or review incident manually"],
+                        recommended_action="Route incident to manual SOC analyst review due to incident_id reference mismatch.",
                         latency_ms=latency_ms,
                         model_identifier=self.model_name,
                         prompt_version_number=prompt_version_number,
                         validation_status="INVALID_INCIDENT_REF",
+                        is_simulated=False,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        total_tokens=total_tokens,
+                        prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                        prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                        prompt_integrity_status="UNVERIFIED",
+                        raw_model_response=raw_reply,
+                        outbound_payload=payload,
+                    )
+
+                # Reject mismatched rule_id / rule reference returned by LLM
+                returned_rule_ref = str(parsed.get("rule_id") or parsed.get("rule_reference") or "").strip()
+                allowed_rule_refs = {
+                    str(v).strip()
+                    for v in (
+                        rule_id,
+                        rule_spec.get("id"),
+                        rule_spec.get("rule_id"),
+                        rule_spec.get("event_type"),
+                        rule_spec.get("name"),
+                    )
+                    if v and str(v).strip()
+                }
+                if returned_rule_ref and allowed_rule_refs and returned_rule_ref not in allowed_rule_refs:
+                    rule_err_msg = f"Model returned mismatched rule reference '{returned_rule_ref}' (expected one of {sorted(allowed_rule_refs)}); verdict rejected and routed to manual review."
+                    if post_capture_cb and capture_meta:
+                        try:
+                            await post_capture_cb(capture_meta=capture_meta, status="FAILED", error_message=rule_err_msg, latency_ms=latency_ms)
+                        except Exception:
+                            pass
+                    return StructuredModelVerdict(
+                        incident_id=incident_id,
+                        rule_id=rule_id,
+                        verdict="REQUIRES_ATTENTION",
+                        confidence=0.0,
+                        reason=rule_err_msg,
+                        supporting_evidence=[],
+                        supporting_claims=[],
+                        contradictory_evidence=[f"rule_id mismatch: returned={returned_rule_ref}"],
+                        missing_evidence=["Valid rule reference match in model response"],
+                        analyst_questions=["Verify rule mapping and review incident manually"],
+                        recommended_action="Route incident to manual SOC analyst review due to rule reference mismatch.",
+                        latency_ms=latency_ms,
+                        model_identifier=self.model_name,
+                        prompt_version_number=prompt_version_number,
+                        validation_status="INVALID_RULE_REF",
                         is_simulated=False,
                         prompt_tokens=prompt_tokens,
                         completion_tokens=completion_tokens,
@@ -524,17 +582,24 @@ class OpenAICompatibleProvider(BaseModelProvider):
                         if conf_num != conf_num or conf_num < 0.0 or conf_num > 100.0:
                             raise ValueError("out_of_range")
                     except (TypeError, ValueError):
+                        conf_err_msg = f"Model returned invalid confidence value '{raw_conf_val}'; verdict rejected and routed to manual review."
+                        if post_capture_cb and capture_meta:
+                            try:
+                                await post_capture_cb(capture_meta=capture_meta, status="FAILED", error_message=conf_err_msg, latency_ms=latency_ms)
+                            except Exception:
+                                pass
                         return StructuredModelVerdict(
                             incident_id=incident_id,
                             rule_id=rule_id,
                             verdict="REQUIRES_ATTENTION",
                             confidence=0.0,
-                            reason=f"Model returned invalid confidence value '{raw_conf_val}'; verdict rejected and routed to manual review.",
+                            reason=conf_err_msg,
                             supporting_evidence=[],
                             supporting_claims=[],
                             contradictory_evidence=[],
                             missing_evidence=["Valid confidence score (0-100)"],
                             analyst_questions=["Review raw LLM output for invalid confidence value"],
+                            recommended_action="Route incident to manual SOC analyst review due to invalid confidence score.",
                             latency_ms=latency_ms,
                             model_identifier=self.model_name,
                             prompt_version_number=prompt_version_number,
@@ -553,17 +618,24 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 # If output required regex recovery from malformed non-JSON response,
                 # decisive TP/FP classifications must NEVER be accepted as valid.
                 if is_recovered and raw_verdict_str in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                    rec_err_msg = f"Model output required regex recovery from malformed non-JSON response; decisive {raw_verdict_str} rejected: {parsed.get('reason', '')}"
+                    if post_capture_cb and capture_meta:
+                        try:
+                            await post_capture_cb(capture_meta=capture_meta, status="FAILED", error_message=rec_err_msg, latency_ms=latency_ms)
+                        except Exception:
+                            pass
                     return StructuredModelVerdict(
                         incident_id=incident_id,
                         rule_id=rule_id,
                         verdict="REQUIRES_ATTENTION",
                         confidence=0.0,
-                        reason=f"Model output required regex recovery from malformed non-JSON response; decisive {raw_verdict_str} rejected: {parsed.get('reason', '')}",
+                        reason=rec_err_msg,
                         supporting_evidence=[],
                         supporting_claims=[],
                         contradictory_evidence=[],
                         missing_evidence=["Valid structured JSON response"],
                         analyst_questions=["Review raw LLM output for syntax defects"],
+                        recommended_action="Route incident to manual SOC analyst review due to malformed LLM response.",
                         latency_ms=latency_ms,
                         model_identifier=self.model_name,
                         prompt_version_number=prompt_version_number,
@@ -572,10 +644,23 @@ class OpenAICompatibleProvider(BaseModelProvider):
                         prompt_tokens=prompt_tokens,
                         completion_tokens=completion_tokens,
                         total_tokens=total_tokens,
+                        prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                        prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                        prompt_integrity_status="UNVERIFIED",
+                        raw_model_response=raw_reply,
+                        outbound_payload=payload,
                     )
 
                 val_status = "INVALID_SCHEMA" if is_recovered else "VALID"
                 resolved_confidence = float(parsed["confidence"]) if parsed.get("confidence") is not None else 0.0
+                rec_action = parsed.get("recommended_action")
+                if not rec_action:
+                    if raw_verdict_str == "TRUE_POSITIVE":
+                        rec_action = "Escalate to SOC L2 analyst for investigation and containment verification; keep incident OPEN."
+                    elif raw_verdict_str == "FALSE_POSITIVE":
+                        rec_action = "Verify supporting benign/authorization evidence; eligible for closure only under approved governance."
+                    else:
+                        rec_action = "Route to manual SOC analyst investigation to collect missing telemetry."
 
                 if post_capture_cb and capture_meta:
                     try:
@@ -604,6 +689,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     contradictory_evidence=contradictory_ev,
                     missing_evidence=parsed.get("missing_evidence", []) if isinstance(parsed.get("missing_evidence"), list) else [],
                     analyst_questions=parsed.get("analyst_questions", []) if isinstance(parsed.get("analyst_questions"), list) else [],
+                    recommended_action=str(rec_action),
                     latency_ms=latency_ms,
                     model_identifier=self.model_name,
                     prompt_version_number=prompt_version_number,

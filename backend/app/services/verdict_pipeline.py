@@ -1173,6 +1173,7 @@ async def run_shared_verdict_pipeline(
         "field_validation_status": getattr(val_res, "field_validation_status", {}),
         "unmapped_fields": getattr(norm_result, "unmapped_fields", []),
         "analyst_action_directive": final_action_directive,
+        "recommended_action": getattr(verdict_obj, "recommended_action", None) or final_action_directive,
         "canonical_evidence_count": norm_result.total_evidence_count,
         "contract_id": val_res.contract_id,
         "contract_version": val_res.contract_version,

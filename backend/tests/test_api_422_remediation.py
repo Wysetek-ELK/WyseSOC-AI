@@ -429,13 +429,41 @@ async def test_lifecycle_transition_and_promotion_eligibility_enforcement(
     assert res_prom_prod.status_code == 400
     assert "cannot submit promotion request" in res_prom_prod.json()["detail"].lower()
 
-    # 4. Now simulate rule meeting production criteria
+    # 4. Now simulate rule meeting full production criteria (95% acc, 99% FP prec, 0 missed TP, G1-G8 PASS)
+    from app.models.prompt import RulePrompt, PromptVersion
+    from app.models.policy_quality import PolicyQualityAssessmentRecord
+
+    rp = RulePrompt(id=str(uuid.uuid4()), rule_id=profile.rule_id, title="Gov Test Prompt", ai_execution_suspended=False)
+    db_session.add(rp)
+    await db_session.flush()
+    pv = PromptVersion(id=str(uuid.uuid4()), prompt_id=rp.id, version_number=1, status="APPROVED", quality_status="APPROVED", quality_score=96.0)
+    db_session.add(pv)
+    await db_session.flush()
+    rp.active_version_id = pv.id
+    db_session.add(rp)
+    qa = PolicyQualityAssessmentRecord(
+        id=f"PQA-GOV-{uuid.uuid4().hex[:8]}",
+        rule_id=profile.rule_id,
+        prompt_version_id=pv.id,
+        version_number=1,
+        quality_score=96.0,
+        gate_results={f"G{i}_GATE": {"gate_id": f"G{i}", "status": "PASSED", "score": 10.0, "max_score": 10.0} for i in range(1, 9)},
+        blocking_issues=[],
+        approval_eligible=True,
+        simulation_status="EVALUATED_PASSED",
+    )
+    db_session.add(qa)
+
     profile.total_analyst_reviews = 120
     profile.verified_tp_count = 35
     profile.verified_fp_count = 85
+    profile.ai_correct_count = 120
+    profile.ai_incorrect_count = 0
+    profile.empirical_accuracy = 1.0
     profile.fp_precision = 0.99
     profile.wilson_lower_bound = 0.97
     profile.tp_recall = 0.98
+    profile.error_distribution = {"agreement_tp": 35, "agreement_fp": 85, "critical_missed_tp": 0, "ai_false_alarm": 0}
     profile.lifecycle_stage = "SUPERVISED_PILOT"
     db_session.add(profile)
     await db_session.commit()

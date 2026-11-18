@@ -134,11 +134,10 @@ async def _seed_approved_prompt_with_g1_g8(db: AsyncSession, rule: Rule) -> Prom
         for i in range(1, 9)
     }
     qa = PolicyQualityAssessmentRecord(
-        id=str(uuid.uuid4()),
-        assessment_id=f"PQA-TEST-{uuid.uuid4().hex[:8]}",
+        id=f"PQA-TEST-{uuid.uuid4().hex[:8]}",
         rule_id=rule.id,
         prompt_version_id=pv.id,
-        policy_version_number=1,
+        version_number=1,
         archetype="NETWORK_SCAN",
         quality_score=96.0,
         gate_results=gate_results,
@@ -442,7 +441,8 @@ async def test_05_controlled_fortisiem_automation_all_branches_and_emergency_sus
     # 2. AI INSUFFICIENT_EVIDENCE -> NEVER auto-closes
     ins_res = await AutomationGovernor.execute_governed_incident_decision(db_session, "700002", "GDC_NOC", dry_run=True)
     assert ins_res["incident_closed"] is False
-    assert ins_res["execution_status"] == "ROUTED_MANUAL_INSUFFICIENT_EVIDENCE"
+    assert ins_res["execution_status"] == "ROUTED_INSUFFICIENT_EVIDENCE"
+    assert len(ins_res["execution_status"]) <= 32
 
     # 3. AI FALSE_POSITIVE while policy is still disabled -> BLOCKED_SAFETY_BARRIER
     fp_blocked = await AutomationGovernor.execute_governed_incident_decision(db_session, "700003", "GDC_NOC", dry_run=True)
@@ -531,3 +531,160 @@ async def test_06_prompt_improvement_draft_never_mutates_approved_prompt(db_sess
 
     rp = (await db_session.execute(select(RulePrompt).where(RulePrompt.rule_id == rule.id))).scalar_one()
     assert rp.active_version_id == approved_v.id
+
+
+@pytest.mark.asyncio
+async def test_07_llm_response_validation_insufficient_evidence_and_rejections():
+    """Phase 3: Verify INSUFFICIENT_EVIDENCE acceptance and strict rejection of bad refs/confidence/JSON."""
+    import json
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from app.services.model_provider.openai_compatible import OpenAICompatibleProvider
+
+    provider = OpenAICompatibleProvider(base_url="http://127.0.0.1:8000/v1", model_name="Qwen/Qwen2.5-7B-Instruct-AWQ")
+    ok, vstat, err = provider.validate_verdict_schema({
+        "verdict": "INSUFFICIENT_EVIDENCE",
+        "confidence": 40.0,
+        "reason": "Missing raw firewall logs (0 events).",
+    })
+    assert ok is True and vstat == "VALID" and err is None
+
+    def _mock_http_response(content_str: str):
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.json.return_value = {
+            "choices": [{"message": {"content": content_str}}],
+            "usage": {"prompt_tokens": 120, "completion_tokens": 45, "total_tokens": 165},
+        }
+        return resp
+
+    inc_payload = {"incident_id": "176122"}
+    rule_spec = {"id": TARGET_RULE_UUID, "rule_id": TARGET_EVENT_TYPE, "name": TARGET_RULE_NAME}
+
+    # 1. Valid INSUFFICIENT_EVIDENCE normalized safely to REQUIRES_ATTENTION
+    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=_mock_http_response(json.dumps({
+        "incident_id": "176122",
+        "rule_id": TARGET_EVENT_TYPE,
+        "verdict": "INSUFFICIENT_EVIDENCE",
+        "confidence": 35.0,
+        "reason": "Header-only incident with zero raw logs.",
+        "missing_evidence": ["raw firewall logs"],
+        "recommended_action": "Collect FortiGate traffic logs before deciding.",
+    })))):
+        res = await provider.analyze_incident(inc_payload, rule_spec, "TEST PROMPT", 1)
+        assert res.validation_status == "VALID"
+        assert res.verdict == "REQUIRES_ATTENTION"
+        assert "FortiGate" in (res.recommended_action or "")
+
+    # 2. Mismatched incident_id -> rejected with INVALID_INCIDENT_REF + post_capture FAILED
+    post_cb = AsyncMock()
+    pre_cb = AsyncMock(return_value=MagicMock(id="cap-1", request_sha256="abc123"))
+    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=_mock_http_response(json.dumps({
+        "incident_id": "999999",
+        "rule_id": TARGET_EVENT_TYPE,
+        "verdict": "FALSE_POSITIVE",
+        "confidence": 95.0,
+        "reason": "Wrong incident reference",
+    })))):
+        res_bad_inc = await provider.analyze_incident(
+            inc_payload, rule_spec, "TEST PROMPT", 1,
+            capture_callback=pre_cb, post_capture_callback=post_cb,
+        )
+        assert res_bad_inc.validation_status == "INVALID_INCIDENT_REF"
+        assert res_bad_inc.verdict == "REQUIRES_ATTENTION"
+        assert post_cb.await_count == 1
+        assert post_cb.call_args.kwargs["status"] == "FAILED"
+
+    # 3. Mismatched rule_id (e.g. sibling multi-port rule) -> rejected with INVALID_RULE_REF
+    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=_mock_http_response(json.dumps({
+        "incident_id": "176122",
+        "rule_id": SIBLING_EVENT_TYPE,
+        "verdict": "FALSE_POSITIVE",
+        "confidence": 90.0,
+        "reason": "Confused with sibling rule",
+    })))):
+        res_bad_rule = await provider.analyze_incident(inc_payload, rule_spec, "TEST PROMPT", 1)
+        assert res_bad_rule.validation_status == "INVALID_RULE_REF"
+        assert res_bad_rule.verdict == "REQUIRES_ATTENTION"
+
+    # 4. Out-of-range confidence (> 100) -> rejected with INVALID_CONFIDENCE
+    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=_mock_http_response(json.dumps({
+        "incident_id": "176122",
+        "rule_id": TARGET_EVENT_TYPE,
+        "verdict": "FALSE_POSITIVE",
+        "confidence": 150.0,
+        "reason": "Invalid confidence",
+    })))):
+        res_bad_conf = await provider.analyze_incident(inc_payload, rule_spec, "TEST PROMPT", 1)
+        assert res_bad_conf.validation_status == "INVALID_CONFIDENCE"
+        assert res_bad_conf.verdict == "REQUIRES_ATTENTION"
+
+
+@pytest.mark.asyncio
+async def test_08_contradictory_evidence_block_and_rag_partition_isolation(db_session: AsyncSession):
+    """Phases 4, 5 & 7: Contradictory evidence blocks FP closure; LOCKED_TEST never leaks into RAG."""
+    from app.models.learning import LearningRecord
+    from app.services.verified_semantic_retrieval_service import VerifiedSemanticRetrievalService
+    from app.services.historical_ground_truth_validator import HistoricalGroundTruthValidator
+
+    rule = await _seed_target_rule(db_session)
+    pv = await _seed_approved_prompt_with_g1_g8(db_session, rule)
+
+    # Contradictory evidence must block barrier 5 even when rule is in CONTROLLED_PRODUCTION & enabled
+    profile = await RuleLearningService.get_or_create_profile(db_session, TARGET_RULE_UUID, "GDC_NOC")
+    profile.lifecycle_stage = RuleLearningService.STAGE_CONTROLLED_PRODUCTION
+    profile.total_analyst_reviews = 150
+    profile.verified_tp_count = 50
+    profile.verified_fp_count = 100
+    profile.ai_correct_count = 150
+    profile.ai_incorrect_count = 0
+    profile.error_distribution = {"agreement_tp": 50, "agreement_fp": 100, "critical_missed_tp": 0, "ai_false_alarm": 0}
+    RuleLearningService._recalculate_profile_metrics(profile)
+    db_session.add(profile)
+    await db_session.commit()
+
+    await PromotionService.update_automation_policy(
+        db=db_session, rule_id=TARGET_RULE_UUID, customer="GDC_NOC",
+        admin_user_id=ADMIN_USER.username, is_enabled=True, reason="Enable for barrier 5 test",
+    )
+    inc_contra = Incident(
+        id=str(uuid.uuid4()), incident_id="700099", rule_id=rule.id, event_type=TARGET_EVENT_TYPE,
+        title=TARGET_RULE_NAME, customer="GDC_NOC",
+        ai_verdict={
+            "verdict": "FALSE_POSITIVE", "trust_score": 9, "confidence": 91.0,
+            "reason": "Mixed outbound browsing and internal denied sweeps",
+            "contradictory_evidence": ["25 denied flows to internal port 445 conflict with browsing claim"],
+            "policy_version_id": pv.id, "policy_version_number": 1,
+        },
+    )
+    db_session.add(inc_contra)
+    await db_session.commit()
+
+    contra_res = await AutomationGovernor.execute_governed_incident_decision(db_session, "700099", "GDC_NOC", dry_run=True)
+    assert contra_res["incident_closed"] is False
+    assert contra_res["barriers"]["barrier_05_zero_contradictions"] is False
+
+    # Verify LOCKED_TEST partition isolation in VerifiedSemanticRetrievalService
+    locked_id = next(
+        f"INC-LOCK-{i}"
+        for i in range(1, 500)
+        if str(getattr(HistoricalGroundTruthValidator.assign_partition(f"INC-LOCK-{i}"), "value", "")).upper() == "LOCKED_TEST"
+    )
+    inc_locked = Incident(
+        id=str(uuid.uuid4()), incident_id=locked_id, rule_id=rule.id, event_type=TARGET_EVENT_TYPE,
+        title=TARGET_RULE_NAME, customer="GDC_NOC",
+    )
+    db_session.add(inc_locked)
+    await db_session.flush()
+    lr_locked = LearningRecord(
+        rule_id=rule.id, incident_id=inc_locked.id, verified_verdict="FALSE_POSITIVE",
+        analyst_explanation="Heavy TCP Host Scan On Fixed Port authorized scanner",
+        verification_status="VERIFIED",
+    )
+    db_session.add(lr_locked)
+    await db_session.commit()
+
+    rag = await VerifiedSemanticRetrievalService.retrieve_verified_precedents(
+        db=db_session, incident=inc_contra, rule_id=rule.id, max_precedents=5
+    )
+    assert all(p.incident_id != locked_id for p in rag.precedents)
+    assert rag.candidates_rejected_future_leakage >= 1

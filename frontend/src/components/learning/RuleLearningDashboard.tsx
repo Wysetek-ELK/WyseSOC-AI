@@ -79,6 +79,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
   const [loadingEvidence, setLoadingEvidence] = useState(false);
   const [dryRunResult, setDryRunResult] = useState<any | null>(null);
   const [runningDryRun, setRunningDryRun] = useState(false);
+  const [updatingAutomationPolicy, setUpdatingAutomationPolicy] = useState(false);
   const [promptInspectorOpen, setPromptInspectorOpen] = useState(false);
   const [promptInspectorIncidentId, setPromptInspectorIncidentId] = useState<string | null>(null);
 
@@ -314,6 +315,34 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
     }
   };
 
+  const handleToggleRuleAutomation = async (enable: boolean) => {
+    if (!ruleId) return;
+    setUpdatingAutomationPolicy(true);
+    setFeedback(null);
+    try {
+      await api.updateAutomationPolicy(ruleId, {
+        customer: profile?.customer || customer || "DEFAULT",
+        is_enabled: enable,
+        emergency_disable: enable ? false : undefined,
+        reason: enable
+          ? "Administrator explicitly enabled controlled FP automation"
+          : "Administrator disabled rule-scoped FP automation",
+      });
+      setFeedback({
+        type: "success",
+        text: enable
+          ? "Controlled FP automation enabled for this rule/tenant scope."
+          : "Controlled FP automation disabled for this rule/tenant scope.",
+      });
+      await fetchProfile();
+      await fetchGovernanceData();
+    } catch (err: any) {
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, "Failed to update automation policy") });
+    } finally {
+      setUpdatingAutomationPolicy(false);
+    }
+  };
+
   const handleEngageKillSwitch = async () => {
     if (!killSwitchReason.trim()) return;
     setEngagingKillSwitch(true);
@@ -459,12 +488,15 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
 
           {stage === "SUPERVISED_PILOT" && (
             <button
-              onClick={() => handleTransition("CONTROLLED_PRODUCTION", "Formal promotion to Controlled Production automation")}
+              onClick={() => {
+                setTargetStage("CONTROLLED_PRODUCTION");
+                setActiveSubTab("governance");
+              }}
               disabled={transitioning || !isEligible}
-              title={!isEligible ? "Rule does not satisfy production criteria (see checklist below)" : "Promote to Production"}
+              title={!isEligible ? "Rule does not satisfy 95% accuracy & safety criteria (see checklist below)" : "Open formal Request Production Approval workflow"}
               className="px-3 py-1.5 rounded-lg bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 border border-emerald-700 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
             >
-              Promote to CONTROLLED PRODUCTION
+              Request Production Approval
               <ShieldCheck className="w-3.5 h-3.5" />
             </button>
           )}
@@ -535,8 +567,8 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
       {/* SUB-TAB 1: ACCURACY & CONFUSION MATRIX */}
       {activeSubTab === "metrics" && (
         <div className="space-y-4">
-          {/* 4 Primary Metric Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {/* Primary Metric Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
             <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40">
               <div className="text-[10px] uppercase font-bold text-slate-400">Total Analyst Reviews</div>
               <div className="text-xl font-bold text-slate-100 mt-1">{profile.total_analyst_reviews}</div>
@@ -546,11 +578,19 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
             </div>
 
             <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40">
+              <div className="text-[10px] uppercase font-bold text-slate-400">Verified Rule Accuracy</div>
+              <div className="text-xl font-bold text-indigo-300 mt-1">
+                {profile.empirical_accuracy != null ? `${(profile.empirical_accuracy * 100).toFixed(1)}%` : "N/A"}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Target: ≥95.0%</div>
+            </div>
+
+            <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40">
               <div className="text-[10px] uppercase font-bold text-slate-400">Observed FP Precision</div>
               <div className="text-xl font-bold text-emerald-400 mt-1">
                 {profile.fp_precision !== null ? `${(profile.fp_precision * 100).toFixed(1)}%` : "N/A"}
               </div>
-              <div className="text-[10px] text-slate-500 mt-0.5">Target: ≥98.0%</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Target: ≥99.0%</div>
             </div>
 
             <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40">
@@ -714,18 +754,74 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                 <span>Critical Missed TPs (= 0)</span>
                 <span className="font-bold">{confusion.critical_missed_tp}</span>
               </div>
+
+              <div
+                className={`p-2 rounded border flex items-center justify-between ${
+                  profile.readiness_governance?.g1_g8_passed
+                    ? "bg-emerald-950/20 border-emerald-900 text-emerald-300"
+                    : "bg-slate-950/40 border-slate-800 text-slate-400"
+                }`}
+              >
+                <span>AIS Quality Gates (G1–G8)</span>
+                <span className="font-bold">{profile.readiness_governance?.gates_passed_count ?? 0}/8</span>
+              </div>
+
+              <div
+                className={`p-2 rounded border flex items-center justify-between ${
+                  profile.readiness_governance?.approved_prompt_version_number
+                    ? "bg-emerald-950/20 border-emerald-900 text-emerald-300"
+                    : "bg-slate-950/40 border-slate-800 text-slate-400"
+                }`}
+              >
+                <span>Approved Policy &amp; Model</span>
+                <span className="font-bold font-mono text-[10px] truncate max-w-[140px]">
+                  {profile.readiness_governance?.approved_prompt_version_number
+                    ? `v${profile.readiness_governance.approved_prompt_version_number}`
+                    : "None"}{" "}
+                  / {profile.active_model_identifier || "Local LLM"}
+                </span>
+              </div>
+
+              <div
+                className={`p-2 rounded border flex items-center justify-between ${
+                  (profile.readiness_governance?.unresolved_disputes ?? 0) === 0
+                    ? "bg-emerald-950/20 border-emerald-900 text-emerald-300"
+                    : "bg-rose-950/30 border-rose-800 text-rose-300"
+                }`}
+              >
+                <span>Unresolved Disputes (= 0)</span>
+                <span className="font-bold">{profile.readiness_governance?.unresolved_disputes ?? 0}</span>
+              </div>
             </div>
 
-            <div className="flex items-center justify-end pt-1">
-              <button
-                type="button"
-                onClick={handleSuggestPromptImprovement}
-                disabled={suggestingDraft}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 disabled:opacity-50"
-              >
-                <GitBranch className="w-3.5 h-3.5" />
-                {suggestingDraft ? "Generating Candidate Draft..." : "Propose Feedback-Driven Prompt Draft"}
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <div className="text-[11px] text-slate-400 font-mono">
+                Coverage: {((profile.coverage ?? 0) * 100).toFixed(1)}% &bull; Abstention Rate: {((profile.abstention_rate ?? 0) * 100).toFixed(1)}% &bull; False Alarm Rate: {((profile.false_alarm_rate ?? 0) * 100).toFixed(1)}%
+              </div>
+              <div className="flex items-center gap-2">
+                {isEligible && stage !== "CONTROLLED_PRODUCTION" && stage !== "MONITORING" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetStage("CONTROLLED_PRODUCTION");
+                      setActiveSubTab("governance");
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1.5"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Request Production Approval
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSuggestPromptImprovement}
+                  disabled={suggestingDraft}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <GitBranch className="w-3.5 h-3.5" />
+                  {suggestingDraft ? "Generating Candidate Draft..." : "Propose Feedback-Driven Prompt Draft"}
+                </button>
+              </div>
             </div>
 
             {!isEligible && eligibilityReasons.length > 0 && (
@@ -761,7 +857,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
               </div>
               <div className="p-2.5 rounded-lg bg-slate-950/40 border border-slate-800 space-y-1">
                 <div className="font-bold text-slate-200">4. Production Accuracy Eligibility</div>
-                <div>Mandates all empirical criteria simultaneously: sample threshold, FP Precision ≥98%, Wilson Lower Bound ≥96%, and TP Recall ≥95%. When sample size is insufficient, accuracy is marked N/A, never PASS.</div>
+                <div>Mandates all empirical criteria simultaneously: ≥100 eligible evaluations, Verified Accuracy ≥95%, Observed FP Precision ≥99%, Wilson Lower Bound ≥96%, TP Recall ≥95%, 0 Missed TPs, and G1–G8 PASS. When sample size is insufficient, accuracy is marked N/A, never PASS.</div>
               </div>
             </div>
           </div>
@@ -1259,8 +1355,33 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
               </div>
             </div>
 
-            {selectedIncident?.incident_id && (
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => handleToggleRuleAutomation(!profile.automation_policy?.is_enabled)}
+                disabled={
+                  updatingAutomationPolicy ||
+                  (!profile.automation_policy?.is_enabled &&
+                    (!isEligible || !["CONTROLLED_PRODUCTION", "MONITORING"].includes(stage)))
+                }
+                title={
+                  !profile.automation_policy?.is_enabled && (!isEligible || !["CONTROLLED_PRODUCTION", "MONITORING"].includes(stage))
+                    ? "Requires CONTROLLED_PRODUCTION stage and all readiness gates passing"
+                    : "Toggle rule-scoped FP auto-closure"
+                }
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border disabled:opacity-50 ${
+                  profile.automation_policy?.is_enabled
+                    ? "bg-amber-900/50 hover:bg-amber-800 text-amber-200 border-amber-700"
+                    : "bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 border-emerald-700"
+                }`}
+              >
+                {updatingAutomationPolicy
+                  ? "Updating Policy..."
+                  : profile.automation_policy?.is_enabled
+                  ? "Disable Rule FP Auto-Closure"
+                  : "Enable Rule FP Auto-Closure (Admin)"}
+              </button>
+              {selectedIncident?.incident_id && (
                 <button
                   type="button"
                   onClick={() => handleDryRunDecision(String(selectedIncident.incident_id))}
@@ -1269,13 +1390,13 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                 >
                   {runningDryRun ? "Simulating..." : `Simulate Automation Dry-Run on Incident #${selectedIncident.incident_id}`}
                 </button>
-                {dryRunResult && (
-                  <span className="text-[11px] font-mono text-cyan-300">
-                    {dryRunResult.action_taken} → {dryRunResult.execution_status} (closed={String(dryRunResult.incident_closed)})
-                  </span>
-                )}
-              </div>
-            )}
+              )}
+              {dryRunResult && (
+                <span className="text-[11px] font-mono text-cyan-300">
+                  {dryRunResult.action_taken} → {dryRunResult.execution_status} (closed={String(dryRunResult.incident_closed)})
+                </span>
+              )}
+            </div>
 
             {automationAudits.length > 0 && (
               <div className="space-y-1.5 pt-1">

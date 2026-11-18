@@ -245,9 +245,9 @@ class AutomationGovernor:
         reason = str(ai_v.get("reason") or ai_v.get("reasoning") or "")
         supporting_ev = ai_v.get("supporting_evidence") or []
         missing_ev = ai_v.get("missing_evidence") or []
-        recommended_actions = ai_v.get("analyst_questions") or ai_v.get("recommended_actions") or []
-        prompt_ver = ai_v.get("prompt_version_number")
-        prompt_ver_id = ai_v.get("prompt_version_id")
+        recommended_actions = ai_v.get("analyst_questions") or ai_v.get("recommended_actions") or ([ai_v["recommended_action"]] if ai_v.get("recommended_action") else [])
+        prompt_ver = ai_v.get("prompt_version_number") or ai_v.get("policy_version_number")
+        prompt_ver_id = ai_v.get("prompt_version_id") or ai_v.get("policy_version_id")
         model_id = str(ai_v.get("model_identifier") or "UNKNOWN_MODEL")
         has_contradictions = bool(
             ai_v.get("contradictory_evidence")
@@ -299,7 +299,7 @@ class AutomationGovernor:
                 rule_id=rule_ref,
                 customer=eff_customer,
                 action_type="ROUTE_TO_MANUAL_REVIEW",
-                execution_status="ROUTED_MANUAL_INSUFFICIENT_EVIDENCE",
+                execution_status="ROUTED_INSUFFICIENT_EVIDENCE",
                 safety_checks={"auto_closure_attempted": False, "verdict": verdict},
                 summary=summary,
             )
@@ -309,7 +309,7 @@ class AutomationGovernor:
                 "customer": eff_customer,
                 "verdict": verdict,
                 "action_taken": "ROUTE_TO_MANUAL_REVIEW",
-                "execution_status": "ROUTED_MANUAL_INSUFFICIENT_EVIDENCE",
+                "execution_status": "ROUTED_INSUFFICIENT_EVIDENCE",
                 "incident_closed": False,
                 "dry_run": dry_run,
                 "audit_id": audit.id,

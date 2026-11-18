@@ -831,6 +831,7 @@ class RuleLearningService:
         NEVER mutates the currently approved production prompt or fine-tunes the model.
         """
         from app.services.prompt_studio_service import PromptStudioService
+        from app.schemas.prompt import PromptVersionCreate
 
         profile = await cls.get_or_create_profile(db=db, rule_id=rule_id, customer=customer)
         rev_res = await db.execute(
@@ -853,7 +854,10 @@ class RuleLearningService:
 
         ps = PromptStudioService(db)
         rp = await ps.get_or_create_rule_prompt(profile.rule_id)
-        base_ver = rp.active_version or (rp.versions[0] if rp.versions else None)
+        versions_list = list(rp.versions or [])
+        base_ver = next((v for v in versions_list if rp.active_version_id and v.id == rp.active_version_id), None)
+        if base_ver is None and versions_list:
+            base_ver = versions_list[0]
 
         tp_additions = []
         fp_additions = []
@@ -885,18 +889,24 @@ class RuleLearningService:
             f"(missed_tp={len(missed_tps)}, false_alarm={len(false_alarms)}, resolved_abstention={len(abstentions)}). "
             f"Requires offline replay and explicit Admin approval before activation."
         )
-        draft = await ps.create_draft_version(
-            rule_id=profile.rule_id,
-            common_prompt=(base_ver.common_prompt if base_ver else ""),
-            rule_specific_prompt=(base_ver.rule_specific_prompt if base_ver else ""),
-            detection_conditions=(base_ver.detection_conditions if base_ver else ""),
-            required_evidence=(base_ver.required_evidence if base_ver else ""),
+        base_rule_prompt = ((base_ver.rule_specific_prompt if base_ver else "") or "").strip()
+        if len(base_rule_prompt) < 5:
+            base_rule_prompt = f"Rule-specific investigation directive for {profile.rule_identifier}"
+        draft_payload = PromptVersionCreate(
+            common_prompt=(base_ver.common_prompt if base_ver else "") or "",
+            rule_specific_prompt=base_rule_prompt,
+            detection_conditions=(base_ver.detection_conditions if base_ver else "") or "",
+            required_evidence=(base_ver.required_evidence if base_ver else "") or "",
             tp_indicators=tp_text,
             fp_indicators=fp_text,
             missing_info_criteria=abs_text,
-            escalation_conditions=(base_ver.escalation_conditions if base_ver else ""),
-            analyst_questions=(base_ver.analyst_questions if base_ver else []),
-            change_summary=summary,
+            escalation_conditions=(base_ver.escalation_conditions if base_ver else "") or "",
+            analyst_questions=list(base_ver.analyst_questions) if (base_ver and base_ver.analyst_questions) else [],
+            change_summary=summary[:512],
+        )
+        draft = await ps.create_draft_version(
+            rule_id=profile.rule_id,
+            data=draft_payload,
             user_id=user_id,
         )
         return {

@@ -32,9 +32,17 @@ class PolicyCompilerService:
         "type": "object",
         "required": ["verdict", "confidence", "reason", "supporting_claims"],
         "properties": {
+            "incident_id": {
+                "type": "string",
+                "description": "Exact Incident ID being evaluated (must match input incident.incident_id)."
+            },
+            "rule_id": {
+                "type": "string",
+                "description": "Exact detection rule reference (rule UUID or event_type)."
+            },
             "verdict": {
                 "type": "string",
-                "enum": ["TRUE_POSITIVE", "FALSE_POSITIVE", "REQUIRES_ATTENTION"],
+                "enum": ["TRUE_POSITIVE", "FALSE_POSITIVE", "INSUFFICIENT_EVIDENCE", "REQUIRES_ATTENTION"],
                 "description": "Deterministic or proposed classification for the incident."
             },
             "confidence": {
@@ -90,10 +98,24 @@ class PolicyCompilerService:
                     }
                 }
             },
+            "supporting_evidence": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Specific supporting canonical evidence references (EV-* IDs or exact telemetry observations)."
+            },
+            "contradictory_evidence": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Any contradictory or conflicting evidence observed in telemetry."
+            },
             "missing_evidence": {
                 "type": "array",
                 "items": {"type": "string"},
                 "description": "Required evidence items absent from the incident telemetry."
+            },
+            "recommended_action": {
+                "type": "string",
+                "description": "Recommended SOC analyst triage or escalation action."
             },
             "analyst_questions": {
                 "type": "array",

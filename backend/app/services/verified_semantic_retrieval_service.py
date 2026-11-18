@@ -161,9 +161,9 @@ class VerifiedSemanticRetrievalService:
                 continue
             try:
                 from app.services.historical_ground_truth_validator import HistoricalGroundTruthValidator
-                query_part = HistoricalGroundTruthValidator.assign_partition(str(query_inc_id))
                 cand_part = HistoricalGroundTruthValidator.assign_partition(str(cand_inc_id))
-                if query_part == "LOCKED_TEST" and cand_part == "LOCKED_TEST":
+                cand_part_val = getattr(cand_part, "value", str(cand_part))
+                if str(cand_part_val).upper() == "LOCKED_TEST":
                     future_leakage_count += 1
                     continue
             except Exception:
