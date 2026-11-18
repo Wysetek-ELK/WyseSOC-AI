@@ -843,3 +843,83 @@ async def test_10_v8_evidence_alignment_fortigate_contract_and_label_reversal(db
     assert p2.ai_correct_count == 0 and p2.ai_incorrect_count == 1
     assert p2.error_distribution.get("agreement_fp", 0) == 0
     assert p2.error_distribution.get("critical_missed_tp", 0) == 1
+
+
+@pytest.mark.asyncio
+async def test_11_v81_truncation_detection_sample_context_and_4096_768_budget(db_session: AsyncSession):
+    """V8.1 Phases 2-4 & 9: 4096/768 budget preserves scan.policy_and_service & scan.sample_context; extended 8192 budget works; truncated JSON is flagged TRUNCATED_OUTPUT."""
+    from app.services.policy_compiler_service import PolicyCompilerService
+    from app.services.token_budget_service import TokenBudgetService
+    from app.schemas.compiled_policy import CompilationExecutionMode
+    from app.services.model_provider.openai_compatible import robust_parse_model_verdict_json
+
+    rule = await _seed_target_rule(db_session)
+    pv = await _seed_approved_prompt_with_g1_g8(db_session, rule)
+    compiled = PolicyCompilerService.compile_policy(rule, pv, CompilationExecutionMode.LIVE)
+
+    inc = Incident(
+        id=str(uuid.uuid4()), incident_id="176011", rule_id=rule.id, event_type=TARGET_EVENT_TYPE,
+        title=TARGET_RULE_NAME, severity="MEDIUM", customer="GDC_NOC",
+        raw_payload={"incidentSrc": "srcIpAddr:172.25.24.154", "incidentTarget": "destIpPort:443", "incidentDetail": '{"incidentCount":103}'},
+    )
+    evts = [
+        IncidentEvent(
+            id=str(uuid.uuid4()), incident_id=inc.id, event_id=f"evt-{i}",
+            event_receive_time=1794476000000 + (i * 1000),
+            event_type="FortiGate-traffic-end-forward-client-rst",
+            raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.154 srcport={50000+i} dstip=198.51.100.{(i%75)+1} dstport=443 proto=6 action="client-rst" policyname="Cybersecurity" service="Browsing" sentbyte={1000+i} rcvdbyte={2000+i}',
+            attributes={"Source IP": "172.25.24.154", "Destination IP": f"198.51.100.{(i%75)+1}", "Destination TCP/UDP Port": 443},
+        )
+        for i in range(100)
+    ]
+    norm = EvidenceNormalizationService.normalize_incident_evidence(inc, events=evts)
+    norm_fields = {r.source_field: r.observed_value for r in norm.records}
+    assert "scan.sample_context" in norm_fields
+    assert "sampled_events=100" in norm_fields["scan.sample_context"]
+    assert "sample_unique_dst_hosts=75" in norm_fields["scan.sample_context"]
+
+    payload = {
+        "incident_id": inc.incident_id, "title": inc.title, "event_type": inc.event_type,
+        "description": "", "detail": "", "category": "", "subcategory": "", "source_ip": "",
+        "rule_id": TARGET_EVENT_TYPE, "rule_name": TARGET_RULE_NAME,
+        "rule_pattern": "Expression: COUNT(DISTINCT destIpAddr) >= 100 AND destIpPort IS NOT NULL AND ipProto = 6\nWindow: 180s",
+        "evidence_contract": {
+            "contract_id": f"EC-{TARGET_RULE_UUID}-V8", "version": 8,
+            "required_fields": ["security.event_type", "event.timestamp", "network.source_ip", "network.destination_port"],
+            "conditional_fields": ["scan.policy_and_service", "scan.window_seconds", "scan.rate_per_second", "network.protocol"],
+            "optional_fields": ["network.tcp_flags"],
+        },
+        "canonical_evidence": [r.model_dump() for r in norm.records],
+        "events": [{"event_id": e.event_id, "raw_log": e.raw_log, "attributes": e.attributes} for e in evts],
+    }
+
+    # A. 4096-token context with 768 reserved completion tokens (available_prompt_budget = 3328)
+    b4k = TokenBudgetService.budget_prompt(
+        compiled_policy=compiled, incident_payload=payload, rag_block="",
+        max_context_tokens=4096, max_completion_tokens=768, reserved_overhead_tokens=160,
+    )
+    assert b4k.can_proceed_to_inference is True, f"4096/768 budget failed: {b4k.abstention_reason}"
+    assert b4k.breakdown.total_prompt_tokens <= 3328
+    kept_4k = {r.get("source_field") for r in b4k.budgeted_incident_payload.get("canonical_evidence", [])}
+    for req_f in (
+        "network.source_ip", "network.destination_port", "network.protocol", "event.timestamp",
+        "scan.raw_events_count", "scan.connection_count", "scan.unique_destination_hosts",
+        "scan.destination_scope", "scan.firewall_action_summary", "scan.tcp_behavior_summary",
+        "scan.policy_and_service", "scan.sample_context",
+    ):
+        assert req_f in kept_4k, f"Essential scan field '{req_f}' was lost under 4096/768 compaction! kept={sorted(kept_4k)}"
+
+    # B. Optional extended 8192-token context with 1024 completion tokens
+    b8k = TokenBudgetService.budget_prompt(
+        compiled_policy=compiled, incident_payload=payload, rag_block="",
+        max_context_tokens=8192, max_completion_tokens=1024, reserved_overhead_tokens=160,
+    )
+    assert b8k.can_proceed_to_inference is True
+    assert b8k.breakdown.available_prompt_budget == 7168
+
+    # C. Truncated JSON repair MUST explicitly tag _truncated_output=True (never silently VALID)
+    cut_json = '{"incident_id":"176011","rule_id":"40498741-ee6b-4a71-9101-0d6d3f77154c","verdict":"FALSE_POSITIVE","confidence":85.0,"reason":"Truncated mid-claim","supporting_claims":[{"claim_text":"cut off'
+    parsed_trunc, err_trunc = robust_parse_model_verdict_json(cut_json)
+    assert err_trunc is None and parsed_trunc is not None
+    assert parsed_trunc.get("_truncated_output") is True
+    assert parsed_trunc.get("_schema_recovery_applied") is True

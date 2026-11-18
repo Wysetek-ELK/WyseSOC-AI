@@ -328,15 +328,26 @@ class EvidenceCompactionService:
             }
 
         # Partition records into Mandatory Core Anchors vs Auxiliary Telemetry.
-        # For high-cardinality multi-valued per-event fields (e.g., 100 distinct dest IPs/ports/bytes
-        # in horizontal scan incidents), preserve ALL deterministic scan.* aggregates plus 1 representative
-        # anchor per contract field, moving overflow records to relevance-sorted auxiliary_records.
+        # When overflowing tight context budgets (e.g. 4096 tokens), strip redundant wire key
+        # `evidence_type` (always preserving `evidence_id`, `source_field`, `observed_value`)
+        # so ALL essential scan & contract fields fit cleanly without losing investigation signal.
+        wire_dicts: List[Dict[str, Any]] = []
+        for d in compacted_dicts:
+            slim_d = {
+                "evidence_id": d["evidence_id"],
+                "source_field": d["source_field"],
+                "observed_value": d["observed_value"],
+            }
+            if "occurrence_count" in d:
+                slim_d["occurrence_count"] = d["occurrence_count"]
+            wire_dicts.append(slim_d)
+
         core_records: List[Dict[str, Any]] = []
         auxiliary_records: List[Dict[str, Any]] = []
         core_field_counts: Dict[str, int] = {}
-        has_scan_aggregates = any(str(d.get("source_field", "")).lower().startswith("scan.") for d in compacted_dicts)
+        has_scan_aggregates = any(str(d.get("source_field", "")).lower().startswith("scan.") for d in wire_dicts)
 
-        for r_dict in compacted_dicts:
+        for r_dict in wire_dicts:
             f_norm = r_dict["source_field"].lower()
             is_forensic = f_norm in DO_NOT_COLLAPSE_FIELDS or any(term in f_norm for term in DO_NOT_COLLAPSE_FIELDS)
             is_scan_agg = f_norm.startswith("scan.") or f_norm == "network.destination_ip_list"
@@ -363,10 +374,10 @@ class EvidenceCompactionService:
 
         # For high-cardinality scan incidents with deterministic scan.* aggregates,
         # if the expanded core + contract set slightly exceeds tight 4096-context budgets,
-        # demote secondary/redundant scan fields (e.g. single destination_ip when destination_ip_list
-        # & destination_scope are present, or event.time_range when scan.window_seconds is present)
-        # to the front of auxiliary_records so they are re-packed up to exact budget without
-        # dropping the mandatory scan triage core.
+        # demote secondary/redundant scan fields to the front of auxiliary_records in explicit
+        # investigative priority order (`scan.policy_and_service`, `event.timestamp`,
+        # `network.protocol`, `scan.sample_context`, `scan.window_seconds`, `scan.rate_per_second`,
+        # `network.destination_ip_list`, `security.event_type`) so they are packed up to exact budget.
         if has_scan_aggregates and core_tokens > max_evidence_budget_tokens:
             essential_scan_fields = frozenset({
                 "network.source_ip",
@@ -379,13 +390,14 @@ class EvidenceCompactionService:
                 "scan.tcp_behavior_summary",
             })
             secondary_priority = {
-                "event.timestamp": 0,
-                "network.protocol": 1,
-                "security.event_type": 2,
-                "scan.policy_and_service": 3,
+                "scan.policy_and_service": 0,
+                "event.timestamp": 1,
+                "network.protocol": 2,
+                "scan.sample_context": 3,
                 "scan.window_seconds": 4,
                 "scan.rate_per_second": 5,
                 "network.destination_ip_list": 6,
+                "security.event_type": 7,
             }
             essential_core: List[Dict[str, Any]] = []
             demoted_core: List[Dict[str, Any]] = []

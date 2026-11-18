@@ -64,6 +64,7 @@ CANONICAL_FIELD_CATALOG: Set[str] = {
     "scan.tcp_behavior_summary",
     "scan.policy_and_service",
     "scan.window_seconds",
+    "scan.sample_context",
     "network.destination_ip_list",
     "network.tcp_flags",
     "webCategory",

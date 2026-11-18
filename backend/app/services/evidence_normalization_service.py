@@ -717,12 +717,30 @@ class EvidenceNormalizationService:
         add_fn("scan.raw_events_count", len(evts), "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "events_count", "AGGREGATED")
 
         # Connection count fallback from incidentDetail or raw events
-        has_conn_count = any(r.source_field == "scan.connection_count" for r in records)
+        conn_val = len(evts)
+        has_conn_count = False
+        for r in records:
+            if r.source_field == "scan.connection_count":
+                has_conn_count = True
+                try:
+                    conn_val = int(float(r.observed_value))
+                except Exception:
+                    pass
+                break
         if not has_conn_count and len(evts) > 0:
             add_fn("scan.connection_count", len(evts), "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "events_count", "AGGREGATED")
 
         if dst_ips:
             add_fn("scan.unique_destination_hosts", len(dst_ips), "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "dstip_distinct", "AGGREGATED")
+            add_fn(
+                "scan.sample_context",
+                f"sampled_events={len(evts)}, sample_unique_dst_hosts={len(dst_ips)}, full_window_trigger_count={conn_val} (sample is a subset of SIEM trigger window)",
+                "NETWORK_CONNECTION",
+                "SCAN_SUMMARY",
+                obs_time,
+                "sample_scope",
+                "AGGREGATED",
+            )
             sample_str = ", ".join(dst_ips[:5]) + (f" (+{len(dst_ips) - 5} more)" if len(dst_ips) > 5 else "")
             add_fn("network.destination_ip_list", sample_str, "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "dstip_list", "AGGREGATED")
 

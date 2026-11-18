@@ -196,6 +196,19 @@ class TokenBudgetService:
         payload_work = copy.deepcopy(incident_payload)
         rag_work = rag_block or ""
 
+        # Step 0 (Lossless wire cleanup): drop empty-string/None optional header keys and
+        # remove duplicate `rule_pattern` when Section 3 already carries detection conditions,
+        # preserving incident_id, rule_id, event_type, title, timestamps, and canonical_evidence.
+        for _empty_k in ("description", "detail", "category", "subcategory", "source_ip", "reporting_device", "reporting_ip"):
+            if _empty_k in payload_work and (payload_work[_empty_k] is None or payload_work[_empty_k] == ""):
+                del payload_work[_empty_k]
+        if (
+            "rule_pattern" in payload_work
+            and compiled_policy.compiled_system_prompt
+            and "SECTION 3:" in compiled_policy.compiled_system_prompt
+        ):
+            del payload_work["rule_pattern"]
+
         # Measure Priority 1 & 2 (Compiled System Prompt)
         # Note: sections 1-9 are P2, sections 10-11 are P1
         p1_schema_tokens = cls.estimate_tokens(compiled_policy.model_response_schema) + 120
@@ -329,7 +342,7 @@ class TokenBudgetService:
                 + cls.estimate_tokens(contract_info)
                 + cls.estimate_tokens(payload_work.get("title"))
                 + max(0, int(reserved_overhead_tokens))
-                + 240  # wire margin + incident header fields + slimmed events[0]
+                + 140  # wire margin + cleaned incident header fields + slimmed events[0]
             )
             avail_ev_budget = max(400, available_budget - overhead)
 

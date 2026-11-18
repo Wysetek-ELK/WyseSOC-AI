@@ -80,10 +80,16 @@ def robust_parse_model_verdict_json(raw_text: str) -> Tuple[Optional[Dict[str, A
         pass
 
     # 5. Self-healing for truncated JSON (unterminated strings, unclosed brackets/braces)
+    # Explicitly tag _truncated_output=True so downstream validators NEVER treat a syntactically
+    # repaired truncation as an unconditionally valid complete model response.
     repaired = _repair_truncated_json(sanitized)
     if repaired:
         try:
-            return json.loads(repaired, strict=False), None
+            repaired_obj = json.loads(repaired, strict=False)
+            if isinstance(repaired_obj, dict):
+                repaired_obj["_truncated_output"] = True
+                repaired_obj["_schema_recovery_applied"] = True
+                return repaired_obj, None
         except json.JSONDecodeError:
             pass
 
@@ -329,7 +335,8 @@ class OpenAICompatibleProvider(BaseModelProvider):
             try:
                 override_int = int(max_tokens_override)
                 if override_int > 0:
-                    effective_max_tokens = min(self.max_tokens, override_int)
+                    # Honor pipeline-verified token-budget override (bounded safely <= 1024)
+                    effective_max_tokens = min(override_int, max(self.max_tokens, 1024))
             except Exception:
                 pass
 
@@ -409,7 +416,9 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     )
 
                 data = res.json()
-                raw_reply = data["choices"][0]["message"]["content"]
+                choice0 = data["choices"][0]
+                raw_reply = choice0["message"]["content"]
+                finish_reason = str(choice0.get("finish_reason") or "").lower().strip()
                 usage = data.get("usage", {})
                 prompt_tokens = int(usage.get("prompt_tokens", 0))
                 completion_tokens = int(usage.get("completion_tokens", 0))
@@ -624,6 +633,63 @@ class OpenAICompatibleProvider(BaseModelProvider):
                             raw_model_response=raw_reply,
                             outbound_payload=payload,
                         )
+
+                is_truncated = (finish_reason == "length") or bool(parsed.get("_truncated_output", False))
+                # If output was truncated (finish_reason='length' or required JSON truncation repair),
+                # NEVER silently accept a decisive TP/FP verdict or mark the response VALID.
+                if is_truncated:
+                    trunc_note = (
+                        f"TRUNCATED_OUTPUT (finish_reason={finish_reason or 'repaired'}, "
+                        f"completion_tokens={completion_tokens}/{effective_max_tokens}): "
+                        "Incomplete model response routed safely to manual analyst review."
+                    )
+                    base_reason = str(parsed.get("reason") or "").strip()
+                    combined_reason = f"{trunc_note} {base_reason}".strip() if base_reason else trunc_note
+                    if post_capture_cb and capture_meta:
+                        try:
+                            await post_capture_cb(
+                                capture_meta=capture_meta,
+                                status="COMPLETED",
+                                response_raw=raw_reply,
+                                response_verdict="REQUIRES_ATTENTION",
+                                response_confidence=0.0,
+                                prompt_tokens=prompt_tokens,
+                                completion_tokens=completion_tokens,
+                                total_tokens=total_tokens,
+                                latency_ms=latency_ms,
+                                error_message=trunc_note,
+                            )
+                        except Exception:
+                            pass
+                    return StructuredModelVerdict(
+                        incident_id=incident_id,
+                        rule_id=rule_id,
+                        verdict="REQUIRES_ATTENTION",
+                        confidence=0.0,
+                        reason=combined_reason,
+                        supporting_evidence=parsed.get("supporting_evidence", []) if isinstance(parsed.get("supporting_evidence"), list) else [],
+                        supporting_claims=supporting_claims,
+                        contradictory_evidence=contradictory_ev,
+                        missing_evidence=list(dict.fromkeys(
+                            (parsed.get("missing_evidence", []) if isinstance(parsed.get("missing_evidence"), list) else [])
+                            + ["Complete untruncated LLM JSON response"]
+                        )),
+                        analyst_questions=parsed.get("analyst_questions", []) if isinstance(parsed.get("analyst_questions"), list) else [],
+                        recommended_action="Route incident to manual SOC analyst review due to truncated LLM output.",
+                        latency_ms=latency_ms,
+                        model_identifier=self.model_name,
+                        prompt_version_number=prompt_version_number,
+                        validation_status="TRUNCATED_OUTPUT",
+                        is_simulated=False,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        total_tokens=total_tokens,
+                        prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                        prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                        prompt_integrity_status="VERIFIED" if capture_meta else "UNVERIFIED",
+                        raw_model_response=raw_reply,
+                        outbound_payload=payload,
+                    )
 
                 # If output required regex recovery from malformed non-JSON response,
                 # decisive TP/FP classifications must NEVER be accepted as valid.

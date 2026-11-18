@@ -808,8 +808,8 @@ async def run_shared_verdict_pipeline(
         else configured_ctx
     )
     reserved_comp_tokens = int(model_profile.get("reserved_output_tokens") or getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
-    if effective_max_ctx <= 4096 and reserved_comp_tokens > 512:
-        reserved_comp_tokens = 512
+    if effective_max_ctx <= 4096 and reserved_comp_tokens > 768:
+        reserved_comp_tokens = 768
     target_input = int(model_profile.get("target_input_budget") or getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192)
 
     rule_spec = {
@@ -1044,8 +1044,18 @@ async def run_shared_verdict_pipeline(
     final_action_directive = val_res.analyst_action_directive
 
     raw_provider_status = str(getattr(verdict_obj, "validation_status", "VALID") or "VALID").upper().strip()
-    if (
-        raw_provider_status in ("INVALID_SCHEMA", "UNEXPECTED_VERDICT", "INVALID_MODEL_OUTPUT", "PARSE_ERROR")
+    if raw_provider_status == "TRUNCATED_OUTPUT":
+        final_auth_verdict = "REQUIRES_ATTENTION"
+        final_is_decisive = False
+        final_validation_status = "TRUNCATED_OUTPUT"
+        final_confidence_display = 0.0
+        if "OUTPUT_TRUNCATED" not in final_reason_codes:
+            final_reason_codes.append("OUTPUT_TRUNCATED")
+        final_action_directive = (
+            "Model output hit completion token limit and was truncated; safely abstained and routed to analyst review."
+        )
+    elif (
+        raw_provider_status in ("INVALID_SCHEMA", "UNEXPECTED_VERDICT", "INVALID_MODEL_OUTPUT", "PARSE_ERROR", "INVALID_INCIDENT_REF", "INVALID_RULE_REF", "INVALID_CONFIDENCE")
         or "MODEL_OUTPUT_INVALID" in final_reason_codes
     ):
         final_auth_verdict = "REQUIRES_ATTENTION"
@@ -1058,7 +1068,11 @@ async def run_shared_verdict_pipeline(
             "Model returned malformed or invalid structured output; safely abstained and routed to analyst review."
         )
 
-    if final_validation_status == "INVALID_MODEL_OUTPUT":
+    if final_validation_status == "TRUNCATED_OUTPUT":
+        proposal_validation_outcome = "TRUNCATED_OUTPUT"
+        final_disposition = "SAFE_ABSTENTION_AFTER_TRUNCATED_OUTPUT"
+        abstention_reason = final_action_directive
+    elif final_validation_status == "INVALID_MODEL_OUTPUT":
         proposal_validation_outcome = "INVALID_MODEL_OUTPUT"
         final_disposition = "SAFE_ABSTENTION_AFTER_INVALID_OUTPUT"
         abstention_reason = final_action_directive
@@ -1111,7 +1125,15 @@ async def run_shared_verdict_pipeline(
             if trust_res.escalation_reason:
                 final_action_directive = trust_res.escalation_reason
 
-    if final_validation_status == "INVALID_MODEL_OUTPUT":
+    if final_validation_status == "TRUNCATED_OUTPUT":
+        note_trunc = (
+            "TRUNCATED_OUTPUT: Completion token cap reached before JSON finished; decisive verdict blocked and trust capped (<= 4/10)."
+        )
+        if note_trunc not in trust_res.confidence_limitations:
+            trust_res.confidence_limitations.append(note_trunc)
+        if trust_res.trust_score is not None:
+            trust_res.trust_score = min(4, trust_res.trust_score)
+    elif final_validation_status == "INVALID_MODEL_OUTPUT":
         note_invalid = (
             "INVALID_MODEL_OUTPUT: Malformed or unparseable model verdict forced safe abstention and minimal trust (<= 2/10)."
         )
