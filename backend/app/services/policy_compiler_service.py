@@ -323,7 +323,7 @@ class PolicyCompilerService:
         prompt_parts.append(
             "You MUST respond ONLY with a single valid JSON object adhering to the schema below. "
             "Do not include markdown prose outside of the JSON block.\n"
-            f"```json\n{json.dumps(cls.MODEL_RESPONSE_SCHEMA, indent=2)}\n```"
+            f"```json\n{json.dumps(cls.MODEL_RESPONSE_SCHEMA, separators=(',', ':'))}\n```"
         )
 
         compiled_system_prompt = "\n".join(prompt_parts)

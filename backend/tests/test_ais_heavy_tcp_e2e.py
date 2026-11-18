@@ -688,3 +688,60 @@ async def test_08_contradictory_evidence_block_and_rag_partition_isolation(db_se
     )
     assert all(p.incident_id != locked_id for p in rag.precedents)
     assert rag.candidates_rejected_future_leakage >= 1
+
+
+@pytest.mark.asyncio
+async def test_09_high_cardinality_scan_token_budget_fits_4096_context(db_session: AsyncSession):
+    """Phase 3: Verify 100-event horizontal TCP scan fits within 4096-token Server 2 context without dropping scan.* aggregates."""
+    from app.services.policy_compiler_service import PolicyCompilerService
+    from app.services.token_budget_service import TokenBudgetService
+    from app.schemas.compiled_policy import CompilationExecutionMode
+
+    rule = await _seed_target_rule(db_session)
+    pv = await _seed_approved_prompt_with_g1_g8(db_session, rule)
+    compiled = PolicyCompilerService.compile_policy(rule, pv, CompilationExecutionMode.LIVE)
+
+    inc = Incident(
+        id=str(uuid.uuid4()),
+        incident_id="176011",
+        rule_id=rule.id,
+        event_type=TARGET_EVENT_TYPE,
+        title=TARGET_RULE_NAME,
+        severity="MEDIUM",
+        customer="GDC_NOC",
+        raw_payload={"incidentSrc": "srcIpAddr:172.25.24.154", "incidentTarget": "destIpPort:443", "incidentDetail": '{"incidentCount":103}'},
+    )
+    evts = [
+        IncidentEvent(
+            id=str(uuid.uuid4()),
+            incident_id=inc.id,
+            event_id=f"evt-{i}",
+            event_receive_time=1794476000000 + (i * 1000),
+            event_type="FortiGate-traffic-end-forward-client-rst",
+            raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.154 srcport={50000+i} dstip=198.51.100.{(i%250)+1} dstport=443 proto=6 action="client-rst" policyname="Cybersecurity" service="Browsing" sentbyte={1000+i} rcvdbyte={2000+i}',
+            attributes={"Source IP": "172.25.24.154", "Destination IP": f"198.51.100.{(i%250)+1}", "Destination TCP/UDP Port": 443},
+        )
+        for i in range(100)
+    ]
+    norm = EvidenceNormalizationService.normalize_incident_evidence(inc, events=evts)
+    payload = {
+        "incident_id": inc.incident_id,
+        "title": inc.title,
+        "event_type": inc.event_type,
+        "canonical_evidence": [r.model_dump() for r in norm.records],
+        "events": [{"event_id": e.event_id, "raw_log": e.raw_log, "attributes": e.attributes} for e in evts],
+    }
+    budgeted = TokenBudgetService.budget_prompt(
+        compiled_policy=compiled,
+        incident_payload=payload,
+        rag_block="",
+        max_context_tokens=4096,
+        max_completion_tokens=512,
+        reserved_overhead_tokens=80,
+    )
+    assert budgeted.can_proceed_to_inference is True, f"Exceeded 4096 budget: {budgeted.abstention_reason}"
+    assert budgeted.breakdown.total_prompt_tokens <= 3584
+    kept_fields = {r.get("source_field") for r in budgeted.budgeted_incident_payload.get("canonical_evidence", [])}
+    assert "scan.unique_destination_hosts" in kept_fields
+    assert "scan.tcp_behavior_summary" in kept_fields
+    assert "scan.destination_scope" in kept_fields

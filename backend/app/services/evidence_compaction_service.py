@@ -257,6 +257,10 @@ class EvidenceCompactionService:
             if f_lower in contract_fields:
                 score += 1000
 
+            # Priority 1b: Deterministic Scan Aggregates (compact 100+ raw events into exact scan metrics)
+            if f_lower.startswith("scan.") or f_lower == "network.destination_ip_list":
+                score += 900
+
             # Priority 2: In detection rule pattern logic or anomaly trigger fields
             for token in re.findall(r"[a-zA-Z0-9_]+", pattern_text):
                 if token and len(token) > 2 and token in f_lower:
@@ -323,9 +327,25 @@ class EvidenceCompactionService:
                 "deduplication_ratio": dedup_ratio,
             }
 
-        # Partition records into Mandatory Core Anchors vs Auxiliary Telemetry
+        # Partition records into Mandatory Core Anchors vs Auxiliary Telemetry.
+        # For high-cardinality multi-valued per-event fields (e.g., 100 distinct dest IPs/ports/bytes
+        # in horizontal scan incidents), keep up to 3 representative anchors in core_records while
+        # preserving ALL deterministic scan.* aggregates, moving the overflow to auxiliary_records.
         core_records: List[Dict[str, Any]] = []
         auxiliary_records: List[Dict[str, Any]] = []
+        core_field_counts: Dict[str, int] = {}
+        HIGH_CARDINALITY_CORE_CAP: Dict[str, int] = {
+            "network.destination_ip": 3,
+            "network.destination_domain": 3,
+            "network.source_port": 1,
+            "network.bytes_out": 2,
+            "network.bytes_in": 2,
+            "network.packets_out": 1,
+            "network.packets_in": 1,
+            "network.session_duration_sec": 1,
+            "event.timestamp": 2,
+            "security.raw_log": 1,
+        }
 
         for r_dict in compacted_dicts:
             f_norm = r_dict["source_field"].lower()
@@ -337,16 +357,21 @@ class EvidenceCompactionService:
                 evidence_type=r_dict["evidence_type"],
                 integrity_digest="anchor",
             )
-            # Mandatory contract requirements, forensic execution indicators, rule triggers, time range & primary cluster
-            if (
-                f_norm in contract_fields
+            # Mandatory contract requirements, scan aggregates, forensic execution indicators, rule triggers & time range
+            is_core_candidate = (
+                f_norm.startswith("scan.")
+                or f_norm == "network.destination_ip_list"
+                or f_norm in contract_fields
                 or f_norm in DO_NOT_COLLAPSE_FIELDS
                 or any(term in f_norm for term in DO_NOT_COLLAPSE_FIELDS)
                 or score_relevance(rec_obj) >= 450
                 or "cluster" in r_dict["evidence_id"].lower()
                 or "time_range" in f_norm
-            ):
+            )
+            cap = HIGH_CARDINALITY_CORE_CAP.get(f_norm)
+            if is_core_candidate and (cap is None or core_field_counts.get(f_norm, 0) < cap):
                 core_records.append(r_dict)
+                core_field_counts[f_norm] = core_field_counts.get(f_norm, 0) + 1
             else:
                 auxiliary_records.append(r_dict)
 

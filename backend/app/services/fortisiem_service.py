@@ -536,7 +536,7 @@ class FortiSIEMService:
             existing.severity = parsed["severity"]
             existing.pattern_logic = parsed["pattern_logic"]
             existing.raw_rule_text = parsed["raw_rule_text"]
-            meta = existing.parsed_metadata or {}
+            meta = dict(existing.parsed_metadata or {})
             meta.update(parsed["metadata"])
             meta["definition_status"] = computed_def_status
             meta["provenance"] = computed_provenance
