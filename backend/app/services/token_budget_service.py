@@ -208,6 +208,10 @@ class TokenBudgetService:
             and "SECTION 3:" in compiled_policy.compiled_system_prompt
         ):
             del payload_work["rule_pattern"]
+        # Preserve conditional_fields locally for compaction priority even when trimmed from wire payload
+        _orig_conditional_fields: List[str] = []
+        if isinstance(payload_work.get("evidence_contract"), dict):
+            _orig_conditional_fields = list(payload_work["evidence_contract"].get("conditional_fields") or [])
         # Avoid duplicating conditional/optional field lists in wire payload when Section 4 already lists them
         if (
             isinstance(payload_work.get("evidence_contract"), dict)
@@ -348,7 +352,11 @@ class TokenBudgetService:
                 payload_work["events"] = slim_ev_list
                 events_compacted = True
 
-            contract_req = list(contract_info.get("required_fields") or []) + list(contract_info.get("conditional_fields") or [])
+            contract_req = list(dict.fromkeys(
+                list(contract_info.get("required_fields") or [])
+                + list(contract_info.get("conditional_fields") or [])
+                + _orig_conditional_fields
+            ))
             overhead = (
                 cls.estimate_tokens(compiled_policy.compiled_system_prompt)
                 + cls.estimate_tokens(contract_info)
