@@ -369,19 +369,24 @@ class EvidenceCompactionService:
         # dropping the mandatory scan triage core.
         if has_scan_aggregates and core_tokens > max_evidence_budget_tokens:
             essential_scan_fields = frozenset({
-                "security.event_type",
-                "event.timestamp",
                 "network.source_ip",
                 "network.destination_port",
-                "network.protocol",
                 "scan.raw_events_count",
                 "scan.connection_count",
                 "scan.unique_destination_hosts",
                 "scan.destination_scope",
                 "scan.firewall_action_summary",
                 "scan.tcp_behavior_summary",
-                "scan.policy_and_service",
             })
+            secondary_priority = {
+                "event.timestamp": 0,
+                "network.protocol": 1,
+                "security.event_type": 2,
+                "scan.policy_and_service": 3,
+                "scan.window_seconds": 4,
+                "scan.rate_per_second": 5,
+                "network.destination_ip_list": 6,
+            }
             essential_core: List[Dict[str, Any]] = []
             demoted_core: List[Dict[str, Any]] = []
             for rec_d in core_records:
@@ -390,6 +395,7 @@ class EvidenceCompactionService:
                     essential_core.append(rec_d)
                 else:
                     demoted_core.append(rec_d)
+            demoted_core.sort(key=lambda d: secondary_priority.get(str(d.get("source_field", "")).lower(), 99))
             core_records = essential_core
             auxiliary_records = demoted_core + auxiliary_records
             core_tokens = ModelTokenizerService.count_json_tokens(core_records)

@@ -165,11 +165,11 @@ class PolicyGenerationService:
         elif archetype_def.archetype_id == ArchetypeId.NETWORK_SCAN:
             if semantics.rule_identifier == "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT":
                 lines.extend([
-                    "1. Scope: Horizontal TCP scan on ONE fixed port across >=100 distinct destination hosts within 180s (`PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`; distinct from multi-port `PH_RULE_HEAVY_TCP_HOST_SCAN`).",
-                    "2. Telemetry Alignment: FortiGate session-end & appctrl logs do NOT emit raw `network.tcp_flags`. Do NOT abstain solely for absent `network.tcp_flags` or rule metadata (`detection.threshold`); evaluate `scan.tcp_behavior_summary` (`bidirectional_sessions`, `appctrl_pass_events`, `unanswered_probes`, `denied_flows`) and `scan.firewall_action_summary` instead. NEVER invent unobserved TCP flags.",
-                    "3. Inspect `network.source_ip`, `network.destination_port`, `network.protocol`, `scan.raw_events_count`, `scan.unique_destination_hosts`, `scan.destination_scope`, `scan.policy_and_service`, `scan.window_seconds`, and `scan.rate_per_second`.",
-                    "4. NEVER classify as FALSE_POSITIVE merely because source is internal (RFC-1918) or port is common (443/80/22/445); require verifiable authorization OR conclusive external bidirectional browsing telemetry.",
-                    "5. Cite exact `EV-*` IDs in `supporting_claims` and `supporting_evidence`; abstain (`REQUIRES_ATTENTION`/`INSUFFICIENT_EVIDENCE`) when `scan.raw_events_count == 0`, targets include unverified internal hosts, or telemetry is inconclusive/contradictory.",
+                    "1. Scope: Single-fixed-port horizontal TCP scan (`PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`, >=100 distinct dest hosts in 180s; distinct from multi-port `PH_RULE_HEAVY_TCP_HOST_SCAN`).",
+                    "2. FortiGate Alignment: Session-end/appctrl logs omit raw `network.tcp_flags`; evaluate `scan.tcp_behavior_summary` (`bidirectional_sessions`/`appctrl_pass_events`/`unanswered_probes`/`denied_flows`) and `scan.firewall_action_summary` instead. NEVER invent unobserved flags or abstain solely for optional `network.tcp_flags`/rule metadata.",
+                    "3. Check `network.source_ip`, `network.destination_port`, `network.protocol`, `scan.raw_events_count`, `scan.unique_destination_hosts`, `scan.destination_scope`, `scan.policy_and_service`, `scan.window_seconds`, `scan.rate_per_second`.",
+                    "4. NEVER classify as FALSE_POSITIVE merely because source is internal or port is common (443/80/22/445); require verifiable authorization OR conclusive external bidirectional browsing logs.",
+                    "5. Cite exact `EV-*` IDs in `supporting_claims` and `supporting_evidence`; abstain when `scan.raw_events_count == 0` or telemetry is inconclusive.",
                 ])
             else:
                 lines.extend([
