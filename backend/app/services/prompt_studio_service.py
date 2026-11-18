@@ -397,6 +397,8 @@ class AgentPolicyEngine:
             target_version.change_summary = change_summary
 
         rule_prompt.active_version_id = target_version.id
+        rule_prompt.ai_execution_suspended = False
+        rule_prompt.suspension_reason = None
         rule_prompt.updated_at = utc_now()
 
         await self.db.commit()

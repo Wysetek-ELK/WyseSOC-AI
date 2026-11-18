@@ -2741,6 +2741,114 @@ export const api = {
     }
     return res.json();
   },
+
+  async listPromotionRequests(ruleId?: string, statusFilter?: string, customer?: string) {
+    const params = new URLSearchParams();
+    if (ruleId) params.set("rule_id", ruleId);
+    if (statusFilter) params.set("status", statusFilter);
+    if (customer) params.set("customer", customer);
+    const qs = params.toString();
+    const res = await fetchWithAuth(`${API_BASE}/governance/promotion/requests${qs ? `?${qs}` : ""}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to load promotion requests" }));
+      throw new Error(formatApiErrorMessage(err, "Failed to load promotion requests"));
+    }
+    return res.json();
+  },
+
+  async getRuleLearningHistory(ruleId: string, customer?: string) {
+    const qs = customer ? `?customer=${encodeURIComponent(customer)}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/history${qs}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to load learning history" }));
+      throw new Error(formatApiErrorMessage(err, "Failed to load learning history"));
+    }
+    return res.json();
+  },
+
+  async suggestPromptImprovement(ruleId: string, customer?: string) {
+    const qs = customer ? `?customer=${encodeURIComponent(customer)}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/suggest-prompt-improvement${qs}`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to propose prompt improvement draft" }));
+      throw new Error(formatApiErrorMessage(err, "Failed to propose prompt improvement draft"));
+    }
+    return res.json();
+  },
+
+  async getAutomationPolicy(ruleId: string, customer = "DEFAULT") {
+    const res = await fetchWithAuth(
+      `${API_BASE}/governance/automation/policy/${encodeURIComponent(ruleId)}?customer=${encodeURIComponent(customer)}`
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to load automation policy" }));
+      throw new Error(formatApiErrorMessage(err, "Failed to load automation policy"));
+    }
+    return res.json();
+  },
+
+  async updateAutomationPolicy(
+    ruleId: string,
+    payload: {
+      customer?: string;
+      is_enabled?: boolean;
+      min_trust_score?: number;
+      min_fp_precision?: number;
+      daily_closure_limit?: number;
+      emergency_disable?: boolean;
+      reason?: string;
+    }
+  ) {
+    const res = await fetchWithAuth(`${API_BASE}/governance/automation/policy/${encodeURIComponent(ruleId)}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to update automation policy" }));
+      throw new Error(formatApiErrorMessage(err, "Failed to update automation policy"));
+    }
+    return res.json();
+  },
+
+  async executeAutomationDecision(
+    incidentId: string,
+    payload: { customer?: string; dry_run?: boolean; global_kill_switch?: boolean } = { dry_run: true }
+  ) {
+    const res = await fetchWithAuth(`${API_BASE}/governance/automation/decide/${encodeURIComponent(incidentId)}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to execute automation decision" }));
+      throw new Error(formatApiErrorMessage(err, "Failed to execute automation decision"));
+    }
+    return res.json();
+  },
+
+  async listAutomationAudits(ruleId?: string, customer?: string, limit = 25) {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (ruleId) params.set("rule_id", ruleId);
+    if (customer) params.set("customer", customer);
+    const res = await fetchWithAuth(`${API_BASE}/governance/automation/audits?${params.toString()}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to load automation audits" }));
+      throw new Error(formatApiErrorMessage(err, "Failed to load automation audits"));
+    }
+    return res.json();
+  },
+
+  async resumeRuleAiExecution(ruleId: string) {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}/resume-ai`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to resume AI execution" }));
+      throw new Error(formatApiErrorMessage(err, "Failed to resume AI execution"));
+    }
+    return res.json();
+  },
 };
 
 export interface DryRunConfig {

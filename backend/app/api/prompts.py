@@ -52,6 +52,7 @@ from app.services.bulk_quality_audit_service import BulkQualityAuditService
 from app.services.policy_lifecycle_monitor import PolicyLifecycleMonitor
 from app.services.production_readiness_service import ProductionReadinessService
 from app.services.policy_eligibility_service import PolicyEligibilityService
+from app.services.historical_ground_truth_validator import HistoricalGroundTruthValidator
 from app.schemas.prompt import (
     RulePromptResponse,
     PromptVersionResponse,
@@ -158,7 +159,9 @@ async def get_rule_prompts_summary(
         )
 
         is_target_approved = target_v is not None and target_v.status == "APPROVED"
-        is_revoked = any(v.status == "REVOKED" for v in versions) or bool(active_v and active_v.status == "REVOKED")
+        is_revoked = bool(active_v and active_v.status == "REVOKED") or (
+            not has_approved and any(v.status == "REVOKED" for v in versions)
+        )
         is_suspended = bool(rp and getattr(rp, "ai_execution_suspended", False))
 
         revalidation_req = bool((r.id in drift_rule_ids) or (bool(target_v) and getattr(target_v, "quality_status", None) == "REVIEW_REQUIRED"))
@@ -175,8 +178,6 @@ async def get_rule_prompts_summary(
                 1 for g in latest_qa.gate_results.values()
                 if (g.get("status") if isinstance(g, dict) else getattr(g, "status", "")) == "PASSED"
             )
-        elif is_target_approved:
-            gates_passed_count = 8
         elif not is_def_incomplete and q_score and q_score > 50:
             gates_passed_count = 2
 
@@ -1062,6 +1063,59 @@ async def revoke_prompt_version(
     return ver_resp
 
 
+@router.post("/rule/{rule_id}/resume-ai", response_model=Dict[str, Any])
+async def resume_rule_ai_execution(
+    rule_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: Clear AI execution suspension flag for a rule after policy review."""
+    service = PromptStudioService(db)
+    rp = await service.resume_ai_execution(rule_id=rule_id, user_id=current_user.id)
+    audit = AuditService(db)
+    await audit.log(
+        action="RULE_AI_EXECUTION_RESUMED",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="RulePrompt",
+        entity_id=rule_id,
+        details={"active_version_id": rp.active_version_id},
+    )
+    return {
+        "status": "RESUMED",
+        "rule_id": rp.rule_id,
+        "ai_execution_suspended": rp.ai_execution_suspended,
+        "active_version_id": rp.active_version_id,
+    }
+
+
+@router.post("/rule/{rule_id}/suspend-ai", response_model=Dict[str, Any])
+async def suspend_rule_ai_execution(
+    rule_id: str,
+    reason: str = Query("Suspended by Administrator", min_length=5),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: Immediately suspend AI execution for a specific rule."""
+    service = PromptStudioService(db)
+    rp = await service.suspend_ai_execution(rule_id=rule_id, reason=reason, user_id=current_user.id)
+    audit = AuditService(db)
+    await audit.log(
+        action="RULE_AI_EXECUTION_SUSPENDED",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="RulePrompt",
+        entity_id=rule_id,
+        details={"reason": reason},
+    )
+    return {
+        "status": "SUSPENDED",
+        "rule_id": rp.rule_id,
+        "ai_execution_suspended": rp.ai_execution_suspended,
+        "suspension_reason": rp.suspension_reason,
+    }
+
+
 @router.get("/rule/{rule_id}/eligibility", response_model=PolicyEligibilityResponse)
 async def get_rule_policy_eligibility(
     rule_id: str,
@@ -1265,7 +1319,7 @@ async def get_actual_prompt_for_incident(
             delivery_status="HISTORICAL_UNAVAILABLE",
             execution_summary=summary,
             system_prompt="[HISTORICAL CAPTURE UNAVAILABLE: This incident verdict was evaluated prior to the deployment of the Actual LLM Prompt Capture engine. Outbound prompt payload was not recorded in runtime storage.]",
-            incident_payload=json.dumps(incident.raw_payload or {}, indent=2),
+            incident_payload=json.dumps(HistoricalGroundTruthValidator.sanitize_incident_for_inference(incident.raw_payload or {}), indent=2),
             rag_precedents=[],
             has_rag_precedents=False,
             evidence_requirements={},

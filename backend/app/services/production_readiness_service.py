@@ -231,15 +231,19 @@ class ProductionReadinessService:
         )
 
         pilot_reviews_passed = total_reviews >= RuleLearningService.MIN_PILOT_SAMPLES
+        eligible_eval_count = int((learning_profile.ai_correct_count or 0) + (learning_profile.ai_incorrect_count or 0)) if learning_profile else 0
+        critical_missed_tp = int((learning_profile.error_distribution or {}).get("critical_missed_tp", 0)) if learning_profile else 0
         prod_reviews_passed = (
-            total_reviews >= RuleLearningService.MIN_PRODUCTION_SAMPLES
+            eligible_eval_count >= RuleLearningService.MIN_PRODUCTION_SAMPLES
             and verified_tp >= RuleLearningService.MIN_PRODUCTION_TP
             and verified_fp >= RuleLearningService.MIN_PRODUCTION_FP
         )
 
+        accuracy_passed = empirical_accuracy is not None and empirical_accuracy >= RuleLearningService.MIN_PRODUCTION_ACCURACY
         fp_precision_passed = fp_precision is not None and fp_precision >= RuleLearningService.MIN_PRODUCTION_FP_PRECISION
         wilson_passed = wilson_lower is not None and wilson_lower >= RuleLearningService.MIN_PRODUCTION_WILSON_LOWER
         tp_recall_passed = tp_recall is not None and tp_recall >= RuleLearningService.MIN_PRODUCTION_TP_RECALL
+        zero_missed_tp_passed = (critical_missed_tp == 0)
 
         sim_passed = (
             gate_results.get("G8_SIMULATION_REGRESSION") is not None
@@ -268,13 +272,24 @@ class ProductionReadinessService:
                     blocking_requirements.append(b)
         if not pilot_reviews_passed:
             blocking_requirements.append(f"Insufficient ground truth reviews ({total_reviews}/{RuleLearningService.MIN_PILOT_SAMPLES} for pilot)")
+        if not prod_reviews_passed:
+            blocking_requirements.append(
+                f"Insufficient eligible verified TP/FP evaluations for production ({eligible_eval_count}/{RuleLearningService.MIN_PRODUCTION_SAMPLES}; TP={verified_tp}/{RuleLearningService.MIN_PRODUCTION_TP}, FP={verified_fp}/{RuleLearningService.MIN_PRODUCTION_FP})"
+            )
         if not sim_passed:
             blocking_requirements.append("Non-simulated empirical regression simulation (G8) required on active policy digest")
+        if not accuracy_passed:
+            if eligible_eval_count == 0:
+                blocking_requirements.append("Verified Rule Accuracy (>=95.0%) requires eligible TP/FP evaluations (currently 0)")
+            else:
+                blocking_requirements.append(f"Verified Rule Accuracy ({empirical_accuracy or 0:.1%}) below 95.0% production requirement")
+        if not zero_missed_tp_passed:
+            blocking_requirements.append(f"Critical Missed True Positives detected ({critical_missed_tp}); promotion requires 0 observed missed TPs")
         if not fp_precision_passed:
             if total_reviews == 0:
                 blocking_requirements.append("Empirical FP Precision requires verified analyst reviews (currently 0 reviews)")
             else:
-                blocking_requirements.append(f"Empirical FP Precision ({fp_precision or 0:.1%}) below 98.0% production requirement")
+                blocking_requirements.append(f"Empirical FP Precision ({fp_precision or 0:.1%}) below 99.0% production requirement")
         if not wilson_passed:
             if total_reviews == 0:
                 blocking_requirements.append("Wilson Lower Bound requires verified analyst reviews (currently 0 reviews)")
@@ -297,7 +312,9 @@ class ProductionReadinessService:
             rule_def_verified
             and evidence_contract_verified
             and policy_structural_passed
-            and pilot_reviews_passed
+            and prod_reviews_passed
+            and accuracy_passed
+            and zero_missed_tp_passed
             and sim_passed
             and fp_precision_passed
             and wilson_passed

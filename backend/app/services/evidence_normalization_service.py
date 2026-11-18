@@ -12,9 +12,10 @@ logger = logging.getLogger(__name__)
 # Regular expression for parsing key-value pairs from raw syslog/CEF logs
 KV_PATTERN = re.compile(r'([a-zA-Z0-9_\.\-]+)=(?:"([^"]*)"|\'([^\']*)\'|(\S+))')
 
-# Regex for extracting source/destination IPs and hosts from FortiSIEM incidentSrc/incidentTarget strings
+# Regex for extracting source/destination IPs, ports, and hosts from FortiSIEM incidentSrc/incidentTarget strings
 SRC_IP_RE = re.compile(r'(?:srcIpAddr|srcIp|src|sourceIp)\s*[:=]\s*([0-9a-fA-F\.:]+)', re.IGNORECASE)
 DST_IP_RE = re.compile(r'(?:destIpAddr|dstIpAddr|destIp|dstIp|dst|destinationIp)\s*[:=]\s*([0-9a-fA-F\.:]+)', re.IGNORECASE)
+DST_PORT_RE = re.compile(r'(?:destIpPort|dstIpPort|destPort|dstPort|destinationPort|dest_port|dst_port)\s*[:=]\s*(\d{1,5})', re.IGNORECASE)
 DST_HOST_RE = re.compile(r'(?:destName|destinationName|destDomain|domain|hostName)\s*[:=]\s*([^\s,;]+)', re.IGNORECASE)
 
 
@@ -123,6 +124,30 @@ FIELD_MAPPINGS: Dict[str, Dict[str, str]] = {
     "destination.port": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
     "dstport": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
     "dst_port": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
+    "destipport": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
+    "dstipport": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
+    "destination tcp/udp port": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
+    "destinationtcpudpport": {"field": "network.destination_port", "type": "NETWORK_CONNECTION"},
+    "source tcp/udp port": {"field": "network.source_port", "type": "NETWORK_CONNECTION"},
+    "sourcetcpudpport": {"field": "network.source_port", "type": "NETWORK_CONNECTION"},
+
+    # Scan & Firewall Telemetry Context
+    "incidentcount": {"field": "scan.connection_count", "type": "NETWORK_CONNECTION"},
+    "tcpflags": {"field": "network.tcp_flags", "type": "NETWORK_CONNECTION"},
+    "tcp_flags": {"field": "network.tcp_flags", "type": "NETWORK_CONNECTION"},
+    "policyname": {"field": "security.policy_name", "type": "SECURITY_EVENT"},
+    "policy_name": {"field": "security.policy_name", "type": "SECURITY_EVENT"},
+    "srcintf": {"field": "network.source_interface", "type": "NETWORK_CONNECTION"},
+    "dstintf": {"field": "network.destination_interface", "type": "NETWORK_CONNECTION"},
+    "srccountry": {"field": "network.source_country", "type": "NETWORK_CONNECTION"},
+    "dstcountry": {"field": "network.destination_country", "type": "NETWORK_CONNECTION"},
+    "transip": {"field": "network.nat_source_ip", "type": "NETWORK_CONNECTION"},
+    "post-nat source ip": {"field": "network.nat_source_ip", "type": "NETWORK_CONNECTION"},
+    "sentpkt": {"field": "network.packets_out", "type": "NETWORK_CONNECTION"},
+    "rcvdpkt": {"field": "network.packets_in", "type": "NETWORK_CONNECTION"},
+    "duration": {"field": "network.session_duration_sec", "type": "NETWORK_CONNECTION"},
+    "devtype": {"field": "endpoint.device_type", "type": "ENDPOINT_TELEMETRY"},
+    "srchwvendor": {"field": "endpoint.hardware_vendor", "type": "ENDPOINT_TELEMETRY"},
 
     # Protocol & Direction
     "proto": {"field": "network.protocol", "type": "NETWORK_CONNECTION"},
@@ -376,13 +401,16 @@ class EvidenceNormalizationService:
         if top_source_ip:
             add_record("network.source_ip", top_source_ip, "NETWORK_CONNECTION", "TOP", obs_time, "source_ip", "ALIASED")
 
-        # Top-level destination IP / target
+        # Top-level destination IP / port / target
         if isinstance(raw_p, dict):
             target_str = raw_p.get("incidentTarget") or raw_p.get("destIpAddr") or raw_p.get("destinationIp") or ""
             if target_str:
                 match_dst = DST_IP_RE.search(str(target_str))
                 if match_dst:
                     add_record("network.destination_ip", match_dst.group(1).strip(), "NETWORK_CONNECTION", "TOP", obs_time, "incidentTarget", "ALIASED")
+                match_port = DST_PORT_RE.search(str(target_str))
+                if match_port:
+                    add_record("network.destination_port", match_port.group(1).strip(), "NETWORK_CONNECTION", "TOP", obs_time, "incidentTarget", "ALIASED")
                 match_host = DST_HOST_RE.search(str(target_str))
                 if match_host:
                     add_record("endpoint.hostname", match_host.group(1).strip(), "ENDPOINT_TELEMETRY", "TOP", obs_time, "incidentTarget", "ALIASED")
@@ -491,6 +519,9 @@ class EvidenceNormalizationService:
             if top_scalars:
                 cls._extract_from_dict(top_scalars, "PAYLOAD", obs_time, add_record, unmapped_fields)
 
+        # 4. Deterministic Scan Telemetry Aggregation (for network scan / host scan incidents)
+        cls._append_scan_telemetry_summary(incident, evts, records, obs_time, add_record)
+
         # Aggregate and categorize
         by_type: Dict[str, List[CanonicalEvidenceRecord]] = {}
         by_field: Dict[str, List[CanonicalEvidenceRecord]] = {}
@@ -576,3 +607,164 @@ class EvidenceNormalizationService:
                             raw_field_name=str(key),
                             transformation="HEURISTIC_FALLBACK",
                         )
+
+    @staticmethod
+    def _is_private_ip(ip_str: str) -> Optional[bool]:
+        import ipaddress
+        try:
+            addr = ipaddress.ip_address(str(ip_str).strip())
+            return bool(addr.is_private or addr.is_loopback or addr.is_link_local)
+        except Exception:
+            return None
+
+    @classmethod
+    def _append_scan_telemetry_summary(
+        cls,
+        incident: Incident,
+        evts: List[Any],
+        records: List[CanonicalEvidenceRecord],
+        obs_time: Optional[str],
+        add_fn: Any,
+    ) -> None:
+        """
+        Synthesizes deterministic, zero-fabrication aggregate scan evidence for
+        network/host scan incidents (e.g., PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT).
+        """
+        combo = f"{getattr(incident, 'event_type', '') or ''} {getattr(incident, 'title', '') or ''}".upper()
+        is_scan_rule = any(tok in combo for tok in ("HOST_SCAN", "PORT_SCAN", "HOST SCAN", "PORT SCAN", "NETWORK_SCAN", "RECONNAISSANCE"))
+
+        dst_ips: List[str] = []
+        dst_ip_set: Set[str] = set()
+        actions: Dict[str, int] = {}
+        policies: Set[str] = set()
+        services: Set[str] = set()
+        protocols: Set[str] = set()
+        timestamps_sec: List[float] = []
+        bidirectional_sessions = 0
+        unanswered_probes = 0
+        denied_flows = 0
+
+        for evt in evts:
+            attrs = getattr(evt, "attributes", None) or {}
+            raw_log = getattr(evt, "raw_log", None) or ""
+            kv = parse_key_value_string(raw_log) if isinstance(raw_log, str) and raw_log.strip() else {}
+
+            dst_ip = (
+                kv.get("dstip")
+                or attrs.get("Destination IP")
+                or attrs.get("destIpAddr")
+                or attrs.get("dstip")
+            )
+            if dst_ip:
+                d_str = str(dst_ip).strip()
+                if d_str and d_str not in dst_ip_set:
+                    dst_ip_set.add(d_str)
+                    dst_ips.append(d_str)
+
+            act = (
+                kv.get("action")
+                or attrs.get("Firewall Action")
+                or attrs.get("action")
+                or ""
+            )
+            if act:
+                a_norm = str(act).strip().lower()
+                actions[a_norm] = actions.get(a_norm, 0) + 1
+                if a_norm in ("deny", "drop", "block", "reject", "reset"):
+                    denied_flows += 1
+
+            pol = kv.get("policyname") or attrs.get("Policy Name")
+            if pol:
+                policies.add(str(pol).strip())
+            svc = kv.get("service") or attrs.get("Service")
+            if svc:
+                services.add(str(svc).strip())
+            proto = kv.get("proto") or attrs.get("IP Protocol")
+            if proto:
+                protocols.add(str(proto).strip())
+
+            # Evaluate TCP session directionality (bidirectional TLS/data vs unanswered probes)
+            try:
+                sb = int(kv.get("sentbyte") or attrs.get("Sent Bytes64") or 0)
+                rb = int(kv.get("rcvdbyte") or attrs.get("Received Bytes64") or 0)
+                if sb > 0 and rb > 0:
+                    bidirectional_sessions += 1
+                elif sb > 0 and rb == 0:
+                    unanswered_probes += 1
+            except Exception:
+                pass
+
+            rx = getattr(evt, "event_receive_time", None)
+            if rx:
+                try:
+                    num = float(rx)
+                    timestamps_sec.append(num / 1000.0 if num >= 1e11 else num)
+                except Exception:
+                    pass
+
+        if not is_scan_rule and len(dst_ips) < 3:
+            return
+
+        add_fn("scan.raw_events_count", len(evts), "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "events_count", "AGGREGATED")
+
+        # Connection count fallback from incidentDetail or raw events
+        has_conn_count = any(r.source_field == "scan.connection_count" for r in records)
+        if not has_conn_count and len(evts) > 0:
+            add_fn("scan.connection_count", len(evts), "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "events_count", "AGGREGATED")
+
+        if dst_ips:
+            add_fn("scan.unique_destination_hosts", len(dst_ips), "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "dstip_distinct", "AGGREGATED")
+            sample_str = ", ".join(dst_ips[:10]) + (f" (+{len(dst_ips) - 10} more)" if len(dst_ips) > 10 else "")
+            add_fn("network.destination_ip_list", sample_str, "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "dstip_list", "AGGREGATED")
+
+            internal_dst = sum(1 for ip in dst_ips if cls._is_private_ip(ip) is True)
+            external_dst = sum(1 for ip in dst_ips if cls._is_private_ip(ip) is False)
+            add_fn(
+                "scan.destination_scope",
+                f"internal={internal_dst}, external={external_dst}, total_unique_hosts={len(dst_ips)}",
+                "NETWORK_CONNECTION",
+                "SCAN_SUMMARY",
+                obs_time,
+                "dstip_scope",
+                "AGGREGATED",
+            )
+
+        if actions:
+            act_summary = ", ".join(f"{k}={v}" for k, v in sorted(actions.items(), key=lambda kv_i: -kv_i[1]))
+            add_fn("scan.firewall_action_summary", act_summary, "SECURITY_EVENT", "SCAN_SUMMARY", obs_time, "action_breakdown", "AGGREGATED")
+
+        if len(evts) > 0:
+            add_fn(
+                "scan.tcp_behavior_summary",
+                f"bidirectional_sessions={bidirectional_sessions}, unanswered_probes={unanswered_probes}, denied_flows={denied_flows}, sampled_events={len(evts)}",
+                "NETWORK_CONNECTION",
+                "SCAN_SUMMARY",
+                obs_time,
+                "tcp_behavior",
+                "AGGREGATED",
+            )
+
+        if policies or services:
+            ps_parts = []
+            if policies:
+                ps_parts.append("policy=" + ",".join(sorted(policies)[:5]))
+            if services:
+                ps_parts.append("service=" + ",".join(sorted(services)[:5]))
+            add_fn("scan.policy_and_service", "; ".join(ps_parts), "SECURITY_EVENT", "SCAN_SUMMARY", obs_time, "policy_service", "AGGREGATED")
+
+        if protocols and not any(r.source_field == "network.protocol" for r in records):
+            add_fn("network.protocol", ",".join(sorted(protocols)[:3]), "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "proto", "AGGREGATED")
+
+        if len(timestamps_sec) >= 2:
+            window_sec = max(1.0, round(max(timestamps_sec) - min(timestamps_sec), 2))
+            add_fn("scan.window_seconds", window_sec, "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "event_window", "AGGREGATED")
+            conn_val = len(evts)
+            for r in records:
+                if r.source_field == "scan.connection_count":
+                    try:
+                        conn_val = int(float(r.observed_value))
+                    except Exception:
+                        pass
+                    break
+            rate = round(conn_val / window_sec, 3)
+            add_fn("scan.rate_per_second", rate, "NETWORK_CONNECTION", "SCAN_SUMMARY", obs_time, "scan_rate", "AGGREGATED")

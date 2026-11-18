@@ -14,8 +14,11 @@ Historical PolicySimulationService to enforce identical safeguards:
 
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
+import logging
 import uuid
 import json
+
+logger = logging.getLogger("ai_verdict.verdict_pipeline")
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -558,7 +561,11 @@ async def run_shared_verdict_pipeline(
             prompt_sha256=verdict_data.get("prompt_sha256"),
             prompt_integrity_status="UNVERIFIED",
         )
-    active_v = prompt_version
+    # Strictly preserve the approved policy version in LIVE mode (never overwrite with unapproved candidate draft)
+    if is_simulation:
+        active_v = prompt_version or active_approved_version
+    else:
+        active_v = getattr(eligibility, "policy_version", None) or active_approved_version or prompt_version
 
     # 2. Runtime Governance / Autonomous Authorization Gate (AIS-F03)
     certification = await assess_policy_runtime_certification(db, rule, active_v)
@@ -921,7 +928,10 @@ async def run_shared_verdict_pipeline(
         db=db,
         execution_id=execution_id,
         incident_id=str(incident.incident_id),
-        rag_precedents=rag_result.precedents if hasattr(rag_result, "precedents") else [],
+        rag_precedents=[
+            p.model_dump() if hasattr(p, "model_dump") else (p.dict() if hasattr(p, "dict") else p)
+            for p in (rag_result.precedents if hasattr(rag_result, "precedents") and rag_result.precedents else [])
+        ],
         policy_source=policy_source,
     )
 
@@ -1241,8 +1251,8 @@ async def run_shared_verdict_pipeline(
         "prompt_sha256": getattr(verdict_obj, "prompt_request_sha256", None),
     }
 
-    # Record operational learning profile metrics
-    if rule and db:
+    # Record operational learning profile metrics (LIVE executions only; never pollute counters with simulations)
+    if rule and db and not is_simulation:
         try:
             from app.services.rule_learning_service import RuleLearningService
             await RuleLearningService.record_verdict_completion(

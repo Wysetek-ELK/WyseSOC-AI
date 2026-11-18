@@ -20,22 +20,47 @@ class AnalystReviewService:
     """
 
     @classmethod
+    async def _resolve_rule_aliases(cls, db: AsyncSession, rule_ref: Optional[str]) -> Tuple[Optional[str], List[str]]:
+        """Resolves a rule UUID, rule_id, or event_type into (canonical_uuid, all_matching_tokens)."""
+        if not rule_ref or not str(rule_ref).strip():
+            return None, []
+        from sqlalchemy import or_
+        from app.models.rule import Rule
+
+        clean = str(rule_ref).strip()
+        stmt = select(Rule).where(
+            or_(Rule.id == clean, Rule.rule_id == clean, Rule.event_type == clean)
+        )
+        rule_obj = (await db.execute(stmt)).scalars().first()
+        if not rule_obj:
+            return None, [clean]
+        tokens = list({t for t in (clean, rule_obj.id, rule_obj.rule_id, rule_obj.event_type) if t})
+        return rule_obj.id, tokens
+
+    @classmethod
     async def get_pending_reviews(
         cls,
         db: AsyncSession,
         customer: Optional[str] = None,
         rule_id: Optional[str] = None,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
+        reviewer_id: Optional[str] = None,
+        include_reviewed: bool = False,
     ) -> Tuple[int, List[Dict[str, Any]]]:
         """
         Retrieves incidents awaiting human analyst review.
-        In double-blind mode, the AI verdict is masked from the analyst payload.
+        In double-blind mode, all AI verdict fields are strictly excluded from the payload.
+        Resolves rule UUID/event_type aliases and filters out already-reviewed incidents by default.
         """
-        from sqlalchemy import func, or_
+        from sqlalchemy import func, or_, not_, exists
+        from sqlalchemy.orm import selectinload
+        from app.services.evidence_normalization_service import SRC_IP_RE, DST_PORT_RE
+
         query = (
             select(Incident, Investigation)
             .outerjoin(Investigation, Incident.id == Investigation.incident_id)
+            .options(selectinload(Incident.events))
         )
         count_q = (
             select(func.count(Incident.id))
@@ -51,8 +76,23 @@ class AnalystReviewService:
                 count_q = count_q.where(Incident.customer == customer)
 
         if rule_id:
-            query = query.where(or_(Incident.rule_id == rule_id, Incident.event_type == rule_id))
-            count_q = count_q.where(or_(Incident.rule_id == rule_id, Incident.event_type == rule_id))
+            _, rule_tokens = await cls._resolve_rule_aliases(db, rule_id)
+            rule_filter = or_(Incident.rule_id.in_(rule_tokens), Incident.event_type.in_(rule_tokens))
+            query = query.where(rule_filter)
+            count_q = count_q.where(rule_filter)
+
+        if not include_reviewed:
+            if reviewer_id:
+                reviewed_exists = exists().where(
+                    and_(
+                        AnalystVerdictReview.incident_id == Incident.id,
+                        AnalystVerdictReview.reviewer_id == str(reviewer_id),
+                    )
+                )
+            else:
+                reviewed_exists = exists().where(AnalystVerdictReview.incident_id == Incident.id)
+            query = query.where(not_(reviewed_exists))
+            count_q = count_q.where(not_(reviewed_exists))
 
         query = query.order_by(desc(Incident.created_at)).limit(limit).offset(offset)
         res = await db.execute(query)
@@ -61,6 +101,21 @@ class AnalystReviewService:
 
         items = []
         for inc, inv in rows:
+            raw_p = inc.raw_payload if isinstance(inc.raw_payload, dict) else {}
+            src_ip = (inc.source_ip or "").strip()
+            if not src_ip and raw_p.get("incidentSrc"):
+                m_src = SRC_IP_RE.search(str(raw_p.get("incidentSrc")))
+                src_ip = m_src.group(1).strip() if m_src else str(raw_p.get("incidentSrc")).strip()
+
+            dest_port = ""
+            if raw_p.get("incidentTarget"):
+                m_pt = DST_PORT_RE.search(str(raw_p.get("incidentTarget")))
+                dest_port = m_pt.group(1).strip() if m_pt else ""
+
+            rpt_dev = (inc.reporting_device or raw_p.get("incidentRptDevName") or raw_p.get("incidentRptIp") or "").strip()
+            inc_detail = str(raw_p.get("incidentDetail") or inc.detail or "").strip()
+            evts = inc.__dict__.get("events") or []
+
             items.append({
                 "incident_id": inc.incident_id,
                 "db_id": inc.id,
@@ -69,12 +124,16 @@ class AnalystReviewService:
                 "event_type": inc.event_type,
                 "severity": inc.severity,
                 "customer": inc.customer,
-                "source_ip": inc.source_ip,
-                "reporting_device": inc.reporting_device,
+                "source_ip": src_ip,
+                "destination_port": dest_port,
+                "incident_detail": inc_detail,
+                "reporting_device": rpt_dev,
+                "raw_events_count": len(evts),
                 "created_at": inc.created_at.isoformat() if inc.created_at else None,
                 "investigation_status": inv.status if inv else "PENDING_REVIEW",
                 "analyst_verdict": inv.analyst_verdict if inv else None,
-                "is_blind_mode": True,  # AI verdict remains hidden in pending queue
+                "is_disputed": bool(getattr(inv, "is_disputed", False)) if inv else False,
+                "is_blind_mode": True,  # AI verdict, confidence, and rationale strictly excluded
             })
         return total, items
 
@@ -145,14 +204,17 @@ class AnalystReviewService:
         )
 
         ground_truth_status = "INSUFFICIENT_EVIDENCE" if analyst_verdict == "INSUFFICIENT_EVIDENCE" else "VERIFIED"
-        target_rule = incident.rule_id or incident.event_type or "DEFAULT_RULE"
+        raw_rule_ref = incident.rule_id or incident.event_type or "DEFAULT_RULE"
+        canonical_rule_uuid, _ = await cls._resolve_rule_aliases(db, raw_rule_ref)
+        target_rule = canonical_rule_uuid or raw_rule_ref
 
-        # 4. Check for existing review by THIS reviewer (exact-once metric guarantee and idempotency per reviewer)
-        rev_stmt = select(AnalystVerdictReview).where(
-            AnalystVerdictReview.incident_id == incident.id,
-            AnalystVerdictReview.reviewer_id == str(reviewer_id)
-        )
-        existing_rev = (await db.execute(rev_stmt)).scalars().first()
+        # 4. Check existing reviews for THIS incident (exact-once per-incident counting + dispute detection)
+        all_inc_revs_stmt = select(AnalystVerdictReview).where(
+            AnalystVerdictReview.incident_id == incident.id
+        ).order_by(AnalystVerdictReview.created_at.asc())
+        all_inc_revs = list((await db.execute(all_inc_revs_stmt)).scalars().all())
+        existing_rev = next((r for r in all_inc_revs if str(r.reviewer_id) == str(reviewer_id)), None)
+        other_revs = [r for r in all_inc_revs if str(r.reviewer_id) != str(reviewer_id)]
 
         if existing_rev:
             if existing_rev.analyst_verdict == analyst_verdict:
@@ -237,25 +299,41 @@ class AnalystReviewService:
                     "is_updated": True,
                 }
 
-        # 5. First-time review: check investigation record or create
+        # Check multi-analyst dispute if another reviewer already submitted a conflicting verdict
+        is_second_reviewer = len(other_revs) > 0
+        prior_verdicts = {r.analyst_verdict for r in other_revs if r.analyst_verdict}
+        has_inter_analyst_dispute = bool(is_second_reviewer and any(pv != analyst_verdict for pv in prior_verdicts))
+        if has_inter_analyst_dispute:
+            ground_truth_status = "DISPUTED"
+            comparison_outcome = "DISPUTED"
+            disagreement_reason = f"Inter-analyst dispute: reviewer '{reviewer_id}' ({analyst_verdict}) disagreed with prior review ({', '.join(sorted(prior_verdicts))}). Requires L2 adjudication."
+            for prev_r in other_revs:
+                prev_r.ground_truth_status = "DISPUTED"
+                db.add(prev_r)
+
+        # 5. First-time review by this reviewer: check investigation record or create
         inv_stmt = select(Investigation).where(Investigation.incident_id == incident.id)
         inv_res = await db.execute(inv_stmt)
         investigation = inv_res.scalar_one_or_none()
         if not investigation:
             investigation = Investigation(
                 incident_id=incident.id,
-                status="REVIEWED",
+                status="DISPUTED" if has_inter_analyst_dispute else "REVIEWED",
                 analyst_verdict=analyst_verdict,
                 verdict_reason=analyst_notes,
-                is_independently_verified=True,
+                is_independently_verified=not has_inter_analyst_dispute,
             )
+            if hasattr(investigation, "is_disputed"):
+                investigation.is_disputed = has_inter_analyst_dispute
             db.add(investigation)
             await db.flush()
         else:
-            investigation.status = "REVIEWED"
+            investigation.status = "DISPUTED" if has_inter_analyst_dispute else "REVIEWED"
             investigation.analyst_verdict = analyst_verdict
             investigation.verdict_reason = analyst_notes
-            investigation.is_independently_verified = True
+            investigation.is_independently_verified = not has_inter_analyst_dispute
+            if hasattr(investigation, "is_disputed"):
+                investigation.is_disputed = has_inter_analyst_dispute
             db.add(investigation)
 
         # 6. Persist immutable AnalystVerdictReview
@@ -277,11 +355,11 @@ class AnalystReviewService:
         db.add(review)
         await db.flush()
 
-        # 7. Create / Update verified LearningRecord
-        if target_rule:
+        # 7. Create / Update LearningRecord (only VERIFIED TP/FP enter verified RAG pool; DISPUTED/INSUFFICIENT excluded)
+        if target_rule and canonical_rule_uuid:
             learn_stmt = select(LearningRecord).where(
                 and_(
-                    LearningRecord.rule_id == target_rule,
+                    LearningRecord.rule_id == canonical_rule_uuid,
                     LearningRecord.incident_id == incident.id
                 )
             )
@@ -289,7 +367,7 @@ class AnalystReviewService:
             learn_rec = learn_res.scalar_one_or_none()
             if not learn_rec:
                 learn_rec = LearningRecord(
-                    rule_id=target_rule,
+                    rule_id=canonical_rule_uuid,
                     incident_id=incident.id,
                     verified_verdict=analyst_verdict,
                     analyst_explanation=analyst_notes,
@@ -303,7 +381,8 @@ class AnalystReviewService:
                 learn_rec.verification_status = ground_truth_status
                 db.add(learn_rec)
 
-            # 8. Update RuleLearningProfile metrics exactly once
+        # 8. Update RuleLearningProfile metrics STRICTLY ONCE per incident (never double-count 2nd reviewer)
+        if target_rule and not is_second_reviewer:
             profile = await RuleLearningService.get_or_create_profile(
                 db=db,
                 rule_id=target_rule,
@@ -327,6 +406,8 @@ class AnalystReviewService:
             "comparison_outcome": comparison_outcome,
             "disagreement_reason": disagreement_reason,
             "ground_truth_status": ground_truth_status,
+            "is_second_reviewer": is_second_reviewer,
+            "is_disputed": has_inter_analyst_dispute,
             "reviewed_at": review.created_at.isoformat(),
         }
 
@@ -375,7 +456,9 @@ class AnalystReviewService:
         rationale: str
     ) -> Dict[str, Any]:
         """
-        Binding L2 adjudication for disputed reviews.
+        Binding L2 adjudication for disputed or disagreed reviews.
+        Recalculates comparison outcome, updates LearningRecord, resolves disputes,
+        and recalibrates RuleLearningProfile metrics (including critical missed TP suspension).
         """
         rev_stmt = select(AnalystVerdictReview).where(AnalystVerdictReview.id == review_id)
         rev_res = await db.execute(rev_stmt)
@@ -383,25 +466,108 @@ class AnalystReviewService:
         if not review:
             raise ValueError(f"Review {review_id} not found")
 
+        norm_final = final_verdict.upper().strip()
+        old_verdict = review.analyst_verdict
+        old_outcome = review.comparison_outcome
+
+        new_outcome, _ = cls._classify_outcome(
+            analyst_verdict=norm_final,
+            ai_verdict=review.revealed_ai_verdict,
+        )
+        new_gt_status = "INSUFFICIENT_EVIDENCE" if norm_final == "INSUFFICIENT_EVIDENCE" else "ADJUDICATED"
+
         adjudication = AnalystReviewAdjudication(
             review_id=review.id,
             incident_id=review.incident_id,
             adjudicator_user_id=adjudicator_id,
-            final_verdict=final_verdict,
+            final_verdict=norm_final,
             adjudication_rationale=rationale,
             original_dispute_reason=review.analyst_notes
         )
         db.add(adjudication)
 
-        review.analyst_verdict = final_verdict
-        review.ground_truth_status = "ADJUDICATED"
+        review.analyst_verdict = norm_final
+        review.comparison_outcome = new_outcome
+        review.ground_truth_status = new_gt_status
         db.add(review)
+
+        # Resolve any sibling disputed reviews on the same incident
+        sib_res = await db.execute(
+            select(AnalystVerdictReview).where(
+                and_(
+                    AnalystVerdictReview.incident_id == review.incident_id,
+                    AnalystVerdictReview.id != review.id,
+                    AnalystVerdictReview.ground_truth_status == "DISPUTED",
+                )
+            )
+        )
+        for sib in sib_res.scalars().all():
+            sib.ground_truth_status = "SUPERSEDED_BY_ADJUDICATION"
+            db.add(sib)
+
+        # Update Investigation
+        inv_res = await db.execute(select(Investigation).where(Investigation.incident_id == review.incident_id))
+        inv = inv_res.scalar_one_or_none()
+        if inv:
+            inv.status = "REVIEWED"
+            inv.analyst_verdict = norm_final
+            inv.verdict_reason = rationale
+            inv.is_independently_verified = (norm_final != "INSUFFICIENT_EVIDENCE")
+            if hasattr(inv, "is_disputed"):
+                inv.is_disputed = False
+            db.add(inv)
+
+        # Update LearningRecord
+        canonical_uuid, _ = await cls._resolve_rule_aliases(db, review.rule_id)
+        if canonical_uuid:
+            learn_res = await db.execute(
+                select(LearningRecord).where(
+                    and_(
+                        LearningRecord.rule_id == canonical_uuid,
+                        LearningRecord.incident_id == review.incident_id,
+                    )
+                )
+            )
+            learn_rec = learn_res.scalar_one_or_none()
+            lr_status = "VERIFIED" if norm_final in ("TRUE_POSITIVE", "FALSE_POSITIVE") else "INSUFFICIENT_EVIDENCE"
+            if learn_rec:
+                learn_rec.verified_verdict = norm_final
+                learn_rec.analyst_explanation = rationale
+                learn_rec.verification_status = lr_status
+                db.add(learn_rec)
+            else:
+                db.add(LearningRecord(
+                    rule_id=canonical_uuid,
+                    incident_id=review.incident_id,
+                    verified_verdict=norm_final,
+                    analyst_explanation=rationale,
+                    verification_status=lr_status,
+                ))
+
+        # Recalibrate RuleLearningProfile metrics cleanly
+        if review.rule_id:
+            profile = await RuleLearningService.get_or_create_profile(
+                db=db,
+                rule_id=review.rule_id,
+                customer=review.customer or "DEFAULT",
+            )
+            await RuleLearningService.adjust_analyst_feedback(
+                db=db,
+                profile_id=profile.id,
+                old_verdict=old_verdict,
+                old_outcome=old_outcome,
+                new_verdict=norm_final,
+                new_outcome=new_outcome,
+            )
+
         await db.flush()
 
         return {
             "adjudication_id": adjudication.id,
             "review_id": review.id,
-            "final_verdict": final_verdict,
+            "final_verdict": norm_final,
+            "comparison_outcome": new_outcome,
+            "ground_truth_status": new_gt_status,
             "adjudicator": adjudicator_id,
             "adjudicated_at": adjudication.created_at.isoformat()
         }

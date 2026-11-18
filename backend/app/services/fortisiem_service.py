@@ -2078,3 +2078,185 @@ class FortiSIEMService:
             "source": source_type,
             "message": f"Resolution successfully synchronized for incident '{inc.incident_id}'.",
         }
+
+    async def get_live_incident_state(self, incident_id: str) -> Dict[str, Any]:
+        """
+        Queries FortiSIEM for the target incident's current status prior to automated closure.
+        Fails safely when FortiSIEM host is unconfigured or unreachable.
+        """
+        clean_id = str(incident_id).strip()
+        if not (settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip()):
+            return {
+                "reachable": False,
+                "incident_id": clean_id,
+                "status_code": None,
+                "state": "SIEM_UNCONFIGURED",
+                "already_closed": False,
+                "error": "FORTISIEM_HOST is not configured.",
+            }
+
+        base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
+        auth = (settings.FORTISIEM_USERNAME, settings.FORTISIEM_PASSWORD) if (settings.FORTISIEM_USERNAME and settings.FORTISIEM_PASSWORD) else None
+        try:
+            async with httpx.AsyncClient(verify=settings.FORTISIEM_VERIFY_SSL, timeout=settings.FORTISIEM_TIMEOUT) as client:
+                res = await client.get(
+                    f"{base_url}/phoenix/rest/incident/incidentDetail",
+                    params={"incidentId": clean_id},
+                    auth=auth,
+                    headers={"Accept": "application/json"},
+                )
+                if res.status_code == 200:
+                    data = res.json() if res.content else {}
+                    raw_status = str(data.get("incidentStatus") or data.get("status") or "").strip().lower()
+                    already_closed = raw_status in ("1", "2", "cleared", "closed", "resolved", "auto-cleared", "manually cleared")
+                    return {
+                        "reachable": True,
+                        "incident_id": clean_id,
+                        "status_code": res.status_code,
+                        "state": raw_status or "open",
+                        "already_closed": already_closed,
+                        "raw": data,
+                    }
+                return {
+                    "reachable": True,
+                    "incident_id": clean_id,
+                    "status_code": res.status_code,
+                    "state": "HTTP_ERROR",
+                    "already_closed": False,
+                    "error": f"FortiSIEM returned HTTP {res.status_code}",
+                }
+        except Exception as exc:
+            return {
+                "reachable": False,
+                "incident_id": clean_id,
+                "status_code": None,
+                "state": "CONNECTION_ERROR",
+                "already_closed": False,
+                "error": str(exc),
+            }
+
+    async def close_incident_in_fortisiem(
+        self,
+        incident_id: str,
+        resolution_reason: str,
+        comments: str,
+        audit_id: str,
+        dry_run: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Governed FortiSIEM incident closure interface for validated FALSE_POSITIVE verdicts.
+        Defaults to dry_run=True to guarantee zero live FortiSIEM mutation during testing/validation.
+        In live mode (dry_run=False), verifies pre-state, submits closure, and verifies post-state.
+        """
+        clean_id = str(incident_id).strip()
+        tx_id = f"FSM-TX-{audit_id[:12]}"
+        closure_payload = {
+            "incidentId": clean_id,
+            "incidentStatus": 2,  # FortiSIEM Manually/Auto Cleared
+            "incidentReso": "False Positive",
+            "clearedReason": resolution_reason[:500],
+            "comments": comments[:1000],
+            "auditId": audit_id,
+        }
+
+        if dry_run:
+            return {
+                "ok": True,
+                "dry_run": True,
+                "execution_status": "DRY_RUN_WOULD_CLOSE",
+                "incident_id": clean_id,
+                "siem_status_code": 200,
+                "siem_transaction_id": f"DRYRUN-{tx_id}",
+                "remote_verified": True,
+                "payload_preview": closure_payload,
+                "message": f"[DRY-RUN] Verified payload and would close FortiSIEM incident {clean_id} as False Positive (no remote write executed).",
+            }
+
+        if not (settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip()):
+            return {
+                "ok": False,
+                "dry_run": False,
+                "execution_status": "FAILED_SIEM_UNCONFIGURED",
+                "incident_id": clean_id,
+                "siem_status_code": None,
+                "siem_transaction_id": tx_id,
+                "remote_verified": False,
+                "message": "Live FortiSIEM closure aborted: FORTISIEM_HOST is not configured.",
+            }
+
+        # 1. Verify current FortiSIEM state before writing
+        pre_state = await self.get_live_incident_state(clean_id)
+        if not pre_state.get("reachable"):
+            return {
+                "ok": False,
+                "dry_run": False,
+                "execution_status": "FAILED_SIEM_UNREACHABLE",
+                "incident_id": clean_id,
+                "siem_status_code": pre_state.get("status_code"),
+                "siem_transaction_id": tx_id,
+                "remote_verified": False,
+                "message": f"FortiSIEM pre-check failed: {pre_state.get('error')}",
+            }
+        if pre_state.get("already_closed"):
+            return {
+                "ok": True,
+                "dry_run": False,
+                "execution_status": "ALREADY_CLOSED_IN_SIEM",
+                "incident_id": clean_id,
+                "siem_status_code": pre_state.get("status_code"),
+                "siem_transaction_id": tx_id,
+                "remote_verified": True,
+                "message": f"Incident {clean_id} is already closed/cleared in FortiSIEM (state={pre_state.get('state')}); idempotent no-op.",
+            }
+
+        # 2. Submit FortiSIEM closure write-back
+        base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
+        auth = (settings.FORTISIEM_USERNAME, settings.FORTISIEM_PASSWORD) if (settings.FORTISIEM_USERNAME and settings.FORTISIEM_PASSWORD) else None
+        try:
+            async with httpx.AsyncClient(verify=settings.FORTISIEM_VERIFY_SSL, timeout=settings.FORTISIEM_TIMEOUT) as client:
+                res = await client.post(
+                    f"{base_url}/phoenix/rest/incident/external",
+                    json=closure_payload,
+                    auth=auth,
+                    headers={"Accept": "application/json", "Content-Type": "application/json"},
+                )
+                if res.status_code not in (200, 201, 202, 204):
+                    return {
+                        "ok": False,
+                        "dry_run": False,
+                        "execution_status": "FAILED_SIEM_WRITE",
+                        "incident_id": clean_id,
+                        "siem_status_code": res.status_code,
+                        "siem_transaction_id": tx_id,
+                        "remote_verified": False,
+                        "message": f"FortiSIEM closure rejected with HTTP {res.status_code}: {res.text[:200]}",
+                    }
+
+            # 3. Post-closure remote verification
+            post_state = await self.get_live_incident_state(clean_id)
+            remote_ok = bool(post_state.get("reachable") and post_state.get("already_closed"))
+            return {
+                "ok": remote_ok,
+                "dry_run": False,
+                "execution_status": "CLOSED_AND_VERIFIED" if remote_ok else "CLOSED_PENDING_RECONCILIATION",
+                "incident_id": clean_id,
+                "siem_status_code": res.status_code,
+                "siem_transaction_id": tx_id,
+                "remote_verified": remote_ok,
+                "message": (
+                    f"Incident {clean_id} closed in FortiSIEM and remote cleared state verified."
+                    if remote_ok
+                    else f"Closure accepted (HTTP {res.status_code}) but post-check state is '{post_state.get('state')}'; queued for reconciliation."
+                ),
+            }
+        except Exception as exc:
+            return {
+                "ok": False,
+                "dry_run": False,
+                "execution_status": "FAILED_RECONCILIATION_REQUIRED",
+                "incident_id": clean_id,
+                "siem_status_code": None,
+                "siem_transaction_id": tx_id,
+                "remote_verified": False,
+                "message": f"FortiSIEM write-back error requiring reconciliation: {exc}",
+            }

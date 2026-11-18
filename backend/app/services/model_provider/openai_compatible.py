@@ -307,6 +307,15 @@ class OpenAICompatibleProvider(BaseModelProvider):
             "rule": rule_spec,
         }, separators=(",", ":"))
 
+        # Neutralize prompt-injection attempts trying to close untrusted delimiter tags inside raw logs
+        compact_json = (
+            compact_json
+            .replace("</UNTRUSTED_INCIDENT_DATA>", "&lt;/UNTRUSTED_INCIDENT_DATA&gt;")
+            .replace("</untrusted_incident_data>", "&lt;/untrusted_incident_data&gt;")
+            .replace("</VERIFIED_HISTORICAL_PRECEDENTS>", "&lt;/VERIFIED_HISTORICAL_PRECEDENTS&gt;")
+            .replace("</verified_historical_precedents>", "&lt;/verified_historical_precedents&gt;")
+        )
+
         # Enforce Section 10 instruction boundary delimiters around untrusted telemetry
         user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
 
@@ -474,7 +483,72 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 contradictory_ev = [str(c) for c in raw_contra] if isinstance(raw_contra, list) else []
 
                 raw_verdict_str = str(parsed.get("verdict", "REQUIRES_ATTENTION")).upper().strip()
+                if raw_verdict_str in ("INSUFFICIENT_EVIDENCE", "ABSTAIN", "UNKNOWN", "UNCERTAIN"):
+                    raw_verdict_str = "REQUIRES_ATTENTION"
                 is_recovered = bool(parsed.get("_schema_recovery_applied", False))
+
+                # Reject mismatched incident_id returned by LLM (prevents cross-incident hallucination)
+                returned_inc_id = str(parsed.get("incident_id") or "").strip()
+                if returned_inc_id and str(incident_id).strip() and returned_inc_id != str(incident_id).strip():
+                    return StructuredModelVerdict(
+                        incident_id=incident_id,
+                        rule_id=rule_id,
+                        verdict="REQUIRES_ATTENTION",
+                        confidence=0.0,
+                        reason=f"Model returned mismatched incident_id '{returned_inc_id}' (expected '{incident_id}'); verdict rejected and routed to manual review.",
+                        supporting_evidence=[],
+                        supporting_claims=[],
+                        contradictory_evidence=[f"incident_id mismatch: returned={returned_inc_id}, expected={incident_id}"],
+                        missing_evidence=["Valid incident_id match in model response"],
+                        analyst_questions=["Re-run inference or review incident manually"],
+                        latency_ms=latency_ms,
+                        model_identifier=self.model_name,
+                        prompt_version_number=prompt_version_number,
+                        validation_status="INVALID_INCIDENT_REF",
+                        is_simulated=False,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        total_tokens=total_tokens,
+                        prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                        prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                        prompt_integrity_status="UNVERIFIED",
+                        raw_model_response=raw_reply,
+                        outbound_payload=payload,
+                    )
+
+                # Reject invalid/out-of-range confidence values
+                raw_conf_val = parsed.get("confidence")
+                if raw_conf_val is not None:
+                    try:
+                        conf_num = float(raw_conf_val)
+                        if conf_num != conf_num or conf_num < 0.0 or conf_num > 100.0:
+                            raise ValueError("out_of_range")
+                    except (TypeError, ValueError):
+                        return StructuredModelVerdict(
+                            incident_id=incident_id,
+                            rule_id=rule_id,
+                            verdict="REQUIRES_ATTENTION",
+                            confidence=0.0,
+                            reason=f"Model returned invalid confidence value '{raw_conf_val}'; verdict rejected and routed to manual review.",
+                            supporting_evidence=[],
+                            supporting_claims=[],
+                            contradictory_evidence=[],
+                            missing_evidence=["Valid confidence score (0-100)"],
+                            analyst_questions=["Review raw LLM output for invalid confidence value"],
+                            latency_ms=latency_ms,
+                            model_identifier=self.model_name,
+                            prompt_version_number=prompt_version_number,
+                            validation_status="INVALID_CONFIDENCE",
+                            is_simulated=False,
+                            prompt_tokens=prompt_tokens,
+                            completion_tokens=completion_tokens,
+                            total_tokens=total_tokens,
+                            prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                            prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                            prompt_integrity_status="UNVERIFIED",
+                            raw_model_response=raw_reply,
+                            outbound_payload=payload,
+                        )
 
                 # If output required regex recovery from malformed non-JSON response,
                 # decisive TP/FP classifications must NEVER be accepted as valid.

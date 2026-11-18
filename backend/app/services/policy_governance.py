@@ -409,7 +409,13 @@ async def assess_policy_runtime_certification(
             reasons.append("STALE_ASSESSMENT_DIGEST")
         gate_results = getattr(assessment, "gate_results", None) or {}
         for gid in ("G1", "G2", "G3", "G4", "G5", "G6", "G7"):
-            gate = gate_results.get(gid) or {}
+            gate = gate_results.get(gid)
+            if not gate:
+                for gk, gv in gate_results.items():
+                    if str(gk).startswith(f"{gid}_") or (isinstance(gv, dict) and str(gv.get("gate_id") or "").upper() == gid):
+                        gate = gv
+                        break
+            gate = gate or {}
             if str(gate.get("status") or "").upper() == "FAILED":
                 structural_ok = False
                 reasons.append(f"STRUCTURAL_GATE_FAILED:{gid}")

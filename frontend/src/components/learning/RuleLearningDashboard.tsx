@@ -26,6 +26,7 @@ import {
   Info,
 } from "lucide-react";
 import { api, formatApiErrorMessage } from "@/lib/api";
+import { ActualPromptInspectorModal } from "@/components/prompt-inspector/ActualPromptInspectorModal";
 
 interface RuleLearningDashboardProps {
   ruleId: string;
@@ -64,9 +65,22 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
   const [engagingKillSwitch, setEngagingKillSwitch] = useState(false);
 
   // Dispute Adjudication State
-  const [adjudicationVerdict, setAdjudicationVerdict] = useState<"TRUE_POSITIVE" | "FALSE_POSITIVE">("FALSE_POSITIVE");
+  const [adjudicationVerdict, setAdjudicationVerdict] = useState<"TRUE_POSITIVE" | "FALSE_POSITIVE" | "INSUFFICIENT_EVIDENCE">("FALSE_POSITIVE");
   const [adjudicationRationale, setAdjudicationRationale] = useState("");
   const [adjudicating, setAdjudicating] = useState(false);
+
+  // Governance Approval Queue, Automation Audits & Sanitized Evidence State
+  const [promotionRequests, setPromotionRequests] = useState<any[]>([]);
+  const [automationAudits, setAutomationAudits] = useState<any[]>([]);
+  const [decidingReqId, setDecidingReqId] = useState<string | null>(null);
+  const [decisionNotes, setDecisionNotes] = useState("");
+  const [suggestingDraft, setSuggestingDraft] = useState(false);
+  const [selectedEvidence, setSelectedEvidence] = useState<any[]>([]);
+  const [loadingEvidence, setLoadingEvidence] = useState(false);
+  const [dryRunResult, setDryRunResult] = useState<any | null>(null);
+  const [runningDryRun, setRunningDryRun] = useState(false);
+  const [promptInspectorOpen, setPromptInspectorOpen] = useState(false);
+  const [promptInspectorIncidentId, setPromptInspectorIncidentId] = useState<string | null>(null);
 
   const fetchProfile = async () => {
     if (!ruleId) {
@@ -119,10 +133,50 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
     }
   };
 
+  const fetchGovernanceData = async () => {
+    if (!ruleId) return;
+    try {
+      const [reqData, auditData] = await Promise.all([
+        api.listPromotionRequests(ruleId).catch(() => ({ items: [] })),
+        api.listAutomationAudits(ruleId, undefined, 20).catch(() => ({ items: [] })),
+      ]);
+      setPromotionRequests(reqData.items || []);
+      setAutomationAudits(auditData.items || []);
+    } catch {
+      // non-fatal
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
     fetchPendingReviews();
+    fetchGovernanceData();
   }, [ruleId]);
+
+  useEffect(() => {
+    if (!selectedIncident?.incident_id) {
+      setSelectedEvidence([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingEvidence(true);
+    api
+      .getIncidentModelPayload(String(selectedIncident.incident_id))
+      .then((mp: any) => {
+        if (!cancelled) {
+          setSelectedEvidence(Array.isArray(mp?.canonical_evidence) ? mp.canonical_evidence : []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSelectedEvidence([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEvidence(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedIncident?.incident_id]);
 
   const handleTransition = async (newStage: string, reason: string) => {
     setTransitioning(true);
@@ -199,10 +253,64 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
       );
       setFeedback({ type: "success", text: `Formal promotion request for ${targetStage} submitted.` });
       setPromotionJustification("");
+      await fetchGovernanceData();
     } catch (err: any) {
       setFeedback({ type: "error", text: formatApiErrorMessage(err, "Failed to submit promotion request") });
     } finally {
       setRequestingPromotion(false);
+    }
+  };
+
+  const handleDecidePromotion = async (requestId: string, action: "APPROVED" | "REJECTED") => {
+    setDecidingReqId(requestId);
+    setFeedback(null);
+    try {
+      const res = await api.decideRulePromotion(
+        requestId,
+        action,
+        decisionNotes || `${action} via Administrator Governance Panel`
+      );
+      setFeedback({ type: "success", text: `Promotion request ${action}: ${res.rule_id} -> ${res.requested_stage}.` });
+      setDecisionNotes("");
+      await fetchProfile();
+      await fetchGovernanceData();
+    } catch (err: any) {
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, `Failed to ${action.toLowerCase()} promotion request`) });
+    } finally {
+      setDecidingReqId(null);
+    }
+  };
+
+  const handleSuggestPromptImprovement = async () => {
+    if (!ruleId) return;
+    setSuggestingDraft(true);
+    setFeedback(null);
+    try {
+      const res = await api.suggestPromptImprovement(ruleId, customer);
+      setFeedback({
+        type: "success",
+        text: `Created controlled candidate DRAFT v${res.draft_version_number} from ${res.error_cases_analyzed} verified feedback cases (active production prompt unchanged).`,
+      });
+    } catch (err: any) {
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, "Failed to generate candidate draft") });
+    } finally {
+      setSuggestingDraft(false);
+    }
+  };
+
+  const handleDryRunDecision = async (incidentId: string) => {
+    setRunningDryRun(true);
+    setDryRunResult(null);
+    setFeedback(null);
+    try {
+      const res = await api.executeAutomationDecision(incidentId, { dry_run: true, customer });
+      setDryRunResult(res);
+      setFeedback({ type: "success", text: `Dry-run completed: ${res.action_taken} (${res.execution_status}). Zero live FortiSIEM changes executed.` });
+      await fetchGovernanceData();
+    } catch (err: any) {
+      setFeedback({ type: "error", text: formatApiErrorMessage(err, "Dry-run simulation failed") });
+    } finally {
+      setRunningDryRun(false);
     }
   };
 
@@ -540,27 +648,38 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
               <div
                 className={`p-2 rounded border flex items-center justify-between ${
-                  profile.total_analyst_reviews >= 100
+                  (profile.eligible_evaluations ?? ((profile.ai_correct_count || 0) + (profile.ai_incorrect_count || 0))) >= 100
                     ? "bg-emerald-950/20 border-emerald-900 text-emerald-300"
                     : "bg-slate-950/40 border-slate-800 text-slate-400"
                 }`}
               >
-                <span>Verified Sample Size (≥100 reviews)</span>
-                <span className="font-bold">{profile.total_analyst_reviews}/100</span>
+                <span>Eligible TP/FP Evaluations (≥100)</span>
+                <span className="font-bold">{profile.eligible_evaluations ?? ((profile.ai_correct_count || 0) + (profile.ai_incorrect_count || 0))}/100</span>
               </div>
 
               <div
                 className={`p-2 rounded border flex items-center justify-between ${
-                  (profile.fp_precision || 0) >= 0.98
+                  (profile.empirical_accuracy || 0) >= 0.95
                     ? "bg-emerald-950/20 border-emerald-900 text-emerald-300"
                     : "bg-slate-950/40 border-slate-800 text-slate-400"
                 }`}
               >
-                <span>Observed FP Precision (≥98.0%)</span>
-                <span className="font-bold">{((profile.fp_precision || 0) * 100).toFixed(1)}%</span>
+                <span>Verified Rule Accuracy (≥95.0%)</span>
+                <span className="font-bold">{profile.empirical_accuracy != null ? `${(profile.empirical_accuracy * 100).toFixed(1)}%` : "N/A"}</span>
+              </div>
+
+              <div
+                className={`p-2 rounded border flex items-center justify-between ${
+                  (profile.fp_precision || 0) >= 0.99
+                    ? "bg-emerald-950/20 border-emerald-900 text-emerald-300"
+                    : "bg-slate-950/40 border-slate-800 text-slate-400"
+                }`}
+              >
+                <span>Observed FP Precision (≥99.0%)</span>
+                <span className="font-bold">{profile.fp_precision != null ? `${(profile.fp_precision * 100).toFixed(1)}%` : "N/A"}</span>
               </div>
 
               <div
@@ -570,8 +689,8 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                     : "bg-slate-950/40 border-slate-800 text-slate-400"
                 }`}
               >
-                <span>Wilson 95% Confidence Lower Bound (≥96.0%)</span>
-                <span className="font-bold">{((profile.wilson_lower_bound || 0) * 100).toFixed(1)}%</span>
+                <span>Wilson 95% Lower Bound (≥96.0%)</span>
+                <span className="font-bold">{profile.wilson_lower_bound != null ? `${(profile.wilson_lower_bound * 100).toFixed(1)}%` : "N/A"}</span>
               </div>
 
               <div
@@ -581,9 +700,32 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                     : "bg-slate-950/40 border-slate-800 text-slate-400"
                 }`}
               >
-                <span>TP Recall / True Attack Coverage (≥95.0%)</span>
-                <span className="font-bold">{((profile.tp_recall || 0) * 100).toFixed(1)}%</span>
+                <span>TP Recall / Attack Coverage (≥95.0%)</span>
+                <span className="font-bold">{profile.tp_recall != null ? `${(profile.tp_recall * 100).toFixed(1)}%` : "N/A"}</span>
               </div>
+
+              <div
+                className={`p-2 rounded border flex items-center justify-between ${
+                  confusion.critical_missed_tp === 0
+                    ? "bg-emerald-950/20 border-emerald-900 text-emerald-300"
+                    : "bg-rose-950/30 border-rose-800 text-rose-300"
+                }`}
+              >
+                <span>Critical Missed TPs (= 0)</span>
+                <span className="font-bold">{confusion.critical_missed_tp}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end pt-1">
+              <button
+                type="button"
+                onClick={handleSuggestPromptImprovement}
+                disabled={suggestingDraft}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[11px] font-semibold flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <GitBranch className="w-3.5 h-3.5" />
+                {suggestingDraft ? "Generating Candidate Draft..." : "Propose Feedback-Driven Prompt Draft"}
+              </button>
             </div>
 
             {!isEligible && eligibilityReasons.length > 0 && (
@@ -703,19 +845,55 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                   </div>
 
                   {/* Incident Telemetry Summary */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-[11px]">
                     <div className="p-2 rounded bg-slate-950/60 border border-slate-800">
                       <div className="text-slate-500 text-[10px]">Source IP</div>
                       <div className="font-mono text-slate-200">{selectedIncident.source_ip || "N/A"}</div>
                     </div>
                     <div className="p-2 rounded bg-slate-950/60 border border-slate-800">
+                      <div className="text-slate-500 text-[10px]">Dest Port</div>
+                      <div className="font-mono text-slate-200">{selectedIncident.destination_port || "N/A"}</div>
+                    </div>
+                    <div className="p-2 rounded bg-slate-950/60 border border-slate-800">
+                      <div className="text-slate-500 text-[10px]">Raw Events</div>
+                      <div className="font-mono text-slate-200">{selectedIncident.raw_events_count ?? 0}</div>
+                    </div>
+                    <div className="p-2 rounded bg-slate-950/60 border border-slate-800">
                       <div className="text-slate-500 text-[10px]">Reporting Device</div>
-                      <div className="font-mono text-slate-200">{selectedIncident.reporting_device || "N/A"}</div>
+                      <div className="font-mono text-slate-200 truncate">{selectedIncident.reporting_device || "N/A"}</div>
                     </div>
                     <div className="p-2 rounded bg-slate-950/60 border border-slate-800">
                       <div className="text-slate-500 text-[10px]">Severity</div>
                       <div className="font-mono text-slate-200">{selectedIncident.severity || "MEDIUM"}</div>
                     </div>
+                  </div>
+
+                  {/* Sanitized Canonical Incident Evidence (Blind-Safe: zero AI verdict or ground-truth leakage) */}
+                  <div className="p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-slate-300">Observed Canonical Evidence ({selectedEvidence.length})</span>
+                      {selectedIncident.incident_detail && (
+                        <span className="font-mono text-[10px] text-cyan-400 truncate max-w-[260px]">
+                          {selectedIncident.incident_detail}
+                        </span>
+                      )}
+                    </div>
+                    {loadingEvidence ? (
+                      <div className="text-[10px] text-slate-500">Loading sanitized incident evidence...</div>
+                    ) : selectedEvidence.length === 0 ? (
+                      <div className="text-[10px] text-amber-400">No canonical evidence records extracted yet.</div>
+                    ) : (
+                      <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                        {selectedEvidence.slice(0, 14).map((ev: any, i: number) => (
+                          <div key={ev.evidence_id || i} className="flex items-start justify-between gap-2 text-[10px] border-b border-slate-800/60 pb-1">
+                            <span className="font-mono text-cyan-300 shrink-0">{ev.source_field}</span>
+                            <span className="font-mono text-slate-300 text-right break-all">
+                              {String(ev.observed_value || "").slice(0, 140)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Independent Analyst Radio Controls */}
@@ -766,7 +944,7 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                     </div>
                   </div>
 
-                  {/* Analyst Notes & References */}
+                  {/* Analyst Notes & Evidence References */}
                   <div className="space-y-2">
                     <label className="text-xs font-semibold text-slate-300">Analyst Investigation Notes &amp; Rationale:</label>
                     <textarea
@@ -776,6 +954,16 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                       rows={2}
                       className="w-full p-2.5 rounded-lg border border-slate-800 bg-slate-950 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
                     />
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-400">Evidence References (comma-separated EV-* IDs or tickets):</label>
+                      <input
+                        type="text"
+                        value={evidenceRefs}
+                        onChange={(e) => setEvidenceRefs(e.target.value)}
+                        placeholder="e.g. EV-176011-TOP-network_source_ip, CHG-2026-1042"
+                        className="w-full mt-1 p-2 rounded-lg border border-slate-800 bg-slate-950 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                      />
+                    </div>
                   </div>
 
                   <button
@@ -795,9 +983,22 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                           <Award className="w-4 h-4 text-cyan-400" />
                           <span className="text-xs font-bold text-slate-100">Comparison &amp; Agreement Outcome</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
-                          {revealedResult.comparison_outcome}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPromptInspectorIncidentId(String(revealedResult.incident_id));
+                              setPromptInspectorOpen(true);
+                            }}
+                            className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-950/70 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/80 flex items-center gap-1"
+                          >
+                            <Eye className="w-3 h-3" />
+                            View Actual LLM Prompt
+                          </button>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
+                            {revealedResult.comparison_outcome}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 text-xs">
@@ -811,9 +1012,15 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                           <div className="text-sm font-black text-purple-300 mt-1">
                             {revealedResult.revealed_ai_verdict || "NO_PREDICTION"}
                           </div>
-                          {revealedResult.revealed_ai_confidence && (
+                          {revealedResult.revealed_ai_confidence != null && (
                             <div className="text-[10px] text-slate-500 mt-0.5">
-                              Confidence: {(revealedResult.revealed_ai_confidence * 100).toFixed(1)}%
+                              Confidence:{" "}
+                              {(
+                                Number(revealedResult.revealed_ai_confidence) > 1
+                                  ? Number(revealedResult.revealed_ai_confidence)
+                                  : Number(revealedResult.revealed_ai_confidence) * 100
+                              ).toFixed(1)}
+                              %
                             </div>
                           )}
                         </div>
@@ -825,8 +1032,8 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
                         </div>
                       )}
 
-                      {/* L2 Adjudication Controls if Disputed */}
-                      {revealedResult.comparison_outcome === "DISPUTED" && (
+                      {/* L2 Adjudication Controls for Disputed or Disagreed Determinations */}
+                      {["DISPUTED", "CRITICAL_MISSED_TP", "AI_FALSE_ALARM"].includes(revealedResult.comparison_outcome) && (
                         <div className="p-3 rounded-lg border border-amber-900/40 bg-amber-950/20 space-y-2 text-xs">
                           <span className="font-bold text-amber-300">L2 Adjudication Required:</span>
                           <div className="flex items-center gap-2">
@@ -942,6 +1149,151 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
             </button>
           </div>
 
+          {/* Administrator Promotion Approval Queue */}
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Scale className="w-4 h-4 text-emerald-400" />
+                Administrator Promotion Approval Queue ({promotionRequests.length})
+              </h3>
+              <span className="text-[10px] text-slate-400">Dual-Control (Requester ≠ Approver)</span>
+            </div>
+
+            {promotionRequests.length === 0 ? (
+              <div className="text-[11px] text-slate-500">No formal promotion requests recorded for this rule yet.</div>
+            ) : (
+              <div className="space-y-2">
+                {promotionRequests.map((req: any) => (
+                  <div key={req.request_id} className="p-3 rounded-lg border border-slate-800 bg-slate-950/60 space-y-2 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-semibold text-slate-200">
+                        {req.current_stage} → <span className="text-cyan-300">{req.requested_stage}</span>
+                        <span className="ml-2 text-[10px] font-mono text-slate-400">by {req.requester_user_id}</span>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          req.status === "APPROVED"
+                            ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                            : req.status === "REJECTED"
+                            ? "bg-rose-950 text-rose-300 border-rose-800"
+                            : "bg-amber-950 text-amber-300 border-amber-800"
+                        }`}
+                      >
+                        {req.status}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-400">{req.justification}</div>
+                    {req.status === "PENDING" && (
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <input
+                          type="text"
+                          value={decisionNotes}
+                          onChange={(e) => setDecisionNotes(e.target.value)}
+                          placeholder="Administrator approval / rejection justification..."
+                          className="flex-1 min-w-[200px] p-1.5 rounded border border-slate-800 bg-slate-900 text-xs text-slate-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleDecidePromotion(req.request_id, "APPROVED")}
+                          disabled={decidingReqId === req.request_id}
+                          className="px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-[11px] disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDecidePromotion(req.request_id, "REJECTED")}
+                          disabled={decidingReqId === req.request_id}
+                          className="px-3 py-1.5 rounded bg-rose-800 hover:bg-rose-700 text-rose-100 font-bold text-[11px] disabled:opacity-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Controlled FortiSIEM Automation Policy & Audit History */}
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Sliders className="w-4 h-4 text-cyan-400" />
+                Controlled FortiSIEM Automation Status &amp; Dry-Run Verification
+              </h3>
+              <span
+                className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                  profile.automation_policy?.is_enabled && !profile.automation_policy?.emergency_disable
+                    ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                    : "bg-slate-900 text-amber-300 border-amber-800/70"
+                }`}
+              >
+                {profile.automation_policy?.emergency_disable
+                  ? "EMERGENCY DISABLED"
+                  : profile.automation_policy?.is_enabled
+                  ? "AUTO-CLOSURE ENABLED"
+                  : "AUTO-CLOSURE DISABLED (FAIL-CLOSED)"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+              <div className="p-2 rounded bg-slate-950/60 border border-slate-800">
+                <div className="text-slate-500 text-[10px]">Allowed Auto-Close</div>
+                <div className="font-mono text-slate-200">FALSE_POSITIVE Only</div>
+              </div>
+              <div className="p-2 rounded bg-slate-950/60 border border-slate-800">
+                <div className="text-slate-500 text-[10px]">Min Trust Score</div>
+                <div className="font-mono text-slate-200">{profile.automation_policy?.min_trust_score ?? 8}/10</div>
+              </div>
+              <div className="p-2 rounded bg-slate-950/60 border border-slate-800">
+                <div className="text-slate-500 text-[10px]">Min FP Precision</div>
+                <div className="font-mono text-slate-200">{((profile.automation_policy?.min_fp_precision ?? 0.99) * 100).toFixed(1)}%</div>
+              </div>
+              <div className="p-2 rounded bg-slate-950/60 border border-slate-800">
+                <div className="text-slate-500 text-[10px]">Daily Budget</div>
+                <div className="font-mono text-slate-200">
+                  {profile.automation_policy?.current_day_closure_count ?? 0}/{profile.automation_policy?.daily_closure_limit ?? 50}
+                </div>
+              </div>
+            </div>
+
+            {selectedIncident?.incident_id && (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDryRunDecision(String(selectedIncident.incident_id))}
+                  disabled={runningDryRun}
+                  className="px-3 py-1.5 rounded-lg bg-cyan-900/50 hover:bg-cyan-800/70 text-cyan-200 border border-cyan-700 text-[11px] font-semibold disabled:opacity-50"
+                >
+                  {runningDryRun ? "Simulating..." : `Simulate Automation Dry-Run on Incident #${selectedIncident.incident_id}`}
+                </button>
+                {dryRunResult && (
+                  <span className="text-[11px] font-mono text-cyan-300">
+                    {dryRunResult.action_taken} → {dryRunResult.execution_status} (closed={String(dryRunResult.incident_closed)})
+                  </span>
+                )}
+              </div>
+            )}
+
+            {automationAudits.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <div className="text-[11px] font-semibold text-slate-300">Recent Automation Decisions ({automationAudits.length})</div>
+                <div className="max-h-40 overflow-y-auto space-y-1">
+                  {automationAudits.map((a: any) => (
+                    <div key={a.audit_id} className="p-2 rounded bg-slate-950/60 border border-slate-800 text-[10px] flex items-center justify-between gap-2">
+                      <span className="font-mono text-slate-300">
+                        #{a.incident_id} &bull; {a.action_type}
+                      </span>
+                      <span className="font-mono text-cyan-300">{a.execution_status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Emergency Safety Controls */}
           <div className="p-4 rounded-xl border border-rose-900/40 bg-rose-950/10 space-y-3">
             <h3 className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
@@ -1006,6 +1358,14 @@ export function RuleLearningDashboard({ ruleId, ruleName, customer, onProfileUpd
           </div>
         </div>
       )}
+      <ActualPromptInspectorModal
+        isOpen={promptInspectorOpen}
+        onClose={() => setPromptInspectorOpen(false)}
+        incidentId={promptInspectorIncidentId}
+        ruleId={ruleId}
+        ruleName={ruleName || profile?.rule_identifier}
+        initialMode="capture"
+      />
     </div>
   );
 }

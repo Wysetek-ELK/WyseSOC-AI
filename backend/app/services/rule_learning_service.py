@@ -41,9 +41,11 @@ class RuleLearningService:
     MIN_PRODUCTION_SAMPLES = 100
     MIN_PRODUCTION_TP = 25
     MIN_PRODUCTION_FP = 50
-    MIN_PRODUCTION_FP_PRECISION = 0.98
+    MIN_PRODUCTION_ACCURACY = 0.95
+    MIN_PRODUCTION_FP_PRECISION = 0.99
     MIN_PRODUCTION_WILSON_LOWER = 0.96
     MIN_PRODUCTION_TP_RECALL = 0.95
+    MAX_CRITICAL_MISSED_TP = 0
 
     # Minimum Criteria for Supervised Pilot
     MIN_PILOT_SAMPLES = 30
@@ -276,7 +278,18 @@ class RuleLearningService:
 
         effective_rule_id = rule_obj.id
         rule_identifier = rule_obj.rule_id
-        primary_archetype = "POLICY_VIOLATION" if "policy" in rule_identifier.lower() else "UNKNOWN"
+        primary_archetype = "UNKNOWN"
+        try:
+            from app.services.rule_intelligence_analyzer import RuleIntelligenceAnalyzer
+            from app.services.detection_archetype_registry import DetectionArchetypeRegistry
+            sem = RuleIntelligenceAnalyzer.analyze_rule(rule_obj)
+            cls_res = DetectionArchetypeRegistry.classify_rule(sem, rule_obj)
+            primary_archetype = cls_res.primary_archetype.value
+        except Exception:
+            if "host_scan" in rule_identifier.lower() or "port_scan" in rule_identifier.lower():
+                primary_archetype = "NETWORK_SCAN"
+            elif "policy" in rule_identifier.lower():
+                primary_archetype = "POLICY_VIOLATION"
 
         # 3. Double-check profile existence by effective_rule_id to avoid unique constraint collisions
         check_stmt = select(RuleLearningProfile).where(
@@ -344,7 +357,7 @@ class RuleLearningService:
                 is_enabled=False,  # REQ-05: Automatic closure strictly disabled by default
                 allowed_verdicts=["FALSE_POSITIVE"],
                 min_trust_score=8,
-                min_fp_precision=0.98,
+                min_fp_precision=0.99,
                 daily_closure_limit=50,
                 emergency_disable=False
             )
@@ -489,24 +502,75 @@ class RuleLearningService:
             profile.ai_incorrect_count += 1
             # Check critical missed TP suspension trigger
             if comparison_outcome == "CRITICAL_MISSED_TP":
-                if profile.lifecycle_stage in (cls.STAGE_CONTROLLED_PRODUCTION, cls.STAGE_MONITORING):
-                    logger.critical(
-                        f"CRITICAL MISSED TRUE POSITIVE on rule {profile.rule_identifier}. "
-                        f"Triggering immediate automatic suspension!"
-                    )
-                    await cls.transition_lifecycle_stage(
-                        db=db,
-                        profile=profile,
-                        new_stage=cls.STAGE_SUSPENDED,
-                        reason="Automatic suspension triggered by Critical Missed True Positive event",
-                        user_id="governor_sentinel"
-                    )
+                await cls._trigger_critical_missed_tp_suspension(
+                    db=db,
+                    profile=profile,
+                    reason="Automatic suspension triggered by Critical Missed True Positive event",
+                )
 
         # Recalculate statistical metrics
         cls._recalculate_profile_metrics(profile)
         db.add(profile)
         await db.flush()
         return profile
+
+    @classmethod
+    async def _trigger_critical_missed_tp_suspension(
+        cls,
+        db: AsyncSession,
+        profile: RuleLearningProfile,
+        reason: str,
+    ) -> bool:
+        """
+        Immediately suspends rule lifecycle AND disables ProductionAutomationPolicy
+        for the affected rule/tenant scope whenever a verified critical missed TP occurs
+        in CONTROLLED_PRODUCTION or MONITORING.
+        """
+        from app.models.production_governance import ProductionAutomationPolicy
+        from app.models.prompt import RulePrompt
+
+        if profile.lifecycle_stage not in (cls.STAGE_CONTROLLED_PRODUCTION, cls.STAGE_MONITORING):
+            return False
+
+        logger.critical(
+            f"CRITICAL MISSED TRUE POSITIVE on rule {profile.rule_identifier} [{profile.customer}]. "
+            f"Triggering immediate automatic suspension and disabling FP auto-closure!"
+        )
+        await cls.transition_lifecycle_stage(
+            db=db,
+            profile=profile,
+            new_stage=cls.STAGE_SUSPENDED,
+            reason=reason,
+            user_id="governor_sentinel",
+        )
+
+        # Immediately disable scoped ProductionAutomationPolicy (never touches other rules/tenants)
+        pol_res = await db.execute(
+            select(ProductionAutomationPolicy).where(
+                or_(
+                    ProductionAutomationPolicy.profile_id == profile.id,
+                    and_(
+                        ProductionAutomationPolicy.rule_id == profile.rule_identifier,
+                        ProductionAutomationPolicy.customer == profile.customer,
+                    ),
+                )
+            )
+        )
+        for pol in pol_res.scalars().all():
+            pol.is_enabled = False
+            pol.emergency_disable = True
+            db.add(pol)
+
+        # Also flag RulePrompt if present so autonomous execution halts immediately
+        rp_res = await db.execute(select(RulePrompt).where(RulePrompt.rule_id == profile.rule_id))
+        rp = rp_res.scalar_one_or_none()
+        if rp:
+            rp.ai_execution_suspended = True
+            rp.suspension_reason = reason
+            db.add(rp)
+
+        await db.flush()
+        return True
 
     @classmethod
     async def adjust_analyst_feedback(
@@ -561,6 +625,12 @@ class RuleLearningService:
             profile.ai_correct_count += 1
         elif new_outcome in ("AI_FALSE_ALARM", "CRITICAL_MISSED_TP"):
             profile.ai_incorrect_count += 1
+            if new_outcome == "CRITICAL_MISSED_TP":
+                await cls._trigger_critical_missed_tp_suspension(
+                    db=db,
+                    profile=profile,
+                    reason="Automatic suspension triggered by Critical Missed True Positive discovered via verdict correction/adjudication",
+                )
 
         cls._recalculate_profile_metrics(profile)
         db.add(profile)
@@ -573,6 +643,8 @@ class RuleLearningService:
         total_eval = profile.ai_correct_count + profile.ai_incorrect_count
         if total_eval > 0:
             profile.empirical_accuracy = round(float(profile.ai_correct_count) / float(total_eval), 4)
+        else:
+            profile.empirical_accuracy = None
 
         err_dist = profile.error_distribution or {}
         agreed_fp = err_dist.get("agreement_fp", 0)
@@ -602,13 +674,24 @@ class RuleLearningService:
     @classmethod
     def check_production_eligibility(cls, profile: RuleLearningProfile) -> Tuple[bool, List[str]]:
         """
-        Determines whether a detection rule satisfies all requirements for CONTROLLED_PRODUCTION.
+        Determines whether a detection rule satisfies all empirical requirements for CONTROLLED_PRODUCTION:
+          - >= 100 eligible verified TP/FP evaluations (abstentions/disputes excluded)
+          - >= 25 verified TP and >= 50 verified FP cases
+          - >= 95.0% verified rule accuracy
+          - 0 observed critical missed TPs
+          - >= 99.0% observed FP precision
+          - >= 96.0% Wilson 95% lower confidence bound
+          - >= 95.0% TP recall
         Returns (is_eligible, list_of_reasons).
         """
         reasons = []
-        if profile.total_analyst_reviews < cls.MIN_PRODUCTION_SAMPLES:
+        eligible_eval_count = int((profile.ai_correct_count or 0) + (profile.ai_incorrect_count or 0))
+        err_dist = profile.error_distribution or {}
+        missed_tp_count = int(err_dist.get("critical_missed_tp", 0))
+
+        if eligible_eval_count < cls.MIN_PRODUCTION_SAMPLES:
             reasons.append(
-                f"Insufficient verified sample size: {profile.total_analyst_reviews}/{cls.MIN_PRODUCTION_SAMPLES} reviews."
+                f"Insufficient eligible verified TP/FP evaluations: {eligible_eval_count}/{cls.MIN_PRODUCTION_SAMPLES} required (total reviews: {profile.total_analyst_reviews})."
             )
         if profile.verified_tp_count < cls.MIN_PRODUCTION_TP:
             reasons.append(
@@ -617,6 +700,17 @@ class RuleLearningService:
         if profile.verified_fp_count < cls.MIN_PRODUCTION_FP:
             reasons.append(
                 f"Insufficient False Positive cases: {profile.verified_fp_count}/{cls.MIN_PRODUCTION_FP} required."
+            )
+
+        emp_acc = profile.empirical_accuracy or 0.0
+        if emp_acc < cls.MIN_PRODUCTION_ACCURACY:
+            reasons.append(
+                f"Verified Rule Accuracy ({emp_acc*100:.1f}%) below requirement ({cls.MIN_PRODUCTION_ACCURACY*100:.1f}%)."
+            )
+
+        if missed_tp_count > cls.MAX_CRITICAL_MISSED_TP:
+            reasons.append(
+                f"Critical Missed True Positives detected ({missed_tp_count}); promotion strictly requires 0 observed missed TPs."
             )
 
         fp_prec = profile.fp_precision or 0.0
@@ -639,6 +733,187 @@ class RuleLearningService:
 
         is_eligible = len(reasons) == 0
         return is_eligible, reasons
+
+    @classmethod
+    async def evaluate_full_production_readiness(
+        cls,
+        db: AsyncSession,
+        profile: RuleLearningProfile,
+    ) -> Tuple[bool, List[str], Dict[str, Any]]:
+        """
+        Comprehensive production readiness gate combining empirical metrics,
+        zero unresolved disputes, approved prompt/model binding, and G1-G8 quality gates.
+        """
+        from app.models.prompt import RulePrompt, PromptVersion
+        from app.models.policy_quality import PolicyQualityAssessmentRecord
+
+        emp_ok, reasons = cls.check_production_eligibility(profile)
+        reasons = list(reasons)
+
+        # Check unresolved critical analyst disputes
+        dispute_res = await db.execute(
+            select(func.count(AnalystVerdictReview.id)).where(
+                and_(
+                    or_(
+                        AnalystVerdictReview.rule_id == profile.rule_id,
+                        AnalystVerdictReview.rule_id == profile.rule_identifier,
+                    ),
+                    AnalystVerdictReview.ground_truth_status == "DISPUTED",
+                )
+            )
+        )
+        unresolved_disputes = int(dispute_res.scalar() or 0)
+        if unresolved_disputes > 0:
+            reasons.append(f"Unresolved analyst disputes ({unresolved_disputes}) must be adjudicated prior to promotion.")
+
+        # Check approved active prompt version & suspension status
+        rp_res = await db.execute(select(RulePrompt).where(RulePrompt.rule_id == profile.rule_id))
+        rp = rp_res.scalar_one_or_none()
+        approved_version_id = None
+        approved_version_number = None
+        g1_g8_passed = False
+        gates_passed_count = 0
+
+        if not rp or not rp.active_version_id:
+            reasons.append("No approved active AIS policy version is bound to this rule.")
+        else:
+            if getattr(rp, "ai_execution_suspended", False):
+                reasons.append(f"AI execution is currently suspended for this rule: {rp.suspension_reason or 'revoked/suspended'}.")
+            ver_res = await db.execute(select(PromptVersion).where(PromptVersion.id == rp.active_version_id))
+            ver = ver_res.scalar_one_or_none()
+            if not ver or ver.status != "APPROVED":
+                reasons.append("Active prompt version is not in APPROVED status.")
+            else:
+                approved_version_id = ver.id
+                approved_version_number = ver.version_number
+                qa_res = await db.execute(
+                    select(PolicyQualityAssessmentRecord)
+                    .where(PolicyQualityAssessmentRecord.prompt_version_id == ver.id)
+                    .order_by(PolicyQualityAssessmentRecord.evaluated_at.desc())
+                    .limit(1)
+                )
+                latest_qa = qa_res.scalar_one_or_none()
+                if not latest_qa or not latest_qa.gate_results:
+                    reasons.append("No G1-G8 quality assessment record found for active approved prompt version.")
+                else:
+                    gates_passed_count = sum(
+                        1 for g in latest_qa.gate_results.values()
+                        if (g.get("status") if isinstance(g, dict) else getattr(g, "status", "")) == "PASSED"
+                    )
+                    if gates_passed_count < 8 or (latest_qa.blocking_issues and len(latest_qa.blocking_issues) > 0):
+                        reasons.append(f"All G1-G8 quality gates must PASS before production promotion (passed: {gates_passed_count}/8).")
+                    else:
+                        g1_g8_passed = True
+
+        metadata = {
+            "empirical_gates_passed": emp_ok,
+            "unresolved_disputes": unresolved_disputes,
+            "approved_prompt_version_id": approved_version_id,
+            "approved_prompt_version_number": approved_version_number,
+            "active_model_identifier": profile.active_model_identifier,
+            "g1_g8_passed": g1_g8_passed,
+            "gates_passed_count": gates_passed_count,
+            "critical_missed_tp_count": int((profile.error_distribution or {}).get("critical_missed_tp", 0)),
+        }
+        return (len(reasons) == 0), reasons, metadata
+
+    @classmethod
+    async def propose_prompt_improvement_draft(
+        cls,
+        db: AsyncSession,
+        rule_id: str,
+        customer: str = "DEFAULT",
+        user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Inspects verified analyst disagreements for the rule and creates a controlled DRAFT
+        candidate prompt version incorporating targeted remediation guidance.
+        NEVER mutates the currently approved production prompt or fine-tunes the model.
+        """
+        from app.services.prompt_studio_service import PromptStudioService
+
+        profile = await cls.get_or_create_profile(db=db, rule_id=rule_id, customer=customer)
+        rev_res = await db.execute(
+            select(AnalystVerdictReview).where(
+                and_(
+                    or_(
+                        AnalystVerdictReview.rule_id == profile.rule_id,
+                        AnalystVerdictReview.rule_id == profile.rule_identifier,
+                    ),
+                    AnalystVerdictReview.ground_truth_status.in_(["VERIFIED", "ADJUDICATED"]),
+                    AnalystVerdictReview.comparison_outcome.in_(["CRITICAL_MISSED_TP", "AI_FALSE_ALARM", "ANALYST_RESOLVED_ABSTENTION"]),
+                )
+            ).order_by(AnalystVerdictReview.created_at.desc()).limit(20)
+        )
+        error_reviews = list(rev_res.scalars().all())
+
+        missed_tps = [r for r in error_reviews if r.comparison_outcome == "CRITICAL_MISSED_TP"]
+        false_alarms = [r for r in error_reviews if r.comparison_outcome == "AI_FALSE_ALARM"]
+        abstentions = [r for r in error_reviews if r.comparison_outcome == "ANALYST_RESOLVED_ABSTENTION"]
+
+        ps = PromptStudioService(db)
+        rp = await ps.get_or_create_rule_prompt(profile.rule_id)
+        base_ver = rp.active_version or (rp.versions[0] if rp.versions else None)
+
+        tp_additions = []
+        fp_additions = []
+        abs_additions = []
+        for r in missed_tps[:5]:
+            note = (r.analyst_notes or r.correction_reason or "Verified missed true positive").strip()[:200]
+            tp_additions.append(f"- [Feedback Lesson — Missed TP]: {note}")
+        for r in false_alarms[:5]:
+            note = (r.analyst_notes or r.correction_reason or "Verified benign operational pattern").strip()[:200]
+            fp_additions.append(f"- [Feedback Lesson — False Alarm]: {note}")
+        for r in abstentions[:5]:
+            note = (r.analyst_notes or "Analyst resolved abstention").strip()[:200]
+            abs_additions.append(f"- [Feedback Lesson — Resolved Abstention ({r.analyst_verdict})]: {note}")
+
+        tp_text = ((base_ver.tp_indicators if base_ver else "") or "").strip()
+        if tp_additions:
+            tp_text = (tp_text + "\n\nVerified Feedback Corrections:\n" + "\n".join(tp_additions)).strip()
+
+        fp_text = ((base_ver.fp_indicators if base_ver else "") or "").strip()
+        if fp_additions:
+            fp_text = (fp_text + "\n\nVerified Feedback Corrections:\n" + "\n".join(fp_additions)).strip()
+
+        abs_text = ((base_ver.missing_info_criteria if base_ver else "") or "").strip()
+        if abs_additions:
+            abs_text = (abs_text + "\n\nVerified Feedback Clarifications:\n" + "\n".join(abs_additions)).strip()
+
+        summary = (
+            f"Feedback-driven candidate draft from {len(error_reviews)} verified error/abstention cases "
+            f"(missed_tp={len(missed_tps)}, false_alarm={len(false_alarms)}, resolved_abstention={len(abstentions)}). "
+            f"Requires offline replay and explicit Admin approval before activation."
+        )
+        draft = await ps.create_draft_version(
+            rule_id=profile.rule_id,
+            common_prompt=(base_ver.common_prompt if base_ver else ""),
+            rule_specific_prompt=(base_ver.rule_specific_prompt if base_ver else ""),
+            detection_conditions=(base_ver.detection_conditions if base_ver else ""),
+            required_evidence=(base_ver.required_evidence if base_ver else ""),
+            tp_indicators=tp_text,
+            fp_indicators=fp_text,
+            missing_info_criteria=abs_text,
+            escalation_conditions=(base_ver.escalation_conditions if base_ver else ""),
+            analyst_questions=(base_ver.analyst_questions if base_ver else []),
+            change_summary=summary,
+            user_id=user_id,
+        )
+        return {
+            "status": "DRAFT_CREATED",
+            "rule_id": profile.rule_id,
+            "draft_version_id": draft.id,
+            "draft_version_number": draft.version_number,
+            "draft_status": draft.status,
+            "active_production_prompt_modified": False,
+            "error_cases_analyzed": len(error_reviews),
+            "breakdown": {
+                "critical_missed_tp": len(missed_tps),
+                "ai_false_alarm": len(false_alarms),
+                "analyst_resolved_abstention": len(abstentions),
+            },
+            "change_summary": summary,
+        }
 
     @classmethod
     async def transition_lifecycle_stage(

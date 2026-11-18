@@ -279,6 +279,7 @@ app.include_router(verdict_intelligence.router, prefix=settings.API_V1_STR)
 app.include_router(verdict_intelligence.router, prefix="/api/v1")
 app.include_router(pilot.router, prefix=settings.API_V1_STR)
 app.include_router(rule_learning.router, prefix=settings.API_V1_STR)
+app.include_router(rule_learning.router, prefix="/api/v1")
 app.include_router(health.router)
 app.include_router(health.router, prefix=settings.API_V1_STR)
 

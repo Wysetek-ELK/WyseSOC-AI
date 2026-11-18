@@ -119,7 +119,8 @@ class VerifiedSemanticRetrievalService:
         query_time = incident.created_at
         if not query_time and incident.created_at_epoch:
             try:
-                query_time = utc_from_timestamp(incident.created_at_epoch)
+                ep_val = float(incident.created_at_epoch)
+                query_time = utc_from_timestamp(ep_val / 1000.0 if ep_val >= 1e11 else ep_val)
             except Exception:
                 query_time = utc_now()
         if not query_time:
@@ -145,16 +146,28 @@ class VerifiedSemanticRetrievalService:
         seen_incident_ids: Set[str] = set()
 
         for cand in all_candidates:
-            # 1. Gate 1: Verification Status (Phase 1 supervisor gate)
-            if cand.verification_status != "VERIFIED":
+            # 1. Gate 1: Verification Status (Phase 1 supervisor gate — only VERIFIED/ADJUDICATED TP/FP labels)
+            if cand.verification_status not in ("VERIFIED", "ADJUDICATED"):
+                unverified_count += 1
+                continue
+            if str(getattr(cand, "verified_verdict", "") or "").upper().strip() not in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
                 unverified_count += 1
                 continue
 
-            # 2. Gate 2: Self-exclusion
+            # 2. Gate 2: Self-exclusion & Training/Evaluation Partition Isolation (zero eval-set leakage)
             cand_inc = cand.incident
             cand_inc_id = cand_inc.incident_id if cand_inc else cand.incident_id
             if cand_inc_id == query_inc_id or (cand_inc and cand_inc.id == incident.id):
                 continue
+            try:
+                from app.services.historical_ground_truth_validator import HistoricalGroundTruthValidator
+                query_part = HistoricalGroundTruthValidator.assign_partition(str(query_inc_id))
+                cand_part = HistoricalGroundTruthValidator.assign_partition(str(cand_inc_id))
+                if query_part == "LOCKED_TEST" and cand_part == "LOCKED_TEST":
+                    future_leakage_count += 1
+                    continue
+            except Exception:
+                pass
 
             # 3. Gate 3: Tenant Isolation Gate
             cand_tenant_id = getattr(cand, "tenant_id", None) or (getattr(cand_inc, "customer", None) if cand_inc else None) or (getattr(cand_inc, "tenant_id", None) if cand_inc else None)
