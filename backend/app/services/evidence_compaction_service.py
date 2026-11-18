@@ -369,6 +369,8 @@ class EvidenceCompactionService:
                 or "time_range" in f_norm
             )
             cap = HIGH_CARDINALITY_CORE_CAP.get(f_norm)
+            if cap is None and f_norm not in DO_NOT_COLLAPSE_FIELDS and not f_norm.startswith("scan."):
+                cap = 2
             if is_core_candidate and (cap is None or core_field_counts.get(f_norm, 0) < cap):
                 core_records.append(r_dict)
                 core_field_counts[f_norm] = core_field_counts.get(f_norm, 0) + 1

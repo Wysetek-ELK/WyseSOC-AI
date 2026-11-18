@@ -357,6 +357,24 @@ class TokenBudgetService:
                 + max(0, int(reserved_overhead_tokens))
             )
 
+        # Trimming Step 3e: Deduplicate verbose events[0] raw_log/attributes if still over budget
+        # and canonical_evidence already carries normalized/aggregated telemetry.
+        if total_tokens > available_budget and payload_work.get("events") and payload_work.get("canonical_evidence"):
+            slim_events = []
+            for ev in payload_work["events"][:1]:
+                if isinstance(ev, dict):
+                    slim_ev = {k: ev[k] for k in ("event_id", "event_type", "event_receive_time") if k in ev}
+                    if ev.get("raw_log"):
+                        slim_ev["raw_log_preview"] = str(ev["raw_log"])[:200]
+                    slim_events.append(slim_ev)
+            payload_work["events"] = slim_events
+            events_compacted = True
+            total_tokens = (
+                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
+                + cls.estimate_tokens(payload_work)
+                + max(0, int(reserved_overhead_tokens))
+            )
+
         # Trimming Step 4: Check if mandatory core (P1 + P2 + P3 + P4) still exceeds budget
         if total_tokens > available_budget:
             overflow_detected = True

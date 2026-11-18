@@ -318,12 +318,25 @@ class PolicyCompilerService:
         )
         prompt_parts.append("")
 
-        # Section 11: Output Schema Specification
+        # Section 11: Output Schema Specification (compact JSON contract for finite context windows)
         prompt_parts.append("## SECTION 11: STRICT STRUCTURED JSON OUTPUT REQUIREMENTS")
+        compact_contract = (
+            '{"incident_id":"<exact incident_id>","rule_id":"<exact rule_id>",'
+            '"verdict":"TRUE_POSITIVE|FALSE_POSITIVE|INSUFFICIENT_EVIDENCE|REQUIRES_ATTENTION",'
+            '"confidence":0.0,'
+            '"reason":"<concise evidence-grounded explanation>",'
+            '"supporting_claims":[{"claim_text":"<observed fact>","field":"<canonical source_field>",'
+            '"asserted_value":"<exact observed value>","claim_type":"OBSERVED_FACT|NETWORK_CONNECTION|SECURITY_EVENT",'
+            '"cited_evidence_ids":["<EV-id>"],"evidence_ids":["<EV-id>"]}],'
+            '"supporting_evidence":["<EV-id or exact fact>"],'
+            '"contradictory_evidence":["<conflict if any>"],'
+            '"missing_evidence":["<missing item if any>"],'
+            '"recommended_action":"<recommended SOC analyst action>",'
+            '"analyst_questions":["<follow-up question>"]}'
+        )
         prompt_parts.append(
-            "You MUST respond ONLY with a single valid JSON object adhering to the schema below. "
-            "Do not include markdown prose outside of the JSON block.\n"
-            f"```json\n{json.dumps(cls.MODEL_RESPONSE_SCHEMA, separators=(',', ':'))}\n```"
+            "Respond ONLY with a single valid JSON object matching this contract (no markdown prose outside JSON):\n"
+            f"```json\n{compact_contract}\n```"
         )
 
         compiled_system_prompt = "\n".join(prompt_parts)
