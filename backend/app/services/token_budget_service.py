@@ -362,7 +362,7 @@ class TokenBudgetService:
                 + cls.estimate_tokens(contract_info)
                 + cls.estimate_tokens(payload_work.get("title"))
                 + max(0, int(reserved_overhead_tokens))
-                + 140  # wire margin + cleaned incident header fields + slimmed events[0]
+                + 95  # wire margin + cleaned incident header fields + slimmed events[0]
             )
             avail_ev_budget = max(400, available_budget - overhead)
 
