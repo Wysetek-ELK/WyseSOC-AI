@@ -361,6 +361,36 @@ class EvidenceCompactionService:
 
         core_tokens = ModelTokenizerService.count_json_tokens(core_records)
 
+        # For high-cardinality scan incidents with deterministic scan.* aggregates,
+        # if the expanded core + contract set slightly exceeds tight 4096-context budgets,
+        # demote secondary/redundant scan fields (e.g. single destination_ip when destination_ip_list
+        # & destination_scope are present, or event.time_range when scan.window_seconds is present)
+        # to the front of auxiliary_records so they are re-packed up to exact budget without
+        # dropping the mandatory scan triage core.
+        if has_scan_aggregates and core_tokens > max_evidence_budget_tokens:
+            essential_scan_fields = frozenset({
+                "network.source_ip",
+                "network.destination_port",
+                "scan.raw_events_count",
+                "scan.connection_count",
+                "scan.unique_destination_hosts",
+                "scan.destination_scope",
+                "scan.firewall_action_summary",
+                "scan.tcp_behavior_summary",
+                "security.event_type",
+            })
+            essential_core: List[Dict[str, Any]] = []
+            demoted_core: List[Dict[str, Any]] = []
+            for rec_d in core_records:
+                f_l = str(rec_d.get("source_field", "")).lower()
+                if f_l in essential_scan_fields or f_l in DO_NOT_COLLAPSE_FIELDS:
+                    essential_core.append(rec_d)
+                else:
+                    demoted_core.append(rec_d)
+            core_records = essential_core
+            auxiliary_records = demoted_core + auxiliary_records
+            core_tokens = ModelTokenizerService.count_json_tokens(core_records)
+
         # If mandatory core alone exceeds budget, fail closed (or chunk if explicitly requested)
         if core_tokens > max_evidence_budget_tokens:
             if not enable_chunking:

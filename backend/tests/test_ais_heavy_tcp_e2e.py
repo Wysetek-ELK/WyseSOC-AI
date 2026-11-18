@@ -728,6 +728,18 @@ async def test_09_high_cardinality_scan_token_budget_fits_4096_context(db_sessio
         "incident_id": inc.incident_id,
         "title": inc.title,
         "event_type": inc.event_type,
+        "rule_id": TARGET_EVENT_TYPE,
+        "rule_name": TARGET_RULE_NAME,
+        "rule_pattern": "Expression: COUNT(DISTINCT destIpAddr) >= 100 AND destIpPort IS NOT NULL AND ipProto = 6\nWindow: 180s\nGroupBy: srcIpAddr,destIpPort",
+        "evidence_contract": {
+            "contract_id": f"EC-{TARGET_RULE_UUID}-V7",
+            "version": 7,
+            "required_fields": [
+                "security.event_type", "event.timestamp", "network.source_ip",
+                "network.destination_port", "network.destination_ip", "network.destination_ip_list",
+                "network.protocol", "scan.rate_per_second", "scan.connection_count", "network.tcp_flags",
+            ],
+        },
         "canonical_evidence": [r.model_dump() for r in norm.records],
         "events": [{"event_id": e.event_id, "raw_log": e.raw_log, "attributes": e.attributes} for e in evts],
     }
@@ -737,7 +749,7 @@ async def test_09_high_cardinality_scan_token_budget_fits_4096_context(db_sessio
         rag_block="",
         max_context_tokens=4096,
         max_completion_tokens=512,
-        reserved_overhead_tokens=80,
+        reserved_overhead_tokens=180,
     )
     assert budgeted.can_proceed_to_inference is True, f"Exceeded 4096 budget: {budgeted.abstention_reason}"
     assert budgeted.breakdown.total_prompt_tokens <= 3584
