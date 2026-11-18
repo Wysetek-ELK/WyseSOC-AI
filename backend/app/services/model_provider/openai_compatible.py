@@ -102,11 +102,10 @@ def robust_parse_model_verdict_json(raw_text: str) -> Tuple[Optional[Dict[str, A
 
 
 def _repair_truncated_json(text: str) -> Optional[str]:
-    """Attempts to complete truncated strings, arrays, and dictionaries."""
+    """Attempts to complete truncated strings, arrays, and dictionaries in LIFO nesting order."""
     in_string = False
     escaped = False
-    open_brackets = 0
-    open_braces = 0
+    stack: List[str] = []
 
     clean_chars = []
     for ch in text:
@@ -119,13 +118,11 @@ def _repair_truncated_json(text: str) -> Optional[str]:
         else:
             if not in_string:
                 if ch == '[':
-                    open_brackets += 1
-                elif ch == ']':
-                    open_brackets = max(0, open_brackets - 1)
+                    stack.append(']')
                 elif ch == '{':
-                    open_braces += 1
-                elif ch == '}':
-                    open_braces = max(0, open_braces - 1)
+                    stack.append('}')
+                elif ch in (']', '}') and stack and stack[-1] == ch:
+                    stack.pop()
             clean_chars.append(ch)
             escaped = False
 
@@ -137,10 +134,8 @@ def _repair_truncated_json(text: str) -> Optional[str]:
     repaired = re.sub(r',\s*$', '', repaired)
     repaired = re.sub(r':\s*$', ': ""', repaired)
 
-    if open_brackets > 0:
-        repaired += ']' * open_brackets
-    if open_braces > 0:
-        repaired += '}' * open_braces
+    if stack:
+        repaired += "".join(reversed(stack))
 
     return repaired
 
@@ -165,6 +160,9 @@ def _regex_fallback_extract(text: str) -> Tuple[Optional[Dict[str, Any]], Option
     if supporting:
         evidence_list = [item.strip(' ",\'\n\r\t') for item in re.findall(r'["\']([^"\']+)["\']', supporting[0])]
 
+    stripped = (text or "").strip()
+    looks_truncated = ("{" in stripped and not stripped.endswith("}")) or (stripped.count("{") > stripped.count("}")) or (stripped.count("[") > stripped.count("]"))
+
     return {
         "verdict": verdict,
         "confidence": 0.0,
@@ -174,6 +172,7 @@ def _regex_fallback_extract(text: str) -> Tuple[Optional[Dict[str, Any]], Option
         "missing_evidence": [],
         "analyst_questions": [],
         "_schema_recovery_applied": True,
+        "_truncated_output": bool(looks_truncated),
     }, None
 
 
