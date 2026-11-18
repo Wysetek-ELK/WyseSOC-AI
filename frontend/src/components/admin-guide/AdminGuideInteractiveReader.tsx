@@ -3,20 +3,6 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import {
-  LayoutDashboard,
-  AlertTriangle,
-  UploadCloud,
-  UserCheck,
-  MessageSquareCode,
-  Cpu,
-  FileCode2,
-  Brain,
-  FlaskConical,
-  BarChart3,
-  Server,
-  Settings,
-  ShieldCheck,
-  BookOpenCheck,
   Search,
   X,
   ExternalLink,
@@ -32,41 +18,17 @@ import {
   Lock,
   Layers,
   Sparkles,
-  Database,
-  Radio,
-  FileText,
   AlertCircle,
 } from "lucide-react";
 import {
   ALL_GUIDE_PAGES,
   WORKFLOW_STAGES,
   GuidePageDetail,
-  WorkflowStageDetail,
 } from "@/data/admin-guide/pagesGuideData";
+import { NavigationIcon } from "@/components/navigation/NavigationIcon";
+import { NAVIGATION_GROUP_ORDER } from "@/config/navigationIcons";
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  "agent-mission-control": LayoutDashboard,
-  "ai-triage-workbench": AlertTriangle,
-  "telemetry-hub": UploadCloud,
-  "human-review-queue": UserCheck,
-  "soc-chatbot": MessageSquareCode,
-  "agent-intelligence-studio": Cpu,
-  "detection-intelligence": FileCode2,
-  "agent-memory": Brain,
-  "agent-simulation-lab": FlaskConical,
-  "verdict-intelligence": BarChart3,
-  "inference-control": Server,
-  "agent-configuration": Settings,
-  "governance-access": ShieldCheck,
-  "admin-guide": BookOpenCheck,
-};
-
-const GROUP_ORDER = [
-  "SOC OPERATIONS",
-  "AGENT INTELLIGENCE",
-  "VALIDATION & TRUST",
-  "PLATFORM CONTROL",
-] as const;
+const GROUP_ORDER = NAVIGATION_GROUP_ORDER;
 
 export function AdminGuideInteractiveReader() {
   const [selectedId, setSelectedId] = useState<string>("workflow");
@@ -145,14 +107,19 @@ export function AdminGuideInteractiveReader() {
         </div>
 
         {/* Navigation List */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-220px)] shadow-lg shadow-black/20">
+        <nav
+          aria-label="Admin Guide pages navigation"
+          className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 flex flex-col gap-4 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-220px)] shadow-lg shadow-black/20"
+        >
           {/* Top Item: How Verdictum AI Works */}
           <div>
             <button
+              type="button"
               onClick={() => {
                 setSelectedId("workflow");
                 setSearchQuery("");
               }}
+              aria-current={selectedId === "workflow" ? "page" : undefined}
               className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                 selectedId === "workflow"
                   ? "bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-md shadow-sky-900/30"
@@ -161,7 +128,7 @@ export function AdminGuideInteractiveReader() {
             >
               <Workflow className="w-4 h-4 shrink-0 text-sky-400" />
               <span className="truncate">How Verdictum AI Works</span>
-              <span className="ml-auto text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-sky-950/70 border border-sky-800/60 text-sky-300">
+              <span className="ml-auto shrink-0 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-sky-950/70 border border-sky-800/60 text-sky-300">
                 Core
               </span>
             </button>
@@ -169,7 +136,7 @@ export function AdminGuideInteractiveReader() {
 
           {/* Search Hits Dropdown (if searching) */}
           {searchResults !== null ? (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-2 py-1">
                 Matching Pages ({searchResults.length})
               </div>
@@ -179,20 +146,22 @@ export function AdminGuideInteractiveReader() {
                 </div>
               ) : (
                 searchResults.map((page) => {
-                  const PageIcon = ICON_MAP[page.slug] || FileText;
                   const isSelected = selectedId === page.slug;
                   return (
                     <button
+                      type="button"
                       key={page.slug}
                       onClick={() => setSelectedId(page.slug)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs transition-all ${
+                      aria-current={isSelected ? "page" : undefined}
+                      data-guide-nav-id={page.slug}
+                      className={`nav-item-link w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs min-w-0 ${
                         isSelected
-                          ? "bg-sky-500/20 text-sky-200 border border-sky-500/40 font-medium"
-                          : "text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                          ? "theme-nav-active font-semibold"
+                          : "text-slate-300 hover:bg-slate-800/80 hover:text-slate-100 border border-transparent"
                       }`}
                     >
-                      <PageIcon className="w-3.5 h-3.5 shrink-0 text-sky-400" />
-                      <div className="truncate">
+                      <NavigationIcon pageId={page.slug} size="compact" active={isSelected} />
+                      <div className="min-w-0 flex-1 truncate">
                         <div className="truncate font-medium">{page.title}</div>
                         <div className="text-[10px] text-slate-400 truncate">{page.groupTitle}</div>
                       </div>
@@ -206,29 +175,31 @@ export function AdminGuideInteractiveReader() {
             GROUP_ORDER.map((group) => {
               const pages = groupedPages.get(group) || [];
               return (
-                <div key={group} className="flex flex-col gap-1">
+                <div key={group} className="flex flex-col gap-1 min-w-0">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 flex items-center justify-between">
-                    <span>{group}</span>
-                    <span className="text-slate-400 font-mono text-[9px]">{pages.length}</span>
+                    <span className="truncate">{group}</span>
+                    <span className="text-slate-400 font-mono text-[9px] shrink-0">{pages.length}</span>
                   </div>
                   {pages.map((page) => {
-                    const PageIcon = ICON_MAP[page.slug] || FileText;
                     const isSelected = selectedId === page.slug;
                     return (
                       <button
+                        type="button"
                         key={page.slug}
                         onClick={() => setSelectedId(page.slug)}
-                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-xs transition-all ${
+                        aria-current={isSelected ? "page" : undefined}
+                        data-guide-nav-id={page.slug}
+                        className={`nav-item-link w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-left text-xs min-w-0 ${
                           isSelected
-                            ? "bg-sky-600/20 text-sky-200 border border-sky-500/40 font-medium shadow-sm"
-                            : "text-slate-300 hover:bg-slate-800/70 hover:text-slate-100"
+                            ? "theme-nav-active font-semibold"
+                            : "text-slate-300 hover:bg-slate-800/70 hover:text-slate-100 border border-transparent"
                         }`}
                       >
-                        <PageIcon className="w-3.5 h-3.5 shrink-0 text-sky-400" />
-                        <span className="truncate">{page.title}</span>
+                        <NavigationIcon pageId={page.slug} size="compact" active={isSelected} />
+                        <span className="truncate min-w-0 flex-1">{page.title}</span>
                         {page.badge && (
                           <span
-                            className={`ml-auto text-[9px] font-semibold px-1 py-0.2 rounded border ${page.badgeColor}`}
+                            className={`ml-auto shrink-0 text-[9px] font-semibold px-1 py-0.2 rounded border ${page.badgeColor}`}
                           >
                             {page.badge}
                           </span>
@@ -240,7 +211,7 @@ export function AdminGuideInteractiveReader() {
               );
             })
           )}
-        </div>
+        </nav>
       </aside>
 
       {/* MAIN CONTENT AREA */}
@@ -393,8 +364,9 @@ export function AdminGuideInteractiveReader() {
                   <span>•</span>
                   <span className="font-mono text-slate-400">{currentPage.route}</span>
                 </div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-                  {currentPage.title}
+                <h1 className="text-2xl lg:text-3xl font-bold text-white tracking-tight flex flex-wrap items-center gap-3">
+                  <NavigationIcon pageId={currentPage.slug} size="expanded" active />
+                  <span>{currentPage.title}</span>
                   {currentPage.badge && (
                     <span
                       className={`text-xs font-semibold px-2 py-0.5 rounded border ${currentPage.badgeColor}`}
@@ -513,6 +485,7 @@ export function AdminGuideInteractiveReader() {
                 <div className="flex flex-wrap gap-2 pt-1">
                   {currentPage.relatedPages.map((rel, idx) => (
                     <button
+                      type="button"
                       key={idx}
                       onClick={() => {
                         const targetSlug = rel.route.replace(/^\//, "");
@@ -520,6 +493,7 @@ export function AdminGuideInteractiveReader() {
                       }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700/80 hover:border-sky-500 hover:text-sky-300 text-xs text-slate-300 transition-all font-medium"
                     >
+                      <NavigationIcon pageId={rel.route} size="xs" withContainer={false} />
                       <span>{rel.title}</span>
                       <ArrowRight className="w-3 h-3 text-slate-400" />
                     </button>

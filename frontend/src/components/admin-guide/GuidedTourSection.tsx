@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { GUIDED_TOUR_STOPS, PLATFORM_PAGE_LINKS } from "@/data/admin-guide/glossaryAndTroubleshootingData";
 import type { GuideMode } from "@/data/admin-guide/types";
+import { NavigationIcon } from "@/components/navigation/NavigationIcon";
 
 interface GuidedTourSectionProps {
   onNavigateMode: (mode: GuideMode) => void;
@@ -227,8 +228,9 @@ export function GuidedTourSection({ onNavigateMode }: GuidedTourSectionProps) {
                 <Link
                   key={lnk.href}
                   href={lnk.href}
-                  className="inline-flex items-center gap-1 rounded border border-slate-800 bg-slate-950 px-2 py-0.5 text-[10px] text-slate-300 hover:border-cyan-700 hover:text-cyan-300"
+                  className="inline-flex items-center gap-1.5 rounded border border-slate-800 bg-slate-950 px-2 py-0.5 text-[10px] text-slate-300 hover:border-cyan-700 hover:text-cyan-300"
                 >
+                  <NavigationIcon pageId={lnk.href} size="xs" withContainer={false} />
                   <span>{lnk.title}</span>
                   <ExternalLink className="h-2.5 w-2.5" />
                 </Link>

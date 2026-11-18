@@ -5,30 +5,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { api } from "@/lib/api";
 import { formatServer2HealthSummary } from "@/lib/provenance";
-import {
-  LayoutDashboard,
-  AlertTriangle,
-  UserCheck,
-  FileCode2,
-  Cpu,
-  Brain,
-  FlaskConical,
-  BarChart3,
-  Settings,
-  ShieldCheck,
-  UploadCloud,
-  ChevronLeft,
-  ChevronRight,
-  Server,
-  MessageSquareCode,
-  BookOpenCheck,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
+import { NavigationIcon } from "@/components/navigation/NavigationIcon";
+import type { NavigationPageId } from "@/config/navigationIcons";
 
 interface NavItem {
+  id: NavigationPageId;
   title: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
   badge?: string;
   badgeColor?: string;
 }
@@ -43,29 +28,29 @@ const NAV_GROUPS: NavGroup[] = [
     groupTitle: "SOC OPERATIONS",
     items: [
       {
+        id: "agent-mission-control",
         title: "Agent Mission Control",
         href: "/agent-mission-control",
-        icon: LayoutDashboard,
       },
       {
+        id: "ai-triage-workbench",
         title: "AI Triage Workbench",
         href: "/ai-triage-workbench",
-        icon: AlertTriangle,
       },
       {
+        id: "telemetry-hub",
         title: "Telemetry Hub",
         href: "/telemetry-hub",
-        icon: UploadCloud,
       },
       {
+        id: "human-review-queue",
         title: "Human Review Queue",
         href: "/human-review-queue",
-        icon: UserCheck,
       },
       {
+        id: "soc-chatbot",
         title: "Verdictum Sentinel",
         href: "/soc-chatbot",
-        icon: MessageSquareCode,
         badge: "COPILOT",
         badgeColor: "bg-indigo-950 text-indigo-300 border border-indigo-800",
       },
@@ -75,19 +60,19 @@ const NAV_GROUPS: NavGroup[] = [
     groupTitle: "AGENT INTELLIGENCE",
     items: [
       {
+        id: "agent-intelligence-studio",
         title: "Agent Intelligence Studio",
         href: "/agent-intelligence-studio",
-        icon: Cpu,
       },
       {
+        id: "detection-intelligence",
         title: "Detection Intelligence",
         href: "/detection-intelligence",
-        icon: FileCode2,
       },
       {
+        id: "agent-memory",
         title: "Agent Memory",
         href: "/agent-memory",
-        icon: Brain,
       },
     ],
   },
@@ -95,14 +80,14 @@ const NAV_GROUPS: NavGroup[] = [
     groupTitle: "VALIDATION & TRUST",
     items: [
       {
+        id: "agent-simulation-lab",
         title: "Agent Simulation Lab",
         href: "/agent-simulation-lab",
-        icon: FlaskConical,
       },
       {
+        id: "verdict-intelligence",
         title: "Verdict Intelligence",
         href: "/verdict-intelligence",
-        icon: BarChart3,
       },
     ],
   },
@@ -110,24 +95,24 @@ const NAV_GROUPS: NavGroup[] = [
     groupTitle: "PLATFORM CONTROL",
     items: [
       {
+        id: "inference-control",
         title: "Inference Control",
         href: "/inference-control",
-        icon: Server,
       },
       {
+        id: "agent-configuration",
         title: "Agent Configuration",
         href: "/agent-configuration",
-        icon: Settings,
       },
       {
+        id: "governance-access",
         title: "Governance & Access",
         href: "/governance-access",
-        icon: ShieldCheck,
       },
       {
+        id: "admin-guide",
         title: "Verdictum AI Admin Guide",
         href: "/admin-guide",
-        icon: BookOpenCheck,
       },
     ],
   },
@@ -209,7 +194,9 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`relative z-10 flex flex-col theme-sidebar-shell text-slate-200 transition-all duration-200 select-none ${
+      aria-label="Primary sidebar"
+      data-sidebar-collapsed={collapsed ? "true" : "false"}
+      className={`relative z-10 flex flex-col theme-sidebar-shell text-slate-200 transition-all duration-200 motion-reduce:transition-none select-none ${
         collapsed ? "w-14" : "w-60"
       }`}
     >
@@ -241,47 +228,68 @@ export function Sidebar() {
           )}
         </Link>
         <button
+          type="button"
           onClick={() => setCollapsed(!collapsed)}
           className={`rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors shrink-0 ${
             collapsed ? "w-full flex items-center justify-center py-0.5" : "p-1"
           }`}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
         >
           {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
         </button>
       </div>
 
       {/* Navigation Groups */}
-      <nav className="flex-1 overflow-y-auto p-1.5 space-y-2">
-        {NAV_GROUPS.map((group) => (
+      <nav aria-label="Main navigation" className="flex-1 overflow-y-auto p-1.5 space-y-2">
+        {NAV_GROUPS.map((group, groupIdx) => (
           <div key={group.groupTitle} className="space-y-0.5">
-            {!collapsed && (
+            {collapsed ? (
+              groupIdx > 0 && (
+                <div
+                  aria-hidden="true"
+                  className="mx-1.5 my-1 border-t border-slate-800/70"
+                />
+              )
+            ) : (
               <div className="px-2 pt-0.5 pb-0.5 text-[9px] font-mono font-semibold uppercase tracking-wider text-slate-500">
                 {group.groupTitle}
               </div>
             )}
             {group.items.map((item) => {
               const active = isItemActive(item.href);
-              const Icon = item.icon;
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-2 py-1 rounded-md text-[11.5px] font-medium transition-all ${active
-                      ? "theme-nav-active"
-                      : "text-slate-400 hover:text-slate-100 hover:bg-slate-900/60 border border-transparent"
-                    }`}
+                  aria-current={active ? "page" : undefined}
+                  aria-label={item.title}
+                  data-nav-id={item.id}
+                  data-nav-active={active ? "true" : "false"}
+                  className={`nav-item-link flex items-center rounded-md text-[11.5px] font-medium ${
+                    collapsed
+                      ? "justify-center p-1"
+                      : "gap-2 px-1.5 py-[3px]"
+                  } ${
+                    active
+                      ? "theme-nav-active font-semibold"
+                      : "text-slate-300/90 hover:text-slate-100 hover:bg-slate-900/70 border border-transparent"
+                  }`}
                   title={collapsed ? item.title : undefined}
                 >
-                  <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "text-cyan-300" : "text-slate-400"}`} />
+                  <NavigationIcon
+                    pageId={item.id}
+                    size={collapsed ? "collapsed" : "expanded"}
+                    active={active}
+                  />
                   {!collapsed && (
-                    <div className="flex flex-1 items-center justify-between overflow-hidden">
+                    <div className="flex flex-1 items-center justify-between gap-1.5 min-w-0 overflow-hidden">
                       <span className="truncate">{item.title}</span>
                       {item.badge && (
                         <span
-                          className={`text-[9px] px-1.5 py-0.2 rounded uppercase font-mono tracking-wider ${item.badgeColor}`}
+                          className={`shrink-0 text-[9px] px-1.5 py-0.2 rounded uppercase font-mono tracking-wider ${item.badgeColor}`}
                         >
                           {item.badge}
                         </span>

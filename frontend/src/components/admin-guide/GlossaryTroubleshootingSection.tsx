@@ -19,6 +19,7 @@ import {
   PLATFORM_PAGE_LINKS,
   TROUBLESHOOTING_SCENARIOS,
 } from "@/data/admin-guide/glossaryAndTroubleshootingData";
+import { NavigationIcon } from "@/components/navigation/NavigationIcon";
 
 interface GlossaryTroubleshootingSectionProps {
   highlightedGlossaryId?: string | null;
@@ -326,11 +327,14 @@ export function GlossaryTroubleshootingSection({
             <Link
               key={page.href}
               href={page.href}
-              className="group rounded-lg border border-slate-800 bg-slate-900/40 hover:border-cyan-500/60 hover:bg-slate-900/80 p-3 space-y-1 transition-all"
+              className="nav-item-link group rounded-lg border border-slate-800 bg-slate-900/40 hover:border-cyan-500/60 hover:bg-slate-900/80 p-3 space-y-1.5"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[9px] font-mono uppercase text-cyan-400">{page.category}</span>
-                <ExternalLink className="h-3 w-3 text-slate-500 group-hover:text-cyan-300" />
+                <div className="flex items-center gap-2 min-w-0">
+                  <NavigationIcon pageId={page.href} size="compact" />
+                  <span className="text-[9px] font-mono uppercase text-cyan-400 truncate">{page.category}</span>
+                </div>
+                <ExternalLink className="h-3 w-3 shrink-0 text-slate-500 group-hover:text-cyan-300" />
               </div>
               <div className="text-xs font-bold text-slate-100 group-hover:text-cyan-200">
                 {page.title}

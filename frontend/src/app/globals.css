@@ -233,6 +233,11 @@ html[data-theme="classic"] .theme-glass-header {
   box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.75);
 }
 
+html[data-theme="classic"] :focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.8);
+}
+
 /* Sticky Right Action Column */
 .vcds-sticky-action-col {
   position: sticky;
@@ -264,17 +269,67 @@ html[data-theme="classic"] .theme-glass-header {
 
 /* Active Sidebar Navigation Item */
 .theme-nav-active {
-  background: linear-gradient(90deg, rgba(249, 115, 22, 0.24) 0%, rgba(245, 158, 11, 0.12) 65%, rgba(249, 115, 22, 0.05) 100%);
-  color: #fed7aa;
-  border: 1px solid rgba(251, 146, 60, 0.62);
+  position: relative;
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.22) 0%, rgba(245, 158, 11, 0.11) 62%, rgba(168, 85, 247, 0.06) 100%);
+  color: #ffedd5;
+  border: 1px solid rgba(251, 146, 60, 0.58);
   box-shadow: var(--shadow-glow-nav);
 }
 
+.theme-nav-active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 5px;
+  bottom: 5px;
+  width: 3px;
+  border-radius: 0 9999px 9999px 0;
+  background: linear-gradient(180deg, #fbbf24 0%, #f97316 100%);
+  pointer-events: none;
+}
+
 html[data-theme="classic"] .theme-nav-active {
+  position: relative;
   background: rgba(8, 51, 68, 0.6);
   color: #67e8f9;
-  border: 1px solid rgba(14, 116, 144, 0.5);
+  border: 1px solid rgba(14, 116, 144, 0.55);
   box-shadow: var(--shadow-glow-nav);
+}
+
+html[data-theme="classic"] .theme-nav-active::before {
+  background: linear-gradient(180deg, #38bdf8 0%, #22d3ee 100%);
+}
+
+/* Semantic Multicolor Navigation Icons (Main Sidebar & Admin Guide) */
+.nav-item-link {
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.nav-icon-badge {
+  color: var(--nav-icon-color);
+  background-color: var(--nav-icon-bg);
+  border: 1px solid var(--nav-icon-border);
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, transform 150ms ease-out;
+}
+
+.nav-icon-glyph {
+  color: inherit;
+  transition: transform 150ms ease-out;
+}
+
+.nav-item-link:hover .nav-icon-badge,
+.nav-item-link:focus-visible .nav-icon-badge {
+  background-color: var(--nav-icon-bg-hover);
+  border-color: var(--nav-icon-border-active);
+}
+
+.nav-item-link:hover .nav-icon-glyph {
+  transform: scale(1.04);
+}
+
+.nav-icon-badge-active {
+  background-color: var(--nav-icon-bg-active);
+  border-color: var(--nav-icon-border-active);
 }
 
 /* Buttons */
@@ -400,6 +455,14 @@ html[data-theme="classic"] .theme-tab-active {
 @media (prefers-reduced-motion: reduce) {
   .flow-edge-animated {
     animation: none !important;
+  }
+
+  .theme-sidebar-shell,
+  .nav-item-link,
+  .nav-icon-badge,
+  .nav-icon-glyph {
+    transition: none !important;
+    transform: none !important;
   }
 }
 

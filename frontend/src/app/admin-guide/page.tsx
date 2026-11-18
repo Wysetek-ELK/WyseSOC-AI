@@ -17,7 +17,7 @@ import {
   ArrowRight,
   Lock,
   Layers,
-  BookOpenCheck,
+  BookOpenText,
 } from "lucide-react";
 import type { GuideMode } from "@/data/admin-guide/types";
 import {
@@ -45,6 +45,7 @@ import { RequirementsSection } from "@/components/admin-guide/RequirementsSectio
 import { GlossaryTroubleshootingSection } from "@/components/admin-guide/GlossaryTroubleshootingSection";
 import { AdminGuideInteractiveReader } from "@/components/admin-guide/AdminGuideInteractiveReader";
 import { BrandLogo } from "@/components/common/BrandLogo";
+import { NavigationIcon } from "@/components/navigation/NavigationIcon";
 
 interface SearchHit {
   id: string;
@@ -64,7 +65,7 @@ const MODE_TABS: Array<{
   shortLabel: string;
   icon: React.ComponentType<{ className?: string }>;
 }> = [
-  { id: "platform-pages", label: "Sidebar Pages & Workflows (14)", shortLabel: "14 Pages Guide", icon: BookOpenCheck },
+  { id: "platform-pages", label: "Sidebar Pages & Workflows (14)", shortLabel: "14 Pages Guide", icon: BookOpenText },
   { id: "guided-tour", label: "Guided Tour", shortLabel: "Tour", icon: Compass },
   { id: "architecture", label: "Explore Architecture", shortLabel: "Architecture", icon: Network },
   { id: "policy-lifecycle", label: "Policy Lifecycle (AIS 2.0)", shortLabel: "AIS 2.0", icon: Cpu },
@@ -407,8 +408,9 @@ function AdminGuideContent() {
                 <Link
                   key={p.href}
                   href={p.href}
-                  className="inline-flex items-center gap-1 rounded border border-slate-800 bg-slate-900/60 px-2 py-1 text-[10px] text-slate-300 hover:border-cyan-600/60 hover:text-cyan-300 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded border border-slate-800 bg-slate-900/60 px-2 py-1 text-[10px] text-slate-300 hover:border-cyan-600/60 hover:text-cyan-300 transition-colors"
                 >
+                  <NavigationIcon pageId={p.href} size="xs" withContainer={false} />
                   <span>{p.title}</span>
                   <ExternalLink className="h-2.5 w-2.5" />
                 </Link>
