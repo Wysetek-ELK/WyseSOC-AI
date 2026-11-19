@@ -8,6 +8,7 @@ Tests software behavior using isolated in-memory SQLite + synthetic fixtures and
 FortiSIEM write-back. Synthetic fixtures NEVER contribute to real empirical accuracy.
 """
 
+import copy
 import uuid
 import pytest
 import pytest_asyncio
@@ -928,6 +929,7 @@ async def test_11_v81_truncation_detection_sample_context_and_4096_768_budget(db
 @pytest.mark.asyncio
 async def test_12_v82_deterministic_reasoning_integrity_and_confidence_calibration(db_session: AsyncSession):
     """V8.2 Phases 2-5 & 8: Confidence calibration, reasoning contradiction engine, verdict-evidence consistency, and safe abstention preservation."""
+    import copy
     import math
     from app.services.confidence_normalizer import ConfidenceNormalizer
     from app.services.reasoning_integrity_engine import ReasoningIntegrityEngine
