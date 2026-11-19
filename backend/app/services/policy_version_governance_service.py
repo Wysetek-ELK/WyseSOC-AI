@@ -10,7 +10,7 @@ from app.models.rule import Rule
 from app.models.prompt import RulePrompt, PromptVersion
 from app.models.rule_learning import RuleLearningProfile
 from app.models.actual_prompt_capture import ActualLLMPromptCapture
-from app.models.pilot import PilotVerdictRecord
+from app.models.pilot import PilotEvaluationRecord
 from app.models.verdict_intelligence import HistoricalEvaluationRunRecord
 from app.models.dry_run import DryRunConfig
 from app.models.policy_quality import PolicyQualityAssessmentRecord
@@ -141,8 +141,8 @@ class PolicyVersionGovernanceService:
 
         # 4. Pilot Verdicts
         pilot_count_res = await db.execute(
-            select(func.count(PilotVerdictRecord.id)).where(
-                PilotVerdictRecord.policy_version_id == version_id_str
+            select(func.count(PilotEvaluationRecord.id)).where(
+                PilotEvaluationRecord.policy_version_id == version_id_str
             )
         )
         pilot_count = pilot_count_res.scalar() or 0
