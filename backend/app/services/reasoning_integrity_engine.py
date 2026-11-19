@@ -312,7 +312,7 @@ class ReasoningIntegrityEngine:
         "endpoint.ioc_match",
     })
 
-    TICKET_ID_RE = re.compile(r'\b(?:CHG|RFC|INC|TKT|SEC)-\d{4,}\b', re.IGNORECASE)
+    TICKET_ID_RE = re.compile(r'\b(?:CHG|RFC|INC|TKT|SEC)-(?:[A-Za-z0-9]+-)*[A-Za-z0-9]+\b', re.IGNORECASE)
 
     @classmethod
     def verify_threat_corroboration(
