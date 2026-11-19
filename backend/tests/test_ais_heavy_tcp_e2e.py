@@ -867,8 +867,8 @@ async def test_11_v81_truncation_detection_sample_context_and_4096_768_budget(db
             id=str(uuid.uuid4()), incident_id=inc.id, event_id=f"evt-{i}",
             event_receive_time=1794476000000 + (i * 1000),
             event_type="FortiGate-traffic-end-forward-client-rst",
-            raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.154 srcport={50000+i} dstip=198.51.100.{(i%75)+1} dstport=443 proto=6 action="client-rst" policyname="Cybersecurity" service="Browsing" sentbyte={1000+i} rcvdbyte={2000+i}',
-            attributes={"Source IP": "172.25.24.154", "Destination IP": f"198.51.100.{(i%75)+1}", "Destination TCP/UDP Port": 443},
+            raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.154 srcport={50000+i} dstip=142.250.190.{(i%75)+1} dstport=443 proto=6 action="client-rst" policyname="Cybersecurity" service="Browsing" sentbyte={1000+i} rcvdbyte={2000+i}',
+            attributes={"Source IP": "172.25.24.154", "Destination IP": f"142.250.190.{(i%75)+1}", "Destination TCP/UDP Port": 443},
         )
         for i in range(100)
     ]
@@ -989,8 +989,8 @@ async def test_12_v82_deterministic_reasoning_integrity_and_confidence_calibrati
             id=str(uuid.uuid4()), incident_id=inc.id, event_id=f"evt-{i}",
             event_receive_time=1794476000000 + (i * 1000),
             event_type="FortiGate-traffic-end-forward-client-rst",
-            raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.154 srcport={50000+i} dstip=198.51.100.{(i%75)+1} dstport=443 proto=6 action="client-rst" policyname="Cybersecurity" service="Browsing" sentbyte={1000+i} rcvdbyte={2000+i}',
-            attributes={"Source IP": "172.25.24.154", "Destination IP": f"198.51.100.{(i%75)+1}", "Destination TCP/UDP Port": 443},
+            raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.154 srcport={50000+i} dstip=142.250.190.{(i%75)+1} dstport=443 proto=6 action="client-rst" policyname="Cybersecurity" service="Browsing" sentbyte={1000+i} rcvdbyte={2000+i}',
+            attributes={"Source IP": "172.25.24.154", "Destination IP": f"142.250.190.{(i%75)+1}", "Destination TCP/UDP Port": 443},
         )
         for i in range(100)
     ]
