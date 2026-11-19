@@ -1219,7 +1219,7 @@ async def test_13_v83_reasoning_validator_safety_and_nuanced_tp_fp_evaluation(db
                 id=str(uuid.uuid4()), incident_id=inc.id, event_id=f"evt-{i}",
                 event_receive_time=1794476000000 + (i * 1000),
                 event_type="FortiGate-traffic-server-rst",
-                raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.130 srcport={50000+i} dstip=142.250.190.{(i%60)+1} dstport=443 proto=6 action="server-rst" policyname="Cybersecurity" service="Browsing" sentbyte=0 rcvdbyte=0',
+                raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.130 srcport={50000+i} dstip=142.250.190.{(i%60)+1} dstport=443 proto=6 action="server-rst" policyname="Cybersecurity" service="Browsing" sentbyte={1000+i} rcvdbyte=0',
                 attributes={"Source IP": "172.25.24.130", "Destination IP": f"142.250.190.{(i%60)+1}", "Destination TCP/UDP Port": 443},
             )
         )
