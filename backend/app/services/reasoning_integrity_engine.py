@@ -259,6 +259,236 @@ class ReasoningIntegrityEngine:
             effective_verdict_override=None,
         )
 
+    # -------------------------------------------------------------
+    # Negation and Speculation Patterns (V8.3a Hotfix)
+    # -------------------------------------------------------------
+    NEGATED_THREAT_RE = re.compile(
+        r'\b(?:no|not|neither|nor|without|never|unobserved|none|not\s+observed|not\s+detected|not\s+found|zero|absence\s+of)\s+'
+        r'(?:exploit|c2|malice|payload|threat|attack|botnet|brute\s*force|malware|reconnaissance|malicious\s+activity)\b|'
+        r'\b(?:c2|exploit|malware|threat|payload|botnet)\s+(?:was\s+not|is\s+not|not)\s+(?:observed|detected|found|seen|present)\b',
+        re.IGNORECASE,
+    )
+
+    SPECULATIVE_THREAT_RE = re.compile(
+        r'\b(?:potential\s+malicious\s+ip|model\s+suspects\s+reconnaissance|suspects\s+reconnaissance|'
+        r'unconfirmed\s+threat|hypothetical\s+c2|might\s+be\s+malicious|could\s+be\s+an\s+exploit)\b',
+        re.IGNORECASE,
+    )
+
+    NEGATED_AUTH_RE = re.compile(
+        r'\b(?:scanner\s+authorization\s+unknown|not\s+an\s+authorized\s+scanner|no\s+approved\s+change\s+ticket|'
+        r'unauthorized\s+scanner|unapproved\s+scanner|authorization\s+unknown|no\s+change\s+ticket|'
+        r'authorization\s+(?:was\s+not|is\s+not|not)\s+(?:found|observed|verified|provided|present)|'
+        r'(?:no|without|absence\s+of)\s+(?:approved|authorized)\s+(?:change|ticket|maintenance|scanner))\b',
+        re.IGNORECASE,
+    )
+
+    AUTHORIZATION_FIELDS = frozenset({
+        "asset.authorization",
+        "asset.authorization_ticket",
+        "asset.scanner_role",
+        "asset.is_authorized_scanner",
+        "change.ticket_id",
+        "change.approval_status",
+        "maintenance.window_active",
+        "itsm.ticket_id",
+        "telemetry.change_ticket",
+        "asset.scan_approval",
+        "scan.authorization",
+    })
+
+    THREAT_FIELDS = frozenset({
+        "threat_intel.verdict",
+        "threat_intel.reputation",
+        "threat_intel.category",
+        "security_event.signature",
+        "security_event.threat_name",
+        "security_event.attack_technique",
+        "payload.signature",
+        "c2.indicator",
+        "antivirus.threat_name",
+        "ips.attack_name",
+        "scan.threat_intel",
+        "endpoint.ioc_match",
+    })
+
+    TICKET_ID_RE = re.compile(r'\b(?:CHG|RFC|INC|TKT|SEC)-\d{4,}\b', re.IGNORECASE)
+
+    @classmethod
+    def verify_threat_corroboration(
+        cls,
+        supporting_claims: List[ModelSupportingClaim],
+        normalization_result: EvidenceNormalizationResult,
+        model_reason: str,
+    ) -> Tuple[bool, str, List[str]]:
+        """
+        V8.3a Hotfix: Evidence-backed threat corroboration validator.
+        Guarantees that decisive TRUE_POSITIVE proposals on traffic resembling browsing
+        are backed by genuine, verified threat intelligence, exploit payloads, or C2 indicators.
+        Strictly rejects:
+        - Narrative keyword matches without verified evidence records
+        - Negated statements ("No exploit detected", "C2 was not observed")
+        - Speculative statements ("Potential malicious IP", "The model suspects reconnaissance")
+        - Bare EV-* identifiers citing unrelated evidence (e.g. protocol or destination IP list)
+        - Fabricated claims lacking provenance
+        """
+        verified_eids: List[str] = []
+        record_by_id = {r.evidence_id: r for r in normalization_result.records}
+
+        # 1. Inspect direct canonical evidence records for authoritative threat intelligence / attack signatures
+        for rec in normalization_result.records:
+            sf_lower = rec.source_field.lower()
+            val_lower = str(rec.observed_value).lower()
+            if sf_lower in cls.THREAT_FIELDS or any(sf_lower.startswith(prefix) for prefix in ("threat_intel.", "security_event.", "c2.", "payload.")):
+                is_positive_threat = any(term in val_lower for term in ("malicious", "c2", "botnet", "exploit", "trojan", "attack", "high_risk", "phishing", "backdoor", "scanner"))
+                is_clean_threat = any(term in val_lower for term in ("clean", "benign", "safe", "none", "no exploit", "not observed", "0"))
+                if is_positive_threat and not is_clean_threat:
+                    verified_eids.append(rec.evidence_id)
+
+        # 2. Inspect grounded claims
+        for claim in supporting_claims:
+            claim_text = str(getattr(claim, "claim_text", "") or "").strip()
+            asserted_val = str(getattr(claim, "asserted_value", "") or "").strip()
+            full_claim = f"{claim_text} {asserted_val}".lower()
+
+            if cls.NEGATED_THREAT_RE.search(full_claim) or cls.SPECULATIVE_THREAT_RE.search(full_claim):
+                continue
+
+            if not getattr(claim, "is_grounded", False) or getattr(claim, "grounding_status", "") != "GROUNDED":
+                continue
+
+            matched_id = getattr(claim, "matched_evidence_id", None)
+            if matched_id and matched_id in record_by_id:
+                matched_rec = record_by_id[matched_id]
+                m_field = matched_rec.source_field.lower()
+                m_val = str(matched_rec.observed_value).lower()
+
+                is_authoritative_threat_record = (
+                    m_field in cls.THREAT_FIELDS
+                    or any(m_field.startswith(p) for p in ("threat_intel.", "security_event.", "c2.", "payload.", "antivirus.", "ips."))
+                    or any(term in m_val for term in ("malicious", "c2", "botnet", "exploit", "trojan", "compromised", "brute_force"))
+                )
+                if is_authoritative_threat_record:
+                    if matched_id not in verified_eids:
+                        verified_eids.append(matched_id)
+
+        if verified_eids:
+            return (
+                True,
+                f"Threat corroboration independently verified via {len(verified_eids)} canonical record(s) ({', '.join(verified_eids[:3])})",
+                verified_eids,
+            )
+
+        if cls.NEGATED_THREAT_RE.search(model_reason):
+            return (
+                False,
+                "Model narrative explicitly contains negated threat statements ('no exploit detected' / 'C2 was not observed') which cannot establish maliciousness",
+                [],
+            )
+        if cls.SPECULATIVE_THREAT_RE.search(model_reason):
+            return (
+                False,
+                "Model narrative contains speculative/unconfirmed assertions ('potential malicious IP' / 'model suspects reconnaissance') lacking verified evidence records",
+                [],
+            )
+
+        return (
+            False,
+            "No verified threat intelligence, exploit payload, or C2 evidence found in canonical evidence records. Model-generated prose or citations of unrelated evidence IDs do not establish maliciousness",
+            [],
+        )
+
+    @classmethod
+    def verify_authorization(
+        cls,
+        supporting_claims: List[ModelSupportingClaim],
+        normalization_result: EvidenceNormalizationResult,
+        model_reason: str,
+    ) -> Tuple[bool, str, List[str]]:
+        """
+        V8.3a Hotfix: Evidence-backed scanner and change authorization validator.
+        Guarantees that decisive FALSE_POSITIVE proposals on internal scan sweeps
+        are backed by verifiable change management tickets, scanner registrations, or maintenance approvals.
+        Strictly rejects:
+        - Narrative keyword matches without verified evidence records
+        - Negated statements ("Scanner authorization unknown", "Not an authorized scanner", "No approved change ticket")
+        - Model-generated ticket identifiers with no verified record (e.g. hallucinated "CHG-9999")
+        - Bare EV-* identifiers citing unrelated evidence
+        - Speculative or unverified claims
+        """
+        verified_eids: List[str] = []
+        record_by_id = {r.evidence_id: r for r in normalization_result.records}
+
+        # 1. Inspect direct canonical evidence records for authoritative change tickets or scanner registrations
+        for rec in normalization_result.records:
+            sf_lower = rec.source_field.lower()
+            val_str = str(rec.observed_value)
+            val_lower = val_str.lower()
+
+            if sf_lower in cls.AUTHORIZATION_FIELDS or any(sf_lower.startswith(prefix) for prefix in ("asset.auth", "change.", "maintenance.", "itsm.")):
+                has_ticket = bool(cls.TICKET_ID_RE.search(val_str))
+                has_approval = any(term in val_lower for term in ("authorized", "approved", "active_maintenance", "registered_scanner", "scheduled"))
+                is_negated = any(term in val_lower for term in ("unauthorized", "unapproved", "rejected", "expired", "cancelled", "unknown", "none"))
+                if (has_ticket or has_approval) and not is_negated:
+                    verified_eids.append(rec.evidence_id)
+
+        # 2. Inspect grounded claims
+        for claim in supporting_claims:
+            claim_text = str(getattr(claim, "claim_text", "") or "").strip()
+            asserted_val = str(getattr(claim, "asserted_value", "") or "").strip()
+            full_claim = f"{claim_text} {asserted_val}".lower()
+
+            if cls.NEGATED_AUTH_RE.search(full_claim):
+                continue
+
+            if not getattr(claim, "is_grounded", False) or getattr(claim, "grounding_status", "") != "GROUNDED":
+                continue
+
+            matched_id = getattr(claim, "matched_evidence_id", None)
+            if matched_id and matched_id in record_by_id:
+                matched_rec = record_by_id[matched_id]
+                m_field = matched_rec.source_field.lower()
+                m_val = str(matched_rec.observed_value)
+
+                is_authoritative_auth_record = (
+                    m_field in cls.AUTHORIZATION_FIELDS
+                    or any(m_field.startswith(p) for p in ("asset.auth", "change.", "maintenance.", "itsm."))
+                    or bool(cls.TICKET_ID_RE.search(m_val))
+                    or any(term in m_val.lower() for term in ("authorized scanner", "approved change", "maintenance window"))
+                )
+                if is_authoritative_auth_record:
+                    if matched_id not in verified_eids:
+                        verified_eids.append(matched_id)
+
+        if verified_eids:
+            return (
+                True,
+                f"Scanner/change authorization independently verified via {len(verified_eids)} canonical record(s) ({', '.join(verified_eids[:3])})",
+                verified_eids,
+            )
+
+        if cls.NEGATED_AUTH_RE.search(model_reason):
+            return (
+                False,
+                "Model narrative explicitly indicates scanner authorization is unknown, unapproved, or lacking a change ticket ('not an authorized scanner' / 'no approved change ticket')",
+                [],
+            )
+
+        narrative_ticket_match = cls.TICKET_ID_RE.search(model_reason)
+        if narrative_ticket_match:
+            hallucinated_ticket = narrative_ticket_match.group(0)
+            return (
+                False,
+                f"Model-generated ticket identifier '{hallucinated_ticket}' was asserted in narrative but has no verified record in canonical incident evidence",
+                [],
+            )
+
+        return (
+            False,
+            "No verified change ticket, scanner asset registration, or maintenance approval found in canonical evidence records. Model-generated prose or citations of unrelated evidence IDs do not establish authorization",
+            [],
+        )
+
     @classmethod
     def evaluate_verdict_evidence_consistency(
         cls,
@@ -270,14 +500,15 @@ class ReasoningIntegrityEngine:
         rule_archetype: str = "NETWORK_SCAN",
     ) -> ReasoningValidationResult:
         """
-        Phase 3 Verdict Consistency Engine:
+        Phase 3 Verdict Consistency Engine (V8.3a Hotfix):
         Validates whether observed telemetry actually justifies a decisive TP or FP proposal
         under the rule-specific policy criteria.
-        Reconciled in V8.3:
-        - Rejects unsupported reasoning without falsely rejecting legitimate TPs that resemble browsing.
-        - Recognizes that bidirectional TCP / port 443 can still be malicious if corroborating threat
-          intelligence, exploit tradecraft, brute-force, or unauthorized scanning tools are cited.
-        - Recognizes that internal sweeps with documented scanner/change authorization qualify as FP.
+        Enforces evidence-verified threat corroboration and scanner authorization:
+        - Rejects narrative-keyword matches without verified evidence records.
+        - Rejects negated statements ("No exploit detected", "C2 was not observed").
+        - Rejects speculative statements ("Potential malicious IP", "The model suspects reconnaissance").
+        - Rejects bare EV-* citations referring to unrelated evidence.
+        - Requires verifiable change ticket / scanner asset records for internal scans.
         """
         clean_prop = str(proposed_verdict or "REQUIRES_ATTENTION").upper().strip()
         record_map: Dict[str, Any] = {
@@ -288,65 +519,7 @@ class ReasoningIntegrityEngine:
         dest_scope = cls.parse_destination_scope(record_map.get("scan.destination_scope"))
 
         reason_str = str(model_reason or "").strip()
-        claim_texts = [
-            str(getattr(c, "claim_text", "") or getattr(c, "asserted_value", "") or "").strip()
-            for c in supporting_claims
-        ]
-        combined_narrative = f"{reason_str} {' '.join(claim_texts)}".lower()
-
-        # Check for concrete corroborating malicious indicators
-        has_corroborating_malice = any(
-            term in combined_narrative
-            for term in (
-                "threat intelligence",
-                "threat intel",
-                "malicious ip",
-                "c2",
-                "command and control",
-                "botnet",
-                "exploit",
-                "payload",
-                "brute force",
-                "brute-force",
-                "directory traversal",
-                "directory harvest",
-                "vulnerability scan",
-                "vulnerability assessment",
-                "web crawler",
-                "reconnaissance tool",
-                "unauthorized tool",
-                "credential",
-                "exfiltration",
-                "malware",
-                "trojan",
-                "cobalt strike",
-                "sql injection",
-                "sqli",
-                "xss",
-                "active probe",
-                "host enumeration",
-                "compromised host",
-            )
-        )
-
-        # Check for documented administrative/scanner authorization
-        has_authorization = any(
-            term in combined_narrative
-            for term in (
-                "authorized scanner",
-                "vulnerability assessment ticket",
-                "approved change",
-                "change window",
-                "maintenance window",
-                "authorized admin",
-                "authorized sweep",
-                "security assessment ticket",
-                "authorized maintenance",
-                "itsm ticket",
-                "change ticket",
-                "authorized penetration test",
-            )
-        )
+        semantic_notes: List[str] = []
 
         # -------------------------------------------------------------
         # True Positive Consistency Rules for Network Scan
@@ -368,45 +541,64 @@ class ReasoningIntegrityEngine:
                 and any(term in policy_and_svc for term in ("browsing", "https", "ssl", "internet"))
             )
 
-            # V8.3 Nuanced Guardrail: If traffic resembles external browsing, propose TP ONLY IF
-            # concrete corroborating malicious indicators (threat intel, C2, exploit payloads, brute force) exist.
-            if is_pure_external_browsing and not has_corroborating_malice:
+            # V8.3a Evidence-Verified Threat Corroboration Check
+            is_threat_verified, threat_detail, verified_threat_eids = cls.verify_threat_corroboration(
+                supporting_claims=supporting_claims,
+                normalization_result=normalization_result,
+                model_reason=reason_str,
+            )
+
+            if is_pure_external_browsing and not is_threat_verified:
                 conflict_msg = (
                     f"Verdict Conflict: Proposed TRUE_POSITIVE contradicts observed telemetry showing "
                     f"100% external bidirectional browsing (bidirectional={bidir}, unanswered={unans}, "
-                    f"denied={denied}, internal=0, policy={record_map.get('scan.policy_and_service')}) "
-                    "without corroborating scan indicators, probe timeouts, or lateral attack tradecraft."
+                    f"denied={denied}, internal=0, policy={record_map.get('scan.policy_and_service')}). "
+                    f"Requirement unsatisfied: {threat_detail}. Model narrative keywords or ungrounded "
+                    "assertions cannot establish maliciousness without verified canonical evidence records."
                 )
                 return ReasoningValidationResult(
                     is_valid=False,
                     validation_status="VERDICT_EVIDENCE_CONFLICT",
                     reason_codes=["VERDICT_EVIDENCE_CONFLICT", "TP_CRITERIA_UNSATISFIED"],
                     detected_contradictions=[conflict_msg],
-                    analyst_action_directive="Proposed TRUE_POSITIVE is in conflict with observed bidirectional web telemetry lacking corroborating threat tradecraft. Overruled to REQUIRES_ATTENTION for manual triage.",
+                    semantic_review_notes=semantic_notes,
+                    analyst_action_directive="Proposed TRUE_POSITIVE lacks verified threat intelligence or attack tradecraft in canonical evidence records. Overruled to REQUIRES_ATTENTION for manual triage.",
                     effective_verdict_override="REQUIRES_ATTENTION",
                 )
+            elif is_threat_verified:
+                semantic_notes.append(f"Threat Corroboration Verified: {threat_detail}")
 
         # -------------------------------------------------------------
         # False Positive Consistency Rules for Network Scan
         # -------------------------------------------------------------
         elif clean_prop == "FALSE_POSITIVE" and rule_archetype in ("NETWORK_SCAN", "UNKNOWN"):
-            # Bidirectional HTTPS sessions alone do NOT conclusively establish False Positive
-            # on internal targets without verifying absence of internal recon or change authorization.
             internal_dst = dest_scope["internal"]
-            if internal_dst > 0 and not has_authorization:
+
+            # V8.3a Evidence-Verified Authorization Check
+            is_auth_verified, auth_detail, verified_auth_eids = cls.verify_authorization(
+                supporting_claims=supporting_claims,
+                normalization_result=normalization_result,
+                model_reason=reason_str,
+            )
+
+            if internal_dst > 0 and not is_auth_verified:
                 conflict_msg = (
-                    f"Verdict Conflict: Proposed FALSE_POSITIVE contradicts observed mixed destination scope "
-                    f"(internal={internal_dst}, external={dest_scope['external']}). Internal targets require "
-                    "authoritative scanner/change authorization before benign closure."
+                    f"Verdict Conflict: Proposed FALSE_POSITIVE contradicts observed internal/mixed destination scope "
+                    f"(internal={internal_dst}, external={dest_scope['external']}). "
+                    f"Requirement unsatisfied: {auth_detail}. Internal host sweeps require verifiable change "
+                    "ticket, scanner registration, or maintenance approval in evidence records before benign closure."
                 )
                 return ReasoningValidationResult(
                     is_valid=False,
                     validation_status="VERDICT_EVIDENCE_CONFLICT",
                     reason_codes=["VERDICT_EVIDENCE_CONFLICT", "FP_CRITERIA_UNSATISFIED"],
                     detected_contradictions=[conflict_msg],
-                    analyst_action_directive="Proposed FALSE_POSITIVE lacks required authorization evidence for internal targets. Overruled to REQUIRES_ATTENTION.",
+                    semantic_review_notes=semantic_notes,
+                    analyst_action_directive="Proposed FALSE_POSITIVE lacks verifiable authorization evidence for internal targets. Overruled to REQUIRES_ATTENTION.",
                     effective_verdict_override="REQUIRES_ATTENTION",
                 )
+            elif is_auth_verified:
+                semantic_notes.append(f"Scanner Authorization Verified: {auth_detail}")
 
         # Safe Abstention:
         elif clean_prop in ("REQUIRES_ATTENTION", "INSUFFICIENT_EVIDENCE"):
@@ -415,6 +607,7 @@ class ReasoningIntegrityEngine:
                 validation_status="SAFE_ABSTENTION",
                 reason_codes=[],
                 detected_contradictions=[],
+                semantic_review_notes=semantic_notes,
                 analyst_action_directive="Model safely abstained; route to analyst triage.",
                 effective_verdict_override="REQUIRES_ATTENTION",
             )
@@ -424,6 +617,7 @@ class ReasoningIntegrityEngine:
             validation_status="VALIDATED",
             reason_codes=[],
             detected_contradictions=[],
+            semantic_review_notes=semantic_notes,
             analyst_action_directive="Verdict-evidence consistency verified.",
             effective_verdict_override=None,
         )

@@ -233,7 +233,7 @@ class IndependentVerdictValidator:
             if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
                 final_verdict = "REQUIRES_ATTENTION"
                 if validation_status != "REASONING_CONTRADICTION":
-                    validation_status = "VERDICT_EVIDENCE_CONFLICT"
+                    validation_status = consistency_res.validation_status or "VERDICT_EVIDENCE_CONFLICT"
                 action_directive = consistency_res.analyst_action_directive
 
         # Check 5: Verdict-Specific Decision Criteria

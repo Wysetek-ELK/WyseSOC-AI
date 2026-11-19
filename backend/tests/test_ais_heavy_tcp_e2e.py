@@ -1253,18 +1253,35 @@ async def test_13_v83_reasoning_validator_safety_and_nuanced_tp_fp_evaluation(db
     assert any("server-rst indicates reset/rejection" in note for note in res_num.semantic_review_notes)
 
     # ------------------------------------------------------------------
-    # 2. Nuanced TRUE_POSITIVE: Malicious Scanning with Successful TCP Connections
+    # 2. Nuanced TRUE_POSITIVE: Malicious Scanning with Successful TCP Connections (Verified Evidence)
     # ------------------------------------------------------------------
-    # When model observes bidirectional sessions on port 443 BUT cites concrete threat intelligence
-    # and active web vulnerability scanning tradecraft:
+    # When model observes bidirectional sessions on port 443 BUT is backed by verified threat intelligence
+    # and active web vulnerability scanning tradecraft in canonical evidence:
+    from app.schemas.canonical_evidence import CanonicalEvidenceRecord
+
+    rec_threat = CanonicalEvidenceRecord(
+        evidence_id=f"EV-{inc.incident_id}-TOP-threat_intel_verdict",
+        incident_id=inc.incident_id,
+        source_system="ThreatIntel",
+        source_field="threat_intel.verdict",
+        observed_value="MALICIOUS_C2_BOTNET",
+        evidence_type="SECURITY_EVENT",
+        availability="AVAILABLE",
+        provenance_status="SOURCE_RECORDED",
+        integrity_digest="a" * 64,
+        validation_status="PRESENT_VALID",
+    )
+    norm.records.append(rec_threat)
+
     claims_malicious_recon = [
         ModelSupportingClaim(
             claim_type="SECURITY_OBSERVATION",
-            field="scan.tcp_behavior_summary",
-            asserted_value="bidirectional_sessions=97, unanswered_probes=3",
+            field="threat_intel.verdict",
+            asserted_value="MALICIOUS_C2_BOTNET",
             claim_text="Threat intelligence confirms destination IPs match active C2 botnet infrastructure and automated web crawler vulnerability scan.",
             is_grounded=True,
             grounding_status="GROUNDED",
+            matched_evidence_id=rec_threat.evidence_id,
         )
     ]
     res_malicious_tp = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
@@ -1275,20 +1292,34 @@ async def test_13_v83_reasoning_validator_safety_and_nuanced_tp_fp_evaluation(db
         normalization_result=norm,
         rule_archetype="NETWORK_SCAN",
     )
-    # MUST NOT be falsely rejected: legitimate TP with corroborating malicious threat indicators!
+    # MUST NOT be falsely rejected: legitimate TP with verified corroborating malicious threat indicators!
     assert res_malicious_tp.is_valid is True
     assert res_malicious_tp.validation_status == "VALIDATED"
     assert len(res_malicious_tp.detected_contradictions) == 0
 
     # ------------------------------------------------------------------
-    # 3. Nuanced FALSE_POSITIVE: Authorized Internal Vulnerability Scan
+    # 3. Nuanced FALSE_POSITIVE: Authorized Internal Vulnerability Scan (Verified Evidence)
     # ------------------------------------------------------------------
     norm_internal = copy.deepcopy(norm)
     for r in norm_internal.records:
         if r.source_field == "scan.destination_scope":
             r.observed_value = "internal=50, external=10, total_unique_hosts=60"
 
-    # A. Internal scan with documented authorization ticket -> VALIDATED FP
+    rec_auth = CanonicalEvidenceRecord(
+        evidence_id=f"EV-{inc.incident_id}-TOP-change_ticket_id",
+        incident_id=inc.incident_id,
+        source_system="ServiceNow",
+        source_field="change.ticket_id",
+        observed_value="CHG-2026-991",
+        evidence_type="SECURITY_EVENT",
+        availability="AVAILABLE",
+        provenance_status="SOURCE_RECORDED",
+        integrity_digest="b" * 64,
+        validation_status="PRESENT_VALID",
+    )
+    norm_internal.records.append(rec_auth)
+
+    # A. Internal scan with documented authorization ticket in evidence records -> VALIDATED FP
     res_auth_fp = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
         incident_id="173449",
         proposed_verdict="FALSE_POSITIVE",
@@ -1300,13 +1331,17 @@ async def test_13_v83_reasoning_validator_safety_and_nuanced_tp_fp_evaluation(db
     assert res_auth_fp.is_valid is True
     assert res_auth_fp.validation_status == "VALIDATED"
 
-    # B. Internal scan WITHOUT authorization ticket -> VERDICT_EVIDENCE_CONFLICT
+    # B. Internal scan WITHOUT authorization ticket in evidence records -> VERDICT_EVIDENCE_CONFLICT
+    norm_unauth = copy.deepcopy(norm)
+    for r in norm_unauth.records:
+        if r.source_field == "scan.destination_scope":
+            r.observed_value = "internal=50, external=10, total_unique_hosts=60"
     res_unauth_fp = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
         incident_id="173449",
         proposed_verdict="FALSE_POSITIVE",
         model_reason="Internal host sweep looks benign because connections completed.",
         supporting_claims=[],
-        normalization_result=norm_internal,
+        normalization_result=norm_unauth,
         rule_archetype="NETWORK_SCAN",
     )
     assert res_unauth_fp.is_valid is False
@@ -1348,5 +1383,258 @@ async def test_13_v83_reasoning_validator_safety_and_nuanced_tp_fp_evaluation(db
     assert target_item["is_blind_mode"] is True
     assert target_item["analyst_verdict"] is None
     assert "ai_verdict" not in target_item or target_item["ai_verdict"] is None
+
+
+@pytest.mark.asyncio
+async def test_14_v83a_evidence_verified_guardrails_and_analyst_workflow(db_session: AsyncSession):
+    """
+    V8.3a: Comprehensive validation of evidence-backed reasoning guardrails,
+    mandatory negative cases (negation, hypothetical, bare EV-* references, hallucinated tickets),
+    and end-to-end double-blind analyst review workflow.
+    """
+    import uuid
+    import copy
+    from app.services.reasoning_integrity_engine import ReasoningIntegrityEngine
+    from app.services.analyst_review_service import AnalystReviewService
+    from app.schemas.evidence_claim import ModelSupportingClaim
+    from app.schemas.canonical_evidence import CanonicalEvidenceRecord
+    from app.models.incident import Incident, IncidentEvent
+
+    rule = await _seed_target_rule(db_session)
+
+    # Base Incident with 100 events representing external browsing on port 443
+    inc = Incident(
+        id=str(uuid.uuid4()), incident_id="179901", rule_id=rule.id, event_type=TARGET_EVENT_TYPE,
+        title=TARGET_RULE_NAME, severity="MEDIUM", customer="GDC_NOC",
+        raw_payload={"incidentSrc": "srcIpAddr:172.25.24.150", "incidentTarget": "destIpPort:443", "incidentDetail": '{"incidentCount":100}'},
+        ai_verdict={"verdict": "FALSE_POSITIVE", "effective_verdict": "FALSE_POSITIVE", "confidence": 92.0, "reasoning": "Observed 100% external HTTPS browsing."},
+    )
+    evts = []
+    for i in range(100):
+        evts.append(
+            IncidentEvent(
+                id=str(uuid.uuid4()), incident_id=inc.id, event_id=f"evt-v83a-{i}",
+                event_receive_time=1794480000000 + (i * 1000),
+                event_type="FortiGate-traffic-end-forward-client-rst",
+                raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.150 srcport={50000+i} dstip=142.250.190.{(i%60)+1} dstport=443 proto=6 action="client-rst" policyname="Cybersecurity" service="Browsing" sentbyte={1000+i} rcvdbyte={2000+i}',
+                attributes={"Source IP": "172.25.24.150", "Destination IP": f"142.250.190.{(i%60)+1}", "Destination TCP/UDP Port": 443},
+            )
+        )
+    norm = EvidenceNormalizationService.normalize_incident_evidence(inc, events=evts)
+
+    # ------------------------------------------------------------------
+    # Part 1: Mandatory Negative Cases for Threat Corroboration (Phase 2 & 3)
+    # ------------------------------------------------------------------
+    # A. Negated threat indicator: "No exploit detected"
+    res_neg_exploit = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="179901",
+        proposed_verdict="TRUE_POSITIVE",
+        model_reason="No exploit detected and C2 was not observed across destinations.",
+        supporting_claims=[],
+        normalization_result=norm,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_neg_exploit.is_valid is False
+    assert res_neg_exploit.validation_status == "VERDICT_EVIDENCE_CONFLICT"
+    assert "TP_CRITERIA_UNSATISFIED" in res_neg_exploit.reason_codes
+
+    # B. Speculative threat statement: "Potential malicious IP; the model suspects reconnaissance"
+    res_spec_threat = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="179901",
+        proposed_verdict="TRUE_POSITIVE",
+        model_reason="Potential malicious IP detected; the model suspects reconnaissance activity.",
+        supporting_claims=[],
+        normalization_result=norm,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_spec_threat.is_valid is False
+    assert res_spec_threat.validation_status == "VERDICT_EVIDENCE_CONFLICT"
+
+    # C. Bare EV-* identifier citing unrelated evidence (citing scan.tcp_behavior_summary to claim C2)
+    bare_ev_claim = ModelSupportingClaim(
+        claim_type="SECURITY_OBSERVATION",
+        field="scan.tcp_behavior_summary",
+        asserted_value="bidirectional_sessions=100, unanswered_probes=0",
+        claim_text="Threat intelligence confirms this is active C2 infrastructure.",
+        is_grounded=True,
+        grounding_status="GROUNDED",
+        matched_evidence_id=f"EV-{inc.incident_id}-TOP-scan_tcp_behavior_summary",
+    )
+    res_bare_ev = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="179901",
+        proposed_verdict="TRUE_POSITIVE",
+        model_reason="Citing evidence ID for confirmed C2 botnet.",
+        supporting_claims=[bare_ev_claim],
+        normalization_result=norm,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_bare_ev.is_valid is False
+    assert res_bare_ev.validation_status == "VERDICT_EVIDENCE_CONFLICT"
+
+    # ------------------------------------------------------------------
+    # Part 2: Mandatory Negative Cases for Scanner Authorization (Phase 2 & 3)
+    # ------------------------------------------------------------------
+    norm_internal = copy.deepcopy(norm)
+    for r in norm_internal.records:
+        if r.source_field == "scan.destination_scope":
+            r.observed_value = "internal=80, external=0, total_unique_hosts=80"
+
+    # A. Negated authorization: "Scanner authorization unknown"
+    res_neg_auth = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="179901",
+        proposed_verdict="FALSE_POSITIVE",
+        model_reason="Scanner authorization unknown and not an authorized scanner.",
+        supporting_claims=[],
+        normalization_result=norm_internal,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_neg_auth.is_valid is False
+    assert res_neg_auth.validation_status == "VERDICT_EVIDENCE_CONFLICT"
+
+    # B. Hallucinated ticket ID with NO verified record in evidence
+    res_halluc_ticket = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="179901",
+        proposed_verdict="FALSE_POSITIVE",
+        model_reason="Authorized scanner performing routine sweep under change ticket CHG-2026-99999.",
+        supporting_claims=[],
+        normalization_result=norm_internal,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_halluc_ticket.is_valid is False
+    assert res_halluc_ticket.validation_status == "VERDICT_EVIDENCE_CONFLICT"
+    assert any("CHG-2026-99999" in c for c in res_halluc_ticket.detected_contradictions)
+
+    # ------------------------------------------------------------------
+    # Part 3: Verified Positive Evidence Corroboration (Phase 2 & 3)
+    # ------------------------------------------------------------------
+    # A. Verified Threat Intelligence in Canonical Evidence
+    rec_threat_valid = CanonicalEvidenceRecord(
+        evidence_id=f"EV-{inc.incident_id}-TOP-threat_intel_verdict",
+        incident_id=inc.incident_id,
+        source_system="RecordedFuture",
+        source_field="threat_intel.verdict",
+        observed_value="MALICIOUS_C2_INFRASTRUCTURE",
+        evidence_type="SECURITY_EVENT",
+        availability="AVAILABLE",
+        provenance_status="SOURCE_RECORDED",
+        integrity_digest="c" * 64,
+        validation_status="PRESENT_VALID",
+    )
+    norm_with_threat = copy.deepcopy(norm)
+    norm_with_threat.records.append(rec_threat_valid)
+
+    res_valid_tp = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="179901",
+        proposed_verdict="TRUE_POSITIVE",
+        model_reason="Adversary command and control activity confirmed via threat intelligence feed.",
+        supporting_claims=[],
+        normalization_result=norm_with_threat,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_valid_tp.is_valid is True
+    assert res_valid_tp.validation_status == "VALIDATED"
+    assert any("Threat Corroboration Verified" in note for note in res_valid_tp.semantic_review_notes)
+
+    # B. Verified Change Ticket in Canonical Evidence
+    rec_auth_valid = CanonicalEvidenceRecord(
+        evidence_id=f"EV-{inc.incident_id}-TOP-change_ticket_id",
+        incident_id=inc.incident_id,
+        source_system="ServiceNow",
+        source_field="change.ticket_id",
+        observed_value="CHG-2026-5544",
+        evidence_type="SECURITY_EVENT",
+        availability="AVAILABLE",
+        provenance_status="SOURCE_RECORDED",
+        integrity_digest="d" * 64,
+        validation_status="PRESENT_VALID",
+    )
+    norm_with_auth = copy.deepcopy(norm_internal)
+    norm_with_auth.records.append(rec_auth_valid)
+
+    res_valid_fp = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="179901",
+        proposed_verdict="FALSE_POSITIVE",
+        model_reason="Approved vulnerability assessment under change ticket CHG-2026-5544.",
+        supporting_claims=[],
+        normalization_result=norm_with_auth,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_valid_fp.is_valid is True
+    assert res_valid_fp.validation_status == "VALIDATED"
+    assert any("Scanner Authorization Verified" in note for note in res_valid_fp.semantic_review_notes)
+
+    # ------------------------------------------------------------------
+    # Part 4: End-to-End Double-Blind Analyst Review Lifecycle (Phase 4 & 6)
+    # ------------------------------------------------------------------
+    db_session.add(inc)
+    await db_session.commit()
+
+    # 1. Fetch pending reviews -> verify double-blind isolation
+    total, items = await AnalystReviewService.get_pending_reviews(
+        db=db_session,
+        rule_id=rule.id,
+        reviewer_id="analyst_test_user",
+        include_reviewed=False,
+    )
+    assert total >= 1
+    target = next((item for item in items if item["incident_id"] == "179901"), None)
+    assert target is not None
+    assert target["is_blind_mode"] is True
+    assert target["analyst_verdict"] is None
+    assert "ai_verdict" not in target or target["ai_verdict"] is None
+
+    # 2. Submit independent analyst review (Reviewer 1)
+    rev_result = await AnalystReviewService.submit_analyst_review(
+        db=db_session,
+        incident_id=inc.id,
+        reviewer_id="analyst_1",
+        analyst_verdict="FALSE_POSITIVE",
+        analyst_notes="Verified internal web browsing to office365 telemetry endpoints; legitimate employee traffic.",
+        evidence_references=["EV-179901-TOP-network_source_ip"],
+        blind_mode_active=True,
+        customer="GDC_NOC",
+    )
+    await db_session.commit()
+
+    assert rev_result["analyst_verdict"] == "FALSE_POSITIVE"
+    assert rev_result["revealed_ai_verdict"] == "FALSE_POSITIVE"
+    assert rev_result["revealed_ai_confidence"] == 92.0
+    assert rev_result["comparison_outcome"] == "AGREEMENT"
+
+    # 3. Duplicate submission idempotency (same reviewer submits again)
+    dup_result = await AnalystReviewService.submit_analyst_review(
+        db=db_session,
+        incident_id=inc.id,
+        reviewer_id="analyst_1",
+        analyst_verdict="FALSE_POSITIVE",
+        analyst_notes="Duplicate resubmission test.",
+        customer="GDC_NOC",
+    )
+    assert dup_result["review_id"] == rev_result["review_id"]
+
+    # 4. Dispute detection (Reviewer 2 submits divergent verdict)
+    dispute_result = await AnalystReviewService.submit_analyst_review(
+        db=db_session,
+        incident_id=inc.id,
+        reviewer_id="analyst_2",
+        analyst_verdict="TRUE_POSITIVE",
+        analyst_notes="I believe this is an unauthorized scan sweep.",
+        customer="GDC_NOC",
+    )
+    await db_session.commit()
+    assert dispute_result["is_disputed"] is True
+
+    # 5. Lead investigator adjudication resolves the dispute
+    adj_result = await AnalystReviewService.adjudicate_review(
+        db=db_session,
+        review_id=rev_result["review_id"],
+        final_verdict="FALSE_POSITIVE",
+        rationale="Lead investigator confirmed legitimate employee traffic; dispute resolved as FALSE_POSITIVE.",
+        adjudicator_id="lead_investigator_admin",
+    )
+    await db_session.commit()
+    assert adj_result["status"] == "ADJUDICATED"
+    assert adj_result["final_verdict"] == "FALSE_POSITIVE"
+
 
 
