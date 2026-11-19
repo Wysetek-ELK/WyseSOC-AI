@@ -10,6 +10,8 @@ from app.schemas.evidence_contract import RuleEvidenceContract
 from app.schemas.evidence_preflight import PreflightValidationResult
 from app.schemas.evidence_claim import ClaimGroundingResult
 from app.schemas.verdict_validation import VerdictValidationResult
+from app.services.confidence_normalizer import ConfidenceNormalizer
+from app.services.reasoning_integrity_engine import ReasoningIntegrityEngine
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +63,7 @@ class IndependentVerdictValidator:
         compilation_digest: Optional[str] = None,
         model_reason: str = "",
         contradictory_evidence: Optional[List[str]] = None,
+        confidence_scale: Optional[str] = None,
     ) -> VerdictValidationResult:
         """
         Executes the 8 mandatory deterministic checks and determines the final authoritative verdict.
@@ -85,10 +88,22 @@ class IndependentVerdictValidator:
             clean_prop_verdict = "REQUIRES_ATTENTION"
             reason_codes.append("MODEL_OUTPUT_INVALID")
 
+        # Confidence Calibration & Scale Validation (V8.2)
+        norm_conf = ConfidenceNormalizer.normalize(raw_model_confidence, confidence_scale)
+        if not norm_conf.is_valid:
+            if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                invalid_output_flag = True
+                clean_prop_verdict = "REQUIRES_ATTENTION"
+            if norm_conf.interpretation not in reason_codes:
+                reason_codes.append(norm_conf.interpretation)
+            if "MODEL_OUTPUT_INVALID" not in reason_codes:
+                reason_codes.append("MODEL_OUTPUT_INVALID")
+            action_directive = norm_conf.error_message or "Model emitted invalid or ambiguous confidence score."
+
         final_verdict = clean_prop_verdict
         validation_status = "INVALID_MODEL_OUTPUT" if invalid_output_flag else "VALIDATED"
         is_decisive = False
-        action_directive = "Verdict verified against canonical evidence contract."
+        action_directive = action_directive if invalid_output_flag else "Verdict verified against canonical evidence contract."
 
         # Check 1: Policy & Contract Authorization
         if contract.status != "APPROVED":
@@ -176,6 +191,50 @@ class IndependentVerdictValidator:
             if "EVIDENCE_CONTRADICTION" not in reason_codes:
                 reason_codes.append("EVIDENCE_CONTRADICTION")
             action_directive = "Material contradictory evidence detected in incident telemetry. Human Tier 2 review required."
+
+        # Check 4c (V8.2): Deterministic Reasoning Integrity Cross-Validation
+        reasoning_res = ReasoningIntegrityEngine.evaluate_reasoning_integrity(
+            incident_id=incident_id,
+            proposed_verdict=clean_prop_verdict,
+            model_reason=model_reason,
+            supporting_claims=claim_grounding.claims,
+            normalization_result=normalization_result,
+            contradictory_evidence=contradictory_evidence,
+        )
+        if not reasoning_res.is_valid:
+            for c_str in reasoning_res.detected_contradictions:
+                if c_str not in contradictions:
+                    contradictions.append(c_str)
+            for rc in reasoning_res.reason_codes:
+                if rc not in reason_codes:
+                    reason_codes.append(rc)
+            if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REASONING_CONTRADICTION"
+                action_directive = reasoning_res.analyst_action_directive
+
+        # Check 4d (V8.2): Verdict-Evidence Consistency Validation
+        rule_archetype = getattr(contract, "detection_archetype", None) or "NETWORK_SCAN"
+        consistency_res = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+            incident_id=incident_id,
+            proposed_verdict=clean_prop_verdict,
+            model_reason=model_reason,
+            supporting_claims=claim_grounding.claims,
+            normalization_result=normalization_result,
+            rule_archetype=rule_archetype,
+        )
+        if not consistency_res.is_valid:
+            for c_str in consistency_res.detected_contradictions:
+                if c_str not in contradictions:
+                    contradictions.append(c_str)
+            for rc in consistency_res.reason_codes:
+                if rc not in reason_codes:
+                    reason_codes.append(rc)
+            if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                final_verdict = "REQUIRES_ATTENTION"
+                if validation_status != "REASONING_CONTRADICTION":
+                    validation_status = "VERDICT_EVIDENCE_CONFLICT"
+                action_directive = consistency_res.analyst_action_directive
 
         # Check 5: Verdict-Specific Decision Criteria
         if clean_prop_verdict == "TRUE_POSITIVE":
@@ -337,7 +396,7 @@ class IndependentVerdictValidator:
                 r"\b(?:mimikatz|sekurlsa|privilege::debug)\b",
                 r"\bvssadmin(?:\.exe)?\s+delete\s+shadows\b",
                 r"\bcertutil(?:\.exe)?\s+.*-urlcache\b",
-                r"\b(?:downloadstring|iex\s*\(|invoke-expression)\b",
+                r"\b(?:downloadstring|iex\s*\(|invoke[-_]expression)\b",
             ]
             has_adversary_tradecraft = False
             for r in normalization_result.records:
@@ -654,7 +713,13 @@ class IndependentVerdictValidator:
             contract_version=contract.version_number,
             validator_version=cls.VALIDATOR_VERSION,
             raw_model_confidence=raw_model_confidence,
-            validated_confidence_display=raw_model_confidence if is_decisive else 0.0,
+            confidence_scale=norm_conf.raw_scale,
+            confidence_interpretation=norm_conf.interpretation,
+            normalized_confidence_percent=norm_conf.normalized_percent if norm_conf.is_valid else None,
+            reasoning_integrity_status=reasoning_res.validation_status if 'reasoning_res' in locals() else "NOT_EVALUATED",
+            reasoning_contradictions=reasoning_res.detected_contradictions if 'reasoning_res' in locals() else [],
+            semantic_review_notes=reasoning_res.semantic_review_notes if 'reasoning_res' in locals() else [],
+            validated_confidence_display=(norm_conf.normalized_percent if (is_decisive and norm_conf.is_valid and norm_conf.normalized_percent is not None) else 0.0),
             replay_signature=replay_sig,
         )
 
@@ -705,4 +770,5 @@ class IndependentVerdictValidator:
             allow_simulation=True,
             model_reason=str(saved_model_output.get("reason", "")),
             contradictory_evidence=saved_model_output.get("contradictory_evidence") if isinstance(saved_model_output.get("contradictory_evidence"), list) else None,
+            confidence_scale=saved_model_output.get("confidence_scale"),
         )

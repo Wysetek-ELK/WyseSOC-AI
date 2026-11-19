@@ -13,6 +13,7 @@ class ModelSupportingClaim(BaseModel):
     cited_evidence_ids: List[str] = Field(default_factory=list, description="Standardized cited canonical evidence IDs (e.g. EV-01)")
     field: str = Field(..., description="Canonical telemetry field, e.g. process.command_line")
     asserted_value: Any = Field(..., description="Value asserted by the model")
+    claim_text: Optional[str] = Field(default="", description="Narrative prose or statement associated with this claim")
     is_grounded: bool = Field(False, description="True if verified against real canonical evidence")
     grounding_status: str = Field("UNCHECKED", description="GROUNDED, EVIDENCE_REFERENCE_NOT_FOUND, EVIDENCE_VALUE_MISMATCH, FIELD_NOT_FOUND, CLAIM_NOT_VERIFIABLE")
     matched_evidence_id: Optional[str] = Field(None, description="Actual matching evidence ID in canonical evidence")

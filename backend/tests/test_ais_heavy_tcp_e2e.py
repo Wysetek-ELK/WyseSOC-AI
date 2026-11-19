@@ -923,3 +923,255 @@ async def test_11_v81_truncation_detection_sample_context_and_4096_768_budget(db
     assert err_trunc is None and parsed_trunc is not None
     assert parsed_trunc.get("_truncated_output") is True
     assert parsed_trunc.get("_schema_recovery_applied") is True
+
+
+@pytest.mark.asyncio
+async def test_12_v82_deterministic_reasoning_integrity_and_confidence_calibration(db_session: AsyncSession):
+    """V8.2 Phases 2-5 & 8: Confidence calibration, reasoning contradiction engine, verdict-evidence consistency, and safe abstention preservation."""
+    import math
+    from app.services.confidence_normalizer import ConfidenceNormalizer
+    from app.services.reasoning_integrity_engine import ReasoningIntegrityEngine
+    from app.services.independent_verdict_validator import IndependentVerdictValidator
+    from app.schemas.evidence_claim import ModelSupportingClaim, ClaimGroundingResult
+    from app.schemas.evidence_preflight import PreflightValidationResult
+    from app.schemas.evidence_contract import RuleEvidenceContract
+
+    rule = await _seed_target_rule(db_session)
+    pv = await _seed_approved_prompt_with_g1_g8(db_session, rule)
+
+    # ------------------------------------------------------------------
+    # 1. Confidence Normalizer & Scale Validation (Phase 4)
+    # ------------------------------------------------------------------
+    # A. Declared PERCENT_0_100: accepted
+    c1 = ConfidenceNormalizer.normalize(85.0, declared_scale="PERCENT_0_100")
+    assert c1.is_valid is True
+    assert c1.normalized_percent == 85.0
+    assert c1.interpretation == "DECLARED_PERCENT"
+
+    # B. Declared PROBABILITY_0_1: converted to percent
+    c2 = ConfidenceNormalizer.normalize(0.85, declared_scale="PROBABILITY_0_1")
+    assert c2.is_valid is True
+    assert c2.normalized_percent == 85.0
+    assert c2.interpretation == "DECLARED_PROBABILITY_CONVERTED"
+
+    # C. Ambiguous 0.85 without declared scale: STRICTLY REJECTED (no silent * 100)
+    c3 = ConfidenceNormalizer.normalize(0.85, declared_scale=None)
+    assert c3.is_valid is False
+    assert c3.interpretation == "AMBIGUOUS_SCALE_REJECTED"
+    assert c3.normalized_percent is None
+
+    # D. Unambiguous 85.0 without declared scale: accepted as percent
+    c4 = ConfidenceNormalizer.normalize(85.0, declared_scale=None)
+    assert c4.is_valid is True
+    assert c4.normalized_percent == 85.0
+
+    # E. Exactly 0.0: zero under any scale
+    c5 = ConfidenceNormalizer.normalize(0.0, declared_scale=None)
+    assert c5.is_valid is True
+    assert c5.normalized_percent == 0.0
+
+    # F. Invalid range, NaN, Inf, and negative: rejected
+    assert ConfidenceNormalizer.normalize(-10.0).is_valid is False
+    assert ConfidenceNormalizer.normalize(150.0).is_valid is False
+    assert ConfidenceNormalizer.normalize(float("nan")).is_valid is False
+    assert ConfidenceNormalizer.normalize(float("inf")).is_valid is False
+
+    # ------------------------------------------------------------------
+    # 2. Reasoning Contradiction Detection & Telemetry Inversions (Phase 2)
+    # ------------------------------------------------------------------
+    inc = Incident(
+        id=str(uuid.uuid4()), incident_id="176011", rule_id=rule.id, event_type=TARGET_EVENT_TYPE,
+        title=TARGET_RULE_NAME, severity="MEDIUM", customer="GDC_NOC",
+        raw_payload={"incidentSrc": "srcIpAddr:172.25.24.154", "incidentTarget": "destIpPort:443", "incidentDetail": '{"incidentCount":103}'},
+    )
+    evts = [
+        IncidentEvent(
+            id=str(uuid.uuid4()), incident_id=inc.id, event_id=f"evt-{i}",
+            event_receive_time=1794476000000 + (i * 1000),
+            event_type="FortiGate-traffic-end-forward-client-rst",
+            raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.154 srcport={50000+i} dstip=198.51.100.{(i%75)+1} dstport=443 proto=6 action="client-rst" policyname="Cybersecurity" service="Browsing" sentbyte={1000+i} rcvdbyte={2000+i}',
+            attributes={"Source IP": "172.25.24.154", "Destination IP": f"198.51.100.{(i%75)+1}", "Destination TCP/UDP Port": 443},
+        )
+        for i in range(100)
+    ]
+    norm = EvidenceNormalizationService.normalize_incident_evidence(inc, events=evts)
+
+    # Contradiction 1: Factual inversion of unanswered probes (historical LLM defect)
+    # Telemetry has 100 bidirectional sessions and 0 unanswered probes.
+    # LLM writes in narrative: "predominantly unanswered probes with no bidirectional sessions"
+    claims_contra = [
+        ModelSupportingClaim(
+            claim_type="OBSERVED_FACT",
+            field="scan.tcp_behavior_summary",
+            asserted_value="bidirectional_sessions=100, unanswered_probes=0",
+            claim_text="Observed predominantly unanswered probes with no bidirectional sessions",
+            is_grounded=True,
+            grounding_status="GROUNDED",
+        )
+    ]
+    res_contra1 = ReasoningIntegrityEngine.evaluate_reasoning_integrity(
+        incident_id="176011",
+        proposed_verdict="TRUE_POSITIVE",
+        model_reason="Heavy TCP host scan detected due to predominantly unanswered probes against external hosts.",
+        supporting_claims=claims_contra,
+        normalization_result=norm,
+    )
+    assert res_contra1.is_valid is False
+    assert res_contra1.validation_status == "REASONING_CONTRADICTION"
+    assert "REASONING_CONTRADICTION" in res_contra1.reason_codes
+    assert any("predominantly unanswered probes" in c for c in res_contra1.detected_contradictions)
+
+    # Contradiction 2: Denied flows inversion (denied_flows=0 in telemetry, narrative claims traffic was denied)
+    res_contra2 = ReasoningIntegrityEngine.evaluate_reasoning_integrity(
+        incident_id="176011",
+        proposed_verdict="TRUE_POSITIVE",
+        model_reason="All traffic was denied flows blocked by firewall rules.",
+        supporting_claims=[],
+        normalization_result=norm,
+    )
+    assert res_contra2.is_valid is False
+    assert any("denied_flows=0" in c for c in res_contra2.detected_contradictions)
+
+    # Contradiction 3: Internal scope inversion (internal=0, external=75, narrative claims internal host sweep)
+    res_contra3 = ReasoningIntegrityEngine.evaluate_reasoning_integrity(
+        incident_id="176011",
+        proposed_verdict="TRUE_POSITIVE",
+        model_reason="Adversary performing internal host scan and lateral movement.",
+        supporting_claims=[],
+        normalization_result=norm,
+    )
+    assert res_contra3.is_valid is False
+    assert any("100% external destinations" in c for c in res_contra3.detected_contradictions)
+
+    # ------------------------------------------------------------------
+    # 3. Verdict-Evidence Consistency Validation (Phase 3)
+    # ------------------------------------------------------------------
+    # Proposing TRUE_POSITIVE on 100% external bidirectional browsing without scan indicators
+    res_verdict_tp = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="176011",
+        proposed_verdict="TRUE_POSITIVE",
+        model_reason="Standard outbound browsing traffic.",
+        supporting_claims=[],
+        normalization_result=norm,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_verdict_tp.is_valid is False
+    assert res_verdict_tp.validation_status == "VERDICT_EVIDENCE_CONFLICT"
+    assert "TP_CRITERIA_UNSATISFIED" in res_verdict_tp.reason_codes
+
+    # Proposing FALSE_POSITIVE on mixed destination scope without authorization
+    norm_mixed = copy.deepcopy(norm)
+    for r in norm_mixed.records:
+        if r.source_field == "scan.destination_scope":
+            r.observed_value = "internal=5, external=70, total_unique_hosts=75"
+    res_verdict_fp = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="176011",
+        proposed_verdict="FALSE_POSITIVE",
+        model_reason="Mixed internal/external scan without ITSM authorization.",
+        supporting_claims=[],
+        normalization_result=norm_mixed,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_verdict_fp.is_valid is False
+    assert res_verdict_fp.validation_status == "VERDICT_EVIDENCE_CONFLICT"
+    assert "FP_CRITERIA_UNSATISFIED" in res_verdict_fp.reason_codes
+
+    # ------------------------------------------------------------------
+    # 4. IndependentVerdictValidator Integration & Safe Abstention Preservation
+    # ------------------------------------------------------------------
+    contract = RuleEvidenceContract(
+        rule_id=TARGET_RULE_UUID,
+        contract_id=f"EC-{TARGET_RULE_UUID}-V8",
+        status="APPROVED",
+        version_number=8,
+        required_fields=["security.event_type", "event.timestamp", "network.source_ip", "network.destination_port"],
+        conditional_fields=["scan.tcp_behavior_summary", "scan.destination_scope"],
+        optional_fields=[],
+        detection_archetype="NETWORK_SCAN",
+    )
+    preflight = PreflightValidationResult(
+        incident_id="176011",
+        rule_id=TARGET_RULE_UUID,
+        contract_id=contract.contract_id,
+        preflight_status="VALIDATED",
+        evidence_completeness=1.0,
+        missing_evidence_fields=[],
+        critical_missing_fields=[],
+        detected_contradictions=[],
+    )
+    grounding = ClaimGroundingResult(
+        incident_id="176011",
+        total_claims=1,
+        grounded_claims=1,
+        unsupported_claims=0,
+        grounding_ratio=1.0,
+        claims=claims_contra,
+        unsupported_claim_details=[],
+        has_hallucinations=False,
+    )
+
+    # A. Decisive TP with reasoning contradiction overruled to REQUIRES_ATTENTION
+    val_contra = IndependentVerdictValidator.validate_verdict(
+        incident_id="176011",
+        proposed_verdict="TRUE_POSITIVE",
+        raw_model_confidence=90.0,
+        preflight=preflight,
+        claim_grounding=grounding,
+        normalization_result=norm,
+        contract=contract,
+        model_reason="Predominantly unanswered probes with no bidirectional sessions.",
+        confidence_scale="PERCENT_0_100",
+    )
+    assert val_contra.final_verdict == "REQUIRES_ATTENTION"
+    assert val_contra.is_decisive_accepted is False
+    assert val_contra.validation_status in ("REASONING_CONTRADICTION", "VERDICT_EVIDENCE_CONFLICT")
+    assert val_contra.validated_confidence_display == 0.0
+
+    # B. Safe Abstention Preservation: REQUIRES_ATTENTION is preserved without false rejection
+    grounding_neutral = ClaimGroundingResult(
+        incident_id="176011", total_claims=0, grounded_claims=0, unsupported_claims=0,
+        grounding_ratio=1.0, claims=[], unsupported_claim_details=[], has_hallucinations=False,
+    )
+    val_abstain = IndependentVerdictValidator.validate_verdict(
+        incident_id="176011",
+        proposed_verdict="REQUIRES_ATTENTION",
+        raw_model_confidence=0.0,
+        preflight=preflight,
+        claim_grounding=grounding_neutral,
+        normalization_result=norm,
+        contract=contract,
+        model_reason="Insufficient evidence to confirm malicious intent.",
+        confidence_scale="PERCENT_0_100",
+    )
+    assert val_abstain.final_verdict == "REQUIRES_ATTENTION"
+    assert val_abstain.is_decisive_accepted is False
+    assert val_abstain.validation_status == "VALIDATED"
+    assert "EVIDENCE_VALIDATED" in val_abstain.validation_reason_codes
+
+    # C. Ambiguous Scale Rejection via Validator
+    val_ambig = IndependentVerdictValidator.validate_verdict(
+        incident_id="176011",
+        proposed_verdict="TRUE_POSITIVE",
+        raw_model_confidence=0.92,
+        preflight=preflight,
+        claim_grounding=grounding_neutral,
+        normalization_result=norm,
+        contract=contract,
+        model_reason="Valid reasoning without scale.",
+        confidence_scale=None,
+    )
+    assert val_ambig.final_verdict == "REQUIRES_ATTENTION"
+    assert val_ambig.validation_status == "INVALID_MODEL_OUTPUT"
+    assert "AMBIGUOUS_SCALE_REJECTED" in val_ambig.validation_reason_codes
+
+    # ------------------------------------------------------------------
+    # 5. Non-Regression of Sibling Rule (PH_RULE_HEAVY_TCP_HOST_SCAN)
+    # ------------------------------------------------------------------
+    sibling_rule = await db_session.execute(
+        select(Rule).where(Rule.event_type == SIBLING_EVENT_TYPE)
+    )
+    sib_r = sibling_rule.scalar_one_or_none()
+    assert sib_r is not None
+    assert sib_r.id == SIBLING_RULE_UUID
+    assert sib_r.is_active is True
+

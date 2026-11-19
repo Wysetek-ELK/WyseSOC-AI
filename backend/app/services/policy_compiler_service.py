@@ -320,7 +320,7 @@ class PolicyCompilerService:
         compact_contract = (
             '{"incident_id":"<exact incident_id>","rule_id":"<exact rule_id>",'
             '"verdict":"TRUE_POSITIVE|FALSE_POSITIVE|INSUFFICIENT_EVIDENCE|REQUIRES_ATTENTION",'
-            '"confidence":0.0,'
+            '"confidence":0.0 to 100.0,"confidence_scale":"PERCENT_0_100",'
             '"reason":"<concise 1-2 sentence evidence-grounded rationale>",'
             '"supporting_claims":[{"claim_text":"<short fact>","field":"<source_field>",'
             '"asserted_value":"<exact value>","cited_evidence_ids":["<EV-id>"]}],'

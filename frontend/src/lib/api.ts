@@ -45,6 +45,12 @@ export interface IncidentAiVerdictResponse {
   evaluated_by_user?: string;
   validation_status?: string;
   validation_reason_codes?: string[];
+  confidence_scale?: string | null;
+  confidence_interpretation?: string | null;
+  normalized_confidence_percent?: number | null;
+  reasoning_integrity_status?: string | null;
+  reasoning_contradictions?: string[];
+  semantic_review_notes?: string[];
   is_decisive_accepted?: boolean;
   proposal_validation_outcome?: string;
   final_disposition?: string;

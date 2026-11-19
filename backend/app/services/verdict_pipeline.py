@@ -1005,6 +1005,7 @@ async def run_shared_verdict_pipeline(
         compilation_digest=compiled_policy.compilation_digest,
         model_reason=verdict_obj.reason,
         contradictory_evidence=getattr(verdict_obj, "contradictory_evidence", None),
+        confidence_scale=getattr(verdict_obj, "confidence_scale", None),
     )
 
     hist_stats = historical_stats or {"sample_count": 0, "accuracy": None, "is_calibrated": False}
@@ -1084,6 +1085,8 @@ async def run_shared_verdict_pipeline(
         "REJECTED",
         "INSUFFICIENT_EVIDENCE",
         "GUARDRAIL_ABSTAINED",
+        "REASONING_CONTRADICTION",
+        "VERDICT_EVIDENCE_CONFLICT",
     ):
         proposal_validation_outcome = "REJECTED_BY_VALIDATOR"
         final_disposition = "OVERRULED_TO_ANALYST_ATTENTION"
@@ -1143,8 +1146,10 @@ async def run_shared_verdict_pipeline(
             trust_res.trust_score = min(2, trust_res.trust_score)
     elif (
         val_res.detected_contradictions
-        or final_validation_status == "REJECTED"
+        or final_validation_status in ("REJECTED", "REASONING_CONTRADICTION", "VERDICT_EVIDENCE_CONFLICT")
         or "EVIDENCE_CONTRADICTION" in final_reason_codes
+        or "REASONING_CONTRADICTION" in final_reason_codes
+        or "VERDICT_EVIDENCE_CONFLICT" in final_reason_codes
     ):
         if trust_res.trust_score is not None:
             trust_res.trust_score = min(3, trust_res.trust_score)
@@ -1203,6 +1208,12 @@ async def run_shared_verdict_pipeline(
         "proposal_validation_outcome": proposal_validation_outcome,
         "final_disposition": final_disposition,
         "abstention_reason": abstention_reason,
+        "confidence_scale": getattr(val_res, "confidence_scale", None) or getattr(verdict_obj, "confidence_scale", None),
+        "confidence_interpretation": getattr(val_res, "confidence_interpretation", None) or getattr(verdict_obj, "confidence_interpretation", None),
+        "normalized_confidence_percent": getattr(val_res, "normalized_confidence_percent", None) or getattr(verdict_obj, "normalized_confidence_percent", None),
+        "reasoning_integrity_status": getattr(val_res, "reasoning_integrity_status", "NOT_EVALUATED"),
+        "reasoning_contradictions": getattr(val_res, "reasoning_contradictions", []),
+        "semantic_review_notes": getattr(val_res, "semantic_review_notes", []),
         "evidence_completeness": val_res.evidence_completeness,
         "grounding_ratio": val_res.grounding_ratio,
         "total_claims_count": val_res.total_claims_count,

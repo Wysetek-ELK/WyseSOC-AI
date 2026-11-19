@@ -853,6 +853,9 @@ class EmpiricalBenchmarkHarness:
             claim_grounding=grounding,
             normalization_result=norm_result,
             contract=contract,
+            model_reason=str(model_output.get("reason", "")),
+            contradictory_evidence=model_output.get("contradictory_evidence") if isinstance(model_output.get("contradictory_evidence"), list) else None,
+            confidence_scale=model_output.get("confidence_scale"),
         )
 
         # Step 6: Trustworthiness Assessment & Guardrails Evaluation

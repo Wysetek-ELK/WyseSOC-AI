@@ -137,12 +137,14 @@ class ModelClaimExtractor:
                     field_name = str(item.get("field") or "unknown")
                     if field_name == "unknown" and ev_ids and ev_ids[0] in evidence_by_id:
                         field_name = evidence_by_id[ev_ids[0]].source_field
+                    claim_text_val = str(item.get("claim_text") or item.get("claim") or "")
                     claim = ModelSupportingClaim(
                         claim_type=str(item.get("claim_type", "OBSERVED_FACT")),
                         evidence_ids=ev_ids,
                         cited_evidence_ids=ev_ids,
                         field=field_name,
                         asserted_value=asserted,
+                        claim_text=claim_text_val,
                     )
                     claims.append(claim)
 
@@ -160,6 +162,7 @@ class ModelClaimExtractor:
                     evidence_ids=[],
                     field="file.hash_sha256",
                     asserted_value=h.lower(),
+                    claim_text=f"Observed SHA-256 hash {h.lower()}",
                 ))
 
             # Extract MD5 Hashes
@@ -169,6 +172,7 @@ class ModelClaimExtractor:
                     evidence_ids=[],
                     field="file.hash_md5",
                     asserted_value=h.lower(),
+                    claim_text=f"Observed MD5 hash {h.lower()}",
                 ))
 
             # Extract IP Addresses
@@ -178,6 +182,7 @@ class ModelClaimExtractor:
                     evidence_ids=[],
                     field="network.destination_ip",
                     asserted_value=ip,
+                    claim_text=f"Observed network connection to {ip}",
                 ))
 
             # Extract Process Names
@@ -187,6 +192,7 @@ class ModelClaimExtractor:
                     evidence_ids=[],
                     field="process.name",
                     asserted_value=proc.lower(),
+                    claim_text=f"Observed process execution of {proc.lower()}",
                 ))
 
         # 3. Ground Each Claim against Canonical Evidence

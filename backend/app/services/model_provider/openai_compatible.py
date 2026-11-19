@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import httpx
 
 from app.services.model_provider.base import BaseModelProvider, ProviderHealthResponse, StructuredModelVerdict
+from app.services.confidence_normalizer import ConfidenceNormalizer
 
 
 def robust_parse_model_verdict_json(raw_text: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
@@ -592,46 +593,46 @@ class OpenAICompatibleProvider(BaseModelProvider):
                         outbound_payload=payload,
                     )
 
-                # Reject invalid/out-of-range confidence values
+                # V8.2: Deterministic Confidence Normalization & Ambiguous Scale Rejection
                 raw_conf_val = parsed.get("confidence")
-                if raw_conf_val is not None:
-                    try:
-                        conf_num = float(raw_conf_val)
-                        if conf_num != conf_num or conf_num < 0.0 or conf_num > 100.0:
-                            raise ValueError("out_of_range")
-                    except (TypeError, ValueError):
-                        conf_err_msg = f"Model returned invalid confidence value '{raw_conf_val}'; verdict rejected and routed to manual review."
-                        if post_capture_cb and capture_meta:
-                            try:
-                                await post_capture_cb(capture_meta=capture_meta, status="FAILED", error_message=conf_err_msg, latency_ms=latency_ms)
-                            except Exception:
-                                pass
-                        return StructuredModelVerdict(
-                            incident_id=incident_id,
-                            rule_id=rule_id,
-                            verdict="REQUIRES_ATTENTION",
-                            confidence=0.0,
-                            reason=conf_err_msg,
-                            supporting_evidence=[],
-                            supporting_claims=[],
-                            contradictory_evidence=[],
-                            missing_evidence=["Valid confidence score (0-100)"],
-                            analyst_questions=["Review raw LLM output for invalid confidence value"],
-                            recommended_action="Route incident to manual SOC analyst review due to invalid confidence score.",
-                            latency_ms=latency_ms,
-                            model_identifier=self.model_name,
-                            prompt_version_number=prompt_version_number,
-                            validation_status="INVALID_CONFIDENCE",
-                            is_simulated=False,
-                            prompt_tokens=prompt_tokens,
-                            completion_tokens=completion_tokens,
-                            total_tokens=total_tokens,
-                            prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
-                            prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
-                            prompt_integrity_status="UNVERIFIED",
-                            raw_model_response=raw_reply,
-                            outbound_payload=payload,
-                        )
+                raw_conf_scale = parsed.get("confidence_scale")
+                norm_conf = ConfidenceNormalizer.normalize(raw_conf_val, raw_conf_scale)
+                if not norm_conf.is_valid:
+                    conf_err_msg = f"Model confidence validation failed ({norm_conf.interpretation}): {norm_conf.error_message}"
+                    if post_capture_cb and capture_meta:
+                        try:
+                            await post_capture_cb(capture_meta=capture_meta, status="FAILED", error_message=conf_err_msg, latency_ms=latency_ms)
+                        except Exception:
+                            pass
+                    return StructuredModelVerdict(
+                        incident_id=incident_id,
+                        rule_id=rule_id,
+                        verdict="REQUIRES_ATTENTION",
+                        confidence=0.0,
+                        confidence_scale=norm_conf.raw_scale,
+                        confidence_interpretation=norm_conf.interpretation,
+                        normalized_confidence_percent=None,
+                        reason=conf_err_msg,
+                        supporting_evidence=[],
+                        supporting_claims=[],
+                        contradictory_evidence=[],
+                        missing_evidence=["Valid confidence score (0-100)"],
+                        analyst_questions=["Review raw LLM output for invalid or ambiguous confidence value"],
+                        recommended_action="Route incident to manual SOC analyst review due to invalid confidence score.",
+                        latency_ms=latency_ms,
+                        model_identifier=self.model_name,
+                        prompt_version_number=prompt_version_number,
+                        validation_status="INVALID_CONFIDENCE",
+                        is_simulated=False,
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                        total_tokens=total_tokens,
+                        prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
+                        prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
+                        prompt_integrity_status="UNVERIFIED",
+                        raw_model_response=raw_reply,
+                        outbound_payload=payload,
+                    )
 
                 is_truncated = (finish_reason == "length") or bool(parsed.get("_truncated_output", False))
                 # If output was truncated (finish_reason='length' or required JSON truncation repair),
@@ -727,7 +728,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     )
 
                 val_status = "INVALID_SCHEMA" if is_recovered else "VALID"
-                resolved_confidence = float(parsed["confidence"]) if parsed.get("confidence") is not None else 0.0
+                resolved_confidence = norm_conf.normalized_percent if norm_conf.is_valid and norm_conf.normalized_percent is not None else 0.0
                 rec_action = parsed.get("recommended_action")
                 if not rec_action:
                     if raw_verdict_str == "TRUE_POSITIVE":
@@ -758,6 +759,9 @@ class OpenAICompatibleProvider(BaseModelProvider):
                     rule_id=rule_id,
                     verdict=raw_verdict_str,
                     confidence=resolved_confidence,
+                    confidence_scale=norm_conf.raw_scale,
+                    confidence_interpretation=norm_conf.interpretation,
+                    normalized_confidence_percent=norm_conf.normalized_percent,
                     reason=str(parsed.get("reason", "")),
                     supporting_evidence=parsed.get("supporting_evidence", []) if isinstance(parsed.get("supporting_evidence"), list) else [],
                     supporting_claims=supporting_claims,

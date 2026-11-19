@@ -10,7 +10,7 @@ class VerdictValidationResult(BaseModel):
     incident_id: str
     proposed_verdict: str = Field(..., description="Verdict proposed by the LLM or simulation")
     final_verdict: str = Field(..., description="Authoritative validated verdict accepted by the system")
-    validation_status: str = Field(..., description="VALIDATED, ABSTAINED, REJECTED, INSUFFICIENT_EVIDENCE, INVALID_MODEL_OUTPUT")
+    validation_status: str = Field(..., description="VALIDATED, ABSTAINED, REJECTED, INSUFFICIENT_EVIDENCE, INVALID_MODEL_OUTPUT, REASONING_CONTRADICTION, VERDICT_EVIDENCE_CONFLICT, SEMANTIC_REVIEW_REQUIRED, SAFE_ABSTENTION")
     validation_reason_codes: List[str] = Field(default_factory=list, description="Machine-readable diagnostic reason codes")
     is_decisive_accepted: bool = Field(False, description="True if proposed TP or FP was accepted; False if routed to REQUIRES_ATTENTION")
     proposal_validation_outcome: Optional[str] = Field(None, description="VALID_DECISIVE_PROPOSAL, MODEL_ABSTENTION, REJECTED_BY_VALIDATOR, or INVALID_MODEL_OUTPUT")
@@ -30,6 +30,12 @@ class VerdictValidationResult(BaseModel):
     contract_version: int = 1
     validator_version: str = "2.0.0"
     raw_model_confidence: float = 0.0
+    confidence_scale: Optional[str] = None
+    confidence_interpretation: Optional[str] = None
+    normalized_confidence_percent: Optional[float] = None
+    reasoning_integrity_status: Optional[str] = "NOT_EVALUATED"
+    reasoning_contradictions: List[str] = Field(default_factory=list)
+    semantic_review_notes: List[str] = Field(default_factory=list)
     validated_confidence_display: Optional[float] = None
     replay_signature: str = ""
 

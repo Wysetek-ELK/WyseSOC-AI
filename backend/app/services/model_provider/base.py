@@ -17,6 +17,9 @@ class StructuredModelVerdict(BaseModel):
     rule_id: str
     verdict: str = Field(..., description="TRUE_POSITIVE, FALSE_POSITIVE, or REQUIRES_ATTENTION")
     confidence: float = Field(100.0, ge=0.0, le=100.0)
+    confidence_scale: Optional[str] = Field(None, description="PERCENT_0_100 or PROBABILITY_0_1")
+    confidence_interpretation: Optional[str] = Field(None, description="Interpretation of confidence score/scale")
+    normalized_confidence_percent: Optional[float] = Field(None, description="Canonical normalized confidence 0.0-100.0")
     reason: str = Field(..., description="Technical justification for verdict")
     supporting_evidence: List[str] = Field(default_factory=list)
     supporting_claims: List[Dict[str, Any]] = Field(default_factory=list, description="Structured factual claims citing evidence IDs")
