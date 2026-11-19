@@ -1836,7 +1836,7 @@ function AgentIntelligenceStudioContent() {
   const activeVersion = rulePrompt?.versions.find((v) => v.id === rulePrompt.active_version_id) || null;
   const candidateDraft = rulePrompt?.versions.find((v) => v.status === "DRAFT") || null;
 
-  const nextRecommendedAction = React.useMemo(() => {
+  const nextRecommendedAction = (() => {
     if (!rulePrompt || rulePrompt.versions.length === 0) {
       return {
         label: "Create Draft Policy",
@@ -1925,7 +1925,7 @@ function AgentIntelligenceStudioContent() {
       badge: "Operational Active",
       badgeColor: "bg-cyan-950/80 text-cyan-300 border-cyan-800",
     };
-  }, [rulePrompt, selectedVersion, qualityAssessment, hasHardGateFailure, learningProfile, isApprovalEligible, selectedRuleId, selectedVersionId]);
+  })();
 
   return (
     <div className="space-y-3">
