@@ -1599,7 +1599,7 @@ async def test_14_v83a_evidence_verified_guardrails_and_analyst_workflow(db_sess
     assert rev_result["analyst_verdict"] == "FALSE_POSITIVE"
     assert rev_result["revealed_ai_verdict"] == "FALSE_POSITIVE"
     assert rev_result["revealed_ai_confidence"] == 92.0
-    assert rev_result["comparison_outcome"] == "AGREEMENT"
+    assert rev_result["comparison_outcome"] == "AGREEMENT_FP"
 
     # 3. Duplicate submission idempotency (same reviewer submits again)
     dup_result = await AnalystReviewService.submit_analyst_review(
