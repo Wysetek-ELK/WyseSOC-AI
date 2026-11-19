@@ -106,5 +106,22 @@
     "local_llm_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
     "local_llm_temperature": 0.01,
     "local_llm_config_modified": false
+  },
+  "deployment_evidence": {
+    "upla_execution_id": "upla-20261119-161220-76d2e5",
+    "verified_git_commit_sha": "f8fbef203626762e56087d9e334ac7ca6d28a13a",
+    "git_branch": "feature/phase3-compact-ui",
+    "remote_server": "172.26.41.240",
+    "deployment_status": "DEPLOYED_AND_VERIFIED",
+    "alembic_remote_migration": "014_policy_version_history_management applied on wyse_soc_db",
+    "remote_services": [
+      "ai-verdict-backend.service",
+      "ai-verdict-frontend.service"
+    ],
+    "health_checks": {
+      "frontend_login": "200 OK (http://127.0.0.1:3000/login)",
+      "backend_health": "200 OK (http://127.0.0.1:8000/api/health)"
+    },
+    "rollback_needed": false
   }
 }

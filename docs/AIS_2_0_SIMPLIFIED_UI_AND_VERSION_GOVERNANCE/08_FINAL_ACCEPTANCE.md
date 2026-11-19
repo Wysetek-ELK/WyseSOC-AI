@@ -40,6 +40,23 @@
 
 ---
 
-## 3. Production Recommendation
+## 3. Production Deployment & Live Server Verification
+
+- **UPLA Execution ID**: `upla-20261119-161220-76d2e5`
+- **Verified Git SHA**: `f8fbef203626762e56087d9e334ac7ca6d28a13a` (pushed to branch `feature/phase3-compact-ui`)
+- **Remote Target Server**: `root@172.26.41.240` (Server 1 application host)
+- **Deployment Status**: `DEPLOYED_AND_VERIFIED` (`PASS`)
+- **Alembic Database Migration**: Revision `014_policy_version_history_management` successfully applied to remote PostgreSQL `wyse_soc_db`.
+- **Host Unit & Integration Tests**: `pytest tests/test_ais_heavy_tcp_e2e.py tests/test_rule_learning_platform.py tests/test_api_422_remediation.py -q` passed with 0 failures.
+- **Frontend Host Build**: `npm run build` compiled Next.js optimized production bundle cleanly.
+- **Service Verification**: `ai-verdict-backend.service` and `ai-verdict-frontend.service` restarted and active.
+- **Health Check Status**:
+  - `http://127.0.0.1:3000/login` -> 200 OK
+  - `http://127.0.0.1:8000/api/health` -> 200 OK
+- **Rollback Status**: `NOT_NEEDED`
+
+---
+
+## 4. Production Recommendation
 
 The upgraded Agent Intelligence Studio 2.0 workspace satisfies all functional, architectural, security, and design criteria. It significantly simplifies daily SOC analyst workflows, eliminates misleading readiness warnings, and provides robust policy version history governance.
