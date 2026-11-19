@@ -1633,7 +1633,7 @@ async def test_14_v83a_evidence_verified_guardrails_and_analyst_workflow(db_sess
         adjudicator_id="lead_investigator_admin",
     )
     await db_session.commit()
-    assert adj_result["status"] == "ADJUDICATED"
+    assert adj_result["ground_truth_status"] == "ADJUDICATED"
     assert adj_result["final_verdict"] == "FALSE_POSITIVE"
 
 
