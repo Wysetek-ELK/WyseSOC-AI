@@ -292,6 +292,8 @@ export default function AgentConfigurationPage() {
         timeout,
         mock_fallback: mockFallback,
       });
+      setHost(updated.host || host.trim());
+      setUsername(updated.username || username.trim());
       setIsPasswordSet(updated.is_password_set);
       setIsConfigured(updated.is_configured);
       setPassword(""); // Clear input after successful save

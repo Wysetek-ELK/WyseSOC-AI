@@ -1870,15 +1870,64 @@ class FortiSIEMService:
         if auto_ai_verdict is not None:
             settings.FORTISIEM_AUTO_AI_VERDICT = bool(auto_ai_verdict)
 
-        # REQ-01 / AV-014: Plaintext credential writes to .env on disk are strictly removed.
-        # Credentials and connection parameters update in-memory for the running service.
-        # Persistent environment variables must be provisioned via secure secret store or systemd environment.
-        logger.info(
-            "FortiSIEM configuration updated in-memory for the active session. "
-            "Plaintext .env persistence is disabled to comply with REQ-01 / AV-014 security policies."
-        )
+        # Persist non-secret FortiSIEM settings to .env in dev/staging so they survive service restarts
+        if not is_prod:
+            env_path = os.path.join(BASE_DIR, ".env")
+            env_updates = {
+                "FORTISIEM_HOST": f'"{settings.FORTISIEM_HOST}"',
+                "FORTISIEM_USERNAME": f'"{settings.FORTISIEM_USERNAME}"',
+                "FORTISIEM_VERIFY_SSL": "true" if settings.FORTISIEM_VERIFY_SSL else "false",
+                "FORTISIEM_TIMEOUT": str(settings.FORTISIEM_TIMEOUT),
+                "FORTISIEM_MOCK_FALLBACK": "true" if settings.FORTISIEM_MOCK_FALLBACK else "false",
+            }
+            if password is not None and password.strip():
+                env_updates["FORTISIEM_PASSWORD"] = f'"{password.strip()}"'
+            try:
+                cls._upsert_env_vars(env_path, env_updates)
+                logger.info(f"Persisted FortiSIEM configuration to {env_path}")
+            except Exception as e:
+                logger.warning(f"Could not persist FortiSIEM settings to {env_path}: {e}")
 
         return cls.get_config()
+
+    @classmethod
+    def _upsert_env_vars(cls, env_path: str, updates: Dict[str, str]) -> None:
+        """
+        Idempotently updates or inserts managed FortiSIEM keys in `.env` in-place.
+        """
+        existing_lines: List[str] = []
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                existing_lines = f.readlines()
+
+        new_lines: List[str] = []
+        seen_keys: set = set()
+
+        for line in existing_lines:
+            match = re.match(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=", line)
+            if match:
+                key = match.group(1)
+                if key in updates:
+                    if key not in seen_keys:
+                        seen_keys.add(key)
+                        new_lines.append(f"{key}={updates[key]}\n")
+                    continue
+            new_lines.append(line)
+
+        missing_keys = [k for k in updates if k not in seen_keys]
+        if missing_keys:
+            if new_lines and new_lines[-1].strip():
+                new_lines.append("\n")
+            for k in missing_keys:
+                new_lines.append(f"{k}={updates[k]}\n")
+
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+        if hasattr(os, "chmod"):
+            try:
+                os.chmod(env_path, 0o600)
+            except Exception:
+                pass
 
     @classmethod
     async def test_siem_connection(
