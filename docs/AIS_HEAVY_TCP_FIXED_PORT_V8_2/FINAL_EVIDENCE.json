@@ -1,0 +1,264 @@
+{
+  "schema_version": "2.2.0",
+  "phase": "AIS_2_0_V8_2_REASONING_INTEGRITY_AND_CALIBRATION",
+  "generated_at_utc": "2026-11-19T03:40:00Z",
+  "final_acceptance_verdict": "V8.2 ENGINEERING VALIDATED — ANALYST GROUND TRUTH PENDING — EMPIRICAL ACCURACY NOT MEASURABLE — PRODUCTION AUTOMATION BLOCKED",
+  "overall_recommendation": "KEEP_APPROVED_V7_ACTIVE_AND_RETAIN_V8_AS_DRAFT",
+  "empirical_accuracy_status": "NOT_MEASURABLE",
+  "production_readiness_status": "BLOCKED",
+  "target_rule": {
+    "name": "Heavy TCP Host Scan On Fixed Port",
+    "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+    "canonical_uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "authoritative_threshold": "COUNT(DISTINCT destIpAddr) >= 100 AND destIpPort IS NOT NULL AND ipProto = 6",
+    "window_seconds": 180
+  },
+  "sibling_rule_isolation": {
+    "name": "Heavy TCP Host Scan",
+    "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN",
+    "canonical_uuid": "9839fa49-40ac-4676-abcc-4c5581ae9e09",
+    "active_version_number": 2,
+    "active_version_status": "APPROVED",
+    "status": "ELIGIBLE",
+    "modified": false
+  },
+  "policies": {
+    "active_approved_v7": {
+      "version_id": "d79fb576-c6b9-4f63-9167-3c7a2419b70a",
+      "version_number": 7,
+      "status": "APPROVED",
+      "modified": false
+    },
+    "candidate_draft_v8": {
+      "version_id": "20d4f788-85a5-437d-afbe-fe7fd80abca1",
+      "version_number": 8,
+      "status": "DRAFT",
+      "policy_digest": "c5e87a1ec6ac82c43ed07e62271850521456719da8800299256a897c91f8352b",
+      "compilation_digest": "a7e3c745e689c076c98c08ba07f6561cc3e84313c21f2b824b91d9a9bafe5460",
+      "quality_score": 85.0,
+      "g1_g7_passed": true,
+      "g8_passed": false,
+      "blocking_issues_count": 0,
+      "auto_approved": false,
+      "modified": false
+    }
+  },
+  "deployment": {
+    "branch": "feature/phase3-compact-ui",
+    "server_1_live_deployed_sha": "47a49510bed17fd94064d23ddfc912357a2d5cdf",
+    "upla_deployment_id": "upla-20261119-032142-a3784a",
+    "server_1_live_health": {
+      "status": "healthy",
+      "database_latency_ms": 2.16,
+      "redis_status": "healthy",
+      "live_triage_queue_depth": 0,
+      "cpu_percent": 0.5,
+      "memory_percent": 11.6
+    },
+    "server_2_llm": {
+      "model_name": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "status": "ONLINE",
+      "verified_max_model_len": 4096,
+      "gpu_telemetry_verified": false,
+      "circuit_breaker_state": "CLOSED",
+      "restarted_or_modified": false
+    },
+    "pytest_on_live": {
+      "passed": 25,
+      "failed": 0,
+      "duration_seconds": 6.45,
+      "test_files": [
+        "tests/test_ais_heavy_tcp_e2e.py",
+        "tests/test_rule_learning_platform.py",
+        "tests/test_api_422_remediation.py"
+      ]
+    }
+  },
+  "real_llm_benchmark_v8_2": {
+    "run_id": "2074b011-9fe8-46fb-9937-ff5ead18fc61",
+    "executed_at_utc": "2026-11-19T03:35:04Z",
+    "deployed_sha": "47a49510bed17fd94064d23ddfc912357a2d5cdf",
+    "provider_type": "OPENAI_COMPATIBLE",
+    "is_simulated": false,
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_identifier": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "context_window_budget": {
+      "max_model_len": 4096,
+      "reserved_completion_tokens": 768,
+      "available_prompt_budget": 3328
+    },
+    "cohort_incident_ids": ["176122", "176011", "167157", "175129", "173449", "164575"],
+    "comparison_baselines": {
+      "historical_v7_run_id": "ca113d0a-114d-4322-99fd-2519bb21a5b5",
+      "historical_v8_run_id": "9e2ebd30-e039-440a-89fd-0b37700c87c2",
+      "optimized_v8_1_run_id": "a95cd268-7c2b-43c6-8355-1dd27770d6bf"
+    },
+    "aggregate_metrics": {
+      "inferred_count": 6,
+      "evaluated_ground_truth_cases": 0,
+      "output_truncation_count": 0,
+      "contradictions_detected_count": 4,
+      "contradictions_neutralized_count": 4,
+      "effective_abstentions_count": 6,
+      "schema_parse_failure_count": 0,
+      "hash_match_verified_count": 6,
+      "total_prompt_tokens": 19075,
+      "total_completion_tokens": 3217,
+      "total_tokens": 22292
+    },
+    "per_incident_results": [
+      {
+        "incident_id": "176122",
+        "tenant": "GDC_NOC",
+        "raw_events_count": 0,
+        "suggested_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "model_confidence": 0.0,
+        "confidence_scale": "PERCENT_0_100",
+        "trust_score": 6,
+        "raw_trust_score": 84.0,
+        "validation_status": "ABSTAINED",
+        "validation_reason_codes": ["EVIDENCE_CONTRACT_UNVERIFIED"],
+        "prompt_tokens": 3129,
+        "completion_tokens": 273,
+        "total_tokens": 3402,
+        "capture_id": "895d3523-c644-4a56-9ef3-0db329fd7c80",
+        "prompt_sha256": "400efa4fb051cdb475418f7e984c2ffe8aee21ab3fbda72bb7e5a634c1fa1559"
+      },
+      {
+        "incident_id": "176011",
+        "tenant": "GDC_NOC",
+        "raw_events_count": 100,
+        "suggested_verdict": "TRUE_POSITIVE",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "model_confidence": 95.0,
+        "confidence_scale": "PERCENT_0_100",
+        "trust_score": 3,
+        "raw_trust_score": 79.0,
+        "validation_status": "REASONING_CONTRADICTION",
+        "validation_reason_codes": [
+          "EVIDENCE_CONTRACT_UNVERIFIED",
+          "REASONING_CONTRADICTION",
+          "VERDICT_EVIDENCE_CONFLICT",
+          "TP_CRITERIA_UNSATISFIED"
+        ],
+        "contradictions": [
+          "Contradiction: Model narrative claims predominantly unanswered probes / no bidirectional sessions, but observed telemetry confirms bidirectional_sessions=100 and unanswered_probes=0 (100/100 bidirectional sessions, 0 unanswered probes).",
+          "Contradiction: Model asserted traffic was denied or blocked flows, but observed telemetry confirms denied_flows=0.",
+          "Verdict Conflict: Proposed TRUE_POSITIVE contradicts observed telemetry showing 100% external bidirectional browsing (bidirectional=100, unanswered=0, denied=0, internal=0, policy=policy=Cybersecurity; service=Browsing) without corroborating scan indicators, probe timeouts, or lateral attack tradecraft."
+        ],
+        "prompt_tokens": 3186,
+        "completion_tokens": 552,
+        "total_tokens": 3738,
+        "capture_id": "c471e494-37dd-4d88-98d6-1cf8ceb01acd",
+        "prompt_sha256": "b7764e139abb03c0dcbcc36c3dc2cb44aeeed683135f058563d429bd2c3f1d01"
+      },
+      {
+        "incident_id": "167157",
+        "tenant": "Demo-SOC",
+        "raw_events_count": 100,
+        "suggested_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "model_confidence": 0.0,
+        "confidence_scale": "PERCENT_0_100",
+        "trust_score": 6,
+        "raw_trust_score": 79.0,
+        "validation_status": "ABSTAINED",
+        "validation_reason_codes": ["EVIDENCE_CONTRACT_UNVERIFIED"],
+        "prompt_tokens": 3202,
+        "completion_tokens": 439,
+        "total_tokens": 3641,
+        "capture_id": "7bd22a3e-2d6e-4f0c-95ad-b721018d3a92",
+        "prompt_sha256": "68626d3c5eb18381da4220721baf9beff05ffd639df50fffc929e63e85193926"
+      },
+      {
+        "incident_id": "175129",
+        "tenant": "GDC_NOC",
+        "raw_events_count": 100,
+        "suggested_verdict": "TRUE_POSITIVE",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "model_confidence": 95.0,
+        "confidence_scale": "PERCENT_0_100",
+        "trust_score": 3,
+        "raw_trust_score": 79.0,
+        "validation_status": "REASONING_CONTRADICTION",
+        "validation_reason_codes": [
+          "EVIDENCE_CONTRACT_UNVERIFIED",
+          "REASONING_CONTRADICTION",
+          "VERDICT_EVIDENCE_CONFLICT",
+          "TP_CRITERIA_UNSATISFIED"
+        ],
+        "contradictions": [
+          "Contradiction: Model narrative claims predominantly unanswered probes / no bidirectional sessions, but observed telemetry confirms bidirectional_sessions=100 and unanswered_probes=0 (100/100 bidirectional sessions, 0 unanswered probes).",
+          "Verdict Conflict: Proposed TRUE_POSITIVE contradicts observed telemetry showing 100% external bidirectional browsing (bidirectional=100, unanswered=0, denied=0, internal=0, policy=policy=Cybersecurity; service=Browsing) without corroborating scan indicators, probe timeouts, or lateral attack tradecraft."
+        ],
+        "prompt_tokens": 3182,
+        "completion_tokens": 683,
+        "total_tokens": 3865,
+        "capture_id": "b99e97d8-09ce-4874-9d4b-91f6c99badee",
+        "prompt_sha256": "6f6252ab18d63453080979673484fdebd10a62bc3cb0f18834184821368c0860"
+      },
+      {
+        "incident_id": "173449",
+        "tenant": "GDC_NOC",
+        "raw_events_count": 100,
+        "suggested_verdict": "TRUE_POSITIVE",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "model_confidence": 95.0,
+        "confidence_scale": "PERCENT_0_100",
+        "trust_score": 3,
+        "raw_trust_score": 79.0,
+        "validation_status": "REASONING_CONTRADICTION",
+        "validation_reason_codes": [
+          "EVIDENCE_CONTRACT_UNVERIFIED",
+          "REASONING_CONTRADICTION"
+        ],
+        "contradictions": [
+          "Contradiction: Model narrative claims predominantly unanswered probes / no bidirectional sessions, but observed telemetry confirms bidirectional_sessions=97 and unanswered_probes=3 (97/100 bidirectional sessions, 0 unanswered probes).",
+          "Contradiction: Model asserted traffic was denied or blocked flows, but observed telemetry confirms denied_flows=0."
+        ],
+        "prompt_tokens": 3188,
+        "completion_tokens": 557,
+        "total_tokens": 3745,
+        "capture_id": "a1659236-c08e-42da-8cd8-468cd7ff5088",
+        "prompt_sha256": "ea5e100e0c75201504552514ff076bd1dffdb7f5f5039fe6ce935b855f4c1472"
+      },
+      {
+        "incident_id": "164575",
+        "tenant": "Demo-SOC",
+        "raw_events_count": 100,
+        "suggested_verdict": "TRUE_POSITIVE",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "model_confidence": 95.0,
+        "confidence_scale": "PERCENT_0_100",
+        "trust_score": 3,
+        "raw_trust_score": 79.0,
+        "validation_status": "REASONING_CONTRADICTION",
+        "validation_reason_codes": [
+          "EVIDENCE_CONTRACT_UNVERIFIED",
+          "REASONING_CONTRADICTION",
+          "VERDICT_EVIDENCE_CONFLICT",
+          "TP_CRITERIA_UNSATISFIED"
+        ],
+        "contradictions": [
+          "Contradiction: Model narrative claims predominantly unanswered probes / no bidirectional sessions, but observed telemetry confirms bidirectional_sessions=100 and unanswered_probes=0 (100/100 bidirectional sessions, 0 unanswered probes).",
+          "Contradiction: Model asserted zero bidirectional sessions, but observed telemetry confirms bidirectional_sessions=100.",
+          "Verdict Conflict: Proposed TRUE_POSITIVE contradicts observed telemetry showing 100% external bidirectional browsing (bidirectional=100, unanswered=0, denied=0, internal=0, policy=policy=Cyble-Internet-Access; service=HTTPS) without corroborating scan indicators, probe timeouts, or lateral attack tradecraft."
+        ],
+        "prompt_tokens": 3188,
+        "completion_tokens": 713,
+        "total_tokens": 3901,
+        "capture_id": "31be1d1a-63cf-4c0a-9c9b-9105db3a7aeb",
+        "prompt_sha256": "912c311890daeea539f681d498cdbcffe34240fea9a6d75430615674ba8cfa91"
+      }
+    ]
+  },
+  "safety_invariants": {
+    "active_policy_remains_v7": true,
+    "candidate_policy_remains_draft": true,
+    "sibling_rule_remains_approved_v2": true,
+    "production_automation_disabled": true,
+    "fortisiem_live_closures_count": 0,
+    "server_2_vllm_restarted_or_modified": false
+  }
+}
