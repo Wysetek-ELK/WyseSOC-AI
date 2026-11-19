@@ -387,8 +387,10 @@ class HistoricalEligibilityService:
                 partitions[part] = partitions.get(part, 0) + 1
                 overall_partitions[part] = overall_partitions.get(part, 0) + 1
 
-            g8_elig = "ELIGIBLE" if eligible >= 5 else "INSUFFICIENT_DATA"
-            cal_elig = "ELIGIBLE" if (eligible >= 30 and verified_tp >= 3 and verified_fp >= 3) else "INSUFFICIENT_DATA"
+            exploratory_elig = "ELIGIBLE" if eligible >= 5 else "INSUFFICIENT_DATA"
+            cal_elig = "ELIGIBLE" if (eligible >= 30 and verified_tp >= 10 and verified_fp >= 10) else "INSUFFICIENT_DATA"
+            prod_elig = "ELIGIBLE" if (eligible >= 100 and verified_tp >= 25 and verified_fp >= 50) else "INSUFFICIENT_DATA"
+            g8_elig = "EXPLORATORY_ELIGIBLE" if eligible >= 5 else "INSUFFICIENT_DATA"
 
             rule_reports.append(
                 {
@@ -412,14 +414,42 @@ class HistoricalEligibilityService:
                         for k, v in sorted(missing_fields_map.items(), key=lambda kv: -kv[1])
                     ],
                     "g8_eligibility": g8_elig,
+                    "exploratory_evaluation_eligibility": exploratory_elig,
                     "calibration_eligibility": cal_elig,
+                    "production_certification_eligibility": prod_elig,
                     "governance_readiness": {
-                        "g8_min_samples_met": eligible >= 5,
+                        "exploratory_evaluation_met": eligible >= 5,
+                        "calibration_evaluation_met": eligible >= 30 and verified_tp >= 10 and verified_fp >= 10,
+                        "production_certification_met": eligible >= 100 and verified_tp >= 25 and verified_fp >= 50,
                         "sample_threshold_alone_sufficient": False,
+                        "evaluation_tiers": {
+                            "exploratory": {
+                                "min_samples": 5,
+                                "status": exploratory_elig,
+                                "purpose": "Directional exploration and regression checks. Strictly non-certifying for production.",
+                            },
+                            "calibration": {
+                                "min_samples": 30,
+                                "min_tp": 10,
+                                "min_fp": 10,
+                                "status": cal_elig,
+                                "purpose": "Confidence score calibration and Wilson score statistical confidence.",
+                            },
+                            "production": {
+                                "min_samples": 100,
+                                "min_tp": 25,
+                                "min_fp": 50,
+                                "status": prod_elig,
+                                "purpose": "Certified autonomous closure in controlled production.",
+                            },
+                        },
                         "autonomous_requires": [
                             "APPROVED policy version with zero structural blockers (G1-G7)",
                             "Non-simulated OPENAI_COMPATIBLE Gate G8 EVALUATED_PASSED run on exact active policy_digest",
-                            "Balanced empirical accuracy >= 80% with zero critical false negatives",
+                            "At least 100 verified evaluations (>=25 TP, >=50 FP) with Verified Accuracy >= 95.0%",
+                            "Observed FP Precision >= 99.0% and Wilson 95% lower bound >= 96.0%",
+                            "Zero critical missed True Positives (100% safety on attacks)",
+                            "Explicit independent Administrator approval",
                         ],
                     },
                     "ml_reevaluation_audit": rule_ml_audit,
@@ -437,16 +467,26 @@ class HistoricalEligibilityService:
             totals["duplicate_group_count"] += len(duplicate_clusters)
             totals["eligible_independent_count"] += eligible
 
-        overall_g8 = "ELIGIBLE" if totals["eligible_independent_count"] >= 5 else "INSUFFICIENT_DATA"
+        overall_exploratory = "ELIGIBLE" if totals["eligible_independent_count"] >= 5 else "INSUFFICIENT_DATA"
         overall_cal = (
             "ELIGIBLE"
             if (
                 totals["eligible_independent_count"] >= 30
-                and totals["verified_tp_count"] >= 3
-                and totals["verified_fp_count"] >= 3
+                and totals["verified_tp_count"] >= 10
+                and totals["verified_fp_count"] >= 10
             )
             else "INSUFFICIENT_DATA"
         )
+        overall_prod = (
+            "ELIGIBLE"
+            if (
+                totals["eligible_independent_count"] >= 100
+                and totals["verified_tp_count"] >= 25
+                and totals["verified_fp_count"] >= 50
+            )
+            else "INSUFFICIENT_DATA"
+        )
+        overall_g8 = "EXPLORATORY_ELIGIBLE" if totals["eligible_independent_count"] >= 5 else "INSUFFICIENT_DATA"
 
         return {
             "generated_at": utc_now().isoformat() + "Z",
@@ -459,10 +499,14 @@ class HistoricalEligibilityService:
             "summary": {
                 **totals,
                 "g8_eligibility": overall_g8,
+                "exploratory_evaluation_eligibility": overall_exploratory,
                 "calibration_eligibility": overall_cal,
+                "production_certification_eligibility": overall_prod,
                 "exclusion_reasons": overall_exclusion_reasons,
                 "governance_readiness": {
-                    "min_sample_threshold": 5,
+                    "exploratory_evaluation_met": totals["eligible_independent_count"] >= 5,
+                    "calibration_evaluation_met": totals["eligible_independent_count"] >= 30 and totals["verified_tp_count"] >= 10 and totals["verified_fp_count"] >= 10,
+                    "production_certification_met": totals["eligible_independent_count"] >= 100 and totals["verified_tp_count"] >= 25 and totals["verified_fp_count"] >= 50,
                     "sample_threshold_alone_sufficient": False,
                     "autonomous_operation_requires_empirical_g8_pass": True,
                 },

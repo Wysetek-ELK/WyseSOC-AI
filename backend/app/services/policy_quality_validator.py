@@ -822,7 +822,15 @@ class PolicyQualityValidator:
 
         sim_status = SimulationStatus.EVALUATED_PASSED
         score = 15.0
-        details = f"Simulation PASSED on {sample_count} historical incidents ({eligible_count} verified ground-truth cases). Zero critical regressions."
+        if eligible_count < 100:
+            warns.append(
+                f"G8_EXPLORATORY_EVALUATION: Sample size (evaluated={sample_count}, eligible={eligible_count}) "
+                f"satisfies exploratory testing but is below production certification threshold (>=100 verified cases with >=25 TP and >=50 FP). "
+                "Non-certifying for autonomous production promotion."
+            )
+            details = f"Simulation PASSED exploratory evaluation on {sample_count} historical incidents ({eligible_count} verified ground-truth cases). Zero critical regressions. Production certification requires >=100 verified cases."
+        else:
+            details = f"Simulation PASSED on {sample_count} historical incidents ({eligible_count} verified ground-truth cases). Zero critical regressions."
         return score, GateStatus.PASSED, sim_status, blockers, warns, details
 
     # -------------------------------------------------------------------------

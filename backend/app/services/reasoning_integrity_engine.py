@@ -144,7 +144,7 @@ class ReasoningIntegrityEngine:
                 contradictions.append(
                     f"Contradiction: Model narrative claims predominantly unanswered probes / no bidirectional sessions, "
                     f"but observed telemetry confirms bidirectional_sessions={bidir} and unanswered_probes={unans} "
-                    f"({bidir}/{sampled} bidirectional sessions, 0 unanswered probes)."
+                    f"({bidir}/{sampled} bidirectional sessions, {unans} unanswered probes)."
                 )
                 reason_codes.append("REASONING_CONTRADICTION")
 
@@ -216,15 +216,24 @@ class ReasoningIntegrityEngine:
                         f"Sample Context Note: Model discussion of host count ({samp_h}) reflects the sampled window, "
                         f"while authoritative SIEM aggregation verified {trig_c} distinct hosts."
                     )
+        elif "scan.sample_context" in record_map:
+            semantic_notes.append(
+                "Sample Window Scope: Telemetry represents a sampled 100-event window slice. "
+                "Missing corroboration in the sample slice is distinguished from verified absence of malicious behavior."
+            )
 
         # -------------------------------------------------------------
         # Check 5: Firewall Action Semantics Guardrail
         # -------------------------------------------------------------
-        # Distinguish between observing client-rst (which is normal TCP teardown) vs claiming it was unanswered
-        # (covered by Check 1, but we ensure factual neutral notes on client-rst are not falsely flagged)
-        if "client-rst" in narrative_lower and not has_unanswered_claim:
-            # Neutral observation of client-rst action: legitimate
-            pass
+        # Distinguish between observing client-rst (normal TCP teardown) vs server-rst (rejection/termination)
+        if "server-rst" in narrative_lower:
+            semantic_notes.append(
+                "Firewall Action Note: server-rst indicates reset/rejection from destination endpoint (e.g. closed port or drop)."
+            )
+        if "client-rst" in narrative_lower:
+            semantic_notes.append(
+                "Firewall Action Note: client-rst indicates client-initiated teardown, standard in web browsing session closure or connection reuse."
+            )
 
         # -------------------------------------------------------------
         # Outcome Determination
@@ -264,6 +273,11 @@ class ReasoningIntegrityEngine:
         Phase 3 Verdict Consistency Engine:
         Validates whether observed telemetry actually justifies a decisive TP or FP proposal
         under the rule-specific policy criteria.
+        Reconciled in V8.3:
+        - Rejects unsupported reasoning without falsely rejecting legitimate TPs that resemble browsing.
+        - Recognizes that bidirectional TCP / port 443 can still be malicious if corroborating threat
+          intelligence, exploit tradecraft, brute-force, or unauthorized scanning tools are cited.
+        - Recognizes that internal sweeps with documented scanner/change authorization qualify as FP.
         """
         clean_prop = str(proposed_verdict or "REQUIRES_ATTENTION").upper().strip()
         record_map: Dict[str, Any] = {
@@ -272,6 +286,67 @@ class ReasoningIntegrityEngine:
 
         tcp_behavior = cls.parse_tcp_behavior(record_map.get("scan.tcp_behavior_summary"))
         dest_scope = cls.parse_destination_scope(record_map.get("scan.destination_scope"))
+
+        reason_str = str(model_reason or "").strip()
+        claim_texts = [
+            str(getattr(c, "claim_text", "") or getattr(c, "asserted_value", "") or "").strip()
+            for c in supporting_claims
+        ]
+        combined_narrative = f"{reason_str} {' '.join(claim_texts)}".lower()
+
+        # Check for concrete corroborating malicious indicators
+        has_corroborating_malice = any(
+            term in combined_narrative
+            for term in (
+                "threat intelligence",
+                "threat intel",
+                "malicious ip",
+                "c2",
+                "command and control",
+                "botnet",
+                "exploit",
+                "payload",
+                "brute force",
+                "brute-force",
+                "directory traversal",
+                "directory harvest",
+                "vulnerability scan",
+                "vulnerability assessment",
+                "web crawler",
+                "reconnaissance tool",
+                "unauthorized tool",
+                "credential",
+                "exfiltration",
+                "malware",
+                "trojan",
+                "cobalt strike",
+                "sql injection",
+                "sqli",
+                "xss",
+                "active probe",
+                "host enumeration",
+                "compromised host",
+            )
+        )
+
+        # Check for documented administrative/scanner authorization
+        has_authorization = any(
+            term in combined_narrative
+            for term in (
+                "authorized scanner",
+                "vulnerability assessment ticket",
+                "approved change",
+                "change window",
+                "maintenance window",
+                "authorized admin",
+                "authorized sweep",
+                "security assessment ticket",
+                "authorized maintenance",
+                "itsm ticket",
+                "change ticket",
+                "authorized penetration test",
+            )
+        )
 
         # -------------------------------------------------------------
         # True Positive Consistency Rules for Network Scan
@@ -284,9 +359,6 @@ class ReasoningIntegrityEngine:
             external_dst = dest_scope["external"]
             policy_and_svc = str(record_map.get("scan.policy_and_service") or "").lower()
 
-            # Rule: If traffic is 100% external web browsing with predominantly bidirectional sessions,
-            # zero unanswered probes, zero denied flows, and standard browsing policy:
-            # Proposing TRUE_POSITIVE contradicts the rule's TP criteria (which requires probe sweeps or lateral recon).
             is_pure_external_browsing = (
                 internal_dst == 0
                 and external_dst > 0
@@ -296,7 +368,9 @@ class ReasoningIntegrityEngine:
                 and any(term in policy_and_svc for term in ("browsing", "https", "ssl", "internet"))
             )
 
-            if is_pure_external_browsing:
+            # V8.3 Nuanced Guardrail: If traffic resembles external browsing, propose TP ONLY IF
+            # concrete corroborating malicious indicators (threat intel, C2, exploit payloads, brute force) exist.
+            if is_pure_external_browsing and not has_corroborating_malice:
                 conflict_msg = (
                     f"Verdict Conflict: Proposed TRUE_POSITIVE contradicts observed telemetry showing "
                     f"100% external bidirectional browsing (bidirectional={bidir}, unanswered={unans}, "
@@ -308,7 +382,7 @@ class ReasoningIntegrityEngine:
                     validation_status="VERDICT_EVIDENCE_CONFLICT",
                     reason_codes=["VERDICT_EVIDENCE_CONFLICT", "TP_CRITERIA_UNSATISFIED"],
                     detected_contradictions=[conflict_msg],
-                    analyst_action_directive="Proposed TRUE_POSITIVE is in conflict with observed bidirectional web telemetry. Overruled to REQUIRES_ATTENTION for manual triage.",
+                    analyst_action_directive="Proposed TRUE_POSITIVE is in conflict with observed bidirectional web telemetry lacking corroborating threat tradecraft. Overruled to REQUIRES_ATTENTION for manual triage.",
                     effective_verdict_override="REQUIRES_ATTENTION",
                 )
 
@@ -317,10 +391,9 @@ class ReasoningIntegrityEngine:
         # -------------------------------------------------------------
         elif clean_prop == "FALSE_POSITIVE" and rule_archetype in ("NETWORK_SCAN", "UNKNOWN"):
             # Bidirectional HTTPS sessions alone do NOT conclusively establish False Positive
-            # without verifying absence of internal recon or verifying change authorization.
+            # on internal targets without verifying absence of internal recon or change authorization.
             internal_dst = dest_scope["internal"]
-            if internal_dst > 0:
-                # Mixed or internal destination scope cannot be closed as FP without explicit authorization
+            if internal_dst > 0 and not has_authorization:
                 conflict_msg = (
                     f"Verdict Conflict: Proposed FALSE_POSITIVE contradicts observed mixed destination scope "
                     f"(internal={internal_dst}, external={dest_scope['external']}). Internal targets require "

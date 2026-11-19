@@ -1181,3 +1181,172 @@ async def test_12_v82_deterministic_reasoning_integrity_and_confidence_calibrati
     assert sib_r.id == SIBLING_RULE_UUID
     assert sib_r.status == "ACTIVE"
 
+
+@pytest.mark.asyncio
+async def test_13_v83_reasoning_validator_safety_and_nuanced_tp_fp_evaluation(db_session: AsyncSession):
+    """V8.3: Nuanced reasoning validator safety, malicious scan with successful TCP connections, 3-tier G8 sample consistency, and double-blind isolation."""
+    import copy
+    import uuid
+    from app.services.reasoning_integrity_engine import ReasoningIntegrityEngine
+    from app.services.independent_verdict_validator import IndependentVerdictValidator
+    from app.services.historical_eligibility_service import HistoricalEligibilityService
+    from app.schemas.evidence_claim import ModelSupportingClaim
+    from app.models.incident import Incident, IncidentEvent
+
+    rule = await _seed_target_rule(db_session)
+
+    # Base Incident with 100 events
+    inc = Incident(
+        id=str(uuid.uuid4()), incident_id="173449", rule_id=rule.id, event_type=TARGET_EVENT_TYPE,
+        title=TARGET_RULE_NAME, severity="MEDIUM", customer="GDC_NOC",
+        raw_payload={"incidentSrc": "srcIpAddr:172.25.24.130", "incidentTarget": "destIpPort:443", "incidentDetail": '{"incidentCount":100}'},
+    )
+    # 97 bidirectional sessions, 3 unanswered probes
+    evts = []
+    for i in range(97):
+        evts.append(
+            IncidentEvent(
+                id=str(uuid.uuid4()), incident_id=inc.id, event_id=f"evt-{i}",
+                event_receive_time=1794476000000 + (i * 1000),
+                event_type="FortiGate-traffic-end-forward-client-rst",
+                raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.130 srcport={50000+i} dstip=142.250.190.{(i%60)+1} dstport=443 proto=6 action="client-rst" policyname="Cybersecurity" service="Browsing" sentbyte={1000+i} rcvdbyte={2000+i}',
+                attributes={"Source IP": "172.25.24.130", "Destination IP": f"142.250.190.{(i%60)+1}", "Destination TCP/UDP Port": 443},
+            )
+        )
+    for i in range(97, 100):
+        evts.append(
+            IncidentEvent(
+                id=str(uuid.uuid4()), incident_id=inc.id, event_id=f"evt-{i}",
+                event_receive_time=1794476000000 + (i * 1000),
+                event_type="FortiGate-traffic-server-rst",
+                raw_log=f'<189>devname="FortiGate-120G" srcip=172.25.24.130 srcport={50000+i} dstip=142.250.190.{(i%60)+1} dstport=443 proto=6 action="server-rst" policyname="Cybersecurity" service="Browsing" sentbyte=0 rcvdbyte=0',
+                attributes={"Source IP": "172.25.24.130", "Destination IP": f"142.250.190.{(i%60)+1}", "Destination TCP/UDP Port": 443},
+            )
+        )
+    norm = EvidenceNormalizationService.normalize_incident_evidence(inc, events=evts)
+
+    # ------------------------------------------------------------------
+    # 1. Correct Numerical Count in Contradiction (Incident #173449 bug fix)
+    # ------------------------------------------------------------------
+    claims_contra = [
+        ModelSupportingClaim(
+            claim_type="OBSERVED_FACT",
+            field="scan.tcp_behavior_summary",
+            asserted_value="bidirectional_sessions=97, unanswered_probes=3",
+            claim_text="Observed predominantly unanswered probes with no bidirectional sessions",
+            is_grounded=True,
+            grounding_status="GROUNDED",
+        )
+    ]
+    res_num = ReasoningIntegrityEngine.evaluate_reasoning_integrity(
+        incident_id="173449",
+        proposed_verdict="TRUE_POSITIVE",
+        model_reason="Predominantly unanswered probes across destinations with server-rst actions.",
+        supporting_claims=claims_contra,
+        normalization_result=norm,
+    )
+    assert res_num.is_valid is False
+    assert res_num.validation_status == "REASONING_CONTRADICTION"
+    # Verify that the contradiction message contains "3 unanswered probes", NOT "0 unanswered probes"
+    assert any("3 unanswered probes" in c for c in res_num.detected_contradictions)
+    # Verify server-rst semantic note was captured
+    assert any("server-rst indicates reset/rejection" in note for note in res_num.semantic_review_notes)
+
+    # ------------------------------------------------------------------
+    # 2. Nuanced TRUE_POSITIVE: Malicious Scanning with Successful TCP Connections
+    # ------------------------------------------------------------------
+    # When model observes bidirectional sessions on port 443 BUT cites concrete threat intelligence
+    # and active web vulnerability scanning tradecraft:
+    claims_malicious_recon = [
+        ModelSupportingClaim(
+            claim_type="SECURITY_OBSERVATION",
+            field="scan.tcp_behavior_summary",
+            asserted_value="bidirectional_sessions=97, unanswered_probes=3",
+            claim_text="Threat intelligence confirms destination IPs match active C2 botnet infrastructure and automated web crawler vulnerability scan.",
+            is_grounded=True,
+            grounding_status="GROUNDED",
+        )
+    ]
+    res_malicious_tp = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="173449",
+        proposed_verdict="TRUE_POSITIVE",
+        model_reason="Confirmed adversary web vulnerability scan and reconnaissance tool against external attack surface; threat intelligence and C2 match.",
+        supporting_claims=claims_malicious_recon,
+        normalization_result=norm,
+        rule_archetype="NETWORK_SCAN",
+    )
+    # MUST NOT be falsely rejected: legitimate TP with corroborating malicious threat indicators!
+    assert res_malicious_tp.is_valid is True
+    assert res_malicious_tp.validation_status == "VALIDATED"
+    assert len(res_malicious_tp.detected_contradictions) == 0
+
+    # ------------------------------------------------------------------
+    # 3. Nuanced FALSE_POSITIVE: Authorized Internal Vulnerability Scan
+    # ------------------------------------------------------------------
+    norm_internal = copy.deepcopy(norm)
+    for r in norm_internal.records:
+        if r.source_field == "scan.destination_scope":
+            r.observed_value = "internal=50, external=10, total_unique_hosts=60"
+
+    # A. Internal scan with documented authorization ticket -> VALIDATED FP
+    res_auth_fp = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="173449",
+        proposed_verdict="FALSE_POSITIVE",
+        model_reason="Authorized scanner performing scheduled quarterly vulnerability assessment ticket CHG-2026-991.",
+        supporting_claims=[],
+        normalization_result=norm_internal,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_auth_fp.is_valid is True
+    assert res_auth_fp.validation_status == "VALIDATED"
+
+    # B. Internal scan WITHOUT authorization ticket -> VERDICT_EVIDENCE_CONFLICT
+    res_unauth_fp = ReasoningIntegrityEngine.evaluate_verdict_evidence_consistency(
+        incident_id="173449",
+        proposed_verdict="FALSE_POSITIVE",
+        model_reason="Internal host sweep looks benign because connections completed.",
+        supporting_claims=[],
+        normalization_result=norm_internal,
+        rule_archetype="NETWORK_SCAN",
+    )
+    assert res_unauth_fp.is_valid is False
+    assert res_unauth_fp.validation_status == "VERDICT_EVIDENCE_CONFLICT"
+    assert "FP_CRITERIA_UNSATISFIED" in res_unauth_fp.reason_codes
+
+    # ------------------------------------------------------------------
+    # 4. G8 3-Tier Sample Size Consistency Architecture
+    # ------------------------------------------------------------------
+    # Verify that HistoricalEligibilityService properly distinguishes:
+    # Tier 1: Exploratory (N >= 5)
+    # Tier 2: Calibration (N >= 30, TP >= 10, FP >= 10)
+    # Tier 3: Production Certification (N >= 100, TP >= 25, FP >= 50)
+    assert RuleLearningService.MIN_PRODUCTION_SAMPLES == 100
+    assert RuleLearningService.MIN_PRODUCTION_TP == 25
+    assert RuleLearningService.MIN_PRODUCTION_FP == 50
+    assert RuleLearningService.MIN_PRODUCTION_ACCURACY == 0.95
+    assert RuleLearningService.MIN_PRODUCTION_FP_PRECISION == 0.99
+    assert RuleLearningService.MIN_PRODUCTION_WILSON_LOWER == 0.96
+    assert RuleLearningService.MIN_PRODUCTION_TP_RECALL == 0.95
+    assert RuleLearningService.MAX_CRITICAL_MISSED_TP == 0
+
+    # ------------------------------------------------------------------
+    # 5. Double-Blind Review Queue Isolation
+    # ------------------------------------------------------------------
+    db_session.add(inc)
+    await db_session.commit()
+
+    total, items = await AnalystReviewService.get_pending_reviews(
+        db=db_session,
+        rule_id=rule.id,
+        limit=10,
+        include_reviewed=False,
+    )
+    assert total >= 1
+    target_item = next((item for item in items if item["incident_id"] == "173449"), None)
+    assert target_item is not None
+    # Verify double-blind isolation: AI verdict, confidence, and reasoning MUST be masked
+    assert target_item["is_blind_mode"] is True
+    assert target_item["analyst_verdict"] is None
+    assert "ai_verdict" not in target_item or target_item["ai_verdict"] is None
+
+
