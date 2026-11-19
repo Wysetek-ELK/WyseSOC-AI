@@ -36,4 +36,7 @@ test_scheduler_state.json*
 llm_config_state.json*
 test_llm_config_state.json*
 
+# Maintenance Flags
+*.flag
+
 
