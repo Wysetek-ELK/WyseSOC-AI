@@ -112,6 +112,8 @@ function AgentIntelligenceStudioContent() {
   // Policy Quality Validation State
   const [qualityAssessment, setQualityAssessment] = useState<PolicyQualityAssessmentResponse | null>(null);
   const [loadingQuality, setLoadingQuality] = useState(false);
+  const [expandedGateIds, setExpandedGateIds] = useState<Record<string, boolean>>({});
+  const toggleGateExpand = (gateId: string) => setExpandedGateIds((prev) => ({ ...prev, [gateId]: !prev[gateId] }));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const isViewer = currentUser?.role === "Read-Only Viewer";
   const isAdmin = currentUser?.role === "Administrator";
@@ -1182,189 +1184,200 @@ function AgentIntelligenceStudioContent() {
     return (
       <div className="space-y-4">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3.5">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-100 flex items-center gap-2">
-                <FileCode2 className="w-5 h-5 text-cyan-400" />
-                Agent Intelligence Studio 2.0
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
+                <FileCode2 className="w-5 h-5 text-violet-400" />
+                Agent Intelligence Studio
               </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-950/80 text-cyan-400 border border-cyan-800/60 font-mono">
-                Detection-Aware Policy Engine
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-950/80 text-violet-300 border border-violet-800/60 font-mono">
+                Detection Policies
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              SIEM semantics parsing, 12 detection archetypes, 8-gate quality validation, simulation regression testing, and drift governance.
+            <p className="text-xs text-slate-400 mt-1">
+              Build, validate, and govern AI detection policies.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedRuleId && (
+              <button
+                type="button"
+                onClick={() => setViewMode("studio")}
+                className="px-3.5 py-1.5 text-xs rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-violet-900/20"
+              >
+                <span>Open Studio</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+
             <button
               onClick={() => {
                 loadSummaries();
                 loadRules();
               }}
               disabled={loadingSummaries}
-              className="px-2.5 py-1 text-xs rounded border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium flex items-center gap-1.5 transition-colors"
+              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium flex items-center gap-1.5 transition-colors"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${loadingSummaries ? "animate-spin" : ""}`} />
-              Refresh
+              <span>Refresh</span>
             </button>
 
-            {/* Bulk Quality Audit Trigger */}
-            <button
-              onClick={handleStartBulkAudit}
-              disabled={bulkAuditLoading}
-              className="px-2.5 py-1 text-xs rounded border border-indigo-800/80 bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-200 font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
-              title="Execute bulk policy quality assessment across all rules (chunked in 100s)"
-            >
-              <Layers className="w-3.5 h-3.5 text-indigo-400" />
-              Bulk Audit Rules
-            </button>
-
-            {/* View Actual LLM Prompt Inspector Trigger */}
-            <button
-              onClick={() => {
-                setPromptInspectorIncidentId(null);
-                setPromptInspectorRuleId(selectedRuleId || (selectedRule ? selectedRule.id : null));
-                setPromptInspectorVersionId(selectedVersionId || null);
-                setPromptInspectorInitialMode("capture");
-                setPromptInspectorOpen(true);
-              }}
-              className="px-2.5 py-1 text-xs rounded border border-emerald-800/80 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-200 font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
-              title="Inspect the exact prompt sent from Server 1 to Local LLM (Server 2) for an incident or rule"
-            >
-              <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-              View Actual LLM Prompt
-            </button>
-
-            {/* Download Rule-Wise Prompts */}
+            {/* Contextual More Actions Dropdown */}
             <div className="relative">
-              <div className="inline-flex rounded-md shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => handleExportAll("json")}
-                  disabled={downloadingExport}
-                  className="px-2.5 py-1 text-xs rounded-l border border-cyan-800/80 bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-200 font-semibold flex items-center gap-1.5 transition-colors"
-                  title="Download all rules and prompt configurations as JSON"
-                >
-                  <Download className={`w-3.5 h-3.5 text-cyan-400 ${downloadingExport ? "animate-bounce" : ""}`} />
-                  {downloadingExport ? "Exporting..." : "Download Config"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowExportMenu((prev) => !prev)}
-                  disabled={downloadingExport}
-                  className="px-1.5 py-1 text-xs rounded-r border-t border-b border-r border-cyan-800/80 bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-200 transition-colors"
-                  title="Choose export format"
-                >
-                  <ChevronDown className="w-3 h-3 text-cyan-400" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowExportMenu((prev) => !prev)}
+                className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 font-medium flex items-center gap-1.5 transition-colors"
+                title="Secondary administrative operations"
+              >
+                <span>More Actions</span>
+                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${showExportMenu ? "rotate-180" : ""}`} />
+              </button>
 
               {showExportMenu && (
-                <div className="absolute right-0 mt-1 w-48 rounded-md border border-slate-800 bg-slate-950 py-1 shadow-xl z-20 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => handleExportAll("json")}
-                    className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
-                  >
-                    <span>Download JSON</span>
-                    <span className="text-[10px] text-slate-500 font-mono">.json</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleExportAll("markdown")}
-                    className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
-                  >
-                    <span>Download Markdown</span>
-                    <span className="text-[10px] text-slate-500 font-mono">.md</span>
-                  </button>
+                <div className="absolute right-0 mt-1 w-56 rounded-xl border border-slate-800 bg-slate-950 py-1.5 shadow-2xl z-30 text-xs divide-y divide-slate-800/60">
+                  <div className="py-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        handleStartBulkAudit();
+                      }}
+                      disabled={bulkAuditLoading}
+                      className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center gap-2"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Bulk Audit Rules</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        setPromptInspectorIncidentId(null);
+                        setPromptInspectorRuleId(selectedRuleId || (selectedRule ? selectedRule.id : null));
+                        setPromptInspectorVersionId(selectedVersionId || null);
+                        setPromptInspectorInitialMode("capture");
+                        setPromptInspectorOpen(true);
+                      }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center gap-2"
+                    >
+                      <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>View Actual LLM Prompt</span>
+                    </button>
+                  </div>
+
+                  <div className="py-1">
+                    <div className="px-3 py-1 text-[10px] uppercase font-bold text-slate-500">Download Rule Prompts</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        handleExportAll("json");
+                      }}
+                      disabled={downloadingExport}
+                      className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Download className="w-3 h-3 text-cyan-400" />
+                        Download JSON
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">.json</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        handleExportAll("markdown");
+                      }}
+                      disabled={downloadingExport}
+                      className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Download className="w-3 h-3 text-cyan-400" />
+                        Download Markdown
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">.md</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-
-            {selectedRuleId && (
-              <button
-                onClick={() => setViewMode("studio")}
-                className="px-3 py-1 text-xs rounded bg-sky-600 hover:bg-sky-500 text-white font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
-              >
-                Open Studio <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            )}
           </div>
         </div>
 
-        {/* Top Metrics Cards (AIS 2.0 Enhanced) */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
-          <div className="p-2.5 rounded-xl theme-glass-card">
-            <div className="text-[10px] uppercase font-semibold text-slate-400 flex items-center justify-between">
-              Monitored Rules
+        {/* Top Metrics Cards (6 Compact KPI Cards) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          <div className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/60 shadow-sm">
+            <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center justify-between">
+              <span>Monitored Rules</span>
               <FileCode className="w-3.5 h-3.5 text-slate-500" />
             </div>
-            <div className="text-lg font-bold text-slate-100 mt-1">{totalRulesCount}</div>
-            <div className="text-[9px] text-slate-500 mt-0.5">Active SIEM rules</div>
+            <div className="text-xl font-bold font-mono text-slate-100 mt-1">{totalRulesCount}</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Active SIEM rules</div>
           </div>
 
-          <div className="p-2.5 rounded-xl theme-glass-card border-emerald-900/50">
-            <div className="text-[10px] uppercase font-semibold text-emerald-400 flex items-center justify-between">
-              Approved
+          <div className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/60 shadow-sm">
+            <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center justify-between">
+              <span>Approved Policies</span>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             </div>
-            <div className="text-lg font-bold text-emerald-300 mt-1">{approvedPromptsCount}</div>
-            <div className="text-[9px] text-emerald-500/80 mt-0.5">
-              {totalRulesCount ? Math.round((approvedPromptsCount / totalRulesCount) * 100) : 0}% active
+            <div className="text-xl font-bold font-mono text-emerald-400 mt-1">{approvedPromptsCount}</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">
+              {totalRulesCount ? Math.round((approvedPromptsCount / totalRulesCount) * 100) : 0}% of rules active
             </div>
           </div>
 
-          <div className="p-2.5 rounded-xl theme-glass-card border-sky-900/50">
-            <div className="text-[10px] uppercase font-semibold text-sky-400 flex items-center justify-between">
-              Template Drafts
+          <div className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/60 shadow-sm">
+            <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center justify-between">
+              <span>Drafts</span>
               <Sparkles className="w-3.5 h-3.5 text-sky-400" />
             </div>
-            <div className="text-lg font-bold text-sky-300 mt-1">{draftOnlyCount}</div>
-            <div className="text-[9px] text-sky-500/80 mt-0.5">Drafts awaiting review</div>
+            <div className="text-xl font-bold font-mono text-sky-300 mt-1">{draftOnlyCount}</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Drafts awaiting review</div>
           </div>
 
-          <div className="p-2.5 rounded-xl theme-glass-card border-cyan-900/50">
-            <div className="text-[10px] uppercase font-semibold text-cyan-400 flex items-center justify-between">
-              Avg Quality Score
+          <div className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/60 shadow-sm">
+            <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center justify-between">
+              <span>Average Quality</span>
               <Award className="w-3.5 h-3.5 text-cyan-400" />
             </div>
-            <div className="text-lg font-bold text-cyan-300 mt-1">
-              {qualitySummary ? `${Math.round(qualitySummary.quality_score_average)}/100` : "—"}
+            <div className="text-xl font-bold font-mono text-cyan-300 mt-1">
+              {qualitySummary ? `${Math.round(qualitySummary.quality_score_average)}/100` : "Not evaluated"}
             </div>
-            <div className="text-[9px] text-cyan-500/80 mt-0.5">Static verification index</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Static verification index</div>
           </div>
 
-          <div className="p-2.5 rounded-lg border border-amber-900/50 bg-amber-950/20">
-            <div className="text-[10px] uppercase font-semibold text-amber-400 flex items-center justify-between">
-              Incomplete Specs
+          <div className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/60 shadow-sm">
+            <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center justify-between">
+              <span>Incomplete Definitions</span>
               <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
             </div>
-            <div className="text-lg font-bold text-amber-300 mt-1">{incompleteDefinitionCount}</div>
-            <div className="text-[9px] text-amber-500/80 mt-0.5">Unresolved SIEM logic</div>
+            <div className="text-xl font-bold font-mono text-amber-300 mt-1">{incompleteDefinitionCount}</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Unresolved SIEM logic</div>
           </div>
 
-          <div className="p-2.5 rounded-lg border border-rose-900/50 bg-rose-950/20">
-            <div className="text-[10px] uppercase font-semibold text-rose-400 flex items-center justify-between">
-              Drift / Revalidate
+          <div className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/60 shadow-sm">
+            <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center justify-between">
+              <span>Drift / Revalidation</span>
               <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
             </div>
-            <div className="text-lg font-bold text-rose-300 mt-1">{driftAlertCount}</div>
-            <div className="text-[9px] text-rose-500/80 mt-0.5">Requires re-audit</div>
+            <div className="text-xl font-bold font-mono text-rose-400 mt-1">{driftAlertCount}</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Requires re-audit</div>
           </div>
         </div>
 
         {/* Informational Architecture Banner */}
-        <div className="p-2.5 rounded-lg border border-cyan-900/40 bg-cyan-950/20 text-xs text-slate-300 flex items-start gap-2.5">
-          <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-          <div className="text-[11px] leading-tight space-y-0.5">
-            <div>
-              <strong className="text-cyan-300">Agent Intelligence Studio 2.0 Governance:</strong> SIEM detection rules are parsed via authoritative telemetry distinction.
-              Policies are classified into 12 archetypes and validated through 8 mandatory quality gates (G1–G8). Drafts with missing definitions (e.g. unverified thresholds) remain provisional and cannot be approved.
-            </div>
+        <div className="p-2.5 rounded-xl border border-slate-800/80 bg-slate-950/60 text-xs text-slate-300 flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span className="text-[11px] text-slate-300">
+              <strong className="text-cyan-300">Agent Intelligence Studio Governance:</strong> 12 detection archetypes, 8 mandatory quality gates (G1–G8), simulation regression testing, and drift governance.
+            </span>
           </div>
+          <span className="text-[10px] font-mono text-slate-500 shrink-0 hidden md:inline">Verdictum AI Policy Engine 2.0</span>
         </div>
 
         {/* Filter & Search Toolbar */}
@@ -1459,6 +1472,24 @@ function AgentIntelligenceStudioContent() {
               <option value="APPROVED">Approved</option>
               <option value="ACTIVE">Active</option>
             </select>
+
+            {(searchFilter || archetypeFilter || completenessFilter || severityFilter || baselineFilter || readinessFilter) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchFilter("");
+                  setArchetypeFilter("");
+                  setCompletenessFilter("");
+                  setSeverityFilter("");
+                  setBaselineFilter("");
+                  setReadinessFilter("");
+                  setPage(1);
+                }}
+                className="px-2 py-1 text-xs text-rose-400 hover:text-rose-300 font-medium transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         </div>
 
@@ -1508,8 +1539,8 @@ function AgentIntelligenceStudioContent() {
                         onClick={() => handleOpenStudioForRule(item.rule_id)}
                         className="hover:bg-slate-900/60 cursor-pointer transition-colors group"
                       >
-                        <td className="py-2 px-3">
-                          <div className="font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors">
+                        <td className="py-2.5 px-3">
+                          <div className="font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors max-w-[280px] truncate" title={item.rule_name}>
                             {item.rule_name}
                           </div>
                           <div className="text-[10px] font-mono text-slate-400 mt-0.5 flex items-center gap-1.5">
@@ -1598,7 +1629,7 @@ function AgentIntelligenceStudioContent() {
                           )}
                         </td>
 
-                        <td className="py-2 px-3 text-right sticky right-0 bg-slate-950/95 group-hover:bg-slate-900/95 backdrop-blur-xs shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.5)]">
+                        <td className="py-2.5 px-3 text-right sticky right-0 bg-slate-950/95 group-hover:bg-slate-900/95 backdrop-blur-xs shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.5)]">
                           <div className="inline-flex items-center gap-1.5 justify-end">
                             <button
                               type="button"
@@ -1611,7 +1642,7 @@ function AgentIntelligenceStudioContent() {
                                 setPromptInspectorOpen(true);
                               }}
                               title={`Inspect actual prompt payload for ${item.rule_name}`}
-                              className="p-1 rounded border border-emerald-900/80 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-400 hover:text-emerald-300 transition-colors"
+                              className="p-1.5 rounded-lg border border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-emerald-400 transition-colors"
                             >
                               <Terminal className="w-3.5 h-3.5" />
                             </button>
@@ -1623,7 +1654,7 @@ function AgentIntelligenceStudioContent() {
                               }}
                               disabled={downloadingExport}
                               title="Download rule prompt configuration (JSON)"
-                              className="p-1 rounded border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 transition-colors"
+                              className="p-1.5 rounded-lg border border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 transition-colors"
                             >
                               <Download className="w-3.5 h-3.5" />
                             </button>
@@ -1633,9 +1664,10 @@ function AgentIntelligenceStudioContent() {
                                 e.stopPropagation();
                                 handleOpenStudioForRule(item.rule_id);
                               }}
-                              className="px-2.5 py-1 text-xs rounded border border-cyan-800/80 bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-300 font-semibold inline-flex items-center gap-1 transition-colors shadow-sm"
+                              className="px-2.5 py-1 text-xs rounded-lg border border-cyan-800/80 bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-300 font-semibold inline-flex items-center gap-1 transition-colors shadow-sm"
                             >
-                              Open Studio <ArrowRight className="w-3 h-3" />
+                              <span>Open Studio</span>
+                              <ArrowRight className="w-3 h-3" />
                             </button>
                           </div>
                         </td>
@@ -2421,104 +2453,30 @@ function AgentIntelligenceStudioContent() {
         </div>
       )}
 
-      {/* COMPACT MODE: TAB 3 (ADVANCED CONFIGURATION SUB-NAV) */}
+      {/* COMPACT MODE: TAB 3 (ADVANCED CONFIGURATION 2-COLUMN WORKSPACE) */}
       {!ruleError && !versionError && compactUi && primaryTab === "advanced" && (
-        <div className="p-2 rounded-xl border border-slate-800/80 bg-slate-950/70 mb-1 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1 text-xs">
-            <button
-              onClick={() => { setAdvancedSection("editor"); setStudioTab("editor"); }}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
-                advancedSection === "editor"
-                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <FileCode className="w-3.5 h-3.5" />
-              Policy Editor (9 Sections)
-            </button>
-            <button
-              onClick={() => { setAdvancedSection("quality"); setStudioTab("quality"); }}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
-                advancedSection === "quality"
-                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Award className="w-3.5 h-3.5" />
-              Quality Gates (G1–G8)
-              {blockingIssuesList.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
-                  {blockingIssuesList.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => { setAdvancedSection("intelligence"); setStudioTab("intelligence"); }}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
-                advancedSection === "intelligence"
-                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Cpu className="w-3.5 h-3.5" />
-              SIEM Semantics
-            </button>
-            <button
-              onClick={() => { setAdvancedSection("contract"); setStudioTab("contract"); }}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
-                advancedSection === "contract"
-                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Database className="w-3.5 h-3.5" />
-              Evidence Contract
-            </button>
-            <button
-              onClick={() => { setAdvancedSection("simulation"); setStudioTab("simulation"); }}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
-                advancedSection === "simulation"
-                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Activity className="w-3.5 h-3.5" />
-              Simulation Lab
-            </button>
-            <button
-              onClick={() => { setAdvancedSection("drift"); setStudioTab("drift"); }}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
-                advancedSection === "drift"
-                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <GitBranch className="w-3.5 h-3.5" />
-              Drift &amp; Monitoring
-              {driftEvents.filter((d) => !d.acknowledged).length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
-                  {driftEvents.filter((d) => !d.acknowledged).length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => { setAdvancedSection("history"); setStudioTab("history"); }}
-              className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors ${
-                advancedSection === "history"
-                  ? "bg-slate-800 text-cyan-300 border border-slate-700"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <History className="w-3.5 h-3.5 text-sky-400" />
-              Version History
-              {rulePrompt?.versions.some((v) => v.status === "REVOKED") && (
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
-                  REVOKED
-                </span>
-              )}
-            </button>
+        <div className="p-2.5 rounded-xl border border-slate-800/80 bg-slate-950/70 mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-cyan-400" />
+            <span className="font-bold text-slate-200">Technical Configuration Workbench</span>
+            <span className="text-slate-500">•</span>
+            <span className="text-slate-400 font-mono text-[11px]">
+              {advancedSection === "editor" ? "Policy Editor (9 Sections)" :
+               advancedSection === "quality" ? "Quality Gates (G1–G8)" :
+               advancedSection === "intelligence" ? "SIEM Semantics & Archetype" :
+               advancedSection === "contract" ? "Evidence Contract Feasibility" :
+               advancedSection === "simulation" ? "Simulation Lab & Replay" :
+               advancedSection === "drift" ? "Drift Monitoring & Governance" :
+               "Version History & Lineage"}
+            </span>
           </div>
-          <span className="text-[10px] text-slate-500 font-mono">Advanced Technical Controls</span>
+          <div className="flex items-center gap-2">
+            {selectedVersion && (
+              <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-slate-300 font-mono">
+                Active Selection: <strong className="text-cyan-300">v{selectedVersion.version_number}</strong> ({selectedVersion.status})
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -2542,95 +2500,245 @@ function AgentIntelligenceStudioContent() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 items-start">
-          {/* Left Column: Version History Sidebar */}
-          <div className="lg:col-span-1 space-y-3">
-            <div className="p-3.5 rounded-xl theme-glass-panel space-y-2.5">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
-                  <History className="w-3.5 h-3.5 text-sky-400" /> Version History
-                </span>
-                <span className="text-[10px] text-slate-400 font-mono">
-                  {rulePrompt.versions.length} versions
-                </span>
-              </div>
+        <div className={compactUi ? "grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start" : "grid grid-cols-1 lg:grid-cols-4 gap-3 items-start"}>
+          {compactUi ? (
+            /* Left Column: 7-Module Compact Section Navigation */
+            <div className="lg:col-span-3 space-y-2">
+              <div className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/60 shadow-sm space-y-1">
+                <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1 tracking-wider">
+                  Configuration Modules
+                </div>
+                <button
+                  onClick={() => { setAdvancedSection("editor"); setStudioTab("editor"); }}
+                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
+                    advancedSection === "editor"
+                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <FileCode className="w-3.5 h-3.5 text-slate-400" />
+                    Policy Editor
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">9 Sec</span>
+                </button>
 
-              {/* Version List */}
-              <div className="space-y-2 max-h-[460px] overflow-y-auto pr-0.5">
-                {rulePrompt.versions.length === 0 ? (
-                  <div className="p-3 text-center text-slate-500 text-xs italic">
-                    No versions created yet.
+                <button
+                  onClick={() => { setAdvancedSection("quality"); setStudioTab("quality"); }}
+                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
+                    advancedSection === "quality"
+                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Award className="w-3.5 h-3.5 text-sky-400" />
+                    Quality Gates
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-slate-500 font-mono">G1–G8</span>
+                    {blockingIssuesList.length > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800 font-mono">
+                        {blockingIssuesList.length}
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  rulePrompt.versions.map((ver) => {
-                    const isActive = ver.id === rulePrompt.active_version_id;
-                    const isSelected = ver.id === selectedVersionId;
-                    return (
-                      <div
-                        key={ver.id}
-                        onClick={() => handleSelectVersion(ver.id)}
-                        className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${isSelected
-                          ? "theme-version-selected"
-                          : "theme-glass-sunken hover:border-slate-700"
-                          }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-100 flex items-center gap-1.5 text-xs">
-                            v{ver.version_number}
-                            {isActive && (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-950/90 text-emerald-400 border border-emerald-800/80 font-semibold">
-                                ACTIVE
-                              </span>
-                            )}
-                          </span>
-                          <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${
-                            ver.status === "APPROVED"
-                              ? "bg-emerald-950/90 text-emerald-400 border border-emerald-800/80"
-                              : ver.status === "REVOKED"
-                              ? "bg-rose-950/90 text-rose-400 border border-rose-800/80"
-                              : ver.status === "VALIDATED"
-                              ? "bg-sky-950/90 text-sky-400 border border-sky-800/80"
-                              : ver.status === "ARCHIVED"
-                              ? "bg-slate-900 text-slate-500 border border-slate-800"
-                              : "bg-amber-950/90 text-amber-300 border border-amber-700/80"
-                          }`}>
-                            {ver.status}
-                          </span>
-                        </div>
+                </button>
 
-                        <div className="mt-1 text-[10px] text-slate-400 line-clamp-2">
-                          {ver.change_summary}
-                        </div>
+                <button
+                  onClick={() => { setAdvancedSection("intelligence"); setStudioTab("intelligence"); }}
+                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
+                    advancedSection === "intelligence"
+                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Cpu className="w-3.5 h-3.5 text-violet-400" />
+                    SIEM Semantics
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {intelligenceData?.classification?.primary_archetype ? "Mapped" : "—"}
+                  </span>
+                </button>
 
-                        <div className="mt-1.5 pt-1 border-t border-slate-800/60 flex items-center justify-between text-[9px] text-slate-500">
-                          <span>{new Date(ver.created_at).toLocaleDateString()}</span>
-                          {ver.is_template_draft ? (
-                            <span className="text-sky-400 font-medium">Template</span>
-                          ) : (
-                            <span className="text-slate-400">Manual</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                <button
+                  onClick={() => { setAdvancedSection("contract"); setStudioTab("contract"); }}
+                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
+                    advancedSection === "contract"
+                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Database className="w-3.5 h-3.5 text-cyan-400" />
+                    Evidence Contract
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {intelligenceData?.semantics?.relevant_fields?.length || 0} fields
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => { setAdvancedSection("simulation"); setStudioTab("simulation"); }}
+                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
+                    advancedSection === "simulation"
+                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Activity className="w-3.5 h-3.5 text-amber-400" />
+                    Simulation Lab
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">Replay</span>
+                </button>
+
+                <button
+                  onClick={() => { setAdvancedSection("drift"); setStudioTab("drift"); }}
+                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
+                    advancedSection === "drift"
+                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <GitBranch className="w-3.5 h-3.5 text-rose-400" />
+                    Drift Monitoring
+                  </span>
+                  {driftEvents.filter((d) => !d.acknowledged).length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800 font-mono">
+                      {driftEvents.filter((d) => !d.acknowledged).length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => { setAdvancedSection("history"); setStudioTab("history"); }}
+                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
+                    advancedSection === "history"
+                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <History className="w-3.5 h-3.5 text-sky-400" />
+                    Version History
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-slate-500 font-mono">v{rulePrompt?.versions.length || 0}</span>
+                    {rulePrompt?.versions.some((v) => v.status === "REVOKED") && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
+                        REVOKED
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                {/* Action: Generate Intelligent Draft */}
+                <div className="pt-2 border-t border-slate-800/60 mt-1">
+                  <button
+                    type="button"
+                    disabled={actionLoading || isViewer}
+                    onClick={handleGenerateIntelligentDraft}
+                    title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent policy draft"}
+                    className="w-full py-2 px-2.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Generate Intelligent Draft
+                  </button>
+                </div>
               </div>
-
-              {/* Action: Generate Intelligent Draft */}
-              <button
-                type="button"
-                disabled={actionLoading || isViewer}
-                onClick={handleGenerateIntelligentDraft}
-                title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent policy draft"}
-                className="w-full py-2 px-2.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Generate Intelligent Draft
-              </button>
             </div>
-          </div>
+          ) : (
+            /* Legacy Left Column: Version History Sidebar */
+            <div className="lg:col-span-1 space-y-3">
+              <div className="p-3.5 rounded-xl theme-glass-panel space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
+                    <History className="w-3.5 h-3.5 text-sky-400" /> Version History
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {rulePrompt.versions.length} versions
+                  </span>
+                </div>
+
+                {/* Version List */}
+                <div className="space-y-2 max-h-[460px] overflow-y-auto pr-0.5">
+                  {rulePrompt.versions.length === 0 ? (
+                    <div className="p-3 text-center text-slate-500 text-xs italic">
+                      No versions created yet.
+                    </div>
+                  ) : (
+                    rulePrompt.versions.map((ver) => {
+                      const isActive = ver.id === rulePrompt.active_version_id;
+                      const isSelected = ver.id === selectedVersionId;
+                      return (
+                        <div
+                          key={ver.id}
+                          onClick={() => handleSelectVersion(ver.id)}
+                          className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${isSelected
+                            ? "theme-version-selected"
+                            : "theme-glass-sunken hover:border-slate-700"
+                            }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-100 flex items-center gap-1.5 text-xs">
+                              v{ver.version_number}
+                              {isActive && (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-950/90 text-emerald-400 border border-emerald-800/80 font-semibold">
+                                  ACTIVE
+                                </span>
+                              )}
+                            </span>
+                            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${
+                              ver.status === "APPROVED"
+                                ? "bg-emerald-950/90 text-emerald-400 border border-emerald-800/80"
+                                : ver.status === "REVOKED"
+                                ? "bg-rose-950/90 text-rose-400 border border-rose-800/80"
+                                : ver.status === "VALIDATED"
+                                ? "bg-sky-950/90 text-sky-400 border border-sky-800/80"
+                                : ver.status === "ARCHIVED"
+                                ? "bg-slate-900 text-slate-500 border border-slate-800"
+                                : "bg-amber-950/90 text-amber-300 border border-amber-700/80"
+                            }`}>
+                              {ver.status}
+                            </span>
+                          </div>
+
+                          <div className="mt-1 text-[10px] text-slate-400 line-clamp-2">
+                            {ver.change_summary}
+                          </div>
+
+                          <div className="mt-1.5 pt-1 border-t border-slate-800/60 flex items-center justify-between text-[9px] text-slate-500">
+                            <span>{new Date(ver.created_at).toLocaleDateString()}</span>
+                            {ver.is_template_draft ? (
+                              <span className="text-sky-400 font-medium">Template</span>
+                            ) : (
+                              <span className="text-slate-400">Manual</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Action: Generate Intelligent Draft */}
+                <button
+                  type="button"
+                  disabled={actionLoading || isViewer}
+                  onClick={handleGenerateIntelligentDraft}
+                  title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent policy draft"}
+                  className="w-full py-2 px-2.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Generate Intelligent Draft
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Right Column: Tabbed Workspace */}
-          <div className="lg:col-span-3 space-y-3">
+          <div className={compactUi ? "lg:col-span-9 space-y-3" : "lg:col-span-3 space-y-3"}>
             {/* TAB 1: POLICY EDITOR */}
             {studioTab === "editor" && (
               <>
@@ -3153,59 +3261,105 @@ function AgentIntelligenceStudioContent() {
                       </div>
                     )}
 
-                    {/* 8 Gates Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                      {gateList.map((gate: QualityGateResult) => {
-                        const isPass = gate.status === "PASSED";
-                        const isWarn = gate.status === "WARNING";
-                        return (
-                          <div
-                            key={gate.gate_id}
-                            className={`p-3 rounded-lg border text-xs space-y-1.5 ${isPass
-                              ? "bg-slate-900/30 border-slate-800"
-                              : isWarn
-                                ? "bg-amber-950/20 border-amber-900/60"
-                                : "bg-rose-950/20 border-rose-900/60"
-                              }`}
+                    {/* 8 Gates Cards (Expandable Accordion) */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                        <span>Mandatory Quality Gates Breakdown (G1–G8)</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allExpanded: Record<string, boolean> = {};
+                              gateList.forEach((g) => {
+                                allExpanded[g.gate_id] = true;
+                              });
+                              setExpandedGateIds(allExpanded);
+                            }}
+                            className="text-cyan-400 hover:underline text-[10px]"
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-slate-200 flex items-center gap-1.5">
-                                {isPass ? (
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                                ) : isWarn ? (
-                                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                                ) : (
-                                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                            Expand All
+                          </button>
+                          <span>·</span>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedGateIds({})}
+                            className="text-slate-400 hover:underline text-[10px]"
+                          >
+                            Collapse All
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        {gateList.map((gate: QualityGateResult) => {
+                          const isPass = gate.status === "PASSED";
+                          const isWarn = gate.status === "WARNING";
+                          const isExpanded = !!expandedGateIds[gate.gate_id];
+                          return (
+                            <div
+                              key={gate.gate_id}
+                              className={`rounded-xl border text-xs transition-all ${isPass
+                                ? "bg-slate-900/30 border-slate-800"
+                                : isWarn
+                                  ? "bg-amber-950/20 border-amber-900/60"
+                                  : "bg-rose-950/20 border-rose-900/60"
+                                }`}
+                            >
+                              <div
+                                onClick={() => toggleGateExpand(gate.gate_id)}
+                                className="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-colors select-none"
+                              >
+                                <span className="font-bold text-slate-200 flex items-center gap-1.5 truncate">
+                                  {isPass ? (
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                  ) : isWarn ? (
+                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  ) : (
+                                    <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                  )}
+                                  <span>{gate.gate_id}: {gate.gate_name}</span>
+                                </span>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="font-mono text-[10px] text-slate-400">
+                                    {gate.score}/{gate.max_score} pts
+                                  </span>
+                                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                                </div>
+                              </div>
+
+                              <div className="px-3 pb-3 text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/40 pt-2">
+                                <p>{gate.details}</p>
+
+                                {isExpanded && (
+                                  <div className="mt-2 pt-2 border-t border-slate-800/60 space-y-1.5">
+                                    {gate.blocking_findings && gate.blocking_findings.length > 0 && (
+                                      <div className="text-[10px] text-rose-400 font-mono space-y-0.5 bg-rose-950/40 p-2 rounded-lg border border-rose-800/60">
+                                        <span className="font-sans font-bold text-[9px] uppercase text-rose-300 block">Blocking Findings:</span>
+                                        {gate.blocking_findings.map((bf: string, i: number) => (
+                                          <div key={i}>• {bf}</div>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {gate.warnings && gate.warnings.length > 0 && (
+                                      <div className="text-[10px] text-amber-400 font-mono space-y-0.5 bg-amber-950/40 p-2 rounded-lg border border-amber-800/60">
+                                        <span className="font-sans font-bold text-[9px] uppercase text-amber-300 block">Warnings:</span>
+                                        {gate.warnings.map((wf: string, i: number) => (
+                                          <div key={i}>• {wf}</div>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    <div className="text-[10px] text-slate-500 font-mono pt-1">
+                                      Deterministic Gate ID: <code className="text-cyan-400">{gate.gate_id}</code>
+                                    </div>
+                                  </div>
                                 )}
-                                {gate.gate_id}: {gate.gate_name}
-                              </span>
-                              <span className="font-mono text-[10px] text-slate-400">
-                                {gate.score}/{gate.max_score} pts
-                              </span>
+                              </div>
                             </div>
-
-                            <p className="text-[11px] text-slate-400 leading-relaxed">
-                              {gate.details}
-                            </p>
-
-                            {gate.blocking_findings && gate.blocking_findings.length > 0 && (
-                              <div className="pt-1 text-[10px] text-rose-400 font-mono space-y-0.5">
-                                {gate.blocking_findings.map((bf: string, i: number) => (
-                                  <div key={i}>• {bf}</div>
-                                ))}
-                              </div>
-                            )}
-
-                            {gate.warnings && gate.warnings.length > 0 && (
-                              <div className="pt-1 text-[10px] text-amber-400 font-mono space-y-0.5">
-                                {gate.warnings.map((wf: string, i: number) => (
-                                  <div key={i}>• {wf}</div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
 
                     {/* Recommendations Box */}

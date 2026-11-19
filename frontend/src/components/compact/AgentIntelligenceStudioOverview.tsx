@@ -146,6 +146,7 @@ export function AgentIntelligenceStudioOverview({
   const [loadingReadiness, setLoadingReadiness] = useState(false);
   const [readinessError, setReadinessError] = useState<string | null>(null);
   const [expandedStageDetails, setExpandedStageDetails] = useState<Record<string, boolean>>({});
+  const [showRuleDetails, setShowRuleDetails] = useState(false);
 
   // Fetch backend readiness and eligibility data whenever rule or version changes
   const fetchReadinessAndEligibility = async () => {
@@ -655,9 +656,52 @@ export function AgentIntelligenceStudioOverview({
             </span>
           </div>
 
-          <p className="text-xs text-slate-300 leading-relaxed">
-            {plainEnglishDescription}
-          </p>
+          <div className="flex items-center justify-between text-[11px] pt-1">
+            <p className="text-xs text-slate-300 leading-relaxed flex-1 mr-3">
+              {plainEnglishDescription}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowRuleDetails((prev) => !prev)}
+              className="text-cyan-400 hover:text-cyan-300 font-medium inline-flex items-center gap-1 shrink-0 px-2 py-1 rounded bg-slate-900 border border-slate-800 text-[11px] transition-colors"
+            >
+              <span>{showRuleDetails ? "Hide Rule Details" : "Rule Details"}</span>
+              <ChevronDown className={`w-3 h-3 transition-transform ${showRuleDetails ? "rotate-180" : ""}`} />
+            </button>
+          </div>
+
+          {showRuleDetails && (
+            <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-xs text-slate-300 space-y-2 font-mono">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                <div>
+                  <span className="text-slate-500 block text-[9px] uppercase font-sans font-bold">Rule ID</span>
+                  <span className="text-cyan-300 select-all">{ruleId}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[9px] uppercase font-sans font-bold">Detection Archetype</span>
+                  <span className="text-slate-200">{displayArchetype}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[9px] uppercase font-sans font-bold">SIEM Deployment</span>
+                  <span className={deploymentStatus === "ACTIVE" ? "text-emerald-400" : "text-slate-400"}>{deploymentStatus}</span>
+                </div>
+              </div>
+              {intelligenceData?.semantics?.detection_objective && (
+                <div className="pt-1 border-t border-slate-800/80 text-[11px]">
+                  <span className="text-slate-500 block text-[9px] uppercase font-sans font-bold">Authoritative Objective</span>
+                  <span className="text-slate-300 font-sans">{intelligenceData.semantics.detection_objective}</span>
+                </div>
+              )}
+              {((intelligenceData?.semantics as any)?.correlation_rule || intelligenceData?.semantics?.primary_behavior) && (
+                <div className="pt-1 border-t border-slate-800/80 text-[10px]">
+                  <span className="text-slate-500 block text-[9px] uppercase font-sans font-bold">Detection Logic & Behavior</span>
+                  <pre className="text-slate-300 overflow-x-auto whitespace-pre-wrap font-mono text-[10px]">
+                    {(intelligenceData?.semantics as any)?.correlation_rule || intelligenceData?.semantics?.primary_behavior}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Warning banner when readiness evaluation fails */}
           {readinessError && (
@@ -821,7 +865,79 @@ export function AgentIntelligenceStudioOverview({
         </div>
       </div>
 
-      {/* 2. BALANCED 12-COLUMN MAIN & CONTEXT WORKSPACE */}
+      {/* 2. RULE HEALTH SUMMARY (4 COMPACT INDICATORS) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div
+          onClick={() => onNavigateTab("advanced", "quality")}
+          className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/50 hover:border-cyan-600/60 cursor-pointer transition-all shadow-sm group"
+        >
+          <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400">
+            <span>Policy Quality</span>
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
+          </div>
+          <div className="text-xl font-bold font-mono text-slate-100 mt-1">
+            {qualityScore !== null ? `${qualityScore}/100` : "—"}
+          </div>
+          <div className="text-[10px] text-slate-400 mt-0.5 truncate flex items-center gap-1">
+            <span className={`w-1.5 h-1.5 rounded-full ${qualityScore && qualityScore >= 70 ? "bg-emerald-400" : "bg-amber-400"}`} />
+            {qualityScore && qualityScore >= 70 ? "≥70 Standard Met" : "Requires Rework"}
+          </div>
+        </div>
+
+        <div
+          onClick={() => onNavigateTab("advanced", "quality")}
+          className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/50 hover:border-cyan-600/60 cursor-pointer transition-all shadow-sm group"
+        >
+          <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400">
+            <span>Quality Gates</span>
+            <Award className="w-3.5 h-3.5 text-sky-400 group-hover:scale-110 transition-transform" />
+          </div>
+          <div className="text-xl font-bold font-mono text-cyan-300 mt-1">
+            {passedGates} / 8 Passed
+          </div>
+          <div className="text-[10px] text-slate-400 mt-0.5 truncate flex items-center gap-1">
+            <span className={`w-1.5 h-1.5 rounded-full ${passedGates === 8 ? "bg-emerald-400" : hasHardGateFailure ? "bg-rose-400" : "bg-amber-400"}`} />
+            {passedGates === 8 ? "All Gates Verified" : hasHardGateFailure ? "Blockers Present" : "Gates Incomplete"}
+          </div>
+        </div>
+
+        <div
+          onClick={() => onNavigateTab("learning")}
+          className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/50 hover:border-cyan-600/60 cursor-pointer transition-all shadow-sm group"
+        >
+          <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400">
+            <span>Empirical Validation</span>
+            <FileCheck2 className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+          </div>
+          <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
+            {(readinessData as any)?.empirical_validation_status || (totalReviews >= 30 ? "Verified" : "Insufficient Data")}
+          </div>
+          <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+            {totalReviews} / 30 Verified Reviews
+          </div>
+        </div>
+
+        <div
+          onClick={() => {
+            const el = document.getElementById("guided-readiness-checklist");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
+          className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/50 hover:border-cyan-600/60 cursor-pointer transition-all shadow-sm group"
+        >
+          <div className="flex items-center justify-between text-[10px] uppercase font-bold text-slate-400">
+            <span>Production Readiness</span>
+            <span className={`w-2 h-2 rounded-full ${currentReadinessBadge.dot}`} />
+          </div>
+          <div className="text-sm sm:text-base font-extrabold text-slate-100 mt-1.5 truncate">
+            {currentReadinessBadge.label}
+          </div>
+          <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+            Cascade: {completedStagesCount} / 6 Stages
+          </div>
+        </div>
+      </div>
+
+      {/* 3. BALANCED 12-COLUMN MAIN & CONTEXT WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
         {/* LEFT 8 COLUMNS: PRIMARY ACTIONABLE WORKFLOW */}
         <div className="lg:col-span-8 space-y-3.5">
