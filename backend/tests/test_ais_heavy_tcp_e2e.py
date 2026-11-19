@@ -1179,5 +1179,5 @@ async def test_12_v82_deterministic_reasoning_integrity_and_confidence_calibrati
     sib_r = sibling_rule.scalar_one_or_none()
     assert sib_r is not None
     assert sib_r.id == SIBLING_RULE_UUID
-    assert sib_r.is_active is True
+    assert sib_r.status == "ACTIVE"
 
