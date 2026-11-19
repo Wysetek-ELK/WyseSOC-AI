@@ -61,6 +61,9 @@ class PromptVersion(Base):
     revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     revocation_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     previous_status: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    archived_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    archival_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 

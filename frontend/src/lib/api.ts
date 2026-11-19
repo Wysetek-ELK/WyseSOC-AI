@@ -583,7 +583,60 @@ export interface PromptVersion {
   revoked_at?: string | null;
   revocation_reason?: string | null;
   previous_status?: string | null;
+  archived_by_user_id?: string | null;
+  archived_at?: string | null;
+  archival_reason?: string | null;
   created_at: string;
+}
+
+export interface PolicyVersionHistoryItem {
+  id: string;
+  prompt_id: string;
+  version_number: number;
+  status: "DRAFT" | "VALIDATED" | "APPROVED" | "REVOKED" | "ARCHIVED" | string;
+  previous_status?: string | null;
+  quality_status?: string;
+  quality_score?: number | null;
+  change_summary: string;
+  is_active: boolean;
+  is_eligible_for_deletion: boolean;
+  is_eligible_for_archive: boolean;
+  blocking_reasons: string[];
+  dependency_counts: Record<string, number>;
+  usage_label: string;
+  created_at: string;
+  approved_at?: string | null;
+  archived_at?: string | null;
+  archival_reason?: string | null;
+}
+
+export interface VersionDeletionPreview {
+  rule_id: string;
+  rule_name: string;
+  version_id: string;
+  version_number: number;
+  status: string;
+  is_active: boolean;
+  is_eligible: boolean;
+  blocking_reasons: string[];
+  dependency_counts: Record<string, number>;
+  records_affected: number;
+  is_reversible: boolean;
+  warning_message: string;
+}
+
+export interface BulkVersionDeleteResponse {
+  selected_count: number;
+  eligible_count: number;
+  deleted_count: number;
+  protected_count: number;
+  deleted_version_numbers: number[];
+  protected_items: Array<{
+    version_id: string;
+    version_number: number;
+    status: string;
+    blocking_reasons: string[];
+  }>;
 }
 
 export interface RulePrompt {
@@ -933,11 +986,11 @@ export interface PolicySimulationResult {
   regression_detected: boolean;
   regression_status: "PASS" | "REGRESSION_DETECTED" | "INSUFFICIENT_DATA" | "NOT_ASSESSED";
   empirical_validation_status:
-    | "EVALUATED_PASSED"
-    | "EVALUATED_FAILED"
-    | "INSUFFICIENT_DATA"
-    | "INCONCLUSIVE"
-    | "SIMULATED_ONLY_NOT_CERTIFYING";
+  | "EVALUATED_PASSED"
+  | "EVALUATED_FAILED"
+  | "INSUFFICIENT_DATA"
+  | "INCONCLUSIVE"
+  | "SIMULATED_ONLY_NOT_CERTIFYING";
   abstention_rate?: number | null;
   balanced_accuracy?: number | null;
   precision?: number | null;
@@ -1797,8 +1850,11 @@ export const api = {
     return res.json();
   },
 
-  async getRulePrompt(ruleId: string): Promise<RulePrompt> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}`);
+  async getRulePrompt(ruleId: string, includeArchived: boolean = false): Promise<RulePrompt> {
+    const url = includeArchived
+      ? `${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}?include_archived=true`
+      : `${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}`;
+    const res = await fetchWithAuth(url);
     if (!res.ok) {
       const err: any = new Error(res.status === 404 ? `Rule '${ruleId}' not found (404)` : "Failed to fetch rule prompt");
       err.status = res.status;
@@ -1879,7 +1935,99 @@ export const api = {
     return res.json();
   },
 
-  async getRulePolicyEligibility(ruleId: string, versionId?: string): Promise<PolicyEligibilityResponse> {
+  async getRuleVersionHistory(ruleId: string): Promise<PolicyVersionHistoryItem[]> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}/version-history`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to fetch policy version history" }));
+      throw new Error(err.detail || "Failed to fetch policy version history");
+    }
+    return res.json();
+  },
+
+  async getVersionDeletionPreview(ruleId: string, versionId: string): Promise<VersionDeletionPreview> {
+    const res = await fetchWithAuth(
+      `${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}/version/${encodeURIComponent(versionId)}/deletion-preview`
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to preview version deletion" }));
+      throw new Error(err.detail || "Failed to preview version deletion");
+    }
+    return res.json();
+  },
+
+  async deletePromptVersion(
+    ruleId: string,
+    versionId: string,
+    justification?: string
+  ): Promise<{ success: boolean; message: string }> {
+    const q = justification ? `?justification=${encodeURIComponent(justification)}` : "";
+    const res = await fetchWithAuth(
+      `${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}/version/${encodeURIComponent(versionId)}${q}`,
+      {
+        method: "DELETE",
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to delete policy version" }));
+      throw new Error(err.detail || "Failed to delete policy version");
+    }
+    return res.json();
+  },
+
+  async archivePromptVersion(ruleId: string, versionId: string, reason?: string): Promise<PromptVersion> {
+    const res = await fetchWithAuth(
+      `${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}/version/${encodeURIComponent(versionId)}/archive`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason || "Archived by SOC Administrator" }),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to archive policy version" }));
+      throw new Error(err.detail || "Failed to archive policy version");
+    }
+    return res.json();
+  },
+
+  async restorePromptVersion(ruleId: string, versionId: string): Promise<PromptVersion> {
+    const res = await fetchWithAuth(
+      `${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}/version/${encodeURIComponent(versionId)}/restore`,
+      {
+        method: "POST",
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to restore policy version" }));
+      throw new Error(err.detail || "Failed to restore policy version");
+    }
+    return res.json();
+  },
+
+  async bulkDeletePromptVersions(
+    ruleId: string,
+    versionIds: string[],
+    justification?: string
+  ): Promise<BulkVersionDeleteResponse> {
+    const res = await fetchWithAuth(
+      `${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}/versions/bulk-delete`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          version_ids: versionIds,
+          justification: justification || "Bulk administrative cleanup of obsolete drafts",
+        }),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Bulk cleanup failed" }));
+      throw new Error(err.detail || "Bulk cleanup failed");
+    }
+    return res.json();
+  },
+
+  async getPolicyEligibility(ruleId: string, versionId?: string): Promise<any> {
     const url = versionId
       ? `${API_BASE}/prompts/rule/${ruleId}/eligibility?version_id=${encodeURIComponent(versionId)}`
       : `${API_BASE}/prompts/rule/${ruleId}/eligibility`;
@@ -1891,27 +2039,27 @@ export const api = {
     return res.json();
   },
 
-  async exportRulePrompts(format: "json" | "markdown" = "json"): Promise<{ blob: Blob; filename: string }> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/export?format=${format}`);
-    if (!res.ok) throw new Error("Failed to export rule prompts");
-    const blob = await res.blob();
-    const disposition = res.headers.get("Content-Disposition");
-    let filename = `agent_intelligence_studio_rules_prompts.${format === "json" ? "json" : "md"}`;
-    if (disposition) {
-      const match = disposition.match(/filename="?([^";]+)"?/);
-      if (match && match[1]) filename = match[1];
-    }
+  async exportRulePrompts(format: "json" | "markdown" = "json"): Promise < { blob: Blob; filename: string } > {
+  const res = await fetchWithAuth(`${API_BASE}/prompts/export?format=${format}`);
+  if(!res.ok) throw new Error("Failed to export rule prompts");
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition");
+  let filename = `agent_intelligence_studio_rules_prompts.${format === "json" ? "json" : "md"}`;
+  if(disposition) {
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    if (match && match[1]) filename = match[1];
+  }
     return { blob, filename };
-  },
+},
 
 
-  async exportSingleRulePrompt(ruleId: string, format: "json" | "markdown" = "json"): Promise<{ blob: Blob; filename: string }> {
+  async exportSingleRulePrompt(ruleId: string, format: "json" | "markdown" = "json"): Promise < { blob: Blob; filename: string } > {
     const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/export?format=${format}`);
-    if (!res.ok) throw new Error("Failed to export rule prompt configuration");
+    if(!res.ok) throw new Error("Failed to export rule prompt configuration");
     const blob = await res.blob();
     const disposition = res.headers.get("Content-Disposition");
     let filename = `rule_prompt_${ruleId}.${format === "json" ? "json" : "md"}`;
-    if (disposition) {
+    if(disposition) {
       const match = disposition.match(/filename="?([^";]+)"?/);
       if (match && match[1]) filename = match[1];
     }
@@ -1919,176 +2067,176 @@ export const api = {
   },
 
 
-  // =================== AGENT INTELLIGENCE STUDIO 2.0 ===================
-  async getRuleIntelligence(ruleId: string): Promise<RuleIntelligenceData> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/intelligence`);
-    if (!res.ok) throw new Error("Failed to fetch rule intelligence and detection semantics");
-    return res.json();
-  },
+    // =================== AGENT INTELLIGENCE STUDIO 2.0 ===================
+    async getRuleIntelligence(ruleId: string): Promise < RuleIntelligenceData > {
+      const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/intelligence`);
+      if(!res.ok) throw new Error("Failed to fetch rule intelligence and detection semantics");
+      return res.json();
+    },
 
-  async analyzeRuleIntelligence(ruleId: string, authoritativeDefinition?: any): Promise<any> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/analyze`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ authoritative_siem_definition: authoritativeDefinition }),
-    });
-    if (!res.ok) throw new Error("Failed to analyze rule intelligence");
-    return res.json();
-  },
+      async analyzeRuleIntelligence(ruleId: string, authoritativeDefinition ?: any): Promise < any > {
+        const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ authoritative_siem_definition: authoritativeDefinition }),
+        });
+        if(!res.ok) throw new Error("Failed to analyze rule intelligence");
+        return res.json();
+      },
 
-  async generateIntelligentDraft(ruleId: string, authoritativeDefinition?: any): Promise<PromptVersion> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/generate-intelligent-draft`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ authoritative_siem_definition: authoritativeDefinition }),
-    });
-    if (!res.ok) throw new Error("Failed to generate intelligent draft");
-    return res.json();
-  },
+        async generateIntelligentDraft(ruleId: string, authoritativeDefinition ?: any): Promise < PromptVersion > {
+          const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/generate-intelligent-draft`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ authoritative_siem_definition: authoritativeDefinition }),
+          });
+          if(!res.ok) throw new Error("Failed to generate intelligent draft");
+          return res.json();
+        },
 
-  async previewPolicyQuality(ruleId: string, versionId?: string): Promise<PolicyQualityAssessmentResponse> {
-    const url = versionId
-      ? `${API_BASE}/prompts/rule/${ruleId}/quality-preview?version_id=${versionId}`
-      : `${API_BASE}/prompts/rule/${ruleId}/quality-preview`;
-    const res = await fetchWithAuth(url);
-    if (!res.ok) throw new Error("Failed to load read-only policy quality preview");
-    return res.json();
-  },
+          async previewPolicyQuality(ruleId: string, versionId ?: string): Promise < PolicyQualityAssessmentResponse > {
+            const url = versionId
+              ? `${API_BASE}/prompts/rule/${ruleId}/quality-preview?version_id=${versionId}`
+              : `${API_BASE}/prompts/rule/${ruleId}/quality-preview`;
+            const res = await fetchWithAuth(url);
+            if(!res.ok) throw new Error("Failed to load read-only policy quality preview");
+            return res.json();
+          },
 
-  async validatePolicyQuality(ruleId: string, versionId?: string): Promise<PolicyQualityAssessmentResponse> {
-    const url = versionId ? `${API_BASE}/prompts/rule/${ruleId}/validate-quality?version_id=${versionId}` : `${API_BASE}/prompts/rule/${ruleId}/validate-quality`;
-    const res = await fetchWithAuth(url, { method: "POST" });
-    if (!res.ok) throw new Error("Failed to validate policy quality");
-    return res.json();
-  },
+            async validatePolicyQuality(ruleId: string, versionId ?: string): Promise < PolicyQualityAssessmentResponse > {
+              const url = versionId ? `${API_BASE}/prompts/rule/${ruleId}/validate-quality?version_id=${versionId}` : `${API_BASE}/prompts/rule/${ruleId}/validate-quality`;
+              const res = await fetchWithAuth(url, { method: "POST" });
+              if(!res.ok) throw new Error("Failed to validate policy quality");
+              return res.json();
+            },
 
-  async evaluatePolicySimulation(
-    ruleId: string,
-    versionId?: string,
-    options?: {
-      provider_type?: "OPENAI_COMPATIBLE" | "SIMULATED";
-      sample_limit?: number;
-      include_unlabeled_replay?: boolean;
-      async_execution?: boolean;
+              async evaluatePolicySimulation(
+                ruleId: string,
+                versionId ?: string,
+                options ?: {
+                  provider_type?: "OPENAI_COMPATIBLE" | "SIMULATED";
+                  sample_limit?: number;
+                  include_unlabeled_replay?: boolean;
+                  async_execution?: boolean;
+                }
+              ): Promise < PolicySimulationResult > {
+                const params = new URLSearchParams();
+                if(versionId) params.set("version_id", versionId);
+                if(options?.provider_type) params.set("provider_type", options.provider_type);
+                if(options?.sample_limit !== undefined) params.set("sample_limit", String(options.sample_limit));
+if (options?.include_unlabeled_replay !== undefined) {
+  params.set("include_unlabeled_replay", String(options.include_unlabeled_replay));
+}
+if (options?.async_execution !== undefined) {
+  params.set("async_execution", String(options.async_execution));
+}
+const qs = params.toString();
+const url = qs
+  ? `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation?${qs}`
+  : `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation`;
+const res = await fetchWithAuth(url, { method: "POST" });
+if (!res.ok) {
+  let msg = "Failed to evaluate policy simulation";
+  try {
+    const body = await res.json();
+    if (body && body.detail) {
+      msg = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
     }
-  ): Promise<PolicySimulationResult> {
-    const params = new URLSearchParams();
-    if (versionId) params.set("version_id", versionId);
-    if (options?.provider_type) params.set("provider_type", options.provider_type);
-    if (options?.sample_limit !== undefined) params.set("sample_limit", String(options.sample_limit));
-    if (options?.include_unlabeled_replay !== undefined) {
-      params.set("include_unlabeled_replay", String(options.include_unlabeled_replay));
-    }
-    if (options?.async_execution !== undefined) {
-      params.set("async_execution", String(options.async_execution));
-    }
-    const qs = params.toString();
-    const url = qs
-      ? `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation?${qs}`
-      : `${API_BASE}/prompts/rule/${ruleId}/evaluate-simulation`;
-    const res = await fetchWithAuth(url, { method: "POST" });
-    if (!res.ok) {
-      let msg = "Failed to evaluate policy simulation";
-      try {
-        const body = await res.json();
-        if (body && body.detail) {
-          msg = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
-        }
-      } catch (_) {}
-      throw new Error(msg);
-    }
-    return res.json();
+  } catch (_) { }
+  throw new Error(msg);
+}
+return res.json();
   },
 
-  async getPolicyQualitySummary(): Promise<QualitySummaryItem> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/quality/summary`);
-    if (!res.ok) throw new Error("Failed to fetch policy quality summary");
-    return res.json();
-  },
+  async getPolicyQualitySummary(): Promise < QualitySummaryItem > {
+  const res = await fetchWithAuth(`${API_BASE}/prompts/quality/summary`);
+  if(!res.ok) throw new Error("Failed to fetch policy quality summary");
+  return res.json();
+},
 
-  async startBulkQualityAudit(): Promise<any> {
+  async startBulkQualityAudit(): Promise < any > {
     const res = await fetchWithAuth(`${API_BASE}/prompts/quality/bulk-assess`, { method: "POST" });
-    if (!res.ok) throw new Error("Failed to start bulk quality audit");
+    if(!res.ok) throw new Error("Failed to start bulk quality audit");
     return res.json();
   },
 
-  async getBulkQualityAuditStatus(jobId: string): Promise<any> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/quality/bulk-assess/${jobId}`);
-    if (!res.ok) throw new Error("Failed to get bulk quality audit status");
-    return res.json();
+    async getBulkQualityAuditStatus(jobId: string): Promise < any > {
+      const res = await fetchWithAuth(`${API_BASE}/prompts/quality/bulk-assess/${jobId}`);
+      if(!res.ok) throw new Error("Failed to get bulk quality audit status");
+      return res.json();
+    },
+
+      async getRuleDriftEvents(ruleId: string): Promise < PolicyDriftEventItem[] > {
+        const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/drift`);
+        if(!res.ok) throw new Error("Failed to fetch rule drift events");
+        return res.json();
+      },
+
+        async acknowledgeDriftEvents(ruleId: string): Promise < { acknowledged_count: number } > {
+          const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/acknowledge-drift`, { method: "POST" });
+          if(!res.ok) throw new Error("Failed to acknowledge drift events");
+          return res.json();
+        },
+
+          async getActualPromptForIncident(incidentId: string, captureId ?: string, executionId ?: string): Promise < ActualPromptResponse > {
+            const params = new URLSearchParams();
+            if(captureId) params.append("capture_id", captureId);
+            if(executionId) params.append("execution_id", executionId);
+            const qs = params.toString() ? `?${params.toString()}` : "";
+            const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}${qs}`);
+            if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to fetch actual prompt" }));
+  throw new Error(err.detail || "Failed to fetch actual prompt");
+}
+return res.json();
   },
 
-  async getRuleDriftEvents(ruleId: string): Promise<PolicyDriftEventItem[]> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/drift`);
-    if (!res.ok) throw new Error("Failed to fetch rule drift events");
-    return res.json();
+  async getIncidentActualPromptExecutions(incidentId: string): Promise < ExecutionHistoryItem[] > {
+  const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}/executions`);
+  if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to fetch prompt executions" }));
+  throw new Error(err.detail || "Failed to fetch prompt executions");
+}
+return res.json();
   },
 
-  async acknowledgeDriftEvents(ruleId: string): Promise<{ acknowledged_count: number }> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/acknowledge-drift`, { method: "POST" });
-    if (!res.ok) throw new Error("Failed to acknowledge drift events");
-    return res.json();
+  async getRulePromptCaptures(ruleId: string, limit: number = 20): Promise < RuleCaptureSummaryItem[] > {
+  const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/rule/${ruleId}/captures?limit=${limit}`);
+  if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to fetch rule prompt captures" }));
+  throw new Error(err.detail || "Failed to fetch rule prompt captures");
+}
+return res.json();
   },
 
-  async getActualPromptForIncident(incidentId: string, captureId?: string, executionId?: string): Promise<ActualPromptResponse> {
-    const params = new URLSearchParams();
-    if (captureId) params.append("capture_id", captureId);
-    if (executionId) params.append("execution_id", executionId);
-    const qs = params.toString() ? `?${params.toString()}` : "";
-    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}${qs}`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to fetch actual prompt" }));
-      throw new Error(err.detail || "Failed to fetch actual prompt");
-    }
-    return res.json();
+  async getPromptPreviewForRule(ruleId: string, versionId ?: string, incidentId ?: string): Promise < ActualPromptResponse > {
+  const params = new URLSearchParams();
+  if(versionId) params.append("version_id", versionId);
+  if(incidentId) params.append("incident_id", incidentId);
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/rule/${ruleId}/preview${qs}`);
+  if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to fetch prompt preview" }));
+  throw new Error(err.detail || "Failed to fetch prompt preview");
+}
+return res.json();
   },
 
-  async getIncidentActualPromptExecutions(incidentId: string): Promise<ExecutionHistoryItem[]> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}/executions`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to fetch prompt executions" }));
-      throw new Error(err.detail || "Failed to fetch prompt executions");
-    }
-    return res.json();
-  },
-
-  async getRulePromptCaptures(ruleId: string, limit: number = 20): Promise<RuleCaptureSummaryItem[]> {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/rule/${ruleId}/captures?limit=${limit}`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to fetch rule prompt captures" }));
-      throw new Error(err.detail || "Failed to fetch rule prompt captures");
-    }
-    return res.json();
-  },
-
-  async getPromptPreviewForRule(ruleId: string, versionId?: string, incidentId?: string): Promise<ActualPromptResponse> {
-    const params = new URLSearchParams();
-    if (versionId) params.append("version_id", versionId);
-    if (incidentId) params.append("incident_id", incidentId);
-    const qs = params.toString() ? `?${params.toString()}` : "";
-    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/rule/${ruleId}/preview${qs}`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to fetch prompt preview" }));
-      throw new Error(err.detail || "Failed to fetch prompt preview");
-    }
-    return res.json();
-  },
-
-  async exportActualPrompt(incidentId: string, format: "json" | "markdown" = "json", captureId?: string): Promise<{ blob: Blob; filename: string }> {
-    const params = new URLSearchParams();
-    params.append("format", format);
-    if (captureId) params.append("capture_id", captureId);
-    const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}/export?${params.toString()}`);
-    if (!res.ok) throw new Error("Failed to export actual prompt");
-    const blob = await res.blob();
-    const disposition = res.headers.get("Content-Disposition");
-    let filename = `actual_prompt_${incidentId}.${format === "json" ? "json" : "md"}`;
-    if (disposition) {
-      const match = disposition.match(/filename="?([^";]+)"?/);
-      if (match && match[1]) filename = match[1];
-    }
+  async exportActualPrompt(incidentId: string, format: "json" | "markdown" = "json", captureId ?: string): Promise < { blob: Blob; filename: string } > {
+  const params = new URLSearchParams();
+  params.append("format", format);
+  if(captureId) params.append("capture_id", captureId);
+  const res = await fetchWithAuth(`${API_BASE}/prompts/actual-prompt/incident/${incidentId}/export?${params.toString()}`);
+  if(!res.ok) throw new Error("Failed to export actual prompt");
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition");
+  let filename = `actual_prompt_${incidentId}.${format === "json" ? "json" : "md"}`;
+  if(disposition) {
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    if (match && match[1]) filename = match[1];
+  }
     return { blob, filename };
-  },
+},
 
   // =================== PHASE 2: LEARNING HISTORY ===================
   async getLearningRecords(params: {
@@ -2099,24 +2247,24 @@ export const api = {
     verdict?: string;
     search?: string;
   } = {}) {
-    const q = new URLSearchParams();
-    if (params.page) q.set("page", params.page.toString());
-    if (params.page_size) q.set("page_size", params.page_size.toString());
-    if (params.rule_id) q.set("rule_id", params.rule_id);
-    if (params.verification_status) q.set("verification_status", params.verification_status);
-    if (params.verdict) q.set("verdict", params.verdict);
-    if (params.search) q.set("search", params.search);
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", params.page.toString());
+  if (params.page_size) q.set("page_size", params.page_size.toString());
+  if (params.rule_id) q.set("rule_id", params.rule_id);
+  if (params.verification_status) q.set("verification_status", params.verification_status);
+  if (params.verdict) q.set("verdict", params.verdict);
+  if (params.search) q.set("search", params.search);
 
-    const res = await fetchWithAuth(`${API_BASE}/learning/records?${q.toString()}`);
-    if (!res.ok) throw new Error("Failed to fetch learning records");
-    return res.json();
-  },
+  const res = await fetchWithAuth(`${API_BASE}/learning/records?${q.toString()}`);
+  if (!res.ok) throw new Error("Failed to fetch learning records");
+  return res.json();
+},
 
-  async getLearningRecord(id: string): Promise<LearningRecord> {
-    const res = await fetchWithAuth(`${API_BASE}/learning/records/${id}`);
-    if (!res.ok) throw new Error("Failed to fetch learning record");
-    return res.json();
-  },
+  async getLearningRecord(id: string): Promise < LearningRecord > {
+  const res = await fetchWithAuth(`${API_BASE}/learning/records/${id}`);
+  if(!res.ok) throw new Error("Failed to fetch learning record");
+  return res.json();
+},
 
   async findSimilarCases(data: {
     incident_id?: string;
@@ -2125,159 +2273,159 @@ export const api = {
     source_ip?: string;
     command_substring?: string;
     top_k?: number;
-  }): Promise<SimilarCaseMatch[]> {
+  }): Promise < SimilarCaseMatch[] > {
     const res = await fetchWithAuth(`${API_BASE}/learning/similar-cases`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to search similar cases");
+    if(!res.ok) throw new Error("Failed to search similar cases");
     return res.json();
   },
 
-  async seedHistoricalLearning() {
-    const res = await fetchWithAuth(`${API_BASE}/learning/seed-historical`, {
-      method: "POST",
-    });
-    if (!res.ok) throw new Error("Failed to seed historical learning cases");
-    return res.json();
-  },
+    async seedHistoricalLearning() {
+  const res = await fetchWithAuth(`${API_BASE}/learning/seed-historical`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to seed historical learning cases");
+  return res.json();
+},
 
   // =================== PHASE 3: DRY-RUN ENGINE ===================
   async createDryRunConfig(data: {
-    name: string;
-    description?: string;
-    rule_id?: string;
-    prompt_version_id?: string;
-    provider_type?: string;
-    split_strategy?: string;
-    dataset_filters?: Record<string, any>;
-  }): Promise<DryRunConfig> {
-    const res = await fetchWithAuth(`${API_BASE}/dry-run/configs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Failed to create dry run config");
-    }
-    return res.json();
+  name: string;
+  description?: string;
+  rule_id?: string;
+  prompt_version_id?: string;
+  provider_type?: string;
+  split_strategy?: string;
+  dataset_filters?: Record<string, any>;
+}): Promise < DryRunConfig > {
+  const res = await fetchWithAuth(`${API_BASE}/dry-run/configs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if(!res.ok) {
+  const err = await res.json().catch(() => ({}));
+  throw new Error(err.detail || "Failed to create dry run config");
+}
+return res.json();
   },
 
-  async getDryRunConfigs(): Promise<DryRunConfig[]> {
-    const res = await fetchWithAuth(`${API_BASE}/dry-run/configs`);
-    if (!res.ok) throw new Error("Failed to fetch dry run configs");
-    return res.json();
-  },
+  async getDryRunConfigs(): Promise < DryRunConfig[] > {
+  const res = await fetchWithAuth(`${API_BASE}/dry-run/configs`);
+  if(!res.ok) throw new Error("Failed to fetch dry run configs");
+  return res.json();
+},
 
-  async getDryRunConfig(id: string): Promise<DryRunConfig> {
+  async getDryRunConfig(id: string): Promise < DryRunConfig > {
     const res = await fetchWithAuth(`${API_BASE}/dry-run/configs/${id}`);
-    if (!res.ok) throw new Error("Failed to fetch dry run config");
+    if(!res.ok) throw new Error("Failed to fetch dry run config");
     return res.json();
   },
 
-  async triggerDryRunJob(configId: string, customSampleLimit?: number): Promise<DryRunJob> {
-    const res = await fetchWithAuth(`${API_BASE}/dry-run/trigger`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ config_id: configId, custom_sample_limit: customSampleLimit }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Failed to trigger dry run job");
-    }
-    return res.json();
+    async triggerDryRunJob(configId: string, customSampleLimit ?: number): Promise < DryRunJob > {
+      const res = await fetchWithAuth(`${API_BASE}/dry-run/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config_id: configId, custom_sample_limit: customSampleLimit }),
+      });
+      if(!res.ok) {
+  const err = await res.json().catch(() => ({}));
+  throw new Error(err.detail || "Failed to trigger dry run job");
+}
+return res.json();
   },
 
-  async getDryRunJobs(limit: number = 50): Promise<DryRunJob[]> {
-    const res = await fetchWithAuth(`${API_BASE}/dry-run/jobs?limit=${limit}`);
-    if (!res.ok) throw new Error("Failed to fetch dry run jobs");
-    return res.json();
-  },
+  async getDryRunJobs(limit: number = 50): Promise < DryRunJob[] > {
+  const res = await fetchWithAuth(`${API_BASE}/dry-run/jobs?limit=${limit}`);
+  if(!res.ok) throw new Error("Failed to fetch dry run jobs");
+  return res.json();
+},
 
-  async getDryRunJob(id: string): Promise<DryRunJob> {
+  async getDryRunJob(id: string): Promise < DryRunJob > {
     const res = await fetchWithAuth(`${API_BASE}/dry-run/jobs/${id}`);
-    if (!res.ok) throw new Error("Failed to fetch dry run job");
+    if(!res.ok) throw new Error("Failed to fetch dry run job");
     return res.json();
   },
 
-  async getDryRunJobResults(jobId: string, limit: number = 100, offset: number = 0): Promise<DryRunResult[]> {
-    const res = await fetchWithAuth(`${API_BASE}/dry-run/jobs/${jobId}/results?limit=${limit}&offset=${offset}`);
-    if (!res.ok) throw new Error("Failed to fetch dry run results");
-    return res.json();
-  },
+    async getDryRunJobResults(jobId: string, limit: number = 100, offset: number = 0): Promise < DryRunResult[] > {
+      const res = await fetchWithAuth(`${API_BASE}/dry-run/jobs/${jobId}/results?limit=${limit}&offset=${offset}`);
+      if(!res.ok) throw new Error("Failed to fetch dry run results");
+      return res.json();
+    },
 
-  // =================== PHASE 3: EVALUATION FRAMEWORK ===================
-  async getJobMetrics(jobId: string): Promise<EvaluationMetrics> {
-    const res = await fetchWithAuth(`${API_BASE}/evaluations/job/${jobId}/metrics`);
-    if (!res.ok) throw new Error("Failed to fetch job evaluation metrics");
-    return res.json();
-  },
+      // =================== PHASE 3: EVALUATION FRAMEWORK ===================
+      async getJobMetrics(jobId: string): Promise < EvaluationMetrics > {
+        const res = await fetchWithAuth(`${API_BASE}/evaluations/job/${jobId}/metrics`);
+        if(!res.ok) throw new Error("Failed to fetch job evaluation metrics");
+        return res.json();
+      },
 
-  async getPromptComparisons(ruleId: string): Promise<PromptComparisonItem[]> {
-    const res = await fetchWithAuth(`${API_BASE}/evaluations/prompt-comparison/${ruleId}`);
-    if (!res.ok) throw new Error("Failed to fetch prompt comparisons");
-    return res.json();
-  },
+        async getPromptComparisons(ruleId: string): Promise < PromptComparisonItem[] > {
+          const res = await fetchWithAuth(`${API_BASE}/evaluations/prompt-comparison/${ruleId}`);
+          if(!res.ok) throw new Error("Failed to fetch prompt comparisons");
+          return res.json();
+        },
 
-  async getRuleMaturityStatus(): Promise<RuleMaturity[]> {
-    const res = await fetchWithAuth(`${API_BASE}/evaluations/rule-maturity`);
-    if (!res.ok) throw new Error("Failed to fetch rule maturity evaluations");
-    return res.json();
-  },
+          async getRuleMaturityStatus(): Promise < RuleMaturity[] > {
+            const res = await fetchWithAuth(`${API_BASE}/evaluations/rule-maturity`);
+            if(!res.ok) throw new Error("Failed to fetch rule maturity evaluations");
+            return res.json();
+          },
 
-  async approveRuleForAutomation(ruleId: string, approvalNotes: string): Promise<RuleMaturity> {
-    const res = await fetchWithAuth(`${API_BASE}/evaluations/rule-maturity/${ruleId}/approve`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ approval_notes: approvalNotes }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Failed to approve rule for automation");
-    }
-    return res.json();
+            async approveRuleForAutomation(ruleId: string, approvalNotes: string): Promise < RuleMaturity > {
+              const res = await fetchWithAuth(`${API_BASE}/evaluations/rule-maturity/${ruleId}/approve`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ approval_notes: approvalNotes }),
+              });
+              if(!res.ok) {
+  const err = await res.json().catch(() => ({}));
+  throw new Error(err.detail || "Failed to approve rule for automation");
+}
+return res.json();
   },
 
   // =================== DUAL-SERVER INFRASTRUCTURE MONITORING ===================
-  async getServersLive(): Promise<ServersLiveResponse> {
-    const res = await fetchWithAuth(`${API_BASE}/system/servers/live`);
-    if (!res.ok) throw new Error("Failed to fetch live server metrics");
-    return res.json();
-  },
+  async getServersLive(): Promise < ServersLiveResponse > {
+  const res = await fetchWithAuth(`${API_BASE}/system/servers/live`);
+  if(!res.ok) throw new Error("Failed to fetch live server metrics");
+  return res.json();
+},
 
-  async getServersHistory(window: string = "24h"): Promise<ServersHistoryResponse> {
+  async getServersHistory(window: string = "24h"): Promise < ServersHistoryResponse > {
     const res = await fetchWithAuth(`${API_BASE}/system/servers/history?window=${window}`);
-    if (!res.ok) throw new Error("Failed to fetch server historical telemetry");
+    if(!res.ok) throw new Error("Failed to fetch server historical telemetry");
     return res.json();
   },
 
-  // =================== VERDICT INTELLIGENCE VALIDATION (AIS 2.1) ===================
-  async evaluateIncidentTrust(req: {
-    incident_id: string;
-    rule_id?: string;
-    policy_version_number?: number;
-    allow_simulation?: boolean;
-    custom_model_output?: any;
-  }): Promise<VerdictTrustAssessmentResult> {
-    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/evaluate-incident-trust`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to evaluate incident trust" }));
-      throw new Error(err.detail || "Failed to evaluate incident trust");
-    }
-    return res.json();
+    // =================== VERDICT INTELLIGENCE VALIDATION (AIS 2.1) ===================
+    async evaluateIncidentTrust(req: {
+      incident_id: string;
+      rule_id?: string;
+      policy_version_number?: number;
+      allow_simulation?: boolean;
+      custom_model_output?: any;
+    }): Promise < VerdictTrustAssessmentResult > {
+      const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/evaluate-incident-trust`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+      });
+      if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to evaluate incident trust" }));
+  throw new Error(err.detail || "Failed to evaluate incident trust");
+}
+return res.json();
   },
 
-  async getIncidentTrust(incidentId: string): Promise<VerdictTrustAssessmentResult | null> {
-    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/incident/${encodeURIComponent(incidentId)}/trust`);
-    if (!res.ok) return null;
-    return res.json();
-  },
+  async getIncidentTrust(incidentId: string): Promise < VerdictTrustAssessmentResult | null > {
+  const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/incident/${encodeURIComponent(incidentId)}/trust`);
+  if(!res.ok) return null;
+  return res.json();
+},
 
   async startHistoricalEvaluation(req: {
     run_name?: string;
@@ -2288,591 +2436,591 @@ export const api = {
     policy_version_id?: string;
     baseline_run_id?: string;
     provider_type?: string;
-  }): Promise<any> {
+  }): Promise < any > {
     const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/dry-run/evaluate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to start historical evaluation" }));
-      throw new Error(err.detail || "Failed to start historical evaluation");
-    }
-    return res.json();
+    if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to start historical evaluation" }));
+  throw new Error(err.detail || "Failed to start historical evaluation");
+}
+return res.json();
   },
 
-  async listEvaluationRuns(limit: number = 20): Promise<any[]> {
-    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/dry-run/runs?limit=${limit}`);
-    if (!res.ok) throw new Error("Failed to list evaluation runs");
-    return res.json();
-  },
+  async listEvaluationRuns(limit: number = 20): Promise < any[] > {
+  const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/dry-run/runs?limit=${limit}`);
+  if(!res.ok) throw new Error("Failed to list evaluation runs");
+  return res.json();
+},
 
-  async getEvaluationRunDetails(runId: string): Promise<{ run: any; results: any[] }> {
+  async getEvaluationRunDetails(runId: string): Promise < { run: any; results: any[] } > {
     const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/dry-run/runs/${encodeURIComponent(runId)}`);
-    if (!res.ok) throw new Error("Failed to fetch evaluation run details");
+    if(!res.ok) throw new Error("Failed to fetch evaluation run details");
     return res.json();
   },
 
-  async compareEvaluationRuns(baselineRunId: string, candidateRunId: string): Promise<RegressionComparisonReport> {
-    const res = await fetchWithAuth(
-      `${API_BASE}/verdict-intelligence/dry-run/compare?baseline_run_id=${encodeURIComponent(baselineRunId)}&candidate_run_id=${encodeURIComponent(candidateRunId)}`
-    );
-    if (!res.ok) throw new Error("Failed to compare evaluation runs");
-    return res.json();
-  },
+    async compareEvaluationRuns(baselineRunId: string, candidateRunId: string): Promise < RegressionComparisonReport > {
+      const res = await fetchWithAuth(
+        `${API_BASE}/verdict-intelligence/dry-run/compare?baseline_run_id=${encodeURIComponent(baselineRunId)}&candidate_run_id=${encodeURIComponent(candidateRunId)}`
+      );
+      if(!res.ok) throw new Error("Failed to compare evaluation runs");
+      return res.json();
+    },
 
-  async getVerdictTrustOverview(): Promise<VerdictTrustOverviewResponse> {
-    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/metrics/summary`);
-    if (!res.ok) throw new Error("Failed to fetch verdict trust overview");
-    return res.json();
-  },
+      async getVerdictTrustOverview(): Promise < VerdictTrustOverviewResponse > {
+        const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/metrics/summary`);
+        if(!res.ok) throw new Error("Failed to fetch verdict trust overview");
+        return res.json();
+      },
 
-  async getRuleWiseTrustworthiness(): Promise<RuleWiseTrustworthinessItem[]> {
-    const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/metrics/rule-wise`);
-    if (!res.ok) throw new Error("Failed to fetch rule-wise trustworthiness metrics");
-    return res.json();
-  },
+        async getRuleWiseTrustworthiness(): Promise < RuleWiseTrustworthinessItem[] > {
+          const res = await fetchWithAuth(`${API_BASE}/verdict-intelligence/metrics/rule-wise`);
+          if(!res.ok) throw new Error("Failed to fetch rule-wise trustworthiness metrics");
+          return res.json();
+        },
 
-  async exportEvaluationReport(runId?: string, format: "json" | "csv" = "json"): Promise<{ blob: Blob; filename: string }> {
-    const url = runId
-      ? `${API_BASE}/verdict-intelligence/export?run_id=${encodeURIComponent(runId)}&format=${format}`
-      : `${API_BASE}/verdict-intelligence/export?format=${format}`;
-    const res = await fetchWithAuth(url);
-    if (!res.ok) throw new Error("Failed to export evaluation report");
-    const blob = await res.blob();
-    const disposition = res.headers.get("content-disposition");
-    let filename = `verdict_validation_${runId || "all"}.${format}`;
-    if (disposition) {
-      const match = disposition.match(/filename="?([^";]+)"?/);
-      if (match && match[1]) filename = match[1];
-    }
+          async exportEvaluationReport(runId ?: string, format: "json" | "csv" = "json"): Promise < { blob: Blob; filename: string } > {
+            const url = runId
+              ? `${API_BASE}/verdict-intelligence/export?run_id=${encodeURIComponent(runId)}&format=${format}`
+              : `${API_BASE}/verdict-intelligence/export?format=${format}`;
+            const res = await fetchWithAuth(url);
+            if(!res.ok) throw new Error("Failed to export evaluation report");
+            const blob = await res.blob();
+            const disposition = res.headers.get("content-disposition");
+            let filename = `verdict_validation_${runId || "all"}.${format}`;
+            if(disposition) {
+              const match = disposition.match(/filename="?([^";]+)"?/);
+              if (match && match[1]) filename = match[1];
+            }
     return { blob, filename };
-  },
+          },
 
-  // =================== VERDICTUM SENTINEL (VERDICTUM CORTEX) ===================
-  async getChatStatus(): Promise<ChatStatusResponse> {
-    const res = await fetchWithAuth(`${API_BASE}/chat/status`);
-    if (!res.ok) throw new Error("Failed to check Verdictum Cortex status");
-    return res.json();
-  },
+            // =================== VERDICTUM SENTINEL (VERDICTUM CORTEX) ===================
+            async getChatStatus(): Promise < ChatStatusResponse > {
+              const res = await fetchWithAuth(`${API_BASE}/chat/status`);
+              if(!res.ok) throw new Error("Failed to check Verdictum Cortex status");
+              return res.json();
+            },
 
-  async sendChatMessage(req: ChatRequest): Promise<ChatResponse> {
-    const res = await fetchWithAuth(`${API_BASE}/chat/message`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req),
-    });
-    if (!res.ok) {
-      throw new Error(await parseChatHttpError(res));
-    }
-    return res.json();
+              async sendChatMessage(req: ChatRequest): Promise < ChatResponse > {
+                const res = await fetchWithAuth(`${API_BASE}/chat/message`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(req),
+                });
+                if(!res.ok) {
+  throw new Error(await parseChatHttpError(res));
+}
+return res.json();
   },
 
   async streamChatMessage(
-    req: ChatRequest,
-    callbacks: {
-      onDelta: (chunk: string) => void;
-    }
-  ): Promise<ChatResponse> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 300_000);
-    try {
-      const res = await fetchWithAuth(`${API_BASE}/chat/stream`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(req),
-        signal: controller.signal,
-      });
+  req: ChatRequest,
+  callbacks: {
+  onDelta: (chunk: string) => void;
+}
+): Promise < ChatResponse > {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 300_000);
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/chat/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+      signal: controller.signal,
+    });
 
-      // Fallback cleanly if streaming endpoint is not available (e.g. older backend instance)
-      if (res.status === 404 || res.status === 405) {
-        return this.sendChatMessage(req);
-      }
+    // Fallback cleanly if streaming endpoint is not available (e.g. older backend instance)
+    if(res.status === 404 || res.status === 405) {
+  return this.sendChatMessage(req);
+}
 
-      if (!res.ok || !res.body) {
-        throw new Error(await parseChatHttpError(res));
-      }
+if (!res.ok || !res.body) {
+  throw new Error(await parseChatHttpError(res));
+}
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let accumulated = "";
-      const metaHolder: { done: ChatStreamDoneEvent | null } = { done: null };
+const reader = res.body.getReader();
+const decoder = new TextDecoder();
+let buffer = "";
+let accumulated = "";
+const metaHolder: { done: ChatStreamDoneEvent | null } = { done: null };
 
-      const processLine = (rawLine: string) => {
-        const line = rawLine.trim();
-        if (!line || line.startsWith(":") || !line.startsWith("data:")) return;
-        const jsonPart = line.slice(5).trim();
-        if (!jsonPart || jsonPart === "[DONE]") return;
-        let evt: ChatStreamEvent;
-        try {
-          evt = JSON.parse(jsonPart) as ChatStreamEvent;
-        } catch {
-          return;
-        }
-        if (evt.type === "delta" && typeof evt.content === "string") {
-          accumulated += evt.content;
-          callbacks.onDelta(evt.content);
-        } else if (evt.type === "error") {
-          throw new Error(evt.detail || "Verdictum Cortex stream error");
-        } else if (evt.type === "done") {
-          metaHolder.done = evt;
-        }
-      };
+const processLine = (rawLine: string) => {
+  const line = rawLine.trim();
+  if (!line || line.startsWith(":") || !line.startsWith("data:")) return;
+  const jsonPart = line.slice(5).trim();
+  if (!jsonPart || jsonPart === "[DONE]") return;
+  let evt: ChatStreamEvent;
+  try {
+    evt = JSON.parse(jsonPart) as ChatStreamEvent;
+  } catch {
+    return;
+  }
+  if (evt.type === "delta" && typeof evt.content === "string") {
+    accumulated += evt.content;
+    callbacks.onDelta(evt.content);
+  } else if (evt.type === "error") {
+    throw new Error(evt.detail || "Verdictum Cortex stream error");
+  } else if (evt.type === "done") {
+    metaHolder.done = evt;
+  }
+};
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const l of lines) {
-          processLine(l);
-        }
-      }
-      if (buffer.trim()) {
-        processLine(buffer);
-      }
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  buffer += decoder.decode(value, { stream: true });
+  const lines = buffer.split("\n");
+  buffer = lines.pop() ?? "";
+  for (const l of lines) {
+    processLine(l);
+  }
+}
+if (buffer.trim()) {
+  processLine(buffer);
+}
 
-      const doneMeta = metaHolder.done;
-      return {
-        message: {
-          role: "assistant",
-          content: accumulated,
-          timestamp: doneMeta?.timestamp || new Date().toISOString(),
-        },
-        model: doneMeta?.model || "local-llm",
-        latency_ms: doneMeta?.latency_ms || 0,
-        prompt_tokens: doneMeta?.prompt_tokens || 0,
-        completion_tokens: doneMeta?.completion_tokens || 0,
-        total_tokens: doneMeta?.total_tokens || 0,
-        attached_incident_id: doneMeta?.attached_incident_id ?? undefined,
-        server_url: doneMeta?.server_url || "",
-        is_simulated: false,
-      };
+const doneMeta = metaHolder.done;
+return {
+  message: {
+    role: "assistant",
+    content: accumulated,
+    timestamp: doneMeta?.timestamp || new Date().toISOString(),
+  },
+  model: doneMeta?.model || "local-llm",
+  latency_ms: doneMeta?.latency_ms || 0,
+  prompt_tokens: doneMeta?.prompt_tokens || 0,
+  completion_tokens: doneMeta?.completion_tokens || 0,
+  total_tokens: doneMeta?.total_tokens || 0,
+  attached_incident_id: doneMeta?.attached_incident_id ?? undefined,
+  server_url: doneMeta?.server_url || "",
+  is_simulated: false,
+};
     } finally {
-      clearTimeout(timer);
-    }
+  clearTimeout(timer);
+}
   },
 
   // =================== PHASE 9: CONTROLLED SOC PILOT & ELIGIBILITY ===================
-  async getPilotConfig(): Promise<PilotConfig> {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/config`);
-    if (!res.ok) throw new Error("Failed to load pilot configuration");
-    return res.json();
-  },
+  async getPilotConfig(): Promise < PilotConfig > {
+  const res = await fetchWithAuth(`${API_BASE}/pilot/config`);
+  if(!res.ok) throw new Error("Failed to load pilot configuration");
+  return res.json();
+},
 
-  async updatePilotConfig(payload: Record<string, any>): Promise<PilotConfig> {
+  async updatePilotConfig(payload: Record<string, any>): Promise < PilotConfig > {
     const res = await fetchWithAuth(`${API_BASE}/pilot/config`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to update pilot configuration" }));
-      throw new Error(typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail));
-    }
-    return res.json();
+    if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to update pilot configuration" }));
+  throw new Error(typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail));
+}
+return res.json();
   },
 
-  async activatePilot(mode: "SHADOW" | "ANALYST_ASSISTED" | "DISABLED", change_reason: string): Promise<PilotConfig> {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/activate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode, change_reason }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to activate pilot" }));
-      throw new Error(err.detail || "Failed to activate pilot");
-    }
-    return res.json();
+  async activatePilot(mode: "SHADOW" | "ANALYST_ASSISTED" | "DISABLED", change_reason: string): Promise < PilotConfig > {
+  const res = await fetchWithAuth(`${API_BASE}/pilot/activate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode, change_reason }),
+  });
+  if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to activate pilot" }));
+  throw new Error(err.detail || "Failed to activate pilot");
+}
+return res.json();
   },
 
-  async pausePilot(reason: string): Promise<PilotConfig> {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/pause`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to pause pilot" }));
-      throw new Error(err.detail || "Failed to pause pilot");
-    }
-    return res.json();
+  async pausePilot(reason: string): Promise < PilotConfig > {
+  const res = await fetchWithAuth(`${API_BASE}/pilot/pause`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  });
+  if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to pause pilot" }));
+  throw new Error(err.detail || "Failed to pause pilot");
+}
+return res.json();
   },
 
-  async resumePilot(reason: string): Promise<PilotConfig> {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/resume`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to resume pilot" }));
-      throw new Error(err.detail || "Failed to resume pilot");
-    }
-    return res.json();
+  async resumePilot(reason: string): Promise < PilotConfig > {
+  const res = await fetchWithAuth(`${API_BASE}/pilot/resume`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  });
+  if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to resume pilot" }));
+  throw new Error(err.detail || "Failed to resume pilot");
+}
+return res.json();
   },
 
-  async disablePilot(reason: string): Promise<PilotConfig> {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/disable`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to disable pilot" }));
-      throw new Error(err.detail || "Failed to disable pilot");
-    }
-    return res.json();
+  async disablePilot(reason: string): Promise < PilotConfig > {
+  const res = await fetchWithAuth(`${API_BASE}/pilot/disable`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  });
+  if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to disable pilot" }));
+  throw new Error(err.detail || "Failed to disable pilot");
+}
+return res.json();
   },
 
-  async rollbackPilot(target_version: number, reason: string): Promise<PilotConfig> {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/rollback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ target_version, reason }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to roll back pilot" }));
-      throw new Error(err.detail || "Failed to roll back pilot");
-    }
-    return res.json();
+  async rollbackPilot(target_version: number, reason: string): Promise < PilotConfig > {
+  const res = await fetchWithAuth(`${API_BASE}/pilot/rollback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ target_version, reason }),
+  });
+  if(!res.ok) {
+  const err = await res.json().catch(() => ({ detail: "Failed to roll back pilot" }));
+  throw new Error(err.detail || "Failed to roll back pilot");
+}
+return res.json();
   },
 
-  async getPilotMetrics(): Promise<PilotMetricsResponse> {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/metrics`);
-    if (!res.ok) throw new Error("Failed to load pilot metrics");
-    return res.json();
-  },
+  async getPilotMetrics(): Promise < PilotMetricsResponse > {
+  const res = await fetchWithAuth(`${API_BASE}/pilot/metrics`);
+  if(!res.ok) throw new Error("Failed to load pilot metrics");
+  return res.json();
+},
 
-  async getPilotHistory(): Promise<PilotConfigHistoryItem[]> {
+  async getPilotHistory(): Promise < PilotConfigHistoryItem[] > {
     const res = await fetchWithAuth(`${API_BASE}/pilot/history`);
-    if (!res.ok) throw new Error("Failed to load pilot history");
+    if(!res.ok) throw new Error("Failed to load pilot history");
     return res.json();
   },
 
-  async getPilotAuditLogs(): Promise<{ items: any[]; total: number }> {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/audit`);
-    if (!res.ok) throw new Error("Failed to load pilot audit logs");
-    return res.json();
-  },
+    async getPilotAuditLogs(): Promise < { items: any[]; total: number } > {
+      const res = await fetchWithAuth(`${API_BASE}/pilot/audit`);
+      if(!res.ok) throw new Error("Failed to load pilot audit logs");
+      return res.json();
+    },
 
-  async getPilotEvaluations(mode?: string, includeSimulated: boolean = true): Promise<PilotEvaluationItem[]> {
-    const q = new URLSearchParams();
-    if (mode) q.set("mode", mode);
-    q.set("include_simulated", String(includeSimulated));
-    const res = await fetchWithAuth(`${API_BASE}/pilot/evaluations?${q.toString()}`);
-    if (!res.ok) throw new Error("Failed to load pilot evaluations");
-    return res.json();
-  },
+      async getPilotEvaluations(mode ?: string, includeSimulated: boolean = true): Promise < PilotEvaluationItem[] > {
+        const q = new URLSearchParams();
+        if(mode) q.set("mode", mode);
+        q.set("include_simulated", String(includeSimulated));
+        const res = await fetchWithAuth(`${API_BASE}/pilot/evaluations?${q.toString()}`);
+        if(!res.ok) throw new Error("Failed to load pilot evaluations");
+        return res.json();
+      },
 
-  async runPilotBatch(payload: { incident_ids?: string[]; max_batch?: number; source_type?: "LIVE" | "HISTORICAL"; allow_simulated?: boolean }) {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/run-batch`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to run pilot batch" }));
-      throw new Error(err.detail || "Failed to run pilot batch");
-    }
-    return res.json();
-  },
+        async runPilotBatch(payload: { incident_ids?: string[]; max_batch?: number; source_type?: "LIVE" | "HISTORICAL"; allow_simulated?: boolean }) {
+  const res = await fetchWithAuth(`${API_BASE}/pilot/run-batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to run pilot batch" }));
+    throw new Error(err.detail || "Failed to run pilot batch");
+  }
+  return res.json();
+},
 
   async submitPilotFeedback(evaluationId: string, payload: { action: string; analyst_decision: string; reason: string }) {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/evaluations/${encodeURIComponent(evaluationId)}/feedback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to submit pilot feedback" }));
-      throw new Error(err.detail || "Failed to submit pilot feedback");
-    }
-    return res.json();
-  },
+  const res = await fetchWithAuth(`${API_BASE}/pilot/evaluations/${encodeURIComponent(evaluationId)}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to submit pilot feedback" }));
+    throw new Error(err.detail || "Failed to submit pilot feedback");
+  }
+  return res.json();
+},
 
   async supervisorVerifyPilotFeedback(evaluationId: string, payload: { approved: boolean; notes?: string }) {
-    const res = await fetchWithAuth(`${API_BASE}/pilot/evaluations/${encodeURIComponent(evaluationId)}/supervisor-verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to verify pilot feedback" }));
-      throw new Error(err.detail || "Failed to verify pilot feedback");
-    }
-    return res.json();
-  },
+  const res = await fetchWithAuth(`${API_BASE}/pilot/evaluations/${encodeURIComponent(evaluationId)}/supervisor-verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to verify pilot feedback" }));
+    throw new Error(err.detail || "Failed to verify pilot feedback");
+  }
+  return res.json();
+},
 
-  async getHistoricalEligibilityReport(ruleId?: string): Promise<HistoricalEligibilityReport> {
-    const url = ruleId
-      ? `${API_BASE}/verdict-intelligence/eligibility-report?rule_id=${encodeURIComponent(ruleId)}`
-      : `${API_BASE}/verdict-intelligence/eligibility-report`;
-    const res = await fetchWithAuth(url);
-    if (!res.ok) throw new Error("Failed to load historical eligibility report");
-    return res.json();
-  },
+  async getHistoricalEligibilityReport(ruleId ?: string): Promise < HistoricalEligibilityReport > {
+  const url = ruleId
+    ? `${API_BASE}/verdict-intelligence/eligibility-report?rule_id=${encodeURIComponent(ruleId)}`
+    : `${API_BASE}/verdict-intelligence/eligibility-report`;
+  const res = await fetchWithAuth(url);
+  if(!res.ok) throw new Error("Failed to load historical eligibility report");
+  return res.json();
+},
 
   // Rule-Based Learning & Production Governance
-  async getRuleLearningProfiles(lifecycleStage?: string, limit = 50, offset = 0) {
-    const url = lifecycleStage
-      ? `${API_BASE}/learning/rules?lifecycle_stage=${encodeURIComponent(lifecycleStage)}&limit=${limit}&offset=${offset}`
-      : `${API_BASE}/learning/rules?limit=${limit}&offset=${offset}`;
-    const res = await fetchWithAuth(url);
-    if (!res.ok) throw new Error("Failed to load rule learning profiles");
-    return res.json();
-  },
+  async getRuleLearningProfiles(lifecycleStage ?: string, limit = 50, offset = 0) {
+  const url = lifecycleStage
+    ? `${API_BASE}/learning/rules?lifecycle_stage=${encodeURIComponent(lifecycleStage)}&limit=${limit}&offset=${offset}`
+    : `${API_BASE}/learning/rules?limit=${limit}&offset=${offset}`;
+  const res = await fetchWithAuth(url);
+  if (!res.ok) throw new Error("Failed to load rule learning profiles");
+  return res.json();
+},
 
-  async getRuleLearningProfileDetail(ruleId: string, customer?: string) {
-    const url = customer
-      ? `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}?customer=${encodeURIComponent(customer)}`
-      : `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}`;
-    const res = await fetchWithAuth(url);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to load rule learning profile details" }));
-      throw new Error(err.detail || "Failed to load rule learning profile details");
-    }
-    return res.json();
-  },
+  async getRuleLearningProfileDetail(ruleId: string, customer ?: string) {
+  const url = customer
+    ? `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}?customer=${encodeURIComponent(customer)}`
+    : `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}`;
+  const res = await fetchWithAuth(url);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to load rule learning profile details" }));
+    throw new Error(err.detail || "Failed to load rule learning profile details");
+  }
+  return res.json();
+},
 
-  async initializeRuleLearningProfile(ruleId: string, customer?: string) {
-    const url = customer
-      ? `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/initialize?customer=${encodeURIComponent(customer)}`
-      : `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/initialize`;
-    const res = await fetchWithAuth(url, {
-      method: "POST",
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to initialize rule learning profile" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to initialize rule learning profile"));
-    }
-    return res.json();
-  },
+  async initializeRuleLearningProfile(ruleId: string, customer ?: string) {
+  const url = customer
+    ? `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/initialize?customer=${encodeURIComponent(customer)}`
+    : `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/initialize`;
+  const res = await fetchWithAuth(url, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to initialize rule learning profile" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to initialize rule learning profile"));
+  }
+  return res.json();
+},
 
   async initializeAllRuleLearningProfiles() {
-    const res = await fetchWithAuth(`${API_BASE}/learning/rules/initialize-all`, {
-      method: "POST",
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to initialize all rule learning profiles" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to initialize all rule learning profiles"));
-    }
-    return res.json();
-  },
+  const res = await fetchWithAuth(`${API_BASE}/learning/rules/initialize-all`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to initialize all rule learning profiles" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to initialize all rule learning profiles"));
+  }
+  return res.json();
+},
 
   async transitionRuleLifecycle(ruleId: string, newStage: string, reason: string) {
-    const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/transition`, {
-      method: "POST",
-      body: JSON.stringify({
-        new_stage: newStage,
-        target_stage: newStage,
-        reason: reason || "State transition requested",
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to transition rule stage" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to transition rule stage"));
-    }
-    return res.json();
-  },
+  const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/transition`, {
+    method: "POST",
+    body: JSON.stringify({
+      new_stage: newStage,
+      target_stage: newStage,
+      reason: reason || "State transition requested",
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to transition rule stage" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to transition rule stage"));
+  }
+  return res.json();
+},
 
-  async getPendingDoubleBlindReviews(ruleId?: string, limit = 50, offset = 0) {
-    const params = new URLSearchParams();
-    if (ruleId) params.set("rule_id", ruleId);
-    params.set("limit", limit.toString());
-    params.set("offset", offset.toString());
-    const res = await fetchWithAuth(`${API_BASE}/reviews/pending?${params.toString()}`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to load pending reviews" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to load pending reviews"));
-    }
-    return res.json();
-  },
+  async getPendingDoubleBlindReviews(ruleId ?: string, limit = 50, offset = 0) {
+  const params = new URLSearchParams();
+  if (ruleId) params.set("rule_id", ruleId);
+  params.set("limit", limit.toString());
+  params.set("offset", offset.toString());
+  const res = await fetchWithAuth(`${API_BASE}/reviews/pending?${params.toString()}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to load pending reviews" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to load pending reviews"));
+  }
+  return res.json();
+},
 
   async submitAnalystReview(incidentId: string, payload: {
-    analyst_verdict: string;
-    analyst_notes?: string;
-    correction_reason?: string;
-    evidence_references?: string[];
-    blind_mode_active?: boolean;
-  }) {
-    const res = await fetchWithAuth(`${API_BASE}/reviews/${encodeURIComponent(incidentId)}/submit`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to submit review" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to submit review"));
-    }
-    return res.json();
-  },
+  analyst_verdict: string;
+  analyst_notes?: string;
+  correction_reason?: string;
+  evidence_references?: string[];
+  blind_mode_active?: boolean;
+}) {
+  const res = await fetchWithAuth(`${API_BASE}/reviews/${encodeURIComponent(incidentId)}/submit`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to submit review" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to submit review"));
+  }
+  return res.json();
+},
 
   async adjudicateAnalystReview(reviewId: string, finalVerdict: string, rationale: string) {
-    const res = await fetchWithAuth(`${API_BASE}/reviews/${encodeURIComponent(reviewId)}/adjudicate`, {
-      method: "POST",
-      body: JSON.stringify({ final_verdict: finalVerdict, rationale }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to adjudicate review" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to adjudicate review"));
-    }
-    return res.json();
-  },
+  const res = await fetchWithAuth(`${API_BASE}/reviews/${encodeURIComponent(reviewId)}/adjudicate`, {
+    method: "POST",
+    body: JSON.stringify({ final_verdict: finalVerdict, rationale }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to adjudicate review" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to adjudicate review"));
+  }
+  return res.json();
+},
 
-  async requestRulePromotion(profileId: string, targetStage: string, justification: string, evaluationRunId?: string) {
-    const res = await fetchWithAuth(`${API_BASE}/governance/promotion/request?profile_id=${encodeURIComponent(profileId)}`, {
-      method: "POST",
-      body: JSON.stringify({
-        profile_id: profileId,
-        target_stage: targetStage,
-        justification,
-        evaluation_run_id: evaluationRunId,
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to request promotion" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to request promotion"));
-    }
-    return res.json();
-  },
+  async requestRulePromotion(profileId: string, targetStage: string, justification: string, evaluationRunId ?: string) {
+  const res = await fetchWithAuth(`${API_BASE}/governance/promotion/request?profile_id=${encodeURIComponent(profileId)}`, {
+    method: "POST",
+    body: JSON.stringify({
+      profile_id: profileId,
+      target_stage: targetStage,
+      justification,
+      evaluation_run_id: evaluationRunId,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to request promotion" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to request promotion"));
+  }
+  return res.json();
+},
 
   async decideRulePromotion(requestId: string, action: string, decisionNotes = "", signature = "") {
-    const res = await fetchWithAuth(`${API_BASE}/governance/promotion/decide?request_id=${encodeURIComponent(requestId)}`, {
-      method: "POST",
-      body: JSON.stringify({
-        action,
-        decision_notes: decisionNotes,
-        signature,
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to decide promotion" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to decide promotion"));
-    }
-    return res.json();
-  },
+  const res = await fetchWithAuth(`${API_BASE}/governance/promotion/decide?request_id=${encodeURIComponent(requestId)}`, {
+    method: "POST",
+    body: JSON.stringify({
+      action,
+      decision_notes: decisionNotes,
+      signature,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to decide promotion" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to decide promotion"));
+  }
+  return res.json();
+},
 
   async emergencyDisableAutomation(reason: string) {
-    const res = await fetchWithAuth(`${API_BASE}/governance/automation/emergency-disable`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to emergency disable automation" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to emergency disable automation"));
-    }
-    return res.json();
-  },
+  const res = await fetchWithAuth(`${API_BASE}/governance/automation/emergency-disable`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to emergency disable automation" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to emergency disable automation"));
+  }
+  return res.json();
+},
 
-  async listPromotionRequests(ruleId?: string, statusFilter?: string, customer?: string) {
-    const params = new URLSearchParams();
-    if (ruleId) params.set("rule_id", ruleId);
-    if (statusFilter) params.set("status", statusFilter);
-    if (customer) params.set("customer", customer);
-    const qs = params.toString();
-    const res = await fetchWithAuth(`${API_BASE}/governance/promotion/requests${qs ? `?${qs}` : ""}`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to load promotion requests" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to load promotion requests"));
-    }
-    return res.json();
-  },
+  async listPromotionRequests(ruleId ?: string, statusFilter ?: string, customer ?: string) {
+  const params = new URLSearchParams();
+  if (ruleId) params.set("rule_id", ruleId);
+  if (statusFilter) params.set("status", statusFilter);
+  if (customer) params.set("customer", customer);
+  const qs = params.toString();
+  const res = await fetchWithAuth(`${API_BASE}/governance/promotion/requests${qs ? `?${qs}` : ""}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to load promotion requests" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to load promotion requests"));
+  }
+  return res.json();
+},
 
-  async getRuleLearningHistory(ruleId: string, customer?: string) {
-    const qs = customer ? `?customer=${encodeURIComponent(customer)}` : "";
-    const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/history${qs}`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to load learning history" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to load learning history"));
-    }
-    return res.json();
-  },
+  async getRuleLearningHistory(ruleId: string, customer ?: string) {
+  const qs = customer ? `?customer=${encodeURIComponent(customer)}` : "";
+  const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/history${qs}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to load learning history" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to load learning history"));
+  }
+  return res.json();
+},
 
-  async suggestPromptImprovement(ruleId: string, customer?: string) {
-    const qs = customer ? `?customer=${encodeURIComponent(customer)}` : "";
-    const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/suggest-prompt-improvement${qs}`, {
-      method: "POST",
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to propose prompt improvement draft" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to propose prompt improvement draft"));
-    }
-    return res.json();
-  },
+  async suggestPromptImprovement(ruleId: string, customer ?: string) {
+  const qs = customer ? `?customer=${encodeURIComponent(customer)}` : "";
+  const res = await fetchWithAuth(`${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/suggest-prompt-improvement${qs}`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to propose prompt improvement draft" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to propose prompt improvement draft"));
+  }
+  return res.json();
+},
 
   async getAutomationPolicy(ruleId: string, customer = "DEFAULT") {
-    const res = await fetchWithAuth(
-      `${API_BASE}/governance/automation/policy/${encodeURIComponent(ruleId)}?customer=${encodeURIComponent(customer)}`
-    );
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to load automation policy" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to load automation policy"));
-    }
-    return res.json();
-  },
+  const res = await fetchWithAuth(
+    `${API_BASE}/governance/automation/policy/${encodeURIComponent(ruleId)}?customer=${encodeURIComponent(customer)}`
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to load automation policy" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to load automation policy"));
+  }
+  return res.json();
+},
 
   async updateAutomationPolicy(
-    ruleId: string,
-    payload: {
-      customer?: string;
-      is_enabled?: boolean;
-      min_trust_score?: number;
-      min_fp_precision?: number;
-      daily_closure_limit?: number;
-      emergency_disable?: boolean;
-      reason?: string;
-    }
-  ) {
-    const res = await fetchWithAuth(`${API_BASE}/governance/automation/policy/${encodeURIComponent(ruleId)}`, {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to update automation policy" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to update automation policy"));
-    }
-    return res.json();
-  },
+  ruleId: string,
+  payload: {
+  customer?: string;
+  is_enabled?: boolean;
+  min_trust_score?: number;
+  min_fp_precision?: number;
+  daily_closure_limit?: number;
+  emergency_disable?: boolean;
+  reason?: string;
+}
+) {
+  const res = await fetchWithAuth(`${API_BASE}/governance/automation/policy/${encodeURIComponent(ruleId)}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to update automation policy" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to update automation policy"));
+  }
+  return res.json();
+},
 
   async executeAutomationDecision(
-    incidentId: string,
-    payload: { customer?: string; dry_run?: boolean; global_kill_switch?: boolean } = { dry_run: true }
-  ) {
-    const res = await fetchWithAuth(`${API_BASE}/governance/automation/decide/${encodeURIComponent(incidentId)}`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to execute automation decision" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to execute automation decision"));
-    }
-    return res.json();
-  },
+  incidentId: string,
+  payload: { customer?: string; dry_run?: boolean; global_kill_switch?: boolean } = { dry_run: true }
+) {
+  const res = await fetchWithAuth(`${API_BASE}/governance/automation/decide/${encodeURIComponent(incidentId)}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to execute automation decision" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to execute automation decision"));
+  }
+  return res.json();
+},
 
-  async listAutomationAudits(ruleId?: string, customer?: string, limit = 25) {
-    const params = new URLSearchParams({ limit: String(limit) });
-    if (ruleId) params.set("rule_id", ruleId);
-    if (customer) params.set("customer", customer);
-    const res = await fetchWithAuth(`${API_BASE}/governance/automation/audits?${params.toString()}`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to load automation audits" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to load automation audits"));
-    }
-    return res.json();
-  },
+  async listAutomationAudits(ruleId ?: string, customer ?: string, limit = 25) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (ruleId) params.set("rule_id", ruleId);
+  if (customer) params.set("customer", customer);
+  const res = await fetchWithAuth(`${API_BASE}/governance/automation/audits?${params.toString()}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to load automation audits" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to load automation audits"));
+  }
+  return res.json();
+},
 
   async resumeRuleAiExecution(ruleId: string) {
-    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}/resume-ai`, {
-      method: "POST",
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Failed to resume AI execution" }));
-      throw new Error(formatApiErrorMessage(err, "Failed to resume AI execution"));
-    }
-    return res.json();
-  },
+  const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${encodeURIComponent(ruleId)}/resume-ai`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to resume AI execution" }));
+    throw new Error(formatApiErrorMessage(err, "Failed to resume AI execution"));
+  }
+  return res.json();
+},
 };
 
 export interface DryRunConfig {

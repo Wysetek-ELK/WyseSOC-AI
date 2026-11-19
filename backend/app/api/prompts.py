@@ -53,6 +53,7 @@ from app.services.policy_lifecycle_monitor import PolicyLifecycleMonitor
 from app.services.production_readiness_service import ProductionReadinessService
 from app.services.policy_eligibility_service import PolicyEligibilityService
 from app.services.historical_ground_truth_validator import HistoricalGroundTruthValidator
+from app.services.policy_version_governance_service import PolicyVersionGovernanceService
 from app.schemas.prompt import (
     RulePromptResponse,
     PromptVersionResponse,
@@ -62,6 +63,12 @@ from app.schemas.prompt import (
     PromptRevokeRequest,
     PolicyEligibilityResponse,
     RulePromptSummaryItem,
+    PolicyVersionHistoryItem,
+    VersionDeletionPreviewResponse,
+    VersionArchiveRequest,
+    VersionDeleteRequest,
+    BulkVersionDeleteRequest,
+    BulkVersionDeleteResponse,
 )
 from app.schemas.rule_intelligence import (
     DetectionSemantics,
@@ -382,6 +389,7 @@ async def get_bulk_quality_audit_status(
 @router.get("/rule/{rule_id}", response_model=RulePromptResponse)
 async def get_rule_prompt(
     rule_id: str,
+    include_archived: bool = Query(False, description="Whether to include archived versions in list"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -398,6 +406,11 @@ async def get_rule_prompt(
                 active_v = PromptVersionResponse.model_validate(v)
                 break
 
+    visible_versions = [
+        v for v in prompt.versions
+        if include_archived or v.status != "ARCHIVED" or v.id == prompt.active_version_id
+    ]
+
     return RulePromptResponse(
         id=prompt.id,
         rule_id=prompt.rule_id,
@@ -408,7 +421,7 @@ async def get_rule_prompt(
         active_version=active_v,
         ai_execution_suspended=getattr(prompt, "ai_execution_suspended", False),
         suspension_reason=getattr(prompt, "suspension_reason", None),
-        versions=[PromptVersionResponse.model_validate(v) for v in prompt.versions],
+        versions=[PromptVersionResponse.model_validate(v) for v in visible_versions],
         created_at=prompt.created_at,
         updated_at=prompt.updated_at,
     )
@@ -1069,6 +1082,114 @@ async def revoke_prompt_version(
     )
 
     return ver_resp
+
+
+@router.get("/rule/{rule_id}/version-history", response_model=List[PolicyVersionHistoryItem])
+async def get_rule_version_history(
+    rule_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Returns complete policy version history including usage, dependency counts,
+    and archive/deletion eligibility across all versions (active, historical, draft, archived).
+    """
+    return await PolicyVersionGovernanceService.get_version_history(db, rule_id)
+
+
+@router.get("/rule/{rule_id}/version/{version_id}/deletion-preview", response_model=VersionDeletionPreviewResponse)
+async def get_version_deletion_preview(
+    rule_id: str,
+    version_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Administrator-only: Inspect dependencies and preview the impact of permanently deleting a policy version.
+    """
+    return await PolicyVersionGovernanceService.get_deletion_preview(db, rule_id, version_id)
+
+
+@router.delete("/rule/{rule_id}/version/{version_id}", response_model=Dict[str, Any])
+async def delete_policy_version(
+    rule_id: str,
+    version_id: str,
+    justification: Optional[str] = Query("Administrative cleanup of obsolete draft"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Administrator-only: Permanently delete an eligible unreferenced draft policy version.
+    Active versions, approved baselines, and versions referenced in inference provenance are strictly blocked.
+    """
+    return await PolicyVersionGovernanceService.delete_version(
+        db=db,
+        rule_identifier=rule_id,
+        version_id=version_id,
+        current_user=current_user,
+        justification=justification or "Administrative cleanup of obsolete draft",
+    )
+
+
+@router.post("/rule/{rule_id}/version/{version_id}/archive", response_model=PromptVersionResponse)
+async def archive_policy_version(
+    rule_id: str,
+    version_id: str,
+    payload: VersionArchiveRequest = VersionArchiveRequest(),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Administrator-only: Safely archive a policy version.
+    Archived versions are hidden from normal selectors but preserved in history and restorable.
+    """
+    ver = await PolicyVersionGovernanceService.archive_version(
+        db=db,
+        rule_identifier=rule_id,
+        version_id=version_id,
+        current_user=current_user,
+        reason=payload.reason or "Archived by SOC Administrator",
+    )
+    return PromptVersionResponse.model_validate(ver)
+
+
+@router.post("/rule/{rule_id}/version/{version_id}/restore", response_model=PromptVersionResponse)
+async def restore_policy_version(
+    rule_id: str,
+    version_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Administrator-only: Restore a previously archived policy version back to draft status.
+    """
+    ver = await PolicyVersionGovernanceService.restore_version(
+        db=db,
+        rule_identifier=rule_id,
+        version_id=version_id,
+        current_user=current_user,
+    )
+    return PromptVersionResponse.model_validate(ver)
+
+
+@router.post("/rule/{rule_id}/versions/bulk-delete", response_model=BulkVersionDeleteResponse)
+async def bulk_delete_policy_versions(
+    rule_id: str,
+    payload: BulkVersionDeleteRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Administrator-only: Bulk cleanup of eligible obsolete draft policy versions.
+    Protected and active versions are automatically skipped and preserved.
+    """
+    return await PolicyVersionGovernanceService.bulk_delete_versions(
+        db=db,
+        rule_identifier=rule_id,
+        version_ids=payload.version_ids,
+        current_user=current_user,
+        justification=payload.justification or "Bulk administrative cleanup of obsolete drafts",
+    )
 
 
 @router.post("/rule/{rule_id}/resume-ai", response_model=Dict[str, Any])

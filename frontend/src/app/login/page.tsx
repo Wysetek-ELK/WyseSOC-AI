@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Lock, User, AlertCircle, ArrowRight } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { BrandLogo } from "@/components/common/BrandLogo";
+import { BRANDING } from "@/config/branding";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,13 +40,28 @@ export default function LoginPage() {
             priority
             className="mb-2 drop-shadow-[0_6px_22px_rgba(245,158,11,0.38)]"
           />
-          <h1 className="text-lg font-bold tracking-tight text-sky-300">VERDICTUM AI</h1>
+          <h1 className="text-lg font-bold tracking-tight text-sky-300">
+            {BRANDING.product.title}
+          </h1>
           <p className="text-[11px] text-cyan-400 font-mono mt-0.5 tracking-wider uppercase">
-            Agentic SOC Intelligence Platform
+            {BRANDING.product.platformSubtitle}
           </p>
           <p className="text-[10px] text-slate-400 font-medium mt-1">
-            Evidence-Driven Security Intelligence
+            {BRANDING.product.securityMotto}
           </p>
+
+          {/* Company Branding Attribution */}
+          <div className="mt-2.5 pt-2 border-t border-slate-800/80 w-full flex flex-col items-center">
+            <span className="text-[9px] uppercase tracking-widest text-slate-500 font-mono font-medium">
+              {BRANDING.company.developedByLabel}
+            </span>
+            <span
+              className="text-[11px] sm:text-xs font-semibold tracking-wide text-amber-300/90 font-sans mt-0.5 text-center leading-snug px-1 break-words max-w-[280px] sm:max-w-none"
+              data-testid="login-company-attribution"
+            >
+              {BRANDING.company.fullName}
+            </span>
+          </div>
         </div>
 
         {error && (

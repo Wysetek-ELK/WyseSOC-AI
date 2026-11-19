@@ -161,7 +161,7 @@ export function AgentIntelligenceStudioOverview({
     try {
       const [readinessRes, eligibilityRes] = await Promise.allSettled([
         api.getRuleProductionReadiness(ruleId, selectedVersion?.id),
-        api.getRulePolicyEligibility(ruleId, selectedVersion?.id),
+        api.getPolicyEligibility(ruleId, selectedVersion?.id),
       ]);
       if (readinessRes.status === "fulfilled") {
         setReadinessData(readinessRes.value);
@@ -216,10 +216,10 @@ export function AgentIntelligenceStudioOverview({
 
   // Metrics from readinessData or props fallback
   const qualityScore = readinessError ? null : (readinessData?.quality_score ?? qualityAssessment?.quality_score ?? null);
-  const passedGates = readinessError ? 0 : (readinessData?.quality_gates_passed ?? (
+  const passedGates = readinessError ? null : (readinessData?.quality_gates_passed ?? (
     qualityAssessment?.gate_results
-      ? Object.values(qualityAssessment.gate_results).filter((g) => g.status === "PASSED").length
-      : qualityAssessment?.gates?.filter((g) => g.status === "PASSED").length ?? 0
+      ? Object.values(qualityAssessment.gate_results).filter((g: any) => g.status === "PASSED" || g.status === "PASS").length
+      : qualityAssessment?.gates?.filter((g: any) => g.status === "PASSED" || g.status === "PASS").length ?? null
   ));
   const totalReviews = readinessError ? 0 : (readinessData?.verified_reviews_count ?? learningProfile?.total_analyst_reviews ?? 0);
   const empiricalAccuracy = readinessError ? null : (readinessData?.metrics?.empirical_accuracy ?? learningProfile?.empirical_accuracy);
@@ -237,11 +237,11 @@ export function AgentIntelligenceStudioOverview({
     : "None";
   const activePolicyLabel = activeVersion
     ? (activeVersion.status === "REVOKED"
-        ? `V${activeVersion.version_number} — REVOKED`
-        : `V${activeVersion.version_number} — ${activeVersion.status}`)
+      ? `V${activeVersion.version_number} — REVOKED`
+      : `V${activeVersion.version_number} — ${activeVersion.status}`)
     : (eligibilityData?.active_version_number
-        ? `V${eligibilityData.active_version_number} — ${eligibilityData.active_version_status}`
-        : "None (Revoked / Suspended)");
+      ? `V${eligibilityData.active_version_number} — ${eligibilityData.active_version_status}`
+      : "None (Revoked / Suspended)");
 
   const isPolicyRevoked = Boolean(
     eligibilityData?.is_revoked ||
@@ -253,10 +253,10 @@ export function AgentIntelligenceStudioOverview({
     readinessData?.ai_execution_status
       ? (readinessData.ai_execution_status as "Enabled" | "Disabled" | "Suspended" | "Offline" | "Unknown" | "Blocked")
       : eligibilityData?.ai_verdict_execution_status === "ENABLED"
-      ? "Enabled"
-      : eligibilityData?.ai_verdict_execution_status === "SUSPENDED" || isPolicyRevoked
-      ? "Suspended"
-      : "Blocked";
+        ? "Enabled"
+        : eligibilityData?.ai_verdict_execution_status === "SUSPENDED" || isPolicyRevoked
+          ? "Suspended"
+          : "Blocked";
 
   // Decoupled Statuses: Authoritative Backend Readiness & Eligibility
   // Fail-closed: Never permit approval when readiness data is absent or errored
@@ -267,7 +267,7 @@ export function AgentIntelligenceStudioOverview({
   );
 
   const blockingReqCount = readinessData?.blocking_requirements?.length ?? (
-    (8 - passedGates > 0 ? (8 - passedGates) : 0) + (totalReviews < 30 ? 1 : 0)
+    ((passedGates !== null && 8 - passedGates > 0) ? (8 - passedGates) : (passedGates === null ? 8 : 0)) + (totalReviews < 30 ? 1 : 0)
   );
 
   const productionReadinessStatus: "Ready" | "Blocked" =
@@ -275,16 +275,16 @@ export function AgentIntelligenceStudioOverview({
       ? "Ready"
       : (readinessData?.readiness_status === "APPROVED" && passedGates === 8) ||
         readinessData?.readiness_status === "ACTIVE"
-      ? "Ready"
-      : "Blocked";
+        ? "Ready"
+        : "Blocked";
 
   // Format accuracy for display
   const accuracyDisplay =
     empiricalAccuracy !== null && empiricalAccuracy !== undefined && totalReviews > 0
       ? `${(empiricalAccuracy * 100).toFixed(1)}%`
       : totalReviews === 0
-      ? "N/A"
-      : "Pending";
+        ? "N/A"
+        : "Pending";
 
   // Production Readiness Status & Visual Badges
   // Fail-closed: Never fall back to LEARNING if readiness service errored or data is missing
@@ -587,10 +587,10 @@ export function AgentIntelligenceStudioOverview({
                 selectedVersion?.status === "APPROVED"
                   ? "text-emerald-400 font-semibold"
                   : selectedVersion?.status === "REVOKED"
-                  ? "text-rose-400 font-semibold"
-                  : selectedVersion?.status === "VALIDATED"
-                  ? "text-sky-300 font-semibold"
-                  : "text-amber-400 font-semibold"
+                    ? "text-rose-400 font-semibold"
+                    : selectedVersion?.status === "VALIDATED"
+                      ? "text-sky-300 font-semibold"
+                      : "text-amber-400 font-semibold"
               }>
                 {selectedVersion?.status || "None"}
               </strong>
@@ -609,31 +609,30 @@ export function AgentIntelligenceStudioOverview({
             {/* 3. AI Verdict Execution Status */}
             <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-900 border border-slate-700/80 text-slate-300 flex items-center gap-1.5" title={`Real-time execution state: ${aiVerdictExecutionStatus} (Runtime: ${readinessData?.runtime_availability || "Unknown"}, Automation Configured: ${readinessData?.automation_configured ? "Yes" : "No"})`}>
               <span className="text-slate-500 font-mono text-[10px]">AI Execution:</span>
-              <span className={`w-1.5 h-1.5 rounded-full ${
-                aiVerdictExecutionStatus === "Enabled"
+              <span className={`w-1.5 h-1.5 rounded-full ${aiVerdictExecutionStatus === "Enabled"
                   ? "bg-emerald-400"
                   : aiVerdictExecutionStatus === "Suspended"
-                  ? "bg-amber-400"
-                  : aiVerdictExecutionStatus === "Offline"
-                  ? "bg-rose-500"
-                  : aiVerdictExecutionStatus === "Disabled"
-                  ? "bg-slate-400"
-                  : aiVerdictExecutionStatus === "Unknown"
-                  ? "bg-slate-500"
-                  : "bg-rose-400"
-              }`} />
+                    ? "bg-amber-400"
+                    : aiVerdictExecutionStatus === "Offline"
+                      ? "bg-rose-500"
+                      : aiVerdictExecutionStatus === "Disabled"
+                        ? "bg-slate-400"
+                        : aiVerdictExecutionStatus === "Unknown"
+                          ? "bg-slate-500"
+                          : "bg-rose-400"
+                }`} />
               <strong className={
                 aiVerdictExecutionStatus === "Enabled"
                   ? "text-emerald-300 font-semibold"
                   : aiVerdictExecutionStatus === "Suspended"
-                  ? "text-amber-300 font-semibold"
-                  : aiVerdictExecutionStatus === "Offline"
-                  ? "text-rose-400 font-semibold"
-                  : aiVerdictExecutionStatus === "Disabled"
-                  ? "text-slate-400 font-semibold"
-                  : aiVerdictExecutionStatus === "Unknown"
-                  ? "text-slate-400 font-semibold"
-                  : "text-rose-300 font-semibold"
+                    ? "text-amber-300 font-semibold"
+                    : aiVerdictExecutionStatus === "Offline"
+                      ? "text-rose-400 font-semibold"
+                      : aiVerdictExecutionStatus === "Disabled"
+                        ? "text-slate-400 font-semibold"
+                        : aiVerdictExecutionStatus === "Unknown"
+                          ? "text-slate-400 font-semibold"
+                          : "text-rose-300 font-semibold"
               }>
                 {aiVerdictExecutionStatus}
               </strong>
@@ -646,10 +645,10 @@ export function AgentIntelligenceStudioOverview({
                 readinessStatus === "READY_FOR_APPROVAL" || readinessStatus === "ACTIVE"
                   ? "text-emerald-400 font-semibold"
                   : readinessStatus === "APPROVED"
-                  ? "text-emerald-300 font-semibold"
-                  : readinessStatus === "LEARNING"
-                  ? "text-blue-300 font-semibold"
-                  : "text-rose-400 font-semibold"
+                    ? "text-emerald-300 font-semibold"
+                    : readinessStatus === "LEARNING"
+                      ? "text-blue-300 font-semibold"
+                      : "text-rose-400 font-semibold"
               }>
                 {currentReadinessBadge.label}
               </strong>
@@ -830,17 +829,16 @@ export function AgentIntelligenceStudioOverview({
                   type="button"
                   disabled={actionLoading || !effectiveApprovalEligible || isViewer}
                   onClick={onApproveClick}
-                  className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 text-xs transition-colors ${
-                    effectiveApprovalEligible && !isViewer
+                  className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 text-xs transition-colors ${effectiveApprovalEligible && !isViewer
                       ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
                       : "bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed"
-                  }`}
+                    }`}
                   title={
                     isViewer
                       ? "Read-Only Viewer cannot approve policies (requires Administrator role)"
                       : effectiveApprovalEligible
-                      ? "Approve policy for production baseline"
-                      : `Approval blocked — ${blockingReqCount} mandatory checks incomplete`
+                        ? "Approve policy for production baseline"
+                        : `Approval blocked — ${blockingReqCount} mandatory checks incomplete`
                   }
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -893,11 +891,11 @@ export function AgentIntelligenceStudioOverview({
             <Award className="w-3.5 h-3.5 text-sky-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-xl font-bold font-mono text-cyan-300 mt-1">
-            {passedGates} / 8 Passed
+            {readinessError ? "Unavailable" : `${passedGates ?? 0} / 8 Passed`}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5 truncate flex items-center gap-1">
-            <span className={`w-1.5 h-1.5 rounded-full ${passedGates === 8 ? "bg-emerald-400" : hasHardGateFailure ? "bg-rose-400" : "bg-amber-400"}`} />
-            {passedGates === 8 ? "All Gates Verified" : hasHardGateFailure ? "Blockers Present" : "Gates Incomplete"}
+            <span className={`w-1.5 h-1.5 rounded-full ${readinessError ? "bg-amber-500" : passedGates === 8 ? "bg-emerald-400" : hasHardGateFailure ? "bg-rose-400" : "bg-amber-400"}`} />
+            {readinessError ? "Readiness Check Failed" : passedGates === 8 ? "All Gates Verified" : hasHardGateFailure ? "Blockers Present" : "Gates Incomplete"}
           </div>
         </div>
 
@@ -1039,15 +1037,14 @@ export function AgentIntelligenceStudioOverview({
                                 ? isViewer
                                   ? "Read-Only Viewer cannot approve policies (requires Administrator role)"
                                   : !effectiveApprovalEligible
-                                  ? `Approval blocked — ${blockingReqCount} mandatory checks incomplete`
-                                  : "Approve policy for production baseline"
+                                    ? `Approval blocked — ${blockingReqCount} mandatory checks incomplete`
+                                    : "Approve policy for production baseline"
                                 : undefined
                             }
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 transition-colors ${
-                              stage.stage_id === "production_approval" && (!effectiveApprovalEligible || isViewer)
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1 transition-colors ${stage.stage_id === "production_approval" && (!effectiveApprovalEligible || isViewer)
                                 ? "bg-slate-900/60 text-slate-500 border border-slate-800 cursor-not-allowed opacity-60"
                                 : "bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700"
-                            }`}
+                              }`}
                           >
                             {stage.action_button.label} <ArrowRight className="w-3 h-3 text-cyan-400" />
                           </button>
@@ -1145,7 +1142,7 @@ export function AgentIntelligenceStudioOverview({
                   <Award className="w-3.5 h-3.5 text-sky-400" />
                 </div>
                 <div className="text-base font-bold font-mono text-slate-100 mt-1">
-                  {passedGates} / 8 Passed
+                  {readinessError ? "Unavailable" : `${passedGates ?? 0} / 8 Passed`}
                 </div>
                 <div className="text-[9px] text-slate-500 mt-0.5 truncate">
                   {hasHardGateFailure ? "Blockers present" : "Static gates"}
@@ -1214,9 +1211,8 @@ export function AgentIntelligenceStudioOverview({
               </div>
               <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden flex">
                 <div
-                  className={`h-full transition-all ${
-                    readinessProgress === 100 ? "bg-emerald-500" : readinessProgress >= 50 ? "bg-cyan-500" : "bg-amber-500"
-                  }`}
+                  className={`h-full transition-all ${readinessProgress === 100 ? "bg-emerald-500" : readinessProgress >= 50 ? "bg-cyan-500" : "bg-amber-500"
+                    }`}
                   style={{ width: `${readinessProgress}%` }}
                 />
               </div>
@@ -1278,9 +1274,8 @@ export function AgentIntelligenceStudioOverview({
             </div>
             <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden flex">
               <div
-                className={`h-full transition-all ${
-                  totalReviews >= 30 ? "bg-emerald-500" : "bg-cyan-500"
-                }`}
+                className={`h-full transition-all ${totalReviews >= 30 ? "bg-emerald-500" : "bg-cyan-500"
+                  }`}
                 style={{ width: `${Math.min(100, (totalReviews / 30) * 100)}%` }}
               />
             </div>

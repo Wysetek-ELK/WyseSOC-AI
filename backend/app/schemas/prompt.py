@@ -29,6 +29,9 @@ class PromptVersionResponse(BaseModel):
     revoked_at: Optional[datetime] = None
     revocation_reason: Optional[str] = None
     previous_status: Optional[str] = None
+    archived_by_user_id: Optional[str] = None
+    archived_at: Optional[datetime] = None
+    archival_reason: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -135,3 +138,65 @@ class RulePromptSummaryItem(BaseModel):
     is_revoked: bool = False
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PolicyVersionHistoryItem(BaseModel):
+    id: str
+    prompt_id: str
+    version_number: int
+    status: str  # APPROVED, DRAFT, ARCHIVED
+    previous_status: Optional[str] = None
+    quality_status: Optional[str] = "GENERATED_DRAFT"
+    quality_score: Optional[float] = None
+    change_summary: str
+    is_active: bool = False
+    is_eligible_for_deletion: bool = False
+    is_eligible_for_archive: bool = False
+    blocking_reasons: List[str] = []
+    dependency_counts: Dict[str, int] = {}
+    usage_label: str = "Unreferenced Draft"
+    created_at: datetime
+    approved_at: Optional[datetime] = None
+    archived_at: Optional[datetime] = None
+    archival_reason: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class VersionDeletionPreviewResponse(BaseModel):
+    rule_id: str
+    rule_name: str
+    version_id: str
+    version_number: int
+    status: str
+    is_active: bool
+    is_eligible: bool
+    blocking_reasons: List[str] = []
+    dependency_counts: Dict[str, int] = {}
+    records_affected: int = 0
+    is_reversible: bool = False
+    warning_message: str = ""
+
+
+class VersionArchiveRequest(BaseModel):
+    reason: Optional[str] = Field("Archived by SOC Administrator", description="Administrative justification for archiving version")
+
+
+class VersionDeleteRequest(BaseModel):
+    justification: Optional[str] = Field("Administrative cleanup of obsolete draft", description="Reason for permanent deletion")
+    confirmation_text: Optional[str] = Field(None, description="Typed confirmation matching rule or version")
+
+
+class BulkVersionDeleteRequest(BaseModel):
+    version_ids: List[str] = Field(..., min_length=1, description="List of version IDs to evaluate and clean up")
+    justification: Optional[str] = Field("Bulk administrative cleanup of obsolete drafts", description="Reason for bulk deletion")
+    confirmation_text: Optional[str] = Field(None, description="Typed confirmation 'PERMANENTLY DELETE'")
+
+
+class BulkVersionDeleteResponse(BaseModel):
+    selected_count: int
+    eligible_count: int
+    deleted_count: int
+    protected_count: int
+    deleted_version_numbers: List[int] = []
+    protected_items: List[Dict[str, Any]] = []

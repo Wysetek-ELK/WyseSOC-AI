@@ -37,6 +37,11 @@ import {
   Database,
   GitBranch,
   Terminal,
+  Inbox,
+  TrendingUp,
+  FlaskConical,
+  Trash2,
+  Archive,
 } from "lucide-react";
 import { ActualPromptInspectorModal } from "@/components/prompt-inspector/ActualPromptInspectorModal";
 import {
@@ -62,6 +67,10 @@ import {
 import { RuleLearningDashboard } from "@/components/learning/RuleLearningDashboard";
 import { AgentIntelligenceStudioOverview } from "@/components/compact/AgentIntelligenceStudioOverview";
 import { CompactPageHeader } from "@/components/compact/CompactDesignSystem";
+import { ReviewIncidentsWorkbench } from "@/components/compact/ReviewIncidentsWorkbench";
+import { AiTestWorkbench } from "@/components/compact/AiTestWorkbench";
+import { AccuracyLearningSummary } from "@/components/compact/AccuracyLearningSummary";
+import { ManageVersionHistory } from "@/components/compact/ManageVersionHistory";
 import { deriveOperationalStatus, deriveSiemRuleStatus } from "@/lib/diagnostics";
 import { copyToClipboard as copyTextToClipboard } from "@/lib/clipboard";
 
@@ -71,8 +80,9 @@ function AgentIntelligenceStudioContent() {
   const [studioTab, setStudioTab] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "learning" | "history">("editor");
 
   // Compact 3-Tab Architecture State
-  const [primaryTab, setPrimaryTab] = useState<"overview" | "learning" | "advanced">("overview");
-  const [advancedSection, setAdvancedSection] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "history">("editor");
+  const [primaryTab, setPrimaryTab] = useState<"overview" | "test_ai" | "learning" | "advanced">("overview");
+  const [reviewSubView, setReviewSubView] = useState<"incidents" | "overview">("incidents");
+  const [advancedSection, setAdvancedSection] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "history" | "manage_versions" | "xml" | "diagnostics" | "prompt_inspector" | "governance">("editor");
   const [compactUi, setCompactUi] = useState(true);
   const [learningProfile, setLearningProfile] = useState<any | null>(null);
   const [llmOnline, setLlmOnline] = useState<boolean | null>(null);
@@ -300,7 +310,7 @@ function AgentIntelligenceStudioContent() {
     }
   };
 
-  const handleNavigateTab = (tab: "overview" | "learning" | "advanced", section?: string) => {
+  const handleNavigateTab = (tab: "overview" | "test_ai" | "learning" | "advanced", section?: string) => {
     setPrimaryTab(tab);
     if (tab === "learning") {
       setStudioTab("learning");
@@ -342,12 +352,14 @@ function AgentIntelligenceStudioContent() {
         }
 
         if (tabParam) {
-          if (tabParam === "overview") {
+          if (tabParam === "overview" || tabParam === "review") {
             setPrimaryTab("overview");
-          } else if (tabParam === "learning") {
+          } else if (tabParam === "test_ai" || tabParam === "test") {
+            setPrimaryTab("test_ai");
+          } else if (tabParam === "learning" || tabParam === "accuracy") {
             setPrimaryTab("learning");
             setStudioTab("learning");
-          } else if (["editor", "intelligence", "contract", "quality", "simulation", "drift", "history"].includes(tabParam)) {
+          } else if (["editor", "intelligence", "contract", "quality", "simulation", "drift", "history", "manage_versions", "xml", "diagnostics", "prompt_inspector"].includes(tabParam)) {
             setPrimaryTab("advanced");
             setAdvancedSection(tabParam as any);
             setStudioTab(tabParam as any);
@@ -1812,14 +1824,108 @@ function AgentIntelligenceStudioContent() {
   const operationalStatus = (ruleError || versionError)
     ? null
     : deriveOperationalStatus({
-        lifecycleStage: learningProfile?.lifecycle_stage,
-        isApprovalEligible,
-        isIncompleteDefinition,
-        activeVersionStatus: selectedVersion?.status,
-        hasHardGateFailure,
-        totalAnalystReviews: learningProfile?.total_analyst_reviews || 0,
-        qualityScore: qualityAssessment?.quality_score,
-      });
+      lifecycleStage: learningProfile?.lifecycle_stage,
+      isApprovalEligible,
+      isIncompleteDefinition,
+      activeVersionStatus: selectedVersion?.status,
+      hasHardGateFailure,
+      totalAnalystReviews: learningProfile?.total_analyst_reviews || 0,
+      qualityScore: qualityAssessment?.quality_score,
+    });
+
+  const activeVersion = rulePrompt?.versions.find((v) => v.id === rulePrompt.active_version_id) || null;
+  const candidateDraft = rulePrompt?.versions.find((v) => v.status === "DRAFT") || null;
+
+  const nextRecommendedAction = React.useMemo(() => {
+    if (!rulePrompt || rulePrompt.versions.length === 0) {
+      return {
+        label: "Create Draft Policy",
+        description: "No investigation policy exists for this detection rule. Author a baseline draft to begin.",
+        action: () => {
+          setPrimaryTab("advanced");
+          setAdvancedSection("editor");
+        },
+        buttonText: "Create Baseline Draft",
+        badge: "Baseline Missing",
+        badgeColor: "bg-amber-950/80 text-amber-300 border-amber-800",
+      };
+    }
+    if (selectedVersion?.status === "DRAFT" && (!qualityAssessment || qualityAssessment.quality_score === null || (qualityAssessment as any).overall_status === "UNVALIDATED" || qualityAssessment.validation_status === "UNVALIDATED")) {
+      return {
+        label: "Validate Draft Policy",
+        description: `Candidate draft policy v${selectedVersion.version_number} requires deterministic quality gate evaluation (G1–G8).`,
+        action: () => {
+          if (selectedVersionId) fetchQualityValidation(selectedRuleId, selectedVersionId);
+          setPrimaryTab("advanced");
+          setAdvancedSection("quality");
+        },
+        buttonText: "Validate Draft (G1–G8)",
+        badge: "Validation Pending",
+        badgeColor: "bg-sky-950/80 text-sky-300 border-sky-800",
+      };
+    }
+    if (hasHardGateFailure) {
+      return {
+        label: "Inspect Validation Issues",
+        description: "Mandatory quality gate evaluation failed on blocking requirements. Resolve blockers before proceeding.",
+        action: () => {
+          setPrimaryTab("advanced");
+          setAdvancedSection("quality");
+        },
+        buttonText: "Inspect Quality Blockers",
+        badge: "Blockers Present",
+        badgeColor: "bg-rose-950/80 text-rose-300 border-rose-800",
+      };
+    }
+    if ((learningProfile?.total_analyst_reviews || 0) < 30) {
+      const remaining = 30 - (learningProfile?.total_analyst_reviews || 0);
+      return {
+        label: "Start Analyst Review",
+        description: `${remaining} more double-blind analyst review${remaining === 1 ? "" : "s"} required to establish empirical ground truth baseline.`,
+        action: () => {
+          setPrimaryTab("overview");
+          setReviewSubView("incidents");
+        },
+        buttonText: "Start Double-Blind Review",
+        badge: "Ground Truth Needed",
+        badgeColor: "bg-indigo-950/80 text-indigo-300 border-indigo-800",
+      };
+    }
+    if (learningProfile && learningProfile.empirical_accuracy === null) {
+      return {
+        label: "Evaluate Accuracy",
+        description: "30+ verified analyst reviews collected. Compute empirical accuracy and confusion matrix.",
+        action: () => {
+          setPrimaryTab("learning");
+        },
+        buttonText: "Evaluate Accuracy",
+        badge: "Evaluation Ready",
+        badgeColor: "bg-teal-950/80 text-teal-300 border-teal-800",
+      };
+    }
+    if (isApprovalEligible && selectedVersion?.status !== "APPROVED") {
+      return {
+        label: "Request Administrator Approval",
+        description: "All 8 mandatory quality gates and empirical accuracy criteria satisfied. Ready for production promotion sign-off.",
+        action: () => {
+          setShowApprovalModal(true);
+        },
+        buttonText: "Request Approval",
+        badge: "Production Ready",
+        badgeColor: "bg-emerald-950/80 text-emerald-300 border-emerald-800",
+      };
+    }
+    return {
+      label: "Run AI Simulation / Verification",
+      description: "Approved baseline is active. Test real Local AWQ model inference against live SIEM incidents.",
+      action: () => {
+        setPrimaryTab("test_ai");
+      },
+      buttonText: "Run AI Verification",
+      badge: "Operational Active",
+      badgeColor: "bg-cyan-950/80 text-cyan-300 border-cyan-800",
+    };
+  }, [rulePrompt, selectedVersion, qualityAssessment, hasHardGateFailure, learningProfile, isApprovalEligible, selectedRuleId, selectedVersionId]);
 
   return (
     <div className="space-y-3">
@@ -1842,12 +1948,12 @@ function AgentIntelligenceStudioContent() {
               ruleError
                 ? undefined
                 : versionError
-                ? {
+                  ? {
                     label: "Version Unavailable",
                     badgeClass: "bg-amber-950/70 border-amber-800 text-amber-300",
                     dotClass: "bg-amber-400",
                   }
-                : operationalStatus || undefined
+                  : operationalStatus || undefined
             }
             backAction={{
               label: "Rules List",
@@ -1983,59 +2089,129 @@ function AgentIntelligenceStudioContent() {
             </div>
           ) : (
             <>
-              {/* Primary 3-Tab Bar */}
-          <div data-testid="ais-primary-tabs" className="flex items-center justify-between border-b border-slate-800/90 pb-0 text-xs">
-            <div className="flex space-x-1">
-              <button
-                data-testid="tab-overview"
-                onClick={() => handleNavigateTab("overview")}
-                className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${
-                  primaryTab === "overview"
-                    ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
-                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
-                }`}
-              >
-                <FileCode2 className="w-4 h-4 text-cyan-400" />
-                Overview
-              </button>
-
-              <button
-                data-testid="tab-learning"
-                onClick={() => handleNavigateTab("learning")}
-                className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${
-                  primaryTab === "learning"
-                    ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
-                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
-                }`}
-              >
-                <Shield className="w-4 h-4 text-emerald-400" />
-                Analyst Review &amp; Learning
-                {learningProfile?.total_analyst_reviews !== undefined && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
-                    {learningProfile.total_analyst_reviews}
+              {/* Authoritative Decoupled Rule Status Strip */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-800/80 bg-slate-900/60 text-xs">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="font-semibold text-slate-200 truncate">
+                    {selectedRule?.name || selectedRuleId}
                   </span>
-                )}
-              </button>
-
-              <button
-                data-testid="tab-advanced"
-                onClick={() => handleNavigateTab("advanced")}
-                className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${
-                  primaryTab === "advanced"
-                    ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
-                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
-                }`}
-              >
-                <Sliders className="w-4 h-4 text-sky-400" />
-                Advanced Configuration
-                {blockingIssuesList.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-950 text-amber-300 border border-amber-800">
-                    {blockingIssuesList.length}
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+                  {/* SIEM Status */}
+                  <span className="px-2 py-0.5 rounded-md font-mono text-[11px] font-medium bg-slate-800/80 text-slate-300 border border-slate-700/60">
+                    {selectedRule?.status === "ACTIVE" ? "SIEM Active" : selectedRule?.status ? `SIEM ${selectedRule.status}` : "SIEM Inactive"}
                   </span>
-                )}
-              </button>
-            </div>
-          </div>
+                  {/* Active Policy Version */}
+                  <span className="px-2 py-0.5 rounded-md font-mono text-[11px] font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/70">
+                    {activeVersion ? `v${activeVersion.version_number} Approved` : "No Active Version"}
+                  </span>
+                  {/* Candidate Draft Version */}
+                  <span className="px-2 py-0.5 rounded-md font-mono text-[11px] font-medium bg-sky-950/80 text-sky-300 border border-sky-800/70">
+                    {candidateDraft ? `v${candidateDraft.version_number} Draft` : "No Draft"}
+                  </span>
+                  {/* Learning Stage */}
+                  <span className="px-2 py-0.5 rounded-md font-mono text-[11px] font-medium bg-violet-950/80 text-violet-300 border border-violet-800/70">
+                    {learningProfile?.is_production_eligible ? "Production Verified" : (learningProfile?.total_analyst_reviews || 0) >= 30 ? "Validation Ready" : (learningProfile?.total_analyst_reviews || 0) > 0 ? "Supervised Learning" : "Awaiting Reviews"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Next Recommended Action Banner */}
+              <div className="p-3 rounded-xl border border-cyan-800/60 bg-gradient-to-r from-cyan-950/40 via-slate-900/60 to-slate-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
+                <div className="flex items-start sm:items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-cyan-900/50 border border-cyan-700 text-cyan-300 shrink-0 mt-0.5 sm:mt-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-cyan-200">Next Recommended Action:</span>
+                      <span className="font-semibold text-slate-100">{nextRecommendedAction.label}</span>
+                      <span className={`px-2 py-0.2 rounded-full text-[10px] font-mono border ${nextRecommendedAction.badgeColor}`}>
+                        {nextRecommendedAction.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{nextRecommendedAction.description}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={nextRecommendedAction.action}
+                  className="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 shrink-0 shadow-sm transition-all"
+                >
+                  {nextRecommendedAction.buttonText}
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Primary 3-Tab Bar (Simplified Guided Workspace) */}
+              <div data-testid="ais-primary-tabs" className="flex items-center justify-between border-b border-slate-800/90 pb-0 text-xs">
+                <div className="flex space-x-1">
+                  {/* TAB 1: Review Incidents */}
+                  <button
+                    data-testid="tab-overview"
+                    onClick={() => handleNavigateTab("overview")}
+                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "overview"
+                      ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                      : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                      }`}
+                  >
+                    <Inbox className="w-4 h-4 text-cyan-400" />
+                    <span>Review Incidents</span>
+                    <span className="text-[10px] text-slate-500 font-normal hidden sm:inline">(Overview)</span>
+                  </button>
+
+                  {/* TAB 2: Test AI */}
+                  <button
+                    data-testid="tab-test-ai"
+                    onClick={() => handleNavigateTab("test_ai" as any)}
+                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "test_ai"
+                      ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                      : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                      }`}
+                  >
+                    <FlaskConical className="w-4 h-4 text-amber-400" />
+                    <span>Test AI</span>
+                  </button>
+
+                  {/* TAB 3: Accuracy & Learning */}
+                  <button
+                    data-testid="tab-learning"
+                    onClick={() => handleNavigateTab("learning")}
+                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "learning"
+                      ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                      : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                      }`}
+                  >
+                    <Shield className="w-4 h-4 text-emerald-400" />
+                    <span>Accuracy &amp; Learning</span>
+                    <span className="text-[10px] text-slate-500 font-normal hidden sm:inline">(Analyst Review &amp; Learning)</span>
+                    {learningProfile?.total_analyst_reviews !== undefined && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
+                        {learningProfile.total_analyst_reviews}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* ADVANCED SETTINGS */}
+                  <button
+                    data-testid="tab-advanced"
+                    onClick={() => handleNavigateTab("advanced")}
+                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "advanced"
+                      ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                      : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                      }`}
+                  >
+                    <Sliders className="w-4 h-4 text-sky-400" />
+                    <span>Advanced Settings</span>
+                    <span className="text-[10px] text-slate-500 font-normal hidden sm:inline">(Advanced Configuration)</span>
+                    {blockingIssuesList.length > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-950 text-amber-300 border border-amber-800">
+                        {blockingIssuesList.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
             </>
           )}
         </>
@@ -2160,13 +2336,12 @@ function AgentIntelligenceStudioContent() {
                     return (
                       <span
                         key={idx}
-                        className={`h-2 flex-1 rounded-full transition-all ${
-                          active
-                            ? idx < 10
-                              ? "bg-sky-400 shadow-[0_0_8px_rgba(251,191,36,0.45)]"
-                              : "bg-cyan-500 shadow-[0_0_8px_rgba(249,115,22,0.45)]"
-                            : "bg-slate-800/80 border border-slate-700/50"
-                        }`}
+                        className={`h-2 flex-1 rounded-full transition-all ${active
+                          ? idx < 10
+                            ? "bg-sky-400 shadow-[0_0_8px_rgba(251,191,36,0.45)]"
+                            : "bg-cyan-500 shadow-[0_0_8px_rgba(249,115,22,0.45)]"
+                          : "bg-slate-800/80 border border-slate-700/50"
+                          }`}
                       />
                     );
                   })}
@@ -2272,14 +2447,13 @@ function AgentIntelligenceStudioContent() {
                       isViewer
                         ? "Read-Only Viewer cannot approve policies (requires Administrator role)"
                         : isApprovalEligible
-                        ? "Approve policy for production baseline"
-                        : "Approval blocked — mandatory quality gates or ground truth reviews incomplete"
+                          ? "Approve policy for production baseline"
+                          : "Approval blocked — mandatory quality gates or ground truth reviews incomplete"
                     }
-                    className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition-colors ${
-                      isApprovalEligible && !isViewer
-                        ? "bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500/60"
-                        : "bg-slate-900/70 text-slate-500 cursor-not-allowed border border-slate-800"
-                    }`}
+                    className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition-colors ${isApprovalEligible && !isViewer
+                      ? "bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-500/60"
+                      : "bg-slate-900/70 text-slate-500 cursor-not-allowed border border-slate-800"
+                      }`}
                   >
                     <Check className="w-3.5 h-3.5" /> {isApprovalEligible && !isViewer ? "Approve & Activate" : "Approval Blocked"}
                   </button>
@@ -2317,63 +2491,56 @@ function AgentIntelligenceStudioContent() {
           <div className="flex flex-wrap border-b border-slate-800/90 space-x-1 text-xs">
             <button
               onClick={() => setStudioTab("editor")}
-              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-                studioTab === "editor" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
-              }`}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "editor" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
             >
               <FileCode className="w-3.5 h-3.5" />
               Policy Editor (9 Sections)
             </button>
             <button
               onClick={() => setStudioTab("quality")}
-              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-                studioTab === "quality" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
-              }`}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "quality" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
             >
               <Award className="w-3.5 h-3.5" />
               Quality Gates (G1–G8)
             </button>
             <button
               onClick={() => setStudioTab("intelligence")}
-              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-                studioTab === "intelligence" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
-              }`}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "intelligence" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
             >
               <Cpu className="w-3.5 h-3.5" />
               SIEM Semantics &amp; Archetype
             </button>
             <button
               onClick={() => setStudioTab("contract")}
-              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-                studioTab === "contract" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
-              }`}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "contract" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
             >
               <Database className="w-3.5 h-3.5" />
               Evidence Contract
             </button>
             <button
               onClick={() => setStudioTab("simulation")}
-              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-                studioTab === "simulation" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
-              }`}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "simulation" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
             >
               <Activity className="w-3.5 h-3.5" />
               Simulation Lab
             </button>
             <button
               onClick={() => setStudioTab("drift")}
-              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-                studioTab === "drift" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
-              }`}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "drift" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
             >
               <GitBranch className="w-3.5 h-3.5" />
               Drift &amp; Monitoring
             </button>
             <button
               onClick={() => setStudioTab("learning")}
-              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${
-                studioTab === "learning" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
-              }`}
+              className={`px-3 py-2 font-semibold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-md ${studioTab === "learning" ? "theme-tab-active" : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
             >
               <Shield className="w-3.5 h-3.5" />
               Rule Learning &amp; Production Gating
@@ -2385,89 +2552,174 @@ function AgentIntelligenceStudioContent() {
       {/* Shared Feedback Alert */}
       {feedback && (
         <div
-          className={`p-2.5 rounded-md text-xs border ${
-            feedback.type === "success"
-              ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
-              : feedback.type === "warning"
+          className={`p-2.5 rounded-md text-xs border ${feedback.type === "success"
+            ? "bg-emerald-950/60 border-emerald-800 text-emerald-300"
+            : feedback.type === "warning"
               ? "bg-amber-950/60 border-amber-800 text-amber-300"
               : "bg-rose-950/60 border-rose-800 text-rose-300"
-          }`}
+            }`}
         >
           {feedback.text}
         </div>
       )}
 
-      {/* COMPACT MODE: TAB 1 (OVERVIEW) */}
+      {/* COMPACT MODE: TAB 1 (REVIEW INCIDENTS & GUIDED OVERVIEW) */}
       {!ruleError && !versionError && compactUi && primaryTab === "overview" && (
-        <AgentIntelligenceStudioOverview
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 font-medium">Workspace View:</span>
+              <div className="flex rounded-md bg-slate-900 border border-slate-800 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setReviewSubView("incidents")}
+                  className={`px-3 py-1 rounded text-xs font-semibold transition-all ${reviewSubView === "incidents"
+                    ? "bg-cyan-950 text-cyan-300 border border-cyan-800"
+                    : "text-slate-400 hover:text-slate-200"
+                    }`}
+                >
+                  Incident Review Workbench
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReviewSubView("overview")}
+                  className={`px-3 py-1 rounded text-xs font-semibold transition-all ${reviewSubView === "overview"
+                    ? "bg-cyan-950 text-cyan-300 border border-cyan-800"
+                    : "text-slate-400 hover:text-slate-200"
+                    }`}
+                >
+                  Policy Overview &amp; 6 Stages
+                </button>
+              </div>
+            </div>
+            <div className="text-[11px] text-slate-500 font-mono hidden sm:block">
+              {reviewSubView === "incidents"
+                ? "Double-blind evaluation queue"
+                : "Authoritative production readiness"}
+            </div>
+          </div>
+
+          {reviewSubView === "incidents" ? (
+            <ReviewIncidentsWorkbench
+              ruleId={selectedRuleId}
+              ruleName={rulePrompt?.rule_name || selectedRule?.name}
+              onNavigateToTest={() => setPrimaryTab("test_ai")}
+            />
+          ) : (
+            <AgentIntelligenceStudioOverview
+              ruleId={selectedRuleId}
+              ruleName={rulePrompt?.rule_name || selectedRule?.name}
+              ruleStatus={selectedRule?.status}
+              archetype={intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
+              qualityAssessment={qualityAssessment}
+              learningProfile={learningProfile}
+              intelligenceData={intelligenceData}
+              selectedVersion={selectedVersion || null}
+              versions={rulePrompt?.versions || []}
+              activeVersionId={rulePrompt?.active_version_id}
+              isApprovalEligible={isApprovalEligible}
+              isIncompleteDefinition={isIncompleteDefinition}
+              hasHardGateFailure={hasHardGateFailure}
+              llmOnline={llmOnline}
+              actionLoading={actionLoading}
+              loadingQuality={loadingQuality}
+              loadingSimulation={loadingSimulation}
+              isViewer={isViewer}
+              onSelectVersion={handleSelectVersion}
+              onRollback={handleRollback}
+              onGenerateIntelligentDraft={handleGenerateIntelligentDraft}
+              onValidateQuality={() => selectedVersionId && fetchQualityValidation(selectedRuleId, selectedVersionId)}
+              onRunSimulation={handleRunSimulation}
+              onApproveClick={() => setShowApprovalModal(true)}
+              onNavigateTab={handleNavigateTab}
+              onViewActualPrompt={(incId) => {
+                setPromptInspectorIncidentId(incId || null);
+                setPromptInspectorRuleId(selectedRuleId);
+                setPromptInspectorVersionId(selectedVersionId);
+                setPromptInspectorInitialMode("capture");
+                setPromptInspectorOpen(true);
+              }}
+              onPreviewPrompt={() => {
+                setPromptInspectorIncidentId(null);
+                setPromptInspectorRuleId(selectedRuleId);
+                setPromptInspectorVersionId(selectedVersionId);
+                setPromptInspectorInitialMode("preview");
+                setPromptInspectorOpen(true);
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* COMPACT MODE: TAB 2 (TEST AI) */}
+      {!ruleError && !versionError && compactUi && primaryTab === "test_ai" && (
+        <AiTestWorkbench
           ruleId={selectedRuleId}
           ruleName={rulePrompt?.rule_name || selectedRule?.name}
-          ruleStatus={selectedRule?.status}
-          archetype={intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
-          qualityAssessment={qualityAssessment}
-          learningProfile={learningProfile}
-          intelligenceData={intelligenceData}
-          selectedVersion={selectedVersion || null}
+          activeVersion={activeVersion}
+          selectedVersion={selectedVersion}
           versions={rulePrompt?.versions || []}
-          activeVersionId={rulePrompt?.active_version_id}
-          isApprovalEligible={isApprovalEligible}
-          isIncompleteDefinition={isIncompleteDefinition}
-          hasHardGateFailure={hasHardGateFailure}
-          llmOnline={llmOnline}
-          actionLoading={actionLoading}
-          loadingQuality={loadingQuality}
-          loadingSimulation={loadingSimulation}
-          isViewer={isViewer}
-          onSelectVersion={handleSelectVersion}
-          onRollback={handleRollback}
-          onGenerateIntelligentDraft={handleGenerateIntelligentDraft}
-          onValidateQuality={() => selectedVersionId && fetchQualityValidation(selectedRuleId, selectedVersionId)}
-          onRunSimulation={handleRunSimulation}
-          onApproveClick={() => setShowApprovalModal(true)}
-          onNavigateTab={handleNavigateTab}
-          onViewActualPrompt={(incId) => {
+          onViewPrompt={(incId?: string | null) => {
             setPromptInspectorIncidentId(incId || null);
             setPromptInspectorRuleId(selectedRuleId);
             setPromptInspectorVersionId(selectedVersionId);
             setPromptInspectorInitialMode("capture");
             setPromptInspectorOpen(true);
           }}
-          onPreviewPrompt={() => {
-            setPromptInspectorIncidentId(null);
-            setPromptInspectorRuleId(selectedRuleId);
-            setPromptInspectorVersionId(selectedVersionId);
-            setPromptInspectorInitialMode("preview");
-            setPromptInspectorOpen(true);
+          onNavigateToAdvanced={() => {
+            setPrimaryTab("advanced");
+            setAdvancedSection("simulation");
           }}
         />
       )}
 
-      {/* COMPACT MODE: TAB 2 (ANALYST REVIEW & LEARNING) */}
+      {/* COMPACT MODE: TAB 3 (ANALYST REVIEW & LEARNING / ACCURACY) */}
       {!ruleError && !versionError && compactUi && primaryTab === "learning" && (
         <div className="space-y-4">
-          <RuleLearningDashboard
+          <AccuracyLearningSummary
             ruleId={selectedRuleId}
             ruleName={rulePrompt?.rule_name || selectedRule?.name}
-            onProfileUpdate={(p) => setLearningProfile(p)}
+            learningProfile={learningProfile}
+            qualityAssessment={qualityAssessment}
+            onStartReviews={() => {
+              setPrimaryTab("overview");
+              setReviewSubView("incidents");
+            }}
           />
+
+          <details className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/40">
+            <summary className="text-xs font-semibold text-slate-300 cursor-pointer hover:text-cyan-300 flex items-center justify-between">
+              <span>Detailed Ground-Truth Review Workbench &amp; Statistical Drift Engine</span>
+              <span className="text-[10px] text-slate-500">Click to expand</span>
+            </summary>
+            <div className="mt-4">
+              <RuleLearningDashboard
+                ruleId={selectedRuleId}
+                ruleName={rulePrompt?.rule_name || selectedRule?.name}
+                onProfileUpdate={(p) => setLearningProfile(p)}
+              />
+            </div>
+          </details>
         </div>
       )}
 
-      {/* COMPACT MODE: TAB 3 (ADVANCED CONFIGURATION 2-COLUMN WORKSPACE) */}
+      {/* COMPACT MODE: TAB 4 (ADVANCED CONFIGURATION 2-COLUMN WORKSPACE) */}
       {!ruleError && !versionError && compactUi && primaryTab === "advanced" && (
         <div className="p-2.5 rounded-xl border border-slate-800/80 bg-slate-950/70 mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
             <Sliders className="w-4 h-4 text-cyan-400" />
-            <span className="font-bold text-slate-200">Technical Configuration Workbench</span>
+            <span className="font-bold text-slate-200">Advanced Settings &amp; Configuration Workbench</span>
             <span className="text-slate-500">•</span>
             <span className="text-slate-400 font-mono text-[11px]">
-              {advancedSection === "editor" ? "Policy Editor (9 Sections)" :
-               advancedSection === "quality" ? "Quality Gates (G1–G8)" :
-               advancedSection === "intelligence" ? "SIEM Semantics & Archetype" :
-               advancedSection === "contract" ? "Evidence Contract Feasibility" :
-               advancedSection === "simulation" ? "Simulation Lab & Replay" :
-               advancedSection === "drift" ? "Drift Monitoring & Governance" :
-               "Version History & Lineage"}
+              {advancedSection === "editor" ? "1. Investigation Policy (9 Sections)" :
+                advancedSection === "quality" ? "2. Quality Gates (G1–G8)" :
+                  advancedSection === "contract" ? "3. Evidence Contract Feasibility" :
+                    advancedSection === "xml" || advancedSection === "intelligence" ? "4. Rule XML & Detection Semantics" :
+                      advancedSection === "prompt_inspector" ? "5. Prompt Inspector & Telemetry" :
+                        advancedSection === "diagnostics" ? "6. Model Diagnostics & AWQ Settings" :
+                          advancedSection === "simulation" ? "7. Simulation Lab & Replay" :
+                            advancedSection === "governance" || advancedSection === "drift" ? "8. Production Governance & Drift" :
+                              "9. Manage Version History"}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -2484,1946 +2736,1863 @@ function AgentIntelligenceStudioContent() {
       {!ruleError && !versionError && (!compactUi || primaryTab === "advanced") && (
         <>
           {loadingPrompt ? (
-        <div className="py-12 text-center text-slate-500 text-xs">
-          <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-cyan-400" />
-          Loading agent policy and intelligence specifications...
-        </div>
-      ) : !rulePrompt ? (
-        <div className="p-8 border border-slate-800 rounded-lg text-center text-slate-500 text-xs space-y-2">
-          <p>No prompt found for this SIEM rule.</p>
-          <button
-            type="button"
-            onClick={handleBackToTable}
-            className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs"
-          >
-            Return to Rules List
-          </button>
-        </div>
-      ) : (
-        <div className={compactUi ? "grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start" : "grid grid-cols-1 lg:grid-cols-4 gap-3 items-start"}>
-          {compactUi ? (
-            /* Left Column: 7-Module Compact Section Navigation */
-            <div className="lg:col-span-3 space-y-2">
-              <div className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/60 shadow-sm space-y-1">
-                <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1 tracking-wider">
-                  Configuration Modules
-                </div>
-                <button
-                  onClick={() => { setAdvancedSection("editor"); setStudioTab("editor"); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
-                    advancedSection === "editor"
-                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <FileCode className="w-3.5 h-3.5 text-slate-400" />
-                    Policy Editor
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-mono">9 Sec</span>
-                </button>
-
-                <button
-                  onClick={() => { setAdvancedSection("quality"); setStudioTab("quality"); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
-                    advancedSection === "quality"
-                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <Award className="w-3.5 h-3.5 text-sky-400" />
-                    Quality Gates
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-slate-500 font-mono">G1–G8</span>
-                    {blockingIssuesList.length > 0 && (
-                      <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800 font-mono">
-                        {blockingIssuesList.length}
-                      </span>
-                    )}
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => { setAdvancedSection("intelligence"); setStudioTab("intelligence"); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
-                    advancedSection === "intelligence"
-                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <Cpu className="w-3.5 h-3.5 text-violet-400" />
-                    SIEM Semantics
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-mono">
-                    {intelligenceData?.classification?.primary_archetype ? "Mapped" : "—"}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => { setAdvancedSection("contract"); setStudioTab("contract"); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
-                    advancedSection === "contract"
-                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <Database className="w-3.5 h-3.5 text-cyan-400" />
-                    Evidence Contract
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-mono">
-                    {intelligenceData?.semantics?.relevant_fields?.length || 0} fields
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => { setAdvancedSection("simulation"); setStudioTab("simulation"); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
-                    advancedSection === "simulation"
-                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <Activity className="w-3.5 h-3.5 text-amber-400" />
-                    Simulation Lab
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-mono">Replay</span>
-                </button>
-
-                <button
-                  onClick={() => { setAdvancedSection("drift"); setStudioTab("drift"); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
-                    advancedSection === "drift"
-                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <GitBranch className="w-3.5 h-3.5 text-rose-400" />
-                    Drift Monitoring
-                  </span>
-                  {driftEvents.filter((d) => !d.acknowledged).length > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800 font-mono">
-                      {driftEvents.filter((d) => !d.acknowledged).length}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => { setAdvancedSection("history"); setStudioTab("history"); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${
-                    advancedSection === "history"
-                      ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <History className="w-3.5 h-3.5 text-sky-400" />
-                    Version History
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-slate-500 font-mono">v{rulePrompt?.versions.length || 0}</span>
-                    {rulePrompt?.versions.some((v) => v.status === "REVOKED") && (
-                      <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
-                        REVOKED
-                      </span>
-                    )}
-                  </div>
-                </button>
-
-                {/* Action: Generate Intelligent Draft */}
-                <div className="pt-2 border-t border-slate-800/60 mt-1">
-                  <button
-                    type="button"
-                    disabled={actionLoading || isViewer}
-                    onClick={handleGenerateIntelligentDraft}
-                    title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent policy draft"}
-                    className="w-full py-2 px-2.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Generate Intelligent Draft
-                  </button>
-                </div>
-              </div>
+            <div className="py-12 text-center text-slate-500 text-xs">
+              <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-cyan-400" />
+              Loading agent policy and intelligence specifications...
+            </div>
+          ) : !rulePrompt ? (
+            <div className="p-8 border border-slate-800 rounded-lg text-center text-slate-500 text-xs space-y-2">
+              <p>No prompt found for this SIEM rule.</p>
+              <button
+                type="button"
+                onClick={handleBackToTable}
+                className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs"
+              >
+                Return to Rules List
+              </button>
             </div>
           ) : (
-            /* Legacy Left Column: Version History Sidebar */
-            <div className="lg:col-span-1 space-y-3">
-              <div className="p-3.5 rounded-xl theme-glass-panel space-y-2.5">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
-                    <History className="w-3.5 h-3.5 text-sky-400" /> Version History
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    {rulePrompt.versions.length} versions
-                  </span>
-                </div>
-
-                {/* Version List */}
-                <div className="space-y-2 max-h-[460px] overflow-y-auto pr-0.5">
-                  {rulePrompt.versions.length === 0 ? (
-                    <div className="p-3 text-center text-slate-500 text-xs italic">
-                      No versions created yet.
+            <div className={compactUi ? "grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start" : "grid grid-cols-1 lg:grid-cols-4 gap-3 items-start"}>
+              {compactUi ? (
+                /* Left Column: 9-Module Compact Section Navigation */
+                <div className="lg:col-span-3 space-y-2">
+                  <div className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/60 shadow-sm space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1 tracking-wider">
+                      Advanced Settings
                     </div>
-                  ) : (
-                    rulePrompt.versions.map((ver) => {
-                      const isActive = ver.id === rulePrompt.active_version_id;
-                      const isSelected = ver.id === selectedVersionId;
-                      return (
-                        <div
-                          key={ver.id}
-                          onClick={() => handleSelectVersion(ver.id)}
-                          className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${isSelected
-                            ? "theme-version-selected"
-                            : "theme-glass-sunken hover:border-slate-700"
-                            }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-100 flex items-center gap-1.5 text-xs">
-                              v{ver.version_number}
-                              {isActive && (
-                                <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-950/90 text-emerald-400 border border-emerald-800/80 font-semibold">
-                                  ACTIVE
-                                </span>
-                              )}
-                            </span>
-                            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${
-                              ver.status === "APPROVED"
-                                ? "bg-emerald-950/90 text-emerald-400 border border-emerald-800/80"
-                                : ver.status === "REVOKED"
-                                ? "bg-rose-950/90 text-rose-400 border border-rose-800/80"
-                                : ver.status === "VALIDATED"
-                                ? "bg-sky-950/90 text-sky-400 border border-sky-800/80"
-                                : ver.status === "ARCHIVED"
-                                ? "bg-slate-900 text-slate-500 border border-slate-800"
-                                : "bg-amber-950/90 text-amber-300 border border-amber-700/80"
-                            }`}>
-                              {ver.status}
-                            </span>
-                          </div>
+                    {/* 1. Investigation Policy */}
+                    <button
+                      onClick={() => { setAdvancedSection("editor"); setStudioTab("editor"); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${advancedSection === "editor"
+                        ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <FileCode className="w-3.5 h-3.5 text-slate-400" />
+                        1. Investigation Policy
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">9 Sec</span>
+                    </button>
 
-                          <div className="mt-1 text-[10px] text-slate-400 line-clamp-2">
-                            {ver.change_summary}
-                          </div>
+                    {/* 2. Quality Gates */}
+                    <button
+                      onClick={() => { setAdvancedSection("quality"); setStudioTab("quality"); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${advancedSection === "quality"
+                        ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Award className="w-3.5 h-3.5 text-sky-400" />
+                        2. Quality Gates
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-slate-500 font-mono">G1–G8</span>
+                        {blockingIssuesList.length > 0 && (
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800 font-mono">
+                            {blockingIssuesList.length}
+                          </span>
+                        )}
+                      </div>
+                    </button>
 
-                          <div className="mt-1.5 pt-1 border-t border-slate-800/60 flex items-center justify-between text-[9px] text-slate-500">
-                            <span>{new Date(ver.created_at).toLocaleDateString()}</span>
-                            {ver.is_template_draft ? (
-                              <span className="text-sky-400 font-medium">Template</span>
-                            ) : (
-                              <span className="text-slate-400">Manual</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
+                    {/* 3. Evidence Contract */}
+                    <button
+                      onClick={() => { setAdvancedSection("contract"); setStudioTab("contract"); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${advancedSection === "contract"
+                        ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Database className="w-3.5 h-3.5 text-cyan-400" />
+                        3. Evidence Contract
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {intelligenceData?.semantics?.relevant_fields?.length || 0} fields
+                      </span>
+                    </button>
+
+                    {/* 4. Rule XML & Logic */}
+                    <button
+                      onClick={() => { setAdvancedSection("xml"); setStudioTab("intelligence"); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${advancedSection === "xml" || advancedSection === "intelligence"
+                        ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Cpu className="w-3.5 h-3.5 text-violet-400" />
+                        4. Rule XML &amp; Logic
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {intelligenceData?.classification?.primary_archetype ? "Mapped" : "—"}
+                      </span>
+                    </button>
+
+                    {/* 5. Prompt Inspector */}
+                    <button
+                      onClick={() => { setAdvancedSection("prompt_inspector"); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${advancedSection === "prompt_inspector"
+                        ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Eye className="w-3.5 h-3.5 text-teal-400" />
+                        5. Prompt Inspector
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">Actual</span>
+                    </button>
+
+                    {/* 6. Model Diagnostics */}
+                    <button
+                      onClick={() => { setAdvancedSection("diagnostics"); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${advancedSection === "diagnostics"
+                        ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Activity className="w-3.5 h-3.5 text-blue-400" />
+                        6. Model Diagnostics
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">AWQ</span>
+                    </button>
+
+                    {/* 7. Simulation History */}
+                    <button
+                      onClick={() => { setAdvancedSection("simulation"); setStudioTab("simulation"); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${advancedSection === "simulation"
+                        ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                        7. Simulation History
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">Replay</span>
+                    </button>
+
+                    {/* 8. Production Governance */}
+                    <button
+                      onClick={() => { setAdvancedSection("governance"); setStudioTab("drift"); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${advancedSection === "governance" || advancedSection === "drift"
+                        ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Shield className="w-3.5 h-3.5 text-rose-400" />
+                        8. Production Governance
+                      </span>
+                      {driftEvents.filter((d) => !d.acknowledged).length > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800 font-mono">
+                          {driftEvents.filter((d) => !d.acknowledged).length}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* 9. Manage Version History */}
+                    <button
+                      onClick={() => { setAdvancedSection("manage_versions"); setStudioTab("history"); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${advancedSection === "manage_versions" || advancedSection === "history"
+                        ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <History className="w-3.5 h-3.5 text-sky-400" />
+                        9. Manage Versions
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-slate-500 font-mono">v{rulePrompt?.versions.length || 0}</span>
+                        {rulePrompt?.versions.some((v) => v.status === "REVOKED") && (
+                          <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-rose-950 text-rose-300 border border-rose-800">
+                            REVOKED
+                          </span>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Action: Generate Intelligent Draft */}
+                    <div className="pt-2 border-t border-slate-800/60 mt-1">
+                      <button
+                        type="button"
+                        disabled={actionLoading || isViewer}
+                        onClick={handleGenerateIntelligentDraft}
+                        title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent policy draft"}
+                        className="w-full py-2 px-2.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Generate Intelligent Draft
+                      </button>
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                /* Legacy Left Column: Version History Sidebar */
+                <div className="lg:col-span-1 space-y-3">
+                  <div className="p-3.5 rounded-xl theme-glass-panel space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
+                        <History className="w-3.5 h-3.5 text-sky-400" /> Version History
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {rulePrompt.versions.length} versions
+                      </span>
+                    </div>
 
-                {/* Action: Generate Intelligent Draft */}
-                <button
-                  type="button"
-                  disabled={actionLoading || isViewer}
-                  onClick={handleGenerateIntelligentDraft}
-                  title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent policy draft"}
-                  className="w-full py-2 px-2.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Generate Intelligent Draft
-                </button>
-              </div>
-            </div>
-          )}
+                    {/* Version List */}
+                    <div className="space-y-2 max-h-[460px] overflow-y-auto pr-0.5">
+                      {rulePrompt.versions.length === 0 ? (
+                        <div className="p-3 text-center text-slate-500 text-xs italic">
+                          No versions created yet.
+                        </div>
+                      ) : (
+                        rulePrompt.versions.map((ver) => {
+                          const isActive = ver.id === rulePrompt.active_version_id;
+                          const isSelected = ver.id === selectedVersionId;
+                          return (
+                            <div
+                              key={ver.id}
+                              onClick={() => handleSelectVersion(ver.id)}
+                              className={`p-2.5 rounded-xl text-xs cursor-pointer transition-all ${isSelected
+                                ? "theme-version-selected"
+                                : "theme-glass-sunken hover:border-slate-700"
+                                }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-slate-100 flex items-center gap-1.5 text-xs">
+                                  v{ver.version_number}
+                                  {isActive && (
+                                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-950/90 text-emerald-400 border border-emerald-800/80 font-semibold">
+                                      ACTIVE
+                                    </span>
+                                  )}
+                                </span>
+                                <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-semibold ${ver.status === "APPROVED"
+                                  ? "bg-emerald-950/90 text-emerald-400 border border-emerald-800/80"
+                                  : ver.status === "REVOKED"
+                                    ? "bg-rose-950/90 text-rose-400 border border-rose-800/80"
+                                    : ver.status === "VALIDATED"
+                                      ? "bg-sky-950/90 text-sky-400 border border-sky-800/80"
+                                      : ver.status === "ARCHIVED"
+                                        ? "bg-slate-900 text-slate-500 border border-slate-800"
+                                        : "bg-amber-950/90 text-amber-300 border border-amber-700/80"
+                                  }`}>
+                                  {ver.status}
+                                </span>
+                              </div>
 
-          {/* Right Column: Tabbed Workspace */}
-          <div className={compactUi ? "lg:col-span-9 space-y-3" : "lg:col-span-3 space-y-3"}>
-            {/* TAB 1: POLICY EDITOR */}
-            {studioTab === "editor" && (
-              <>
-                {!selectedVersion ? (
-                  <div className="p-8 rounded-xl theme-glass-card text-center space-y-3">
-                    <Sparkles className="w-8 h-8 text-cyan-400 mx-auto" />
-                    <h3 className="text-sm font-semibold text-slate-200">No Policy Baseline for This Rule</h3>
-                    <p className="text-xs text-slate-400 max-w-md mx-auto">
-                      Generate an intelligent policy draft synthesized from SIEM rule specifications and detection archetypes.
-                    </p>
+                              <div className="mt-1 text-[10px] text-slate-400 line-clamp-2">
+                                {ver.change_summary}
+                              </div>
+
+                              <div className="mt-1.5 pt-1 border-t border-slate-800/60 flex items-center justify-between text-[9px] text-slate-500">
+                                <span>{new Date(ver.created_at).toLocaleDateString()}</span>
+                                {ver.is_template_draft ? (
+                                  <span className="text-sky-400 font-medium">Template</span>
+                                ) : (
+                                  <span className="text-slate-400">Manual</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Action: Generate Intelligent Draft */}
                     <button
                       type="button"
                       disabled={actionLoading || isViewer}
                       onClick={handleGenerateIntelligentDraft}
                       title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent policy draft"}
-                      className="px-4 py-2 theme-primary-btn rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all disabled:opacity-50"
+                      className="w-full py-2 px-2.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
                     >
-                      <Sparkles className="w-3.5 h-3.5" /> Synthesize Intelligent Draft Now
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Generate Intelligent Draft
                     </button>
                   </div>
-                ) : (
-                  <>
-                    {/* Top Toolbar */}
-                    <div className="p-3 sm:px-4 rounded-xl theme-glass-panel flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-slate-100">
-                            Version {selectedVersion.version_number}
-                          </span>
-                          {isSelectedActive && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 flex items-center gap-1" title="Currently assigned policy version for this rule">
-                              <CheckCircle2 className="w-3 h-3" /> Active Policy v{selectedVersion.version_number}
-                            </span>
-                          )}
-                          {selectedVersion.is_template_draft && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-950/80 text-sky-300 border border-sky-700/70">
-                              INTELLIGENT DRAFT
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
-                          Change Note: <span className="text-slate-300 italic">{selectedVersion.change_summary}</span>
-                        </div>
-                      </div>
+                </div>
+              )}
 
-                      <div className="flex flex-wrap items-center gap-1.5">
+              {/* Right Column: Tabbed Workspace */}
+              <div className={compactUi ? "lg:col-span-9 space-y-3" : "lg:col-span-3 space-y-3"}>
+                {/* TAB 1: POLICY EDITOR */}
+                {studioTab === "editor" && (
+                  <>
+                    {!selectedVersion ? (
+                      <div className="p-8 rounded-xl theme-glass-card text-center space-y-3">
+                        <Sparkles className="w-8 h-8 text-cyan-400 mx-auto" />
+                        <h3 className="text-sm font-semibold text-slate-200">No Policy Baseline for This Rule</h3>
+                        <p className="text-xs text-slate-400 max-w-md mx-auto">
+                          Generate an intelligent policy draft synthesized from SIEM rule specifications and detection archetypes.
+                        </p>
                         <button
                           type="button"
-                          onClick={() => handleExportSingleRule(selectedRuleId, "json")}
-                          disabled={downloadingExport}
-                          className="px-2.5 py-1.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                          disabled={actionLoading || isViewer}
+                          onClick={handleGenerateIntelligentDraft}
+                          title={isViewer ? "Read-Only Viewer cannot synthesize drafts (requires SOC Analyst or Administrator role)" : "Synthesize intelligent policy draft"}
+                          className="px-4 py-2 theme-primary-btn rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all disabled:opacity-50"
                         >
-                          <Download className="w-3.5 h-3.5 text-cyan-400" /> Download
+                          <Sparkles className="w-3.5 h-3.5" /> Synthesize Intelligent Draft Now
                         </button>
-
-                        {!isEditing ? (
-                          <button
-                            type="button"
-                            onClick={() => setIsEditing(true)}
-                            className="px-2.5 py-1.5 theme-secondary-btn rounded-lg text-xs font-semibold transition-colors"
-                          >
-                            Edit as New Draft
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setIsEditing(false)}
-                            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 rounded-lg text-xs font-semibold transition-colors"
-                          >
-                            Cancel Editing
-                          </button>
-                        )}
                       </div>
-                    </div>
-
-                    {/* Structured 9-Section Policy Form */}
-                    <form onSubmit={handleSaveManualDraft} className="space-y-3">
-                      {/* Section 1: Common SOC Baseline */}
-                      <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold text-sky-400 flex items-center gap-1.5 tracking-wide">
-                            <Shield className="w-3.5 h-3.5 text-sky-400" />
-                            1. COMMON SOC BASELINE PROTOCOL
-                          </label>
-                          <span className="text-[10px] text-slate-500 font-mono">Shared across all rules</span>
-                        </div>
-                        {isEditing ? (
-                          <textarea
-                            rows={5}
-                            value={editCommon}
-                            onChange={(e) => setEditCommon(e.target.value)}
-                            className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-sky-500"
-                          />
-                        ) : (
-                          <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
-                            {selectedVersion.common_prompt}
+                    ) : (
+                      <>
+                        {/* Top Toolbar */}
+                        <div className="p-3 sm:px-4 rounded-xl theme-glass-panel flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-slate-100">
+                                Version {selectedVersion.version_number}
+                              </span>
+                              {isSelectedActive && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 flex items-center gap-1" title="Currently assigned policy version for this rule">
+                                  <CheckCircle2 className="w-3 h-3" /> Active Policy v{selectedVersion.version_number}
+                                </span>
+                              )}
+                              {selectedVersion.is_template_draft && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-950/80 text-sky-300 border border-sky-700/70">
+                                  INTELLIGENT DRAFT
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-400 mt-0.5">
+                              Change Note: <span className="text-slate-300 italic">{selectedVersion.change_summary}</span>
+                            </div>
                           </div>
-                        )}
-                      </div>
 
-                      {/* Section 2: Rule-Specific Guidance */}
-                      <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold text-sky-400 flex items-center gap-1.5 tracking-wide">
-                            <FileCode className="w-3.5 h-3.5 text-cyan-400" />
-                            2. RULE-SPECIFIC DIRECTIVE &amp; PATTERN DETAILS
-                          </label>
-                          <span className="text-[10px] text-slate-500 font-mono">Custom tailored per detection</span>
-                        </div>
-                        {isEditing ? (
-                          <textarea
-                            rows={6}
-                            value={editRuleSpecific}
-                            onChange={(e) => setEditRuleSpecific(e.target.value)}
-                            className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-cyan-500"
-                            required
-                          />
-                        ) : (
-                          <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-60 overflow-y-auto leading-relaxed">
-                            {selectedVersion.rule_specific_prompt}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleExportSingleRule(selectedRuleId, "json")}
+                              disabled={downloadingExport}
+                              className="px-2.5 py-1.5 theme-secondary-btn rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                            >
+                              <Download className="w-3.5 h-3.5 text-cyan-400" /> Download
+                            </button>
+
+                            {!isEditing ? (
+                              <button
+                                type="button"
+                                onClick={() => setIsEditing(true)}
+                                className="px-2.5 py-1.5 theme-secondary-btn rounded-lg text-xs font-semibold transition-colors"
+                              >
+                                Edit as New Draft
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setIsEditing(false)}
+                                className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 rounded-lg text-xs font-semibold transition-colors"
+                              >
+                                Cancel Editing
+                              </button>
+                            )}
                           </div>
-                        )}
-                      </div>
-
-                      {/* Section 3 & 4: Detection Conditions & Evidence */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
-                          <label className="text-xs font-bold text-sky-400 block tracking-wide">
-                            3. DETECTION CONDITIONS &amp; PATTERN LOGIC
-                          </label>
-                          {isEditing ? (
-                            <textarea
-                              rows={4}
-                              value={editConditions}
-                              onChange={(e) => setEditConditions(e.target.value)}
-                              className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
-                            />
-                          ) : (
-                            <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto">
-                              {selectedVersion.detection_conditions || "No conditions specified."}
-                            </div>
-                          )}
                         </div>
 
-                        <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
-                          <label className="text-xs font-bold text-sky-400 block tracking-wide">
-                            4. MANDATORY EVIDENCE GATHERING CHECKLIST
-                          </label>
-                          {isEditing ? (
-                            <textarea
-                              rows={4}
-                              value={editEvidence}
-                              onChange={(e) => setEditEvidence(e.target.value)}
-                              className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
-                            />
-                          ) : (
-                            <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto">
-                              {selectedVersion.required_evidence || "Standard telemetry artifacts."}
+                        {/* Structured 9-Section Policy Form */}
+                        <form onSubmit={handleSaveManualDraft} className="space-y-3">
+                          {/* Section 1: Common SOC Baseline */}
+                          <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-bold text-sky-400 flex items-center gap-1.5 tracking-wide">
+                                <Shield className="w-3.5 h-3.5 text-sky-400" />
+                                1. COMMON SOC BASELINE PROTOCOL
+                              </label>
+                              <span className="text-[10px] text-slate-500 font-mono">Shared across all rules</span>
                             </div>
-                          )}
-                        </div>
-                      </div>
+                            {isEditing ? (
+                              <textarea
+                                rows={5}
+                                value={editCommon}
+                                onChange={(e) => setEditCommon(e.target.value)}
+                                className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-sky-500"
+                              />
+                            ) : (
+                              <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                                {selectedVersion.common_prompt}
+                              </div>
+                            )}
+                          </div>
 
-                      {/* Section 5 & 6: TP / FP Indicators */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="p-3 rounded-lg border border-emerald-950/40 bg-emerald-950/10 space-y-1.5">
-                          <label className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                            <Check className="w-3.5 h-3.5" /> 5. TRUE POSITIVE INDICATORS (ATTACK EVIDENCE)
-                          </label>
-                          {isEditing ? (
-                            <textarea
-                              rows={4}
-                              value={editTpIndicators}
-                              onChange={(e) => setEditTpIndicators(e.target.value)}
-                              className="w-full p-2 text-xs font-mono rounded border border-emerald-900/60 bg-slate-950 text-slate-200 focus:outline-none"
-                            />
-                          ) : (
-                            <div className="p-2 text-xs font-mono rounded border border-emerald-900/40 bg-slate-950 text-emerald-200/90 whitespace-pre-wrap max-h-36 overflow-y-auto">
-                              {selectedVersion.tp_indicators || "No specific TP indicators listed."}
+                          {/* Section 2: Rule-Specific Guidance */}
+                          <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-bold text-sky-400 flex items-center gap-1.5 tracking-wide">
+                                <FileCode className="w-3.5 h-3.5 text-cyan-400" />
+                                2. RULE-SPECIFIC DIRECTIVE &amp; PATTERN DETAILS
+                              </label>
+                              <span className="text-[10px] text-slate-500 font-mono">Custom tailored per detection</span>
                             </div>
-                          )}
-                        </div>
+                            {isEditing ? (
+                              <textarea
+                                rows={6}
+                                value={editRuleSpecific}
+                                onChange={(e) => setEditRuleSpecific(e.target.value)}
+                                className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-cyan-500"
+                                required
+                              />
+                            ) : (
+                              <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-60 overflow-y-auto leading-relaxed">
+                                {selectedVersion.rule_specific_prompt}
+                              </div>
+                            )}
+                          </div>
 
-                        <div className="p-3 rounded-lg border border-blue-950/40 bg-blue-950/10 space-y-1.5">
-                          <label className="text-xs font-bold text-blue-300 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> 6. FALSE POSITIVE INDICATORS (BENIGN NOISE)
-                          </label>
-                          {isEditing ? (
-                            <textarea
-                              rows={4}
-                              value={editFpIndicators}
-                              onChange={(e) => setEditFpIndicators(e.target.value)}
-                              className="w-full p-2 text-xs font-mono rounded border border-blue-900/60 bg-slate-950 text-slate-200 focus:outline-none"
-                            />
-                          ) : (
-                            <div className="p-2 text-xs font-mono rounded border border-blue-900/40 bg-slate-950 text-blue-200/90 whitespace-pre-wrap max-h-36 overflow-y-auto">
-                              {selectedVersion.fp_indicators || "No specific FP indicators listed."}
+                          {/* Section 3 & 4: Detection Conditions & Evidence */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
+                              <label className="text-xs font-bold text-sky-400 block tracking-wide">
+                                3. DETECTION CONDITIONS &amp; PATTERN LOGIC
+                              </label>
+                              {isEditing ? (
+                                <textarea
+                                  rows={4}
+                                  value={editConditions}
+                                  onChange={(e) => setEditConditions(e.target.value)}
+                                  className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
+                                />
+                              ) : (
+                                <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto">
+                                  {selectedVersion.detection_conditions || "No conditions specified."}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </div>
 
-                      {/* Section 7 & 8: Abstention & Escalation */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="p-3 rounded-lg border border-amber-950/40 bg-amber-950/10 space-y-1.5">
-                          <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5" /> 7. WHEN TO ABSTAIN (REQUIRES ATTENTION)
-                          </label>
-                          {isEditing ? (
-                            <textarea
-                              rows={3}
-                              value={editMissingInfo}
-                              onChange={(e) => setEditMissingInfo(e.target.value)}
-                              className="w-full p-2 text-xs font-mono rounded border border-amber-900/60 bg-slate-950 text-slate-200 focus:outline-none"
-                            />
-                          ) : (
-                            <div className="p-2 text-xs font-mono rounded border border-amber-900/40 bg-slate-950 text-amber-200/90 whitespace-pre-wrap max-h-32 overflow-y-auto">
-                              {selectedVersion.missing_info_criteria || "Telemetry truncated or crucial context absent."}
+                            <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
+                              <label className="text-xs font-bold text-sky-400 block tracking-wide">
+                                4. MANDATORY EVIDENCE GATHERING CHECKLIST
+                              </label>
+                              {isEditing ? (
+                                <textarea
+                                  rows={4}
+                                  value={editEvidence}
+                                  onChange={(e) => setEditEvidence(e.target.value)}
+                                  className="w-full p-2.5 text-xs font-mono rounded-lg border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
+                                />
+                              ) : (
+                                <div className="p-3 text-xs font-mono rounded-lg theme-glass-sunken text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto">
+                                  {selectedVersion.required_evidence || "Standard telemetry artifacts."}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
+                          </div>
 
-                        <div className="p-3 rounded-lg border border-rose-950/40 bg-rose-950/10 space-y-1.5">
-                          <label className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
-                            <AlertCircle className="w-3.5 h-3.5" /> 8. P1/P2 ESCALATION CONDITIONS
-                          </label>
-                          {isEditing ? (
-                            <textarea
-                              rows={3}
-                              value={editEscalation}
-                              onChange={(e) => setEditEscalation(e.target.value)}
-                              className="w-full p-2 text-xs font-mono rounded border border-rose-900/60 bg-slate-950 text-slate-200 focus:outline-none"
-                            />
-                          ) : (
-                            <div className="p-2 text-xs font-mono rounded border border-rose-900/40 bg-slate-950 text-rose-200/90 whitespace-pre-wrap max-h-32 overflow-y-auto">
-                              {selectedVersion.escalation_conditions || "High impact asset compromise or active exfiltration."}
+                          {/* Section 5 & 6: TP / FP Indicators */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="p-3 rounded-lg border border-emerald-950/40 bg-emerald-950/10 space-y-1.5">
+                              <label className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                                <Check className="w-3.5 h-3.5" /> 5. TRUE POSITIVE INDICATORS (ATTACK EVIDENCE)
+                              </label>
+                              {isEditing ? (
+                                <textarea
+                                  rows={4}
+                                  value={editTpIndicators}
+                                  onChange={(e) => setEditTpIndicators(e.target.value)}
+                                  className="w-full p-2 text-xs font-mono rounded border border-emerald-900/60 bg-slate-950 text-slate-200 focus:outline-none"
+                                />
+                              ) : (
+                                <div className="p-2 text-xs font-mono rounded border border-emerald-900/40 bg-slate-950 text-emerald-200/90 whitespace-pre-wrap max-h-36 overflow-y-auto">
+                                  {selectedVersion.tp_indicators || "No specific TP indicators listed."}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </div>
 
-                      {/* Section 9: Standard Q&A Checklist */}
-                      <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
-                        <label className="text-xs font-bold text-sky-400 block tracking-wide">
-                          9. STANDARD INVESTIGATIVE Q&amp;A CHECKLIST
-                        </label>
-                        <div className="space-y-1.5">
-                          {isEditing ? (
-                            editQuestions.map((q, idx) => (
-                              <div key={idx} className="flex items-center gap-2">
-                                <span className="text-[10px] text-slate-500 font-mono w-4">{idx + 1}.</span>
+                            <div className="p-3 rounded-lg border border-blue-950/40 bg-blue-950/10 space-y-1.5">
+                              <label className="text-xs font-bold text-blue-300 flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> 6. FALSE POSITIVE INDICATORS (BENIGN NOISE)
+                              </label>
+                              {isEditing ? (
+                                <textarea
+                                  rows={4}
+                                  value={editFpIndicators}
+                                  onChange={(e) => setEditFpIndicators(e.target.value)}
+                                  className="w-full p-2 text-xs font-mono rounded border border-blue-900/60 bg-slate-950 text-slate-200 focus:outline-none"
+                                />
+                              ) : (
+                                <div className="p-2 text-xs font-mono rounded border border-blue-900/40 bg-slate-950 text-blue-200/90 whitespace-pre-wrap max-h-36 overflow-y-auto">
+                                  {selectedVersion.fp_indicators || "No specific FP indicators listed."}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Section 7 & 8: Abstention & Escalation */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="p-3 rounded-lg border border-amber-950/40 bg-amber-950/10 space-y-1.5">
+                              <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                <AlertTriangle className="w-3.5 h-3.5" /> 7. WHEN TO ABSTAIN (REQUIRES ATTENTION)
+                              </label>
+                              {isEditing ? (
+                                <textarea
+                                  rows={3}
+                                  value={editMissingInfo}
+                                  onChange={(e) => setEditMissingInfo(e.target.value)}
+                                  className="w-full p-2 text-xs font-mono rounded border border-amber-900/60 bg-slate-950 text-slate-200 focus:outline-none"
+                                />
+                              ) : (
+                                <div className="p-2 text-xs font-mono rounded border border-amber-900/40 bg-slate-950 text-amber-200/90 whitespace-pre-wrap max-h-32 overflow-y-auto">
+                                  {selectedVersion.missing_info_criteria || "Telemetry truncated or crucial context absent."}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="p-3 rounded-lg border border-rose-950/40 bg-rose-950/10 space-y-1.5">
+                              <label className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
+                                <AlertCircle className="w-3.5 h-3.5" /> 8. P1/P2 ESCALATION CONDITIONS
+                              </label>
+                              {isEditing ? (
+                                <textarea
+                                  rows={3}
+                                  value={editEscalation}
+                                  onChange={(e) => setEditEscalation(e.target.value)}
+                                  className="w-full p-2 text-xs font-mono rounded border border-rose-900/60 bg-slate-950 text-slate-200 focus:outline-none"
+                                />
+                              ) : (
+                                <div className="p-2 text-xs font-mono rounded border border-rose-900/40 bg-slate-950 text-rose-200/90 whitespace-pre-wrap max-h-32 overflow-y-auto">
+                                  {selectedVersion.escalation_conditions || "High impact asset compromise or active exfiltration."}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Section 9: Standard Q&A Checklist */}
+                          <div className="p-3.5 rounded-xl theme-glass-card space-y-2">
+                            <label className="text-xs font-bold text-sky-400 block tracking-wide">
+                              9. STANDARD INVESTIGATIVE Q&amp;A CHECKLIST
+                            </label>
+                            <div className="space-y-1.5">
+                              {isEditing ? (
+                                editQuestions.map((q, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <span className="text-[10px] text-slate-500 font-mono w-4">{idx + 1}.</span>
+                                    <input
+                                      type="text"
+                                      value={q}
+                                      onChange={(e) => {
+                                        const updated = [...editQuestions];
+                                        updated[idx] = e.target.value;
+                                        setEditQuestions(updated);
+                                      }}
+                                      className="flex-1 px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveQuestion(idx)}
+                                      className="px-2 py-1 text-[11px] text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ))
+                              ) : (
+                                selectedVersion.analyst_questions && selectedVersion.analyst_questions.length > 0 ? (
+                                  <ol className="list-decimal list-inside space-y-1 text-xs text-slate-300">
+                                    {selectedVersion.analyst_questions.map((q, idx) => (
+                                      <li key={idx} className="font-mono text-[11px]">{q}</li>
+                                    ))}
+                                  </ol>
+                                ) : (
+                                  <div className="text-xs text-slate-500 italic">No checklist questions defined.</div>
+                                )
+                              )}
+                            </div>
+
+                            {isEditing && (
+                              <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80">
                                 <input
                                   type="text"
-                                  value={q}
-                                  onChange={(e) => {
-                                    const updated = [...editQuestions];
-                                    updated[idx] = e.target.value;
-                                    setEditQuestions(updated);
-                                  }}
-                                  className="flex-1 px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none"
+                                  placeholder="Add an investigative checklist question..."
+                                  value={newQuestionInput}
+                                  onChange={(e) => setNewQuestionInput(e.target.value)}
+                                  className="flex-1 px-2.5 py-1 text-xs rounded border border-slate-800 bg-slate-950 text-slate-200 focus:outline-none"
                                 />
                                 <button
                                   type="button"
-                                  onClick={() => handleRemoveQuestion(idx)}
-                                  className="px-2 py-1 text-[11px] text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded"
+                                  onClick={handleAddQuestion}
+                                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-medium border border-slate-700"
                                 >
-                                  ✕
+                                  + Add
                                 </button>
                               </div>
-                            ))
-                          ) : (
-                            selectedVersion.analyst_questions && selectedVersion.analyst_questions.length > 0 ? (
-                              <ol className="list-decimal list-inside space-y-1 text-xs text-slate-300">
-                                {selectedVersion.analyst_questions.map((q, idx) => (
-                                  <li key={idx} className="font-mono text-[11px]">{q}</li>
-                                ))}
-                              </ol>
-                            ) : (
-                              <div className="text-xs text-slate-500 italic">No checklist questions defined.</div>
-                            )
+                            )}
+                          </div>
+
+                          {/* Editing Controls: Save as New Version */}
+                          {isEditing && (
+                            <div className="p-3 rounded-lg border border-sky-900/70 bg-sky-950/20 space-y-2">
+                              <div className="font-bold text-xs text-sky-300">Commit Prompt Updates as New Version</div>
+                              <input
+                                type="text"
+                                required
+                                placeholder="Enter change summary (e.g. Added LOLBin process exclusions)..."
+                                value={changeSummary}
+                                onChange={(e) => setChangeSummary(e.target.value)}
+                                className="w-full px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-950 text-slate-200 placeholder-slate-500 focus:outline-none"
+                              />
+                              <div className="flex justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setIsEditing(false)}
+                                  className="px-2.5 py-1 text-xs text-slate-400 hover:text-slate-200"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="submit"
+                                  disabled={actionLoading}
+                                  className="px-3.5 py-1 bg-sky-700 hover:bg-sky-600 text-white rounded text-xs font-bold flex items-center gap-1.5"
+                                >
+                                  <Save className="w-3.5 h-3.5" /> Save as New Draft Version
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </form>
+                      </>
+                    )}
+                  </>
+                )}
+
+                {/* TAB 2: QUALITY GATES (G1–G8) */}
+                {studioTab === "quality" && (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                            <Award className="w-4 h-4 text-cyan-400" />
+                            Policy Quality Assessment (8 Mandatory Gates)
+                          </h3>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Deterministic static analysis of policy integrity, relevance, evidence feasibility, and escalation safety.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="relative" ref={qualityExportMenuRef}>
+                            <div className="inline-flex rounded-md shadow-sm">
+                              <button
+                                type="button"
+                                onClick={() => handleExportQualityGates("json")}
+                                disabled={!qualityAssessment || loadingQuality}
+                                title={
+                                  !qualityAssessment
+                                    ? "No quality assessment available to download"
+                                    : "Download Quality Gates (G1–G8) output as JSON"
+                                }
+                                className="px-2.5 py-1 text-xs rounded-l theme-secondary-btn disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center gap-1.5 transition-colors"
+                              >
+                                <Download className="w-3 h-3 text-cyan-400" />
+                                Download Output
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowQualityExportMenu((prev) => !prev)}
+                                disabled={!qualityAssessment || loadingQuality}
+                                aria-label="Choose Quality Gates export format"
+                                aria-expanded={showQualityExportMenu}
+                                title="Choose download format (JSON, Markdown, CSV)"
+                                className="px-1.5 py-1 text-xs rounded-r theme-secondary-btn border-l-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              >
+                                <ChevronDown className="w-3 h-3 text-cyan-400" />
+                              </button>
+                            </div>
+
+                            {showQualityExportMenu && qualityAssessment && (
+                              <div className="absolute right-0 mt-1 w-48 rounded-md border border-slate-800 bg-slate-950 py-1 shadow-xl z-20 text-xs">
+                                <button
+                                  type="button"
+                                  onClick={() => handleExportQualityGates("json")}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                                >
+                                  <span>Download JSON</span>
+                                  <span className="text-[10px] text-slate-500 font-mono">.json</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleExportQualityGates("markdown")}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                                >
+                                  <span>Download Markdown</span>
+                                  <span className="text-[10px] text-slate-500 font-mono">.md</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleExportQualityGates("csv")}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
+                                >
+                                  <span>Download CSV</span>
+                                  <span className="text-[10px] text-slate-500 font-mono">.csv</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => fetchQualityValidation(selectedRuleId, selectedVersionId)}
+                            disabled={loadingQuality || isViewer}
+                            title={isViewer ? "Requires SOC Analyst or Administrator role" : "Re-run and persist validation"}
+                            className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 flex items-center gap-1.5"
+                          >
+                            <RefreshCw className={`w-3 h-3 text-cyan-400 ${loadingQuality ? "animate-spin" : ""}`} />
+                            Revalidate
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {qualityAssessment ? (
+                      <div className="space-y-3">
+                        {/* Score Summary Box - Separates Structural Quality from Empirical Validation */}
+                        <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Overall Quality</div>
+                            <div className="text-xl font-bold font-mono text-slate-100">{qualityAssessment.quality_score} / 100</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Structural (G1–G7)</div>
+                            <div className="text-xl font-bold font-mono text-cyan-400">
+                              {qualityAssessment.structural_quality_score !== null && qualityAssessment.structural_quality_score !== undefined
+                                ? `${qualityAssessment.structural_quality_score} / 100`
+                                : `${Math.round(qualityAssessment.quality_score)} / 100`}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Empirical (G8)</div>
+                            <div className={`text-sm font-bold font-mono mt-1 ${(qualityAssessment.empirical_validation_status === "EVALUATED_PASSED" || qualityAssessment.simulation_status === "EVALUATED_PASSED")
+                              ? "text-emerald-400"
+                              : (qualityAssessment.empirical_validation_status === "INSUFFICIENT_DATA" || qualityAssessment.simulation_status === "INSUFFICIENT_DATA")
+                                ? "text-amber-400"
+                                : "text-slate-400"
+                              }`}>
+                              {qualityAssessment.empirical_validation_status || qualityAssessment.simulation_status || "NOT_EVALUATED"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Blocking Issues</div>
+                            <div className="text-xl font-bold font-mono text-rose-400">{blockingIssuesList.length}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Structural Approval</div>
+                            <div className={`text-sm font-bold mt-1 ${isApprovalEligible ? "text-emerald-400" : "text-amber-400"}`}>
+                              {isApprovalEligible ? "ELIGIBLE (G1–G7)" : "NO (REWORK)"}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Explicit Separation of Structural vs Empirical vs Autonomous Eligibility */}
+                        <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-900/40 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span>
+                              <span className="text-slate-400">Structural (G1–G7): </span>
+                              <strong className={(isApprovalEligible && (qualityAssessment.structural_approval_eligible ?? true)) ? "text-emerald-400" : "text-rose-400"}>
+                                {(isApprovalEligible && (qualityAssessment.structural_approval_eligible ?? true)) ? "ELIGIBLE" : "BLOCKED"}
+                              </strong>
+                            </span>
+                            <span>
+                              <span className="text-slate-400">Empirical G8: </span>
+                              <strong className={(qualityAssessment.empirical_validation_eligible ?? (qualityAssessment.empirical_validation_status === "EVALUATED_PASSED")) ? "text-emerald-400" : "text-amber-400"}>
+                                {(qualityAssessment.empirical_validation_eligible ?? (qualityAssessment.empirical_validation_status === "EVALUATED_PASSED"))
+                                  ? "VERIFIED"
+                                  : `NOT CERTIFIED (${qualityAssessment.empirical_validation_status || qualityAssessment.simulation_status || "NOT_EVALUATED"})`}
+                              </strong>
+                            </span>
+                            <span>
+                              <span className="text-slate-400">Autonomous Ops: </span>
+                              <strong className={(qualityAssessment.autonomous_operation_eligible ?? false) ? "text-emerald-400" : "text-amber-300"}>
+                                {(qualityAssessment.autonomous_operation_eligible ?? false) ? "ELIGIBLE" : "REQUIRES G8 PASS"}
+                              </strong>
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400">
+                              Model: <strong className="text-slate-200">{qualityAssessment.scoring_model_version || qualityAssessment.validator_version}</strong>
+                              {" "}({qualityAssessment.gate_scores_total ?? qualityAssessment.quality_score}/{qualityAssessment.gate_max_total ?? 100} gate pts)
+                            </span>
+                            {qualityAssessment.simulation_provider_type && (
+                              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${qualityAssessment.simulation_is_simulated ? "border-amber-700/70 bg-amber-950/30 text-amber-300" : "border-cyan-800/70 bg-cyan-950/30 text-cyan-300"}`}>
+                                Sim: {qualityAssessment.simulation_provider_type}
+                                {qualityAssessment.simulation_model_identifier ? ` • ${qualityAssessment.simulation_model_identifier}` : ""}
+                              </span>
+                            )}
+                          </div>
+                          {qualityAssessment.historical_assessment_preserved && qualityAssessment.persisted_validator_version && qualityAssessment.persisted_validator_version !== qualityAssessment.validator_version && (
+                            <div className="text-[10px] font-mono text-amber-300">
+                              Stored historical assessment preserved verbatim ({qualityAssessment.persisted_validator_version}: {qualityAssessment.persisted_quality_score}/100)
+                            </div>
                           )}
                         </div>
 
-                        {isEditing && (
-                          <div className="flex items-center gap-2 pt-1 border-t border-slate-800/80">
-                            <input
-                              type="text"
-                              placeholder="Add an investigative checklist question..."
-                              value={newQuestionInput}
-                              onChange={(e) => setNewQuestionInput(e.target.value)}
-                              className="flex-1 px-2.5 py-1 text-xs rounded border border-slate-800 bg-slate-950 text-slate-200 focus:outline-none"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleAddQuestion}
-                              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-medium border border-slate-700"
-                            >
-                              + Add
-                            </button>
+                        {/* Blocking Findings Box */}
+                        {blockingIssuesList.length > 0 && (
+                          <div className="p-3 rounded-lg border border-rose-900/60 bg-rose-950/20 text-xs text-rose-300 space-y-1.5">
+                            <div className="font-bold flex items-center gap-1.5 text-rose-300">
+                              <XCircle className="w-4 h-4 text-rose-400" />
+                              Blocking Issues Detected ({blockingIssuesList.length}):
+                            </div>
+                            <ul className="list-disc list-inside space-y-0.5 text-[11px] font-mono text-rose-200">
+                              {blockingIssuesList.map((finding: string, idx: number) => (
+                                <li key={idx}>{finding}</li>
+                              ))}
+                            </ul>
                           </div>
                         )}
-                      </div>
 
-                      {/* Editing Controls: Save as New Version */}
-                      {isEditing && (
-                        <div className="p-3 rounded-lg border border-sky-900/70 bg-sky-950/20 space-y-2">
-                          <div className="font-bold text-xs text-sky-300">Commit Prompt Updates as New Version</div>
-                          <input
-                            type="text"
-                            required
-                            placeholder="Enter change summary (e.g. Added LOLBin process exclusions)..."
-                            value={changeSummary}
-                            onChange={(e) => setChangeSummary(e.target.value)}
-                            className="w-full px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-950 text-slate-200 placeholder-slate-500 focus:outline-none"
-                          />
-                          <div className="flex justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setIsEditing(false)}
-                              className="px-2.5 py-1 text-xs text-slate-400 hover:text-slate-200"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="submit"
-                              disabled={actionLoading}
-                              className="px-3.5 py-1 bg-sky-700 hover:bg-sky-600 text-white rounded text-xs font-bold flex items-center gap-1.5"
-                            >
-                              <Save className="w-3.5 h-3.5" /> Save as New Draft Version
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </form>
-                  </>
-                )}
-              </>
-            )}
-
-            {/* TAB 2: QUALITY GATES (G1–G8) */}
-            {studioTab === "quality" && (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                        <Award className="w-4 h-4 text-cyan-400" />
-                        Policy Quality Assessment (8 Mandatory Gates)
-                      </h3>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Deterministic static analysis of policy integrity, relevance, evidence feasibility, and escalation safety.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="relative" ref={qualityExportMenuRef}>
-                        <div className="inline-flex rounded-md shadow-sm">
-                          <button
-                            type="button"
-                            onClick={() => handleExportQualityGates("json")}
-                            disabled={!qualityAssessment || loadingQuality}
-                            title={
-                              !qualityAssessment
-                                ? "No quality assessment available to download"
-                                : "Download Quality Gates (G1–G8) output as JSON"
-                            }
-                            className="px-2.5 py-1 text-xs rounded-l theme-secondary-btn disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center gap-1.5 transition-colors"
-                          >
-                            <Download className="w-3 h-3 text-cyan-400" />
-                            Download Output
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setShowQualityExportMenu((prev) => !prev)}
-                            disabled={!qualityAssessment || loadingQuality}
-                            aria-label="Choose Quality Gates export format"
-                            aria-expanded={showQualityExportMenu}
-                            title="Choose download format (JSON, Markdown, CSV)"
-                            className="px-1.5 py-1 text-xs rounded-r theme-secondary-btn border-l-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            <ChevronDown className="w-3 h-3 text-cyan-400" />
-                          </button>
-                        </div>
-
-                        {showQualityExportMenu && qualityAssessment && (
-                          <div className="absolute right-0 mt-1 w-48 rounded-md border border-slate-800 bg-slate-950 py-1 shadow-xl z-20 text-xs">
-                            <button
-                              type="button"
-                              onClick={() => handleExportQualityGates("json")}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
-                            >
-                              <span>Download JSON</span>
-                              <span className="text-[10px] text-slate-500 font-mono">.json</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleExportQualityGates("markdown")}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
-                            >
-                              <span>Download Markdown</span>
-                              <span className="text-[10px] text-slate-500 font-mono">.md</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleExportQualityGates("csv")}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center justify-between"
-                            >
-                              <span>Download CSV</span>
-                              <span className="text-[10px] text-slate-500 font-mono">.csv</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => fetchQualityValidation(selectedRuleId, selectedVersionId)}
-                        disabled={loadingQuality || isViewer}
-                        title={isViewer ? "Requires SOC Analyst or Administrator role" : "Re-run and persist validation"}
-                        className="px-2.5 py-1 text-xs rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 flex items-center gap-1.5"
-                      >
-                        <RefreshCw className={`w-3 h-3 text-cyan-400 ${loadingQuality ? "animate-spin" : ""}`} />
-                        Revalidate
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {qualityAssessment ? (
-                  <div className="space-y-3">
-                    {/* Score Summary Box - Separates Structural Quality from Empirical Validation */}
-                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Overall Quality</div>
-                        <div className="text-xl font-bold font-mono text-slate-100">{qualityAssessment.quality_score} / 100</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Structural (G1–G7)</div>
-                        <div className="text-xl font-bold font-mono text-cyan-400">
-                          {qualityAssessment.structural_quality_score !== null && qualityAssessment.structural_quality_score !== undefined
-                            ? `${qualityAssessment.structural_quality_score} / 100`
-                            : `${Math.round(qualityAssessment.quality_score)} / 100`}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Empirical (G8)</div>
-                        <div className={`text-sm font-bold font-mono mt-1 ${(qualityAssessment.empirical_validation_status === "EVALUATED_PASSED" || qualityAssessment.simulation_status === "EVALUATED_PASSED")
-                          ? "text-emerald-400"
-                          : (qualityAssessment.empirical_validation_status === "INSUFFICIENT_DATA" || qualityAssessment.simulation_status === "INSUFFICIENT_DATA")
-                            ? "text-amber-400"
-                            : "text-slate-400"
-                          }`}>
-                          {qualityAssessment.empirical_validation_status || qualityAssessment.simulation_status || "NOT_EVALUATED"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Blocking Issues</div>
-                        <div className="text-xl font-bold font-mono text-rose-400">{blockingIssuesList.length}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Structural Approval</div>
-                        <div className={`text-sm font-bold mt-1 ${isApprovalEligible ? "text-emerald-400" : "text-amber-400"}`}>
-                          {isApprovalEligible ? "ELIGIBLE (G1–G7)" : "NO (REWORK)"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Explicit Separation of Structural vs Empirical vs Autonomous Eligibility */}
-                    <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-900/40 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span>
-                          <span className="text-slate-400">Structural (G1–G7): </span>
-                          <strong className={(isApprovalEligible && (qualityAssessment.structural_approval_eligible ?? true)) ? "text-emerald-400" : "text-rose-400"}>
-                            {(isApprovalEligible && (qualityAssessment.structural_approval_eligible ?? true)) ? "ELIGIBLE" : "BLOCKED"}
-                          </strong>
-                        </span>
-                        <span>
-                          <span className="text-slate-400">Empirical G8: </span>
-                          <strong className={(qualityAssessment.empirical_validation_eligible ?? (qualityAssessment.empirical_validation_status === "EVALUATED_PASSED")) ? "text-emerald-400" : "text-amber-400"}>
-                            {(qualityAssessment.empirical_validation_eligible ?? (qualityAssessment.empirical_validation_status === "EVALUATED_PASSED"))
-                              ? "VERIFIED"
-                              : `NOT CERTIFIED (${qualityAssessment.empirical_validation_status || qualityAssessment.simulation_status || "NOT_EVALUATED"})`}
-                          </strong>
-                        </span>
-                        <span>
-                          <span className="text-slate-400">Autonomous Ops: </span>
-                          <strong className={(qualityAssessment.autonomous_operation_eligible ?? false) ? "text-emerald-400" : "text-amber-300"}>
-                            {(qualityAssessment.autonomous_operation_eligible ?? false) ? "ELIGIBLE" : "REQUIRES G8 PASS"}
-                          </strong>
-                        </span>
-                        <span className="text-[10px] font-mono text-slate-400">
-                          Model: <strong className="text-slate-200">{qualityAssessment.scoring_model_version || qualityAssessment.validator_version}</strong>
-                          {" "}({qualityAssessment.gate_scores_total ?? qualityAssessment.quality_score}/{qualityAssessment.gate_max_total ?? 100} gate pts)
-                        </span>
-                        {qualityAssessment.simulation_provider_type && (
-                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${qualityAssessment.simulation_is_simulated ? "border-amber-700/70 bg-amber-950/30 text-amber-300" : "border-cyan-800/70 bg-cyan-950/30 text-cyan-300"}`}>
-                            Sim: {qualityAssessment.simulation_provider_type}
-                            {qualityAssessment.simulation_model_identifier ? ` • ${qualityAssessment.simulation_model_identifier}` : ""}
-                          </span>
-                        )}
-                      </div>
-                      {qualityAssessment.historical_assessment_preserved && qualityAssessment.persisted_validator_version && qualityAssessment.persisted_validator_version !== qualityAssessment.validator_version && (
-                        <div className="text-[10px] font-mono text-amber-300">
-                          Stored historical assessment preserved verbatim ({qualityAssessment.persisted_validator_version}: {qualityAssessment.persisted_quality_score}/100)
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Blocking Findings Box */}
-                    {blockingIssuesList.length > 0 && (
-                      <div className="p-3 rounded-lg border border-rose-900/60 bg-rose-950/20 text-xs text-rose-300 space-y-1.5">
-                        <div className="font-bold flex items-center gap-1.5 text-rose-300">
-                          <XCircle className="w-4 h-4 text-rose-400" />
-                          Blocking Issues Detected ({blockingIssuesList.length}):
-                        </div>
-                        <ul className="list-disc list-inside space-y-0.5 text-[11px] font-mono text-rose-200">
-                          {blockingIssuesList.map((finding: string, idx: number) => (
-                            <li key={idx}>{finding}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* 8 Gates Cards (Expandable Accordion) */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
-                        <span>Mandatory Quality Gates Breakdown (G1–G8)</span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const allExpanded: Record<string, boolean> = {};
-                              gateList.forEach((g) => {
-                                allExpanded[g.gate_id] = true;
-                              });
-                              setExpandedGateIds(allExpanded);
-                            }}
-                            className="text-cyan-400 hover:underline text-[10px]"
-                          >
-                            Expand All
-                          </button>
-                          <span>·</span>
-                          <button
-                            type="button"
-                            onClick={() => setExpandedGateIds({})}
-                            className="text-slate-400 hover:underline text-[10px]"
-                          >
-                            Collapse All
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                        {gateList.map((gate: QualityGateResult) => {
-                          const isPass = gate.status === "PASSED";
-                          const isWarn = gate.status === "WARNING";
-                          const isExpanded = !!expandedGateIds[gate.gate_id];
-                          return (
-                            <div
-                              key={gate.gate_id}
-                              className={`rounded-xl border text-xs transition-all ${isPass
-                                ? "bg-slate-900/30 border-slate-800"
-                                : isWarn
-                                  ? "bg-amber-950/20 border-amber-900/60"
-                                  : "bg-rose-950/20 border-rose-900/60"
-                                }`}
-                            >
-                              <div
-                                onClick={() => toggleGateExpand(gate.gate_id)}
-                                className="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-colors select-none"
+                        {/* 8 Gates Cards (Expandable Accordion) */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                            <span>Mandatory Quality Gates Breakdown (G1–G8)</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const allExpanded: Record<string, boolean> = {};
+                                  gateList.forEach((g) => {
+                                    allExpanded[g.gate_id] = true;
+                                  });
+                                  setExpandedGateIds(allExpanded);
+                                }}
+                                className="text-cyan-400 hover:underline text-[10px]"
                               >
-                                <span className="font-bold text-slate-200 flex items-center gap-1.5 truncate">
-                                  {isPass ? (
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                  ) : isWarn ? (
-                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                  ) : (
-                                    <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                                  )}
-                                  <span>{gate.gate_id}: {gate.gate_name}</span>
-                                </span>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <span className="font-mono text-[10px] text-slate-400">
-                                    {gate.score}/{gate.max_score} pts
-                                  </span>
-                                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                                </div>
-                              </div>
+                                Expand All
+                              </button>
+                              <span>·</span>
+                              <button
+                                type="button"
+                                onClick={() => setExpandedGateIds({})}
+                                className="text-slate-400 hover:underline text-[10px]"
+                              >
+                                Collapse All
+                              </button>
+                            </div>
+                          </div>
 
-                              <div className="px-3 pb-3 text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/40 pt-2">
-                                <p>{gate.details}</p>
-
-                                {isExpanded && (
-                                  <div className="mt-2 pt-2 border-t border-slate-800/60 space-y-1.5">
-                                    {gate.blocking_findings && gate.blocking_findings.length > 0 && (
-                                      <div className="text-[10px] text-rose-400 font-mono space-y-0.5 bg-rose-950/40 p-2 rounded-lg border border-rose-800/60">
-                                        <span className="font-sans font-bold text-[9px] uppercase text-rose-300 block">Blocking Findings:</span>
-                                        {gate.blocking_findings.map((bf: string, i: number) => (
-                                          <div key={i}>• {bf}</div>
-                                        ))}
-                                      </div>
-                                    )}
-
-                                    {gate.warnings && gate.warnings.length > 0 && (
-                                      <div className="text-[10px] text-amber-400 font-mono space-y-0.5 bg-amber-950/40 p-2 rounded-lg border border-amber-800/60">
-                                        <span className="font-sans font-bold text-[9px] uppercase text-amber-300 block">Warnings:</span>
-                                        {gate.warnings.map((wf: string, i: number) => (
-                                          <div key={i}>• {wf}</div>
-                                        ))}
-                                      </div>
-                                    )}
-
-                                    <div className="text-[10px] text-slate-500 font-mono pt-1">
-                                      Deterministic Gate ID: <code className="text-cyan-400">{gate.gate_id}</code>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                            {gateList.map((gate: QualityGateResult) => {
+                              const isPass = gate.status === "PASSED";
+                              const isWarn = gate.status === "WARNING";
+                              const isExpanded = !!expandedGateIds[gate.gate_id];
+                              return (
+                                <div
+                                  key={gate.gate_id}
+                                  className={`rounded-xl border text-xs transition-all ${isPass
+                                    ? "bg-slate-900/30 border-slate-800"
+                                    : isWarn
+                                      ? "bg-amber-950/20 border-amber-900/60"
+                                      : "bg-rose-950/20 border-rose-900/60"
+                                    }`}
+                                >
+                                  <div
+                                    onClick={() => toggleGateExpand(gate.gate_id)}
+                                    className="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-colors select-none"
+                                  >
+                                    <span className="font-bold text-slate-200 flex items-center gap-1.5 truncate">
+                                      {isPass ? (
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                      ) : isWarn ? (
+                                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                      ) : (
+                                        <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                      )}
+                                      <span>{gate.gate_id}: {gate.gate_name}</span>
+                                    </span>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <span className="font-mono text-[10px] text-slate-400">
+                                        {gate.score}/{gate.max_score} pts
+                                      </span>
+                                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                                     </div>
                                   </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
 
-                    {/* Recommendations Box */}
-                    {qualityAssessment.recommendations && qualityAssessment.recommendations.length > 0 && (
-                      <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/30 text-xs text-slate-300 space-y-1.5">
-                        <div className="font-bold text-cyan-300 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                          Remediation Recommendations:
+                                  <div className="px-3 pb-3 text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/40 pt-2">
+                                    <p>{gate.details}</p>
+
+                                    {isExpanded && (
+                                      <div className="mt-2 pt-2 border-t border-slate-800/60 space-y-1.5">
+                                        {gate.blocking_findings && gate.blocking_findings.length > 0 && (
+                                          <div className="text-[10px] text-rose-400 font-mono space-y-0.5 bg-rose-950/40 p-2 rounded-lg border border-rose-800/60">
+                                            <span className="font-sans font-bold text-[9px] uppercase text-rose-300 block">Blocking Findings:</span>
+                                            {gate.blocking_findings.map((bf: string, i: number) => (
+                                              <div key={i}>• {bf}</div>
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        {gate.warnings && gate.warnings.length > 0 && (
+                                          <div className="text-[10px] text-amber-400 font-mono space-y-0.5 bg-amber-950/40 p-2 rounded-lg border border-amber-800/60">
+                                            <span className="font-sans font-bold text-[9px] uppercase text-amber-300 block">Warnings:</span>
+                                            {gate.warnings.map((wf: string, i: number) => (
+                                              <div key={i}>• {wf}</div>
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        <div className="text-[10px] text-slate-500 font-mono pt-1">
+                                          Deterministic Gate ID: <code className="text-cyan-400">{gate.gate_id}</code>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-400">
-                          {qualityAssessment.recommendations.map((rec: string, idx: number) => (
-                            <li key={idx}>{rec}</li>
-                          ))}
-                        </ul>
+
+                        {/* Recommendations Box */}
+                        {qualityAssessment.recommendations && qualityAssessment.recommendations.length > 0 && (
+                          <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/30 text-xs text-slate-300 space-y-1.5">
+                            <div className="font-bold text-cyan-300 flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                              Remediation Recommendations:
+                            </div>
+                            <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-400">
+                              {qualityAssessment.recommendations.map((rec: string, idx: number) => (
+                                <li key={idx}>{rec}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center text-slate-500 text-xs">
+                        No quality assessment available. Click &quot;Revalidate&quot; to inspect policy quality.
                       </div>
                     )}
                   </div>
-                ) : (
-                  <div className="p-8 text-center text-slate-500 text-xs">
-                    No quality assessment available. Click &quot;Revalidate&quot; to inspect policy quality.
-                  </div>
                 )}
-              </div>
-            )}
 
-            {/* TAB 3: SIEM SEMANTICS & ARCHETYPE */}
-            {studioTab === "intelligence" && (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40">
-                  <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <Cpu className="w-4 h-4 text-cyan-400" />
-                    Detection Semantics &amp; Behavioral Archetype
-                  </h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Analyzed SIEM detection rule logic, verified parameters vs observed telemetry, and behavioral classification.
-                  </p>
-                </div>
-
-                {intelligenceData ? (
-                  <div className="space-y-3 text-xs">
-                    {/* Semantics Breakdown */}
-                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-2">
-                      <div className="font-bold text-slate-200 border-b border-slate-800 pb-1 flex justify-between">
-                        <span>Rule Semantics &amp; Provenance</span>
-                        <span className="font-mono text-cyan-400 text-[10px]">{intelligenceData.semantics?.siem_vendor}</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
-                        <div>
-                          <span className="text-slate-500 block">Definition Status:</span>
-                          <span className={`font-semibold ${isIncompleteDefinition ? "text-amber-400" : "text-emerald-400"}`}>
-                            {intelligenceData.semantics?.definition_status}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">Data Source Provenance:</span>
-                          <span className="text-slate-200 font-mono">{intelligenceData.semantics?.source_provenance}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">Primary Behavior:</span>
-                          <span className="text-slate-200 font-mono">{intelligenceData.semantics?.primary_behavior}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">Configured Threshold:</span>
-                          <span className="text-slate-200 font-mono">
-                            {intelligenceData.semantics?.threshold !== null && intelligenceData.semantics?.threshold !== undefined
-                              ? `${intelligenceData.semantics.threshold} ${intelligenceData.semantics.threshold_unit || ""}`
-                              : "Unspecified (None)"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">Aggregation Window:</span>
-                          <span className="text-slate-200 font-mono">{intelligenceData.semantics?.aggregation_window || "Unspecified"}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">Review Required:</span>
-                          <span className={intelligenceData.semantics?.review_required ? "text-amber-400 font-semibold" : "text-emerald-400"}>
-                            {intelligenceData.semantics?.review_required ? "YES" : "NO"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {intelligenceData.semantics?.missing_requirements && intelligenceData.semantics.missing_requirements.length > 0 && (
-                        <div className="p-2 rounded bg-amber-950/20 border border-amber-900/40 text-amber-300 text-[11px] space-y-1">
-                          <span className="font-bold">Missing Rule Specifications:</span>
-                          <ul className="list-disc list-inside">
-                            {intelligenceData.semantics.missing_requirements.map((mr, i) => (
-                              <li key={i}>{mr}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                {/* TAB 3: SIEM SEMANTICS & ARCHETYPE */}
+                {studioTab === "intelligence" && (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40">
+                      <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                        <Cpu className="w-4 h-4 text-cyan-400" />
+                        Detection Semantics &amp; Behavioral Archetype
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Analyzed SIEM detection rule logic, verified parameters vs observed telemetry, and behavioral classification.
+                      </p>
                     </div>
 
-                    {/* Archetype Classification */}
-                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-2">
-                      <div className="font-bold text-slate-200 border-b border-slate-800 pb-1 flex justify-between">
-                        <span>Archetype Classification</span>
-                        <span className="font-mono text-cyan-400 text-[10px]">Registry v{intelligenceData.classification?.registry_version}</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-[11px]">
-                        <div>
-                          <span className="text-slate-500 block">Primary Archetype:</span>
-                          <span className="text-slate-100 font-bold font-mono text-sm">{intelligenceData.classification?.primary_archetype}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">Classification Confidence:</span>
-                          <span className="text-slate-200 font-mono">{Math.round((intelligenceData.classification?.confidence_score || 0) * 100)}%</span>
-                        </div>
-                      </div>
-
-                      <div className="text-[11px] text-slate-400">
-                        <span className="text-slate-500 block">Reason:</span>
-                        {intelligenceData.classification?.classification_reason}
-                      </div>
-
-                      {intelligenceData.classification?.matched_features && (
-                        <div>
-                          <span className="text-slate-500 block text-[10px] uppercase">Matched Semantic Features:</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {intelligenceData.classification.matched_features.map((mf, i) => (
-                              <span key={i} className="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800 text-[10px] font-mono">
-                                {mf}
-                              </span>
-                            ))}
+                    {intelligenceData ? (
+                      <div className="space-y-3 text-xs">
+                        {/* Semantics Breakdown */}
+                        <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-2">
+                          <div className="font-bold text-slate-200 border-b border-slate-800 pb-1 flex justify-between">
+                            <span>Rule Semantics &amp; Provenance</span>
+                            <span className="font-mono text-cyan-400 text-[10px]">{intelligenceData.semantics?.siem_vendor}</span>
                           </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+                            <div>
+                              <span className="text-slate-500 block">Definition Status:</span>
+                              <span className={`font-semibold ${isIncompleteDefinition ? "text-amber-400" : "text-emerald-400"}`}>
+                                {intelligenceData.semantics?.definition_status}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 block">Data Source Provenance:</span>
+                              <span className="text-slate-200 font-mono">{intelligenceData.semantics?.source_provenance}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 block">Primary Behavior:</span>
+                              <span className="text-slate-200 font-mono">{intelligenceData.semantics?.primary_behavior}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 block">Configured Threshold:</span>
+                              <span className="text-slate-200 font-mono">
+                                {intelligenceData.semantics?.threshold !== null && intelligenceData.semantics?.threshold !== undefined
+                                  ? `${intelligenceData.semantics.threshold} ${intelligenceData.semantics.threshold_unit || ""}`
+                                  : "Unspecified (None)"}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 block">Aggregation Window:</span>
+                              <span className="text-slate-200 font-mono">{intelligenceData.semantics?.aggregation_window || "Unspecified"}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 block">Review Required:</span>
+                              <span className={intelligenceData.semantics?.review_required ? "text-amber-400 font-semibold" : "text-emerald-400"}>
+                                {intelligenceData.semantics?.review_required ? "YES" : "NO"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {intelligenceData.semantics?.missing_requirements && intelligenceData.semantics.missing_requirements.length > 0 && (
+                            <div className="p-2 rounded bg-amber-950/20 border border-amber-900/40 text-amber-300 text-[11px] space-y-1">
+                              <span className="font-bold">Missing Rule Specifications:</span>
+                              <ul className="list-disc list-inside">
+                                {intelligenceData.semantics.missing_requirements.map((mr, i) => (
+                                  <li key={i}>{mr}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-8 text-center text-slate-500 text-xs">
-                    Loading detection semantics...
+
+                        {/* Archetype Classification */}
+                        <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-2">
+                          <div className="font-bold text-slate-200 border-b border-slate-800 pb-1 flex justify-between">
+                            <span>Archetype Classification</span>
+                            <span className="font-mono text-cyan-400 text-[10px]">Registry v{intelligenceData.classification?.registry_version}</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div>
+                              <span className="text-slate-500 block">Primary Archetype:</span>
+                              <span className="text-slate-100 font-bold font-mono text-sm">{intelligenceData.classification?.primary_archetype}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 block">Classification Confidence:</span>
+                              <span className="text-slate-200 font-mono">{Math.round((intelligenceData.classification?.confidence_score || 0) * 100)}%</span>
+                            </div>
+                          </div>
+
+                          <div className="text-[11px] text-slate-400">
+                            <span className="text-slate-500 block">Reason:</span>
+                            {intelligenceData.classification?.classification_reason}
+                          </div>
+
+                          {intelligenceData.classification?.matched_features && (
+                            <div>
+                              <span className="text-slate-500 block text-[10px] uppercase">Matched Semantic Features:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {intelligenceData.classification.matched_features.map((mf, i) => (
+                                  <span key={i} className="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800 text-[10px] font-mono">
+                                    {mf}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center text-slate-500 text-xs">
+                        Loading detection semantics...
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* TAB 4: EVIDENCE CONTRACT */}
-            {studioTab === "contract" && (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40">
-                  <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <Database className="w-4 h-4 text-cyan-400" />
-                    Synchronized Evidence Contract
-                  </h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Machine-verifiable evidence schema required by the Independent Verdict Validator and Preflight Guard.
-                  </p>
-                </div>
-
-                {intelligenceData?.candidate_evidence_contract ? (
-                  <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-3 text-xs">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                      <span className="font-bold text-slate-200">
-                        Contract Schema: {intelligenceData.candidate_evidence_contract.contract_id || intelligenceData.candidate_evidence_contract.rule_id}
-                      </span>
-                      <span className="text-cyan-400 font-mono text-[10px]">
-                        Target Archetype: {intelligenceData.candidate_evidence_contract.target_archetype || intelligenceData.candidate_evidence_contract.detection_archetype}
-                      </span>
+                {/* TAB 4: EVIDENCE CONTRACT */}
+                {studioTab === "contract" && (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40">
+                      <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                        <Database className="w-4 h-4 text-cyan-400" />
+                        Synchronized Evidence Contract
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Machine-verifiable evidence schema required by the Independent Verdict Validator and Preflight Guard.
+                      </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
-                      <div className="p-2.5 rounded bg-slate-900/40 border border-slate-800 space-y-1.5">
-                        <span className="font-bold text-emerald-400 uppercase text-[10px]">Core Required Fields:</span>
-                        <div className="space-y-1">
-                          {(
-                            intelligenceData.candidate_evidence_contract.core_fields ||
-                            intelligenceData.candidate_evidence_contract.required_evidence?.filter((r: any) => r.requirement_level === "CORE").map((r: any) => ({
-                              field_name: r.field,
-                              field_type: r.evidence_type,
-                              critical: r.critical,
-                            })) ||
-                            []
-                          ).map((f: any, i: number) => (
-                            <div key={i} className="font-mono text-slate-300 flex justify-between">
-                              <span className="flex items-center gap-1">
-                                • {f.field_name}
-                                {f.critical && <span className="text-[9px] px-1 rounded bg-rose-950 text-rose-300 border border-rose-800">CRITICAL</span>}
-                              </span>
-                              <span className="text-[9px] text-slate-500">[{f.field_type}]</span>
-                            </div>
-                          ))}
+                    {intelligenceData?.candidate_evidence_contract ? (
+                      <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-3 text-xs">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-slate-200">
+                            Contract Schema: {intelligenceData.candidate_evidence_contract.contract_id || intelligenceData.candidate_evidence_contract.rule_id}
+                          </span>
+                          <span className="text-cyan-400 font-mono text-[10px]">
+                            Target Archetype: {intelligenceData.candidate_evidence_contract.target_archetype || intelligenceData.candidate_evidence_contract.detection_archetype}
+                          </span>
                         </div>
-                      </div>
 
-                      <div className="p-2.5 rounded bg-slate-900/40 border border-slate-800 space-y-1.5">
-                        <span className="font-bold text-sky-400 uppercase text-[10px]">Conditional Fields:</span>
-                        <div className="space-y-1">
-                          {(() => {
-                            const conds =
-                              intelligenceData.candidate_evidence_contract.conditional_fields ||
-                              intelligenceData.candidate_evidence_contract.required_evidence?.filter((r: any) => r.requirement_level === "CONDITIONAL").map((r: any) => ({
-                                field_name: r.field,
-                                condition: r.description || "Conditional",
-                              })) ||
-                              [];
-                            return conds.length > 0 ? (
-                              conds.map((f: any, i: number) => (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
+                          <div className="p-2.5 rounded bg-slate-900/40 border border-slate-800 space-y-1.5">
+                            <span className="font-bold text-emerald-400 uppercase text-[10px]">Core Required Fields:</span>
+                            <div className="space-y-1">
+                              {(
+                                intelligenceData.candidate_evidence_contract.core_fields ||
+                                intelligenceData.candidate_evidence_contract.required_evidence?.filter((r: any) => r.requirement_level === "CORE").map((r: any) => ({
+                                  field_name: r.field,
+                                  field_type: r.evidence_type,
+                                  critical: r.critical,
+                                })) ||
+                                []
+                              ).map((f: any, i: number) => (
                                 <div key={i} className="font-mono text-slate-300 flex justify-between">
-                                  <span>• {f.field_name}</span>
-                                  <span className="text-[9px] text-slate-500">[{f.condition}]</span>
+                                  <span className="flex items-center gap-1">
+                                    • {f.field_name}
+                                    {f.critical && <span className="text-[9px] px-1 rounded bg-rose-950 text-rose-300 border border-rose-800">CRITICAL</span>}
+                                  </span>
+                                  <span className="text-[9px] text-slate-500">[{f.field_type}]</span>
                                 </div>
-                              ))
-                            ) : (
-                              <span className="text-slate-500 italic">None</span>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-
-                    {(() => {
-                      const unsupp =
-                        intelligenceData.candidate_evidence_contract.unsupported_fields ||
-                        intelligenceData.candidate_evidence_contract.required_evidence?.filter((r: any) => r.requirement_level === "UNAVAILABLE").map((r: any) => r.field) ||
-                        [];
-                      return (
-                        unsupp.length > 0 && (
-                          <div className="p-2.5 rounded bg-rose-950/20 border border-rose-900/40 text-rose-300 text-[11px] space-y-1">
-                            <span className="font-bold text-[10px] uppercase">Prohibited / Unsupported Telemetry Assumptions:</span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {unsupp.map((uf: string, i: number) => (
-                                <span key={i} className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 text-[10px] font-mono">
-                                  {uf}
-                                </span>
                               ))}
                             </div>
                           </div>
-                        )
-                      );
-                    })()}
 
-                    <div className="p-2.5 rounded bg-slate-900/60 border border-slate-800 grid grid-cols-2 gap-2 text-[10px] text-slate-400">
-                      <div>
-                        <span className="text-slate-500 block uppercase">On Critical Missing Evidence:</span>
-                        <span className="font-mono text-amber-300 font-bold">{intelligenceData.candidate_evidence_contract.on_critical_missing_evidence || "REQUIRES_ATTENTION"}</span>
+                          <div className="p-2.5 rounded bg-slate-900/40 border border-slate-800 space-y-1.5">
+                            <span className="font-bold text-sky-400 uppercase text-[10px]">Conditional Fields:</span>
+                            <div className="space-y-1">
+                              {(() => {
+                                const conds =
+                                  intelligenceData.candidate_evidence_contract.conditional_fields ||
+                                  intelligenceData.candidate_evidence_contract.required_evidence?.filter((r: any) => r.requirement_level === "CONDITIONAL").map((r: any) => ({
+                                    field_name: r.field,
+                                    condition: r.description || "Conditional",
+                                  })) ||
+                                  [];
+                                return conds.length > 0 ? (
+                                  conds.map((f: any, i: number) => (
+                                    <div key={i} className="font-mono text-slate-300 flex justify-between">
+                                      <span>• {f.field_name}</span>
+                                      <span className="text-[9px] text-slate-500">[{f.condition}]</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <span className="text-slate-500 italic">None</span>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+
+                        {(() => {
+                          const unsupp =
+                            intelligenceData.candidate_evidence_contract.unsupported_fields ||
+                            intelligenceData.candidate_evidence_contract.required_evidence?.filter((r: any) => r.requirement_level === "UNAVAILABLE").map((r: any) => r.field) ||
+                            [];
+                          return (
+                            unsupp.length > 0 && (
+                              <div className="p-2.5 rounded bg-rose-950/20 border border-rose-900/40 text-rose-300 text-[11px] space-y-1">
+                                <span className="font-bold text-[10px] uppercase">Prohibited / Unsupported Telemetry Assumptions:</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {unsupp.map((uf: string, i: number) => (
+                                    <span key={i} className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 text-[10px] font-mono">
+                                      {uf}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          );
+                        })()}
+
+                        <div className="p-2.5 rounded bg-slate-900/60 border border-slate-800 grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+                          <div>
+                            <span className="text-slate-500 block uppercase">On Critical Missing Evidence:</span>
+                            <span className="font-mono text-amber-300 font-bold">{intelligenceData.candidate_evidence_contract.on_critical_missing_evidence || "REQUIRES_ATTENTION"}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block uppercase">Contradiction Rules:</span>
+                            <span className="font-mono text-cyan-300">{intelligenceData.candidate_evidence_contract.contradiction_rules?.length || 0} active rules</span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-slate-500 block uppercase">Contradiction Rules:</span>
-                        <span className="font-mono text-cyan-300">{intelligenceData.candidate_evidence_contract.contradiction_rules?.length || 0} active rules</span>
+                    ) : (
+                      <div className="p-8 text-center text-slate-500 text-xs">
+                        No evidence contract available for this rule.
                       </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-8 text-center text-slate-500 text-xs">
-                    No evidence contract available for this rule.
+                    )}
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* TAB 5: SIMULATION LAB */}
-            {studioTab === "simulation" && (
-              <div className="space-y-4">
-                <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-purple-400" />
-                        Simulation Lab &amp; Empirical Accuracy Validation
-                      </h3>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Dry-run replay against historical incidents to evaluate verdict trustworthiness, evidence confidence, empirical confusion matrix, and paired regression.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={simulationProvider}
-                        onChange={(e) => setSimulationProvider(e.target.value as "OPENAI_COMPATIBLE" | "SIMULATED")}
-                        aria-label="Simulation Provider"
-                        className="px-2 py-1.5 text-xs rounded border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-purple-500"
-                      >
-                        <option value="OPENAI_COMPATIBLE">Real Local LLM (OPENAI_COMPATIBLE)</option>
-                        <option value="SIMULATED">Mock Simulator (Non-Certifying)</option>
-                      </select>
-                      <button
-                        onClick={handleRunSimulation}
-                        disabled={loadingSimulation}
-                        className="px-3 py-1.5 text-xs rounded border border-purple-800 bg-purple-950/70 hover:bg-purple-900/80 text-purple-200 font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 text-purple-400 ${loadingSimulation ? "animate-spin" : ""}`} />
-                        {loadingSimulation ? "Running Simulation..." : "Run Simulation"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {loadingSimulation ? (
-                  <div className="py-16 text-center text-slate-400 text-xs space-y-3">
-                    <RefreshCw className="w-8 h-8 animate-spin mx-auto text-purple-400" />
-                    <p className="text-sm font-medium text-slate-200">Replaying historical incidents through dry-run validation pipeline...</p>
-                    <p className="text-[11px] text-slate-500">Evaluating Evidence Sufficiency, Verdict Trustworthiness, and Empirical Accuracy</p>
-                  </div>
-                ) : simulationResult ? (
-                  <div className="space-y-4 text-xs">
-                    {/* Messaging Banner */}
-                    <div className={`p-3 rounded-lg border flex items-start gap-2.5 text-xs ${(simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED")
-                      ? "bg-emerald-950/30 border-emerald-900/60 text-emerald-200"
-                      : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA" || simulationResult.status === "SIMULATED_ONLY" || simulationResult.is_simulated)
-                        ? "bg-amber-950/30 border-amber-900/60 text-amber-200"
-                        : "bg-rose-950/30 border-rose-900/60 text-rose-200"
-                      }`}>
-                      {(simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED") ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                      ) : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA" || simulationResult.status === "SIMULATED_ONLY" || simulationResult.is_simulated) ? (
-                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                      )}
-                      <div className="space-y-0.5">
-                        <div className="font-semibold text-slate-100">
-                          {simulationResult.message || "Simulation evaluation completed."}
-                        </div>
-                        <div className="text-[11px] opacity-80">
-                          Provider: <span className="font-mono font-bold">{simulationResult.provider_type || "SIMULATED"}</span>{simulationResult.model_identifier ? ` (${simulationResult.model_identifier})` : ""} | Simulation Status: <span className="font-mono font-bold">{simulationResult.status || simulationResult.simulation_status}</span> | Empirical Validation: <span className="font-mono font-bold">{simulationResult.empirical_validation_status}</span> | Regression Check: <span className="font-mono font-bold">{simulationResult.regression_status}</span>
-                        </div>
-                        <div className="text-[10px] font-mono opacity-75">
-                          Available: {simulationResult.available_count ?? simulationResult.total_scanned ?? 0} | Retrieved: {simulationResult.retrieved_count ?? simulationResult.sample_count ?? 0} | Rule-Matched: {simulationResult.rule_matched ?? 0} | Labeled: {simulationResult.analyst_labeled ?? 0} | Verified: {simulationResult.verified_count ?? simulationResult.eligible_ground_truth_count ?? 0} | Excluded: {simulationResult.excluded_count ?? 0} | Inferred: {simulationResult.inferred_count ?? simulationResult.evaluated_cases ?? 0} | Scored: {simulationResult.scored_count ?? simulationResult.evaluated_cases ?? 0}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Funnel: Historical Incident Eligibility Funnel */}
-                    <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-950 space-y-2.5">
+                {/* TAB 5: SIMULATION LAB */}
+                {studioTab === "simulation" && (
+                  <div className="space-y-4">
+                    <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                          <Layers className="w-3.5 h-3.5 text-cyan-400" />
-                          Historical Incident Eligibility Funnel
-                        </span>
-                        {simulationResult.excluded_count ? (
-                          <button
-                            type="button"
-                            onClick={() => openFunnelCardModal("excluded")}
-                            className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono underline cursor-pointer flex items-center gap-1"
-                            title="Click to view detailed excluded incidents pop-up"
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-purple-400" />
+                            Simulation Lab &amp; Empirical Accuracy Validation
+                          </h3>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Dry-run replay against historical incidents to evaluate verdict trustworthiness, evidence confidence, empirical confusion matrix, and paired regression.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={simulationProvider}
+                            onChange={(e) => setSimulationProvider(e.target.value as "OPENAI_COMPATIBLE" | "SIMULATED")}
+                            aria-label="Simulation Provider"
+                            className="px-2 py-1.5 text-xs rounded border border-slate-700 bg-slate-950 text-slate-200 focus:outline-none focus:border-purple-500"
                           >
-                            <Eye className="w-3 h-3" />
-                            View {simulationResult.excluded_count} Exclusions
+                            <option value="OPENAI_COMPATIBLE">Real Local LLM (OPENAI_COMPATIBLE)</option>
+                            <option value="SIMULATED">Mock Simulator (Non-Certifying)</option>
+                          </select>
+                          <button
+                            onClick={handleRunSimulation}
+                            disabled={loadingSimulation}
+                            className="px-3 py-1.5 text-xs rounded border border-purple-800 bg-purple-950/70 hover:bg-purple-900/80 text-purple-200 font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 text-purple-400 ${loadingSimulation ? "animate-spin" : ""}`} />
+                            {loadingSimulation ? "Running Simulation..." : "Run Simulation"}
                           </button>
-                        ) : null}
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
-                        {/* 1. Scanned */}
-                        <button
-                          type="button"
-                          onClick={() => openFunnelCardModal("scanned")}
-                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-cyan-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-cyan-950/20 text-left transition-all cursor-pointer group relative"
-                          title="Click to inspect all scanned historical incidents"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] text-slate-400 uppercase font-semibold">1. Scanned</span>
-                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
-                          </div>
-                          <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
-                            {simulationResult.total_scanned ?? simulationResult.sample_count ?? 0}
-                          </div>
-                          <span className="text-[8px] text-slate-500 group-hover:text-cyan-400 transition-colors block mt-0.5 font-sans">
-                            Click to inspect →
-                          </span>
-                        </button>
-
-                        {/* 2. Rule-Matched */}
-                        <button
-                          type="button"
-                          onClick={() => openFunnelCardModal("rule_matched")}
-                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-cyan-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-cyan-950/20 text-left transition-all cursor-pointer group relative"
-                          title="Click to inspect rule-matched incidents"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] text-slate-400 uppercase font-semibold">2. Rule-Matched</span>
-                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
-                          </div>
-                          <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
-                            {simulationResult.rule_matched ?? simulationResult.sample_count ?? 0}
-                          </div>
-                          <span className="text-[8px] text-slate-500 group-hover:text-cyan-400 transition-colors block mt-0.5 font-sans">
-                            Click to inspect →
-                          </span>
-                        </button>
-
-                        {/* 3. Analyst-Labeled */}
-                        <button
-                          type="button"
-                          onClick={() => openFunnelCardModal("analyst_labeled")}
-                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-purple-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-purple-950/20 text-left transition-all cursor-pointer group relative"
-                          title="Click to inspect analyst-labeled incidents"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] text-slate-400 uppercase font-semibold">3. Analyst-Labeled</span>
-                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-purple-400 transition-colors" />
-                          </div>
-                          <div className="text-base font-bold font-mono text-purple-300 mt-0.5">
-                            {simulationResult.analyst_labeled ?? simulationResult.eligible_ground_truth_count ?? 0}
-                          </div>
-                          <span className="text-[8px] text-slate-500 group-hover:text-purple-400 transition-colors block mt-0.5 font-sans">
-                            Click to inspect →
-                          </span>
-                        </button>
-
-                        {/* 4. Eligible GT */}
-                        <button
-                          type="button"
-                          onClick={() => openFunnelCardModal("eligible")}
-                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-emerald-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-emerald-950/20 text-left transition-all cursor-pointer group relative"
-                          title="Click to inspect eligible verified ground truth cases"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] text-slate-400 uppercase font-semibold">4. Eligible GT</span>
-                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-emerald-400 transition-colors" />
-                          </div>
-                          <div className="text-base font-bold font-mono text-emerald-400 mt-0.5">
-                            {simulationResult.eligible_ground_truth_count ?? simulationResult.verified_ground_truth_cases ?? 0}
-                          </div>
-                          <span className="text-[8px] text-slate-500 group-hover:text-emerald-400 transition-colors block mt-0.5 font-sans">
-                            Click to inspect →
-                          </span>
-                        </button>
-
-                        {/* 5. Excluded */}
-                        <button
-                          type="button"
-                          onClick={() => openFunnelCardModal("excluded")}
-                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-amber-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-amber-950/20 text-left transition-all cursor-pointer group relative"
-                          title="Click to view pop-up window of excluded incidents with exact reasons"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] text-slate-400 uppercase font-semibold">5. Excluded</span>
-                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-amber-400 transition-colors" />
-                          </div>
-                          <div className={`text-base font-bold font-mono mt-0.5 ${(simulationResult.excluded_count ?? 0) > 0 ? "text-amber-400" : "text-slate-400"}`}>
-                            {simulationResult.excluded_count ?? 0}
-                          </div>
-                          <span className="text-[8px] text-slate-500 group-hover:text-amber-400 transition-colors block mt-0.5 font-sans">
-                            Click to inspect →
-                          </span>
-                        </button>
-
-                        {/* 6. Evaluated */}
-                        <button
-                          type="button"
-                          onClick={() => openFunnelCardModal("evaluated")}
-                          className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-cyan-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-cyan-950/20 text-left transition-all cursor-pointer group relative"
-                          title="Click to inspect evaluated simulation cases"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] text-slate-400 uppercase font-semibold">6. Evaluated</span>
-                            <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
-                          </div>
-                          <div className="text-base font-bold font-mono text-cyan-300 mt-0.5">
-                            {simulationResult.evaluated_cases ?? simulationResult.sample_count ?? 0}
-                          </div>
-                          <span className="text-[8px] text-slate-500 group-hover:text-cyan-400 transition-colors block mt-0.5 font-sans">
-                            Click to inspect →
-                          </span>
-                        </button>
-                      </div>
-
-                      {/* Expandable Exclusion Breakdown */}
-                      {showExclusions && simulationResult.exclusion_reasons && (
-                        <div className="p-2.5 rounded bg-slate-900/90 border border-slate-800 space-y-1.5 text-[11px]">
-                          <span className="font-semibold text-slate-300 block">Exclusion Breakdown (Why incidents were excluded from empirical ground truth):</span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[10px]">
-                            {Object.entries(simulationResult.exclusion_reasons).map(([reason, count]) => (
-                              <div key={reason} className="p-1.5 rounded bg-slate-950/80 border border-slate-800 flex justify-between">
-                                <span className="font-mono text-slate-400">{reason}:</span>
-                                <span className="font-bold text-amber-300 font-mono">{count} incidents</span>
-                              </div>
-                            ))}
-                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
 
-                    {/* Key Status Row: Empirical Validation & Regression Status */}
-                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Empirical Accuracy Status</div>
-                        <div className={`text-sm font-bold font-mono mt-1 ${simulationResult.empirical_validation_status === "EVALUATED_PASSED"
-                          ? "text-emerald-400"
-                          : simulationResult.empirical_validation_status === "INSUFFICIENT_DATA"
-                            ? "text-amber-400"
-                            : "text-rose-400"
+                    {loadingSimulation ? (
+                      <div className="py-16 text-center text-slate-400 text-xs space-y-3">
+                        <RefreshCw className="w-8 h-8 animate-spin mx-auto text-purple-400" />
+                        <p className="text-sm font-medium text-slate-200">Replaying historical incidents through dry-run validation pipeline...</p>
+                        <p className="text-[11px] text-slate-500">Evaluating Evidence Sufficiency, Verdict Trustworthiness, and Empirical Accuracy</p>
+                      </div>
+                    ) : simulationResult ? (
+                      <div className="space-y-4 text-xs">
+                        {/* Messaging Banner */}
+                        <div className={`p-3 rounded-lg border flex items-start gap-2.5 text-xs ${(simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED")
+                          ? "bg-emerald-950/30 border-emerald-900/60 text-emerald-200"
+                          : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA" || simulationResult.status === "SIMULATED_ONLY" || simulationResult.is_simulated)
+                            ? "bg-amber-950/30 border-amber-900/60 text-amber-200"
+                            : "bg-rose-950/30 border-rose-900/60 text-rose-200"
                           }`}>
-                          {simulationResult.empirical_validation_status || "INSUFFICIENT_DATA"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Version Regression Status</div>
-                        <div className={`text-sm font-bold font-mono mt-1 ${simulationResult.regression_status === "PASS"
-                          ? "text-emerald-400"
-                          : simulationResult.regression_status === "REGRESSION_DETECTED"
-                            ? "text-rose-400"
-                            : simulationResult.regression_status === "INSUFFICIENT_DATA"
-                              ? "text-amber-400"
-                              : "text-slate-400"
-                          }`}>
-                          {simulationResult.regression_status || "NOT_ASSESSED"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Decision Coverage</div>
-                        <div className="text-xl font-bold font-mono text-slate-100 mt-0.5">
-                          {simulationResult.decision_coverage != null
-                            ? `${Math.round(simulationResult.decision_coverage * 100)}%`
-                            : "N/A"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Abstention Rate</div>
-                        <div className="text-xl font-bold font-mono text-slate-100 mt-0.5">
-                          {simulationResult.abstention_rate != null
-                            ? `${Math.round(simulationResult.abstention_rate * 100)}%`
-                            : "N/A"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Confusion Matrix Card & Ground Truth Distribution */}
-                    <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/60 space-y-2.5">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                          <Table className="w-3.5 h-3.5 text-purple-400" />
-                          Empirical Confusion Matrix &amp; Ground Truth Distribution
-                        </span>
-                        <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
-                          <span>Verified TP: <strong className="text-emerald-400">{simulationResult.ground_truth_distribution?.tp ?? simulationResult.confusion_matrix?.tp ?? 0}</strong></span>
-                          <span>|</span>
-                          <span>Verified FP: <strong className="text-sky-400">{simulationResult.ground_truth_distribution?.fp ?? simulationResult.confusion_matrix?.tn ?? 0}</strong></span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-                        <button
-                          type="button"
-                          onClick={() => openConfusionModal("tp")}
-                          className="p-2 rounded bg-emerald-950/40 border border-emerald-900/60 hover:bg-emerald-900/50 hover:border-emerald-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
-                          title="Click to inspect True Positive incidents"
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-[9px] uppercase tracking-wider text-emerald-300 font-semibold">True Positives (TP)</span>
-                            <Eye className="w-3 h-3 text-emerald-500 opacity-60 group-hover:opacity-100" />
-                          </div>
-                          <span className="text-lg font-bold font-mono text-emerald-400 mt-0.5 block text-center">
-                            {simulationResult.confusion_matrix?.tp ?? 0}
-                          </span>
-                          <span className="text-[9px] text-slate-400 block text-center">Confirmed Attack Detected</span>
-                          <span className="text-[9px] text-emerald-400/70 group-hover:text-emerald-300 text-center block pt-0.5">Click to inspect →</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openConfusionModal("tn")}
-                          className="p-2 rounded bg-sky-950/40 border border-sky-900/60 hover:bg-sky-900/50 hover:border-sky-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
-                          title="Click to inspect True Negative incidents"
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-[9px] uppercase tracking-wider text-sky-300 font-semibold">True Negatives (TN)</span>
-                            <Eye className="w-3 h-3 text-sky-500 opacity-60 group-hover:opacity-100" />
-                          </div>
-                          <span className="text-lg font-bold font-mono text-sky-400 mt-0.5 block text-center">
-                            {simulationResult.confusion_matrix?.tn ?? 0}
-                          </span>
-                          <span className="text-[9px] text-slate-400 block text-center">Benign Verified Safe</span>
-                          <span className="text-[9px] text-sky-400/70 group-hover:text-sky-300 text-center block pt-0.5">Click to inspect →</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openConfusionModal("fp")}
-                          className="p-2 rounded bg-rose-950/40 border border-rose-900/60 hover:bg-rose-900/50 hover:border-rose-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
-                          title="Click to inspect False Positive incidents"
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-[9px] uppercase tracking-wider text-rose-300 font-semibold">False Positives (FP)</span>
-                            <Eye className="w-3 h-3 text-rose-500 opacity-60 group-hover:opacity-100" />
-                          </div>
-                          <span className="text-lg font-bold font-mono text-rose-400 mt-0.5 block text-center">
-                            {simulationResult.confusion_matrix?.fp ?? 0}
-                          </span>
-                          <span className="text-[9px] text-slate-400 block text-center">Benign Flagged as Attack</span>
-                          <span className="text-[9px] text-rose-400/70 group-hover:text-rose-300 text-center block pt-0.5">Click to inspect →</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openConfusionModal("fn")}
-                          className="p-2 rounded bg-red-950/60 border border-red-800 hover:bg-red-900/60 hover:border-red-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
-                          title="Click to inspect False Negative incidents"
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-[9px] uppercase tracking-wider text-red-300 font-semibold">False Negatives (FN)</span>
-                            <Eye className="w-3 h-3 text-red-400 opacity-60 group-hover:opacity-100" />
-                          </div>
-                          <span className="text-lg font-bold font-mono text-red-400 mt-0.5 block text-center">
-                            {simulationResult.confusion_matrix?.fn ?? 0}
-                          </span>
-                          <span className="text-[9px] text-red-300/80 block font-bold text-center">Critical Missed Attacks</span>
-                          <span className="text-[9px] text-red-400/80 group-hover:text-red-300 text-center block pt-0.5">Click to inspect →</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openConfusionModal("abstained")}
-                          className="p-2 rounded bg-amber-950/40 border border-amber-900/60 hover:bg-amber-900/50 hover:border-amber-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
-                          title="Click to inspect Abstained incidents"
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-[9px] uppercase tracking-wider text-amber-300 font-semibold">Abstentions</span>
-                            <Eye className="w-3 h-3 text-amber-500 opacity-60 group-hover:opacity-100" />
-                          </div>
-                          <span className="text-lg font-bold font-mono text-amber-400 mt-0.5 block text-center">
-                            {simulationResult.confusion_matrix?.abstained ?? 0}
-                          </span>
-                          <span className="text-[9px] text-slate-400 block text-center">Routed to Analyst Review</span>
-                          <span className="text-[9px] text-amber-400/70 group-hover:text-amber-300 text-center block pt-0.5">Click to inspect →</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Empirical Accuracy Metrics Grid (displays N/A instead of 0%) */}
-                    <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Balanced Accuracy</div>
-                        <div className="text-base font-bold font-mono text-cyan-400 mt-0.5">
-                          {simulationResult.balanced_accuracy != null &&
-                            simulationResult.recall != null &&
-                            simulationResult.specificity != null
-                            ? `${Math.round(simulationResult.balanced_accuracy * 100)}%`
-                            : "NOT_CALCULABLE"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Precision / Recall</div>
-                        <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
-                          {simulationResult.precision != null ? `${Math.round(simulationResult.precision * 100)}%` : "N/A"}
-                          {" / "}
-                          {simulationResult.recall != null ? `${Math.round(simulationResult.recall * 100)}%` : "N/A"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Specificity (TNR)</div>
-                        <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
-                          {simulationResult.specificity != null
-                            ? `${Math.round(simulationResult.specificity * 100)}%`
-                            : "N/A"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">False Positive Rate (FPR)</div>
-                        <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
-                          {simulationResult.false_positive_rate != null
-                            ? `${Math.round(simulationResult.false_positive_rate * 100)}%`
-                            : "N/A"}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Calibration & Regression Stats Row */}
-                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Calibration Status</div>
-                        <div className={`text-xs font-bold font-mono mt-1 ${simulationResult.is_calibrated ? "text-emerald-400" : "text-amber-400"}`}>
-                          {simulationResult.calibration_status || (simulationResult.is_calibrated ? "CALIBRATED (N>=30)" : "NOT_CALIBRATED (N<30)")}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Brier Calibration Score</div>
-                        <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
-                          {simulationResult.brier_score != null ? simulationResult.brier_score.toFixed(4) : "N/A"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Expected Calibration Error (ECE)</div>
-                        <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
-                          {simulationResult.ece != null ? simulationResult.ece.toFixed(4) : "N/A"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-slate-500 uppercase">Critical Regressions</div>
-                        <div className={`text-base font-bold font-mono mt-0.5 ${simulationResult.critical_regressions > 0 ? "text-rose-400" : "text-emerald-400"}`}>
-                          {simulationResult.critical_regressions}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Per-Incident Simulation Results Drilldown Table */}
-                    {simulationResult.per_incident_results && simulationResult.per_incident_results.length > 0 && (
-                      <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-2">
-                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                          <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                            Per-Incident Simulation Verdicts &amp; Trust Scores ({simulationResult.per_incident_results.length} cases)
-                          </span>
-                        </div>
-                        <div className="max-h-60 overflow-y-auto space-y-1">
-                          {simulationResult.per_incident_results.map((r, i) => (
-                            <div key={i} className="p-2 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-between text-[11px]">
-                              <div className="space-y-0.5">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono font-bold text-slate-200">{r.incident_id}</span>
-                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono border ${r.ground_truth === "VERIFIED_TP"
-                                    ? "bg-rose-950 text-rose-300 border-rose-800"
-                                    : r.ground_truth === "VERIFIED_FP"
-                                      ? "bg-sky-950 text-sky-300 border-sky-800"
-                                      : "bg-slate-900 text-slate-400 border-slate-800"
-                                    }`}>
-                                    GT: {r.ground_truth || "UNLABELED"}
-                                  </span>
-                                </div>
-                                <div className="text-[10px] text-slate-400">
-                                  AI Suggested: <span className="font-mono text-slate-300">{r.suggested_verdict}</span> | Effective: <span className="font-mono font-bold text-slate-200">{r.effective_verdict}</span>
-                                </div>
-                              </div>
-                              <div className="text-right space-y-0.5">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <span className="text-[10px] text-slate-500 uppercase">Trust Score:</span>
-                                  <span className="font-mono font-bold text-indigo-400">
-                                    {r.trust_score != null ? `${r.trust_score}/10` : "NOT_CALCULABLE"}
-                                  </span>
-                                </div>
-                                <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold border ${r.is_critical_error
-                                    ? "bg-red-950 text-red-300 border-red-800"
-                                    : r.is_abstained
-                                      ? "bg-amber-950 text-amber-300 border-amber-800"
-                                      : r.is_correct
-                                        ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                                        : "bg-slate-900 text-slate-400 border-slate-800"
-                                    }`}>
-                                    {r.is_critical_error ? "MISSED TP (FN)" : r.is_abstained ? "ABSTAINED" : r.is_correct ? "CORRECT" : "WRONG"}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setPromptInspectorIncidentId(r.incident_id);
-                                      setPromptInspectorRuleId(selectedRuleId);
-                                      setPromptInspectorVersionId(selectedVersionId);
-                                      setPromptInspectorOpen(true);
-                                    }}
-                                    className="p-1 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 rounded border border-indigo-900/60 transition"
-                                    title={`View Actual LLM Prompt for ${r.incident_id}`}
-                                  >
-                                    <Terminal className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              </div>
+                          {(simulationResult.status === "PASSED" || simulationResult.simulation_status === "EVALUATED_PASSED") ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                          ) : (simulationResult.status === "INSUFFICIENT_DATA" || simulationResult.simulation_status === "INSUFFICIENT_DATA" || simulationResult.status === "SIMULATED_ONLY" || simulationResult.is_simulated) ? (
+                            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                          )}
+                          <div className="space-y-0.5">
+                            <div className="font-semibold text-slate-100">
+                              {simulationResult.message || "Simulation evaluation completed."}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex justify-end pt-1">
-                      <a
-                        href={`/verdict-intelligence?rule_id=${selectedRuleId}`}
-                        className="px-3 py-1.5 rounded border border-cyan-800 bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
-                        Open in Verdict Intelligence &amp; Calibration Dashboard (Dashboards A–E)
-                      </a>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-8 text-center text-slate-500 text-xs space-y-2">
-                    <p>No simulation run yet for this prompt version.</p>
-                    <button
-                      onClick={handleRunSimulation}
-                      className="px-3 py-1 bg-purple-900/40 hover:bg-purple-900/60 text-purple-300 border border-purple-800 rounded text-xs font-semibold"
-                    >
-                      Run Simulation Now
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 6: DRIFT & MONITORING */}
-            {studioTab === "drift" && (
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                        <GitBranch className="w-4 h-4 text-rose-400" />
-                        Policy Lifecycle Drift &amp; Verified Analyst Feedback
-                      </h3>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Detects changes in SIEM rule definitions, schema evolution, and verified human corrections without silently modifying approved policies.
-                      </p>
-                    </div>
-                    {driftEvents.filter((d) => !d.acknowledged).length > 0 && (
-                      <button
-                        onClick={handleAcknowledgeDrift}
-                        disabled={actionLoading}
-                        className="px-2.5 py-1 text-xs rounded border border-rose-800 bg-rose-950 hover:bg-rose-900 text-rose-200 font-semibold flex items-center gap-1.5"
-                      >
-                        <Check className="w-3 h-3" /> Acknowledge Drift
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {driftEvents.length > 0 ? (
-                  <div className="space-y-2">
-                    {driftEvents.map((ev) => (
-                      <div
-                        key={ev.id}
-                        className={`p-3 rounded-lg border text-xs space-y-1 ${ev.acknowledged
-                          ? "bg-slate-950/60 border-slate-800 text-slate-400"
-                          : "bg-rose-950/20 border-rose-900/60 text-rose-300"
-                          }`}
-                      >
-                        <div className="flex items-center justify-between font-bold">
-                          <span className="flex items-center gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            {ev.trigger_type}
-                          </span>
-                          <span className="font-mono text-[10px] text-slate-500">
-                            {new Date(ev.created_at).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="text-[11px] leading-relaxed">{ev.summary}</p>
-                        {ev.revalidation_required && !ev.acknowledged && (
-                          <div className="text-[10px] font-bold text-rose-400 pt-1">
-                            ⚠️ Policy revalidation required before next deployment.
+                            <div className="text-[11px] opacity-80">
+                              Provider: <span className="font-mono font-bold">{simulationResult.provider_type || "SIMULATED"}</span>{simulationResult.model_identifier ? ` (${simulationResult.model_identifier})` : ""} | Simulation Status: <span className="font-mono font-bold">{simulationResult.status || simulationResult.simulation_status}</span> | Empirical Validation: <span className="font-mono font-bold">{simulationResult.empirical_validation_status}</span> | Regression Check: <span className="font-mono font-bold">{simulationResult.regression_status}</span>
+                            </div>
+                            <div className="text-[10px] font-mono opacity-75">
+                              Available: {simulationResult.available_count ?? simulationResult.total_scanned ?? 0} | Retrieved: {simulationResult.retrieved_count ?? simulationResult.sample_count ?? 0} | Rule-Matched: {simulationResult.rule_matched ?? 0} | Labeled: {simulationResult.analyst_labeled ?? 0} | Verified: {simulationResult.verified_count ?? simulationResult.eligible_ground_truth_count ?? 0} | Excluded: {simulationResult.excluded_count ?? 0} | Inferred: {simulationResult.inferred_count ?? simulationResult.evaluated_cases ?? 0} | Scored: {simulationResult.scored_count ?? simulationResult.evaluated_cases ?? 0}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center text-slate-500 text-xs">
-                    No drift events recorded for this detection rule. Policy specifications are in sync.
-                  </div>
-                )}
-              </div>
-            )}
+                        </div>
 
-            {/* TAB: VERSION HISTORY & POLICY GOVERNANCE */}
-            {(advancedSection === "history" || studioTab === "history") && (
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl theme-glass-panel flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <History className="w-5 h-5 text-sky-400" />
-                      <h2 className="text-base font-bold text-slate-100">Policy Version Lifecycle &amp; Governance</h2>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-                      Authoritative policy lifecycle: <code className="text-amber-400">DRAFT</code> → <code className="text-sky-400">VALIDATED</code> → <code className="text-emerald-400">APPROVED</code> → <code className="text-cyan-400">ACTIVE</code>. Revoked policies are permanently retired and blocked from runtime AI execution.
-                    </p>
-                  </div>
-                  {isAdmin && (
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-950/80 border border-indigo-800 text-indigo-300 flex items-center gap-1.5 shrink-0">
-                      <Shield className="w-3.5 h-3.5 text-indigo-400" />
-                      Administrator Controls Active
-                    </span>
-                  )}
-                </div>
-
-                {/* Revocation / Suspension Alert if any version is revoked or AI execution suspended */}
-                {(rulePrompt?.ai_execution_suspended || rulePrompt?.versions.some((v) => v.status === "REVOKED")) && (
-                  <div className="p-3.5 rounded-xl border border-rose-800/80 bg-rose-950/40 text-rose-200 text-xs flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <div className="font-bold text-rose-300">
-                        Policy Revocation / Execution Suspension in Effect
-                      </div>
-                      <p className="text-[11px] text-rose-200/90 leading-relaxed">
-                        {rulePrompt?.ai_execution_suspended
-                          ? `AI Verdict Execution is currently SUSPENDED: ${rulePrompt.suspension_reason || "Policy suspended by administrator or automated guard."}`
-                          : "One or more policy versions have been revoked. Revoked versions cannot be rolled back, reactivated, or dispatched to Local LLM."}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Detailed Version List */}
-                <div className="space-y-3">
-                  {rulePrompt?.versions.map((ver) => {
-                    const isActive = ver.id === rulePrompt.active_version_id;
-                    const isSelected = ver.id === selectedVersionId;
-                    const isRevoked = ver.status === "REVOKED";
-                    const isApproved = ver.status === "APPROVED";
-
-                    return (
-                      <div
-                        key={ver.id}
-                        className={`p-4 rounded-xl border transition-all ${
-                          isRevoked
-                            ? "border-rose-900/70 bg-rose-950/20"
-                            : isSelected
-                            ? "border-cyan-500/60 bg-slate-900/90 shadow-lg"
-                            : "border-slate-800/80 bg-slate-950/70 hover:border-slate-700"
-                        }`}
-                      >
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800/70 pb-2.5">
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-base font-bold text-slate-100">
-                              Version {ver.version_number}
+                        {/* Funnel: Historical Incident Eligibility Funnel */}
+                        <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-950 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                              Historical Incident Eligibility Funnel
                             </span>
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                ver.status === "APPROVED"
-                                  ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                                  : ver.status === "REVOKED"
-                                  ? "bg-rose-950 text-rose-400 border border-rose-800"
-                                  : ver.status === "VALIDATED"
-                                  ? "bg-sky-950 text-sky-400 border border-sky-800"
-                                  : ver.status === "ARCHIVED"
-                                  ? "bg-slate-900 text-slate-500 border border-slate-800"
-                                  : "bg-amber-950 text-amber-400 border border-amber-800"
-                              }`}
-                            >
-                              {ver.status}
-                            </span>
-                            {isActive && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3 text-cyan-400" />
-                                {isRevoked ? "Active Assignment (REVOKED - Suspended)" : "Active Production Baseline"}
-                              </span>
-                            )}
-                            {ver.is_template_draft && (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-sky-950/60 text-sky-400 border border-sky-800/60">
-                                Template Draft
-                              </span>
-                            )}
+                            {simulationResult.excluded_count ? (
+                              <button
+                                type="button"
+                                onClick={() => openFunnelCardModal("excluded")}
+                                className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono underline cursor-pointer flex items-center gap-1"
+                                title="Click to view detailed excluded incidents pop-up"
+                              >
+                                <Eye className="w-3 h-3" />
+                                View {simulationResult.excluded_count} Exclusions
+                              </button>
+                            ) : null}
                           </div>
 
-                          <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
-                            <span>Created: {new Date(ver.created_at).toLocaleString()}</span>
-                            {ver.created_by_user_id && (
-                              <span>by <strong className="text-slate-300">{ver.created_by_user_id}</strong></span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Revocation Notice Box */}
-                        {isRevoked && (
-                          <div className="mt-3 p-3 rounded-lg border border-rose-800/80 bg-rose-950/40 text-xs text-rose-200 space-y-1">
-                            <div className="flex items-center justify-between text-rose-300 font-bold">
-                              <span className="flex items-center gap-1.5">
-                                <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-                                REVOCATION AUDIT RECORD
-                              </span>
-                              <span className="text-[10px] font-mono text-rose-400">
-                                {ver.revoked_at ? new Date(ver.revoked_at).toLocaleString() : "Date unavailable"}
-                              </span>
-                            </div>
-                            <div className="text-[11px] leading-relaxed">
-                              <strong>Mandatory Reason:</strong> {ver.revocation_reason || "No explicit reason recorded."}
-                            </div>
-                            <div className="text-[10px] text-rose-300/80 flex items-center gap-3 pt-0.5 font-mono">
-                              <span>Revoked By: {ver.revoked_by_user_id || "Administrator"}</span>
-                              <span>·</span>
-                              <span>Previous Status: {ver.previous_status || "APPROVED"}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Approval Info */}
-                        {ver.approved_at && !isRevoked && (
-                          <div className="mt-2 text-[11px] text-emerald-400/90 font-mono flex items-center gap-2">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                            <span>Approved by {ver.approved_by_user_id || "SOC Lead"} at {new Date(ver.approved_at).toLocaleString()}</span>
-                          </div>
-                        )}
-
-                        <div className="mt-2.5 text-xs text-slate-300">
-                          <span className="text-slate-500 font-semibold">Change Summary: </span>
-                          <span>{ver.change_summary || "No change notes recorded."}</span>
-                        </div>
-
-                        {/* Actions Toolbar */}
-                        <div className="mt-3.5 pt-2.5 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                            {/* 1. Scanned */}
                             <button
                               type="button"
-                              onClick={() => {
-                                setSelectedVersionId(ver.id);
-                                loadVersionIntoForm(ver);
-                                setAdvancedSection("editor");
-                                setStudioTab("editor");
-                              }}
-                              className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                              onClick={() => openFunnelCardModal("scanned")}
+                              className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-cyan-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-cyan-950/20 text-left transition-all cursor-pointer group relative"
+                              title="Click to inspect all scanned historical incidents"
                             >
-                              <FileCode className="w-3.5 h-3.5 text-slate-400" />
-                              Inspect in Editor
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] text-slate-400 uppercase font-semibold">1. Scanned</span>
+                                <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                              </div>
+                              <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                                {simulationResult.total_scanned ?? simulationResult.sample_count ?? 0}
+                              </div>
+                              <span className="text-[8px] text-slate-500 group-hover:text-cyan-400 transition-colors block mt-0.5 font-sans">
+                                Click to inspect →
+                              </span>
                             </button>
 
+                            {/* 2. Rule-Matched */}
                             <button
                               type="button"
-                              onClick={() => {
-                                setPromptInspectorIncidentId(null);
-                                setPromptInspectorRuleId(selectedRuleId);
-                                setPromptInspectorVersionId(ver.id);
-                                setPromptInspectorInitialMode("capture");
-                                setPromptInspectorOpen(true);
-                              }}
-                              className="px-2.5 py-1.5 rounded-lg border border-emerald-800/80 bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+                              onClick={() => openFunnelCardModal("rule_matched")}
+                              className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-cyan-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-cyan-950/20 text-left transition-all cursor-pointer group relative"
+                              title="Click to inspect rule-matched incidents"
                             >
-                              <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-                              View Actual LLM Prompt
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] text-slate-400 uppercase font-semibold">2. Rule-Matched</span>
+                                <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                              </div>
+                              <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                                {simulationResult.rule_matched ?? simulationResult.sample_count ?? 0}
+                              </div>
+                              <span className="text-[8px] text-slate-500 group-hover:text-cyan-400 transition-colors block mt-0.5 font-sans">
+                                Click to inspect →
+                              </span>
+                            </button>
+
+                            {/* 3. Analyst-Labeled */}
+                            <button
+                              type="button"
+                              onClick={() => openFunnelCardModal("analyst_labeled")}
+                              className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-purple-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-purple-950/20 text-left transition-all cursor-pointer group relative"
+                              title="Click to inspect analyst-labeled incidents"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] text-slate-400 uppercase font-semibold">3. Analyst-Labeled</span>
+                                <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-purple-400 transition-colors" />
+                              </div>
+                              <div className="text-base font-bold font-mono text-purple-300 mt-0.5">
+                                {simulationResult.analyst_labeled ?? simulationResult.eligible_ground_truth_count ?? 0}
+                              </div>
+                              <span className="text-[8px] text-slate-500 group-hover:text-purple-400 transition-colors block mt-0.5 font-sans">
+                                Click to inspect →
+                              </span>
+                            </button>
+
+                            {/* 4. Eligible GT */}
+                            <button
+                              type="button"
+                              onClick={() => openFunnelCardModal("eligible")}
+                              className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-emerald-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-emerald-950/20 text-left transition-all cursor-pointer group relative"
+                              title="Click to inspect eligible verified ground truth cases"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] text-slate-400 uppercase font-semibold">4. Eligible GT</span>
+                                <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-emerald-400 transition-colors" />
+                              </div>
+                              <div className="text-base font-bold font-mono text-emerald-400 mt-0.5">
+                                {simulationResult.eligible_ground_truth_count ?? simulationResult.verified_ground_truth_cases ?? 0}
+                              </div>
+                              <span className="text-[8px] text-slate-500 group-hover:text-emerald-400 transition-colors block mt-0.5 font-sans">
+                                Click to inspect →
+                              </span>
+                            </button>
+
+                            {/* 5. Excluded */}
+                            <button
+                              type="button"
+                              onClick={() => openFunnelCardModal("excluded")}
+                              className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-amber-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-amber-950/20 text-left transition-all cursor-pointer group relative"
+                              title="Click to view pop-up window of excluded incidents with exact reasons"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] text-slate-400 uppercase font-semibold">5. Excluded</span>
+                                <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-amber-400 transition-colors" />
+                              </div>
+                              <div className={`text-base font-bold font-mono mt-0.5 ${(simulationResult.excluded_count ?? 0) > 0 ? "text-amber-400" : "text-slate-400"}`}>
+                                {simulationResult.excluded_count ?? 0}
+                              </div>
+                              <span className="text-[8px] text-slate-500 group-hover:text-amber-400 transition-colors block mt-0.5 font-sans">
+                                Click to inspect →
+                              </span>
+                            </button>
+
+                            {/* 6. Evaluated */}
+                            <button
+                              type="button"
+                              onClick={() => openFunnelCardModal("evaluated")}
+                              className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-cyan-500/60 hover:bg-slate-850 hover:shadow-md hover:shadow-cyan-950/20 text-left transition-all cursor-pointer group relative"
+                              title="Click to inspect evaluated simulation cases"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] text-slate-400 uppercase font-semibold">6. Evaluated</span>
+                                <ExternalLink className="w-2.5 h-2.5 text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                              </div>
+                              <div className="text-base font-bold font-mono text-cyan-300 mt-0.5">
+                                {simulationResult.evaluated_cases ?? simulationResult.sample_count ?? 0}
+                              </div>
+                              <span className="text-[8px] text-slate-500 group-hover:text-cyan-400 transition-colors block mt-0.5 font-sans">
+                                Click to inspect →
+                              </span>
                             </button>
                           </div>
 
-                          {/* Administrative Controls */}
-                          {isAdmin && (
-                            <div className="flex items-center gap-2">
-                              {/* Revoke Approval Button */}
-                              {isApproved && (
-                                <button
-                                  type="button"
-                                  disabled={actionLoading}
-                                  onClick={() => handleOpenRevoke(ver)}
-                                  className="px-3 py-1.5 rounded-lg border border-rose-800/90 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-rose-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
-                                  title="Revoke approval for this version (Mandatory reason required)"
-                                >
-                                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-                                  Revoke Approval
-                                </button>
-                              )}
-
-                              {/* Rollback Button */}
-                              {!isActive && (
-                                <button
-                                  type="button"
-                                  disabled={actionLoading || isRevoked || !isApproved}
-                                  onClick={() => handleRollback(ver.id)}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                                    isRevoked
-                                      ? "border border-slate-800 bg-slate-900 text-slate-600 cursor-not-allowed"
-                                      : !isApproved
-                                      ? "border border-slate-800 bg-slate-900 text-slate-600 cursor-not-allowed"
-                                      : "border border-amber-800/80 bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 shadow-sm"
-                                  }`}
-                                  title={
-                                    isRevoked
-                                      ? "Revoked versions cannot be reactivated or rolled back to"
-                                      : !isApproved
-                                      ? "Only approved policy versions can be activated via rollback"
-                                      : `Rollback production baseline to Version ${ver.version_number}`
-                                  }
-                                >
-                                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                                  Rollback to This Version
-                                </button>
-                              )}
+                          {/* Expandable Exclusion Breakdown */}
+                          {showExclusions && simulationResult.exclusion_reasons && (
+                            <div className="p-2.5 rounded bg-slate-900/90 border border-slate-800 space-y-1.5 text-[11px]">
+                              <span className="font-semibold text-slate-300 block">Exclusion Breakdown (Why incidents were excluded from empirical ground truth):</span>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[10px]">
+                                {Object.entries(simulationResult.exclusion_reasons).map(([reason, count]) => (
+                                  <div key={reason} className="p-1.5 rounded bg-slate-950/80 border border-slate-800 flex justify-between">
+                                    <span className="font-mono text-slate-400">{reason}:</span>
+                                    <span className="font-bold text-amber-300 font-mono">{count} incidents</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* TAB 7: RULE LEARNING & GOVERNANCE (LEGACY MODE) */}
-      {!compactUi && studioTab === "learning" && (
-        <div className="space-y-4">
-          <RuleLearningDashboard ruleId={selectedRuleId} ruleName={rulePrompt?.rule_name} onProfileUpdate={(p) => setLearningProfile(p)} />
-        </div>
-      )}
+                        {/* Key Status Row: Empirical Validation & Regression Status */}
+                        <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Empirical Accuracy Status</div>
+                            <div className={`text-sm font-bold font-mono mt-1 ${simulationResult.empirical_validation_status === "EVALUATED_PASSED"
+                              ? "text-emerald-400"
+                              : simulationResult.empirical_validation_status === "INSUFFICIENT_DATA"
+                                ? "text-amber-400"
+                                : "text-rose-400"
+                              }`}>
+                              {simulationResult.empirical_validation_status || "INSUFFICIENT_DATA"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Version Regression Status</div>
+                            <div className={`text-sm font-bold font-mono mt-1 ${simulationResult.regression_status === "PASS"
+                              ? "text-emerald-400"
+                              : simulationResult.regression_status === "REGRESSION_DETECTED"
+                                ? "text-rose-400"
+                                : simulationResult.regression_status === "INSUFFICIENT_DATA"
+                                  ? "text-amber-400"
+                                  : "text-slate-400"
+                              }`}>
+                              {simulationResult.regression_status || "NOT_ASSESSED"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Decision Coverage</div>
+                            <div className="text-xl font-bold font-mono text-slate-100 mt-0.5">
+                              {simulationResult.decision_coverage != null
+                                ? `${Math.round(simulationResult.decision_coverage * 100)}%`
+                                : "N/A"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Abstention Rate</div>
+                            <div className="text-xl font-bold font-mono text-slate-100 mt-0.5">
+                              {simulationResult.abstention_rate != null
+                                ? `${Math.round(simulationResult.abstention_rate * 100)}%`
+                                : "N/A"}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Confusion Matrix Card & Ground Truth Distribution */}
+                        <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/60 space-y-2.5">
+                          <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                              <Table className="w-3.5 h-3.5 text-purple-400" />
+                              Empirical Confusion Matrix &amp; Ground Truth Distribution
+                            </span>
+                            <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+                              <span>Verified TP: <strong className="text-emerald-400">{simulationResult.ground_truth_distribution?.tp ?? simulationResult.confusion_matrix?.tp ?? 0}</strong></span>
+                              <span>|</span>
+                              <span>Verified FP: <strong className="text-sky-400">{simulationResult.ground_truth_distribution?.fp ?? simulationResult.confusion_matrix?.tn ?? 0}</strong></span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+                            <button
+                              type="button"
+                              onClick={() => openConfusionModal("tp")}
+                              className="p-2 rounded bg-emerald-950/40 border border-emerald-900/60 hover:bg-emerald-900/50 hover:border-emerald-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
+                              title="Click to inspect True Positive incidents"
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-[9px] uppercase tracking-wider text-emerald-300 font-semibold">True Positives (TP)</span>
+                                <Eye className="w-3 h-3 text-emerald-500 opacity-60 group-hover:opacity-100" />
+                              </div>
+                              <span className="text-lg font-bold font-mono text-emerald-400 mt-0.5 block text-center">
+                                {simulationResult.confusion_matrix?.tp ?? 0}
+                              </span>
+                              <span className="text-[9px] text-slate-400 block text-center">Confirmed Attack Detected</span>
+                              <span className="text-[9px] text-emerald-400/70 group-hover:text-emerald-300 text-center block pt-0.5">Click to inspect →</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openConfusionModal("tn")}
+                              className="p-2 rounded bg-sky-950/40 border border-sky-900/60 hover:bg-sky-900/50 hover:border-sky-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
+                              title="Click to inspect True Negative incidents"
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-[9px] uppercase tracking-wider text-sky-300 font-semibold">True Negatives (TN)</span>
+                                <Eye className="w-3 h-3 text-sky-500 opacity-60 group-hover:opacity-100" />
+                              </div>
+                              <span className="text-lg font-bold font-mono text-sky-400 mt-0.5 block text-center">
+                                {simulationResult.confusion_matrix?.tn ?? 0}
+                              </span>
+                              <span className="text-[9px] text-slate-400 block text-center">Benign Verified Safe</span>
+                              <span className="text-[9px] text-sky-400/70 group-hover:text-sky-300 text-center block pt-0.5">Click to inspect →</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openConfusionModal("fp")}
+                              className="p-2 rounded bg-rose-950/40 border border-rose-900/60 hover:bg-rose-900/50 hover:border-rose-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
+                              title="Click to inspect False Positive incidents"
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-[9px] uppercase tracking-wider text-rose-300 font-semibold">False Positives (FP)</span>
+                                <Eye className="w-3 h-3 text-rose-500 opacity-60 group-hover:opacity-100" />
+                              </div>
+                              <span className="text-lg font-bold font-mono text-rose-400 mt-0.5 block text-center">
+                                {simulationResult.confusion_matrix?.fp ?? 0}
+                              </span>
+                              <span className="text-[9px] text-slate-400 block text-center">Benign Flagged as Attack</span>
+                              <span className="text-[9px] text-rose-400/70 group-hover:text-rose-300 text-center block pt-0.5">Click to inspect →</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openConfusionModal("fn")}
+                              className="p-2 rounded bg-red-950/60 border border-red-800 hover:bg-red-900/60 hover:border-red-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
+                              title="Click to inspect False Negative incidents"
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-[9px] uppercase tracking-wider text-red-300 font-semibold">False Negatives (FN)</span>
+                                <Eye className="w-3 h-3 text-red-400 opacity-60 group-hover:opacity-100" />
+                              </div>
+                              <span className="text-lg font-bold font-mono text-red-400 mt-0.5 block text-center">
+                                {simulationResult.confusion_matrix?.fn ?? 0}
+                              </span>
+                              <span className="text-[9px] text-red-300/80 block font-bold text-center">Critical Missed Attacks</span>
+                              <span className="text-[9px] text-red-400/80 group-hover:text-red-300 text-center block pt-0.5">Click to inspect →</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openConfusionModal("abstained")}
+                              className="p-2 rounded bg-amber-950/40 border border-amber-900/60 hover:bg-amber-900/50 hover:border-amber-600 transition-all text-left flex flex-col justify-between group cursor-pointer"
+                              title="Click to inspect Abstained incidents"
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-[9px] uppercase tracking-wider text-amber-300 font-semibold">Abstentions</span>
+                                <Eye className="w-3 h-3 text-amber-500 opacity-60 group-hover:opacity-100" />
+                              </div>
+                              <span className="text-lg font-bold font-mono text-amber-400 mt-0.5 block text-center">
+                                {simulationResult.confusion_matrix?.abstained ?? 0}
+                              </span>
+                              <span className="text-[9px] text-slate-400 block text-center">Routed to Analyst Review</span>
+                              <span className="text-[9px] text-amber-400/70 group-hover:text-amber-300 text-center block pt-0.5">Click to inspect →</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Empirical Accuracy Metrics Grid (displays N/A instead of 0%) */}
+                        <div className="p-3.5 rounded-lg border border-slate-800 bg-slate-900/40 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Balanced Accuracy</div>
+                            <div className="text-base font-bold font-mono text-cyan-400 mt-0.5">
+                              {simulationResult.balanced_accuracy != null &&
+                                simulationResult.recall != null &&
+                                simulationResult.specificity != null
+                                ? `${Math.round(simulationResult.balanced_accuracy * 100)}%`
+                                : "NOT_CALCULABLE"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Precision / Recall</div>
+                            <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                              {simulationResult.precision != null ? `${Math.round(simulationResult.precision * 100)}%` : "N/A"}
+                              {" / "}
+                              {simulationResult.recall != null ? `${Math.round(simulationResult.recall * 100)}%` : "N/A"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Specificity (TNR)</div>
+                            <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                              {simulationResult.specificity != null
+                                ? `${Math.round(simulationResult.specificity * 100)}%`
+                                : "N/A"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">False Positive Rate (FPR)</div>
+                            <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                              {simulationResult.false_positive_rate != null
+                                ? `${Math.round(simulationResult.false_positive_rate * 100)}%`
+                                : "N/A"}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Calibration & Regression Stats Row */}
+                        <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Calibration Status</div>
+                            <div className={`text-xs font-bold font-mono mt-1 ${simulationResult.is_calibrated ? "text-emerald-400" : "text-amber-400"}`}>
+                              {simulationResult.calibration_status || (simulationResult.is_calibrated ? "CALIBRATED (N>=30)" : "NOT_CALIBRATED (N<30)")}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Brier Calibration Score</div>
+                            <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                              {simulationResult.brier_score != null ? simulationResult.brier_score.toFixed(4) : "N/A"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Expected Calibration Error (ECE)</div>
+                            <div className="text-base font-bold font-mono text-slate-200 mt-0.5">
+                              {simulationResult.ece != null ? simulationResult.ece.toFixed(4) : "N/A"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 uppercase">Critical Regressions</div>
+                            <div className={`text-base font-bold font-mono mt-0.5 ${simulationResult.critical_regressions > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                              {simulationResult.critical_regressions}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Per-Incident Simulation Results Drilldown Table */}
+                        {simulationResult.per_incident_results && simulationResult.per_incident_results.length > 0 && (
+                          <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-2">
+                            <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                              <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                                Per-Incident Simulation Verdicts &amp; Trust Scores ({simulationResult.per_incident_results.length} cases)
+                              </span>
+                            </div>
+                            <div className="max-h-60 overflow-y-auto space-y-1">
+                              {simulationResult.per_incident_results.map((r, i) => (
+                                <div key={i} className="p-2 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-between text-[11px]">
+                                  <div className="space-y-0.5">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono font-bold text-slate-200">{r.incident_id}</span>
+                                      <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono border ${r.ground_truth === "VERIFIED_TP"
+                                        ? "bg-rose-950 text-rose-300 border-rose-800"
+                                        : r.ground_truth === "VERIFIED_FP"
+                                          ? "bg-sky-950 text-sky-300 border-sky-800"
+                                          : "bg-slate-900 text-slate-400 border-slate-800"
+                                        }`}>
+                                        GT: {r.ground_truth || "UNLABELED"}
+                                      </span>
+                                    </div>
+                                    <div className="text-[10px] text-slate-400">
+                                      AI Suggested: <span className="font-mono text-slate-300">{r.suggested_verdict}</span> | Effective: <span className="font-mono font-bold text-slate-200">{r.effective_verdict}</span>
+                                    </div>
+                                  </div>
+                                  <div className="text-right space-y-0.5">
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      <span className="text-[10px] text-slate-500 uppercase">Trust Score:</span>
+                                      <span className="font-mono font-bold text-indigo-400">
+                                        {r.trust_score != null ? `${r.trust_score}/10` : "NOT_CALCULABLE"}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                                      <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold border ${r.is_critical_error
+                                        ? "bg-red-950 text-red-300 border-red-800"
+                                        : r.is_abstained
+                                          ? "bg-amber-950 text-amber-300 border-amber-800"
+                                          : r.is_correct
+                                            ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                            : "bg-slate-900 text-slate-400 border-slate-800"
+                                        }`}>
+                                        {r.is_critical_error ? "MISSED TP (FN)" : r.is_abstained ? "ABSTAINED" : r.is_correct ? "CORRECT" : "WRONG"}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setPromptInspectorIncidentId(r.incident_id);
+                                          setPromptInspectorRuleId(selectedRuleId);
+                                          setPromptInspectorVersionId(selectedVersionId);
+                                          setPromptInspectorOpen(true);
+                                        }}
+                                        className="p-1 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 rounded border border-indigo-900/60 transition"
+                                        title={`View Actual LLM Prompt for ${r.incident_id}`}
+                                      >
+                                        <Terminal className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex justify-end pt-1">
+                          <a
+                            href={`/verdict-intelligence?rule_id=${selectedRuleId}`}
+                            className="px-3 py-1.5 rounded border border-cyan-800 bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                            Open in Verdict Intelligence &amp; Calibration Dashboard (Dashboards A–E)
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center text-slate-500 text-xs space-y-2">
+                        <p>No simulation run yet for this prompt version.</p>
+                        <button
+                          onClick={handleRunSimulation}
+                          className="px-3 py-1 bg-purple-900/40 hover:bg-purple-900/60 text-purple-300 border border-purple-800 rounded text-xs font-semibold"
+                        >
+                          Run Simulation Now
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 6: DRIFT & MONITORING */}
+                {studioTab === "drift" && (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/40">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                            <GitBranch className="w-4 h-4 text-rose-400" />
+                            Policy Lifecycle Drift &amp; Verified Analyst Feedback
+                          </h3>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Detects changes in SIEM rule definitions, schema evolution, and verified human corrections without silently modifying approved policies.
+                          </p>
+                        </div>
+                        {driftEvents.filter((d) => !d.acknowledged).length > 0 && (
+                          <button
+                            onClick={handleAcknowledgeDrift}
+                            disabled={actionLoading}
+                            className="px-2.5 py-1 text-xs rounded border border-rose-800 bg-rose-950 hover:bg-rose-900 text-rose-200 font-semibold flex items-center gap-1.5"
+                          >
+                            <Check className="w-3 h-3" /> Acknowledge Drift
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {driftEvents.length > 0 ? (
+                      <div className="space-y-2">
+                        {driftEvents.map((ev) => (
+                          <div
+                            key={ev.id}
+                            className={`p-3 rounded-lg border text-xs space-y-1 ${ev.acknowledged
+                              ? "bg-slate-950/60 border-slate-800 text-slate-400"
+                              : "bg-rose-950/20 border-rose-900/60 text-rose-300"
+                              }`}
+                          >
+                            <div className="flex items-center justify-between font-bold">
+                              <span className="flex items-center gap-1.5">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                {ev.trigger_type}
+                              </span>
+                              <span className="font-mono text-[10px] text-slate-500">
+                                {new Date(ev.created_at).toLocaleString()}
+                              </span>
+                            </div>
+                            <p className="text-[11px] leading-relaxed">{ev.summary}</p>
+                            {ev.revalidation_required && !ev.acknowledged && (
+                              <div className="text-[10px] font-bold text-rose-400 pt-1">
+                                ⚠️ Policy revalidation required before next deployment.
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center text-slate-500 text-xs">
+                        No drift events recorded for this detection rule. Policy specifications are in sync.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 5. PROMPT INSPECTOR (ADVANCED SECTION) */}
+                {advancedSection === "prompt_inspector" && (
+                  <div className="p-6 rounded-xl theme-glass-panel space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <Eye className="w-5 h-5 text-teal-400" />
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-100">Prompt Inspector &amp; Outbound Verification</h3>
+                          <p className="text-xs text-slate-400">Inspect the exact system prompt, guidelines, and normalized evidence payload delivered to the Local AWQ LLM.</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPromptInspectorIncidentId(null);
+                          setPromptInspectorRuleId(selectedRuleId);
+                          setPromptInspectorVersionId(selectedVersionId);
+                          setPromptInspectorInitialMode("preview");
+                          setPromptInspectorOpen(true);
+                        }}
+                        className="px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm shrink-0"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Open Inspector Modal
+                      </button>
+                    </div>
+                    <div className="p-4 rounded-lg bg-slate-950/80 border border-slate-800 font-mono text-[11px] text-slate-300 space-y-2">
+                      <div className="text-slate-400 font-semibold uppercase text-[10px] tracking-wider">Compiled Prompt Target</div>
+                      <div>Rule: <span className="text-cyan-300">{selectedRule?.name || selectedRuleId}</span></div>
+                      <div>Policy Version: <span className="text-emerald-300">v{selectedVersion?.version_number || 1} ({selectedVersion?.status || "DRAFT"})</span></div>
+                      <div>Model Target: <span className="text-amber-300">Qwen/Qwen2.5-7B-Instruct-AWQ (Local GPU)</span></div>
+                      <div>Evidence Contract Fields: <span className="text-slate-400">{intelligenceData?.semantics?.relevant_fields?.join(", ") || "None"}</span></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 6. MODEL DIAGNOSTICS (ADVANCED SECTION) */}
+                {advancedSection === "diagnostics" && (
+                  <div className="p-6 rounded-xl theme-glass-panel space-y-4">
+                    <div className="flex items-center gap-2.5 border-b border-slate-800 pb-3">
+                      <Activity className="w-5 h-5 text-blue-400" />
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-100">Model Diagnostics &amp; Real Telemetry</h3>
+                        <p className="text-xs text-slate-400">Deterministic Local AWQ inference engine telemetry and parameter safety bounds.</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="p-3.5 rounded-lg bg-slate-950/80 border border-slate-800">
+                        <div className="text-[10px] font-bold uppercase text-slate-400">Inference Model</div>
+                        <div className="text-sm font-bold text-slate-100 mt-1 font-mono">Qwen2.5-7B-AWQ</div>
+                        <div className="text-[10px] text-emerald-400 mt-0.5">Online • Local GPU</div>
+                      </div>
+                      <div className="p-3.5 rounded-lg bg-slate-950/80 border border-slate-800">
+                        <div className="text-[10px] font-bold uppercase text-slate-400">Temperature</div>
+                        <div className="text-sm font-bold text-slate-100 mt-1 font-mono">0.01</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">Deterministic Guard Active</div>
+                      </div>
+                      <div className="p-3.5 rounded-lg bg-slate-950/80 border border-slate-800">
+                        <div className="text-[10px] font-bold uppercase text-slate-400">Max New Tokens</div>
+                        <div className="text-sm font-bold text-slate-100 mt-1 font-mono">1024</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">Strict Structured Output</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB: VERSION HISTORY & POLICY GOVERNANCE */}
+                {(advancedSection === "manage_versions" || advancedSection === "history" || studioTab === "history") && (
+                  <div className="space-y-4">
+                    <ManageVersionHistory
+                      ruleId={selectedRuleId}
+                      ruleName={rulePrompt?.rule_name || selectedRule?.name}
+                      activeVersionId={rulePrompt?.active_version_id}
+                      versions={rulePrompt?.versions || []}
+                      isAdmin={isAdmin}
+                      isViewer={isViewer}
+                      onVersionChanged={async () => {
+                        await fetchPrompt(selectedRuleId);
+                      }}
+                      onViewActualPrompt={(verId) => {
+                        setPromptInspectorIncidentId(null);
+                        setPromptInspectorRuleId(selectedRuleId);
+                        setPromptInspectorVersionId(verId);
+                        setPromptInspectorInitialMode("capture");
+                        setPromptInspectorOpen(true);
+                      }}
+                    />
+
+                    {/* Revocation / Suspension Alert if any version is revoked or AI execution suspended */}
+                    {(rulePrompt?.ai_execution_suspended || rulePrompt?.versions.some((v) => v.status === "REVOKED")) && (
+                      <div className="p-3.5 rounded-xl border border-rose-800/80 bg-rose-950/40 text-rose-200 text-xs flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <div className="font-bold text-rose-300">
+                            Policy Revocation / Execution Suspension in Effect
+                          </div>
+                          <p className="text-[11px] text-rose-200/90 leading-relaxed">
+                            {rulePrompt?.ai_execution_suspended
+                              ? `AI Verdict Execution is currently SUSPENDED: ${rulePrompt.suspension_reason || "Policy suspended by administrator or automated guard."}`
+                              : "One or more policy versions have been revoked. Revoked versions cannot be rolled back, reactivated, or dispatched to Local LLM."}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: RULE LEARNING & GOVERNANCE (LEGACY MODE) */}
+          {!compactUi && studioTab === "learning" && (
+            <div className="space-y-4">
+              <RuleLearningDashboard ruleId={selectedRuleId} ruleName={rulePrompt?.rule_name} onProfileUpdate={(p) => setLearningProfile(p)} />
+            </div>
+          )}
         </>
       )}
 
@@ -4769,7 +4938,7 @@ function AgentIntelligenceStudioContent() {
               <AlertTriangle className="w-5 h-5 shrink-0" />
               <h3 className="text-sm font-bold text-slate-100">Revoke Policy Version Approval</h3>
             </div>
-            
+
             <div className="space-y-2 text-xs text-slate-300">
               <p>
                 You are revoking approval for <strong>Version {revokeTargetVersion.version_number}</strong> of rule <strong>{rulePrompt?.rule_name}</strong>.

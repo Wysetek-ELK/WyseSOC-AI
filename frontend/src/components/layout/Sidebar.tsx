@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BrandLogo } from "@/components/common/BrandLogo";
 import { NavigationIcon } from "@/components/navigation/NavigationIcon";
 import type { NavigationPageId } from "@/config/navigationIcons";
+import { BRANDING } from "@/config/branding";
 
 interface NavItem {
   id: NavigationPageId;
@@ -205,7 +206,7 @@ export function Sidebar() {
         className={`flex items-center border-b border-slate-800/80 ${
           collapsed
             ? "flex-col justify-center gap-1 py-2 px-1"
-            : "h-10 justify-between px-2.5"
+            : "min-h-11 py-1.5 justify-between px-2.5"
         }`}
       >
         <Link
@@ -213,16 +214,22 @@ export function Sidebar() {
           className={`flex items-center ${
             collapsed ? "justify-center shrink-0" : "gap-2 overflow-hidden min-w-0"
           }`}
-          title="Verdictum AI — Agentic SOC Intelligence"
+          title={`${BRANDING.product.name} ${BRANDING.company.sidebarAttribution} — ${BRANDING.product.agenticSubtitle}`}
         >
           <BrandLogo size={collapsed ? 28 : 26} priority />
           {!collapsed && (
             <div className="flex flex-col min-w-0">
               <span className="font-bold text-xs tracking-wider text-sky-300 uppercase leading-tight">
-                Verdictum AI
+                {BRANDING.product.name}
               </span>
               <span className="text-[8.5px] text-cyan-400 font-mono tracking-tight leading-none">
-                Agentic SOC Intelligence
+                {BRANDING.product.agenticSubtitle}
+              </span>
+              <span
+                className="text-[8px] text-amber-300/85 font-mono tracking-wider uppercase leading-tight mt-0.5 font-medium"
+                data-testid="sidebar-company-tagline"
+              >
+                {BRANDING.company.sidebarAttribution}
               </span>
             </div>
           )}
@@ -303,7 +310,7 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer System Status */}
+      {/* Footer System Status & Company Branding */}
       <div className="p-2 border-t border-slate-800/80 text-[10px] font-mono">
         {(() => {
           const s2Summary = formatServer2HealthSummary(llmStatus || undefined);
@@ -311,53 +318,77 @@ export function Sidebar() {
             ? llmStatus.model.split("/").pop()?.replace(/-Instruct.*$/i, "") || llmStatus.model
             : "Qwen 2.5 7B";
           return !collapsed ? (
-            <Link
-              href="/inference-control"
-              className="block rounded-lg theme-glass-sunken hover:border-slate-700 p-2 space-y-1 transition-colors cursor-pointer"
-              title="Inspect Inference Control & Historical Health Telemetry"
-              data-testid="sidebar-inference-widget"
-            >
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="text-slate-400 text-[9px]">INFERENCE</span>
-                <span className={`flex items-center gap-1 rounded px-1.5 py-0.5 border text-[9px] font-bold tracking-wide ${s2Summary.badgeClass}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${s2Summary.dotClass}`}></span>
-                  {s2Summary.statusLabel}
+            <>
+              <Link
+                href="/inference-control"
+                className="block rounded-lg theme-glass-sunken hover:border-slate-700 p-2 space-y-1 transition-colors cursor-pointer"
+                title="Inspect Inference Control & Historical Health Telemetry"
+                data-testid="sidebar-inference-widget"
+              >
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-slate-400 text-[9px]">INFERENCE</span>
+                  <span className={`flex items-center gap-1 rounded px-1.5 py-0.5 border text-[9px] font-bold tracking-wide ${s2Summary.badgeClass}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${s2Summary.dotClass}`}></span>
+                    {s2Summary.statusLabel}
+                  </span>
+                </div>
+                <div className="text-[9px] text-slate-400 leading-tight" data-testid="sidebar-arch-label">
+                  Arch: <span className="text-slate-300">{s2Summary.archLabel}</span>
+                </div>
+                <div className="text-[9px] text-slate-400 leading-tight flex items-center justify-between gap-1">
+                  <span>LLM:</span>
+                  {llmStatus?.is_healthy ? (
+                    <span
+                      className={`${s2Summary.isMockEndpoint ? "text-teal-300" : "text-emerald-400"} font-semibold flex items-center gap-1 truncate max-w-[130px]`}
+                      title={llmStatus.model || s2Summary.modelStatusText}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${s2Summary.dotClass} shrink-0`}></span>
+                      {s2Summary.isMockEndpoint ? `${modelDisplay} (HTTP Mock)` : `${modelDisplay} (Active)`}
+                    </span>
+                  ) : (
+                    <span className="text-rose-300">{s2Summary.modelStatusText}</span>
+                  )}
+                </div>
+                {llmStatus?.test_environment && (
+                  <div className="text-[8px] mt-0.5 px-1 py-0.2 rounded bg-teal-950/70 border border-teal-800/70 text-teal-300 truncate" data-testid="sidebar-test-env">
+                    TEST ENV: {llmStatus.test_environment}
+                  </div>
+                )}
+              </Link>
+              <div className="mt-2 pt-1.5 border-t border-slate-800/70 px-0.5 text-center">
+                <p
+                  className="text-[9px] text-slate-500 leading-tight font-sans tracking-tight break-words select-none"
+                  title={BRANDING.company.copyrightNotice}
+                  data-testid="sidebar-company-footer"
+                >
+                  {BRANDING.company.copyrightNotice}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/inference-control"
+                className="flex justify-center py-1"
+                title={`${s2Summary.archLabel} (${s2Summary.statusLabel})`}
+                data-testid="sidebar-inference-widget"
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${s2Summary.dotClass}`}
+                  title={`${s2Summary.archLabel} (${s2Summary.statusLabel})`}
+                ></span>
+              </Link>
+              <div
+                className="mt-1 flex justify-center text-center cursor-default"
+                title={BRANDING.company.copyrightNotice}
+                aria-label={BRANDING.company.copyrightNotice}
+                data-testid="sidebar-company-footer"
+              >
+                <span className="text-[8px] font-mono text-slate-600 font-semibold select-none hover:text-amber-400/80 transition-colors">
+                  ©
                 </span>
               </div>
-              <div className="text-[9px] text-slate-400 leading-tight" data-testid="sidebar-arch-label">
-                Arch: <span className="text-slate-300">{s2Summary.archLabel}</span>
-              </div>
-              <div className="text-[9px] text-slate-400 leading-tight flex items-center justify-between gap-1">
-                <span>LLM:</span>
-                {llmStatus?.is_healthy ? (
-                  <span
-                    className={`${s2Summary.isMockEndpoint ? "text-teal-300" : "text-emerald-400"} font-semibold flex items-center gap-1 truncate max-w-[130px]`}
-                    title={llmStatus.model || s2Summary.modelStatusText}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${s2Summary.dotClass} shrink-0`}></span>
-                    {s2Summary.isMockEndpoint ? `${modelDisplay} (HTTP Mock)` : `${modelDisplay} (Active)`}
-                  </span>
-                ) : (
-                  <span className="text-rose-300">{s2Summary.modelStatusText}</span>
-                )}
-              </div>
-              {llmStatus?.test_environment && (
-                <div className="text-[8px] mt-0.5 px-1 py-0.2 rounded bg-teal-950/70 border border-teal-800/70 text-teal-300 truncate" data-testid="sidebar-test-env">
-                  TEST ENV: {llmStatus.test_environment}
-                </div>
-              )}
-            </Link>
-          ) : (
-            <Link
-              href="/inference-control"
-              className="flex justify-center py-1"
-              title={`${s2Summary.archLabel} (${s2Summary.statusLabel})`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${s2Summary.dotClass}`}
-                title={`${s2Summary.archLabel} (${s2Summary.statusLabel})`}
-              ></span>
-            </Link>
+            </>
           );
         })()}
       </div>

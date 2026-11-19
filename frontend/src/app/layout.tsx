@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 import { Shell } from "@/components/layout/Shell";
+import { BRANDING } from "@/config/branding";
 
 export const metadata: Metadata = {
-  title: "Verdictum AI — Agentic SOC Intelligence Platform",
-  description: "Evidence-Driven Security Intelligence · Enterprise Verdictum AI Triage, Policy Governance, and Verification.",
+  title: `${BRANDING.product.name} — ${BRANDING.product.platformSubtitle}`,
+  description: `${BRANDING.product.securityMotto} · Enterprise ${BRANDING.product.name} Triage, Policy Governance, and Verification by ${BRANDING.company.fullName}.`,
 };
 
 export default function RootLayout({

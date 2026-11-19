@@ -1,0 +1,110 @@
+{
+  "project": "Verdictum AI — SOC-AI-Agent",
+  "component": "Agent Intelligence Studio 2.0 & Policy Version History Governance",
+  "timestamp": "2026-11-19T20:59:00Z",
+  "status": "COMPLETED",
+  "preserved_rules": [
+    {
+      "rule_id": "7bd13e89-0828-48e6-8cf5-f3cbf12d438c",
+      "rule_name": "Website access policy violation: Same Source and Destination",
+      "active_version": 2,
+      "active_status": "APPROVED",
+      "candidate_version": 3,
+      "candidate_status": "DRAFT",
+      "preserved": true
+    },
+    {
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "rule_name": "Heavy TCP Host Scan On Fixed Port",
+      "active_version": 7,
+      "active_status": "APPROVED",
+      "candidate_version": 8,
+      "candidate_status": "DRAFT",
+      "preserved": true
+    }
+  ],
+  "schema_migration": {
+    "alembic_revision": "014_policy_version_history_management",
+    "table": "prompt_versions",
+    "added_columns": [
+      "archived_at",
+      "archived_by_user_id",
+      "archival_reason"
+    ],
+    "sqlite_local_applied": true,
+    "postgres_staging_ready": true
+  },
+  "ui_simplification": {
+    "primary_tabs": [
+      {
+        "tab_id": "overview",
+        "label": "Review Incidents",
+        "target_persona": "SOC Analyst",
+        "component": "ReviewIncidentsWorkbench"
+      },
+      {
+        "tab_id": "test_ai",
+        "label": "Test AI",
+        "target_persona": "SOC Lead / AI Engineer",
+        "component": "AiTestWorkbench"
+      },
+      {
+        "tab_id": "learning",
+        "label": "Accuracy & Learning",
+        "target_persona": "SOC Lead / Governance",
+        "component": "AccuracyLearningSummary"
+      },
+      {
+        "tab_id": "advanced",
+        "label": "Advanced Settings",
+        "target_persona": "Administrator / SecOps",
+        "modules_count": 9
+      }
+    ],
+    "rule_header": {
+      "decoupled_statuses": [
+        "SIEM Status (SIEM Active / Inactive)",
+        "Active Policy Version (v2 Approved)",
+        "Candidate Draft Version (v3 Draft)",
+        "Learning Stage (Supervised Learning)"
+      ],
+      "next_recommended_action": "Authoritative dynamic engine derived from backend state"
+    },
+    "readiness_consistency_fix": "reconciled PASS and PASSED gate checks, renders Unavailable with Retry on error instead of fabricated zero"
+  },
+  "version_history_governance": {
+    "endpoints": [
+      "GET /api/prompts/rule/{rule_id}/version-history",
+      "GET /api/prompts/rule/{rule_id}/version/{version_id}/deletion-preview",
+      "DELETE /api/prompts/rule/{rule_id}/version/{version_id}",
+      "POST /api/prompts/rule/{rule_id}/version/{version_id}/archive",
+      "POST /api/prompts/rule/{rule_id}/version/{version_id}/restore",
+      "POST /api/prompts/rule/{rule_id}/versions/bulk-delete"
+    ],
+    "invariants": {
+      "active_version_deletion_prohibited": true,
+      "active_version_archival_prohibited": true,
+      "referenced_version_deletion_prohibited": true,
+      "typed_confirmation_required": true,
+      "typed_confirmation_format": "DELETE v{N}",
+      "bulk_cleanup_confirmation_format": "PERMANENTLY DELETE",
+      "reversible_archive_restore": true,
+      "rbac_viewer_lockout": true
+    }
+  },
+  "test_execution": {
+    "suites_run": 13,
+    "suites_passed": 13,
+    "tests_run": 67,
+    "tests_passed": 67,
+    "tests_failed": 0,
+    "pass_rate": "100%"
+  },
+  "safety_invariants": {
+    "siem_writeback_disabled": true,
+    "siem_incidents_closed": 0,
+    "local_llm_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "local_llm_temperature": 0.01,
+    "local_llm_config_modified": false
+  }
+}
