@@ -130,8 +130,12 @@
   },
   "deployment": {
     "branch": "feature/phase3-compact-ui",
+    "github_sha": "95525b1ed5c4614103c7f942beb4167cf4ddd937",
+    "deployed_sha": "95525b1ed5c4614103c7f942beb4167cf4ddd937",
     "server_1_ip": "172.26.41.240",
     "server_2_ip": "13.204.214.64:8000",
+    "upla_execution_id": "upla-20261119-060634-2b56e4",
+    "live_verified_status": "DEPLOYED_AND_VERIFIED",
     "pytest_results": {
       "total_tests": 27,
       "passed": 27,

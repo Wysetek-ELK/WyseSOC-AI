@@ -24,7 +24,7 @@ In earlier V8.2 and V8.3 reports, discrepancies were observed where benchmark ev
 | **V8.3 Deployment Attempt 1** | `cb21e27f...` | `2026-11-19T04:26Z` | Deployment halted by safe rollback | Pytest on Server 1 failed on `test_13` (`sentbyte=0` in test mock). Safe rollback restored Server 1 to previous SHA `9bafdd92...`. |
 | **V8.3 Test Hotfix Commit** | `952eec6c...` | `2026-11-19T04:34Z` | Committed and pushed to GitHub | Fixed probe `sentbyte` generation in `test_13`. Remote SHA verified on GitHub. |
 | **V8.3 Verified Deployment** | `952eec6c...` | `2026-11-19T04:35Z` | Deployed & verified on Server 1 | UPLA execution `upla-20261119-042818-aac442`. All 26 pytest tests passed on Server 1. Frontend rebuilt. Health check `healthy`. |
-| **V8.3a Target Hotfix** | `HEAD` (Local) | `2026-11-19T04:45Z` | Evidence-verified reasoning guardrails hotfix | Replaces narrative-keyword searches with evidence-backed verification in `ReasoningIntegrityEngine`. |
+| **V8.3a Verified Deployment** | `95525b1e...` | `2026-11-19T06:11Z` | Deployed & verified on Server 1 | UPLA execution `upla-20261119-060634-2b56e4`. All 27 pytest tests passed on Server 1. Frontend rebuilt. Health check `healthy`. Evidence-backed reasoning guardrails active. |
 
 ---
 
