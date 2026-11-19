@@ -1,0 +1,159 @@
+{
+  "deletionLog": {
+    "analyst_review_adjudications": {
+      "before": 0,
+      "after": 0,
+      "deleted": 0
+    },
+    "analyst_verdict_reviews": {
+      "before": 1,
+      "after": 0,
+      "deleted": 1
+    },
+    "historical_evaluation_results": {
+      "before": 62,
+      "after": 0,
+      "deleted": 62
+    },
+    "historical_evaluation_runs": {
+      "before": 10,
+      "after": 0,
+      "deleted": 10
+    },
+    "historical_ground_truth": {
+      "before": 25,
+      "after": 0,
+      "deleted": 25
+    },
+    "learning_records": {
+      "before": 20,
+      "after": 0,
+      "deleted": 20
+    },
+    "dry_run_results": {
+      "before": 0,
+      "after": 0,
+      "deleted": 0
+    },
+    "actual_llm_prompt_captures": {
+      "before": 0,
+      "after": 0,
+      "deleted": 0
+    },
+    "evidence_sufficiency_assessments": {
+      "before": 0,
+      "after": 0,
+      "deleted": 0
+    },
+    "ground_truth_validations": {
+      "before": 0,
+      "after": 0,
+      "deleted": 0
+    },
+    "incident_automation_audits": {
+      "before": 0,
+      "after": 0,
+      "deleted": 0
+    },
+    "verdict_trust_assessments": {
+      "before": 0,
+      "after": 0,
+      "deleted": 0
+    },
+    "pilot_evaluations": {
+      "before": 0,
+      "after": 0,
+      "deleted": 0
+    },
+    "investigation_questions": {
+      "before": 0,
+      "after": 0,
+      "deleted": 0
+    },
+    "investigation_evidence": {
+      "before": 0,
+      "after": 0,
+      "deleted": 0
+    },
+    "investigations": {
+      "before": 155,
+      "after": 0,
+      "deleted": 155
+    },
+    "incident_events": {
+      "before": 197,
+      "after": 0,
+      "deleted": 197
+    },
+    "telemetry_timeline_records": {
+      "before": 6,
+      "after": 0,
+      "deleted": 6
+    },
+    "token_usage_records": {
+      "before": 6,
+      "after": 0,
+      "deleted": 6
+    },
+    "incidents": {
+      "before": 155,
+      "after": 0,
+      "deleted": 155
+    },
+    "import_jobs": {
+      "before": 5,
+      "after": 0,
+      "deleted": 5
+    },
+    "rule_learning_profiles (reset)": {
+      "totalProfiles": 51,
+      "resetToZero": 51
+    }
+  },
+  "verificationResults": {
+    "actual_llm_prompt_captures": 0,
+    "alembic_version": 1,
+    "analyst_review_adjudications": 0,
+    "analyst_verdict_reviews": 0,
+    "audit_logs": 210,
+    "bulk_quality_audit_jobs": 0,
+    "distributed_locks": 0,
+    "dry_run_configs": 0,
+    "dry_run_jobs": 0,
+    "dry_run_results": 0,
+    "evidence_sufficiency_assessments": 0,
+    "ground_truth_validations": 0,
+    "historical_evaluation_results": 0,
+    "historical_evaluation_runs": 0,
+    "historical_ground_truth": 0,
+    "import_jobs": 0,
+    "incident_automation_audits": 0,
+    "incident_events": 0,
+    "incidents": 0,
+    "investigation_evidence": 0,
+    "investigation_questions": 0,
+    "investigations": 0,
+    "learning_records": 0,
+    "pilot_config_history": 1,
+    "pilot_configurations": 1,
+    "pilot_evaluations": 0,
+    "policy_drift_events": 0,
+    "policy_quality_assessments": 37,
+    "production_automation_policies": 50,
+    "prompt_versions": 45,
+    "queued_tasks": 0,
+    "rule_intelligence_snapshots": 1,
+    "rule_learning_profiles": 51,
+    "rule_learning_state_history": 50,
+    "rule_maturity_evaluations": 0,
+    "rule_promotion_approvals": 0,
+    "rule_promotion_requests": 0,
+    "rule_prompts": 42,
+    "rules": 51,
+    "system_server_samples": 102,
+    "telemetry_timeline_records": 0,
+    "token_usage_records": 0,
+    "users": 7,
+    "verdict_trust_assessments": 0
+  }
+}
