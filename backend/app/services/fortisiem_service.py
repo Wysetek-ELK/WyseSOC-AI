@@ -1,8 +1,10 @@
 import os
+import sys
 import json
 import zipfile
 import re
 import time
+import tempfile
 import asyncio
 import logging
 from datetime import datetime
@@ -44,10 +46,13 @@ class FortiSIEMService:
     Enables on-demand pulling of incidents by Incident ID.
     Supports live FortiSIEM API and fixture fallback for offline/development environments.
     """
+    _last_synced_state_mtime_ns: int = 0
+    _process_start_time: float = time.time()
 
     def __init__(self, db: AsyncSession):
         self.db = db
         self.fixtures_zip_path = os.path.join(os.path.dirname(BASE_DIR), "fixtures", "Incident json.zip")
+        self.sync_runtime_settings()
 
     def get_available_fixture_ids(self) -> List[str]:
         """Returns incident IDs discovered in the local fixtures archive."""
@@ -1799,8 +1804,126 @@ class FortiSIEMService:
         )
 
     @classmethod
+    def _state_file_path(cls) -> str:
+        is_pytest = "pytest" in sys.modules or "PYTEST_CURRENT_TEST" in os.environ
+        filename = "test_fortisiem_config_state.json" if is_pytest else "fortisiem_config_state.json"
+        return os.path.join(BASE_DIR, filename)
+
+    @classmethod
+    def _persist_runtime_state(cls) -> None:
+        """
+        Atomically writes active FortiSIEM configuration to a shared runtime state file
+        so all Uvicorn API workers and background pollers stay synchronized across processes.
+        Excludes plaintext passwords.
+        """
+        state_file = cls._state_file_path()
+        payload = {
+            "host": settings.FORTISIEM_HOST,
+            "username": settings.FORTISIEM_USERNAME,
+            "verify_ssl": bool(settings.FORTISIEM_VERIFY_SSL),
+            "timeout": float(settings.FORTISIEM_TIMEOUT),
+            "mock_fallback": bool(settings.FORTISIEM_MOCK_FALLBACK),
+            "auto_poll_enabled": bool(getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False)),
+            "poll_interval_seconds": int(getattr(settings, "FORTISIEM_POLL_INTERVAL_SECONDS", 180)),
+            "auto_ai_verdict": bool(getattr(settings, "FORTISIEM_AUTO_AI_VERDICT", True)),
+            "updated_at": time.time(),
+        }
+        tmp_path: Optional[str] = None
+        try:
+            parent_dir = os.path.dirname(os.path.abspath(state_file))
+            os.makedirs(parent_dir, exist_ok=True)
+            fd, tmp_path = tempfile.mkstemp(prefix=".fsiem_cfg_", suffix=".tmp", dir=parent_dir)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, state_file)
+            cls._last_synced_state_mtime_ns = os.stat(state_file).st_mtime_ns
+        except Exception as exc:
+            logger.warning(f"Failed to persist shared FortiSIEM runtime state: {exc}")
+
+    @classmethod
+    def sync_runtime_settings(cls) -> bool:
+        """
+        Synchronizes in-memory FORTISIEM_* settings from the shared runtime state file
+        when another worker process updates FortiSIEM config.
+        Returns True if settings changed in the current worker process.
+        """
+        state_file = cls._state_file_path()
+        if not os.path.exists(state_file):
+            return False
+
+        is_pytest = "pytest" in sys.modules or "PYTEST_CURRENT_TEST" in os.environ
+        try:
+            st = os.stat(state_file)
+            if is_pytest and (st.st_mtime_ns / 1e9) < cls._process_start_time:
+                return False
+            if st.st_mtime_ns <= cls._last_synced_state_mtime_ns:
+                return False
+
+            with open(state_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return False
+
+            changed = False
+            new_host = str(data.get("host") or "").strip()
+            if new_host and new_host != settings.FORTISIEM_HOST:
+                settings.FORTISIEM_HOST = new_host
+                changed = True
+
+            new_user = str(data.get("username") or "").strip()
+            if new_user and new_user != settings.FORTISIEM_USERNAME:
+                settings.FORTISIEM_USERNAME = new_user
+                changed = True
+
+            if data.get("verify_ssl") is not None:
+                new_verify = bool(data["verify_ssl"])
+                if new_verify != bool(settings.FORTISIEM_VERIFY_SSL):
+                    settings.FORTISIEM_VERIFY_SSL = new_verify
+                    changed = True
+
+            if data.get("timeout") is not None:
+                new_timeout = float(data["timeout"])
+                if new_timeout != float(settings.FORTISIEM_TIMEOUT):
+                    settings.FORTISIEM_TIMEOUT = new_timeout
+                    changed = True
+
+            if data.get("mock_fallback") is not None:
+                is_prod = getattr(settings, "APP_ENV", "development").lower() in ("production", "prod")
+                new_mock = False if is_prod else bool(data["mock_fallback"])
+                if new_mock != bool(settings.FORTISIEM_MOCK_FALLBACK):
+                    settings.FORTISIEM_MOCK_FALLBACK = new_mock
+                    changed = True
+
+            if data.get("auto_poll_enabled") is not None:
+                new_poll = bool(data["auto_poll_enabled"])
+                if new_poll != bool(getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False)):
+                    settings.FORTISIEM_AUTO_POLL_ENABLED = new_poll
+                    changed = True
+
+            if data.get("poll_interval_seconds") is not None:
+                new_interval = int(data["poll_interval_seconds"])
+                if new_interval != int(getattr(settings, "FORTISIEM_POLL_INTERVAL_SECONDS", 180)):
+                    settings.FORTISIEM_POLL_INTERVAL_SECONDS = new_interval
+                    changed = True
+
+            if data.get("auto_ai_verdict") is not None:
+                new_auto_ai = bool(data["auto_ai_verdict"])
+                if new_auto_ai != bool(getattr(settings, "FORTISIEM_AUTO_AI_VERDICT", True)):
+                    settings.FORTISIEM_AUTO_AI_VERDICT = new_auto_ai
+                    changed = True
+
+            cls._last_synced_state_mtime_ns = st.st_mtime_ns
+            return changed
+        except Exception as exc:
+            logger.debug(f"Could not sync shared FortiSIEM runtime state: {exc}")
+            return False
+
+    @classmethod
     def get_config(cls) -> Dict[str, Any]:
         """Returns the current FortiSIEM connector configuration (password masked)."""
+        cls.sync_runtime_settings()
         is_configured = bool(settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip())
         return ConfigDict({
             "is_configured": is_configured,
@@ -1870,23 +1993,24 @@ class FortiSIEMService:
         if auto_ai_verdict is not None:
             settings.FORTISIEM_AUTO_AI_VERDICT = bool(auto_ai_verdict)
 
-        # Persist non-secret FortiSIEM settings to .env in dev/staging so they survive service restarts
-        if not is_prod:
-            env_path = os.path.join(BASE_DIR, ".env")
-            env_updates = {
-                "FORTISIEM_HOST": f'"{settings.FORTISIEM_HOST}"',
-                "FORTISIEM_USERNAME": f'"{settings.FORTISIEM_USERNAME}"',
-                "FORTISIEM_VERIFY_SSL": "true" if settings.FORTISIEM_VERIFY_SSL else "false",
-                "FORTISIEM_TIMEOUT": str(settings.FORTISIEM_TIMEOUT),
-                "FORTISIEM_MOCK_FALLBACK": "true" if settings.FORTISIEM_MOCK_FALLBACK else "false",
-            }
-            if password is not None and password.strip():
-                env_updates["FORTISIEM_PASSWORD"] = f'"{password.strip()}"'
-            try:
-                cls._upsert_env_vars(env_path, env_updates)
-                logger.info(f"Persisted FortiSIEM configuration to {env_path}")
-            except Exception as e:
-                logger.warning(f"Could not persist FortiSIEM settings to {env_path}: {e}")
+        # 2. Persist shared runtime state so other workers sync immediately
+        cls._persist_runtime_state()
+
+        # 3. Persist non-secret FortiSIEM settings to .env so they survive service restarts across all environments
+        env_path = os.path.join(BASE_DIR, ".env")
+        env_updates = {
+            "FORTISIEM_HOST": f'"{settings.FORTISIEM_HOST}"',
+            "FORTISIEM_USERNAME": f'"{settings.FORTISIEM_USERNAME}"',
+            "FORTISIEM_VERIFY_SSL": "true" if settings.FORTISIEM_VERIFY_SSL else "false",
+            "FORTISIEM_TIMEOUT": str(settings.FORTISIEM_TIMEOUT),
+            "FORTISIEM_MOCK_FALLBACK": "true" if settings.FORTISIEM_MOCK_FALLBACK else "false",
+        }
+        # Note: In compliance with REQ-01 / AV-014, FORTISIEM_PASSWORD is never written to .env on disk.
+        try:
+            cls._upsert_env_vars(env_path, env_updates)
+            logger.info(f"Persisted FortiSIEM configuration to {env_path}")
+        except Exception as e:
+            logger.warning(f"Could not persist FortiSIEM settings to {env_path}: {e}")
 
         return cls.get_config()
 

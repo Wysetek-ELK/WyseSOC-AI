@@ -240,6 +240,15 @@ async def lifespan(app: FastAPI):
             except Exception as p_exc:
                 print(f"[Startup Maintenance ERROR] Startup incident purge failed: {p_exc}")
 
+        # Startup runtime settings synchronization
+        try:
+            from app.services.fortisiem_service import FortiSIEMService
+            from app.services.llm_config_service import LLMConfigService
+            FortiSIEMService.sync_runtime_settings()
+            LLMConfigService.sync_runtime_settings()
+        except Exception as exc:
+            print(f"[Startup Warning] Runtime settings sync skipped: {exc}")
+
     # Startup background continuous FortiSIEM poller supervisor and resume if enabled
     fortisiem_scheduler.start_supervisor()
     if getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False) or fortisiem_scheduler.is_running:

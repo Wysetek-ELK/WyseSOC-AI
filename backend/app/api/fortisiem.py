@@ -41,6 +41,7 @@ async def get_fortisiem_status(
     """
     Checks FortiSIEM connection status and available fixture IDs for testing.
     """
+    FortiSIEMService.sync_runtime_settings()
     service = FortiSIEMService(db)
     is_configured = bool(settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip())
     mode = "LIVE" if is_configured else "FIXTURE_FALLBACK"
