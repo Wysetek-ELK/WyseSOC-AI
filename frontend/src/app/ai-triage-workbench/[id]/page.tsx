@@ -738,10 +738,11 @@ export default function AITriageWorkbenchDetailPage({
                   </div>
                   <ul className="text-xs space-y-1.5 text-slate-300">
                     {aiVerdict.missing_evidence.map((item, idx) => {
-                      const status = (aiVerdict as any).field_validation_status?.[item];
+                      const itemKey = typeof item === "object" && item !== null ? JSON.stringify(item) : String(item);
+                      const status = (aiVerdict as any).field_validation_status?.[itemKey] || (aiVerdict as any).field_validation_status?.[item as any];
                       return (
                         <li key={idx} className="text-[11px] leading-tight flex items-center justify-between font-mono">
-                          <span className="text-amber-200/90">{item}</span>
+                          <span className="text-amber-200/90">{itemKey}</span>
                           {status && (
                             <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold ${
                               status === "NOT_MAPPED"
@@ -773,11 +774,34 @@ export default function AITriageWorkbenchDetailPage({
                     Source telemetry contains unmapped raw attributes. Normalization fell back safely without data corruption:
                   </p>
                   <div className="flex flex-wrap gap-1 font-mono text-[10px] pt-1">
-                    {(aiVerdict as any).unmapped_fields.slice(0, 10).map((field: string, idx: number) => (
-                      <span key={idx} className="bg-slate-900 text-slate-300 px-1.5 py-0.5 rounded border border-slate-800">
-                        {field}
-                      </span>
-                    ))}
+                    {(aiVerdict as any).unmapped_fields.slice(0, 10).map((field: any, idx: number) => {
+                      const isObj = typeof field === "object" && field !== null;
+                      const fieldName = isObj ? (field.raw_field || JSON.stringify(field)) : String(field);
+                      const fieldValue = isObj && field.value !== undefined ? String(field.value) : null;
+                      const fieldReason = isObj && field.reason ? String(field.reason) : null;
+                      const sourceEvt = isObj && field.source_event_id ? String(field.source_event_id) : null;
+                      const titleTooltip = [
+                        `Field: ${fieldName}`,
+                        fieldValue ? `Value: ${fieldValue}` : null,
+                        fieldReason ? `Reason: ${fieldReason}` : null,
+                        sourceEvt ? `Event: ${sourceEvt}` : null,
+                      ].filter(Boolean).join(" | ");
+
+                      return (
+                        <span
+                          key={idx}
+                          title={titleTooltip}
+                          className="bg-slate-900 text-slate-300 px-1.5 py-0.5 rounded border border-slate-800 hover:border-amber-700/60 transition-colors"
+                        >
+                          {fieldName}
+                          {fieldValue && (
+                            <span className="text-slate-500 ml-1 font-sans">
+                              ({fieldValue.length > 25 ? fieldValue.slice(0, 25) + "…" : fieldValue})
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })}
                     {(aiVerdict as any).unmapped_fields.length > 10 && (
                       <span className="text-slate-500 self-center">+{(aiVerdict as any).unmapped_fields.length - 10} more</span>
                     )}
@@ -794,7 +818,7 @@ export default function AITriageWorkbenchDetailPage({
                   <ul className="text-xs space-y-1 text-slate-300 list-disc list-inside">
                     {aiVerdict.supporting_evidence.map((ev, idx) => (
                       <li key={idx} className="text-[11px] font-mono leading-tight">
-                        {ev}
+                        {typeof ev === "object" && ev !== null ? JSON.stringify(ev) : String(ev)}
                       </li>
                     ))}
                   </ul>

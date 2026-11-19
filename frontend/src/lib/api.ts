@@ -94,7 +94,14 @@ export interface IncidentAiVerdictResponse {
   }>;
   token_budget_breakdown?: Record<string, any>;
   field_validation_status?: Record<string, string>;
-  unmapped_fields?: string[];
+  unmapped_fields?: Array<string | UnmappedField>;
+}
+
+export interface UnmappedField {
+  raw_field: string;
+  value?: string;
+  reason?: string;
+  source_event_id?: string;
 }
 
 export interface IncidentListItem {
