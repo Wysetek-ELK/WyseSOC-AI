@@ -19,6 +19,8 @@ import {
   Globe,
   Radio,
   ExternalLink,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import {
@@ -73,6 +75,10 @@ export default function AgentConfigurationPage() {
   const [llmTestResult, setLlmTestResult] = useState<LLMTestConnectionResponse | null>(null);
   const [llmSaveSuccess, setLlmSaveSuccess] = useState<string | null>(null);
   const [llmSaveError, setLlmSaveError] = useState<string | null>(null);
+
+  const [isPurging, setIsPurging] = useState(false);
+  const [purgeSuccess, setPurgeSuccess] = useState<string | null>(null);
+  const [purgeError, setPurgeError] = useState<string | null>(null);
 
   const loadFortiSiemConfig = async () => {
     setIsLoadingConfig(true);
@@ -303,6 +309,23 @@ export default function AgentConfigurationPage() {
       setSaveError(err.message || "Failed to save configuration.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePurgeAllIncidents = async () => {
+    if (!window.confirm("Are you sure you want to delete all incident records from the database? All rules, approved policies, users, and configurations will be preserved.")) {
+      return;
+    }
+    setIsPurging(true);
+    setPurgeSuccess(null);
+    setPurgeError(null);
+    try {
+      const res = await api.purgeAllIncidents();
+      setPurgeSuccess(res.message || "All incident records safely purged from database.");
+    } catch (err: any) {
+      setPurgeError(err.message || "Failed to purge incidents.");
+    } finally {
+      setIsPurging(false);
     }
   };
 
@@ -979,6 +1002,56 @@ export default function AgentConfigurationPage() {
             </div>
           </div>
         </div>
+
+        {/* 4. Incident Database Maintenance */}
+        {isAdmin && (
+          <div className="rounded-xl border border-rose-900/60 bg-slate-950 p-3.5 sm:p-4 space-y-2.5 text-xs">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-rose-300 flex items-center justify-between font-sans">
+              <span className="flex items-center gap-2">
+                <Trash2 className="h-3.5 w-3.5 text-rose-400" />
+                Incident Database Maintenance &amp; Clean State
+              </span>
+              <span className="text-[10px] text-slate-500 font-mono font-normal uppercase">Admin Only</span>
+            </h2>
+
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              Safely purges all incidents, telemetry events, investigations, analyst reviews, and evaluation runs from the active database.
+              Preserves all users, detection rules, approved AI policies, and audit logs.
+            </p>
+
+            {purgeSuccess && (
+              <div className="rounded-lg border border-emerald-800/80 bg-emerald-950/40 p-2.5 text-xs text-emerald-200">
+                {purgeSuccess}
+              </div>
+            )}
+            {purgeError && (
+              <div className="rounded-lg border border-rose-800/80 bg-rose-950/40 p-2.5 text-xs text-rose-200">
+                {purgeError}
+              </div>
+            )}
+
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handlePurgeAllIncidents}
+                disabled={isPurging}
+                className="px-3 py-1.5 rounded-lg bg-rose-950/90 hover:bg-rose-900 text-rose-200 border border-rose-800/90 text-xs font-semibold inline-flex items-center gap-2 transition-colors disabled:opacity-50"
+              >
+                {isPurging ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Purging Incidents...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Purge All Incidents from Database</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
         </div>
       </div>
     </div>

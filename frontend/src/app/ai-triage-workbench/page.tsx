@@ -26,6 +26,7 @@ import {
   Cpu,
   Database,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { api, IncidentListItem, IncidentAiVerdictResponse, IncidentMatchedRuleSummary } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
@@ -35,7 +36,7 @@ import { CompactRuleScopeBar } from "@/components/compact/CompactDesignSystem";
 function AITriageWorkbenchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { blindReviewMode, setBlindReviewMode } = useApp();
+  const { user, blindReviewMode, setBlindReviewMode } = useApp();
 
   const [incidents, setIncidents] = useState<IncidentListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -107,6 +108,31 @@ function AITriageWorkbenchContent() {
       setTimeout(() => setSyncStatusMsg(null), 6000);
     } finally {
       setSyncingResolutions(false);
+    }
+  };
+
+  const [purgingIncidents, setPurgingIncidents] = useState(false);
+
+  const handlePurgeIncidents = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to permanently delete all incident records from the database? All detection rules, approved policies, users, and audit logs will be preserved."
+      )
+    ) {
+      return;
+    }
+    setPurgingIncidents(true);
+    setSyncStatusMsg(null);
+    try {
+      const res = await api.purgeAllIncidents();
+      setSyncStatusMsg(res.message || "All incidents successfully purged from database.");
+      await loadIncidents();
+      setTimeout(() => setSyncStatusMsg(null), 8000);
+    } catch (err: any) {
+      setSyncStatusMsg(`Purge error: ${err.message}`);
+      setTimeout(() => setSyncStatusMsg(null), 8000);
+    } finally {
+      setPurgingIncidents(false);
     }
   };
 
@@ -287,6 +313,19 @@ function AITriageWorkbenchContent() {
             <DownloadCloud className="h-3.5 w-3.5 text-cyan-400" />
             <span>Pull Telemetry</span>
           </Link>
+
+          {user?.role === "Administrator" && (
+            <button
+              type="button"
+              onClick={handlePurgeIncidents}
+              disabled={purgingIncidents}
+              className="flex items-center gap-1.5 rounded-md border border-rose-800/80 bg-rose-950/60 px-2.5 py-1 text-xs font-semibold text-rose-300 hover:bg-rose-900/80 transition-colors shadow-sm disabled:opacity-50"
+              title="Permanently remove all incident data from database (Admins only)"
+            >
+              <Trash2 className={`h-3.5 w-3.5 text-rose-400 ${purgingIncidents ? "animate-spin" : ""}`} />
+              <span>{purgingIncidents ? "Purging..." : "Purge Incidents"}</span>
+            </button>
+          )}
         </div>
       </div>
 

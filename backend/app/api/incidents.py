@@ -22,7 +22,7 @@ from app.services.model_payload_allowlist import build_model_facing_payload
 from app.services.model_provider.factory import get_model_provider
 from app.services.prompt_studio_service import PromptStudioService, COMMON_SOC_BASELINE
 from app.models.prompt import RulePrompt
-from app.api.deps import get_current_user, require_analyst
+from app.api.deps import get_current_user, require_analyst, require_admin
 
 router = APIRouter(prefix="/incidents", tags=["Incidents"])
 
@@ -224,5 +224,25 @@ async def get_incident_historical_timeline(
             raise HTTPException(status_code=403, detail=result.get("error"))
         raise HTTPException(status_code=404, detail=result.get("error", "Incident timeline not found"))
     return result
+
+
+@router.delete("/purge-all", status_code=200)
+async def purge_all_incidents_endpoint(
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Safely removes all incident data, raw events, investigations, analyst reviews,
+    and evaluation runs from the active database.
+    Restricted to Administrator role.
+    """
+    from app.scripts.cleanup_incidents import purge_all_incidents
+    results = await purge_all_incidents()
+    return {
+        "success": True,
+        "message": "All incident records have been safely purged from the database.",
+        "details": results,
+    }
+
 
 

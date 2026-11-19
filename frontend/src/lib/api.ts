@@ -1346,6 +1346,17 @@ export const api = {
     return res.json();
   },
 
+  async purgeAllIncidents(): Promise<{ success: boolean; message: string; details?: any }> {
+    const res = await fetchWithAuth(`${API_BASE}/incidents/purge-all`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to purge incidents" }));
+      throw new Error(err.detail || "Failed to purge incidents");
+    }
+    return res.json();
+  },
+
   async getTokenAnalytics(windowDays: number = 30, processType?: string): Promise<TokenAnalyticsResponse> {
     const params = new URLSearchParams();
     if (windowDays) params.append("window_days", windowDays.toString());

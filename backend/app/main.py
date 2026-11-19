@@ -1,9 +1,10 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.config import settings
+from app.config import settings, BASE_DIR
 from app.database import async_engine, Base, AsyncSessionLocal
 import app.models
 from app.api import (
@@ -223,6 +224,21 @@ async def lifespan(app: FastAPI):
                 "Rule learning profile startup initialization failed: %s", exc, exc_info=True
             )
             print(f"[Startup Migration ERROR] Rule learning profile initialization failed: {exc}")
+
+        # One-time startup incident database purge if flag file exists
+        purge_flag = os.path.join(BASE_DIR, "PURGE_INCIDENTS_ON_STARTUP.flag")
+        if os.path.exists(purge_flag):
+            try:
+                from app.scripts.cleanup_incidents import purge_all_incidents
+                print("[Startup Maintenance] PURGE_INCIDENTS_ON_STARTUP.flag detected. Purging all incident data from active database...")
+                await purge_all_incidents()
+                try:
+                    os.remove(purge_flag)
+                except Exception:
+                    pass
+                print("[Startup Maintenance] Incident purge completed and flag removed.")
+            except Exception as p_exc:
+                print(f"[Startup Maintenance ERROR] Startup incident purge failed: {p_exc}")
 
     # Startup background continuous FortiSIEM poller supervisor and resume if enabled
     fortisiem_scheduler.start_supervisor()
