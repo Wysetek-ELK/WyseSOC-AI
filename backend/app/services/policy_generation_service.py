@@ -184,6 +184,20 @@ class PolicyGenerationService:
                 "1. Check failed-logon sequence and whether a subsequent logon succeeded.",
                 "2. Assess source IP reputation, ASN, and targeted account breadth (single user vs password spray).",
             ])
+        elif archetype_def.archetype_id == ArchetypeId.POLICY_VIOLATION:
+            if semantics.rule_identifier == "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST":
+                lines.extend([
+                    "1. FortiSIEM Semantics: 'Same Source and Destination' refers to FortiSIEM correlation GroupBy criteria (srcIpAddr, destName/destIpAddr), NOT internal loopback (127.0.0.1) or source IP equals destination IP. Do NOT claim loopback when source and destination IPs are distinct.",
+                    "2. Policy Action & Category: Verify whether perimeter web filter blocked/denied the request (eventType in FortiGate-web-ftgd-cat-blk/FortiGate-webfilter-block, action in 'blocked', 'denied') and inspect webCategory, user identity, and destination domain.",
+                    "3. TP vs FP Distinction: TRUE_POSITIVE indicates genuine access attempts to prohibited/restricted web categories or blocked policy destinations; FALSE_POSITIVE requires verifiable business authorization, approved policy exception ticket, or miscategorized enterprise application.",
+                    "4. Telemetry Integrity: Distinguish header-only aggregation from rich raw event logs; cite exact EV-* evidence IDs; abstain (REQUIRES_ATTENTION) if raw events are missing and policy categorization is unverified.",
+                ])
+            else:
+                lines.extend([
+                    "1. Validate web-filtering / proxy enforcement action (blocked/denied vs allowed).",
+                    "2. Verify webCategory, target domain, and user group policy entitlements.",
+                    "3. Require documented change/ticket or verified exception before classifying as FALSE_POSITIVE.",
+                ])
         else:
             lines.extend([
                 "1. Validate SIEM trigger conditions against canonical telemetry and host/user identity.",
@@ -256,6 +270,13 @@ class PolicyGenerationService:
                 "- Unauthorized internal horizontal sweep (`internal > 0`) on admin/lateral ports (22,135,139,445,3389,5985,1433,3306) or targeting critical servers, or external perimeter sweep with blocks/timeouts.",
                 "- Corroborating exploit, brute-force, IDS/IPS, or lateral-movement alerts from the same source.",
             ])
+        elif semantics.rule_identifier == "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST":
+            return "\n".join([
+                "TRUE_POSITIVE when observed telemetry verifies unauthorized access or repeated attempts to prohibited/restricted web destinations:",
+                "- Repeated blocked or denied web requests (`action` in 'blocked'/'denied', eventType `FortiGate-web-ftgd-cat-blk` or `FortiGate-webfilter-block`) to unauthorized, non-business, or restricted categories.",
+                "- User or endpoint attempting to access restricted web resources in violation of enterprise acceptable use policy without documented business exemption.",
+                "- Corroborating endpoint, proxy, or security event telemetry confirming intentional policy circumvention or policy violation.",
+            ])
         lines = ["TRUE_POSITIVE only when observed telemetry verifies:"]
         for ind in archetype_def.tp_indicator_candidates:
             lines.append(f"- {ind}")
@@ -268,6 +289,13 @@ class PolicyGenerationService:
                 "FALSE_POSITIVE when concrete telemetry confirms benign/authorized activity (internal RFC-1918 traffic is NOT automatically benign; verify explicit authorization or complete external browsing telemetry):",
                 "- Verifiable authorized vulnerability scanner (Nessus/Qualys/Rapid7/OpenVAS) or scheduled admin/monitoring job backed by an active approved ticket/exception in telemetry.",
                 "- Evidence-backed legitimate outbound web/CDN/SaaS browsing where ALL of the following hold in raw logs: `scan.raw_events_count >= 10`, `scan.destination_scope` shows `internal=0` (100% public external destinations), `scan.tcp_behavior_summary` shows predominantly `bidirectional_sessions` (>=80% of sampled events) with `denied_flows=0` and minimal `unanswered_probes`, AND `scan.policy_and_service` shows an explicit outbound browsing/internet policy (`Browsing`/`HTTPS`/`SSL`).",
+            ])
+        elif semantics.rule_identifier == "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST":
+            return "\n".join([
+                "FALSE_POSITIVE when observed telemetry verifies authorized operations, miscategorization, or benign loopback reflection:",
+                "- Verifiable business requirement with approved exception, change ticket, or executive authorization recorded in incident evidence.",
+                "- Benign corporate resource, internal service, or SaaS tool misclassified under a restricted webCategory by the threat intelligence feed.",
+                "- Genuine internal loopback reflection or diagnostic test with identical source and destination IPs verified on loopback/localhost interfaces (do NOT assert loopback if source and destination IPs differ).",
             ])
         lines = ["FALSE_POSITIVE when observed telemetry verifies authorized operations/noise:"]
         for ind in archetype_def.fp_indicator_candidates:
@@ -286,6 +314,14 @@ class PolicyGenerationService:
             if semantics.definition_status == SemanticsDefinitionStatus.INCOMPLETE:
                 lines.append("- Authoritative SIEM correlation threshold/window unverified.")
             return "\n".join(lines)
+        elif semantics.rule_identifier == "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST":
+            lines = [
+                "Abstain (INSUFFICIENT_EVIDENCE / REQUIRES_ATTENTION) when material telemetry is missing or ambiguous:",
+                "- Header-only incident with zero raw logs (`raw_events_count == 0` or missing raw event sample) where web category or action cannot be verified.",
+                "- Ambiguous policy violation where neither block action nor allowed status is recorded in telemetry.",
+                "- Contradictory evidence (e.g. claim of authorized business exception without corresponding record).",
+            ]
+            return "\n".join(lines)
         lines = ["Abstain (REQUIRES_ATTENTION) if:"]
         for req in archetype_def.abstention_requirements:
             lines.append(f"- {req}")
@@ -303,6 +339,13 @@ class PolicyGenerationService:
                 "- Escalate immediately on unauthorized internal lateral/admin port scans (445/3389/22/5985), critical asset targeting, or follow-on exploit/auth alerts.",
                 "- NEVER auto-close TRUE_POSITIVE or INSUFFICIENT_EVIDENCE; auto-closure applies strictly to validated FALSE_POSITIVE under Admin-approved governance.",
             ])
+        elif semantics.rule_identifier == "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST":
+            return "\n".join([
+                "P1/P2 Escalation & Safety:",
+                "- Escalate immediately if policy violation involves known C2, malware distribution, credential phishing, or critical data exfiltration categories.",
+                "- Escalate if repeated violation originates from privileged accounts, domain controllers, or production server assets.",
+                "- NEVER auto-close TRUE_POSITIVE or INSUFFICIENT_EVIDENCE; auto-closure applies strictly to validated FALSE_POSITIVE under Admin-approved governance.",
+            ])
         lines = ["P1/P2 Escalation triggers:"]
         for esc in archetype_def.escalation_considerations:
             lines.append(f"- {esc}")
@@ -316,5 +359,12 @@ class PolicyGenerationService:
                 "Are targets internal assets (lateral recon) or public CDN/web endpoints?",
                 "Do raw logs show unanswered/denied scan probes or bidirectional TLS sessions?",
                 "Are there corroborating exploit, brute-force, or EDR alerts for this source?",
+            ]
+        elif semantics.rule_identifier == "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST":
+            return [
+                "Was the web request actively blocked or denied by the perimeter FortiGate web filter?",
+                "What was the specific FortiGuard web category assigned to the destination domain/URL?",
+                "Does the user have an approved business exemption or change ticket for accessing this category?",
+                "Is the destination domain an enterprise tool misclassified by external threat feeds?",
             ]
         return list(archetype_def.analyst_question_templates)

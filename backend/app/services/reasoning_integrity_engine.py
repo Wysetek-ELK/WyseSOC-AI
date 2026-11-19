@@ -236,6 +236,57 @@ class ReasoningIntegrityEngine:
             )
 
         # -------------------------------------------------------------
+        # Check 6: Policy Violation — Loopback Claimed on External/Distinct Traffic
+        # -------------------------------------------------------------
+        loopback_claim_pattern = re.compile(
+            r'\b(?:same\s+source\s+and\s+destination\s+ip|identical\s+source\s+and\s+destination|'
+            r'source\s+and\s+destination\s+are\s+(?:the\s+)?same|traffic\s+(?:is|was)\s+loopback|'
+            r'internal\s+loopback|localhost\s+traffic|sent\s+to\s+itself|self-referential\s+ip)\b',
+            re.IGNORECASE,
+        )
+        if loopback_claim_pattern.search(narrative_lower):
+            src_ip = str(record_map.get("network.source_ip") or record_map.get("srcIpAddr") or "").strip()
+            dst_ip = str(record_map.get("network.destination_ip") or record_map.get("destIpAddr") or "").strip()
+            dst_name = str(record_map.get("network.destination_domain") or record_map.get("destName") or "").strip()
+
+            # If both source and destination are present and clearly distinct
+            if src_ip and dst_ip and src_ip != dst_ip and not dst_ip.startswith("127."):
+                contradictions.append(
+                    f"Contradiction: Model asserted identical source and destination IP / loopback traffic, "
+                    f"but observed telemetry confirms distinct source ({src_ip}) and destination ({dst_ip}{' / ' + dst_name if dst_name else ''}). "
+                    f"Rule grouping 'Same Source and Destination' reflects FortiSIEM correlation aggregation criteria, not loopback."
+                )
+                if "REASONING_CONTRADICTION" not in reason_codes:
+                    reason_codes.append("REASONING_CONTRADICTION")
+                if "LOOPBACK_CLAIMED_ON_EXTERNAL_TRAFFIC" not in reason_codes:
+                    reason_codes.append("LOOPBACK_CLAIMED_ON_EXTERNAL_TRAFFIC")
+
+        # -------------------------------------------------------------
+        # Check 7: Policy Violation — Firewall Action Inversion (Allowed vs Blocked)
+        # -------------------------------------------------------------
+        asserts_allowed_pattern = re.compile(
+            r'\b(?:traffic\s+was\s+allowed|request\s+was\s+permitted|successfully\s+connected|'
+            r'connection\s+succeeded|session\s+was\s+established|data\s+was\s+exfiltrated|'
+            r'successfully\s+accessed|allowed\s+by\s+policy)\b',
+            re.IGNORECASE,
+        )
+        action_val = str(record_map.get("security.action") or record_map.get("action") or "").lower()
+        event_type_val = str(record_map.get("security.event_type") or record_map.get("eventType") or "").lower()
+        is_blocked_action = (
+            any(term in action_val for term in ("blocked", "denied", "dropped", "reset"))
+            or "cat-blk" in event_type_val
+            or "filter-block" in event_type_val
+        )
+        if asserts_allowed_pattern.search(narrative_lower) and is_blocked_action:
+            contradictions.append(
+                f"Contradiction: Model asserted traffic was allowed or session successfully established, "
+                f"but observed telemetry confirms action='{record_map.get('security.action') or action_val}' "
+                f"and eventType='{record_map.get('security.event_type') or event_type_val}'."
+            )
+            if "REASONING_CONTRADICTION" not in reason_codes:
+                reason_codes.append("REASONING_CONTRADICTION")
+
+        # -------------------------------------------------------------
         # Outcome Determination
         # -------------------------------------------------------------
         if contradictions:
@@ -599,6 +650,64 @@ class ReasoningIntegrityEngine:
                 )
             elif is_auth_verified:
                 semantic_notes.append(f"Scanner Authorization Verified: {auth_detail}")
+
+        # -------------------------------------------------------------
+        # Policy Violation Consistency Rules (Archetype: POLICY_VIOLATION)
+        # -------------------------------------------------------------
+        elif rule_archetype == "POLICY_VIOLATION":
+            if clean_prop == "FALSE_POSITIVE":
+                is_auth_verified, auth_detail, verified_auth_eids = cls.verify_authorization(
+                    supporting_claims=supporting_claims,
+                    normalization_result=normalization_result,
+                    model_reason=reason_str,
+                )
+                claims_authorization = any(
+                    term in reason_str.lower()
+                    for term in ("authorized", "approved exception", "business exemption", "change ticket", "maintenance window")
+                )
+                if claims_authorization and not is_auth_verified:
+                    conflict_msg = (
+                        f"Verdict Conflict: Proposed FALSE_POSITIVE asserts business exemption or authorized exception, "
+                        f"but no verified change ticket or policy exception was found in canonical evidence records ({auth_detail})."
+                    )
+                    return ReasoningValidationResult(
+                        is_valid=False,
+                        validation_status="VERDICT_EVIDENCE_CONFLICT",
+                        reason_codes=["VERDICT_EVIDENCE_CONFLICT", "FP_CRITERIA_UNSATISFIED"],
+                        detected_contradictions=[conflict_msg],
+                        semantic_review_notes=semantic_notes,
+                        analyst_action_directive="Proposed FALSE_POSITIVE lacks verifiable authorization evidence. Overruled to REQUIRES_ATTENTION.",
+                        effective_verdict_override="REQUIRES_ATTENTION",
+                    )
+                elif is_auth_verified:
+                    semantic_notes.append(f"Policy Exception / Authorization Verified: {auth_detail}")
+
+            elif clean_prop == "TRUE_POSITIVE":
+                action_val = str(record_map.get("security.action") or record_map.get("action") or "").lower()
+                event_type_val = str(record_map.get("security.event_type") or record_map.get("eventType") or "").lower()
+                web_cat = str(record_map.get("webCategory") or "").lower()
+                is_violation_telemetry = (
+                    any(term in action_val for term in ("blocked", "denied", "dropped"))
+                    or "cat-blk" in event_type_val
+                    or "filter-block" in event_type_val
+                    or bool(web_cat)
+                )
+                if not is_violation_telemetry:
+                    conflict_msg = (
+                        "Verdict Conflict: Proposed TRUE_POSITIVE for POLICY_VIOLATION, but telemetry lacks "
+                        "policy violation action (blocked/denied) or restricted category."
+                    )
+                    return ReasoningValidationResult(
+                        is_valid=False,
+                        validation_status="VERDICT_EVIDENCE_CONFLICT",
+                        reason_codes=["VERDICT_EVIDENCE_CONFLICT", "TP_CRITERIA_UNSATISFIED"],
+                        detected_contradictions=[conflict_msg],
+                        semantic_review_notes=semantic_notes,
+                        analyst_action_directive="Proposed TRUE_POSITIVE lacks telemetry proof of policy violation. Overruled to REQUIRES_ATTENTION.",
+                        effective_verdict_override="REQUIRES_ATTENTION",
+                    )
+                else:
+                    semantic_notes.append("Policy Violation Telemetry Verified: Confirmed block action or category filtering.")
 
         # Safe Abstention:
         elif clean_prop in ("REQUIRES_ATTENTION", "INSUFFICIENT_EVIDENCE"):
