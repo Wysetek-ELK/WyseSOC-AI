@@ -46,6 +46,7 @@ import {
 import { ActualPromptInspectorModal } from "@/components/prompt-inspector/ActualPromptInspectorModal";
 import {
   api,
+  formatApiErrorMessage,
   User,
   RuleItem,
   RulePrompt,
@@ -86,6 +87,7 @@ function AgentIntelligenceStudioContent() {
   const [compactUi, setCompactUi] = useState(true);
   const [learningProfile, setLearningProfile] = useState<any | null>(null);
   const [llmOnline, setLlmOnline] = useState<boolean | null>(null);
+  const [evaluatingAccuracy, setEvaluatingAccuracy] = useState(false);
 
   // Rules & Summaries State
   const [rules, setRules] = useState<RuleItem[]>([]);
@@ -299,14 +301,33 @@ function AgentIntelligenceStudioContent() {
       setLearningProfile(null);
       return;
     }
-    const reqId = promptRequestIdRef.current;
     try {
       const data = await api.getRuleLearningProfileDetail(ruleId);
-      if (reqId !== promptRequestIdRef.current) return;
       setLearningProfile(data);
-    } catch {
-      if (reqId !== promptRequestIdRef.current) return;
-      setLearningProfile(null);
+    } catch (err) {
+      console.error("Failed to load rule learning profile:", err);
+    }
+  };
+
+  const handleEvaluateAccuracy = async () => {
+    if (!selectedRuleId) return;
+    setEvaluatingAccuracy(true);
+    setPrimaryTab("learning");
+    try {
+      const res = await api.evaluateRuleAccuracy(selectedRuleId, undefined, selectedVersionId);
+      const freshProfile = await api.getRuleLearningProfileDetail(selectedRuleId);
+      setLearningProfile(freshProfile);
+      setFeedback({
+        type: res.empirical_accuracy !== null ? "success" : "warning",
+        text: res.message || "Accuracy evaluation completed.",
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: "error",
+        text: formatApiErrorMessage(err, "Failed to evaluate rule accuracy"),
+      });
+    } finally {
+      setEvaluatingAccuracy(false);
     }
   };
 
@@ -1903,17 +1924,49 @@ function AgentIntelligenceStudioContent() {
         badgeColor: "bg-indigo-950/80 text-indigo-300 border-indigo-800",
       };
     }
-    if (learningProfile && learningProfile.empirical_accuracy === null) {
-      return {
-        label: "Evaluate Accuracy",
-        description: "30+ verified analyst reviews collected. Compute empirical accuracy and confusion matrix.",
-        action: () => {
-          setPrimaryTab("learning");
-        },
-        buttonText: "Evaluate Accuracy",
-        badge: "Evaluation Ready",
-        badgeColor: "bg-teal-950/80 text-teal-300 border-teal-800",
-      };
+    if (learningProfile) {
+      const totalReviews = learningProfile.total_analyst_reviews || 0;
+      const verifiedTp = learningProfile.verified_tp_count || 0;
+      const verifiedFp = learningProfile.verified_fp_count || 0;
+      const decisive = (learningProfile.error_distribution?.decisive_evaluations ?? 0);
+
+      // Class balance check: Tier 2 Supervised Pilot requires >= 10 TP and >= 10 FP
+      if (totalReviews >= 30 && verifiedTp < 10) {
+        return {
+          label: "Collect True Positive Ground Truth",
+          description: `${totalReviews} reviews collected (${verifiedTp} TP / ${verifiedFp} FP). At least 10 independently confirmed True Positive cases required for pilot calibration baseline. Currently 0 decisive AI predictions.`,
+          action: () => {
+            setPrimaryTab("overview");
+            setReviewSubView("incidents");
+            setTimeout(() => {
+              const el = document.getElementById("incident-review-workbench");
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "start" });
+                el.classList.add("ring-2", "ring-cyan-500/80");
+                setTimeout(() => {
+                  el.classList.remove("ring-2", "ring-cyan-500/80");
+                }, 1500);
+              }
+            }, 80);
+          },
+          buttonText: "Review Incidents Queue",
+          badge: "Class Balance Needed",
+          badgeColor: "bg-amber-950/80 text-amber-300 border-amber-800",
+        };
+      }
+
+      if (learningProfile.empirical_accuracy === null) {
+        return {
+          label: "Evaluate Accuracy",
+          description: decisive === 0
+            ? `${totalReviews} verified reviews (${verifiedTp} TP / ${verifiedFp} FP). 0 decisive AI comparisons (16 abstentions, 15 un-evaluated). Click to compute empirical metrics.`
+            : `${totalReviews} verified analyst reviews collected. Compute empirical accuracy and confusion matrix.`,
+          action: handleEvaluateAccuracy,
+          buttonText: evaluatingAccuracy ? "Evaluating..." : "Evaluate Accuracy",
+          badge: decisive === 0 ? "Evaluation Needed" : "Evaluation Ready",
+          badgeColor: "bg-teal-950/80 text-teal-300 border-teal-800",
+        };
+      }
     }
     if (isApprovalEligible && selectedVersion?.status !== "APPROVED") {
       return {
@@ -2616,6 +2669,7 @@ function AgentIntelligenceStudioContent() {
             <ReviewIncidentsWorkbench
               ruleId={selectedRuleId}
               ruleName={rulePrompt?.rule_name || selectedRule?.name}
+              learningProfile={learningProfile}
               onNavigateToTest={() => setPrimaryTab("test_ai")}
               onReviewSubmitted={() => {
                 if (selectedRuleId) {
@@ -2713,6 +2767,12 @@ function AgentIntelligenceStudioContent() {
               setPrimaryTab("overview");
               setReviewSubView("incidents");
             }}
+            onNavigateToReviews={() => {
+              setPrimaryTab("overview");
+              setReviewSubView("incidents");
+            }}
+            onNavigateToTest={() => setPrimaryTab("test_ai")}
+            onProfileUpdate={(p) => setLearningProfile(p)}
           />
 
           <details className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/40">

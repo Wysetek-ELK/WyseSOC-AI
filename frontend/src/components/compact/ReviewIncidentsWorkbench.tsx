@@ -30,6 +30,7 @@ interface ReviewIncidentsWorkbenchProps {
   ruleName?: string;
   customer?: string;
   isViewer?: boolean;
+  learningProfile?: any;
   onReviewSubmitted?: () => void;
   onOpenActualPrompt?: (incidentId: string) => void;
   onNavigateToTest?: () => void;
@@ -38,8 +39,9 @@ interface ReviewIncidentsWorkbenchProps {
 export function ReviewIncidentsWorkbench({
   ruleId,
   ruleName,
-  customer,
+  customer = "DEFAULT",
   isViewer = false,
+  learningProfile: propLearningProfile,
   onReviewSubmitted,
   onOpenActualPrompt,
   onNavigateToTest,
@@ -50,7 +52,11 @@ export function ReviewIncidentsWorkbench({
     pending: number;
     reviewed: number;
     verifiedGt: number;
-  }>({ pending: 0, reviewed: 0, verifiedGt: 0 });
+  }>({
+    pending: 0,
+    reviewed: propLearningProfile?.total_analyst_reviews ?? 0,
+    verifiedGt: (propLearningProfile?.verified_tp_count ?? 0) + (propLearningProfile?.verified_fp_count ?? 0),
+  });
 
   const [selectedIncident, setSelectedIncident] = useState<any | null>(null);
   const [incidentDetail, setIncidentDetail] = useState<any | null>(null);
@@ -76,11 +82,12 @@ export function ReviewIncidentsWorkbench({
       ]);
 
       const items = reviewData.items || [];
+      const effectiveProfile = profileData || propLearningProfile;
       setIncidents(items);
       setCounts({
         pending: reviewData.total ?? items.length,
-        reviewed: profileData?.total_analyst_reviews ?? 0,
-        verifiedGt: (profileData?.verified_tp_count ?? 0) + (profileData?.verified_fp_count ?? 0),
+        reviewed: effectiveProfile?.total_analyst_reviews ?? 0,
+        verifiedGt: (effectiveProfile?.verified_tp_count ?? 0) + (effectiveProfile?.verified_fp_count ?? 0),
       });
 
       if (items.length > 0) {

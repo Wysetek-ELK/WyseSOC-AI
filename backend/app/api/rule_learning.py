@@ -278,6 +278,28 @@ async def get_rule_learning_profile(
     return _serialize_profile_detail(profile, is_eligible, reasons, full_meta, policy)
 
 
+@router.post("/learning/rules/{rule_id}/evaluate-accuracy", response_model=Dict[str, Any])
+async def evaluate_rule_accuracy(
+    rule_id: str,
+    customer: Optional[str] = Query(None),
+    version_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Authoritative evaluation endpoint. Triggers exact empirical accuracy recalculation
+    and reconciliation across all verified analyst determinations and matched AI decisions.
+    """
+    target_customer = customer or "DEFAULT"
+    result = await RuleLearningService.evaluate_rule_accuracy(
+        db=db,
+        rule_id=rule_id,
+        customer=target_customer,
+        version_id=version_id,
+    )
+    return result
+
+
 @router.get("/learning/rules/{rule_id}/history", response_model=Dict[str, Any])
 async def get_rule_learning_history(
     rule_id: str,

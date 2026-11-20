@@ -780,6 +780,215 @@ class RuleLearningService:
         return is_eligible, reasons
 
     @classmethod
+    async def evaluate_rule_accuracy(
+        cls,
+        db: AsyncSession,
+        rule_id: str,
+        customer: str = "DEFAULT",
+        version_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Authoritative evaluation and reconciliation of empirical rule accuracy.
+        Audits all AnalystVerdictReview records against Incident AI determinations,
+        computes decisive classification metrics (Selective Accuracy, TP Recall,
+        FP-Class Precision, Specificity, Wilson 95% confidence bounds),
+        evaluates class balance (Tier 2 Pilot requires >= 10 TP and >= 10 FP),
+        persists updated metrics to RuleLearningProfile, and returns a detailed
+        diagnostic breakdown.
+        """
+        profile = await cls.get_or_create_profile(db=db, rule_id=rule_id, customer=customer)
+
+        stmt = select(Rule).where(or_(Rule.id == rule_id, Rule.rule_id == rule_id))
+        res = await db.execute(stmt)
+        rule = res.scalar_one_or_none()
+        rule_identifiers = [rule_id]
+        if rule:
+            rule_identifiers = list(set([rule.id, rule.rule_id, rule_id]))
+
+        rev_stmt = select(AnalystVerdictReview).where(
+            and_(
+                AnalystVerdictReview.rule_id.in_(rule_identifiers),
+                AnalystVerdictReview.customer == customer,
+            )
+        )
+        rev_res = await db.execute(rev_stmt)
+        reviews = rev_res.scalars().all()
+
+        total_reviews = len(reviews)
+        verified_tp = 0
+        verified_fp = 0
+        analyst_abstain = 0
+
+        agreement_tp = 0
+        agreement_fp = 0
+        ai_false_alarm = 0
+        critical_missed_tp = 0
+        analyst_resolved_abstention = 0
+        analyst_only_initial_benchmark = 0
+        disputed = 0
+
+        for r in reviews:
+            av = (r.analyst_verdict or "").upper().strip()
+            if av == "TRUE_POSITIVE":
+                verified_tp += 1
+            elif av == "FALSE_POSITIVE":
+                verified_fp += 1
+            else:
+                analyst_abstain += 1
+
+            outcome = (r.comparison_outcome or "").upper().strip()
+            if outcome == "AGREEMENT_TP":
+                agreement_tp += 1
+            elif outcome == "AGREEMENT_FP":
+                agreement_fp += 1
+            elif outcome == "AI_FALSE_ALARM":
+                ai_false_alarm += 1
+            elif outcome == "CRITICAL_MISSED_TP":
+                critical_missed_tp += 1
+            elif outcome == "ANALYST_RESOLVED_ABSTENTION":
+                analyst_resolved_abstention += 1
+            elif outcome == "ANALYST_ONLY_INITIAL_BENCHMARK":
+                analyst_only_initial_benchmark += 1
+            elif outcome in ("DISPUTED", "AGREEMENT_REQUIRES_ATTENTION"):
+                disputed += 1
+            else:
+                ai_v = (r.revealed_ai_verdict or "").upper().strip() if r.revealed_ai_verdict else None
+                if not ai_v:
+                    analyst_only_initial_benchmark += 1
+                elif ai_v in ("REQUIRES_ATTENTION", "INSUFFICIENT_EVIDENCE"):
+                    analyst_resolved_abstention += 1
+                elif av == "TRUE_POSITIVE" and ai_v == "TRUE_POSITIVE":
+                    agreement_tp += 1
+                elif av == "FALSE_POSITIVE" and ai_v == "FALSE_POSITIVE":
+                    agreement_fp += 1
+                elif av == "FALSE_POSITIVE" and ai_v == "TRUE_POSITIVE":
+                    ai_false_alarm += 1
+                elif av == "TRUE_POSITIVE" and ai_v == "FALSE_POSITIVE":
+                    critical_missed_tp += 1
+                else:
+                    disputed += 1
+
+        total_decisive = agreement_tp + agreement_fp + ai_false_alarm + critical_missed_tp
+        ai_correct = agreement_tp + agreement_fp
+        ai_incorrect = ai_false_alarm + critical_missed_tp
+
+        if total_decisive > 0:
+            empirical_accuracy = round(float(ai_correct) / float(total_decisive), 4)
+            total_fp_pred = agreement_fp + critical_missed_tp
+            fp_precision = round(float(agreement_fp) / float(total_fp_pred), 4) if total_fp_pred > 0 else None
+            wilson_lower_bound = WilsonScoreEvaluator.calculate_lower_bound(
+                successes=agreement_fp,
+                total=total_fp_pred
+            ) if total_fp_pred > 0 else None
+            total_tp_actual = agreement_tp + critical_missed_tp
+            tp_recall = round(float(agreement_tp) / float(total_tp_actual), 4) if total_tp_actual > 0 else None
+            total_fp_actual = agreement_fp + ai_false_alarm
+            specificity = round(float(agreement_fp) / float(total_fp_actual), 4) if total_fp_actual > 0 else None
+            total_tp_pred = agreement_tp + ai_false_alarm
+            tp_precision = round(float(agreement_tp) / float(total_tp_pred), 4) if total_tp_pred > 0 else None
+        else:
+            empirical_accuracy = None
+            fp_precision = None
+            wilson_lower_bound = None
+            tp_recall = None
+            specificity = None
+            tp_precision = None
+
+        profile.total_analyst_reviews = total_reviews
+        profile.verified_tp_count = verified_tp
+        profile.verified_fp_count = verified_fp
+        profile.ai_correct_count = ai_correct
+        profile.ai_incorrect_count = ai_incorrect
+        profile.empirical_accuracy = empirical_accuracy
+        profile.fp_precision = fp_precision
+        profile.wilson_lower_bound = wilson_lower_bound
+        profile.tp_recall = tp_recall
+        profile.last_evaluated_at = utc_now()
+
+        err_dist = dict(profile.error_distribution or {})
+        err_dist["tp"] = agreement_tp
+        err_dist["fp"] = ai_false_alarm
+        err_dist["tn"] = agreement_fp
+        err_dist["fn"] = critical_missed_tp
+        err_dist["tp_as_tp"] = agreement_tp
+        err_dist["fp_as_tp"] = ai_false_alarm
+        err_dist["tp_as_fp"] = critical_missed_tp
+        err_dist["fp_as_fp"] = agreement_fp
+        err_dist["agreement_tp"] = agreement_tp
+        err_dist["agreement_fp"] = agreement_fp
+        err_dist["ai_false_alarm"] = ai_false_alarm
+        err_dist["critical_missed_tp"] = critical_missed_tp
+        err_dist["analyst_resolved_abstention"] = analyst_resolved_abstention
+        err_dist["analyst_only_initial_benchmark"] = analyst_only_initial_benchmark
+        err_dist["disputed"] = disputed
+        err_dist["decisive_evaluations"] = total_decisive
+        err_dist["selective_accuracy"] = empirical_accuracy
+        err_dist["fp_precision"] = fp_precision
+        err_dist["tp_recall"] = tp_recall
+        err_dist["tp_precision"] = tp_precision
+        err_dist["specificity"] = specificity
+        profile.error_distribution = err_dist
+
+        is_eligible, reasons = cls.check_production_eligibility(profile)
+        profile.is_production_eligible = is_eligible
+        profile.eligibility_reasons = reasons
+
+        db.add(profile)
+        await db.flush()
+
+        pilot_tp_required = cls.MIN_PILOT_TP
+        pilot_fp_required = cls.MIN_PILOT_FP
+        is_pilot_balanced = verified_tp >= pilot_tp_required and verified_fp >= pilot_fp_required
+
+        if total_decisive == 0:
+            if total_reviews == 0:
+                msg = "No analyst reviews exist for this rule. Independent double-blind reviews must be completed to establish ground truth."
+            else:
+                msg = (
+                    f"Accuracy cannot be calculated: 0 eligible decisive AI predictions were found across {total_reviews} verified reviews "
+                    f"({analyst_resolved_abstention} reviews resolved AI abstentions, and {analyst_only_initial_benchmark} were initial benchmarks without AI inference). "
+                    f"Selective Accuracy requires decisive AI predictions (TP or FP) matched against verified analyst verdicts."
+                )
+        else:
+            msg = f"Evaluation complete: {empirical_accuracy * 100:.1f}% empirical accuracy calculated across {total_decisive} decisive comparisons."
+
+        return {
+            "success": True,
+            "rule_id": rule_id,
+            "customer": customer,
+            "total_analyst_reviews": total_reviews,
+            "verified_tp_count": verified_tp,
+            "verified_fp_count": verified_fp,
+            "decisive_evaluations": total_decisive,
+            "ai_correct_count": ai_correct,
+            "ai_incorrect_count": ai_incorrect,
+            "empirical_accuracy": empirical_accuracy,
+            "fp_precision": fp_precision,
+            "wilson_lower_bound": wilson_lower_bound,
+            "tp_recall": tp_recall,
+            "class_balance": {
+                "verified_tp": verified_tp,
+                "required_pilot_tp": pilot_tp_required,
+                "verified_fp": verified_fp,
+                "required_pilot_fp": pilot_fp_required,
+                "is_balanced": is_pilot_balanced,
+                "tp_deficit": max(0, pilot_tp_required - verified_tp),
+                "fp_deficit": max(0, pilot_fp_required - verified_fp),
+            },
+            "breakdown": {
+                "agreement_tp": agreement_tp,
+                "agreement_fp": agreement_fp,
+                "ai_false_alarm": ai_false_alarm,
+                "critical_missed_tp": critical_missed_tp,
+                "analyst_resolved_abstention": analyst_resolved_abstention,
+                "analyst_only_initial_benchmark": analyst_only_initial_benchmark,
+                "disputed": disputed,
+            },
+            "message": msg,
+            "last_evaluated_at": profile.last_evaluated_at.isoformat() if profile.last_evaluated_at else None,
+        }
+
+    @classmethod
     async def evaluate_full_production_readiness(
         cls,
         db: AsyncSession,

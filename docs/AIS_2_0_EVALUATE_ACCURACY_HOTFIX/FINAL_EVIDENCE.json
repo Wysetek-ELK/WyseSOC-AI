@@ -1,0 +1,89 @@
+{
+  "system": "Verdictum AI",
+  "module": "Agent Intelligence Studio 2.0",
+  "component": "Accuracy & Learning / Evaluate Accuracy Button Hotfix",
+  "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+  "rule_identifier": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+  "active_policy_version": {
+    "version_id": "d79fb576-c6b9-4f63-9167-3c7a2419b70a",
+    "version_number": 7,
+    "status": "APPROVED"
+  },
+  "candidate_policy_version": {
+    "version_id": "20d4f788-85a5-437d-afbe-fe7fd80abca1",
+    "version_number": 8,
+    "status": "DRAFT"
+  },
+  "ground_truth_reconciliation": {
+    "total_analyst_reviews": 31,
+    "verified_fp_count": 31,
+    "verified_tp_count": 0,
+    "analyst_resolved_abstention": 16,
+    "analyst_only_initial_benchmark": 15,
+    "decisive_evaluations": 0,
+    "empirical_accuracy": null,
+    "accuracy_status": "NOT_MEASURABLE",
+    "confusion_matrix": {
+      "agreed_fp": 0,
+      "critical_missed_tp": 0,
+      "ai_false_alarm": 0,
+      "agreed_tp": 0,
+      "abstained_resolved": 16,
+      "initial_benchmarks": 15,
+      "disputed": 0
+    },
+    "pilot_class_balance": {
+      "verified_tp": 0,
+      "required_pilot_tp": 10,
+      "verified_fp": 31,
+      "required_pilot_fp": 10,
+      "is_balanced": false,
+      "tp_deficit": 10,
+      "fp_deficit": 0
+    }
+  },
+  "defects_remediated": [
+    {
+      "id": "DEF-001",
+      "summary": "Nonfunctional Evaluate Accuracy button in Next Recommended Action and Accuracy & Learning tab",
+      "root_cause": "Button handler was hardcoded as setPrimaryTab('learning') with no API request or background job",
+      "fix": "Created POST /api/learning/rules/{rule_id}/evaluate-accuracy endpoint and wired handleEvaluateAccuracy in frontend"
+    },
+    {
+      "id": "DEF-002",
+      "summary": "Misleading 'Evaluation Ready' banner when decisive evaluations = 0 and TP = 0",
+      "root_cause": "Next Recommended Action only checked total_analyst_reviews >= 30, ignoring 0 TP class balance deficit",
+      "fix": "Updated nextRecommendedAction to check class balance (TP >= 10, FP >= 10) and recommend 'Collect True Positive Ground Truth'"
+    },
+    {
+      "id": "DEF-003",
+      "summary": "All-zero confusion matrix without explanation in Accuracy & Learning tab",
+      "root_cause": "Selective accuracy requires decisive predictions; 16 reviews resolved abstentions and 15 were initial benchmarks",
+      "fix": "Added comprehensive diagnostic alert and explanation under confusion matrix explaining non-decisive sample composition"
+    },
+    {
+      "id": "DEF-004",
+      "summary": "Transient 0-review count glitch caused by shared promptRequestIdRef",
+      "root_cause": "fetchLearningProfile checked reqId !== promptRequestIdRef.current which was modified by concurrent fetchPrompt",
+      "fix": "Decoupled fetchLearningProfile and passed learningProfile directly to ReviewIncidentsWorkbench"
+    }
+  ],
+  "testing": {
+    "frontend_suites_passed": 16,
+    "frontend_tests_passed": 72,
+    "frontend_tests_failed": 0,
+    "production_build_exit_code": 0,
+    "backend_tests_added": [
+      "test_evaluate_accuracy_zero_decisive_predictions",
+      "test_evaluate_accuracy_with_decisive_predictions"
+    ]
+  },
+  "compliance": {
+    "zero_metric_fabrication": true,
+    "zero_unapproved_ssh_mutations": true,
+    "zero_incident_deletions": true,
+    "active_policy_immutability": true,
+    "upla_mode": "FULL_WORKFLOW"
+  },
+  "timestamp": "2026-11-20T14:47:00Z"
+}

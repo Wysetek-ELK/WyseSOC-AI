@@ -2788,6 +2788,25 @@ return res.json();
   return res.json();
 },
 
+  async evaluateRuleAccuracy(ruleId: string, customer ?: string, versionId ?: string) {
+  const params = new URLSearchParams();
+  if (customer) params.append("customer", customer);
+  if (versionId) params.append("version_id", versionId);
+  const qs = params.toString();
+  const url = `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/evaluate-accuracy${qs ? `?${qs}` : ""}`;
+  const res = await fetchWithAuth(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Failed to evaluate rule accuracy" }));
+    throw new Error(err.detail || "Failed to evaluate rule accuracy");
+  }
+  return res.json();
+},
+
   async initializeRuleLearningProfile(ruleId: string, customer ?: string) {
   const url = customer
     ? `${API_BASE}/learning/rules/${encodeURIComponent(ruleId)}/initialize?customer=${encodeURIComponent(customer)}`
