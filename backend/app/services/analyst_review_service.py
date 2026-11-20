@@ -114,7 +114,7 @@ class AnalystReviewService:
 
             rpt_dev = (inc.reporting_device or raw_p.get("incidentRptDevName") or raw_p.get("incidentRptIp") or "").strip()
             inc_detail = str(raw_p.get("incidentDetail") or inc.detail or "").strip()
-            evts = inc.__dict__.get("events") or []
+            evts = getattr(inc, "events", None) or []
 
             items.append({
                 "incident_id": inc.incident_id,
@@ -193,7 +193,14 @@ class AnalystReviewService:
 
         effective_customer = incident.customer or customer or "DEFAULT"
 
-        # 2. Extract stored AI verdict
+        # 2. Extract stored AI verdict and validate analyst verdict
+        norm_verdict = analyst_verdict.upper().strip()
+        if norm_verdict not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "INSUFFICIENT_EVIDENCE"):
+            raise ValueError(
+                f"Invalid analyst verdict '{analyst_verdict}'. Allowed values are strictly: TRUE_POSITIVE, FALSE_POSITIVE, INSUFFICIENT_EVIDENCE. "
+                "Derived outcomes (e.g. AGREEMENT_TP, AI_FALSE_ALARM) are computed post-submission."
+            )
+
         ai_verdict_data = incident.ai_verdict or {}
         revealed_ai_verdict = ai_verdict_data.get("verdict") or ai_verdict_data.get("effective_verdict")
 
@@ -403,6 +410,11 @@ class AnalystReviewService:
             "revealed_ai_verdict": revealed_ai_verdict,
             "revealed_ai_confidence": ai_verdict_data.get("confidence"),
             "revealed_ai_rationale": ai_verdict_data.get("reasoning") or ai_verdict_data.get("summary") or ai_verdict_data.get("explanation"),
+            "raw_model_verdict": ai_verdict_data.get("raw_verdict") or ai_verdict_data.get("verdict"),
+            "effective_verdict": ai_verdict_data.get("effective_verdict") or revealed_ai_verdict,
+            "policy_version": ai_verdict_data.get("policy_version") or ai_verdict_data.get("policy_version_number"),
+            "model_name": ai_verdict_data.get("model") or ai_verdict_data.get("model_name"),
+            "grounding_status": ai_verdict_data.get("grounding_status") or ai_verdict_data.get("validation_status"),
             "comparison_outcome": comparison_outcome,
             "disagreement_reason": disagreement_reason,
             "ground_truth_status": ground_truth_status,

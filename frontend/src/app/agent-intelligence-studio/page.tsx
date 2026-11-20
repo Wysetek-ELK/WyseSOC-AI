@@ -2604,6 +2604,13 @@ function AgentIntelligenceStudioContent() {
               ruleId={selectedRuleId}
               ruleName={rulePrompt?.rule_name || selectedRule?.name}
               onNavigateToTest={() => setPrimaryTab("test_ai")}
+              onOpenActualPrompt={(incId) => {
+                setPromptInspectorIncidentId(incId || null);
+                setPromptInspectorRuleId(selectedRuleId);
+                setPromptInspectorVersionId(selectedVersionId);
+                setPromptInspectorInitialMode("capture");
+                setPromptInspectorOpen(true);
+              }}
             />
           ) : (
             <AgentIntelligenceStudioOverview

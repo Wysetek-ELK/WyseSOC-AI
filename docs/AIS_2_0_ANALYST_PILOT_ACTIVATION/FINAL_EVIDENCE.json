@@ -1,0 +1,76 @@
+{
+  "project": "Verdictum AI",
+  "component": "Agent Intelligence Studio 2.0 (AIS 2.0)",
+  "phase": "Blind Review Integrity & SOC Analyst Pilot Activation",
+  "execution_id": "upla-20261120-blind-review-pilot-activation",
+  "timestamp": "2026-11-20T13:40:00+05:30",
+  "final_decision": "READY_FOR_SOC_ANALYST_REVIEW",
+  "target_rule": {
+    "rule_uuid": "7bd13e89-0828-48e6-8cf5-f3cbf12d438c",
+    "rule_name": "Website access policy violation: Same Source and Destination",
+    "rule_code": "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST",
+    "active_approved_version": 2,
+    "candidate_draft_version": 3,
+    "pending_reviews_count": 220,
+    "baseline_incidents_count": 210,
+    "cumulative_profile_iterations": 226
+  },
+  "deployment_environment": {
+    "server_1": {
+      "ip": "172.26.41.240",
+      "role": "application_staging_prod",
+      "services": [
+        "ai-verdict-backend.service",
+        "ai-verdict-frontend.service",
+        "ai-verdict-worker.service",
+        "ai-verdict-scheduler.service",
+        "postgresql.service",
+        "redis-server.service",
+        "nginx.service"
+      ],
+      "status": "HEALTHY"
+    },
+    "server_2": {
+      "ip": "172.26.41.241",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "temperature": 0.01,
+      "status": "UNTOUCHED_AND_PROTECTED"
+    }
+  },
+  "verified_15_incident_pilot_cohort": [
+    {"queue_no": 1, "incident_id": "4142", "db_uuid": "bb793252-8703-4927-994c-e836aa39a66d", "tenant": "HOST-172.26.31.254", "source_ip": "172.26.29.74", "raw_logs": 1, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM LinkedIn"},
+    {"queue_no": 2, "incident_id": "4178", "db_uuid": "9db5da52-944a-4d92-969c-2fe84cb8d3c1", "tenant": "HOST-172.26.31.254", "source_ip": "172.26.29.72", "raw_logs": 2, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM Browsing"},
+    {"queue_no": 3, "incident_id": "4171", "db_uuid": "e73efb3c-ff1c-438e-a4b7-d1cfc737c3da", "tenant": "HOST-172.26.31.254", "source_ip": "172.26.29.72", "raw_logs": 1, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM Corporate Portal"},
+    {"queue_no": 4, "incident_id": "4170", "db_uuid": "ca30f736-a6fc-46a2-9b2d-fa2453e1a0b5", "tenant": "HOST-172.26.31.254", "source_ip": "172.26.29.72", "raw_logs": 1, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM HTTP Session"},
+    {"queue_no": 5, "incident_id": "4176", "db_uuid": "a4300ced-1bfa-4c40-811c-c0c1694f54e1", "tenant": "HOST-45.64.199.219", "source_ip": "172.25.26.59", "raw_logs": 1, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM Candidate FP"},
+    {"queue_no": 6, "incident_id": "4177", "db_uuid": "e50f611f-c0fb-4054-a957-c5462cf6cf2b", "tenant": "HOST-45.64.199.219", "source_ip": "172.25.26.59", "raw_logs": 1, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM DMZ Traffic"},
+    {"queue_no": 7, "incident_id": "4172", "db_uuid": "e943933c-23c7-4fc7-bf84-fc4f3be79fce", "tenant": "HOST-45.64.199.219", "source_ip": "172.25.26.59", "raw_logs": 1, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM Blocked URI"},
+    {"queue_no": 8, "incident_id": "4168", "db_uuid": "9d5e8f8f-c301-44eb-9a2c-f3c5aa68a623", "tenant": "HOST-172.27.31.254", "source_ip": "172.27.29.71", "raw_logs": 2, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM Demo-SOC LAN"},
+    {"queue_no": 9, "incident_id": "4158", "db_uuid": "d0f0ff4d-f954-469b-88b1-e23114f49457", "tenant": "HOST-172.27.31.254", "source_ip": "172.27.29.53", "raw_logs": 1, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM Category Hit"},
+    {"queue_no": 10, "incident_id": "4159", "db_uuid": "068e7366-0a2b-42c2-bfa2-36c968fbc76c", "tenant": "HOST-172.27.31.254", "source_ip": "172.27.29.53", "raw_logs": 1, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM Proxy Redirect"},
+    {"queue_no": 11, "incident_id": "4148", "db_uuid": "5f751008-0bf1-4e4b-97e3-0590a9829562", "tenant": "HOST-45.64.199.219", "source_ip": "172.25.24.219", "raw_logs": 0, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Header-Only Abstention"},
+    {"queue_no": 12, "incident_id": "4145", "db_uuid": "00457a4e-1b3d-4c3e-8c54-47120dbefea7", "tenant": "HOST-45.64.199.219", "source_ip": "172.25.24.219", "raw_logs": 0, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Header-Only Abstention"},
+    {"queue_no": 13, "incident_id": "3954", "db_uuid": "2efa3936-cb4d-45a7-96a8-6b8156dbd5b8", "tenant": "HOST-45.64.199.219", "source_ip": "172.25.24.219", "raw_logs": 2, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM Advertising"},
+    {"queue_no": 14, "incident_id": "4179", "db_uuid": "1c8901be-58a4-4a41-8664-d3a669e4f208", "tenant": "HOST-172.26.31.254", "source_ip": "172.26.29.74", "raw_logs": 1, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM Subnet LAN"},
+    {"queue_no": 15, "incident_id": "4180", "db_uuid": "7d04291a-cc62-431e-927b-58832a514d2e", "tenant": "HOST-45.64.199.219", "source_ip": "172.25.26.59", "raw_logs": 1, "status": "PENDING_REVIEW", "eligible": true, "stratum": "Rich UTM Content Filter"}
+  ],
+  "double_blind_masking_checks": {
+    "server_side_enforced": true,
+    "radio_options": ["TRUE_POSITIVE", "FALSE_POSITIVE", "INSUFFICIENT_EVIDENCE"],
+    "derived_outcomes_rejected": true,
+    "pre_submission_leakage_vectors_closed": true,
+    "post_submission_reveal_operational": true,
+    "missing_ai_evaluation_fallback": "AI Evaluation Not Available"
+  },
+  "testing_verification": {
+    "frontend_suites_count": 15,
+    "frontend_tests_count": 74,
+    "tests_passed": 74,
+    "tests_failed": 0,
+    "nextjs_routes_compiled": 32,
+    "nextjs_build_status": "PASS"
+  },
+  "acceptance_checklist": {
+    "15_of_15_criteria_satisfied": true
+  }
+}

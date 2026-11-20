@@ -263,9 +263,10 @@ class IncidentService:
             # 2. SOC Analyst: Strictly double-blind. Client ?blind_review=false CANNOT bypass server protection.
             #    Only revealed IF this analyst has submitted an independent determination for this incident.
             # 3. Read-Only Viewer / others: Always masked / safely redacted.
+            norm_role = (user_role or "").strip().lower()
             if is_admin:
                 can_see_verdict = is_reviewed if blind_review else True
-            elif user_role == "SOC Analyst":
+            elif norm_role in ("soc analyst", "analyst", "security analyst", "senior analyst", "soc_analyst", "senior_analyst"):
                 can_see_verdict = is_reviewed
             else:
                 can_see_verdict = False
@@ -447,9 +448,10 @@ class IncidentService:
         # 2. SOC Analyst: Strictly double-blind. Client ?blind_review=false CANNOT bypass server protection.
         #    Only revealed IF this analyst has submitted an independent determination for this incident.
         # 3. Read-Only Viewer / others: Always masked / safely redacted.
+        norm_role = (user_role or "").strip().lower()
         if is_admin:
             can_see_verdict = has_analyst_review if blind_review else True
-        elif user_role == "SOC Analyst":
+        elif norm_role in ("soc analyst", "analyst", "security analyst", "senior analyst", "soc_analyst", "senior_analyst"):
             can_see_verdict = has_analyst_review
         else:
             can_see_verdict = False

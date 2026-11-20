@@ -49,12 +49,22 @@ class SubmitReviewRequest(BaseModel):
         if not v or not isinstance(v, str):
             raise ValueError("analyst_verdict is required and must be a non-empty string")
         v_clean = v.upper().strip().replace(" ", "_").replace("-", "_")
+        # Reject derived comparison outcomes
+        if v_clean in ("AGREE_TP", "AGREE_FP", "MISSED_TP", "CRITICAL_MISSED_TP", "FALSE_ALARM", "AI_FALSE_ALARM", "AGREEMENT_TP", "AGREEMENT_FP"):
+            raise ValueError(
+                f"'{v}' is a derived post-comparison outcome and cannot be submitted as an independent analyst verdict. "
+                "Allowed values are strictly: TRUE_POSITIVE, FALSE_POSITIVE, INSUFFICIENT_EVIDENCE."
+            )
         if v_clean in ("TP", "TRUE_POSITIVE", "TRUEPOSITIVE", "MALICIOUS"):
             return "TRUE_POSITIVE"
         if v_clean in ("FP", "FALSE_POSITIVE", "FALSEPOSITIVE", "BENIGN"):
             return "FALSE_POSITIVE"
         if v_clean in ("INSUFFICIENT_EVIDENCE", "INSUFFICIENT", "ABSTAIN", "REQUIRES_ATTENTION", "UNKNOWN", "UNCERTAIN"):
             return "INSUFFICIENT_EVIDENCE"
+        if v_clean not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "INSUFFICIENT_EVIDENCE"):
+            raise ValueError(
+                f"Invalid analyst verdict '{v}'. Allowed values are strictly: TRUE_POSITIVE, FALSE_POSITIVE, INSUFFICIENT_EVIDENCE."
+            )
         return v_clean
 
     @field_validator("evidence_references", mode="before")

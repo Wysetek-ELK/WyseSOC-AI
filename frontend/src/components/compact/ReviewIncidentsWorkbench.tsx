@@ -332,13 +332,6 @@ export function ReviewIncidentsWorkbench({
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => onOpenActualPrompt?.(String(selectedIncident.incident_id))}
-                    className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                  >
-                    <FileCode className="w-3.5 h-3.5 text-cyan-400" />
-                    Inspect Payload
-                  </button>
-                  <button
                     onClick={handleNextIncident}
                     className="px-2.5 py-1 rounded bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-800 text-xs font-semibold flex items-center gap-1 transition-colors"
                   >
@@ -524,15 +517,48 @@ export function ReviewIncidentsWorkbench({
                     <div className="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
                       <span className="text-slate-400 font-sans block text-[11px]">AI Model Determination:</span>
                       <span className="font-bold text-cyan-300 text-sm">
-                        {revealedResult.revealed_ai_verdict || "RECORDED"}
+                        {revealedResult.revealed_ai_verdict || "AI Evaluation Not Available"}
                       </span>
+                      {revealedResult.effective_verdict && revealedResult.effective_verdict !== revealedResult.revealed_ai_verdict && (
+                        <span className="block text-[10px] text-amber-400 font-sans mt-0.5">
+                          Governed: {revealedResult.effective_verdict}
+                        </span>
+                      )}
+                      {revealedResult.policy_version && (
+                        <span className="block text-[10px] text-slate-500 font-sans mt-0.5">
+                          Policy Version: v{revealedResult.policy_version}
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex justify-end pt-1">
+                  {revealedResult.disagreement_reason && (
+                    <div className="p-2 rounded bg-amber-950/30 border border-amber-800/60 text-amber-200 text-[11px]">
+                      <span className="font-semibold block mb-0.5">Outcome Rationale:</span>
+                      {revealedResult.disagreement_reason}
+                    </div>
+                  )}
+
+                  {revealedResult.revealed_ai_rationale && (
+                    <div className="p-2 rounded bg-slate-950 border border-slate-800 text-slate-300 text-[11px]">
+                      <span className="font-semibold text-slate-400 block mb-0.5">Model Reasoning:</span>
+                      <p className="line-clamp-3">{revealedResult.revealed_ai_rationale}</p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-1">
+                    {onOpenActualPrompt && (
+                      <button
+                        onClick={() => onOpenActualPrompt(String(selectedIncident.incident_id))}
+                        className="px-2.5 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-slate-800 font-semibold text-xs flex items-center gap-1.5 transition-colors"
+                      >
+                        <FileCode className="w-3.5 h-3.5" />
+                        Inspect LLM Prompt Capture
+                      </button>
+                    )}
                     <button
                       onClick={handleNextIncident}
-                      className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center gap-1 transition-colors"
+                      className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center gap-1 transition-colors ml-auto"
                     >
                       Continue to Next Incident
                       <ArrowRight className="w-3.5 h-3.5" />
