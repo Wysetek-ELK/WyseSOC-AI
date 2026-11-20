@@ -12,6 +12,7 @@ export interface CompanyBrandingConfig {
     shortName: string;
     developedByLabel: string;
     sidebarAttribution: string;
+    headerAttribution: string;
     copyrightYear: number;
     copyrightNotice: string;
   };
@@ -30,6 +31,7 @@ export const BRANDING: CompanyBrandingConfig = {
     shortName: "WYSETEK",
     developedByLabel: "Developed & Operated by",
     sidebarAttribution: "by WYSETEK",
+    headerAttribution: "A Wysetek Product",
     copyrightYear: 2026,
     copyrightNotice: "© 2026 Wysetek Systems Technologists Pvt. Ltd.",
   },
@@ -44,4 +46,5 @@ export const BRANDING: CompanyBrandingConfig = {
 
 export const COMPANY_NAME = BRANDING.company.fullName;
 export const SHORT_COMPANY_NAME = BRANDING.company.shortName;
+export const HEADER_ATTRIBUTION = BRANDING.company.headerAttribution;
 export const COPYRIGHT_NOTICE = BRANDING.company.copyrightNotice;

@@ -11,6 +11,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { HeaderBranding } from "@/components/layout/HeaderBranding";
 
 export function Header() {
   const router = useRouter();
@@ -52,9 +53,9 @@ export function Header() {
   const displayRole = user?.role ? user.role : isLoading ? "SYNCING" : "UNAUTHENTICATED";
 
   return (
-    <header className="flex h-10 items-center justify-between theme-glass-header px-3">
+    <header className="flex h-10 items-center justify-between theme-glass-header px-3 gap-2 sm:gap-4">
       {/* Global Search Bar */}
-      <form onSubmit={handleSearch} className="relative w-72 sm:w-80 md:w-96 max-w-md">
+      <form onSubmit={handleSearch} className="relative w-44 sm:w-64 md:w-72 lg:w-80 xl:w-96 max-w-md shrink min-w-0">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
         <input
           ref={searchInputRef}
@@ -69,8 +70,13 @@ export function Header() {
         </kbd>
       </form>
 
+      {/* Corporate Dual Branding: Verdictum AI | WYSETEK — A Wysetek Product */}
+      <div className="flex items-center justify-center shrink-0 min-w-0 px-1 sm:px-2">
+        <HeaderBranding />
+      </div>
+
       {/* Right Controls */}
-      <div className="flex items-center gap-2 sm:gap-2.5">
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
         {/* Blind Review Mode Toggle */}
         <button
           onClick={() => setBlindReviewMode(!blindReviewMode)}

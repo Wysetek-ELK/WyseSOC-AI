@@ -213,3 +213,85 @@ test("Root metadata incorporates centralized branding", () => {
   assert.match(layoutSrc, /\$\{BRANDING\.product\.name\}\s*—\s*\$\{BRANDING\.product\.platformSubtitle\}/);
   assert.match(layoutSrc, /\$\{BRANDING\.company\.fullName\}/);
 });
+
+test("Header component integrates HeaderBranding dual branding lockup in top navigation bar", () => {
+  const headerSrc = fs.readFileSync(
+    path.join(FRONTEND_SRC, "components/layout/Header.tsx"),
+    "utf-8"
+  );
+
+  // Must import HeaderBranding
+  assert.match(
+    headerSrc,
+    /import\s*\{\s*HeaderBranding\s*\}\s*from\s*["']@\/components\/layout\/HeaderBranding["']/,
+    "Header must import HeaderBranding"
+  );
+
+  // Must render HeaderBranding in center space between search and controls
+  assert.match(
+    headerSrc,
+    /<HeaderBranding\s*\/>/,
+    "Header must render HeaderBranding in navigation bar"
+  );
+
+  // Preserves essential controls: search, blind review, theme toggle, user profile, logout
+  assert.match(headerSrc, /handleSearch/, "Must preserve global search");
+  assert.match(headerSrc, /setBlindReviewMode/, "Must preserve blind review mode toggle");
+  assert.match(headerSrc, /data-testid="theme-toggle-btn"/, "Must preserve theme switch");
+  assert.match(headerSrc, /data-testid="header-user-name"/, "Must preserve user profile display");
+  assert.match(headerSrc, /data-testid="header-user-role"/, "Must preserve user role badge");
+  assert.match(headerSrc, /Sign out of Verdictum AI/, "Must preserve logout button");
+});
+
+test("HeaderBranding component renders Verdictum AI | WYSETEK and subtitle with responsive controls", () => {
+  const brandingComponentSrc = fs.readFileSync(
+    path.join(FRONTEND_SRC, "components/layout/HeaderBranding.tsx"),
+    "utf-8"
+  );
+
+  // Must import centralized BRANDING and BrandLogo
+  assert.match(
+    brandingComponentSrc,
+    /import\s*\{\s*BRANDING\s*\}\s*from\s*["']@\/config\/branding["']/,
+    "HeaderBranding must import centralized BRANDING config"
+  );
+  assert.match(
+    brandingComponentSrc,
+    /import\s*\{\s*BrandLogo\s*\}\s*from\s*["']@\/components\/common\/BrandLogo["']/,
+    "HeaderBranding must import official BrandLogo"
+  );
+
+  // Must render official Verdictum emblem
+  assert.match(
+    brandingComponentSrc,
+    /<BrandLogo[\s\S]*?size=\{18\}[\s\S]*?priority/,
+    "Must render official BrandLogo at size 18"
+  );
+
+  // Must render product name, subtle separator, and WYSETEK
+  assert.match(
+    brandingComponentSrc,
+    /data-testid="header-dual-branding"/,
+    "Must expose data-testid for dual branding container"
+  );
+  assert.match(
+    brandingComponentSrc,
+    /data-testid="header-branding-company"/,
+    "Must expose data-testid for WYSETEK company name"
+  );
+  assert.match(
+    brandingComponentSrc,
+    /data-testid="header-branding-subtitle"/,
+    "Must expose data-testid for A Wysetek Product subtitle"
+  );
+
+  // Must contain subtle vertical separator
+  assert.match(brandingComponentSrc, /\|/, "Must include vertical separator between product and company");
+
+  // Must link to home/dashboard
+  assert.match(
+    brandingComponentSrc,
+    /href=["']\/agent-mission-control["']/,
+    "Dual branding must link to main dashboard"
+  );
+});
