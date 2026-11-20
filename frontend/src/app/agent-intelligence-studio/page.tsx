@@ -1909,9 +1909,9 @@ function AgentIntelligenceStudioContent() {
           setPrimaryTab("overview");
           setReviewSubView("incidents");
           setTimeout(() => {
-            const el = document.getElementById("incident-review-workbench");
+            const el = document.getElementById("analyst-determination-form") || document.getElementById("incident-review-workbench");
             if (el) {
-              el.scrollIntoView({ behavior: "smooth", block: "start" });
+              el.scrollIntoView({ behavior: "smooth", block: "center" });
               el.classList.add("ring-2", "ring-cyan-500/80");
               setTimeout(() => {
                 el.classList.remove("ring-2", "ring-cyan-500/80");
@@ -1939,9 +1939,9 @@ function AgentIntelligenceStudioContent() {
             setPrimaryTab("overview");
             setReviewSubView("incidents");
             setTimeout(() => {
-              const el = document.getElementById("incident-review-workbench");
+              const el = document.getElementById("analyst-determination-form") || document.getElementById("incident-review-workbench");
               if (el) {
-                el.scrollIntoView({ behavior: "smooth", block: "start" });
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
                 el.classList.add("ring-2", "ring-cyan-500/80");
                 setTimeout(() => {
                   el.classList.remove("ring-2", "ring-cyan-500/80");

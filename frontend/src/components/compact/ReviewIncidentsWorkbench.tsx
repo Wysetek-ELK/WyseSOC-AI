@@ -106,6 +106,19 @@ export function ReviewIncidentsWorkbench({
     fetchIncidents();
   }, [ruleId]);
 
+  // Synchronize counts whenever parent passes updated learning profile
+  useEffect(() => {
+    if (propLearningProfile) {
+      setCounts((prev) => ({
+        ...prev,
+        reviewed: propLearningProfile.total_analyst_reviews ?? prev.reviewed,
+        verifiedGt:
+          (propLearningProfile.verified_tp_count ?? 0) +
+          (propLearningProfile.verified_fp_count ?? 0),
+      }));
+    }
+  }, [propLearningProfile]);
+
   // Load detailed incident evidence and raw logs whenever selected incident changes
   useEffect(() => {
     if (!selectedIncident?.incident_id) {
@@ -405,7 +418,7 @@ export function ReviewIncidentsWorkbench({
               </div>
 
               {/* Double-Blind Determination Form */}
-              <div className="p-3.5 rounded-xl border border-indigo-950/80 bg-indigo-950/20 space-y-3">
+              <div id="analyst-determination-form" className="p-3.5 rounded-xl border border-indigo-950/80 bg-indigo-950/20 space-y-3 scroll-mt-6 transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-200 text-xs flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />

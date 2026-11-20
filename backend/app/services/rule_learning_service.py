@@ -4,6 +4,7 @@ from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.rule import Rule
+from app.models.incident import Incident
 from app.models.rule_learning import RuleLearningProfile, RuleLearningStateHistory
 from app.models.analyst_feedback import AnalystVerdictReview
 from app.services.wilson_evaluator import WilsonScoreEvaluator
