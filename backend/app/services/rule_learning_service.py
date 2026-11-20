@@ -805,68 +805,111 @@ class RuleLearningService:
         if rule:
             rule_identifiers = list(set([rule.id, rule.rule_id, rule_id]))
 
-        rev_stmt = select(AnalystVerdictReview).where(
-            and_(
-                AnalystVerdictReview.rule_id.in_(rule_identifiers),
-                AnalystVerdictReview.customer == customer,
-            )
+        rule_filter = or_(
+            AnalystVerdictReview.rule_id.in_(rule_identifiers),
+            Incident.rule_id.in_(rule_identifiers),
+            Incident.event_type.in_(rule_identifiers),
         )
+
+        if customer and customer.upper() not in ("ALL", "GLOBAL"):
+            if customer.upper() == "DEFAULT":
+                cust_filter = or_(
+                    AnalystVerdictReview.customer == "DEFAULT",
+                    AnalystVerdictReview.customer == "default",
+                    AnalystVerdictReview.customer == "",
+                    AnalystVerdictReview.customer.is_(None),
+                    Incident.customer == "DEFAULT",
+                    Incident.customer == "default",
+                    Incident.customer == "",
+                    Incident.customer.is_(None),
+                )
+            else:
+                cust_filter = or_(
+                    AnalystVerdictReview.customer == customer,
+                    Incident.customer == customer,
+                )
+            rev_stmt = (
+                select(AnalystVerdictReview)
+                .outerjoin(Incident, AnalystVerdictReview.incident_id == Incident.id)
+                .where(and_(rule_filter, cust_filter))
+            )
+        else:
+            rev_stmt = (
+                select(AnalystVerdictReview)
+                .outerjoin(Incident, AnalystVerdictReview.incident_id == Incident.id)
+                .where(rule_filter)
+            )
+
         rev_res = await db.execute(rev_stmt)
         reviews = rev_res.scalars().all()
 
         total_reviews = len(reviews)
-        verified_tp = 0
-        verified_fp = 0
-        analyst_abstain = 0
+        if total_reviews == 0 and (profile.total_analyst_reviews or 0) > 0:
+            # Fallback to existing profile counts to preserve verified reviews
+            err_dist_prev = dict(profile.error_distribution or {})
+            total_reviews = profile.total_analyst_reviews
+            verified_tp = profile.verified_tp_count
+            verified_fp = profile.verified_fp_count
+            agreement_tp = err_dist_prev.get("agreement_tp", 0)
+            agreement_fp = err_dist_prev.get("agreement_fp", 0)
+            ai_false_alarm = err_dist_prev.get("ai_false_alarm", 0)
+            critical_missed_tp = err_dist_prev.get("critical_missed_tp", 0)
+            analyst_resolved_abstention = err_dist_prev.get("analyst_resolved_abstention", 0)
+            analyst_only_initial_benchmark = err_dist_prev.get("analyst_only_initial_benchmark", 0)
+            disputed = err_dist_prev.get("disputed", 0)
+        else:
+            verified_tp = 0
+            verified_fp = 0
+            analyst_abstain = 0
 
-        agreement_tp = 0
-        agreement_fp = 0
-        ai_false_alarm = 0
-        critical_missed_tp = 0
-        analyst_resolved_abstention = 0
-        analyst_only_initial_benchmark = 0
-        disputed = 0
+            agreement_tp = 0
+            agreement_fp = 0
+            ai_false_alarm = 0
+            critical_missed_tp = 0
+            analyst_resolved_abstention = 0
+            analyst_only_initial_benchmark = 0
+            disputed = 0
 
-        for r in reviews:
-            av = (r.analyst_verdict or "").upper().strip()
-            if av == "TRUE_POSITIVE":
-                verified_tp += 1
-            elif av == "FALSE_POSITIVE":
-                verified_fp += 1
-            else:
-                analyst_abstain += 1
-
-            outcome = (r.comparison_outcome or "").upper().strip()
-            if outcome == "AGREEMENT_TP":
-                agreement_tp += 1
-            elif outcome == "AGREEMENT_FP":
-                agreement_fp += 1
-            elif outcome == "AI_FALSE_ALARM":
-                ai_false_alarm += 1
-            elif outcome == "CRITICAL_MISSED_TP":
-                critical_missed_tp += 1
-            elif outcome == "ANALYST_RESOLVED_ABSTENTION":
-                analyst_resolved_abstention += 1
-            elif outcome == "ANALYST_ONLY_INITIAL_BENCHMARK":
-                analyst_only_initial_benchmark += 1
-            elif outcome in ("DISPUTED", "AGREEMENT_REQUIRES_ATTENTION"):
-                disputed += 1
-            else:
-                ai_v = (r.revealed_ai_verdict or "").upper().strip() if r.revealed_ai_verdict else None
-                if not ai_v:
-                    analyst_only_initial_benchmark += 1
-                elif ai_v in ("REQUIRES_ATTENTION", "INSUFFICIENT_EVIDENCE"):
-                    analyst_resolved_abstention += 1
-                elif av == "TRUE_POSITIVE" and ai_v == "TRUE_POSITIVE":
-                    agreement_tp += 1
-                elif av == "FALSE_POSITIVE" and ai_v == "FALSE_POSITIVE":
-                    agreement_fp += 1
-                elif av == "FALSE_POSITIVE" and ai_v == "TRUE_POSITIVE":
-                    ai_false_alarm += 1
-                elif av == "TRUE_POSITIVE" and ai_v == "FALSE_POSITIVE":
-                    critical_missed_tp += 1
+            for r in reviews:
+                av = (r.analyst_verdict or "").upper().strip()
+                if av == "TRUE_POSITIVE":
+                    verified_tp += 1
+                elif av == "FALSE_POSITIVE":
+                    verified_fp += 1
                 else:
+                    analyst_abstain += 1
+
+                outcome = (r.comparison_outcome or "").upper().strip()
+                if outcome == "AGREEMENT_TP":
+                    agreement_tp += 1
+                elif outcome == "AGREEMENT_FP":
+                    agreement_fp += 1
+                elif outcome == "AI_FALSE_ALARM":
+                    ai_false_alarm += 1
+                elif outcome == "CRITICAL_MISSED_TP":
+                    critical_missed_tp += 1
+                elif outcome == "ANALYST_RESOLVED_ABSTENTION":
+                    analyst_resolved_abstention += 1
+                elif outcome == "ANALYST_ONLY_INITIAL_BENCHMARK":
+                    analyst_only_initial_benchmark += 1
+                elif outcome in ("DISPUTED", "AGREEMENT_REQUIRES_ATTENTION"):
                     disputed += 1
+                else:
+                    ai_v = (r.revealed_ai_verdict or "").upper().strip() if r.revealed_ai_verdict else None
+                    if not ai_v:
+                        analyst_only_initial_benchmark += 1
+                    elif ai_v in ("REQUIRES_ATTENTION", "INSUFFICIENT_EVIDENCE"):
+                        analyst_resolved_abstention += 1
+                    elif av == "TRUE_POSITIVE" and ai_v == "TRUE_POSITIVE":
+                        agreement_tp += 1
+                    elif av == "FALSE_POSITIVE" and ai_v == "FALSE_POSITIVE":
+                        agreement_fp += 1
+                    elif av == "FALSE_POSITIVE" and ai_v == "TRUE_POSITIVE":
+                        ai_false_alarm += 1
+                    elif av == "TRUE_POSITIVE" and ai_v == "FALSE_POSITIVE":
+                        critical_missed_tp += 1
+                    else:
+                        disputed += 1
 
         total_decisive = agreement_tp + agreement_fp + ai_false_alarm + critical_missed_tp
         ai_correct = agreement_tp + agreement_fp
@@ -934,7 +977,7 @@ class RuleLearningService:
         profile.eligibility_reasons = reasons
 
         db.add(profile)
-        await db.flush()
+        await db.commit()
 
         pilot_tp_required = cls.MIN_PILOT_TP
         pilot_fp_required = cls.MIN_PILOT_FP
