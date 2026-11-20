@@ -83,7 +83,23 @@ Verdictum AI | WYSETEK  (or Verdictum | WYSETEK on < 480px)
 
 ## 6. Deployment Status
 
-- **Workflow Mode**: UPLA `FULL_WORKFLOW`.
-- **Pre-deployment Verification**: Local build and all unit test suites verified clean.
-- **Deployment Target**: Server 1 (`172.26.41.240`, directory `/opt/wysesoc-ai`).
-- **Server 2 & LLM Safeguard**: Server 2 and Local AWQ LLM services (`vllm`) remain untouched and unmodified.
+- **Workflow Mode**: UPLA `FULL_WORKFLOW` (Execution ID: `upla-20261120-045537-54e6d6`).
+- **Pre-deployment Verification**: Local build and all 14 unit test suites (75/75 tests) verified clean.
+- **Gate 1 Approval**: Explicit human authorization granted for GitHub synchronization.
+- **GitHub Synchronization**: Commit SHA `6015f6fc8e9efb66ec52d913146bb61277759ca2` synced and verified on `feature/phase3-compact-ui`.
+- **Gate 2 Approval**: Explicit human authorization granted for remote deployment to Server 1.
+- **Remote Deployment Target**: Server 1 (`172.26.41.240`, directory `/opt/wysesoc-ai`).
+- **Remote Execution Steps**:
+  - Exact Git SHA `6015f6fc8e9efb66ec52d913146bb61277759ca2` checked out.
+  - Remote Alembic migrations executed (`./venv/bin/alembic upgrade head`).
+  - Remote test suites passed (`pytest tests/test_ais_heavy_tcp_e2e.py tests/test_rule_learning_platform.py tests/test_api_422_remediation.py -q`).
+  - Remote Next.js production build succeeded (`npm run build`).
+  - Remote services restarted (`systemctl restart ai-verdict-backend.service ai-verdict-frontend.service`).
+  - Remote health check passed (HTTP 200 on port 3000 `/login` and port 8000 `/api/health`).
+- **Server 2 & LLM Safeguard**: Server 2 and Local AWQ LLM services (`vllm`) remain completely untouched and unmodified.
+
+---
+
+## 7. Remaining Issues
+
+- None. All visual requirements, responsive layout constraints, control preservation guarantees, unit tests, and production build checks have succeeded and verified live on Server 1.
