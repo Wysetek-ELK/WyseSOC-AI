@@ -65,4 +65,10 @@ test("Phase 8: AIS Page wires ReviewIncidentsWorkbench with safe post-submission
 
   assert.ok(pageContent.includes("<ReviewIncidentsWorkbench"), "Page must embed ReviewIncidentsWorkbench");
   assert.ok(pageContent.includes("onOpenActualPrompt="), "Page must wire onOpenActualPrompt for post-submission inspection");
+  assert.ok(pageContent.includes("onReviewSubmitted="), "Page must wire onReviewSubmitted to refresh learning profile");
+  assert.ok(pageContent.includes('document.getElementById("incident-review-workbench")'), "Start Double-Blind Review button must scroll to incident-review-workbench");
+
+  const workbenchPath = path.join(FRONTEND_SRC, "components/compact/ReviewIncidentsWorkbench.tsx");
+  const workbenchContent = fs.readFileSync(workbenchPath, "utf-8");
+  assert.ok(workbenchContent.includes('id="incident-review-workbench"'), "ReviewIncidentsWorkbench must define id='incident-review-workbench'");
 });

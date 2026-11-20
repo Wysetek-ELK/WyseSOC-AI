@@ -141,7 +141,19 @@ export function AccuracyLearningSummary({
             </div>
 
             <button
-              onClick={() => (onStartReviews || onNavigateToReviews)?.()}
+              onClick={() => {
+                (onStartReviews || onNavigateToReviews)?.();
+                setTimeout(() => {
+                  const el = document.getElementById("incident-review-workbench");
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    el.classList.add("ring-2", "ring-cyan-500/80");
+                    setTimeout(() => {
+                      el.classList.remove("ring-2", "ring-cyan-500/80");
+                    }, 1500);
+                  }
+                }, 80);
+              }}
               className="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors font-sans shadow-md"
             >
               Go to Review Incidents

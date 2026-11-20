@@ -83,8 +83,8 @@ export function ReviewIncidentsWorkbench({
         verifiedGt: (profileData?.verified_tp_count ?? 0) + (profileData?.verified_fp_count ?? 0),
       });
 
-      if (items.length > 0 && !selectedIncident) {
-        setSelectedIncident(items[0]);
+      if (items.length > 0) {
+        setSelectedIncident((prev: any) => prev || items[0]);
       }
     } catch (err: any) {
       console.error("Failed to load review queue:", err);
@@ -189,7 +189,7 @@ export function ReviewIncidentsWorkbench({
   };
 
   return (
-    <div className="space-y-4">
+    <div id="incident-review-workbench" className="space-y-4 scroll-mt-6 transition-all duration-300">
       {/* Top Counts & Blind Status Bar */}
       <div className="p-3 rounded-xl border border-slate-800 bg-slate-950/70 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-4">

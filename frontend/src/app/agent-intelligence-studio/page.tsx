@@ -312,7 +312,9 @@ function AgentIntelligenceStudioContent() {
 
   const handleNavigateTab = (tab: "overview" | "test_ai" | "learning" | "advanced", section?: string) => {
     setPrimaryTab(tab);
-    if (tab === "learning") {
+    if (tab === "overview") {
+      setReviewSubView((section as any) || "incidents");
+    } else if (tab === "learning") {
       setStudioTab("learning");
     } else if (tab === "advanced" && section) {
       setAdvancedSection(section as any);
@@ -1885,6 +1887,16 @@ function AgentIntelligenceStudioContent() {
         action: () => {
           setPrimaryTab("overview");
           setReviewSubView("incidents");
+          setTimeout(() => {
+            const el = document.getElementById("incident-review-workbench");
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "start" });
+              el.classList.add("ring-2", "ring-cyan-500/80");
+              setTimeout(() => {
+                el.classList.remove("ring-2", "ring-cyan-500/80");
+              }, 1500);
+            }
+          }, 80);
         },
         buttonText: "Start Double-Blind Review",
         badge: "Ground Truth Needed",
@@ -2135,6 +2147,7 @@ function AgentIntelligenceStudioContent() {
                 </div>
                 <button
                   type="button"
+                  data-testid="next-action-button"
                   onClick={nextRecommendedAction.action}
                   className="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 shrink-0 shadow-sm transition-all"
                 >
@@ -2604,6 +2617,14 @@ function AgentIntelligenceStudioContent() {
               ruleId={selectedRuleId}
               ruleName={rulePrompt?.rule_name || selectedRule?.name}
               onNavigateToTest={() => setPrimaryTab("test_ai")}
+              onReviewSubmitted={() => {
+                if (selectedRuleId) {
+                  fetchLearningProfile(selectedRuleId);
+                  if (selectedVersionId) {
+                    fetchQualityPreview(selectedRuleId, selectedVersionId);
+                  }
+                }
+              }}
               onOpenActualPrompt={(incId) => {
                 setPromptInspectorIncidentId(incId || null);
                 setPromptInspectorRuleId(selectedRuleId);

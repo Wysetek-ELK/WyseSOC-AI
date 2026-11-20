@@ -408,7 +408,19 @@ export function AgentIntelligenceStudioOverview({
         description:
           `Ground truth calibration requires verified analyst reviews (${totalReviews}/30 for pilot). Conduct double-blind evaluations on pending incidents.`,
         label: "Review Incidents",
-        action: () => onNavigateTab("learning"),
+        action: () => {
+          onNavigateTab("overview", "incidents");
+          setTimeout(() => {
+            const el = document.getElementById("incident-review-workbench");
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "start" });
+              el.classList.add("ring-2", "ring-cyan-500/80");
+              setTimeout(() => {
+                el.classList.remove("ring-2", "ring-cyan-500/80");
+              }, 1500);
+            }
+          }, 80);
+        },
         status: "primary" as const,
       };
     }
