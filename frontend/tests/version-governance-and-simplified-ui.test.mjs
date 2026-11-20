@@ -48,7 +48,9 @@ test("Phase 2: Simplified UI 3 Primary Tabs and Workbenches", () => {
   assert.ok(accuracyFile.includes("Begin Independent Analyst Reviews"), "Must recommend starting reviews when unverified");
   assert.ok(accuracyFile.includes("TP Recall"), "Must display TP Recall metric");
   assert.ok(accuracyFile.includes("FP Precision"), "Must display FP Precision metric");
-  assert.ok(accuracyFile.includes("Confusion Matrix"), "Must provide Confusion Matrix when ground truth exists");
+  assert.ok(accuracyFile.includes("Specificity"), "Must display Specificity metric");
+  assert.ok(accuracyFile.includes("Authoritative Three-Tier Governance Contract"), "Must describe 3-tier governance lifecycle");
+  assert.ok(accuracyFile.includes("Verified Confusion Matrix"), "Must provide Confusion Matrix when ground truth exists");
 });
 
 test("Phase 3: Simplified Rule Header, Decoupled Statuses, and Authoritative Next Recommended Action", () => {

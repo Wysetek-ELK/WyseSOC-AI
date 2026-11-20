@@ -1,0 +1,87 @@
+{
+  "project": "Verdictum AI",
+  "component": "Agent Intelligence Studio 2.0 (AIS 2.0)",
+  "phase": "G8 Governance Integrity, Empirical Metrics & Final Deployment Verification",
+  "execution_id": "upla-20261120-g8-governance-final-integrity",
+  "timestamp": "2026-11-20T13:02:00+05:30",
+  "acceptance_decision": "AIS_GOVERNANCE_INTEGRITY_ACCEPTED",
+  "git_state": {
+    "branch": "feature/phase3-compact-ui",
+    "base_sha": "1a5d81795c8d7a7c4617ba64a8c8edfd7b8325b5"
+  },
+  "deployment_targets": {
+    "server_1": {
+      "ip": "172.26.41.240",
+      "role": "application_staging_prod",
+      "status": "HEALTHY",
+      "services": [
+        "ai-verdict-backend.service",
+        "ai-verdict-frontend.service",
+        "ai-verdict-worker.service",
+        "ai-verdict-scheduler.service",
+        "postgresql.service",
+        "redis-server.service",
+        "nginx.service"
+      ],
+      "alembic_revisions": [
+        "014_policy_version_history_management",
+        "015_approved_version_immutability"
+      ]
+    },
+    "server_2": {
+      "ip": "172.26.41.241",
+      "role": "dedicated_local_awq_llm",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "temperature": 0.01,
+      "status": "UNTOUCHED_AND_PROTECTED"
+    }
+  },
+  "protected_baselines": {
+    "website_access_policy_violation": {
+      "rule_id": "7bd13e89-0828-48e6-8cf5-f3cbf12d438c",
+      "active_approved_version": 2,
+      "candidate_draft_version": 3,
+      "status": "PILOT_READY"
+    },
+    "heavy_tcp_host_scan_on_fixed_port": {
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "active_approved_version": 7,
+      "candidate_draft_version": 8,
+      "status": "PILOT_READY"
+    }
+  },
+  "mathematical_reconciliation": {
+    "overall_accuracy": "(TP + TN) / (TP + TN + FP + FN)",
+    "fp_class_precision": "TN / (TN + FN)",
+    "specificity": "TN / (TN + FP)",
+    "tp_class_precision": "TP / (TP + FP)",
+    "tp_recall": "TP / (TP + FN)",
+    "wilson_lower_bound": "Binomial 95% Wilson Score Interval Lower Bound"
+  },
+  "production_thresholds": {
+    "min_samples": 100,
+    "min_tp": 25,
+    "min_fp": 50,
+    "min_accuracy": 0.95,
+    "min_fp_precision": 0.99,
+    "min_wilson_lower_bound": 0.96,
+    "min_tp_recall": 0.95,
+    "max_critical_missed_tp": 0
+  },
+  "test_verification": {
+    "frontend": {
+      "suites_count": 14,
+      "tests_count": 71,
+      "passed": 71,
+      "failed": 0
+    },
+    "backend_version_integrity": {
+      "test_scenarios_count": 17,
+      "passed": 17,
+      "failed": 0
+    }
+  },
+  "criteria_checklist": {
+    "17_of_17_passed": true
+  }
+}

@@ -86,9 +86,21 @@ export function AccuracyLearningSummary({
   const accuracyValue = profile?.empirical_accuracy ?? null;
   const tpRecall = profile?.tp_recall ?? null;
   const fpPrecision = profile?.fp_precision ?? null;
+  const tpPrecision = profile?.error_distribution?.tp_precision ?? null;
+  const specificity = profile?.error_distribution?.specificity ?? null;
   const wilsonBound = profile?.wilson_lower_bound ?? null;
   const abstentionCount = profile?.abstention_count ?? 0;
   const stage = profile?.lifecycle_stage || "LEARNING";
+
+  // Authoritative G8 Multi-Tier Evaluation Status
+  const g8StatusText =
+    totalVerified === 0
+      ? "UNCALIBRATED (0/5 Cases)"
+      : totalVerified < 30
+      ? `EXPLORATORY (${totalVerified}/30 Pilot)`
+      : totalVerified < 100
+      ? `SUPERVISED PILOT (${totalVerified}/100 Prod)`
+      : "PRODUCTION ELIGIBLE";
 
   // Calculate agreement
   const aiCorrect = profile?.ai_correct_count ?? 0;
@@ -211,29 +223,36 @@ export function AccuracyLearningSummary({
             </span>
           </div>
           <span className="text-[10px] text-slate-500 block">
-            G8 Status: {totalVerified >= 30 ? "PASSED" : `${totalVerified}/30 minimum`}
+            G8 Status: {g8StatusText}
           </span>
         </div>
       </div>
 
-      {/* Secondary Metrics Row */}
-      <div className="grid grid-cols-3 gap-3 text-xs font-mono">
-        <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60 flex items-center justify-between">
+      {/* Secondary Metrics Grid: Full Decisive Diagnostic Spectrum */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-xs font-mono">
+        <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60 flex items-center justify-between" title="Sensitivity: TP / (TP + FN)">
           <span className="text-slate-400 font-sans text-[11px]">TP Recall:</span>
           <span className="font-bold text-slate-200">
             {tpRecall !== null ? `${(tpRecall * 100).toFixed(1)}%` : "NOT MEASURABLE"}
           </span>
         </div>
 
-        <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60 flex items-center justify-between">
+        <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60 flex items-center justify-between" title="FP Precision: TN / (TN + FN)">
           <span className="text-slate-400 font-sans text-[11px]">FP Precision:</span>
           <span className="font-bold text-slate-200">
             {fpPrecision !== null ? `${(fpPrecision * 100).toFixed(1)}%` : "NOT MEASURABLE"}
           </span>
         </div>
 
-        <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60 flex items-center justify-between">
-          <span className="text-slate-400 font-sans text-[11px]">Abstention Rate:</span>
+        <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60 flex items-center justify-between" title="True Negative Rate: TN / (TN + FP)">
+          <span className="text-slate-400 font-sans text-[11px]">Specificity:</span>
+          <span className="font-bold text-slate-200">
+            {specificity !== null ? `${(specificity * 100).toFixed(1)}%` : "NOT MEASURABLE"}
+          </span>
+        </div>
+
+        <div className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-950/60 flex items-center justify-between" title="Abstentions requiring human analyst review">
+          <span className="text-slate-400 font-sans text-[11px]">Abstentions:</span>
           <span className="font-bold text-slate-200">
             {abstentionCount} case(s)
           </span>
@@ -272,10 +291,10 @@ export function AccuracyLearningSummary({
                     AI Predicted TP
                   </td>
                   <td className="p-3 border border-slate-800 bg-rose-950/20 text-rose-300 font-bold">
-                    {profile?.error_distribution?.tp_as_tp ?? aiCorrect} (True Positive)
+                    {profile?.error_distribution?.tp ?? profile?.error_distribution?.tp_as_tp ?? profile?.error_distribution?.agreement_tp ?? aiCorrect} (True Positive)
                   </td>
                   <td className="p-3 border border-slate-800 bg-amber-950/20 text-amber-300 font-bold">
-                    {profile?.error_distribution?.fp_as_tp ?? 0} (False Alarm)
+                    {profile?.error_distribution?.fp ?? profile?.error_distribution?.fp_as_tp ?? profile?.error_distribution?.ai_false_alarm ?? 0} (False Alarm)
                   </td>
                 </tr>
                 <tr>
@@ -283,10 +302,10 @@ export function AccuracyLearningSummary({
                     AI Predicted FP
                   </td>
                   <td className="p-3 border border-slate-800 bg-rose-950/40 text-rose-400 font-bold">
-                    {profile?.error_distribution?.tp_as_fp ?? 0} (Missed Attack)
+                    {profile?.error_distribution?.fn ?? profile?.error_distribution?.tp_as_fp ?? profile?.error_distribution?.critical_missed_tp ?? 0} (Missed Attack)
                   </td>
                   <td className="p-3 border border-slate-800 bg-emerald-950/20 text-emerald-300 font-bold">
-                    {profile?.error_distribution?.fp_as_fp ?? 0} (True Negative)
+                    {profile?.error_distribution?.tn ?? profile?.error_distribution?.fp_as_fp ?? profile?.error_distribution?.agreement_fp ?? 0} (True Negative)
                   </td>
                 </tr>
               </tbody>
@@ -299,10 +318,10 @@ export function AccuracyLearningSummary({
       <div className="p-3 rounded-lg border border-slate-800/80 bg-slate-950/50 text-slate-400 text-xs space-y-1">
         <span className="font-semibold text-slate-300 flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 text-cyan-400" />
-          Rigorous Statistical Integrity Contract
+          Authoritative Three-Tier Governance Contract
         </span>
         <p className="text-[11px] leading-relaxed">
-          Verdictum AI clearly distinguishes raw analyst submissions from verified and senior-adjudicated ground truth. Telemetry presence alone is never conflated with true attack verification. Quality Gate G8 requires a minimum of 30 verified ground truth cases and statistical Wilson lower bound $\ge 96\%$ before autonomous production escalation is permitted.
+          Verdictum AI enforces 3 distinct evaluation tiers: <strong>Tier 1 Exploratory</strong> (&ge;5 verified cases, exploratory diagnostics); <strong>Tier 2 Supervised Pilot</strong> (&ge;30 verified cases with &ge;10 TP and &ge;10 FP, &ge;90% accuracy); and <strong>Tier 3 Production Certification</strong> (&ge;100 verified cases, &ge;25 TP, &ge;50 FP, Empirical Accuracy &ge;95.0%, FP-Class Precision &ge;99.0%, Wilson 95% Lower Bound &ge;96.0%, TP Recall &ge;95.0%, and 0 Critical Missed TPs). Production automation remains strictly disabled until Tier 3 criteria and human approval are met.
         </p>
       </div>
     </div>

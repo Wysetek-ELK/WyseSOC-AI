@@ -577,3 +577,281 @@ async def test_archive_restore_preserves_approval_status(db_session: AsyncSessio
     # Genuine unapproved draft restores to DRAFT
     assert restored_v3.status == "DRAFT"
     assert restored_v3.was_ever_approved is False
+
+
+@pytest.mark.asyncio
+async def test_future_approval_flag_persistence_and_deletion_rejection(db_session: AsyncSession, admin_user: User):
+    """
+    Test 11: Validates that future policy approvals immediately set was_ever_approved=True,
+    and any subsequent deletion attempt is strictly rejected.
+    """
+    rule, prompt = await create_base_rule_and_prompt(db_session, "PH_RULE_FUTURE_APPROVE_TEST")
+
+    new_candidate = PromptVersion(
+        id=str(uuid.uuid4()),
+        prompt_id=prompt.id,
+        version_number=1,
+        status="DRAFT",
+        was_ever_approved=False,
+        rule_specific_prompt="New candidate prompt to approve",
+        quality_score=90.0,
+    )
+    db_session.add(new_candidate)
+    await db_session.commit()
+
+    # Simulate approval via PromptStudioService logic
+    new_candidate.status = "APPROVED"
+    new_candidate.was_ever_approved = True
+    new_candidate.approved_at = datetime.now(timezone.utc)
+    new_candidate.approved_by_user_id = admin_user.id
+    prompt.active_version_id = new_candidate.id
+    await db_session.commit()
+    await db_session.refresh(new_candidate)
+
+    assert new_candidate.was_ever_approved is True
+    assert new_candidate.status == "APPROVED"
+
+    # Attempt delete on newly approved version -> MUST FAIL
+    with pytest.raises(HTTPException) as exc_info:
+        await PolicyVersionGovernanceService.delete_version(
+            db=db_session,
+            rule_identifier=rule.id,
+            version_id=new_candidate.id,
+            current_user=admin_user,
+        )
+    assert exc_info.value.status_code == 400
+    assert "permanently immutable" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_concurrent_approval_versus_deletion_row_locking(db_session: AsyncSession, admin_user: User):
+    """
+    Test 12: Validates row-level locking semantics and ensures that if a version
+    becomes approved concurrently, deletion checks abort immediately.
+    """
+    rule, prompt = await create_base_rule_and_prompt(db_session, "PH_RULE_CONCURRENT_LOCK_TEST")
+
+    v_draft = PromptVersion(
+        id=str(uuid.uuid4()),
+        prompt_id=prompt.id,
+        version_number=1,
+        status="DRAFT",
+        was_ever_approved=False,
+        rule_specific_prompt="Draft under race condition",
+    )
+    db_session.add(v_draft)
+    await db_session.commit()
+
+    # Provenance check initially false
+    assert await PolicyVersionGovernanceService.is_version_ever_approved(db_session, v_draft) is False
+
+    # Simulate concurrent approval committing in another transaction
+    v_draft.status = "APPROVED"
+    v_draft.was_ever_approved = True
+    v_draft.approved_at = datetime.now(timezone.utc)
+    await db_session.commit()
+
+    # Attempt delete must abort immediately
+    with pytest.raises(HTTPException) as exc_info:
+        await PolicyVersionGovernanceService.delete_version(
+            db=db_session,
+            rule_identifier=rule.id,
+            version_id=v_draft.id,
+            current_user=admin_user,
+        )
+    assert exc_info.value.status_code == 400
+    assert "permanently immutable" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_concurrent_archive_versus_deletion(db_session: AsyncSession, admin_user: User):
+    """
+    Test 13: Archiving an approved version concurrently does not make it eligible for deletion.
+    """
+    rule, prompt = await create_base_rule_and_prompt(db_session, "PH_RULE_CONCURRENT_ARCHIVE_TEST")
+
+    v_app = PromptVersion(
+        id=str(uuid.uuid4()),
+        prompt_id=prompt.id,
+        version_number=1,
+        status="APPROVED",
+        was_ever_approved=True,
+        rule_specific_prompt="Approved prompt to archive",
+        approved_at=datetime.now(timezone.utc),
+    )
+    db_session.add(v_app)
+    await db_session.commit()
+
+    # Concurrently archive
+    v_app.status = "ARCHIVED"
+    v_app.previous_status = "APPROVED"
+    v_app.was_ever_approved = True
+    await db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await PolicyVersionGovernanceService.delete_version(
+            db=db_session,
+            rule_identifier=rule.id,
+            version_id=v_app.id,
+            current_user=admin_user,
+        )
+    assert exc_info.value.status_code == 400
+    assert "permanently immutable" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_duplicate_delete_idempotent_rejection(db_session: AsyncSession, admin_user: User):
+    """
+    Test 14: Attempting to delete an already deleted version raises HTTP 404 cleanly without 500 crash.
+    """
+    rule, prompt = await create_base_rule_and_prompt(db_session, "PH_RULE_DUP_DEL_TEST")
+
+    v_del = PromptVersion(
+        id=str(uuid.uuid4()),
+        prompt_id=prompt.id,
+        version_number=1,
+        status="DRAFT",
+        was_ever_approved=False,
+    )
+    db_session.add(v_del)
+    await db_session.commit()
+
+    # First delete succeeds
+    res1 = await PolicyVersionGovernanceService.delete_version(
+        db=db_session,
+        rule_identifier=rule.id,
+        version_id=v_del.id,
+        current_user=admin_user,
+    )
+    assert res1["success"] is True
+
+    # Duplicate delete must return 404
+    with pytest.raises(HTTPException) as exc_info:
+        await PolicyVersionGovernanceService.delete_version(
+            db=db_session,
+            rule_identifier=rule.id,
+            version_id=v_del.id,
+            current_user=admin_user,
+        )
+    assert exc_info.value.status_code == 404
+    assert "not found" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_missing_historical_approval_metadata_failsafe(db_session: AsyncSession, admin_user: User):
+    """
+    Test 15: Fail-safe verification when was_ever_approved column is False, but approved_at,
+    approved_by_user_id, or previous_status indicates historical approval.
+    """
+    rule, prompt = await create_base_rule_and_prompt(db_session, "PH_RULE_FAILSAFE_APPROVAL_TEST")
+
+    v_legacy = PromptVersion(
+        id=str(uuid.uuid4()),
+        prompt_id=prompt.id,
+        version_number=1,
+        status="ARCHIVED",
+        was_ever_approved=False,  # Un-backfilled or corrupt flag
+        previous_status="APPROVED",  # Metadata proof of historical approval
+        approved_at=datetime.now(timezone.utc),
+    )
+    db_session.add(v_legacy)
+    await db_session.commit()
+
+    # Must detect approval through multi-layered provenance
+    assert await PolicyVersionGovernanceService.is_version_ever_approved(db_session, v_legacy) is True
+
+    # Attempt delete must be blocked
+    with pytest.raises(HTTPException) as exc_info:
+        await PolicyVersionGovernanceService.delete_version(
+            db=db_session,
+            rule_identifier=rule.id,
+            version_id=v_legacy.id,
+            current_user=admin_user,
+        )
+    assert exc_info.value.status_code == 400
+    assert "permanently immutable" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_protected_learning_profile_active_version_rejection(db_session: AsyncSession, admin_user: User):
+    """
+    Test 16: An unapproved draft bound to RuleLearningProfile.active_prompt_version_id
+    is considered ACTIVE and cannot be deleted.
+    """
+    from app.models.rule_learning import RuleLearningProfile
+
+    rule, prompt = await create_base_rule_and_prompt(db_session, "PH_RULE_LP_BINDING_TEST")
+
+    v_candidate = PromptVersion(
+        id=str(uuid.uuid4()),
+        prompt_id=prompt.id,
+        version_number=1,
+        status="DRAFT",
+        was_ever_approved=False,
+    )
+    db_session.add(v_candidate)
+    await db_session.flush()
+
+    # Bind to learning profile
+    lp = RuleLearningProfile(
+        id=str(uuid.uuid4()),
+        rule_id=rule.id,
+        rule_identifier=rule.rule_id,
+        customer="DEFAULT",
+        active_prompt_version_id=v_candidate.id,
+    )
+    db_session.add(lp)
+    await db_session.commit()
+
+    # Attempt delete must be blocked because it is bound to active learning profile
+    with pytest.raises(HTTPException) as exc_info:
+        await PolicyVersionGovernanceService.delete_version(
+            db=db_session,
+            rule_identifier=rule.id,
+            version_id=v_candidate.id,
+            current_user=admin_user,
+        )
+    assert exc_info.value.status_code == 400
+    assert "cannot be deleted" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_protected_policy_drift_event_rejection(db_session: AsyncSession, admin_user: User):
+    """
+    Test 17: Draft versions linked to PolicyDriftEvent cannot be deleted.
+    """
+    from app.models.policy_drift import PolicyDriftEvent
+
+    rule, prompt = await create_base_rule_and_prompt(db_session, "PH_RULE_DRIFT_REF_TEST")
+
+    v_drift = PromptVersion(
+        id=str(uuid.uuid4()),
+        prompt_id=prompt.id,
+        version_number=1,
+        status="DRAFT",
+        was_ever_approved=False,
+    )
+    db_session.add(v_drift)
+    await db_session.flush()
+
+    drift = PolicyDriftEvent(
+        id=str(uuid.uuid4()),
+        rule_id=rule.id,
+        prompt_version_id=v_drift.id,
+        event_type="SCHEMA_DRIFT",
+        description="Detection schema updated",
+        acknowledged=False,
+    )
+    db_session.add(drift)
+    await db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await PolicyVersionGovernanceService.delete_version(
+            db=db_session,
+            rule_identifier=rule.id,
+            version_id=v_drift.id,
+            current_user=admin_user,
+        )
+    assert exc_info.value.status_code == 400
+    assert "cannot be deleted" in exc_info.value.detail
+

@@ -639,20 +639,24 @@ class RuleLearningService:
 
     @classmethod
     def _recalculate_profile_metrics(cls, profile: RuleLearningProfile) -> None:
-        """Computes empirical accuracy, precision, recall, and Wilson confidence bounds."""
-        total_eval = profile.ai_correct_count + profile.ai_incorrect_count
-        if total_eval > 0:
-            profile.empirical_accuracy = round(float(profile.ai_correct_count) / float(total_eval), 4)
+        """
+        Computes exact empirical classification metrics, Wilson confidence bounds,
+        and populates authoritative confusion matrix keys.
+        """
+        err_dist = dict(profile.error_distribution or {})
+        agreed_fp = err_dist.get("agreement_fp", 0)  # TN (AI: FP, Analyst: FP)
+        missed_tp = err_dist.get("critical_missed_tp", 0)  # FN (AI: FP, Analyst: TP)
+        agreed_tp = err_dist.get("agreement_tp", 0)  # TP (AI: TP, Analyst: TP)
+        false_alarm = err_dist.get("ai_false_alarm", 0)  # FP (AI: TP, Analyst: FP)
+
+        # Total decisive automated predictions (excluding abstentions)
+        total_decisive = agreed_tp + agreed_fp + false_alarm + missed_tp
+        if total_decisive > 0:
+            profile.empirical_accuracy = round(float(agreed_tp + agreed_fp) / float(total_decisive), 4)
         else:
             profile.empirical_accuracy = None
 
-        err_dist = profile.error_distribution or {}
-        agreed_fp = err_dist.get("agreement_fp", 0)
-        missed_tp = err_dist.get("critical_missed_tp", 0)
-        agreed_tp = err_dist.get("agreement_tp", 0)
-        false_alarm = err_dist.get("ai_false_alarm", 0)
-
-        # Precision of FP predictions: correct FP / total cases where AI predicted FP
+        # FP-Class Precision (precision of benign/FP predictions): TN / (TN + FN)
         total_fp_pred = agreed_fp + missed_tp
         if total_fp_pred > 0:
             profile.fp_precision = round(float(agreed_fp) / float(total_fp_pred), 4)
@@ -664,12 +668,41 @@ class RuleLearningService:
             profile.fp_precision = None
             profile.wilson_lower_bound = None
 
-        # Recall of actual True Positives: correctly escalated TP / total verified TP
+        # TP-Class Precision: TP / (TP + FP)
+        total_tp_pred = agreed_tp + false_alarm
+        tp_precision = round(float(agreed_tp) / float(total_tp_pred), 4) if total_tp_pred > 0 else None
+
+        # TP Recall (Sensitivity): TP / (TP + FN)
         total_actual_tp = agreed_tp + missed_tp
         if total_actual_tp > 0:
             profile.tp_recall = round(float(agreed_tp) / float(total_actual_tp), 4)
         else:
             profile.tp_recall = None
+
+        # Specificity (True Negative Rate): TN / (TN + FP)
+        total_actual_fp = agreed_fp + false_alarm
+        specificity = round(float(agreed_fp) / float(total_actual_fp), 4) if total_actual_fp > 0 else None
+
+        # Store normalized matrix & metric keys in error_distribution
+        err_dist["tp"] = agreed_tp
+        err_dist["fp"] = false_alarm
+        err_dist["tn"] = agreed_fp
+        err_dist["fn"] = missed_tp
+        err_dist["tp_as_tp"] = agreed_tp
+        err_dist["fp_as_tp"] = false_alarm
+        err_dist["tp_as_fp"] = missed_tp
+        err_dist["fp_as_fp"] = agreed_fp
+        err_dist["agreement_tp"] = agreed_tp
+        err_dist["ai_false_alarm"] = false_alarm
+        err_dist["critical_missed_tp"] = missed_tp
+        err_dist["agreement_fp"] = agreed_fp
+        err_dist["tp_precision"] = tp_precision
+        err_dist["fp_precision"] = profile.fp_precision
+        err_dist["specificity"] = specificity
+        err_dist["tp_recall"] = profile.tp_recall
+        err_dist["selective_accuracy"] = profile.empirical_accuracy
+        err_dist["decisive_evaluations"] = total_decisive
+        profile.error_distribution = err_dist
 
     @classmethod
     def check_production_eligibility(cls, profile: RuleLearningProfile) -> Tuple[bool, List[str]]:
