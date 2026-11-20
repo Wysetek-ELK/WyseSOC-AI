@@ -35,6 +35,12 @@ test("Phase 2 & 3: ReviewIncidentsWorkbench strictly enforces true Double-Blind 
 
   // 6. Post-submission prompt inspection must be available safely
   assert.ok(content.includes('Inspect LLM Prompt Capture'), "Must offer safe prompt inspection only post-submission");
+
+  // 7. API client must send Content-Type: application/json to prevent 422 Unprocessable Entity
+  const clientApiPath = path.join(FRONTEND_SRC, "lib/api.ts");
+  const clientApiContent = fs.readFileSync(clientApiPath, "utf-8");
+  assert.ok(clientApiContent.includes('headers.set("Content-Type", "application/json")'), "fetchWithAuth must auto-set Content-Type: application/json for stringified bodies");
+  assert.ok(clientApiContent.includes('headers: { "Content-Type": "application/json" }'), "submitAnalystReview must explicitly pass Content-Type: application/json");
 });
 
 test("Phase 2 & 3: Backend API and service enforce strict verdict validation and server-side masking", () => {

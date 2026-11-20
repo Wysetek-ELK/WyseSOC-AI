@@ -157,8 +157,8 @@ export function ReviewIncidentsWorkbench({
     try {
       const payload = {
         analyst_verdict: analystVerdict,
-        analyst_notes: analystNotes,
-        evidence_references: evidenceRefs ? evidenceRefs.split(",").map((s) => s.trim()) : [],
+        analyst_notes: analystNotes || "",
+        evidence_references: evidenceRefs ? evidenceRefs.split(",").map((s) => s.trim()).filter(Boolean) : [],
         blind_mode_active: true,
       };
 

@@ -1245,6 +1245,9 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
+  if (options.body && typeof options.body === "string" && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
   options.credentials = "include"; // For HttpOnly cookie support
   options.headers = headers;
 
@@ -2848,6 +2851,7 @@ return res.json();
 }) {
   const res = await fetchWithAuth(`${API_BASE}/reviews/${encodeURIComponent(incidentId)}/submit`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -2860,6 +2864,7 @@ return res.json();
   async adjudicateAnalystReview(reviewId: string, finalVerdict: string, rationale: string) {
   const res = await fetchWithAuth(`${API_BASE}/reviews/${encodeURIComponent(reviewId)}/adjudicate`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ final_verdict: finalVerdict, rationale }),
   });
   if (!res.ok) {
