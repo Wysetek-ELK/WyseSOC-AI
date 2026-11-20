@@ -155,6 +155,8 @@ async def get_incident_model_payload(
 @router.post("/{identifier}/ai-verdict")
 async def request_incident_ai_verdict(
     identifier: str,
+    version_id: Optional[str] = Query(None, description="Target policy version UUID"),
+    version_number: Optional[int] = Query(None, description="Target policy version number"),
     request: Request = None,
     current_user: User = Depends(require_analyst),
     db: AsyncSession = Depends(get_db),
@@ -193,6 +195,8 @@ async def request_incident_ai_verdict(
             incident_id_or_obj=identifier,
             username=current_user.username,
             allow_simulated_fallback=False,
+            target_version_id=version_id,
+            target_version_number=version_number,
         )
         return verdict_data
     except LocalLLMUnavailableError as llm_err:

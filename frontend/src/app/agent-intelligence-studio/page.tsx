@@ -2670,6 +2670,9 @@ function AgentIntelligenceStudioContent() {
               ruleId={selectedRuleId}
               ruleName={rulePrompt?.rule_name || selectedRule?.name}
               learningProfile={learningProfile}
+              isAdmin={isAdmin}
+              isViewer={isViewer}
+              selectedVersionId={selectedVersionId}
               onNavigateToTest={() => setPrimaryTab("test_ai")}
               onReviewSubmitted={() => {
                 if (selectedRuleId) {
@@ -2739,8 +2742,21 @@ function AgentIntelligenceStudioContent() {
           ruleId={selectedRuleId}
           ruleName={rulePrompt?.rule_name || selectedRule?.name}
           activeVersion={activeVersion}
+          activeVersionId={activeVersion?.id}
           selectedVersion={selectedVersion}
+          selectedVersionId={selectedVersionId}
           versions={rulePrompt?.versions || []}
+          llmOnline={llmOnline}
+          isAdmin={isAdmin}
+          isViewer={isViewer}
+          onSelectVersion={(vId) => setSelectedVersionId(vId)}
+          onOpenActualPrompt={(incId?: string) => {
+            setPromptInspectorIncidentId(incId || null);
+            setPromptInspectorRuleId(selectedRuleId);
+            setPromptInspectorVersionId(selectedVersionId);
+            setPromptInspectorInitialMode("capture");
+            setPromptInspectorOpen(true);
+          }}
           onViewPrompt={(incId?: string | null) => {
             setPromptInspectorIncidentId(incId || null);
             setPromptInspectorRuleId(selectedRuleId);
@@ -2761,6 +2777,7 @@ function AgentIntelligenceStudioContent() {
           <AccuracyLearningSummary
             ruleId={selectedRuleId}
             ruleName={rulePrompt?.rule_name || selectedRule?.name}
+            selectedVersionId={selectedVersionId}
             learningProfile={learningProfile}
             qualityAssessment={qualityAssessment}
             onStartReviews={() => {

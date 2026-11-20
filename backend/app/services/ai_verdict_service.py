@@ -127,6 +127,8 @@ class VerdictTriageAgent:
         pilot_context: Optional[Dict[str, Any]] = None,
         execution_context: str = "ANALYST_ASSISTED",
         require_autonomous_certification: bool = False,
+        target_version_id: Optional[str] = None,
+        target_version_number: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Evaluates a single incident with the LLM.
@@ -184,6 +186,8 @@ class VerdictTriageAgent:
                     pilot_context=pilot_context,
                     execution_context=execution_context,
                     require_autonomous_certification=require_autonomous_certification,
+                    target_version_id=target_version_id,
+                    target_version_number=target_version_number,
                 )
 
     async def _evaluate_incident_locked(
@@ -197,6 +201,8 @@ class VerdictTriageAgent:
         pilot_context: Optional[Dict[str, Any]] = None,
         execution_context: str = "ANALYST_ASSISTED",
         require_autonomous_certification: bool = False,
+        target_version_id: Optional[str] = None,
+        target_version_number: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Protected single-incident evaluation execution under per-incident concurrency lock."""
         is_shadow_pilot = bool(pilot_context and str(pilot_context.get("mode", "")).upper() == "SHADOW")
@@ -257,7 +263,20 @@ class VerdictTriageAgent:
                 if cand and cand.status == "APPROVED":
                     active_v = cand
             if rp and rp.versions:
-                candidate_v = rp.versions[0]
+                if target_version_id:
+                    matched = next((v for v in rp.versions if v.id == target_version_id), None)
+                    if matched:
+                        candidate_v = matched
+                        if matched.status == "APPROVED":
+                            active_v = matched
+                elif target_version_number is not None:
+                    matched = next((v for v in rp.versions if v.version_number == target_version_number), None)
+                    if matched:
+                        candidate_v = matched
+                        if matched.status == "APPROVED":
+                            active_v = matched
+                if not candidate_v:
+                    candidate_v = rp.versions[0]
 
         hist_stats = await PolicySimulationService(self.db).get_rule_calibration_stats(
             rule.id if rule else None

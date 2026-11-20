@@ -97,6 +97,162 @@ export interface IncidentAiVerdictResponse {
   unmapped_fields?: Array<string | UnmappedField>;
 }
 
+export type CanonicalEvaluationStatus =
+  | "NOT_EVALUATED"
+  | "EVALUATED_DECISIVE"
+  | "ABSTAINED"
+  | "VALIDATION_REJECTED"
+  | "EVALUATION_FAILED"
+  | "QUEUED"
+  | "RUNNING";
+
+export interface AisEvaluationItem {
+  incident_id: string;
+  db_id: string;
+  rule_id: string;
+  title: string;
+  event_type: string;
+  customer?: string;
+  created_at?: string | null;
+  status: CanonicalEvaluationStatus;
+  status_display: string;
+  badge_color: "neutral" | "green" | "amber" | "red" | "blue";
+  policy_version_number?: number | null;
+  policy_version_id?: string | null;
+  is_real_inference: boolean;
+  is_simulated: boolean;
+  execution_id?: string | null;
+  prompt_capture_id?: string | null;
+  model_name?: string | null;
+  latency_ms?: number | null;
+  token_usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null;
+  captured_at?: string | null;
+  raw_model_verdict?: string | null;
+  effective_verdict?: string | null;
+  confidence?: number | null;
+  reason?: string | null;
+  validation_status?: string | null;
+  validation_failure_reason?: string | null;
+  can_inspect_details?: boolean;
+  has_existing_prompt_capture?: boolean;
+  evaluation_attempts_count?: number;
+  analyst_review?: {
+    review_id: string;
+    reviewer_id: string;
+    analyst_verdict: string;
+    ground_truth_status: string;
+    reviewed_at?: string | null;
+    comparison_outcome?: string | null;
+  } | null;
+}
+
+export interface AisEvaluationSummary {
+  rule_uuid: string;
+  policy_version_number?: number | null;
+  policy_version_id?: string | null;
+  policy_status: string;
+  customer: string;
+  total_incidents: number;
+  not_evaluated: number;
+  evaluated_decisive: number;
+  abstained: number;
+  validation_rejected: number;
+  evaluation_failed: number;
+  queued: number;
+  running: number;
+  mock_only_count: number;
+  total_analyst_reviews: number;
+  matched_verified_reviews: number;
+  eligible_decisive_comparisons: number;
+  missing_evaluations_among_reviewed: number;
+  decision_coverage_percent: number;
+  abstention_rate_percent: number;
+  accuracy_status: "NOT_MEASURABLE" | "MEASURABLE";
+  accuracy_explanation: string;
+  selective_accuracy?: number | null;
+  fp_precision?: number | null;
+  tp_recall?: number | null;
+  specificity?: number | null;
+  wilson_lower_bound?: number | null;
+  agreement_tp: number;
+  agreement_fp: number;
+  ai_false_alarm: number;
+  critical_missed_tp: number;
+  class_balance_status: "BALANCED" | "IMBALANCED";
+  class_balance_notice: string;
+}
+
+export interface AisEvaluationStatusResponse {
+  summary: AisEvaluationSummary;
+  items: AisEvaluationItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface AisEvaluationHistoryItem {
+  execution_id?: string | null;
+  prompt_capture_id?: string | null;
+  policy_version_number?: number | null;
+  policy_version_id?: string | null;
+  policy_status?: string | null;
+  dispatch_status: string;
+  is_simulated: boolean;
+  model_name?: string | null;
+  raw_verdict?: string | null;
+  confidence?: number | null;
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+  total_tokens?: number | null;
+  latency_ms?: number | null;
+  error_message?: string | null;
+  prompt_integrity_status?: string | null;
+  captured_at?: string | null;
+  integrity_details?: Record<string, any>;
+}
+
+export interface AisEvaluationHistoryResponse {
+  incident_id: string;
+  db_id: string;
+  rule_id: string;
+  customer?: string;
+  history_count: number;
+  history: AisEvaluationHistoryItem[];
+}
+
+export interface AisBatchEvaluationResponse {
+  action: "PREFLIGHT_SUMMARY" | "BATCH_COMPLETE";
+  confirmed: boolean;
+  ready_for_execution?: boolean;
+  message?: string;
+  total_processed?: number;
+  succeeded_count?: number;
+  failed_count?: number;
+  results?: Array<{
+    incident_id: string;
+    success: boolean;
+    verdict?: string;
+    effective_verdict?: string;
+    validation_status?: string;
+    latency_ms?: number;
+    error?: string;
+  }>;
+  preflight?: {
+    rule_uuid: string;
+    policy_version_number?: number | null;
+    policy_version_id?: string | null;
+    policy_status: string;
+    customer: string;
+    eligible_candidates_count: number;
+    candidate_incident_ids: string[];
+    local_llm_online: boolean;
+    estimated_token_workload: number;
+    concurrency_limit: number;
+    provenance: string;
+    ground_truth_isolation_active: boolean;
+  };
+}
+
 export interface UnmappedField {
   raw_field: string;
   value?: string;
@@ -1385,13 +1541,80 @@ export const api = {
     return res.json();
   },
 
-  async getIncidentAiVerdict(id: string): Promise<IncidentAiVerdictResponse> {
-    const res = await fetchWithAuth(`${API_BASE}/incidents/${id}/ai-verdict`, {
+  async getIncidentAiVerdict(id: string, versionId?: string, versionNumber?: number): Promise<IncidentAiVerdictResponse> {
+    const params = new URLSearchParams();
+    if (versionId) params.append("version_id", versionId);
+    if (versionNumber !== undefined && versionNumber !== null) params.append("version_number", versionNumber.toString());
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/incidents/${id}/ai-verdict${qs}`, {
       method: "POST",
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "AI verdict failed" }));
       throw new Error(err.detail || "Failed to generate AI verdict");
+    }
+    return res.json();
+  },
+
+  async getRuleEvaluationStatus(
+    ruleUuid: string,
+    options?: {
+      policy_version_id?: string;
+      policy_version_number?: number;
+      customer?: string;
+      status?: string;
+      search?: string;
+      page?: number;
+      page_size?: number;
+    }
+  ): Promise<AisEvaluationStatusResponse> {
+    const params = new URLSearchParams();
+    if (options?.policy_version_id) params.append("policy_version_id", options.policy_version_id);
+    if (options?.policy_version_number !== undefined && options?.policy_version_number !== null) {
+      params.append("policy_version_number", options.policy_version_number.toString());
+    }
+    if (options?.customer) params.append("customer", options.customer);
+    if (options?.status) params.append("status", options.status);
+    if (options?.search) params.append("search", options.search);
+    if (options?.page) params.append("page", options.page.toString());
+    if (options?.page_size) params.append("page_size", options.page_size.toString());
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/ais/rules/${encodeURIComponent(ruleUuid)}/evaluation-status${qs}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to fetch evaluation status" }));
+      throw new Error(err.detail || "Failed to fetch evaluation status");
+    }
+    return res.json();
+  },
+
+  async getIncidentEvaluationHistory(incidentId: string): Promise<AisEvaluationHistoryResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/ais/incidents/${encodeURIComponent(incidentId)}/evaluation-history`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to fetch incident evaluation history" }));
+      throw new Error(err.detail || "Failed to fetch incident evaluation history");
+    }
+    return res.json();
+  },
+
+  async evaluateMissingIncidentsBatch(
+    ruleUuid: string,
+    payload: {
+      version_id?: string;
+      version_number?: number;
+      customer?: string;
+      incident_ids?: string[];
+      max_concurrency?: number;
+      confirm_execution?: boolean;
+    }
+  ): Promise<AisBatchEvaluationResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/ais/rules/${encodeURIComponent(ruleUuid)}/evaluate-missing-batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Batch evaluation failed" }));
+      throw new Error(err.detail || "Failed to execute missing incidents batch");
     }
     return res.json();
   },

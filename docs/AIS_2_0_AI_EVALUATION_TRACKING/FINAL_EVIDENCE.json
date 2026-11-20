@@ -1,0 +1,69 @@
+{
+  "engagement": "Verdictum AI — AIS 2.0 AI Evaluation Tracking & Controlled Inference Management",
+  "target_rule": {
+    "uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "name": "Heavy TCP Host Scan On Fixed Port",
+    "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT"
+  },
+  "policy_versions": {
+    "active": "v7",
+    "draft": "v8"
+  },
+  "baseline_metrics": {
+    "total_verified_analyst_reviews": 31,
+    "analyst_confirmed_tp": 0,
+    "analyst_confirmed_fp": 31,
+    "reviewed_incidents_with_ai_abstentions": 16,
+    "reviewed_incidents_without_stored_inference": 15,
+    "eligible_decisive_ai_predictions": 0,
+    "empirical_accuracy": "NOT_MEASURABLE"
+  },
+  "canonical_statuses": [
+    "QUEUED",
+    "RUNNING",
+    "VALIDATION_REJECTED",
+    "EVALUATED_DECISIVE",
+    "ABSTAINED",
+    "EVALUATION_FAILED",
+    "NOT_EVALUATED"
+  ],
+  "implementation_deliverables": {
+    "backend_service": "backend/app/services/ais_evaluation_service.py",
+    "backend_api": "backend/app/api/ais_evaluation.py",
+    "backend_verdict_pipeline": "backend/app/services/ai_verdict_service.py",
+    "frontend_api_client": "frontend/src/lib/api.ts",
+    "frontend_review_incidents": "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+    "frontend_test_ai": "frontend/src/components/compact/AiTestWorkbench.tsx",
+    "frontend_accuracy_summary": "frontend/src/components/compact/AccuracyLearningSummary.tsx",
+    "frontend_main_page": "frontend/src/app/agent-intelligence-studio/page.tsx"
+  },
+  "test_results": {
+    "evaluation_tracking_test_suite": {
+      "path": "backend/tests/test_ais_evaluation_tracking.py",
+      "total_tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "execution_time_seconds": 7.46
+    },
+    "regression_e2e_suite": {
+      "path": "backend/tests/test_ais_heavy_tcp_e2e.py",
+      "total_tests": 14,
+      "passed": 14,
+      "failed": 0,
+      "execution_time_seconds": 5.78
+    },
+    "frontend_build": {
+      "command": "npm run build",
+      "status": "SUCCESS",
+      "static_pages": 32,
+      "typescript_errors": 0
+    }
+  },
+  "governance_and_security": {
+    "double_blind_protection": "ENFORCED_SERVER_SIDE",
+    "tenant_isolation": "ENFORCED_SERVER_SIDE",
+    "rbac_controlled_batch": "ENFORCED_SERVER_SIDE",
+    "upla_mode": "FULL_WORKFLOW"
+  },
+  "final_verdict": "AI_EVALUATION_TRACKING_ACCEPTED"
+}

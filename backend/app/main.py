@@ -30,6 +30,7 @@ from app.api import (
     chat,
     pilot,
     rule_learning,
+    ais_evaluation,
 )
 from app.models.user import User
 from app.utils.security import get_password_hash
@@ -290,6 +291,8 @@ app.include_router(verdict_intelligence.router, prefix="/api/v1")
 app.include_router(pilot.router, prefix=settings.API_V1_STR)
 app.include_router(rule_learning.router, prefix=settings.API_V1_STR)
 app.include_router(rule_learning.router, prefix="/api/v1")
+app.include_router(ais_evaluation.router, prefix=settings.API_V1_STR)
+app.include_router(ais_evaluation.router, prefix="/api/v1")
 app.include_router(health.router)
 app.include_router(health.router, prefix=settings.API_V1_STR)
 
