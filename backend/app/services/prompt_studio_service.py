@@ -380,14 +380,17 @@ class AgentPolicyEngine:
         )
         self.db.add(assessment_record)
 
-        # Archive any currently active approved version
+        # Archive any currently active approved version while preserving immutable approval provenance
         for v in all_versions:
             if v.status == "APPROVED" and v.id != version_id:
+                v.previous_status = "APPROVED"
+                v.was_ever_approved = True
                 v.status = "ARCHIVED"
 
         # Atomically activate approved version
         target_version.status = "APPROVED"
         target_version.quality_status = "APPROVED"
+        target_version.was_ever_approved = True
         target_version.is_template_draft = False
         target_version.quality_score = quality_res.quality_score
         target_version.quality_assessment_id = quality_res.assessment_id
@@ -466,6 +469,7 @@ class AgentPolicyEngine:
             version_number=next_ver,
             status="APPROVED",
             quality_status="APPROVED",
+            was_ever_approved=True,
             quality_score=rollback_quality_score,
             is_template_draft=False,
             common_prompt=source_version.common_prompt,
@@ -483,9 +487,11 @@ class AgentPolicyEngine:
             approved_at=utc_now(),
         )
 
-        # Archive others
+        # Archive others while preserving immutable approval provenance
         for v in all_versions:
             if v.status == "APPROVED":
+                v.previous_status = "APPROVED"
+                v.was_ever_approved = True
                 v.status = "ARCHIVED"
 
         self.db.add(rolled_version)

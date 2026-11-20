@@ -333,23 +333,22 @@ export function ManageVersionHistory({
               )}
               <th className="py-2.5 px-3">Version</th>
               <th className="py-2.5 px-3">Status</th>
-              <th className="py-2.5 px-3">Quality</th>
               <th className="py-2.5 px-3">Created</th>
-              <th className="py-2.5 px-3">Usage &amp; Dependencies</th>
+              <th className="py-2.5 px-3">Usage</th>
               <th className="py-2.5 px-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60 font-mono">
             {loading ? (
               <tr>
-                <td colSpan={isAdmin ? 7 : 6} className="py-8 text-center text-slate-500">
+                <td colSpan={isAdmin ? 6 : 5} className="py-8 text-center text-slate-500">
                   <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-cyan-400" />
                   Loading authoritative version records from PostgreSQL...
                 </td>
               </tr>
             ) : filteredItems.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 7 : 6} className="py-6 text-center text-slate-500 text-xs">
+                <td colSpan={isAdmin ? 6 : 5} className="py-6 text-center text-slate-500 text-xs">
                   No policy versions found matching filter '{filterStatus}'.
                 </td>
               </tr>
@@ -397,36 +396,35 @@ export function ManageVersionHistory({
                       </div>
                     </td>
                     <td className="py-2 px-3">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-sans font-bold border ${
-                          item.status === "APPROVED"
-                            ? "bg-emerald-950/50 text-emerald-300 border-emerald-700/60"
-                            : item.status === "DRAFT"
-                            ? "bg-amber-950/50 text-amber-300 border-amber-700/60"
-                            : item.status === "ARCHIVED"
-                            ? "bg-slate-900 text-slate-400 border-slate-700"
-                            : "bg-rose-950/50 text-rose-300 border-rose-700/60"
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 font-sans">
-                      {item.quality_score !== null && item.quality_score !== undefined ? (
+                      <div className="flex items-center gap-2">
                         <span
-                          className={`text-xs font-semibold ${
-                            item.quality_score >= 80
-                              ? "text-emerald-400"
-                              : item.quality_score >= 65
-                              ? "text-amber-400"
-                              : "text-rose-400"
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-sans font-bold border ${
+                            item.status === "APPROVED"
+                              ? "bg-emerald-950/50 text-emerald-300 border-emerald-700/60"
+                              : item.status === "DRAFT"
+                              ? "bg-amber-950/50 text-amber-300 border-amber-700/60"
+                              : item.status === "ARCHIVED"
+                              ? "bg-slate-900 text-slate-400 border-slate-700"
+                              : "bg-rose-950/50 text-rose-300 border-rose-700/60"
                           }`}
                         >
-                          {item.quality_score.toFixed(0)}/100
+                          {item.status}
                         </span>
-                      ) : (
-                        <span className="text-slate-500 text-xs">Unscored</span>
-                      )}
+                        {item.quality_score !== null && item.quality_score !== undefined && (
+                          <span
+                            className={`text-[10px] font-sans font-semibold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 ${
+                              item.quality_score >= 80
+                                ? "text-emerald-400"
+                                : item.quality_score >= 65
+                                ? "text-amber-400"
+                                : "text-rose-400"
+                            }`}
+                            title={`Quality Score: ${item.quality_score.toFixed(0)}/100`}
+                          >
+                            {item.quality_score.toFixed(0)}/100
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-2 px-3 text-slate-400 text-xs font-sans">
                       {new Date(item.created_at).toLocaleDateString()}
@@ -495,7 +493,7 @@ export function ManageVersionHistory({
                             title={
                               isViewer
                                 ? "Read-Only Viewer cannot restore policy versions"
-                                : "Restore archived version back to draft"
+                                : "Restore archived version"
                             }
                           >
                             <RotateCcw className="w-3 h-3 text-emerald-400" />
@@ -514,7 +512,18 @@ export function ManageVersionHistory({
                                 ? "Read-Only Viewer cannot delete policy versions"
                                 : item.is_eligible_for_deletion
                                 ? "Permanently delete eligible draft"
-                                : "Protected from deletion: " + item.blocking_reasons.join(", ")
+                                : item.is_active
+                                ? "Deletion unavailable — active policy version"
+                                : item.status === "APPROVED" || (item.usage_label && item.usage_label.toLowerCase().includes("approved"))
+                                ? "Deletion unavailable — historical approved policy"
+                                : (item.dependency_counts && (
+                                    (item.dependency_counts.actual_prompt_captures || 0) > 0 ||
+                                    (item.dependency_counts.pilot_verdicts || 0) > 0 ||
+                                    (item.dependency_counts.historical_evaluation_runs || 0) > 0 ||
+                                    (item.dependency_counts.dry_run_configs || 0) > 0
+                                  ))
+                                ? "Deletion unavailable — referenced by inference history"
+                                : "Protected from deletion: " + (item.blocking_reasons?.length ? item.blocking_reasons.join(", ") : "Referenced or approved")
                             }
                           >
                             <Trash2 className="w-3 h-3 text-rose-400" />

@@ -114,4 +114,16 @@ test("Phase 5: Manage Version History Governance & Safe Deletion Invariants", ()
   // Invariants: RBAC viewer lockout
   assert.ok(content.includes("isViewer"), "Must enforce viewer check");
   assert.ok(content.includes("Viewer Lockout") || content.includes("Read-Only Viewer"), "Must explain viewer restrictions");
+
+  // Invariants: Compact table layout headers
+  assert.ok(content.includes(">Version</th>"), "Must display Version column header");
+  assert.ok(content.includes(">Status</th>"), "Must display Status column header");
+  assert.ok(content.includes(">Created</th>"), "Must display Created column header");
+  assert.ok(content.includes(">Usage</th>"), "Must display Usage column header");
+  assert.ok(content.includes(">Actions</th>"), "Must display Actions column header");
+
+  // Invariants: Specific deletion protection tooltips
+  assert.ok(content.includes("Deletion unavailable — historical approved policy"), "Must display historical approved tooltip");
+  assert.ok(content.includes("Deletion unavailable — active policy version"), "Must display active policy tooltip");
+  assert.ok(content.includes("Deletion unavailable — referenced by inference history"), "Must display inference history reference tooltip");
 });

@@ -1,0 +1,82 @@
+{
+  "project": "Verdictum AI",
+  "component": "Agent Intelligence Studio 2.0 (AIS 2.0)",
+  "execution_id": "upla-20261120-114500-final-acceptance",
+  "timestamp": "2026-11-20T11:49:00+05:30",
+  "acceptance_decision": "AIS_2_0_FINAL_GUI_ACCEPTED",
+  "target_environment": {
+    "server_1": "172.26.41.240",
+    "server_2": "172.26.41.241 (Untouched AWQ LLM)",
+    "local_database": "PostgreSQL / SQLite Replica"
+  },
+  "protected_baselines": {
+    "website_access_policy_violation": {
+      "rule_id": "7bd13e89-0828-48e6-8cf5-f3cbf12d438c",
+      "rule_code": "PH_RULE_WEBSITE_ACCESS_POLICY_VIOLATION",
+      "active_approved_version": "v2",
+      "active_quality_score": 88.0,
+      "candidate_draft_version": "v3",
+      "status": "PRESERVED_AND_PROTECTED"
+    },
+    "heavy_tcp_host_scan_on_fixed_port": {
+      "rule_id": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+      "rule_code": "PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT",
+      "active_approved_version": "v7",
+      "active_quality_score": 92.0,
+      "candidate_draft_version": "v8",
+      "status": "PRESERVED_AND_PROTECTED"
+    }
+  },
+  "database_migrations": [
+    {
+      "revision": "014_policy_version_history_management",
+      "description": "Added version history, archival fields, and cascade models",
+      "status": "APPLIED"
+    },
+    {
+      "revision": "015_immutable_approval_history_protection",
+      "description": "Added was_ever_approved column with automatic historical backfill",
+      "status": "APPLIED"
+    }
+  ],
+  "verification_metrics": {
+    "frontend_unit_tests": {
+      "total": 67,
+      "passed": 67,
+      "failed": 0,
+      "skipped": 0,
+      "pass_rate": "100%"
+    },
+    "postgresql_integrity_tests": {
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "scenarios_covered": [
+        "Unreferenced draft deletion succeeds",
+        "Active approved version deletion rejected",
+        "Historical approved version deletion rejected",
+        "Archived approved version deletion rejected",
+        "Restored approved version deletion rejected",
+        "Revoked approved version deletion rejected",
+        "Referenced draft deletion rejected",
+        "Cross-rule version ID mismatch rejected",
+        "Bulk deletion excludes approved and referenced versions",
+        "Archive/restore preserves approval status"
+      ]
+    },
+    "frontend_production_build": {
+      "engine": "Next.js 16.4.5 (Turbopack)",
+      "routes_generated": 32,
+      "compilation_time_ms": 1948,
+      "errors": 0
+    }
+  },
+  "user_experience_acceptance": {
+    "three_primary_tabs": "ACCEPTED",
+    "advanced_settings_9_modules": "ACCEPTED",
+    "manage_version_history_table": "ACCEPTED",
+    "table_headers": ["Version", "Status", "Created", "Usage", "Actions"],
+    "deletion_protection_tooltips": "ACCEPTED",
+    "dual_branding_header": "ACCEPTED"
+  }
+}

@@ -89,6 +89,50 @@ class PolicyVersionGovernanceService:
         return items
 
     @classmethod
+    async def is_version_ever_approved(
+        cls,
+        db: AsyncSession,
+        version: PromptVersion,
+    ) -> bool:
+        """
+        Authoritative provenance check to determine whether a policy version has ever been approved.
+        A version that has ever been approved must NEVER become eligible for physical deletion.
+        """
+        # 1. Authoritative model column flags
+        if getattr(version, "was_ever_approved", False):
+            return True
+        if version.status == "APPROVED":
+            return True
+        if getattr(version, "previous_status", None) == "APPROVED":
+            return True
+        if version.approved_at is not None:
+            return True
+        if version.approved_by_user_id is not None:
+            return True
+
+        # 2. Immutable audit trail verification
+        try:
+            version_id_str = str(version.id)
+            audit_stmt = select(func.count(AuditLog.id)).where(
+                AuditLog.resource_id == version_id_str,
+                AuditLog.action.in_([
+                    "POLICY_APPROVE",
+                    "POLICY_VERSION_APPROVE",
+                    "PROMPT_VERSION_APPROVED",
+                    "POLICY_VERSION_APPROVED",
+                ]),
+            )
+            audit_count = (await db.execute(audit_stmt)).scalar() or 0
+            if audit_count > 0:
+                return True
+        except Exception as exc:
+            logger.warning(f"Audit log approval provenance check error for version {version.id}: {exc}")
+            # Fail-safe: if provenance cannot be determined due to DB error, protect the version
+            return True
+
+        return False
+
+    @classmethod
     async def check_version_dependencies(
         cls,
         db: AsyncSession,
@@ -119,14 +163,10 @@ class PolicyVersionGovernanceService:
         if is_active:
             blocking_reasons.append("Active policy version is currently bound to production/pilot execution.")
 
-        # 2. Approved Status Check (Immutable historical baselines)
-        is_approved = (
-            version.status == "APPROVED"
-            or version.approved_at is not None
-            or version.approved_by_user_id is not None
-        )
-        if is_approved:
-            blocking_reasons.append("Approved policy versions are immutable to preserve regulatory sign-off and audit trails.")
+        # 2. Authoritative Ever-Approved Check (Immutable historical baselines)
+        is_ever_approved = await cls.is_version_ever_approved(db, version)
+        if is_ever_approved:
+            blocking_reasons.append("Historical approved policy version: Approved policies are permanently immutable to preserve regulatory sign-off and audit trails.")
 
         # 3. Actual Outbound LLM Prompt Captures (Inference Provenance)
         captures_count_res = await db.execute(
@@ -190,22 +230,23 @@ class PolicyVersionGovernanceService:
         drift_count = drift_count_res.scalar() or 0
         dep_counts["policy_drift_events"] = drift_count
 
-        # Eligibility determination
+        # Eligibility determination: permanently prohibited if active, ever approved, or referenced
         is_eligible_for_archive = not is_active and version.status != "ARCHIVED"
         is_eligible_for_deletion = (
             not is_active
-            and not is_approved
+            and not is_ever_approved
             and captures_count == 0
             and pilot_count == 0
             and eval_count == 0
             and dry_run_count == 0
+            and drift_count == 0
         )
 
         # Derive usage label
         if is_active:
             usage_label = f"Active {version.status.title()}"
-        elif is_approved:
-            usage_label = "Approved Historical (Protected)"
+        elif is_ever_approved:
+            usage_label = "Approved Historical (Permanently Protected)"
         elif captures_count > 0 or pilot_count > 0 or eval_count > 0 or dry_run_count > 0:
             ref_total = captures_count + pilot_count + eval_count + dry_run_count
             usage_label = f"Referenced ({ref_total} execution records)"
@@ -216,7 +257,7 @@ class PolicyVersionGovernanceService:
 
         return {
             "is_active": is_active,
-            "is_approved": is_approved,
+            "is_approved": is_ever_approved,
             "is_eligible_for_archive": is_eligible_for_archive,
             "is_eligible_for_deletion": is_eligible_for_deletion,
             "blocking_reasons": blocking_reasons,
@@ -303,6 +344,26 @@ class PolicyVersionGovernanceService:
         target_version = next((v for v in rule_prompt.versions if v.id == version_id), None)
         if not target_version:
             raise HTTPException(status_code=404, detail=f"Policy version '{version_id}' not found")
+
+        # Explicit lock on the PromptVersion row in PostgreSQL to prevent race conditions with concurrent approval
+        try:
+            bind = db.get_bind()
+            if bind and bind.dialect.name == "postgresql":
+                await db.execute(
+                    select(PromptVersion.id)
+                    .where(PromptVersion.id == version_id)
+                    .with_for_update()
+                )
+        except Exception as lock_err:
+            logger.debug(f"Row locking skipped/handled: {lock_err}")
+
+        # Explicit invariant check: never allow deletion of any version that was ever approved
+        is_ever_approved = await cls.is_version_ever_approved(db, target_version)
+        if is_ever_approved:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Version v{target_version.version_number} has been historically approved and is permanently immutable. It cannot be deleted.",
+            )
 
         dep_info = await cls.check_version_dependencies(db, rule, target_version, rule_prompt)
         if not dep_info["is_eligible_for_deletion"]:
@@ -397,7 +458,12 @@ class PolicyVersionGovernanceService:
                 detail=f"Version v{target_version.version_number} is already archived.",
             )
 
-        target_version.previous_status = target_version.status
+        is_ever_approved = await cls.is_version_ever_approved(db, target_version)
+        if is_ever_approved:
+            target_version.was_ever_approved = True
+            target_version.previous_status = "APPROVED"
+        else:
+            target_version.previous_status = target_version.status
         target_version.status = "ARCHIVED"
         target_version.archived_at = utc_now()
         target_version.archived_by_user_id = current_user.id if current_user else None
@@ -458,10 +524,15 @@ class PolicyVersionGovernanceService:
                 detail=f"Version v{target_version.version_number} is not archived (current status: {target_version.status}).",
             )
 
-        restored_status = target_version.previous_status or "DRAFT"
-        # If previous status was APPROVED, but another version is already active approved, restore as DRAFT to prevent conflicting active states
-        if restored_status == "APPROVED" and rule_prompt.active_version_id and rule_prompt.active_version_id != target_version.id:
-            restored_status = "DRAFT"
+        is_ever_approved = await cls.is_version_ever_approved(db, target_version)
+        if is_ever_approved:
+            # Under NO circumstance may a historically approved policy version be restored to DRAFT!
+            # It must be restored to its immutable APPROVED status as an inactive historical approved baseline.
+            restored_status = "APPROVED"
+            target_version.was_ever_approved = True
+            target_version.previous_status = "APPROVED"
+        else:
+            restored_status = target_version.previous_status or "DRAFT"
 
         target_version.status = restored_status
         target_version.archived_at = None
@@ -520,6 +591,17 @@ class PolicyVersionGovernanceService:
         for vid in version_ids:
             target_version = next((v for v in rule_prompt.versions if v.id == vid), None)
             if not target_version:
+                continue
+
+            # Invariant check: Historically approved versions are permanently protected
+            is_ever_approved = await cls.is_version_ever_approved(db, target_version)
+            if is_ever_approved:
+                protected_items.append({
+                    "version_id": target_version.id,
+                    "version_number": target_version.version_number,
+                    "status": target_version.status,
+                    "blocking_reasons": ["Historical approved policy: Approved policies are permanently immutable to preserve regulatory sign-off."],
+                })
                 continue
 
             dep_info = await cls.check_version_dependencies(db, rule, target_version, rule_prompt)

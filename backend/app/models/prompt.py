@@ -57,6 +57,7 @@ class PromptVersion(Base):
     created_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    was_ever_approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     revoked_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     revocation_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
