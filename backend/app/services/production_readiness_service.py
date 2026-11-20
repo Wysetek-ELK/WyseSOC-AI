@@ -231,8 +231,8 @@ class ProductionReadinessService:
         )
 
         pilot_reviews_passed = total_reviews >= RuleLearningService.MIN_PILOT_SAMPLES
-        eligible_eval_count = int((learning_profile.ai_correct_count or 0) + (learning_profile.ai_incorrect_count or 0)) if learning_profile else 0
-        critical_missed_tp = int((learning_profile.error_distribution or {}).get("critical_missed_tp", 0)) if learning_profile else 0
+        eligible_eval_count = int((profile.ai_correct_count or 0) + (profile.ai_incorrect_count or 0)) if profile else 0
+        critical_missed_tp = int((profile.error_distribution or {}).get("critical_missed_tp", 0)) if profile else 0
         prod_reviews_passed = (
             eligible_eval_count >= RuleLearningService.MIN_PRODUCTION_SAMPLES
             and verified_tp >= RuleLearningService.MIN_PRODUCTION_TP

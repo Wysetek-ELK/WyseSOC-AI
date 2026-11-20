@@ -296,6 +296,12 @@ async def get_rule_production_readiness(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.exception(f"Error evaluating readiness for rule '{rule_id}': {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to evaluate production readiness: {str(e)}",
+        )
 
 
 @router.get("/export")
