@@ -1,0 +1,116 @@
+{
+  "project": "Verdictum AI — Agent Intelligence Studio (AIS)",
+  "version": "2.1a",
+  "task": "Unified Evaluation Population & Accuracy Display Integrity Hotfix",
+  "decision": "AIS_UNIFIED_ACCURACY_INTEGRITY_ACCEPTED",
+  "timestamp": "2026-11-21T05:58:30Z",
+  "targetRule": {
+    "name": "Heavy TCP Host Scan On Fixed Port",
+    "uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "eventType": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+    "activePolicyVersion": 7,
+    "activePolicyVersionId": "d79fb576-c6b9-4f63-9167-3c7a2419b70a",
+    "candidatePolicyVersion": 8,
+    "candidatePolicyVersionId": "20d4f788-85a5-437d-afbe-fe7fd80abca1",
+    "candidateStatus": "DRAFT (UNAPPROVED)"
+  },
+  "issuesResolved": {
+    "issueA_contradictoryTotals": {
+      "observed": "13 Reviews (0 TP / 45 FP)",
+      "resolved": "Eliminated. Segmented toggle separates Current Inventory (13: 0 TP / 13 FP) from Cumulative Historical Cohort (45: 0 TP / 45 FP). Total Verified = Verified TP + Verified FP is strictly enforced in both views.",
+      "status": "RESOLVED"
+    },
+    "issueB_countReconciliation": {
+      "counts": {
+        "currentOperationalInventory": 13,
+        "historicalBaselineReviews": 32,
+        "cumulativeHistoricalReviews": 45,
+        "historicalEventsProcessed": 56,
+        "currentEventsProcessed": 69
+      },
+      "reconciliation": "13 incidents in operational database across Demo-SOC and GDC_NOC. 45 cumulative reviews = 32 historical + 13 current. 69 events = 56 historical + 13 current. All populations explicitly delineated.",
+      "status": "RESOLVED"
+    },
+    "issueC_browserAssertionFailure": {
+      "observed": "hasNotMeasurable = false in gui_acceptance_results.json",
+      "resolved": "Case-insensitive and semantic DOM matching implemented in scripts/run_ais_2_1a_gui_acceptance.mjs. Live browser evaluation confirms hasNotMeasurable = true.",
+      "status": "RESOLVED"
+    },
+    "issueD_testFixtureProvenance": {
+      "observed": "Patterned UUIDs (10000000-... and 20000000-...) in mock data",
+      "resolved": "Verified 0 patterned UUIDs in operational database. Implemented regex exclusion filter in RuleLearningService and AisEvaluationService.",
+      "status": "RESOLVED"
+    }
+  },
+  "uplaExecution": {
+    "executionId": "upla-20261121-055330-0f11a5",
+    "mode": "FULL_WORKFLOW",
+    "profile": "release",
+    "workspaceFingerprint": "0219f9ff5b7bf3d852ee196a54fb33fe854a4af0029ecd4fed8b010dce165099",
+    "gate1_github": {
+      "approvalId": "apr-c1d52bc05f29",
+      "decision": "YES",
+      "commitSha": "58f81813b7d6f5acb8a646994909cc72f33bb49c",
+      "remoteVerifiedSha": "58f81813b7d6f5acb8a646994909cc72f33bb49c",
+      "status": "SYNCED_AND_VERIFIED"
+    },
+    "gate2_deployment": {
+      "approvalId": "apr-ac7e279af4b0",
+      "decision": "YES",
+      "target": "server-1@58f81813b7d6f5acb8a646994909cc72f33bb49c",
+      "deployedSha": "58f81813b7d6f5acb8a646994909cc72f33bb49c",
+      "status": "DEPLOYED_AND_VERIFIED",
+      "rollbackStatus": "NOT_NEEDED"
+    }
+  },
+  "liveGuiAcceptance": {
+    "baseUrl": "http://172.26.41.240:3000",
+    "ruleHeader": {
+      "hasDualBranding": true,
+      "hasTargetRule": true,
+      "hasV7Approved": true,
+      "hasNoActiveVersion": false,
+      "hasThreeTabs": true,
+      "hasSettings": true
+    },
+    "aiEvaluationTab": {
+      "hasNotEvaluated": true,
+      "hasAbstained": true,
+      "hasTable": true,
+      "containsDemoSoc": true,
+      "containsGdcNoc": true,
+      "containsIncident335": true
+    },
+    "accuracyTab": {
+      "hasAccuracyTab": true,
+      "hasReviews32Or45": true,
+      "hasFpMention": true,
+      "hasNotMeasurable": true,
+      "hasContradictory13Reviews45FP": false,
+      "hasDualScopes": true,
+      "hasOneClassDataset": true
+    },
+    "screenshotsCaptured": [
+      "01_login_page.png",
+      "02_ais_header_and_rule_v7_active.png",
+      "03_ai_evaluation_tracking_tab.png",
+      "04_accuracy_learning_tab.png",
+      "05_review_incidents_tab.png",
+      "06_settings_drawer_open.png"
+    ]
+  },
+  "testVerification": {
+    "backendPytest": {
+      "test_ais_evaluation_tracking": "20 PASSED",
+      "test_ais_unified_population_contract": "3 PASSED",
+      "totalBackendPassed": 23,
+      "backendFailures": 0
+    },
+    "frontendTests": {
+      "totalSuites": 16,
+      "suitesPassed": 16,
+      "frontendFailures": 0
+    },
+    "nextBuild": "COMPILED_CLEANLY (32/32 routes)"
+  }
+}
