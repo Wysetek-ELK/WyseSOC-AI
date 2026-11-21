@@ -443,11 +443,11 @@ export function AiTestWorkbench({
       {/* SECTION A: Evaluation Coverage Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
         <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
-          <span className="text-slate-400 font-medium text-[11px]">Total Incidents</span>
+          <span className="text-slate-400 font-medium text-[11px]">Current Incidents</span>
           <span className="text-xl font-bold font-mono text-slate-100 mt-1">
             {evalSummary?.total_incidents ?? ruleEvalItems.length}
           </span>
-          <span className="text-[10px] text-slate-500 font-mono mt-0.5">Authoritative Inventory</span>
+          <span className="text-[10px] text-slate-500 font-mono mt-0.5">Current Operational Scope</span>
         </div>
 
         <div className="p-3 rounded-xl border border-emerald-900/50 bg-emerald-950/20 flex flex-col justify-between">
@@ -517,7 +517,7 @@ export function AiTestWorkbench({
             <Activity className="w-4 h-4 text-cyan-400" />
             <h3 className="font-bold text-slate-100 text-xs">Incident Evaluation Tracking</h3>
             <span className="text-[11px] text-slate-500 font-mono">
-              (Target Policy: v{targetVer?.version_number ?? 7})
+              (Target Policy: v{targetVer?.version_number ?? 7} · Scope: Current Inventory [{evalSummary?.total_incidents ?? ruleEvalItems.length}])
             </span>
           </div>
 

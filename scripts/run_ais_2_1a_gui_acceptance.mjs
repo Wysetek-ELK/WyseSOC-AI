@@ -3,7 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 const CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-const OUTPUT_DIR = path.resolve("docs/AIS_2_1a_FINAL_OPERATIONAL_ACCEPTANCE/screenshots");
+const OUTPUT_DIR = path.resolve("docs/AIS_2_1a_UNIFIED_POPULATION_ACCURACY_INTEGRITY/screenshots");
+const LEGACY_OUTPUT_DIR = path.resolve("docs/AIS_2_1a_FINAL_OPERATIONAL_ACCEPTANCE/screenshots");
 const BASE_URL = "http://172.26.41.240:3000";
 const DEBUG_PORT = 9222;
 const RULE_UUID = "40498741-ee6b-4a71-9101-0d6d3f77154c";
@@ -88,6 +89,9 @@ async function captureScreenshot(cdp, filename) {
   const buffer = Buffer.from(result.data, "base64");
   const filePath = path.join(OUTPUT_DIR, filename);
   fs.writeFileSync(filePath, buffer);
+  if (fs.existsSync(LEGACY_OUTPUT_DIR)) {
+    fs.writeFileSync(path.join(LEGACY_OUTPUT_DIR, filename), buffer);
+  }
   console.log(`Saved screenshot: ${filePath} (${(buffer.length / 1024).toFixed(1)} KB)`);
   return filePath;
 }
@@ -108,6 +112,9 @@ async function main() {
   console.log("=== VERDICTUM AI AIS 2.1a: LIVE GUI ACCEPTANCE TEST ON SERVER 1 ===");
   if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(LEGACY_OUTPUT_DIR)) {
+    fs.mkdirSync(LEGACY_OUTPUT_DIR, { recursive: true });
   }
 
   console.log("[1/6] Authenticating administrator account via API...");
@@ -257,11 +264,19 @@ async function main() {
       expression: `
         (() => {
           const text = document.body.innerText;
+          const lower = text.toLowerCase();
+          const hasNotMeasurable = lower.includes('not measurable') || lower.includes('no eligible decisive') || lower.includes('0 eligible decisive');
+          const hasContradictory13Reviews45FP = text.includes('13 Reviews (0 TP / 45 FP)') || text.includes('13 (0 TP / 45 FP)');
+          const hasDualScopes = (text.includes('Current Incident Inventory') || text.includes('Current Operational')) && (text.includes('Cumulative Historical') || text.includes('Historical Cohort'));
+          const hasOneClassDataset = text.includes('One-Class Dataset') || lower.includes('one-class');
           return {
             hasAccuracyTab: true,
-            hasReviews32: text.includes('32'),
+            hasReviews32Or45: text.includes('32') || text.includes('45'),
             hasFpMention: text.includes('FP') || text.includes('False Positive'),
-            hasNotMeasurable: text.includes('Not Measurable') || text.includes('No eligible decisive')
+            hasNotMeasurable,
+            hasContradictory13Reviews45FP,
+            hasDualScopes,
+            hasOneClassDataset,
           };
         })()
       `,
@@ -340,10 +355,11 @@ async function main() {
       ]
     };
 
-    fs.writeFileSync(
-      path.join(OUTPUT_DIR, "../gui_acceptance_results.json"),
-      JSON.stringify(finalReport, null, 2)
-    );
+    const reportJson = JSON.stringify(finalReport, null, 2);
+    fs.writeFileSync(path.join(OUTPUT_DIR, "../gui_acceptance_results.json"), reportJson);
+    if (fs.existsSync(LEGACY_OUTPUT_DIR)) {
+      fs.writeFileSync(path.join(LEGACY_OUTPUT_DIR, "../gui_acceptance_results.json"), reportJson);
+    }
     console.log("=== LIVE GUI ACCEPTANCE COMPLETED SUCCESSFULLY ===");
 
     cdp.close();

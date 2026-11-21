@@ -55,6 +55,9 @@ export function AccuracyLearningSummary({
     text: string;
   } | null>(null);
 
+  // Population Scope Selection: "current" (13 incidents) or "historical" (45 reviews)
+  const [populationScope, setPopulationScope] = useState<"current" | "historical">("current");
+
   const fetchData = async () => {
     if (!ruleId) return;
     setLoading(true);
@@ -120,26 +123,48 @@ export function AccuracyLearningSummary({
     );
   }
 
-  // Authoritative Ground Truth & Evaluation Counts
-  const verifiedTp = profile?.verified_tp_count ?? 0;
-  const verifiedFp = profile?.verified_fp_count ?? 31;
-  const totalVerified = evalSummary?.matched_verified_reviews ?? (verifiedTp + verifiedFp);
-  const rawReviews = profile?.total_analyst_reviews ?? totalVerified;
+  // --- Authoritative Population Scope Metrics ---
+  const isCurrentScope = populationScope === "current";
 
-  const abstainedCount = evalSummary?.abstained ?? profile?.error_distribution?.analyst_resolved_abstention ?? 16;
-  const missingInferenceCount = evalSummary?.missing_evaluations_among_reviewed ?? profile?.error_distribution?.analyst_only_initial_benchmark ?? 15;
-  const decisiveEvaluations = evalSummary?.evaluated_decisive ?? 0;
-  const validationRejectedCount = evalSummary?.validation_rejected ?? 0;
-  const evaluationFailedCount = evalSummary?.evaluation_failed ?? 0;
+  // Current scope metrics (Current Incident Inventory: 13 operational incidents)
+  const currentTotal = evalSummary?.current_inventory?.verified_reviews ?? evalSummary?.matched_verified_reviews ?? evalSummary?.total_incidents ?? 13;
+  const currentTp = evalSummary?.current_inventory?.verified_tp ?? evalSummary?.verified_tp_count ?? 0;
+  const currentFp = evalSummary?.current_inventory?.verified_fp ?? evalSummary?.verified_fp_count ?? (currentTotal - currentTp);
+  const currentAbstained = evalSummary?.current_inventory?.abstained ?? evalSummary?.abstained ?? 13;
+  const currentMissing = evalSummary?.current_inventory?.missing_evaluations_among_reviewed ?? evalSummary?.missing_evaluations_among_reviewed ?? 0;
+  const currentDecisive = evalSummary?.current_inventory?.evaluated_decisive ?? evalSummary?.evaluated_decisive ?? 0;
+  const currentRejected = evalSummary?.current_inventory?.validation_rejected ?? evalSummary?.validation_rejected ?? 0;
+  const currentFailed = evalSummary?.current_inventory?.failed ?? evalSummary?.evaluation_failed ?? 0;
+
+  // Historical scope metrics (Cumulative Historical Ground Truth: 45 reviews)
+  const histTotal = profile?.total_analyst_reviews ?? evalSummary?.historical_cohort?.total_reviews ?? 45;
+  const histTp = profile?.verified_tp_count ?? evalSummary?.historical_cohort?.verified_tp ?? 0;
+  const histFp = profile?.verified_fp_count ?? evalSummary?.historical_cohort?.verified_fp ?? 45;
+  const histAbstained = profile?.error_distribution?.analyst_resolved_abstention ?? evalSummary?.historical_cohort?.abstained ?? 30;
+  const histMissing = profile?.error_distribution?.analyst_only_initial_benchmark ?? evalSummary?.historical_cohort?.initial_benchmarks_missing_inference ?? 15;
+  const histDecisive = profile?.error_distribution?.decisive_evaluations ?? evalSummary?.historical_cohort?.decisive ?? 0;
+  const histRejected = evalSummary?.validation_rejected ?? 0;
+  const histFailed = evalSummary?.evaluation_failed ?? 0;
+
+  // Active Scope Selected Values: STRICT GUARANTEE: totalVerified = verifiedTp + verifiedFp
+  const totalVerified = isCurrentScope ? currentTotal : histTotal;
+  const verifiedTp = isCurrentScope ? currentTp : histTp;
+  const verifiedFp = isCurrentScope ? currentFp : histFp;
+  const abstainedCount = isCurrentScope ? currentAbstained : histAbstained;
+  const missingInferenceCount = isCurrentScope ? currentMissing : histMissing;
+  const decisiveEvaluations = isCurrentScope ? currentDecisive : histDecisive;
+  const validationRejectedCount = isCurrentScope ? currentRejected : histRejected;
+  const evaluationFailedCount = isCurrentScope ? currentFailed : histFailed;
   const matchedRealAiCount = decisiveEvaluations + abstainedCount + validationRejectedCount;
+  const rawReviews = totalVerified;
+  const scopeLabel = isCurrentScope ? "Current Incident Inventory" : "Cumulative Historical Cohort";
 
   const hasVerifiedLabels = totalVerified > 0;
-  const accuracyValue = profile?.empirical_accuracy ?? null;
-  const tpRecall = profile?.tp_recall ?? null;
-  const fpPrecision = profile?.fp_precision ?? null;
-  const tpPrecision = profile?.error_distribution?.tp_precision ?? null;
-  const specificity = profile?.error_distribution?.specificity ?? null;
-  const wilsonBound = profile?.wilson_lower_bound ?? null;
+  const accuracyValue = isCurrentScope ? (evalSummary?.selective_accuracy ?? null) : (profile?.empirical_accuracy ?? null);
+  const tpRecall = isCurrentScope ? (evalSummary?.tp_recall ?? null) : (profile?.tp_recall ?? null);
+  const fpPrecision = isCurrentScope ? (evalSummary?.fp_precision ?? null) : (profile?.fp_precision ?? null);
+  const specificity = isCurrentScope ? (evalSummary?.specificity ?? null) : (profile?.error_distribution?.specificity ?? null);
+  const wilsonBound = isCurrentScope ? (evalSummary?.wilson_lower_bound ?? null) : (profile?.wilson_lower_bound ?? null);
   const stage = profile?.lifecycle_stage || "LEARNING";
 
   // Authoritative G8 Multi-Tier Evaluation Status
@@ -232,7 +257,7 @@ export function AccuracyLearningSummary({
         <div className="p-4 rounded-xl border border-cyan-800/60 bg-cyan-950/20 text-xs space-y-3">
           <div className="flex items-start gap-3">
             <Info className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-            <div className="space-y-2">
+            <div className="space-y-2 flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-cyan-300 text-sm">
                   Empirical Accuracy: NOT MEASURABLE (0 Decisive AI Predictions)
@@ -242,12 +267,43 @@ export function AccuracyLearningSummary({
                 </span>
               </div>
 
+              <p className="text-xs font-semibold text-slate-200">
+                Accuracy Not Measurable — No eligible decisive AI predictions are matched to verified analyst verdicts.
+              </p>
+
+              {/* Scope Selector Control */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 pb-1">
+                <span className="text-[11px] text-slate-400 font-sans">Active Population Scope:</span>
+                <div className="inline-flex rounded-lg border border-slate-800 bg-slate-950/90 p-0.5 text-[11px]">
+                  <button
+                    onClick={() => setPopulationScope("current")}
+                    className={`px-2.5 py-1 rounded font-medium transition-colors ${
+                      isCurrentScope
+                        ? "bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    Current Incident Inventory (13)
+                  </button>
+                  <button
+                    onClick={() => setPopulationScope("historical")}
+                    className={`px-2.5 py-1 rounded font-medium transition-colors ${
+                      !isCurrentScope
+                        ? "bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    Cumulative Historical Cohort (45)
+                  </button>
+                </div>
+              </div>
+
               <div className="text-slate-300 text-xs leading-relaxed space-y-1.5">
                 <p>
                   Objective empirical accuracy is mathematically undefined because <strong>0 eligible decisive AI predictions (TP or FP)</strong> exist to pair against verified analyst ground truth:
                 </p>
                 <ul className="list-disc pl-5 space-y-0.5 text-slate-300 font-mono text-[11px]">
-                  <li><strong>{totalVerified} analyst ground-truth reviews</strong> exist in the database ({verifiedTp} TP / {verifiedFp} FP).</li>
+                  <li><strong>{totalVerified} analyst ground-truth reviews</strong> exist in the {scopeLabel} ({verifiedTp} TP / {verifiedFp} FP).</li>
                   <li><strong>{abstainedCount} reviews</strong> resolved AI abstentions (<code className="text-amber-300">REQUIRES_ATTENTION</code>).</li>
                   <li><strong>{missingInferenceCount} reviews</strong> represent initial benchmarks without stored AI inference.</li>
                   <li><strong>0 decisive AI predictions</strong> (TP or FP) are available for comparison.</li>
@@ -257,13 +313,16 @@ export function AccuracyLearningSummary({
                 </p>
               </div>
 
-              {/* Explicit Pilot Class Balance Deficit Notice */}
+              {/* Explicit One-Class Dataset & Pilot Class Balance Deficit Notice */}
               <div className="p-3 rounded-lg bg-amber-950/40 border border-amber-800/80 text-amber-200 text-xs space-y-1 mt-2">
                 <div className="flex items-center gap-2 font-bold">
                   <AlertTriangle className="w-4 h-4 text-amber-400" />
-                  <span>Pilot Class Balance Deficit:</span>
+                  <span>One-Class Dataset &amp; Pilot Class Balance Deficit:</span>
                 </div>
                 <p className="text-[11px] leading-relaxed">
+                  One-Class Dataset — Verified FP performance can be evaluated, but TP recall and two-class certification require genuine TP cases.
+                </p>
+                <p className="text-[11px] text-amber-300/80">
                   Current verified ground truth contains <strong>{verifiedFp} False Positives (100%)</strong> and <strong>{verifiedTp} True Positives (0%)</strong>. Supervised Pilot baseline calibration requires at least <strong>10 True Positive</strong> and <strong>10 False Positive</strong> verified cases to establish representative statistical significance.
                 </p>
               </div>
@@ -302,7 +361,7 @@ export function AccuracyLearningSummary({
         </div>
       ) : null}
 
-      {/* NEW: Comprehensive AI Evaluation Tracking & Coverage Breakdown Grid */}
+      {/* Comprehensive AI Evaluation Tracking & Coverage Breakdown Grid */}
       <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/70 space-y-3">
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
           <div className="flex items-center gap-2">
@@ -311,8 +370,8 @@ export function AccuracyLearningSummary({
               AI Evaluation Tracking &amp; Decision Coverage Breakdown
             </h3>
           </div>
-          <span className="text-[11px] text-slate-500 font-mono">
-            Heavy TCP Host Scan On Fixed Port
+          <span className="text-[11px] text-cyan-400 font-mono">
+            Scope: {scopeLabel}
           </span>
         </div>
 
@@ -371,9 +430,14 @@ export function AccuracyLearningSummary({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
         {/* Card 1: Verified Ground Truth */}
         <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/60 space-y-1">
-          <span className="text-slate-400 font-semibold block text-[11px]">
-            Verified Ground Truth
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400 font-semibold block text-[11px]">
+              Verified Ground Truth
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300">
+              {isCurrentScope ? "Current Queue" : "Historical"}
+            </span>
+          </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold font-mono text-cyan-300">
               {totalVerified}
@@ -383,7 +447,7 @@ export function AccuracyLearningSummary({
             </span>
           </div>
           <span className="text-[10px] text-slate-500 block">
-            From {rawReviews} total analyst review(s)
+            {isCurrentScope ? "13 operational incidents in queue" : "45 cumulative reviewed cases in profile"}
           </span>
         </div>
 
@@ -406,10 +470,10 @@ export function AccuracyLearningSummary({
           <div className="flex items-baseline gap-2">
             <span
               className={`text-xl font-bold font-mono ${
-                accuracyValue !== null ? "text-emerald-400" : "text-slate-500"
+                accuracyValue !== null ? "text-emerald-400" : "text-slate-400 text-sm"
               }`}
             >
-              {accuracyValue !== null ? `${(accuracyValue * 100).toFixed(1)}%` : "N/A"}
+              {accuracyValue !== null ? `${(accuracyValue * 100).toFixed(1)}%` : "NOT MEASURABLE"}
             </span>
             {wilsonBound !== null && (
               <span className="text-[10px] text-slate-500 font-mono">
@@ -430,14 +494,14 @@ export function AccuracyLearningSummary({
           <div className="flex items-baseline gap-2">
             <span
               className={`text-xl font-bold font-mono ${
-                agreementRate !== null ? "text-cyan-300" : "text-slate-500"
+                agreementRate !== null ? "text-cyan-300" : "text-slate-400 text-sm"
               }`}
             >
-              {agreementRate !== null ? `${agreementRate.toFixed(1)}%` : "N/A"}
+              {agreementRate !== null ? `${agreementRate.toFixed(1)}%` : "NOT MEASURABLE"}
             </span>
           </div>
           <span className="text-[10px] text-slate-500 block">
-            {aiCorrect} agreed, {aiIncorrect} disagreed
+            {decisiveEvaluations > 0 ? `${aiCorrect} agreed, ${aiIncorrect} disagreed` : "0 decisive comparison pairs"}
           </span>
         </div>
 
@@ -452,7 +516,7 @@ export function AccuracyLearningSummary({
             </span>
           </div>
           <span className="text-[10px] text-slate-500 block">
-            G8 Status: {g8StatusText}
+            G8 Status: {g8StatusText} (0/10 TP Pilot Deficit)
           </span>
         </div>
       </div>

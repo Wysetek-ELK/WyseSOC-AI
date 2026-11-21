@@ -842,7 +842,40 @@ class RuleLearningService:
             )
 
         rev_res = await db.execute(rev_stmt)
-        reviews = rev_res.scalars().all()
+        all_candidate_reviews = rev_res.scalars().all()
+
+        # Exclude patterned synthetic test fixtures from certified evaluation metrics
+        import re
+        def is_patterned_test_uuid(val: Optional[str]) -> bool:
+            if not val:
+                return False
+            return bool(re.match(r"^[0-9]0000000-0000-0000-0000-[0-9a-f]{12}$", str(val).strip().lower()))
+
+        reviews = [
+            r for r in all_candidate_reviews
+            if not is_patterned_test_uuid(r.incident_id) and not is_patterned_test_uuid(r.id)
+        ]
+
+        # Audit current operational incident inventory
+        inc_stmt = select(Incident).where(
+            or_(
+                Incident.rule_id.in_(rule_identifiers),
+                Incident.event_type.in_(rule_identifiers),
+            )
+        )
+        if customer and customer.upper() not in ("ALL", "GLOBAL"):
+            if customer.upper() == "DEFAULT":
+                inc_stmt = inc_stmt.where(or_(Incident.customer == "DEFAULT", Incident.customer == "", Incident.customer.is_(None)))
+            else:
+                inc_stmt = inc_stmt.where(Incident.customer == customer)
+        curr_inc_res = await db.execute(inc_stmt)
+        curr_incs = curr_inc_res.scalars().all()
+        curr_inc_ids = {i.id for i in curr_incs} | {i.incident_id for i in curr_incs if i.incident_id}
+
+        curr_matched_revs = [r for r in reviews if r.incident_id in curr_inc_ids]
+        curr_tp = sum(1 for r in curr_matched_revs if (r.analyst_verdict or "").upper() == "TRUE_POSITIVE")
+        curr_fp = sum(1 for r in curr_matched_revs if (r.analyst_verdict or "").upper() == "FALSE_POSITIVE")
+        curr_abstained = sum(1 for r in curr_matched_revs if (r.revealed_ai_verdict or "").upper() in ("REQUIRES_ATTENTION", "INSUFFICIENT_EVIDENCE") or (r.comparison_outcome or "").upper() == "ANALYST_RESOLVED_ABSTENTION")
 
         total_reviews = len(reviews)
         if total_reviews == 0 and (profile.total_analyst_reviews or 0) > 0:
@@ -971,6 +1004,11 @@ class RuleLearningService:
         err_dist["tp_recall"] = tp_recall
         err_dist["tp_precision"] = tp_precision
         err_dist["specificity"] = specificity
+        err_dist["current_inventory_incidents"] = len(curr_incs)
+        err_dist["current_inventory_reviews"] = len(curr_matched_revs)
+        err_dist["current_inventory_verified_tp"] = curr_tp
+        err_dist["current_inventory_verified_fp"] = curr_fp
+        err_dist["current_inventory_abstained"] = curr_abstained
         profile.error_distribution = err_dist
 
         is_eligible, reasons = cls.check_production_eligibility(profile)
@@ -989,7 +1027,7 @@ class RuleLearningService:
                 msg = "No analyst reviews exist for this rule. Independent double-blind reviews must be completed to establish ground truth."
             else:
                 msg = (
-                    f"Accuracy cannot be calculated: 0 eligible decisive AI predictions were found across {total_reviews} verified reviews "
+                    f"Accuracy cannot be calculated: 0 eligible decisive AI predictions were found across {total_reviews} historical verified reviews "
                     f"({analyst_resolved_abstention} reviews resolved AI abstentions, and {analyst_only_initial_benchmark} were initial benchmarks without AI inference). "
                     f"Selective Accuracy requires decisive AI predictions (TP or FP) matched against verified analyst verdicts."
                 )
@@ -1010,6 +1048,24 @@ class RuleLearningService:
             "fp_precision": fp_precision,
             "wilson_lower_bound": wilson_lower_bound,
             "tp_recall": tp_recall,
+            "current_inventory": {
+                "population_name": "Current Incident Inventory",
+                "total_incidents": len(curr_incs),
+                "verified_reviews": len(curr_matched_revs),
+                "verified_tp": curr_tp,
+                "verified_fp": curr_fp,
+                "abstained": curr_abstained,
+                "decisive": 0,
+            },
+            "historical_cohort": {
+                "population_name": "Cumulative Historical Ground Truth",
+                "total_reviews": total_reviews,
+                "verified_tp": verified_tp,
+                "verified_fp": verified_fp,
+                "abstained": analyst_resolved_abstention,
+                "initial_benchmarks_missing_inference": analyst_only_initial_benchmark,
+                "decisive": total_decisive,
+            },
             "class_balance": {
                 "verified_tp": verified_tp,
                 "required_pilot_tp": pilot_tp_required,

@@ -178,8 +178,48 @@ export interface AisEvaluationSummary {
   agreement_fp: number;
   ai_false_alarm: number;
   critical_missed_tp: number;
-  class_balance_status: "BALANCED" | "IMBALANCED";
+  class_balance_status: "BALANCED" | "IMBALANCED" | string;
   class_balance_notice: string;
+  verified_tp_count?: number;
+  verified_fp_count?: number;
+  historical_total_reviews?: number;
+  historical_verified_tp?: number;
+  historical_verified_fp?: number;
+  historical_abstained?: number;
+  historical_missing_inference?: number;
+  historical_total_processed?: number;
+  is_one_class_dataset?: boolean;
+  one_class_notice?: string;
+  population_scope?: string;
+  snapshot_at?: string;
+  current_inventory?: {
+    population_name: string;
+    total_incidents: number;
+    verified_reviews: number;
+    verified_tp: number;
+    verified_fp: number;
+    abstained: number;
+    evaluated_decisive: number;
+    validation_rejected: number;
+    missing_evaluations_among_reviewed: number;
+    not_evaluated: number;
+    failed: number;
+    decision_coverage_percent: number;
+    selective_accuracy?: number | null;
+    accuracy_status: string;
+  };
+  historical_cohort?: {
+    population_name: string;
+    total_reviews: number;
+    verified_tp: number;
+    verified_fp: number;
+    abstained: number;
+    initial_benchmarks_missing_inference: number;
+    decisive: number;
+    selective_accuracy?: number | null;
+    accuracy_status: string;
+    total_processed: number;
+  };
 }
 
 export interface AisEvaluationStatusResponse {

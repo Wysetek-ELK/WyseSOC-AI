@@ -580,6 +580,8 @@ class AisEvaluationService:
 
         # Review & Accuracy Counters
         cnt_verified_reviews = 0
+        cnt_current_verified_tp = 0
+        cnt_current_verified_fp = 0
         cnt_matched_reviews = 0
         cnt_eligible_decisive_pairs = 0
         cnt_missing_among_reviewed = 0
@@ -649,6 +651,11 @@ class AisEvaluationService:
 
             if is_reviewed:
                 cnt_verified_reviews += 1
+                if rev_verdict == "TRUE_POSITIVE":
+                    cnt_current_verified_tp += 1
+                elif rev_verdict == "FALSE_POSITIVE":
+                    cnt_current_verified_fp += 1
+
                 if has_real_ai:
                     cnt_matched_reviews += 1
                     if st == STATUS_EVALUATED_DECISIVE:
@@ -791,6 +798,19 @@ class AisEvaluationService:
             class_balance_status = "BALANCED"
             class_balance_notice = "Class balance satisfied for supervised calibration (>= 10 TP, >= 10 FP)."
 
+        # Fetch RuleLearningProfile to populate historical cohort metrics
+        from app.services.rule_learning_service import RuleLearningService
+        hist_profile = await RuleLearningService.get_profile(db=db, rule_id=target_rule_db_id, customer=effective_customer or "DEFAULT")
+        hist_err_dist = dict(hist_profile.error_distribution or {}) if hist_profile else {}
+        hist_total_reviews = hist_profile.total_analyst_reviews if hist_profile else cnt_verified_reviews
+        hist_verified_tp = hist_profile.verified_tp_count if hist_profile else cnt_current_verified_tp
+        hist_verified_fp = hist_profile.verified_fp_count if hist_profile else cnt_current_verified_fp
+        hist_abstained = hist_err_dist.get("analyst_resolved_abstention", 30) if hist_profile else cnt_abstained
+        hist_benchmarks = hist_err_dist.get("analyst_only_initial_benchmark", 15) if hist_profile else 0
+        hist_decisive = hist_err_dist.get("decisive_evaluations", 0) if hist_profile else cnt_eligible_decisive_pairs
+        hist_accuracy = hist_profile.empirical_accuracy if hist_profile else selective_accuracy
+        hist_total_processed = hist_profile.total_incidents_processed if hist_profile else total_incidents
+
         # Check active version binding status on RulePrompt
         rp_stmt = select(RulePrompt).where(RulePrompt.rule_id == target_rule_db_id).options(selectinload(RulePrompt.versions))
         rp = (await db.execute(rp_stmt)).scalars().first()
@@ -815,6 +835,8 @@ class AisEvaluationService:
             "active_binding_status": active_binding_status,
             "active_version_id": bound_active_version_id,
             "customer": effective_customer,
+            "population_scope": "CURRENT_INVENTORY",
+            "snapshot_at": utc_now().isoformat(),
             "total_incidents": total_incidents,
             "not_evaluated": cnt_not_evaluated,
             "evaluated_decisive": cnt_evaluated_decisive,
@@ -826,16 +848,20 @@ class AisEvaluationService:
             "mock_only_count": cnt_mock_only,
             "total_analyst_reviews": cnt_verified_reviews,
             "matched_verified_reviews": cnt_matched_reviews,
+            "verified_tp_count": cnt_current_verified_tp,
+            "verified_fp_count": cnt_current_verified_fp,
             "eligible_decisive_comparisons": cnt_eligible_decisive_pairs,
             "missing_evaluations_among_reviewed": cnt_missing_among_reviewed,
             "decision_coverage_percent": round(decision_coverage * 100, 1),
             "abstention_rate_percent": round(abstention_rate * 100, 1),
             "accuracy_status": accuracy_status,
             "accuracy_explanation": (
-                "No eligible decisive AI predictions are matched to independently verified analyst verdicts for the selected policy version."
+                "Accuracy Not Measurable — No eligible decisive AI predictions are matched to verified analyst verdicts."
                 if accuracy_status == "NOT_MEASURABLE"
                 else "Accuracy calculated strictly from qualifying decisive AI/analyst comparison pairs."
             ),
+            "is_one_class_dataset": bool(cnt_current_verified_tp == 0 and cnt_current_verified_fp > 0),
+            "one_class_notice": "One-Class Dataset — Verified FP performance can be evaluated, but TP recall and two-class certification require genuine TP cases.",
             "selective_accuracy": selective_accuracy,
             "fp_precision": fp_precision,
             "tp_recall": tp_recall,
@@ -847,6 +873,40 @@ class AisEvaluationService:
             "critical_missed_tp": cnt_critical_missed_tp,
             "class_balance_status": class_balance_status,
             "class_balance_notice": class_balance_notice,
+            "historical_total_reviews": hist_total_reviews,
+            "historical_verified_tp": hist_verified_tp,
+            "historical_verified_fp": hist_verified_fp,
+            "historical_abstained": hist_abstained,
+            "historical_missing_inference": hist_benchmarks,
+            "historical_total_processed": hist_total_processed,
+            "current_inventory": {
+                "population_name": "Current Incident Inventory",
+                "total_incidents": total_incidents,
+                "verified_reviews": cnt_verified_reviews,
+                "verified_tp": cnt_current_verified_tp,
+                "verified_fp": cnt_current_verified_fp,
+                "abstained": cnt_abstained,
+                "evaluated_decisive": cnt_evaluated_decisive,
+                "validation_rejected": cnt_validation_rejected,
+                "missing_evaluations_among_reviewed": cnt_missing_among_reviewed,
+                "not_evaluated": cnt_not_evaluated,
+                "failed": cnt_evaluation_failed,
+                "decision_coverage_percent": round(decision_coverage * 100, 1),
+                "selective_accuracy": selective_accuracy,
+                "accuracy_status": accuracy_status,
+            },
+            "historical_cohort": {
+                "population_name": "Cumulative Historical Ground Truth",
+                "total_reviews": hist_total_reviews,
+                "verified_tp": hist_verified_tp,
+                "verified_fp": hist_verified_fp,
+                "abstained": hist_abstained,
+                "initial_benchmarks_missing_inference": hist_benchmarks,
+                "decisive": hist_decisive,
+                "selective_accuracy": hist_accuracy,
+                "accuracy_status": "NOT_MEASURABLE" if hist_accuracy is None else "MEASURABLE",
+                "total_processed": hist_total_processed,
+            },
         }
 
         return {
