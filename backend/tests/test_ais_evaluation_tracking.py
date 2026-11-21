@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, or_
 
 from app.main import app
 from app.database import AsyncSessionLocal
@@ -106,14 +106,40 @@ def make_trust_record(
     )
 
 
+# Global tracker to preserve original active version binding across tests
+_SAVED_RULE_PROMPT_STATE: Dict[str, Any] = {}
+
+
 @pytest_asyncio.fixture(autouse=True)
 async def setup_test_environment():
     """Seed test rule, prompt versions v7 and v8, test users, and clean test records."""
     async with AsyncSessionLocal() as db:
-        await db.execute(delete(ActualLLMPromptCapture).where(ActualLLMPromptCapture.rule_id.in_([RULE_UUID, RULE_EVENT_TYPE])))
-        await db.execute(delete(VerdictTrustAssessmentRecord).where(VerdictTrustAssessmentRecord.rule_id.in_([RULE_UUID, RULE_EVENT_TYPE])))
-        await db.execute(delete(AnalystVerdictReview).where(AnalystVerdictReview.rule_id.in_([RULE_UUID, RULE_EVENT_TYPE])))
-        await db.execute(delete(Incident).where(Incident.event_type == RULE_EVENT_TYPE))
+        # Preserve existing active version binding if present
+        rp_existing_res = await db.execute(select(RulePrompt).where(RulePrompt.rule_id == RULE_UUID))
+        rp_existing = rp_existing_res.scalar_one_or_none()
+        if rp_existing:
+            _SAVED_RULE_PROMPT_STATE["active_version_id"] = rp_existing.active_version_id
+            _SAVED_RULE_PROMPT_STATE["ai_execution_suspended"] = rp_existing.ai_execution_suspended
+
+        await db.execute(delete(ActualLLMPromptCapture).where(
+            or_(
+                ActualLLMPromptCapture.incident_id.like("INC-%"),
+                ActualLLMPromptCapture.incident_id.like("db-inc-%"),
+            )
+        ))
+        await db.execute(delete(VerdictTrustAssessmentRecord).where(
+            or_(
+                VerdictTrustAssessmentRecord.incident_id.like("INC-%"),
+                VerdictTrustAssessmentRecord.incident_id.like("db-inc-%"),
+            )
+        ))
+        await db.execute(delete(AnalystVerdictReview).where(
+            or_(
+                AnalystVerdictReview.incident_id.like("INC-%"),
+                AnalystVerdictReview.incident_id.like("db-inc-%"),
+            )
+        ))
+        await db.execute(delete(Incident).where(Incident.id.like("db-inc-%")))
         await db.execute(delete(PromptVersion).where(PromptVersion.id.in_([V7_VERSION_ID, V8_VERSION_ID])))
         await db.commit()
 
@@ -202,11 +228,34 @@ async def setup_test_environment():
     yield
 
     async with AsyncSessionLocal() as db:
-        await db.execute(delete(ActualLLMPromptCapture).where(ActualLLMPromptCapture.rule_id.in_([RULE_UUID, RULE_EVENT_TYPE])))
-        await db.execute(delete(VerdictTrustAssessmentRecord).where(VerdictTrustAssessmentRecord.rule_id.in_([RULE_UUID, RULE_EVENT_TYPE])))
-        await db.execute(delete(AnalystVerdictReview).where(AnalystVerdictReview.rule_id.in_([RULE_UUID, RULE_EVENT_TYPE])))
-        await db.execute(delete(Incident).where(Incident.event_type == RULE_EVENT_TYPE))
+        await db.execute(delete(ActualLLMPromptCapture).where(
+            or_(
+                ActualLLMPromptCapture.incident_id.like("INC-%"),
+                ActualLLMPromptCapture.incident_id.like("db-inc-%"),
+            )
+        ))
+        await db.execute(delete(VerdictTrustAssessmentRecord).where(
+            or_(
+                VerdictTrustAssessmentRecord.incident_id.like("INC-%"),
+                VerdictTrustAssessmentRecord.incident_id.like("db-inc-%"),
+            )
+        ))
+        await db.execute(delete(AnalystVerdictReview).where(
+            or_(
+                AnalystVerdictReview.incident_id.like("INC-%"),
+                AnalystVerdictReview.incident_id.like("db-inc-%"),
+            )
+        ))
+        await db.execute(delete(Incident).where(Incident.id.like("db-inc-%")))
         await db.execute(delete(PromptVersion).where(PromptVersion.id.in_([V7_VERSION_ID, V8_VERSION_ID])))
+
+        # Restore original active version binding if it was recorded
+        rp_res = await db.execute(select(RulePrompt).where(RulePrompt.rule_id == RULE_UUID))
+        rp = rp_res.scalar_one_or_none()
+        if rp and "active_version_id" in _SAVED_RULE_PROMPT_STATE:
+            rp.active_version_id = _SAVED_RULE_PROMPT_STATE["active_version_id"]
+            rp.ai_execution_suspended = _SAVED_RULE_PROMPT_STATE.get("ai_execution_suspended", False)
+
         await db.commit()
 
 

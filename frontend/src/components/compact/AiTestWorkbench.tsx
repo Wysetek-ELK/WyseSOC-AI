@@ -24,6 +24,7 @@ import {
   Check,
   AlertCircle,
   HelpCircle,
+  Search,
 } from "lucide-react";
 import {
   api,
@@ -98,6 +99,10 @@ export function AiTestWorkbench({
   const [batchConcurrency, setBatchConcurrency] = useState<number>(1);
   const [batchConfirmed, setBatchConfirmed] = useState(false);
   const [batchResult, setBatchResult] = useState<AisBatchEvaluationResponse | null>(null);
+
+  // Table Filters State
+  const [tableFilter, setTableFilter] = useState<string>("ALL");
+  const [tableSearch, setTableSearch] = useState<string>("");
 
   // Expandable Detail Panels (collapsed by default for clean UI)
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -343,6 +348,17 @@ export function AiTestWorkbench({
   );
   const missingCount = evalSummary?.missing_evaluations_among_reviewed ?? missingCandidates.length;
 
+  const filteredEvalItems = ruleEvalItems.filter((it) => {
+    if (tableFilter !== "ALL" && it.status !== tableFilter) return false;
+    if (tableSearch.trim()) {
+      const q = tableSearch.trim().toLowerCase();
+      const incIdStr = String(it.incident_id || "").toLowerCase();
+      const titleStr = String(it.title || "").toLowerCase();
+      if (!incIdStr.includes(q) && !titleStr.includes(q)) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-4">
       {/* Top Technical Metadata Bar */}
@@ -423,6 +439,250 @@ export function AiTestWorkbench({
           </button>
         </div>
       )}
+
+      {/* SECTION A: Evaluation Coverage Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+        <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
+          <span className="text-slate-400 font-medium text-[11px]">Total Incidents</span>
+          <span className="text-xl font-bold font-mono text-slate-100 mt-1">
+            {evalSummary?.total_incidents ?? ruleEvalItems.length}
+          </span>
+          <span className="text-[10px] text-slate-500 font-mono mt-0.5">Authoritative Inventory</span>
+        </div>
+
+        <div className="p-3 rounded-xl border border-emerald-900/50 bg-emerald-950/20 flex flex-col justify-between">
+          <span className="text-emerald-400 font-medium text-[11px] flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+            Decisive Verdicts
+          </span>
+          <span className="text-xl font-bold font-mono text-emerald-300 mt-1">
+            {evalSummary?.evaluated_decisive ?? 0}
+          </span>
+          <span className="text-[10px] text-emerald-500 font-mono mt-0.5">
+            {evalSummary?.decision_coverage_percent ? `${evalSummary.decision_coverage_percent}% coverage` : "TP / FP"}
+          </span>
+        </div>
+
+        <div className="p-3 rounded-xl border border-amber-900/50 bg-amber-950/20 flex flex-col justify-between">
+          <span className="text-amber-400 font-medium text-[11px] flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3 text-amber-400" />
+            Abstained
+          </span>
+          <span className="text-xl font-bold font-mono text-amber-300 mt-1">
+            {evalSummary?.abstained ?? 0}
+          </span>
+          <span className="text-[10px] text-amber-500 font-mono mt-0.5">
+            {evalSummary?.abstention_rate_percent ? `${evalSummary.abstention_rate_percent}% rate` : "Requires Attention"}
+          </span>
+        </div>
+
+        <div className="p-3 rounded-xl border border-rose-900/50 bg-rose-950/20 flex flex-col justify-between">
+          <span className="text-rose-400 font-medium text-[11px] flex items-center gap-1">
+            <ShieldAlert className="w-3 h-3 text-rose-400" />
+            Rejected
+          </span>
+          <span className="text-xl font-bold font-mono text-rose-300 mt-1">
+            {evalSummary?.validation_rejected ?? 0}
+          </span>
+          <span className="text-[10px] text-rose-500 font-mono mt-0.5">Evidence Grounding</span>
+        </div>
+
+        <div className="p-3 rounded-xl border border-red-900/50 bg-red-950/20 flex flex-col justify-between">
+          <span className="text-red-400 font-medium text-[11px] flex items-center gap-1">
+            <X className="w-3 h-3 text-red-400" />
+            Failed / Timeout
+          </span>
+          <span className="text-xl font-bold font-mono text-red-300 mt-1">
+            {evalSummary?.evaluation_failed ?? 0}
+          </span>
+          <span className="text-[10px] text-red-500 font-mono mt-0.5">Execution Errors</span>
+        </div>
+
+        <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 flex flex-col justify-between">
+          <span className="text-slate-400 font-medium text-[11px] flex items-center gap-1">
+            <HelpCircle className="w-3 h-3 text-slate-400" />
+            Not Evaluated
+          </span>
+          <span className="text-xl font-bold font-mono text-slate-300 mt-1">
+            {evalSummary?.not_evaluated ?? 0}
+          </span>
+          <span className="text-[10px] text-slate-500 font-mono mt-0.5">Missing Inference</span>
+        </div>
+      </div>
+
+      {/* SECTION B: Incident Evaluation Tracking Table */}
+      <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-cyan-400" />
+            <h3 className="font-bold text-slate-100 text-xs">Incident Evaluation Tracking</h3>
+            <span className="text-[11px] text-slate-500 font-mono">
+              (Target Policy: v{targetVer?.version_number ?? 7})
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-1 max-w-xs">
+            <div className="relative w-full">
+              <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
+              <input
+                type="text"
+                value={tableSearch}
+                onChange={(e) => setTableSearch(e.target.value)}
+                placeholder="Search Incident ID..."
+                className="w-full pl-8 pr-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 text-xs font-mono focus:ring-1 focus:ring-cyan-500"
+              />
+            </div>
+            <button
+              onClick={fetchRuleSummary}
+              disabled={loadingSummary}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors shrink-0"
+              title="Refresh tracking data"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingSummary ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Pills */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+          {[
+            { id: "ALL", label: "All Incidents", count: ruleEvalItems.length },
+            { id: "NOT_EVALUATED", label: "Not Evaluated", count: evalSummary?.not_evaluated ?? 0 },
+            { id: "EVALUATED_DECISIVE", label: "Decisive", count: evalSummary?.evaluated_decisive ?? 0 },
+            { id: "ABSTAINED", label: "Abstained", count: evalSummary?.abstained ?? 0 },
+            { id: "VALIDATION_REJECTED", label: "Rejected", count: evalSummary?.validation_rejected ?? 0 },
+            { id: "EVALUATION_FAILED", label: "Failed", count: evalSummary?.evaluation_failed ?? 0 },
+          ].map((pill) => (
+            <button
+              key={pill.id}
+              onClick={() => setTableFilter(pill.id)}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1.5 ${
+                tableFilter === pill.id
+                  ? "bg-cyan-950 text-cyan-300 border border-cyan-800"
+                  : "bg-slate-950/60 text-slate-400 border border-slate-800/80 hover:text-slate-200"
+              }`}
+            >
+              <span>{pill.label}</span>
+              <span className="font-mono text-[10px] text-slate-500">({pill.count})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Table */}
+        <div className="rounded-lg border border-slate-800 bg-slate-950/80 overflow-hidden">
+          <div className="overflow-x-auto max-h-72 overflow-y-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-800 text-[11px] sticky top-0 z-10">
+                <tr>
+                  <th className="py-2 px-3">Incident</th>
+                  <th className="py-2 px-3">Severity</th>
+                  <th className="py-2 px-3">Canonical Status</th>
+                  <th className="py-2 px-3">Effective Verdict</th>
+                  <th className="py-2 px-3">Policy</th>
+                  <th className="py-2 px-3">Analyst Review</th>
+                  <th className="py-2 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {loadingSummary ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-500 text-xs">
+                      <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-cyan-400" />
+                      Loading incident evaluation records...
+                    </td>
+                  </tr>
+                ) : filteredEvalItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-500 text-xs">
+                      No incidents match the selected filter.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEvalItems.map((item) => {
+                    const isSelected = selectedIncidentId === item.incident_id || selectedIncidentId === item.db_id;
+                    return (
+                      <tr
+                        key={item.incident_id}
+                        onClick={() => setSelectedIncidentId(item.incident_id)}
+                        className={`cursor-pointer transition-colors ${
+                          isSelected
+                            ? "bg-cyan-950/30 border-l-2 border-l-cyan-400"
+                            : "hover:bg-slate-900/40"
+                        }`}
+                      >
+                        <td className="py-2 px-3 font-bold text-slate-200">
+                          #{item.incident_id}
+                          {item.title && (
+                            <span className="block font-sans text-[10px] text-slate-400 font-normal truncate max-w-xs">
+                              {item.title}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                            {item.customer || "DEFAULT"}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3">
+                          {renderStatusBadge(item.status)}
+                        </td>
+                        <td className="py-2 px-3">
+                          {item.effective_verdict ? (
+                            <span className={item.effective_verdict === "TRUE_POSITIVE" ? "text-rose-400 font-bold" : "text-emerald-400 font-bold"}>
+                              {item.effective_verdict}
+                            </span>
+                          ) : item.status === "ABSTAINED" ? (
+                            <span className="text-amber-400 font-semibold">REQUIRES_ATTENTION</span>
+                          ) : (
+                            <span className="text-slate-600">—</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 text-slate-400">
+                          v{item.policy_version_number ?? targetVer?.version_number ?? "?"}
+                        </td>
+                        <td className="py-2 px-3">
+                          {item.analyst_review ? (
+                            <span className="text-cyan-300 font-bold flex items-center gap-1 text-[11px]">
+                              <Check className="w-3 h-3 text-emerald-400" />
+                              {item.analyst_review.analyst_verdict}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600 italic text-[11px]">Unreviewed</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => setSelectedIncidentId(item.incident_id)}
+                              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
+                                isSelected
+                                  ? "bg-cyan-600 text-slate-950 font-bold"
+                                  : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                              }`}
+                            >
+                              {isSelected ? "Active" : "Select"}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedIncidentId(item.incident_id);
+                                setShowHistoryModal(true);
+                              }}
+                              className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                              title="Evaluation History"
+                            >
+                              <History className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
       {/* Guided Test Workflow Card */}
       <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-4">

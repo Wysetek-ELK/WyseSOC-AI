@@ -486,8 +486,19 @@ class AisEvaluationService:
         inc_stmt = select(Incident).where(inc_filter).options(selectinload(Incident.events))
 
         # Tenant isolation
+        user_role = getattr(current_user, "role", "")
+        is_admin_user = user_role in ("Administrator", "SuperAdmin", "SOC_Manager") or getattr(current_user, "is_superuser", False)
         user_cust = getattr(current_user, "customer", None)
-        effective_customer = user_cust or customer or "DEFAULT"
+
+        if is_admin_user:
+            # Administrators can view all tenants by default unless an explicit tenant is chosen
+            if customer and customer.upper() not in ("ALL", "GLOBAL", "DEFAULT", ""):
+                effective_customer = customer
+            else:
+                effective_customer = None
+        else:
+            effective_customer = user_cust or customer or "DEFAULT"
+
         if effective_customer and effective_customer.upper() not in ("ALL", "GLOBAL"):
             if effective_customer == "DEFAULT":
                 cust_filter = or_(
@@ -780,11 +791,29 @@ class AisEvaluationService:
             class_balance_status = "BALANCED"
             class_balance_notice = "Class balance satisfied for supervised calibration (>= 10 TP, >= 10 FP)."
 
+        # Check active version binding status on RulePrompt
+        rp_stmt = select(RulePrompt).where(RulePrompt.rule_id == target_rule_db_id).options(selectinload(RulePrompt.versions))
+        rp = (await db.execute(rp_stmt)).scalars().first()
+        is_active_bound = False
+        active_binding_status = "NO_ACTIVE_BINDING"
+        bound_active_version_id = None
+        if rp and rp.active_version_id:
+            bound_active_version_id = rp.active_version_id
+            bound_v = next((x for x in rp.versions if x.id == rp.active_version_id), None)
+            if bound_v:
+                is_active_bound = True
+                active_binding_status = "ACTIVE" if bound_v.status == "APPROVED" else f"UNAPPROVED_{bound_v.status}"
+            else:
+                active_binding_status = "ORPHANED_BINDING"
+
         summary = {
             "rule_uuid": target_rule_db_id,
             "policy_version_number": target_ver_num,
             "policy_version_id": target_ver_id,
             "policy_status": target_ver_status,
+            "is_active_policy_bound": is_active_bound,
+            "active_binding_status": active_binding_status,
+            "active_version_id": bound_active_version_id,
             "customer": effective_customer,
             "total_incidents": total_incidents,
             "not_evaluated": cnt_not_evaluated,

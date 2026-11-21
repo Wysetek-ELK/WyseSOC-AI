@@ -54,7 +54,13 @@ async def get_rule_evaluation_status(
     """
     target_v_id = policy_version_id or version_id
     target_v_num = policy_version_number if policy_version_number is not None else version_number
-    target_customer = customer or getattr(current_user, "customer", "DEFAULT") or "DEFAULT"
+    user_role = getattr(current_user, "role", "")
+    is_admin_user = user_role in ("Administrator", "SuperAdmin", "SOC_Manager") or getattr(current_user, "is_superuser", False)
+
+    if is_admin_user:
+        target_customer = customer if (customer and customer.upper() not in ("ALL", "GLOBAL", "DEFAULT", "")) else None
+    else:
+        target_customer = getattr(current_user, "customer", None) or customer or "DEFAULT"
 
     try:
         res = await AisEvaluationService.get_rule_evaluation_tracking_overview(

@@ -232,6 +232,12 @@ export function AgentIntelligenceStudioOverview({
 
   // Decoupled Policy Governance & AI Execution Status
   const activeVersion = versions.find((v) => v.id === activeVersionId) || null;
+  const isPolicyRevoked = Boolean(
+    eligibilityData?.is_revoked ||
+    selectedVersion?.status === "REVOKED" ||
+    (activeVersion && activeVersion.status === "REVOKED")
+  );
+
   const selectedPolicyLabel = selectedVersion
     ? `V${selectedVersion.version_number} — ${selectedVersion.status}`
     : "None";
@@ -241,13 +247,9 @@ export function AgentIntelligenceStudioOverview({
       : `V${activeVersion.version_number} — ${activeVersion.status}`)
     : (eligibilityData?.active_version_number
       ? `V${eligibilityData.active_version_number} — ${eligibilityData.active_version_status}`
-      : "None (Revoked / Suspended)");
-
-  const isPolicyRevoked = Boolean(
-    eligibilityData?.is_revoked ||
-    selectedVersion?.status === "REVOKED" ||
-    (activeVersion && activeVersion.status === "REVOKED")
-  );
+      : isPolicyRevoked
+        ? "None (Policy Revoked)"
+        : "None (No Active Policy Bound)");
 
   const aiVerdictExecutionStatus: "Enabled" | "Disabled" | "Suspended" | "Offline" | "Unknown" | "Blocked" =
     readinessData?.ai_execution_status
@@ -740,7 +742,13 @@ export function AgentIntelligenceStudioOverview({
               <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <div className="font-semibold text-amber-300 flex items-center gap-2">
-                  <span>AI Execution Suspended: {eligibilityData.reason_code}</span>
+                  <span>
+                    {eligibilityData.status === "RULE_SUSPENDED" || (eligibilityData as any).is_suspended
+                      ? `AI Execution Suspended: ${eligibilityData.reason_code}`
+                      : eligibilityData.status === "POLICY_REVOKED" || isPolicyRevoked
+                      ? "AI Execution Suspended: Policy Revoked"
+                      : `AI Execution Inactive: ${eligibilityData.reason_code}`}
+                  </span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-900/80 text-amber-200 border border-amber-700">
                     Safe Fallback
                   </span>

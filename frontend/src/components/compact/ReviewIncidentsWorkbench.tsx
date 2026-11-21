@@ -64,9 +64,6 @@ export function ReviewIncidentsWorkbench({
   onOpenActualPrompt,
   onNavigateToTest,
 }: ReviewIncidentsWorkbenchProps) {
-  // Mode toggle: "queue" (analyst review) vs "tracking" (admin evaluation tracking table)
-  const [activeViewMode, setActiveViewMode] = useState<"queue" | "tracking">("queue");
-
   // Queue state
   const [incidents, setIncidents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,22 +91,7 @@ export function ReviewIncidentsWorkbench({
   const [revealedResult, setRevealedResult] = useState<any | null>(null);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Administrative Tracking Table state
-  const [trackingData, setTrackingData] = useState<{
-    summary: AisEvaluationSummary | null;
-    items: AisEvaluationItem[];
-    total: number;
-  }>({
-    summary: null,
-    items: [],
-    total: 0,
-  });
-  const [loadingTracking, setLoadingTracking] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-
   // Modals state
-  const [selectedEvaluationDetail, setSelectedEvaluationDetail] = useState<AisEvaluationItem | null>(null);
   const [historyModalIncidentId, setHistoryModalIncidentId] = useState<string | null>(null);
   const [historyItems, setHistoryItems] = useState<AisEvaluationHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -142,44 +124,11 @@ export function ReviewIncidentsWorkbench({
     }
   };
 
-  const fetchTrackingData = async () => {
-    if (!ruleId) return;
-    setLoadingTracking(true);
-    try {
-      const res = await api.getRuleEvaluationStatus(ruleId, {
-        policy_version_id: selectedVersionId,
-        customer,
-        status: statusFilter !== "ALL" ? statusFilter : undefined,
-        search: searchQuery || undefined,
-        page: 1,
-        page_size: 100,
-      });
-      setTrackingData({
-        summary: res.summary,
-        items: res.items || [],
-        total: res.total || 0,
-      });
-    } catch (err: any) {
-      console.error("Failed to load evaluation tracking data:", err);
-    } finally {
-      setLoadingTracking(false);
-    }
-  };
-
   useEffect(() => {
     setSelectedIncident(null);
     setRevealedResult(null);
     fetchIncidents();
-    if (activeViewMode === "tracking") {
-      fetchTrackingData();
-    }
   }, [ruleId, selectedVersionId]);
-
-  useEffect(() => {
-    if (activeViewMode === "tracking") {
-      fetchTrackingData();
-    }
-  }, [activeViewMode, statusFilter, selectedVersionId]);
 
   // Synchronize counts whenever parent passes updated learning profile
   useEffect(() => {
@@ -264,9 +213,6 @@ export function ReviewIncidentsWorkbench({
       });
       onReviewSubmitted?.();
       await fetchIncidents();
-      if (activeViewMode === "tracking") {
-        await fetchTrackingData();
-      }
     } catch (err: any) {
       setFeedback({
         type: "error",
@@ -315,33 +261,13 @@ export function ReviewIncidentsWorkbench({
 
   return (
     <div id="incident-review-workbench" className="space-y-4 scroll-mt-6 transition-all duration-300">
-      {/* Top Header Bar with Mode Toggle & Stats */}
+      {/* Top Header Bar with Stats */}
       <div className="p-3 rounded-xl border border-slate-800 bg-slate-950/70 flex flex-wrap items-center justify-between gap-3 text-xs">
-        {/* Left: View Mode Segmented Switch */}
-        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-slate-900 border border-slate-800">
-          <button
-            onClick={() => setActiveViewMode("queue")}
-            className={`px-3 py-1 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5 ${
-              activeViewMode === "queue"
-                ? "bg-cyan-600 text-slate-950 shadow-sm"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Double-Blind Review Queue
-          </button>
-
-          <button
-            onClick={() => setActiveViewMode("tracking")}
-            className={`px-3 py-1 rounded-md font-semibold text-xs transition-colors flex items-center gap-1.5 ${
-              activeViewMode === "tracking"
-                ? "bg-cyan-600 text-slate-950 shadow-sm"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5" />
-            AI Evaluation Tracking (Admin)
-          </button>
+        {/* Left: Section Title */}
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-cyan-400" />
+          <span className="font-bold text-slate-100">Double-Blind Incident Review Queue</span>
+          <span className="text-[11px] text-slate-500 font-mono hidden sm:inline">(Analyst Independent Determination)</span>
         </div>
 
         {/* Center/Right: Counts & Blind Indicator */}
@@ -379,9 +305,8 @@ export function ReviewIncidentsWorkbench({
         </div>
       )}
 
-      {/* VIEW MODE 1: Standard Double-Blind Analyst Review Queue */}
-      {activeViewMode === "queue" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      {/* Standard Double-Blind Analyst Review Queue */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
           {/* LEFT PANEL: Compact Incident Queue (5 cols on lg) */}
           <div className="lg:col-span-5 rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden flex flex-col max-h-[750px]">
             <div className="p-3 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
@@ -489,49 +414,66 @@ export function ReviewIncidentsWorkbench({
                 </div>
 
                 {/* Normalized Evidence Summary Table */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs text-slate-300 font-semibold">
-                    <span className="flex items-center gap-1.5">
-                      <Database className="w-3.5 h-3.5 text-cyan-400" />
-                      Normalized Evidence Artifacts
-                    </span>
-                    <span className="text-[11px] text-slate-500">
-                      {normalizedEvidence.length} attribute(s) mapped
-                    </span>
-                  </div>
+                {(() => {
+                  const effectiveEvidence = normalizedEvidence && normalizedEvidence.length > 0
+                    ? normalizedEvidence.map((ev, idx) => ({
+                        field: ev.source_field || ev.canonical_field || ev.field || ev.raw_field_name || "telemetry.attribute",
+                        value: ev.observed_value ?? ev.value ?? ev.raw_value ?? "Not available",
+                        evidence_id: ev.evidence_id || `EV-${selectedIncident.incident_id}-${idx + 1}`,
+                        provenance: ev.provenance_status || (ev.source_event_id ? "Raw Event Log" : "Source: Incident Metadata"),
+                      }))
+                    : [
+                        { field: "network.source_ip", value: selectedIncident.source_ip || "Not available", evidence_id: `EV-${selectedIncident.incident_id}-src_ip`, provenance: "Source: Incident Metadata" },
+                        { field: "device.reporting_device", value: selectedIncident.reporting_device || "Not available", evidence_id: `EV-${selectedIncident.incident_id}-rpt_dev`, provenance: "Source: Incident Metadata" },
+                        { field: "network.destination_port", value: selectedIncident.destination_port || "Not available", evidence_id: `EV-${selectedIncident.incident_id}-dst_port`, provenance: "Source: Incident Metadata" },
+                        { field: "incident.event_type", value: selectedIncident.event_type || selectedIncident.rule_id || "Not available", evidence_id: `EV-${selectedIncident.incident_id}-event_type`, provenance: "Source: Incident Metadata" },
+                        { field: "incident.severity", value: selectedIncident.severity || "Not available", evidence_id: `EV-${selectedIncident.incident_id}-severity`, provenance: "Source: Incident Metadata" },
+                      ];
 
-                  {loadingDetail ? (
-                    <div className="py-6 text-center text-slate-500 text-xs">
-                      <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-cyan-400" />
-                      Extracting normalized evidence...
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs text-slate-300 font-semibold">
+                        <span className="flex items-center gap-1.5">
+                          <Database className="w-3.5 h-3.5 text-cyan-400" />
+                          Normalized Evidence Artifacts
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          {effectiveEvidence.length} attribute(s) mapped
+                        </span>
+                      </div>
+
+                      {loadingDetail ? (
+                        <div className="py-6 text-center text-slate-500 text-xs">
+                          <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-cyan-400" />
+                          Extracting normalized evidence...
+                        </div>
+                      ) : (
+                        <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950">
+                          <table className="w-full text-left text-[11px] font-mono">
+                            <thead className="bg-slate-900/80 text-slate-400 border-b border-slate-800">
+                              <tr>
+                                <th className="py-1 px-2.5">Field</th>
+                                <th className="py-1 px-2.5">Observed Value</th>
+                                <th className="py-1 px-2.5">Provenance</th>
+                                <th className="py-1 px-2.5">EV-ID</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/60">
+                              {effectiveEvidence.map((ev, idx) => (
+                                <tr key={idx} className="hover:bg-slate-900/40">
+                                  <td className="py-1 px-2.5 text-cyan-400 font-semibold">{ev.field}</td>
+                                  <td className="py-1 px-2.5 text-slate-200 truncate max-w-xs">{String(ev.value)}</td>
+                                  <td className="py-1 px-2.5 text-slate-400 text-[10px]">{ev.provenance}</td>
+                                  <td className="py-1 px-2.5 text-slate-500 font-bold">{ev.evidence_id}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
-                  ) : normalizedEvidence.length > 0 ? (
-                    <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950">
-                      <table className="w-full text-left text-[11px] font-mono">
-                        <thead className="bg-slate-900/80 text-slate-400 border-b border-slate-800">
-                          <tr>
-                            <th className="py-1 px-2.5">Field</th>
-                            <th className="py-1 px-2.5">Value</th>
-                            <th className="py-1 px-2.5">EV-ID</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800/60">
-                          {normalizedEvidence.map((ev, idx) => (
-                            <tr key={idx} className="hover:bg-slate-900/40">
-                              <td className="py-1 px-2.5 text-cyan-400 font-semibold">{ev.field}</td>
-                              <td className="py-1 px-2.5 text-slate-200 truncate max-w-xs">{String(ev.value ?? "-")}</td>
-                              <td className="py-1 px-2.5 text-slate-500 font-bold">{ev.evidence_id || `EV-${idx + 1}`}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 text-slate-400 text-xs">
-                      Standard normalized fields: Source IP: {selectedIncident.source_ip || "-"}, Device: {selectedIncident.reporting_device || "-"}
-                    </div>
-                  )}
-                </div>
+                  );
+                })()}
 
                 {/* Raw Logs Section */}
                 <div className="space-y-1.5">
@@ -724,387 +666,11 @@ export function ReviewIncidentsWorkbench({
             )}
           </div>
         </div>
-      )}
 
-      {/* VIEW MODE 2: Compact Incident-Level AI Evaluation Tracking Table (Admin) */}
-      {activeViewMode === "tracking" && (
-        <div className="space-y-3">
-          {/* Controls & Filter Bar */}
-          <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-slate-400 font-semibold">Status Filter:</span>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-2.5 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200 text-xs font-mono focus:ring-1 focus:ring-cyan-500"
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="EVALUATED_DECISIVE">Evaluated — Decisive</option>
-                <option value="ABSTAINED">Abstained</option>
-                <option value="VALIDATION_REJECTED">Validation Rejected</option>
-                <option value="EVALUATION_FAILED">Evaluation Failed</option>
-                <option value="NOT_EVALUATED">Not Evaluated</option>
-                <option value="QUEUED">Queued</option>
-                <option value="RUNNING">Running</option>
-              </select>
-            </div>
 
-            <div className="flex items-center gap-2 flex-1 max-w-sm">
-              <Search className="w-3.5 h-3.5 text-slate-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") fetchTrackingData();
-                }}
-                placeholder="Search Incident ID..."
-                className="w-full px-2.5 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200 text-xs font-mono focus:ring-1 focus:ring-cyan-500"
-              />
-            </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={fetchTrackingData}
-                disabled={loadingTracking}
-                className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center gap-1.5 transition-colors"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingTracking ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
-            </div>
-          </div>
 
-          {/* Compact Incident Table */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-sans">
-                <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800 text-[11px] uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th className="py-2.5 px-3">Incident</th>
-                    <th className="py-2.5 px-3">Analyst Review</th>
-                    <th className="py-2.5 px-3">AI Evaluation</th>
-                    <th className="py-2.5 px-3">Policy</th>
-                    <th className="py-2.5 px-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                  {loadingTracking ? (
-                    <tr>
-                      <td colSpan={5} className="py-12 text-center text-slate-500 text-xs">
-                        <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-cyan-400" />
-                        Loading authoritative evaluation records...
-                      </td>
-                    </tr>
-                  ) : trackingData.items.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-12 text-center text-slate-500 text-xs">
-                        No incidents match the selected evaluation status filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    trackingData.items.map((item) => {
-                      const rev = item.analyst_review;
-                      let revBadge = <span className="text-slate-500 text-[11px]">Unreviewed</span>;
-                      if (rev) {
-                        const av = rev.analyst_verdict;
-                        if (av === "FALSE_POSITIVE") {
-                          revBadge = (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800">
-                              Verified FP
-                            </span>
-                          );
-                        } else if (av === "TRUE_POSITIVE") {
-                          revBadge = (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/80 text-rose-300 border border-rose-800">
-                              Verified TP
-                            </span>
-                          );
-                        } else {
-                          revBadge = (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800">
-                              Insufficient Evidence
-                            </span>
-                          );
-                        }
-                      }
 
-                      return (
-                        <tr key={item.incident_id} className="hover:bg-slate-800/30 transition-colors">
-                          {/* Incident ID */}
-                          <td className="py-2.5 px-3 font-mono font-bold text-slate-200">
-                            <div>
-                              <span>#{item.incident_id}</span>
-                              <span className="block text-[10px] font-normal text-slate-500 font-sans truncate max-w-xs">
-                                {item.title || item.event_type}
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Analyst Review */}
-                          <td className="py-2.5 px-3">
-                            {revBadge}
-                          </td>
-
-                          {/* AI Evaluation Status Badge */}
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-2">
-                              {renderBadge(item.status, item.status_display, item.badge_color)}
-                              {item.effective_verdict && item.effective_verdict !== "[Hidden - Blind Review]" && (
-                                <span className="text-[10px] font-mono text-slate-400">
-                                  ({item.effective_verdict})
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Policy Version */}
-                          <td className="py-2.5 px-3 font-mono text-slate-300 text-xs">
-                            {item.policy_version_number ? `v${item.policy_version_number}` : "—"}
-                          </td>
-
-                          {/* Actions */}
-                          <td className="py-2.5 px-3 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {/* Primary Inspect/View Button */}
-                              {item.status === "VALIDATION_REJECTED" ? (
-                                <button
-                                  onClick={() => setSelectedEvaluationDetail(item)}
-                                  className="px-2 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-[11px] font-semibold"
-                                >
-                                  Inspect Error
-                                </button>
-                              ) : item.status === "EVALUATION_FAILED" ? (
-                                <button
-                                  onClick={() => setSelectedEvaluationDetail(item)}
-                                  className="px-2 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 text-[11px] font-semibold"
-                                >
-                                  Inspect Error
-                                </button>
-                              ) : item.status === "NOT_EVALUATED" ? (
-                                <button
-                                  onClick={() => onNavigateToTest?.(item.incident_id)}
-                                  className="px-2 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-[11px] font-bold"
-                                >
-                                  Run AI Test
-                                </button>
-                              ) : item.status === "ABSTAINED" ? (
-                                <button
-                                  onClick={() => setSelectedEvaluationDetail(item)}
-                                  className="px-2 py-1 rounded bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-800 text-[11px] font-semibold"
-                                >
-                                  Inspect
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setSelectedEvaluationDetail(item)}
-                                  className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold"
-                                >
-                                  View
-                                </button>
-                              )}
-
-                              {/* History Modal Trigger */}
-                              <button
-                                onClick={() => openHistoryModal(item.incident_id)}
-                                title="Evaluation History"
-                                className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                              >
-                                <History className="w-3.5 h-3.5" />
-                              </button>
-
-                              {/* Prompt Inspector Trigger */}
-                              {item.has_existing_prompt_capture && onOpenActualPrompt && (
-                                <button
-                                  onClick={() => onOpenActualPrompt(item.incident_id)}
-                                  title="Inspect Prompt Capture"
-                                  className="p-1 rounded text-cyan-400 hover:text-cyan-200 hover:bg-slate-800"
-                                >
-                                  <FileCode className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Tracking Summary Footer Bar */}
-            {trackingData.summary && (
-              <div className="p-3 bg-slate-950/90 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
-                <div className="flex items-center gap-4">
-                  <span>
-                    Total: <strong className="text-slate-200">{trackingData.summary.total_incidents}</strong>
-                  </span>
-                  <span>
-                    Decisive: <strong className="text-emerald-400">{trackingData.summary.evaluated_decisive}</strong>
-                  </span>
-                  <span>
-                    Abstained: <strong className="text-amber-400">{trackingData.summary.abstained}</strong>
-                  </span>
-                  <span>
-                    Rejected: <strong className="text-rose-400">{trackingData.summary.validation_rejected}</strong>
-                  </span>
-                  <span>
-                    Missing Inference: <strong className="text-slate-200">{trackingData.summary.not_evaluated}</strong>
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3 font-mono text-[11px]">
-                  <span>Decision Coverage: <strong>{trackingData.summary.decision_coverage_percent}%</strong></span>
-                  <span>Accuracy: <strong className={trackingData.summary.accuracy_status === "MEASURABLE" ? "text-emerald-400" : "text-amber-400"}>{trackingData.summary.accuracy_status}</strong></span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 1: Evaluation Detail & Validation Failure Inspector */}
-      {selectedEvaluationDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-xl rounded-xl border border-slate-800 bg-slate-900 p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-cyan-400" />
-                <span className="font-bold text-slate-200 text-sm">
-                  Evaluation Record — Incident #{selectedEvaluationDetail.incident_id}
-                </span>
-              </div>
-              <button
-                onClick={() => setSelectedEvaluationDetail(null)}
-                className="p-1 rounded text-slate-400 hover:text-slate-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              {/* Status Header */}
-              <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 flex items-center justify-between">
-                <div>
-                  <span className="text-slate-500 block text-[11px]">Evaluation Status:</span>
-                  <div className="mt-1">
-                    {renderBadge(
-                      selectedEvaluationDetail.status,
-                      selectedEvaluationDetail.status_display,
-                      selectedEvaluationDetail.badge_color
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-slate-500 block text-[11px]">Policy Version:</span>
-                  <span className="font-mono font-bold text-slate-200">
-                    {selectedEvaluationDetail.policy_version_number ? `v${selectedEvaluationDetail.policy_version_number}` : "—"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Execution Metadata Grid */}
-              <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
-                <div className="p-2.5 rounded bg-slate-950 border border-slate-800">
-                  <span className="text-slate-500 font-sans block text-[10px]">Model:</span>
-                  <span className="text-slate-200 font-bold">
-                    {selectedEvaluationDetail.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ"}
-                  </span>
-                </div>
-                <div className="p-2.5 rounded bg-slate-950 border border-slate-800">
-                  <span className="text-slate-500 font-sans block text-[10px]">Inference Type:</span>
-                  <span className={selectedEvaluationDetail.is_simulated ? "text-amber-400" : "text-emerald-400"}>
-                    {selectedEvaluationDetail.is_simulated ? "Simulated / Mock" : "Real Server 2 vLLM"}
-                  </span>
-                </div>
-                <div className="p-2.5 rounded bg-slate-950 border border-slate-800">
-                  <span className="text-slate-500 font-sans block text-[10px]">Raw Model Verdict:</span>
-                  <span className="text-cyan-300 font-bold">
-                    {selectedEvaluationDetail.raw_model_verdict || "—"}
-                  </span>
-                </div>
-                <div className="p-2.5 rounded bg-slate-950 border border-slate-800">
-                  <span className="text-slate-500 font-sans block text-[10px]">Governed Effective Verdict:</span>
-                  <span className="text-slate-200 font-bold">
-                    {selectedEvaluationDetail.effective_verdict || "—"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Validation Failure / Rejection Notice */}
-              {selectedEvaluationDetail.status === "VALIDATION_REJECTED" && (
-                <div className="p-3 rounded-lg border border-rose-800/80 bg-rose-950/30 text-rose-300 space-y-1">
-                  <span className="font-bold flex items-center gap-1.5 text-rose-200">
-                    <AlertTriangle className="w-4 h-4 text-rose-400" />
-                    Deterministic Validation Rejected
-                  </span>
-                  <p className="text-[11px] leading-relaxed">
-                    Failure Reason: <strong>{selectedEvaluationDetail.validation_failure_reason || selectedEvaluationDetail.validation_status}</strong>
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    The model generated output, but deterministic evidence grounding or reasoning integrity verification rejected the proposal. The effective outcome was converted to REQUIRES_ATTENTION for safety.
-                  </p>
-                </div>
-              )}
-
-              {/* Execution Error Notice */}
-              {selectedEvaluationDetail.status === "EVALUATION_FAILED" && (
-                <div className="p-3 rounded-lg border border-rose-800/80 bg-rose-950/30 text-rose-300 space-y-1">
-                  <span className="font-bold flex items-center gap-1.5 text-rose-200">
-                    <XCircle className="w-4 h-4 text-rose-400" />
-                    Inference Execution Failed
-                  </span>
-                  <p className="text-[11px] leading-relaxed font-mono">
-                    {selectedEvaluationDetail.validation_failure_reason || "Inference dispatch failed or timed out"}
-                  </p>
-                </div>
-              )}
-
-              {/* Reasoning / Rationale */}
-              {selectedEvaluationDetail.reason && (
-                <div className="p-3 rounded-lg border border-slate-800 bg-slate-950 space-y-1">
-                  <span className="text-slate-400 font-semibold block text-[11px]">Model Rationale:</span>
-                  <p className="text-slate-300 text-[11px] leading-relaxed whitespace-pre-wrap">
-                    {selectedEvaluationDetail.reason}
-                  </p>
-                </div>
-              )}
-
-              {/* Token & Latency Telemetry */}
-              {selectedEvaluationDetail.token_usage && (
-                <div className="p-2.5 rounded-lg border border-slate-800 bg-slate-950 flex items-center justify-between text-[11px] font-mono text-slate-400">
-                  <span>Tokens: {selectedEvaluationDetail.token_usage.total_tokens || "—"}</span>
-                  <span>Latency: {selectedEvaluationDetail.latency_ms ? `${selectedEvaluationDetail.latency_ms} ms` : "—"}</span>
-                  <span>Execution: #{selectedEvaluationDetail.execution_id?.slice(0, 8) || "—"}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t border-slate-800 pt-3">
-              {selectedEvaluationDetail.has_existing_prompt_capture && onOpenActualPrompt && (
-                <button
-                  onClick={() => {
-                    const incId = selectedEvaluationDetail.incident_id;
-                    setSelectedEvaluationDetail(null);
-                    onOpenActualPrompt(incId);
-                  }}
-                  className="px-3 py-1.5 rounded bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 text-xs font-semibold flex items-center gap-1.5"
-                >
-                  <FileCode className="w-3.5 h-3.5" />
-                  View Prompt Capture
-                </button>
-              )}
-              <button
-                onClick={() => setSelectedEvaluationDetail(null)}
-                className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL 2: Full Chronological Evaluation History */}
       {historyModalIncidentId && (

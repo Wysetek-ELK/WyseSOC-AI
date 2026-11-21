@@ -81,9 +81,9 @@ function AgentIntelligenceStudioContent() {
   const [studioTab, setStudioTab] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "learning" | "history">("editor");
 
   // Compact 3-Tab Architecture State
-  const [primaryTab, setPrimaryTab] = useState<"overview" | "test_ai" | "learning" | "advanced">("overview");
+  const [primaryTab, setPrimaryTab] = useState<"incidents" | "ai_evaluation" | "accuracy" | "settings" | "overview" | "test_ai" | "learning" | "advanced">("incidents");
   const [reviewSubView, setReviewSubView] = useState<"incidents" | "overview">("incidents");
-  const [advancedSection, setAdvancedSection] = useState<"editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "history" | "manage_versions" | "xml" | "diagnostics" | "prompt_inspector" | "governance">("editor");
+  const [advancedSection, setAdvancedSection] = useState<"overview" | "editor" | "intelligence" | "contract" | "quality" | "simulation" | "drift" | "history" | "manage_versions" | "xml" | "diagnostics" | "prompt_inspector" | "governance">("editor");
   const [compactUi, setCompactUi] = useState(true);
   const [learningProfile, setLearningProfile] = useState<any | null>(null);
   const [llmOnline, setLlmOnline] = useState<boolean | null>(null);
@@ -331,19 +331,23 @@ function AgentIntelligenceStudioContent() {
     }
   };
 
-  const handleNavigateTab = (tab: "overview" | "test_ai" | "learning" | "advanced", section?: string) => {
-    setPrimaryTab(tab);
-    if (tab === "overview") {
-      setReviewSubView((section as any) || "incidents");
-    } else if (tab === "learning") {
-      setStudioTab("learning");
-    } else if (tab === "advanced" && section) {
+  const handleNavigateTab = (tab: "incidents" | "ai_evaluation" | "accuracy" | "settings" | "overview" | "test_ai" | "learning" | "advanced", section?: string) => {
+    let normalizedTab: typeof primaryTab = tab;
+    if (tab === "overview" || tab === "incidents") normalizedTab = "incidents";
+    else if (tab === "test_ai" || tab === "ai_evaluation") normalizedTab = "ai_evaluation";
+    else if (tab === "learning" || tab === "accuracy") normalizedTab = "accuracy";
+    else if (tab === "advanced" || tab === "settings") normalizedTab = "settings";
+
+    setPrimaryTab(normalizedTab);
+    if (normalizedTab === "settings" && section) {
       setAdvancedSection(section as any);
       setStudioTab(section as any);
+    } else if (normalizedTab === "accuracy") {
+      setStudioTab("learning");
     }
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
-      url.searchParams.set("tab", section || tab);
+      url.searchParams.set("tab", section || normalizedTab);
       window.history.pushState({}, "", url.toString());
     }
   };
@@ -375,17 +379,19 @@ function AgentIntelligenceStudioContent() {
         }
 
         if (tabParam) {
-          if (tabParam === "overview" || tabParam === "review") {
-            setPrimaryTab("overview");
-          } else if (tabParam === "test_ai" || tabParam === "test") {
-            setPrimaryTab("test_ai");
+          if (tabParam === "overview" || tabParam === "review" || tabParam === "incidents") {
+            setPrimaryTab("incidents");
+          } else if (tabParam === "test_ai" || tabParam === "test" || tabParam === "ai_evaluation") {
+            setPrimaryTab("ai_evaluation");
           } else if (tabParam === "learning" || tabParam === "accuracy") {
-            setPrimaryTab("learning");
+            setPrimaryTab("accuracy");
             setStudioTab("learning");
-          } else if (["editor", "intelligence", "contract", "quality", "simulation", "drift", "history", "manage_versions", "xml", "diagnostics", "prompt_inspector"].includes(tabParam)) {
-            setPrimaryTab("advanced");
-            setAdvancedSection(tabParam as any);
-            setStudioTab(tabParam as any);
+          } else if (["overview_admin", "editor", "intelligence", "contract", "quality", "simulation", "drift", "history", "manage_versions", "xml", "diagnostics", "prompt_inspector", "governance", "advanced", "settings"].includes(tabParam)) {
+            setPrimaryTab("settings");
+            if (tabParam !== "advanced" && tabParam !== "settings") {
+              setAdvancedSection(tabParam as any);
+              setStudioTab(tabParam as any);
+            }
           }
         }
       }
@@ -1224,10 +1230,10 @@ function AgentIntelligenceStudioContent() {
             <div className="flex items-center gap-2.5">
               <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
                 <FileCode2 className="w-5 h-5 text-violet-400" />
-                Agent Intelligence Studio
+                Verdictum AI — Agent Intelligence Studio 2.1
               </h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-950/80 text-violet-300 border border-violet-800/60 font-mono">
-                Detection Policies
+                Powered by WYSETEK Systems
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
@@ -1412,7 +1418,7 @@ function AgentIntelligenceStudioContent() {
               <strong className="text-cyan-300">Agent Intelligence Studio Governance:</strong> 12 detection archetypes, 8 mandatory quality gates (G1–G8), simulation regression testing, and drift governance.
             </span>
           </div>
-          <span className="text-[10px] font-mono text-slate-500 shrink-0 hidden md:inline">Verdictum AI Policy Engine 2.0</span>
+          <span className="text-[10px] font-mono text-slate-400 shrink-0 hidden md:inline"><strong className="text-cyan-400">Verdictum AI 2.1</strong> • Powered by WYSETEK Systems</span>
         </div>
 
         {/* Filter & Search Toolbar */}
@@ -1892,7 +1898,7 @@ function AgentIntelligenceStudioContent() {
         label: "Inspect Validation Issues",
         description: "Mandatory quality gate evaluation failed on blocking requirements. Resolve blockers before proceeding.",
         action: () => {
-          setPrimaryTab("advanced");
+          setPrimaryTab("settings");
           setAdvancedSection("quality");
         },
         buttonText: "Inspect Quality Blockers",
@@ -1906,8 +1912,7 @@ function AgentIntelligenceStudioContent() {
         label: "Start Analyst Review",
         description: `${remaining} more double-blind analyst review${remaining === 1 ? "" : "s"} required to establish empirical ground truth baseline.`,
         action: () => {
-          setPrimaryTab("overview");
-          setReviewSubView("incidents");
+          setPrimaryTab("incidents");
           setTimeout(() => {
             const el = document.getElementById("analyst-determination-form") || document.getElementById("incident-review-workbench");
             if (el) {
@@ -1936,8 +1941,7 @@ function AgentIntelligenceStudioContent() {
           label: "Collect True Positive Ground Truth",
           description: `${totalReviews} reviews collected (${verifiedTp} TP / ${verifiedFp} FP). At least 10 independently confirmed True Positive cases required for pilot calibration baseline. Currently 0 decisive AI predictions.`,
           action: () => {
-            setPrimaryTab("overview");
-            setReviewSubView("incidents");
+            setPrimaryTab("incidents");
             setTimeout(() => {
               const el = document.getElementById("analyst-determination-form") || document.getElementById("incident-review-workbench");
               if (el) {
@@ -1984,7 +1988,7 @@ function AgentIntelligenceStudioContent() {
       label: "Run AI Simulation / Verification",
       description: "Approved baseline is active. Test real Local AWQ model inference against live SIEM incidents.",
       action: () => {
-        setPrimaryTab("test_ai");
+        setPrimaryTab("ai_evaluation");
       },
       buttonText: "Run AI Verification",
       badge: "Operational Active",
@@ -2049,7 +2053,10 @@ function AgentIntelligenceStudioContent() {
               </div>
             }
             actions={
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="hidden lg:inline text-[10px] font-mono text-slate-400 border-r border-slate-800 pr-2.5">
+                  <strong className="text-cyan-400">Verdictum AI 2.1</strong> • Powered by WYSETEK Systems
+                </span>
                 <button
                   type="button"
                   onClick={() => {
@@ -2209,14 +2216,14 @@ function AgentIntelligenceStudioContent() {
                 </button>
               </div>
 
-              {/* Primary 3-Tab Bar (Simplified Guided Workspace) */}
+              {/* Primary 3-Tab Bar (Simplified Guided Workspace) + Settings */}
               <div data-testid="ais-primary-tabs" className="flex items-center justify-between border-b border-slate-800/90 pb-0 text-xs">
                 <div className="flex space-x-1">
                   {/* TAB 1: Review Incidents */}
                   <button
                     data-testid="tab-overview"
-                    onClick={() => handleNavigateTab("overview")}
-                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "overview"
+                    onClick={() => handleNavigateTab("incidents")}
+                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "incidents" || primaryTab === "overview"
                       ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
                       : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
                       }`}
@@ -2229,21 +2236,22 @@ function AgentIntelligenceStudioContent() {
                   {/* TAB 2: Test AI */}
                   <button
                     data-testid="tab-test-ai"
-                    onClick={() => handleNavigateTab("test_ai" as any)}
-                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "test_ai"
+                    onClick={() => handleNavigateTab("ai_evaluation")}
+                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "ai_evaluation" || primaryTab === "test_ai"
                       ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
                       : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
                       }`}
                   >
                     <FlaskConical className="w-4 h-4 text-amber-400" />
                     <span>Test AI</span>
+                    <span className="text-[10px] text-slate-500 font-normal hidden sm:inline">(AI Evaluation)</span>
                   </button>
 
                   {/* TAB 3: Accuracy & Learning */}
                   <button
                     data-testid="tab-learning"
-                    onClick={() => handleNavigateTab("learning")}
-                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "learning"
+                    onClick={() => handleNavigateTab("accuracy")}
+                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "accuracy" || primaryTab === "learning"
                       ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
                       : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
                       }`}
@@ -2257,15 +2265,18 @@ function AgentIntelligenceStudioContent() {
                       </span>
                     )}
                   </button>
+                </div>
 
-                  {/* ADVANCED SETTINGS */}
+                {/* ADMINISTRATIVE SETTINGS CONTROL */}
+                <div className="flex items-center gap-2">
                   <button
                     data-testid="tab-advanced"
-                    onClick={() => handleNavigateTab("advanced")}
-                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "advanced"
+                    onClick={() => handleNavigateTab("settings")}
+                    className={`px-3.5 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "settings" || primaryTab === "advanced"
                       ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
                       : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
                       }`}
+                    title="Administrative policy controls and configuration"
                   >
                     <Sliders className="w-4 h-4 text-sky-400" />
                     <span>Advanced Settings</span>
@@ -2629,115 +2640,38 @@ function AgentIntelligenceStudioContent() {
         </div>
       )}
 
-      {/* COMPACT MODE: TAB 1 (REVIEW INCIDENTS & GUIDED OVERVIEW) */}
-      {!ruleError && !versionError && compactUi && primaryTab === "overview" && (
+      {/* COMPACT MODE: TAB 1 (REVIEW INCIDENTS) */}
+      {!ruleError && !versionError && compactUi && (primaryTab === "incidents" || primaryTab === "overview") && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-slate-400 font-medium">Workspace View:</span>
-              <div className="flex rounded-md bg-slate-900 border border-slate-800 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setReviewSubView("incidents")}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-all ${reviewSubView === "incidents"
-                    ? "bg-cyan-950 text-cyan-300 border border-cyan-800"
-                    : "text-slate-400 hover:text-slate-200"
-                    }`}
-                >
-                  Incident Review Workbench
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setReviewSubView("overview")}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-all ${reviewSubView === "overview"
-                    ? "bg-cyan-950 text-cyan-300 border border-cyan-800"
-                    : "text-slate-400 hover:text-slate-200"
-                    }`}
-                >
-                  Policy Overview &amp; 6 Stages
-                </button>
-              </div>
-            </div>
-            <div className="text-[11px] text-slate-500 font-mono hidden sm:block">
-              {reviewSubView === "incidents"
-                ? "Double-blind evaluation queue"
-                : "Authoritative production readiness"}
-            </div>
-          </div>
-
-          {reviewSubView === "incidents" ? (
-            <ReviewIncidentsWorkbench
-              ruleId={selectedRuleId}
-              ruleName={rulePrompt?.rule_name || selectedRule?.name}
-              learningProfile={learningProfile}
-              isAdmin={isAdmin}
-              isViewer={isViewer}
-              selectedVersionId={selectedVersionId}
-              onNavigateToTest={() => setPrimaryTab("test_ai")}
-              onReviewSubmitted={() => {
-                if (selectedRuleId) {
-                  fetchLearningProfile(selectedRuleId);
-                  if (selectedVersionId) {
-                    fetchQualityPreview(selectedRuleId, selectedVersionId);
-                  }
+          <ReviewIncidentsWorkbench
+            ruleId={selectedRuleId}
+            ruleName={rulePrompt?.rule_name || selectedRule?.name}
+            learningProfile={learningProfile}
+            isAdmin={isAdmin}
+            isViewer={isViewer}
+            selectedVersionId={selectedVersionId}
+            onNavigateToTest={() => handleNavigateTab("ai_evaluation")}
+            onReviewSubmitted={() => {
+              if (selectedRuleId) {
+                fetchLearningProfile(selectedRuleId);
+                if (selectedVersionId) {
+                  fetchQualityPreview(selectedRuleId, selectedVersionId);
                 }
-              }}
-              onOpenActualPrompt={(incId) => {
-                setPromptInspectorIncidentId(incId || null);
-                setPromptInspectorRuleId(selectedRuleId);
-                setPromptInspectorVersionId(selectedVersionId);
-                setPromptInspectorInitialMode("capture");
-                setPromptInspectorOpen(true);
-              }}
-            />
-          ) : (
-            <AgentIntelligenceStudioOverview
-              ruleId={selectedRuleId}
-              ruleName={rulePrompt?.rule_name || selectedRule?.name}
-              ruleStatus={selectedRule?.status}
-              archetype={intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
-              qualityAssessment={qualityAssessment}
-              learningProfile={learningProfile}
-              intelligenceData={intelligenceData}
-              selectedVersion={selectedVersion || null}
-              versions={rulePrompt?.versions || []}
-              activeVersionId={rulePrompt?.active_version_id}
-              isApprovalEligible={isApprovalEligible}
-              isIncompleteDefinition={isIncompleteDefinition}
-              hasHardGateFailure={hasHardGateFailure}
-              llmOnline={llmOnline}
-              actionLoading={actionLoading}
-              loadingQuality={loadingQuality}
-              loadingSimulation={loadingSimulation}
-              isViewer={isViewer}
-              onSelectVersion={handleSelectVersion}
-              onRollback={handleRollback}
-              onGenerateIntelligentDraft={handleGenerateIntelligentDraft}
-              onValidateQuality={() => selectedVersionId && fetchQualityValidation(selectedRuleId, selectedVersionId)}
-              onRunSimulation={handleRunSimulation}
-              onApproveClick={() => setShowApprovalModal(true)}
-              onNavigateTab={handleNavigateTab}
-              onViewActualPrompt={(incId) => {
-                setPromptInspectorIncidentId(incId || null);
-                setPromptInspectorRuleId(selectedRuleId);
-                setPromptInspectorVersionId(selectedVersionId);
-                setPromptInspectorInitialMode("capture");
-                setPromptInspectorOpen(true);
-              }}
-              onPreviewPrompt={() => {
-                setPromptInspectorIncidentId(null);
-                setPromptInspectorRuleId(selectedRuleId);
-                setPromptInspectorVersionId(selectedVersionId);
-                setPromptInspectorInitialMode("preview");
-                setPromptInspectorOpen(true);
-              }}
-            />
-          )}
+              }
+            }}
+            onOpenActualPrompt={(incId) => {
+              setPromptInspectorIncidentId(incId || null);
+              setPromptInspectorRuleId(selectedRuleId);
+              setPromptInspectorVersionId(selectedVersionId);
+              setPromptInspectorInitialMode("capture");
+              setPromptInspectorOpen(true);
+            }}
+          />
         </div>
       )}
 
-      {/* COMPACT MODE: TAB 2 (TEST AI) */}
-      {!ruleError && !versionError && compactUi && primaryTab === "test_ai" && (
+      {/* COMPACT MODE: TAB 2 (AI EVALUATION) */}
+      {!ruleError && !versionError && compactUi && (primaryTab === "ai_evaluation" || primaryTab === "test_ai") && (
         <AiTestWorkbench
           ruleId={selectedRuleId}
           ruleName={rulePrompt?.rule_name || selectedRule?.name}
@@ -2765,14 +2699,13 @@ function AgentIntelligenceStudioContent() {
             setPromptInspectorOpen(true);
           }}
           onNavigateToAdvanced={() => {
-            setPrimaryTab("advanced");
-            setAdvancedSection("simulation");
+            handleNavigateTab("settings", "simulation");
           }}
         />
       )}
 
       {/* COMPACT MODE: TAB 3 (ANALYST REVIEW & LEARNING / ACCURACY) */}
-      {!ruleError && !versionError && compactUi && primaryTab === "learning" && (
+      {!ruleError && !versionError && compactUi && (primaryTab === "accuracy" || primaryTab === "learning") && (
         <div className="space-y-4">
           <AccuracyLearningSummary
             ruleId={selectedRuleId}
@@ -2781,14 +2714,12 @@ function AgentIntelligenceStudioContent() {
             learningProfile={learningProfile}
             qualityAssessment={qualityAssessment}
             onStartReviews={() => {
-              setPrimaryTab("overview");
-              setReviewSubView("incidents");
+              handleNavigateTab("incidents");
             }}
             onNavigateToReviews={() => {
-              setPrimaryTab("overview");
-              setReviewSubView("incidents");
+              handleNavigateTab("incidents");
             }}
-            onNavigateToTest={() => setPrimaryTab("test_ai")}
+            onNavigateToTest={() => handleNavigateTab("ai_evaluation")}
             onProfileUpdate={(p) => setLearningProfile(p)}
           />
 
@@ -2808,23 +2739,24 @@ function AgentIntelligenceStudioContent() {
         </div>
       )}
 
-      {/* COMPACT MODE: TAB 4 (ADVANCED CONFIGURATION 2-COLUMN WORKSPACE) */}
-      {!ruleError && !versionError && compactUi && primaryTab === "advanced" && (
+      {/* COMPACT MODE: ADMINISTRATIVE SETTINGS WORKSPACE HEADER */}
+      {!ruleError && !versionError && compactUi && (primaryTab === "settings" || primaryTab === "advanced") && (
         <div className="p-2.5 rounded-xl border border-slate-800/80 bg-slate-950/70 mb-2 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
             <Sliders className="w-4 h-4 text-cyan-400" />
-            <span className="font-bold text-slate-200">Advanced Settings &amp; Configuration Workbench</span>
+            <span className="font-bold text-slate-200">Administrative Settings &amp; Configuration Workbench</span>
             <span className="text-slate-500">•</span>
             <span className="text-slate-400 font-mono text-[11px]">
-              {advancedSection === "editor" ? "1. Investigation Policy (9 Sections)" :
-                advancedSection === "quality" ? "2. Quality Gates (G1–G8)" :
-                  advancedSection === "contract" ? "3. Evidence Contract Feasibility" :
-                    advancedSection === "xml" || advancedSection === "intelligence" ? "4. Rule XML & Detection Semantics" :
-                      advancedSection === "prompt_inspector" ? "5. Prompt Inspector & Telemetry" :
-                        advancedSection === "diagnostics" ? "6. Model Diagnostics & AWQ Settings" :
-                          advancedSection === "simulation" ? "7. Simulation Lab & Replay" :
-                            advancedSection === "governance" || advancedSection === "drift" ? "8. Production Governance & Drift" :
-                              "9. Manage Version History"}
+              {advancedSection === "overview" ? "0. Production Readiness & Policy Overview" :
+                advancedSection === "editor" ? "1. Investigation Policy (9 Sections)" :
+                  advancedSection === "quality" ? "2. Quality Gates (G1–G8)" :
+                    advancedSection === "contract" ? "3. Evidence Contract Feasibility" :
+                      advancedSection === "xml" || advancedSection === "intelligence" ? "4. Rule XML & Detection Semantics" :
+                        advancedSection === "prompt_inspector" ? "5. Prompt Inspector & Telemetry" :
+                          advancedSection === "diagnostics" ? "6. Model Diagnostics & AWQ Settings" :
+                            advancedSection === "simulation" ? "7. Simulation Lab & Replay" :
+                              advancedSection === "governance" || advancedSection === "drift" ? "8. Production Governance & Drift" :
+                                "9. Manage Version History"}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -2837,8 +2769,8 @@ function AgentIntelligenceStudioContent() {
         </div>
       )}
 
-      {/* WORKSPACE CONTENT: RENDERED FOR LEGACY OR WHEN IN ADVANCED TAB */}
-      {!ruleError && !versionError && (!compactUi || primaryTab === "advanced") && (
+      {/* WORKSPACE CONTENT: RENDERED FOR LEGACY OR WHEN IN SETTINGS TAB */}
+      {!ruleError && !versionError && (!compactUi || primaryTab === "settings" || primaryTab === "advanced") && (
         <>
           {loadingPrompt ? (
             <div className="py-12 text-center text-slate-500 text-xs">
@@ -2859,12 +2791,27 @@ function AgentIntelligenceStudioContent() {
           ) : (
             <div className={compactUi ? "grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start" : "grid grid-cols-1 lg:grid-cols-4 gap-3 items-start"}>
               {compactUi ? (
-                /* Left Column: 9-Module Compact Section Navigation */
+                /* Left Column: 10-Module Compact Section Navigation */
                 <div className="lg:col-span-3 space-y-2">
                   <div className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/60 shadow-sm space-y-1">
                     <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1 tracking-wider">
-                      Advanced Settings
+                      Administrative Settings
                     </div>
+                    {/* 0. Policy Overview & Readiness */}
+                    <button
+                      onClick={() => { setAdvancedSection("overview"); }}
+                      className={`w-full text-left px-3 py-2 rounded-lg font-semibold flex items-center justify-between text-xs transition-colors ${advancedSection === "overview"
+                        ? "bg-slate-800 text-cyan-300 border border-slate-700/80 shadow-xs"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/40"
+                        }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                        0. Policy Overview &amp; Readiness
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">6 Stages</span>
+                    </button>
+
                     {/* 1. Investigation Policy */}
                     <button
                       onClick={() => { setAdvancedSection("editor"); setStudioTab("editor"); }}
@@ -3125,8 +3072,53 @@ function AgentIntelligenceStudioContent() {
 
               {/* Right Column: Tabbed Workspace */}
               <div className={compactUi ? "lg:col-span-9 space-y-3" : "lg:col-span-3 space-y-3"}>
+                {/* SECTION 0: POLICY OVERVIEW & READINESS (COMPACT MODE) */}
+                {compactUi && advancedSection === "overview" && (
+                  <AgentIntelligenceStudioOverview
+                    ruleId={selectedRuleId}
+                    ruleName={rulePrompt?.rule_name || selectedRule?.name}
+                    ruleStatus={selectedRule?.status}
+                    archetype={intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
+                    qualityAssessment={qualityAssessment}
+                    learningProfile={learningProfile}
+                    intelligenceData={intelligenceData}
+                    selectedVersion={selectedVersion || null}
+                    versions={rulePrompt?.versions || []}
+                    activeVersionId={rulePrompt?.active_version_id}
+                    isApprovalEligible={isApprovalEligible}
+                    isIncompleteDefinition={isIncompleteDefinition}
+                    hasHardGateFailure={hasHardGateFailure}
+                    llmOnline={llmOnline}
+                    actionLoading={actionLoading}
+                    loadingQuality={loadingQuality}
+                    loadingSimulation={loadingSimulation}
+                    isViewer={isViewer}
+                    onSelectVersion={handleSelectVersion}
+                    onRollback={handleRollback}
+                    onGenerateIntelligentDraft={handleGenerateIntelligentDraft}
+                    onValidateQuality={() => selectedVersionId && fetchQualityValidation(selectedRuleId, selectedVersionId)}
+                    onRunSimulation={handleRunSimulation}
+                    onApproveClick={() => setShowApprovalModal(true)}
+                    onNavigateTab={handleNavigateTab}
+                    onViewActualPrompt={(incId) => {
+                      setPromptInspectorIncidentId(incId || null);
+                      setPromptInspectorRuleId(selectedRuleId);
+                      setPromptInspectorVersionId(selectedVersionId);
+                      setPromptInspectorInitialMode("capture");
+                      setPromptInspectorOpen(true);
+                    }}
+                    onPreviewPrompt={() => {
+                      setPromptInspectorIncidentId(null);
+                      setPromptInspectorRuleId(selectedRuleId);
+                      setPromptInspectorVersionId(selectedVersionId);
+                      setPromptInspectorInitialMode("preview");
+                      setPromptInspectorOpen(true);
+                    }}
+                  />
+                )}
+
                 {/* TAB 1: POLICY EDITOR */}
-                {studioTab === "editor" && (
+                {(!compactUi || advancedSection !== "overview") && studioTab === "editor" && (
                   <>
                     {!selectedVersion ? (
                       <div className="p-8 rounded-xl theme-glass-card text-center space-y-3">

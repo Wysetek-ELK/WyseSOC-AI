@@ -1,0 +1,77 @@
+{
+  "release": "Verdictum AI — Agent Intelligence Studio 2.1",
+  "branding": {
+    "primary": "Verdictum AI 2.1",
+    "partner": "Powered by WYSETEK Systems",
+    "status": "Production Ready"
+  },
+  "acceptance_verdict": "AIS_2_1_ACCEPTED",
+  "target_rule": {
+    "rule_uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "rule_name": "Heavy TCP Host Scan On Fixed Port",
+    "rule_code": "FortiSIEM-Heavy-TCP-Host-Scan",
+    "v7_approved_version_id": "d79fb576-c6b9-4f63-9167-3c7a2419b70a",
+    "v8_draft_version_id": "91542f74-63cf-41cb-8a4a-131e549da731",
+    "was_ever_approved": true,
+    "recovery_endpoint": "POST /api/prompts/rule/{rule_id}/activate-approved/{version_id}"
+  },
+  "root_cause_resolutions": {
+    "issue_a_policy_state": {
+      "problem": "v7 Approved but GUI displayed No Active Version and False Revocation/Suspension",
+      "root_cause": "Test fixture teardown deleted ephemeral versions leaving active_version_id dangling, and UI conflated null binding with security suspension",
+      "fix": "Hardened test teardown to scoped deletions, added safe activate_approved_version endpoint, corrected activePolicyLabel to distinguish null binding from revocation",
+      "status": "RESOLVED"
+    },
+    "issue_b_evaluation_tracking": {
+      "problem": "AI Evaluation Tracking showed 0 total incidents despite 37 incidents existing",
+      "root_cause": "AisEvaluationService defaulted customer to 'DEFAULT', excluding multi-tenant FortiSIEM incidents in 'GDC_NOC' and 'Demo-SOC'",
+      "fix": "Multi-tenant bypass for admin users in ais_evaluation_service.py and ais_evaluation.py",
+      "status": "RESOLVED"
+    },
+    "issue_c_evidence_mapping": {
+      "problem": "Review Incidents normalized evidence table displayed '-' for source IP, timestamp, port, host",
+      "root_cause": "Field key mismatch ('field'/'value' vs 'source_field'/'observed_value') and lack of fallback for header-only incidents",
+      "fix": "Canonical evidence mapping aligned to source_field and canonical_field with automatic fallback to incident top-level metadata",
+      "status": "RESOLVED"
+    },
+    "issue_d_navigation_simplification": {
+      "problem": "Excessive multi-level nested navigation confusing operational SOC analysts",
+      "root_cause": "Fragmented layout across reviewSubView, activeViewMode, 9 separate config sections, and legacy 7-tab view",
+      "fix": "Consolidated into 3 operational tabs (Tab 1: Incidents, Tab 2: AI Evaluation, Tab 3: Accuracy) + 1 Administrative Settings control with 10 modules",
+      "status": "RESOLVED"
+    }
+  },
+  "testing_and_verification": {
+    "backend_evaluation_tracking_tests": {
+      "suite": "backend/tests/test_ais_evaluation_tracking.py",
+      "total": 20,
+      "passed": 20,
+      "failed": 0
+    },
+    "backend_target_rule_e2e_tests": {
+      "suite": "backend/tests/test_ais_heavy_tcp_e2e.py",
+      "total": 14,
+      "passed": 14,
+      "failed": 0
+    },
+    "frontend_compilation": {
+      "tool": "Next.js 16.4.5 Turbopack",
+      "type_check": "Zero TypeScript errors",
+      "static_pages": "32/32 generated successfully",
+      "status": "PASS"
+    }
+  },
+  "documentation_deliverables": [
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/01_EXISTING_ARCHITECTURE_AND_UI_AUDIT.md",
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/02_V7_ACTIVE_POLICY_ROOT_CAUSE.md",
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/03_ACTIVE_POLICY_RECOVERY_AND_SAFETY.md",
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/04_AI_EVALUATION_TRACKING_ROOT_CAUSE.md",
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/05_INCIDENT_EVIDENCE_MAPPING_VALIDATION.md",
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/06_THREE_TAB_UI_IMPLEMENTATION.md",
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/07_BACKEND_FRONTEND_REGRESSION_TESTS.md",
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/08_SECURITY_RBAC_AND_BLIND_REVIEW.md",
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/09_REMOTE_DEPLOYMENT_AND_GUI_ACCEPTANCE.md",
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/10_FINAL_ACCEPTANCE_AND_NEXT_ACTIONS.md",
+    "docs/AIS_2_1_POLICY_INTEGRITY_AND_UI_SIMPLIFICATION/FINAL_EVIDENCE.json"
+  ]
+}

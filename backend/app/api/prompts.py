@@ -1039,6 +1039,40 @@ async def rollback_prompt_version(
     return PromptVersionResponse.model_validate(ver)
 
 
+@router.post("/rule/{rule_id}/activate-approved/{version_id}", response_model=Dict[str, Any])
+async def activate_approved_prompt_version(
+    rule_id: str,
+    version_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Safely binds and activates an already-approved historical policy version.
+    Validates provenance, semantic compatibility, and quality gates before restoring the active binding.
+    Does not regenerate or create a duplicate version.
+    """
+    service = PromptStudioService(db)
+    try:
+        res = await service.activate_approved_version(rule_id, version_id, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    audit = AuditService(db)
+    await audit.log(
+        action="ACTIVATE_APPROVED_POLICY_VERSION",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="RulePrompt",
+        entity_id=rule_id,
+        details={
+            "version_id": version_id,
+            "version_number": res.get("version_number"),
+            "status": "APPROVED",
+        },
+    )
+    return res
+
+
 @router.post("/rule/{rule_id}/version/{version_id}/revoke", response_model=PromptVersionResponse)
 async def revoke_prompt_version(
     rule_id: str,

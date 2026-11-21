@@ -504,6 +504,99 @@ class AgentPolicyEngine:
         await self.db.refresh(rolled_version)
         return rolled_version
 
+    async def activate_approved_version(
+        self,
+        rule_id: str,
+        version_id: str,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Safely restores the active version binding for an already approved version.
+        Ensures target version was historically approved and is not revoked.
+        Validates semantic compatibility and quality gates without creating a duplicate version.
+        """
+        rule_prompt = await self.get_or_create_rule_prompt(rule_id)
+        rule = await resolve_canonical_rule(self.db, rule_id)
+        if not rule:
+            raise ValueError(f"Detection rule '{rule_id}' not found.")
+
+        ver_res = await self.db.execute(select(PromptVersion).where(PromptVersion.prompt_id == rule_prompt.id))
+        all_versions = ver_res.scalars().all()
+        target_version = next((v for v in all_versions if v.id == version_id), None)
+        if not target_version:
+            raise ValueError(f"Prompt version '{version_id}' not found for rule '{rule_id}'.")
+
+        # Provenance check: must have been approved
+        from app.services.policy_version_governance_service import PolicyVersionGovernanceService
+        is_ever_approved = await PolicyVersionGovernanceService.is_version_ever_approved(self.db, target_version)
+        if not is_ever_approved and target_version.status != "APPROVED":
+            raise ValueError(
+                f"Cannot activate Version {target_version.version_number}: Only approved policy versions can be activated. Current status is {target_version.status}."
+            )
+
+        if target_version.status == "REVOKED":
+            raise ValueError(
+                f"Cannot activate Version {target_version.version_number}: Policy is REVOKED (Reason: {target_version.revocation_reason or 'Untrusted'}). Revoked policies cannot be reactivated."
+            )
+
+        # Semantic compatibility check
+        from app.services.policy_eligibility_service import PolicyEligibilityService
+        is_mismatch, mismatch_desc = PolicyEligibilityService.detect_semantic_mismatch(rule, target_version)
+        if is_mismatch:
+            raise ValueError(
+                f"Cannot activate Version {target_version.version_number}: Semantic mismatch detected ({mismatch_desc})."
+            )
+
+        # Quality validation check
+        semantics, contract, _ = await get_rule_semantics_and_contract(
+            self.db, rule, prompt_version=target_version, for_quality_validation=True
+        )
+        quality_res = PolicyQualityValidator.validate_policy_quality(
+            rule=rule,
+            prompt_version=target_version,
+            contract=contract,
+            semantics=semantics,
+        )
+        if not quality_res.approval_eligible:
+            blocker_text = "; ".join(quality_res.blocking_issues)
+            raise ValueError(
+                f"Cannot activate Version {target_version.version_number}: Quality Validation Gate blockers: {blocker_text}"
+            )
+
+        # Mark target version as APPROVED and preserve was_ever_approved
+        target_version.status = "APPROVED"
+        target_version.quality_status = "APPROVED"
+        target_version.was_ever_approved = True
+
+        # Archive any other versions that were previously marked APPROVED
+        for v in all_versions:
+            if v.id != target_version.id and v.status == "APPROVED":
+                v.status = "ARCHIVED"
+                v.previous_status = "APPROVED"
+                v.was_ever_approved = True
+
+        # Atomically bind target version
+        rule_prompt.active_version_id = target_version.id
+        rule_prompt.ai_execution_suspended = False
+        rule_prompt.suspension_reason = None
+        rule_prompt.updated_at = utc_now()
+
+        await self.db.commit()
+        await self.db.refresh(target_version)
+        await self.db.refresh(rule_prompt)
+
+        return {
+            "success": True,
+            "rule_id": rule.id,
+            "rule_name": rule.name,
+            "active_version_id": target_version.id,
+            "version_number": target_version.version_number,
+            "status": target_version.status,
+            "quality_score": target_version.quality_score,
+            "ai_execution_suspended": rule_prompt.ai_execution_suspended,
+            "message": f"Policy version v{target_version.version_number} successfully restored and bound as active baseline.",
+        }
+
     async def revoke_version(
         self,
         rule_id: str,

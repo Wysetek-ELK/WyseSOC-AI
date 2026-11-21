@@ -2142,6 +2142,17 @@ export const api = {
     return res.json();
   },
 
+  async activateApprovedPolicyVersion(ruleId: string, versionId: string): Promise<any> {
+    const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/activate-approved/${versionId}`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to activate approved policy version" }));
+      throw new Error(err.detail || "Failed to activate approved policy version");
+    }
+    return res.json();
+  },
+
   async revokePromptVersion(ruleId: string, versionId: string, revocationReason: string): Promise<PromptVersion> {
     const res = await fetchWithAuth(`${API_BASE}/prompts/rule/${ruleId}/version/${versionId}/revoke`, {
       method: "POST",
