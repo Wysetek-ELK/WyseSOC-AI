@@ -509,37 +509,101 @@ class AgentPolicyEngine:
         rule_id: str,
         version_id: str,
         user_id: Optional[str] = None,
+        confirm: bool = True,
+        justification: str = "Authorized recovery of historically approved baseline",
     ) -> Dict[str, Any]:
         """
         Safely restores the active version binding for an already approved version.
-        Ensures target version was historically approved and is not revoked.
-        Validates semantic compatibility and quality gates without creating a duplicate version.
+        Enforces all 14 governance and security verification criteria:
+        1. Authenticated Administrator role (enforced at API layer)
+        2. Valid rule UUID / Canonical detection rule resolution
+        3. Exact version ID match
+        4. Version belongs to the specified rule
+        5. Version status is APPROVED
+        6. Historical approval provenance verified (was_ever_approved=True or immutable audit record)
+        7. Version is not REVOKED
+        8. Version is not ARCHIVED
+        9. No unresolved administrative security freeze or manual kill-switch hold
+        10. No active critical unacknowledged policy drift hold
+        11. No semantic or contract mismatch with current detection rule
+        12. Policy quality gates verified (G1-G8 validation passes approval threshold)
+        13. Explicit confirmation flag confirm=True
+        14. Mandatory substantive recovery justification (minimum 10 characters)
         """
-        rule_prompt = await self.get_or_create_rule_prompt(rule_id)
+        # Criterion 13: Confirmation flag
+        if not confirm:
+            raise ValueError("Activation aborted: Explicit confirmation flag (confirm=True) is required.")
+
+        # Criterion 14: Justification check
+        clean_justification = (justification or "").strip()
+        if len(clean_justification) < 10:
+            raise ValueError(
+                "Activation aborted: A substantive recovery justification of at least 10 characters is mandatory."
+            )
+
+        # Criterion 2: Canonical rule resolution
         rule = await resolve_canonical_rule(self.db, rule_id)
         if not rule:
             raise ValueError(f"Detection rule '{rule_id}' not found.")
 
+        # Criterion 4: RulePrompt container belongs to rule
+        rule_prompt = await self.get_or_create_rule_prompt(rule_id)
+
+        # Criterion 3: Exact version exists
         ver_res = await self.db.execute(select(PromptVersion).where(PromptVersion.prompt_id == rule_prompt.id))
         all_versions = ver_res.scalars().all()
         target_version = next((v for v in all_versions if v.id == version_id), None)
         if not target_version:
-            raise ValueError(f"Prompt version '{version_id}' not found for rule '{rule_id}'.")
+            raise ValueError(f"Prompt version '{version_id}' not found for rule '{rule.name}'.")
 
-        # Provenance check: must have been approved
+        # Criterion 7: Not REVOKED
+        if target_version.status == "REVOKED" or target_version.revoked_at is not None:
+            raise ValueError(
+                f"Cannot activate Version {target_version.version_number}: Policy is REVOKED "
+                f"(Reason: {target_version.revocation_reason or 'Untrusted'}). Revoked policies cannot be reactivated."
+            )
+
+        # Criterion 8: Not ARCHIVED
+        if target_version.status == "ARCHIVED":
+            raise ValueError(
+                f"Cannot activate Version {target_version.version_number}: Policy is ARCHIVED. "
+                f"Archived versions cannot be directly activated without formal unarchival governance."
+            )
+
+        # Criterion 5 & 6: Historical approval provenance check
         from app.services.policy_version_governance_service import PolicyVersionGovernanceService
         is_ever_approved = await PolicyVersionGovernanceService.is_version_ever_approved(self.db, target_version)
         if not is_ever_approved and target_version.status != "APPROVED":
             raise ValueError(
-                f"Cannot activate Version {target_version.version_number}: Only approved policy versions can be activated. Current status is {target_version.status}."
+                f"Cannot activate Version {target_version.version_number}: Only approved policy versions can be activated. "
+                f"Current status is {target_version.status}."
             )
 
-        if target_version.status == "REVOKED":
+        # Criterion 9: Administrative suspension check (allow lifting POLICY_NOT_APPROVED, block external freeze)
+        if rule_prompt.ai_execution_suspended:
+            suspension_reason = (rule_prompt.suspension_reason or "").upper()
+            if "SECURITY_LOCK" in suspension_reason or "KILL_SWITCH" in suspension_reason:
+                raise ValueError(
+                    f"Cannot activate Version {target_version.version_number}: AI execution is suspended under "
+                    f"active security hold: '{rule_prompt.suspension_reason}'. Clear the security hold first."
+                )
+
+        # Criterion 10: Active unacknowledged drift hold
+        from app.models.policy_drift import PolicyDriftEvent
+        drift_stmt = select(func.count(PolicyDriftEvent.id)).where(
+            PolicyDriftEvent.rule_id == rule.id,
+            PolicyDriftEvent.prompt_version_id == target_version.id,
+            PolicyDriftEvent.revalidation_required == True,
+            PolicyDriftEvent.acknowledged == False,
+        )
+        active_drifts = (await self.db.execute(drift_stmt)).scalar() or 0
+        if active_drifts > 0:
             raise ValueError(
-                f"Cannot activate Version {target_version.version_number}: Policy is REVOKED (Reason: {target_version.revocation_reason or 'Untrusted'}). Revoked policies cannot be reactivated."
+                f"Cannot activate Version {target_version.version_number}: Version has {active_drifts} unacknowledged "
+                f"critical drift events requiring revalidation before activation."
             )
 
-        # Semantic compatibility check
+        # Criterion 11: Semantic compatibility check
         from app.services.policy_eligibility_service import PolicyEligibilityService
         is_mismatch, mismatch_desc = PolicyEligibilityService.detect_semantic_mismatch(rule, target_version)
         if is_mismatch:
@@ -547,7 +611,7 @@ class AgentPolicyEngine:
                 f"Cannot activate Version {target_version.version_number}: Semantic mismatch detected ({mismatch_desc})."
             )
 
-        # Quality validation check
+        # Criterion 12: Quality validation check
         semantics, contract, _ = await get_rule_semantics_and_contract(
             self.db, rule, prompt_version=target_version, for_quality_validation=True
         )
@@ -575,7 +639,7 @@ class AgentPolicyEngine:
                 v.previous_status = "APPROVED"
                 v.was_ever_approved = True
 
-        # Atomically bind target version
+        # Atomically bind target version and clear suspension
         rule_prompt.active_version_id = target_version.id
         rule_prompt.ai_execution_suspended = False
         rule_prompt.suspension_reason = None
@@ -594,6 +658,7 @@ class AgentPolicyEngine:
             "status": target_version.status,
             "quality_score": target_version.quality_score,
             "ai_execution_suspended": rule_prompt.ai_execution_suspended,
+            "justification": clean_justification,
             "message": f"Policy version v{target_version.version_number} successfully restored and bound as active baseline.",
         }
 

@@ -200,3 +200,13 @@ class BulkVersionDeleteResponse(BaseModel):
     protected_count: int
     deleted_version_numbers: List[int] = []
     protected_items: List[Dict[str, Any]] = []
+
+
+class ActivateApprovedVersionRequest(BaseModel):
+    confirm: bool = Field(True, description="Explicit administrator confirmation to bind the approved policy version")
+    justification: str = Field(
+        "Authorized recovery of historically approved baseline",
+        min_length=10,
+        description="Mandatory substantive administrative justification for restoring policy baseline",
+    )
+

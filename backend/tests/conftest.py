@@ -12,13 +12,20 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 os.environ["APP_ENV"] = "testing"
+os.environ["AI_VERDICT_TEST_ENV"] = "test-session-isolated"
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ["SYNC_DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test-secret-key-fixture-minimum-32-chars-long-1234567890"
 
 from app.config import settings
 settings.APP_ENV = "testing"
+settings.DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+settings.SYNC_DATABASE_URL = "sqlite:///:memory:"
 settings.SECRET_KEY = "test-secret-key-fixture-minimum-32-chars-long-1234567890"
 settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK = True
 
+from app.core.db_guard import enforce_database_safety
+import app.database as app_db
 from app.database import Base, get_db
 import app.models
 from app.main import app
@@ -26,6 +33,7 @@ from app.models.user import User
 from app.utils.security import get_password_hash, create_access_token
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
+enforce_database_safety(TEST_DB_URL, "testing")
 
 test_engine = create_async_engine(
     TEST_DB_URL,
@@ -39,6 +47,11 @@ TestSessionLocal = async_sessionmaker(
     autocommit=False,
     autoflush=False,
 )
+
+# Rebind app.database.async_engine and AsyncSessionLocal to test_engine / TestSessionLocal
+# to guarantee no test execution can ever mutate or query operational database
+app_db.async_engine = test_engine
+app_db.AsyncSessionLocal = TestSessionLocal
 
 
 @pytest_asyncio.fixture(autouse=True)

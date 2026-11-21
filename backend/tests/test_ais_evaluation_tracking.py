@@ -205,6 +205,8 @@ async def setup_test_environment():
             status="APPROVED",
             quality_status="APPROVED",
             quality_score=95.0,
+            was_ever_approved=True,
+            approved_at=datetime.datetime.now(datetime.timezone.utc),
             common_prompt="Standard Common Prompt",
             rule_specific_prompt="V7 Rule Specific Prompt",
             change_summary="V7 Approved Baseline",
@@ -247,15 +249,16 @@ async def setup_test_environment():
             )
         ))
         await db.execute(delete(Incident).where(Incident.id.like("db-inc-%")))
-        await db.execute(delete(PromptVersion).where(PromptVersion.id.in_([V7_VERSION_ID, V8_VERSION_ID])))
 
-        # Restore original active version binding if it was recorded
+        # Clear or restore active version binding before deleting versions to preserve referential integrity
         rp_res = await db.execute(select(RulePrompt).where(RulePrompt.rule_id == RULE_UUID))
         rp = rp_res.scalar_one_or_none()
-        if rp and "active_version_id" in _SAVED_RULE_PROMPT_STATE:
-            rp.active_version_id = _SAVED_RULE_PROMPT_STATE["active_version_id"]
+        if rp:
+            rp.active_version_id = _SAVED_RULE_PROMPT_STATE.get("active_version_id", None)
             rp.ai_execution_suspended = _SAVED_RULE_PROMPT_STATE.get("ai_execution_suspended", False)
+            await db.flush()
 
+        await db.execute(delete(PromptVersion).where(PromptVersion.id.in_([V7_VERSION_ID, V8_VERSION_ID])))
         await db.commit()
 
 

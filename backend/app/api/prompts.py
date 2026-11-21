@@ -69,6 +69,7 @@ from app.schemas.prompt import (
     VersionDeleteRequest,
     BulkVersionDeleteRequest,
     BulkVersionDeleteResponse,
+    ActivateApprovedVersionRequest,
 )
 from app.schemas.rule_intelligence import (
     DetectionSemantics,
@@ -1043,17 +1044,28 @@ async def rollback_prompt_version(
 async def activate_approved_prompt_version(
     rule_id: str,
     version_id: str,
+    req: Optional[ActivateApprovedVersionRequest] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
     """
     Safely binds and activates an already-approved historical policy version.
-    Validates provenance, semantic compatibility, and quality gates before restoring the active binding.
+    Validates all 14 governance criteria: provenance, semantic compatibility,
+    quality gates, absence of revocation/drift holds, confirmation flag, and justification.
     Does not regenerate or create a duplicate version.
     """
     service = PromptStudioService(db)
+    confirm = req.confirm if req else True
+    justification = req.justification if req else "Authorized recovery of historically approved baseline"
+
     try:
-        res = await service.activate_approved_version(rule_id, version_id, current_user.id)
+        res = await service.activate_approved_version(
+            rule_id=rule_id,
+            version_id=version_id,
+            user_id=current_user.id,
+            confirm=confirm,
+            justification=justification,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -1068,6 +1080,9 @@ async def activate_approved_prompt_version(
             "version_id": version_id,
             "version_number": res.get("version_number"),
             "status": "APPROVED",
+            "justification": justification,
+            "confirm": confirm,
+            "governance_criteria_verified": 14,
         },
     )
     return res

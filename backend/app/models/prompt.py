@@ -13,7 +13,11 @@ class RulePrompt(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     rule_id: Mapped[str] = mapped_column(String(36), ForeignKey("rules.id", ondelete="CASCADE"), unique=True, index=True, nullable=False)
     title: Mapped[str] = mapped_column(String(256), default="")
-    active_version_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    active_version_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("prompt_versions.id", ondelete="SET NULL", use_alter=True, name="fk_rule_prompts_active_version"),
+        nullable=True
+    )
     ai_execution_suspended: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     suspension_reason: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
 
@@ -22,7 +26,13 @@ class RulePrompt(Base):
 
     # Relationships
     rule: Mapped["Rule"] = relationship("Rule")
-    versions: Mapped[List["PromptVersion"]] = relationship("PromptVersion", back_populates="prompt", cascade="all, delete-orphan", order_by="desc(PromptVersion.version_number)")
+    versions: Mapped[List["PromptVersion"]] = relationship(
+        "PromptVersion",
+        back_populates="prompt",
+        cascade="all, delete-orphan",
+        order_by="desc(PromptVersion.version_number)",
+        foreign_keys="[PromptVersion.prompt_id]",
+    )
 
 
 class PromptVersion(Base):
@@ -69,5 +79,9 @@ class PromptVersion(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationship
-    prompt: Mapped["RulePrompt"] = relationship("RulePrompt", back_populates="versions")
+    prompt: Mapped["RulePrompt"] = relationship(
+        "RulePrompt",
+        back_populates="versions",
+        foreign_keys=[prompt_id],
+    )
 

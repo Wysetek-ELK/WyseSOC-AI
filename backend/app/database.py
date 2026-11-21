@@ -10,6 +10,10 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool, QueuePool
 from app.config import settings
+from app.core.db_guard import enforce_database_safety
+
+# Fail-closed operational database safety check
+enforce_database_safety(settings.DATABASE_URL, settings.APP_ENV)
 
 # Engine configuration for PostgreSQL / SQLite
 engine_kwargs: Dict[str, Any] = {"echo": False}

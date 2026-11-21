@@ -1,0 +1,3 @@
+"""
+Verdictum AI Core Package
+"""
