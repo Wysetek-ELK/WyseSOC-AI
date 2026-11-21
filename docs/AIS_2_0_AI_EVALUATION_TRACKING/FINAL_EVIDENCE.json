@@ -65,5 +65,14 @@
     "rbac_controlled_batch": "ENFORCED_SERVER_SIDE",
     "upla_mode": "FULL_WORKFLOW"
   },
+  "deployment": {
+    "execution_id": "upla-20261121-013551-63df57",
+    "target_server": "server-1 (172.26.41.240)",
+    "target_branch": "feature/phase3-compact-ui",
+    "verified_git_commit_sha": "d0baa67826c5d39f0ae482938aa00fbdbff37dad",
+    "gate1_github_sync": "SYNCED_AND_VERIFIED",
+    "gate2_remote_deployment": "DEPLOYED_AND_VERIFIED",
+    "health_check": "PASSED"
+  },
   "final_verdict": "AI_EVALUATION_TRACKING_ACCEPTED"
 }
