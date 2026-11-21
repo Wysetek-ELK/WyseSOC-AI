@@ -1,0 +1,44 @@
+{
+  "testTimestamp": "2026-11-21T04:38:41.158Z",
+  "baseUrl": "http://172.26.41.240:3000",
+  "ruleUuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+  "ruleHeader": {
+    "hasDualBranding": true,
+    "hasTargetRule": true,
+    "hasV7Approved": true,
+    "hasNoActiveVersion": false,
+    "hasThreeTabs": true,
+    "hasSettings": true,
+    "pageTitle": "Verdictum AI — Agentic SOC Intelligence Platform",
+    "bodySnippet": "VERDICTUM AI\nAgentic SOC Intelligence\nBY WYSETEK\nSOC OPERATIONS\nAgent Mission Control\nAI Triage Workbench\nTelemetry Hub\nHuman Review Queue\nVerdictum Sentinel\nCOPILOT\nAGENT INTELLIGENCE\nAgent Intelligence Studio\nDetection Intelligence\nAgent Memory\nVALIDATION & TRUST\nAgent Simulation Lab\nVerdict Intelligence\nPLATFORM CONTROL\nInference Control\nAgent Configuration\nGovernance & Access\nVerdictum AI Admin Guide\nINFERENCE\nACTIVE\nArch: Core + Cortex (HTTP API)\nLLM:\nQwen2.5-7B (Active)\n\n© 2026 Wysetek Systems Technologists Pvt. Ltd.\n\nCtrl+K\nVerdictum AI\n|\nWYSETEK\nA WYSETEK PRODUCT\nBlind Review: ON\nObsidian\nadmin\nADMINISTRATOR\nRules List\nHeavy TCP Host Scan On Fixed Port\nNETWORK_SCAN\nSIEM Rule Active\nPolicy Approved\n\nDetect unauthorized or anomalous network scanning, host reconnaissance, or port sweeps attempting to map internal or perimeter attack surface (Heavy TCP Host Scan On Fixed Port).\n\nRULE:\nWebsite access policy violation: Same Source and Destination (MEDIUM)\nWebsite access policy violat"
+  },
+  "aiEvaluationTab": {
+    "hasTotalCards": true,
+    "hasNotEvaluated": true,
+    "hasAbstained": true,
+    "hasTable": true,
+    "containsDemoSoc": true,
+    "containsGdcNoc": true,
+    "containsIncident335": true
+  },
+  "accuracyTab": {
+    "hasAccuracyTab": true,
+    "hasReviews32": true,
+    "hasFpMention": true,
+    "hasNotMeasurable": false
+  },
+  "incidentsTab": {
+    "hasIncidentsTab": true,
+    "containsIncident335": true,
+    "containsSourceMetadata": true,
+    "containsHostReporting": true
+  },
+  "screenshots": [
+    "01_login_page.png",
+    "02_ais_header_and_rule_v7_active.png",
+    "03_ai_evaluation_tracking_tab.png",
+    "04_accuracy_learning_tab.png",
+    "05_review_incidents_tab.png",
+    "06_settings_drawer_open.png"
+  ]
+}

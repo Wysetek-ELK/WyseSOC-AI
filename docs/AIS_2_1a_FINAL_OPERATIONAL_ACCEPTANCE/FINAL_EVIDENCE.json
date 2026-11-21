@@ -1,0 +1,157 @@
+{
+  "project": "Verdictum AI",
+  "product": "Agent Intelligence Studio 2.1a",
+  "acceptance_timestamp": "2026-11-21T04:45:00Z",
+  "status": "AIS_2_1a_FINAL_ACCEPTED",
+  "target_rule": {
+    "name": "Heavy TCP Host Scan On Fixed Port",
+    "uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+    "active_version": {
+      "version_number": 7,
+      "version_id": "d79fb576-c6b9-4f63-9167-3c7a2419b70a",
+      "status": "APPROVED",
+      "is_suspended": false
+    },
+    "candidate_version": {
+      "version_number": 8,
+      "version_id": "20d4f788-85a5-437d-afbe-fe7fd80abca1",
+      "status": "DRAFT"
+    }
+  },
+  "preserved_unrelated_rule": {
+    "name": "Website access policy violation: Same Source and Destination",
+    "uuid": "7bd13e89-0828-48e6-8cf5-f3cbf12d438c",
+    "active_version_id": "ccb9dffa-e29e-49b6-b945-4359829272b6",
+    "status": "APPROVED",
+    "untouched": true
+  },
+  "infrastructure": {
+    "server_1": {
+      "ip": "172.26.41.240",
+      "os": "Rocky Linux 10.1",
+      "app_dir": "/opt/wysesoc-ai",
+      "frontend_url": "http://172.26.41.240:3000",
+      "backend_url": "http://172.26.41.240:8000",
+      "services": {
+        "ai-verdict-backend": "active (running)",
+        "ai-verdict-frontend": "active (running)"
+      },
+      "firewall": "port 3000/tcp opened"
+    },
+    "server_2": {
+      "url": "http://13.204.214.64:8000/v1",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "role": "vLLM Inference Host"
+    }
+  },
+  "upla_deployment": {
+    "execution_id": "upla-20261121-041339-6a8835",
+    "mode": "FULL_WORKFLOW",
+    "deployed_commit_sha": "f41c7a82c05ef98f4d4d12b5db8e57d002582522",
+    "github_branch": "feature/phase3-compact-ui",
+    "gate_1_human_approval": "YES",
+    "gate_2_human_approval": "YES",
+    "status": "DEPLOYED_AND_VERIFIED"
+  },
+  "test_isolation": {
+    "guard_module": "backend/app/core/db_guard.py",
+    "fail_closed_exception": "OperationalDatabaseProtectionError",
+    "prohibited_targets": [
+      "172.26.41.240",
+      "ai_verdict",
+      "ai_verdict_prod",
+      "ai_verdict.db"
+    ],
+    "referential_integrity": {
+      "fk_column": "RulePrompt.active_version_id",
+      "fk_target": "prompt_versions.id",
+      "on_delete": "SET NULL"
+    },
+    "backend_test_results": {
+      "isolation_tests_passed": 8,
+      "tracking_tests_passed": 20,
+      "heavy_tcp_e2e_tests_passed": 14,
+      "total_tests_passed": 42,
+      "tests_failed": 0
+    },
+    "frontend_test_results": {
+      "suites_passed": 16,
+      "suites_failed": 0,
+      "turbopack_build_status": "SUCCESS (32/32 routes)"
+    }
+  },
+  "evaluation_tracking": {
+    "total_incidents": 13,
+    "tenants": ["Demo-SOC", "GDC_NOC"],
+    "tenant_breakdown": {
+      "Demo-SOC": 11,
+      "GDC_NOC": 2
+    },
+    "evaluated_decisive": 0,
+    "abstained": 1,
+    "not_evaluated": 12,
+    "rejected": 0,
+    "incident_335_status": "ABSTAINED"
+  },
+  "live_inference_verification": {
+    "incident_id": "049d9828-a8e4-404b-ae38-2288724552d3",
+    "incident_number": 335,
+    "latency_ms": 16648,
+    "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "policy_version": "v7",
+    "verdict": "REQUIRES_ATTENTION",
+    "confidence": 0.65,
+    "validation_status": "VALIDATED"
+  },
+  "ground_truth_reconciliation": {
+    "total_incidents_processed": 56,
+    "total_analyst_reviews": 32,
+    "verified_tp_count": 0,
+    "verified_fp_count": 32,
+    "abstention_count": 56,
+    "empirical_accuracy": null,
+    "accuracy_display": "NOT_MEASURABLE",
+    "zero_fabrication_enforced": true
+  },
+  "normalized_evidence": {
+    "incident_335": {
+      "source_ip": "172.26.29.65",
+      "destination_port": "80",
+      "reporting_device": "HOST-172.26.31.254",
+      "provenance": "INCIDENT_METADATA",
+      "badge": "Source: Incident Metadata"
+    }
+  },
+  "gui_acceptance": {
+    "dual_branding": "Verdictum AI 2.1 • Powered by WYSETEK Systems",
+    "three_tabs": [
+      "Incidents",
+      "AI Evaluation",
+      "Accuracy"
+    ],
+    "settings_drawer": "Verified Open & Functional (9 sections)",
+    "screenshots": [
+      "01_login_page.png",
+      "02_ais_header_and_rule_v7_active.png",
+      "03_ai_evaluation_tracking_tab.png",
+      "04_accuracy_learning_tab.png",
+      "05_review_incidents_tab.png",
+      "06_settings_drawer_open.png"
+    ]
+  },
+  "reports": [
+    "01_PERMANENT_POSTGRESQL_TEST_ISOLATION.md",
+    "02_FAIL_CLOSED_DATABASE_IDENTITY_GUARD.md",
+    "03_APPROVED_POLICY_V7_RECOVERY_AND_SAFETY.md",
+    "04_AI_EVALUATION_TRACKING_INVENTORY_ACCEPTANCE.md",
+    "05_NORMALIZED_INCIDENT_EVIDENCE_VERIFICATION.md",
+    "06_THREE_TAB_WORKSPACE_CONSOLIDATION_ACCEPTANCE.md",
+    "07_LIVE_GROUND_TRUTH_RECONCILIATION.md",
+    "08_AUTHORIZED_UPLA_DEPLOYMENT_SERVER1.md",
+    "09_SINGLE_LOCAL_LLM_EVALUATION_ACCEPTANCE.md",
+    "10_FULL_REGRESSION_AND_SECURITY_ASSURANCE.md",
+    "11_FINAL_OPERATIONAL_ACCEPTANCE_EXECUTIVE_SUMMARY.md",
+    "FINAL_EVIDENCE.json"
+  ]
+}

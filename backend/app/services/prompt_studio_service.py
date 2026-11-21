@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
 from app.utils.datetime_utils import utc_now
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, or_
+from sqlalchemy import select, desc, or_, func
 from sqlalchemy.orm import selectinload
 
 from app.models.prompt import RulePrompt, PromptVersion
