@@ -457,23 +457,27 @@ class AisEvaluationService:
         for the given rule and policy version.
         Applies server-side tenant isolation and double-blind masking.
         """
+        # Safely extract user primitives upfront before any session or transaction operations
+        user_role = getattr(current_user, "role", "") if current_user else ""
+        is_admin_user = (
+            user_role in ("Administrator", "SuperAdmin", "SOC_Manager")
+            or getattr(current_user, "is_superuser", False)
+        )
+        user_cust = getattr(current_user, "customer", None) if current_user else None
+        current_username = getattr(current_user, "username", "") if current_user else ""
+        current_user_id = str(getattr(current_user, "id", "")) if current_user else ""
+
         # Guarantee transaction-level snapshot isolation under PostgreSQL
         # Ensures all subsequent multi-table queries observe an identical MVCC point-in-time snapshot.
         try:
             bind = db.get_bind()
             if getattr(bind.dialect, "name", "") == "postgresql":
-                # In PostgreSQL, SET TRANSACTION ISOLATION LEVEL must be issued before any query
-                # in the transaction block. If an implicit read transaction already started (e.g. from user auth),
-                # rollback the clean read transaction first so the snapshot isolation command succeeds.
-                if db.in_transaction():
-                    await db.rollback()
                 await db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;"))
         except Exception as iso_err:
             logger.debug("Transaction isolation set skipped or not supported: %s", iso_err)
-            # Crucial: if setting transaction isolation level failed, PostgreSQL marks the transaction
-            # as aborted (TBLOCK_ABORT / 25P02). We must rollback so subsequent queries are not rejected!
             try:
-                await db.rollback()
+                if db.in_transaction():
+                    await db.rollback()
             except Exception:
                 pass
 
@@ -508,10 +512,6 @@ class AisEvaluationService:
         inc_stmt = select(Incident).where(inc_filter).options(selectinload(Incident.events))
 
         # Tenant isolation
-        user_role = getattr(current_user, "role", "")
-        is_admin_user = user_role in ("Administrator", "SuperAdmin", "SOC_Manager") or getattr(current_user, "is_superuser", False)
-        user_cust = getattr(current_user, "customer", None)
-
         if is_admin_user:
             # Administrators can view all tenants by default unless an explicit tenant is chosen
             if customer and customer.upper() not in ("ALL", "GLOBAL", "DEFAULT", ""):
@@ -583,7 +583,7 @@ class AisEvaluationService:
             for rev in (await db.execute(rev_stmt)).scalars().all():
                 if rev.incident_id not in reviews_by_inc:
                     reviews_by_inc[rev.incident_id] = rev
-                if current_user and (rev.reviewer_id == current_user.username or rev.reviewer_id == str(current_user.id)):
+                if current_user and (rev.reviewer_id == current_username or rev.reviewer_id == current_user_id):
                     user_reviewed_inc_ids.add(rev.incident_id)
 
         # 5. Resolve status for each incident
@@ -614,8 +614,7 @@ class AisEvaluationService:
         cnt_ai_false_alarm = 0
         cnt_critical_missed_tp = 0
 
-        is_admin = bool(current_user and current_user.role in ("Administrator", "SOC_Manager"))
-        current_username = getattr(current_user, "username", "")
+        is_admin = bool(current_user and user_role in ("Administrator", "SOC_Manager"))
 
         for inc in inc_rows:
             c_list = captures_by_inc.get(inc.id, []) + captures_by_inc.get(inc.incident_id, [])
@@ -1007,6 +1006,13 @@ class AisEvaluationService:
         Retrieves full chronological history of all AI evaluation attempts across all policy versions
         for a specific incident.
         """
+        # Safely extract user primitives upfront
+        u_role = getattr(current_user, "role", "") if current_user else ""
+        u_cust = getattr(current_user, "customer", None) if current_user else None
+        c_username = getattr(current_user, "username", "") if current_user else ""
+        c_user_id = str(getattr(current_user, "id", "")) if current_user else ""
+        is_admin = bool(current_user and u_role in ("Administrator", "SOC_Manager"))
+
         # Find incident
         inc_stmt = select(Incident).where(
             or_(Incident.id == incident_id, Incident.incident_id == incident_id)
@@ -1016,12 +1022,9 @@ class AisEvaluationService:
             raise ValueError(f"Incident '{incident_id}' not found.")
 
         # Check tenant access
-        if current_user and getattr(current_user, "customer", None):
-            u_cust = current_user.customer
+        if current_user and u_cust:
             if u_cust.upper() not in ("ALL", "GLOBAL") and inc.customer and inc.customer != u_cust:
                 raise ValueError(f"Access denied: Incident belongs to tenant '{inc.customer}'.")
-
-        is_admin = bool(current_user and current_user.role in ("Administrator", "SOC_Manager"))
 
         # Check if user has submitted a review for this incident
         rev_stmt = select(AnalystVerdictReview).where(
@@ -1029,7 +1032,7 @@ class AisEvaluationService:
         )
         all_revs = (await db.execute(rev_stmt)).scalars().all()
         user_has_reviewed = any(
-            r.reviewer_id == current_user.username or r.reviewer_id == str(current_user.id)
+            r.reviewer_id == c_username or r.reviewer_id == c_user_id
             for r in all_revs
         ) if current_user else False
 

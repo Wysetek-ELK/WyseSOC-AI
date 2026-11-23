@@ -1,0 +1,853 @@
+{
+  "benchmark_manifest_version": "2.2a.0",
+  "generated_at": "2026-11-23T05:02:06.997996+00:00",
+  "random_seed": 42,
+  "split_strategy": "deterministic_cluster_isolated_unique_partitioning",
+  "dataset_readiness_status": "INSUFFICIENT_VALIDATED_DATASET",
+  "readiness_rationale": "Historical fixtures contain 0 verified TP under strict forensic criteria (4 under operational triage) and 2 verified FP. Multi-class empirical accuracy baseline is NOT_MEASURABLE without synthetic fabrication.",
+  "target_rules": [
+    {
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "name": "Crowdstrike: Suspicious Activity",
+      "total_fixtures": 10,
+      "eligible_unique": 10,
+      "quarantined_duplicates": 0
+    },
+    {
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "name": "Prisma SASE: Suspicious File Threat Detection",
+      "total_fixtures": 10,
+      "eligible_unique": 5,
+      "quarantined_duplicates": 5
+    }
+  ],
+  "authoritative_populations": {
+    "zip_fixtures_historical_incidents": {
+      "total": 20,
+      "eligible_unique_count": 15,
+      "quarantined_duplicate_count": 5,
+      "ground_truth_strict_forensic": {
+        "verified_tp": 0,
+        "verified_fp": 2,
+        "unverified": 18
+      },
+      "ground_truth_operational_triage": {
+        "verified_tp": 4,
+        "verified_fp": 2,
+        "unverified": 14
+      }
+    },
+    "server1_current_inventory": {
+      "total_incidents": 35,
+      "verified_analyst_reviews": 33,
+      "verified_tp": 0,
+      "verified_fp": 33,
+      "not_evaluated": 2,
+      "abstained": 33,
+      "decisive": 0
+    },
+    "server1_cumulative_historical_cohort": {
+      "total_reviews": 65,
+      "verified_tp": 0,
+      "verified_fp": 65,
+      "initial_benchmarks_missing_inference": 32,
+      "abstained": 33,
+      "decisive": 0
+    }
+  },
+  "dataset_splits": {
+    "development_cohort": [
+      {
+        "incident_id": "132438483",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "events_count": 25,
+        "sha256": "d35c42f7d5931fa412d08bdebc2bc665fc1125d482689d5b325b633938570754",
+        "cluster_hash": "38a0d7310c7fb3ca",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132439932",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "events_count": 8,
+        "sha256": "224cf263774f7444d863eab155a99b7e3c7578e4464453b389c8c2079e134544",
+        "cluster_hash": "590d7a41defddbb4",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132441815",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "events_count": 16,
+        "sha256": "19417728832489479058a942f3b71e4a8c71cc977e30a911d70dbafdcb47c764",
+        "cluster_hash": "1ba12aea3c7aed51",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132461358",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "events_count": 34,
+        "sha256": "e6048c6f15f7bb950ef61a2d7d8d7c4ede1da37934ec573689b0c3def7371b2d",
+        "cluster_hash": "c742a3d82ed030d7",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132461368",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "events_count": 19,
+        "sha256": "059dd10ae7e2c8d37de185b0cbedfd9795fca215ea2e1aa89ad2db7166586c73",
+        "cluster_hash": "37db3657d09d6d08",
+        "ground_truth_withheld": true
+      }
+    ],
+    "validation_cohort": [
+      {
+        "incident_id": "132472498",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "events_count": 30,
+        "sha256": "b12295c6d3cf6837720beeab280151bc6a7f3d241bc765f92b81617e30d496b6",
+        "cluster_hash": "8ef56d6c7da9ec35",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132474210",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "events_count": 13,
+        "sha256": "2e3bac14eeca1e6a57b097a2ea0f573d7c1769f7d9e1c2065e26e415fce18741",
+        "cluster_hash": "88c166cd8f01c714",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132499009",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+        "events_count": 1,
+        "sha256": "158717e0c0d4af0ac3210cf4aa9be1cd7358a0395eba89310babdf966509a95d",
+        "cluster_hash": "76915202e84514d4",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132499023",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+        "events_count": 1,
+        "sha256": "7802374f11d163e0cd0324619a2b4046ff0dc08b32b185cc698dd72dce0c830f",
+        "cluster_hash": "3c65e7165bd72bd0",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132501348",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "events_count": 2,
+        "sha256": "0fcc5d60212c072f2beb88bade21b85be873ecfb01f025a7890064d108aba148",
+        "cluster_hash": "43129bd298529051",
+        "ground_truth_withheld": true
+      }
+    ],
+    "held_out_blind_cohort": [
+      {
+        "incident_id": "132502453",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "events_count": 24,
+        "sha256": "e9881c404d63bab3ca93d81e0e2679b3379dbdb40b621bf63a96feb90df32880",
+        "cluster_hash": "830a56c01c5cea39",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132527297",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "events_count": 2,
+        "sha256": "237a1245f83e5ee73ffefb8c8e24ace0ba2239e30e5082ba217008606edb54ee",
+        "cluster_hash": "a5b79cd7072311f3",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132591888",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+        "events_count": 3,
+        "sha256": "709555d5633b425cb42bd9d705bdb4c765747774260e75a29723c9ea874c58e1",
+        "cluster_hash": "0961ae145714e9db",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132599145",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+        "events_count": 2,
+        "sha256": "4ce6aeaeba82dccd9c4a04ff6322e500d18ea506588cad20478d7d04591255f7",
+        "cluster_hash": "4052a7e6ec6af5fd",
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132599146",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+        "events_count": 11,
+        "sha256": "b4a6f242713d6a65e4773eb2ee2ee5f5eaee58063b2ca183a63ad39766d1b178",
+        "cluster_hash": "35bbeb588c5e2899",
+        "ground_truth_withheld": true
+      }
+    ]
+  },
+  "anti_leakage_controls": {
+    "fields_sanitized": [
+      "resolution",
+      "clearedReason",
+      "comments",
+      "clearedUser",
+      "clearedTime",
+      "cmsClearUser",
+      "analyst_verdict",
+      "ground_truth"
+    ],
+    "leakage_audited_count": 20,
+    "leaks_detected": 0,
+    "status": "PASS"
+  },
+  "duplicate_quarantine": {
+    "rule": "eligible_cohort_ids \u2229 quarantined_ids = \u2205",
+    "invariant_satisfied": true,
+    "quarantined_ids": [
+      "132499745",
+      "132578774",
+      "132595592",
+      "132596403",
+      "132599330"
+    ],
+    "quarantined_count": 5,
+    "clusters": [
+      {
+        "cluster_key": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE|appName:web-browsing,|1",
+        "cluster_hash": "3c65e7165bd72bd0",
+        "primary_id": "132499023",
+        "quarantined_duplicates": [
+          "132499745",
+          "132578774",
+          "132595592",
+          "132596403"
+        ],
+        "reason": "Shared rule, target and event count (1 events)"
+      },
+      {
+        "cluster_key": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE|appName:indonis,|2",
+        "cluster_hash": "4052a7e6ec6af5fd",
+        "primary_id": "132599145",
+        "quarantined_duplicates": [
+          "132599330"
+        ],
+        "reason": "Shared rule, target and event count (2 events)"
+      }
+    ]
+  },
+  "all_records_inventory": [
+    {
+      "source_file": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132438483.json",
+      "incident_id": "132438483",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "target": "hostName:DESKTOP-E0G2R49,",
+      "events_count": 25,
+      "sha256": "d35c42f7d5931fa412d08bdebc2bc665fc1125d482689d5b325b633938570754",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "False Positive",
+        "cleared_reason": "kill process is true",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "38a0d7310c7fb3ca",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132439932.json",
+      "incident_id": "132439932",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "target": "hostName:TSI-IT-002-200,",
+      "events_count": 8,
+      "sha256": "224cf263774f7444d863eab155a99b7e3c7578e4464453b389c8c2079e134544",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 1.0,
+          "rationale": "Verified FP with analyst rationale: kill process is true"
+        },
+        "operational_triage": {
+          "label": "VERIFIED_FP",
+          "confidence_score": 1.0,
+          "rationale": "Verified FP with analyst rationale: kill process is true"
+        },
+        "analyst_resolution_raw": "False Positive",
+        "cleared_reason": "kill process is true",
+        "comments": "",
+        "cleared_user": "",
+        "is_automated_or_ml": false
+      },
+      "cluster_hash": "590d7a41defddbb4",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132441815.json",
+      "incident_id": "132441815",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "target": "hostName:DESKTOP-E0G2R49,",
+      "events_count": 16,
+      "sha256": "19417728832489479058a942f3b71e4a8c71cc977e30a911d70dbafdcb47c764",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 1.0,
+          "rationale": "Verified FP with analyst rationale: proccess is kiled"
+        },
+        "operational_triage": {
+          "label": "VERIFIED_FP",
+          "confidence_score": 1.0,
+          "rationale": "Verified FP with analyst rationale: proccess is kiled"
+        },
+        "analyst_resolution_raw": "False Positive",
+        "cleared_reason": "proccess is kiled",
+        "comments": "",
+        "cleared_user": "",
+        "is_automated_or_ml": false
+      },
+      "cluster_hash": "1ba12aea3c7aed51",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132461358.json",
+      "incident_id": "132461358",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "target": "hostName:TSI-IT-002-200,",
+      "events_count": 34,
+      "sha256": "e6048c6f15f7bb950ef61a2d7d8d7c4ede1da37934ec573689b0c3def7371b2d",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "False Positive",
+        "cleared_reason": "hash value is clean",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "shivamw",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "c742a3d82ed030d7",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132461368.json",
+      "incident_id": "132461368",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "target": "hostName:DESKTOP-E0G2R49,",
+      "events_count": 19,
+      "sha256": "059dd10ae7e2c8d37de185b0cbedfd9795fca215ea2e1aa89ad2db7166586c73",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "True Positive",
+        "cleared_reason": "case raised and client are working on it",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "37db3657d09d6d08",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132472498.json",
+      "incident_id": "132472498",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "target": "hostName:PC-TSI-DC,",
+      "events_count": 30,
+      "sha256": "b12295c6d3cf6837720beeab280151bc6a7f3d241bc765f92b81617e30d496b6",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "True Positive",
+        "cleared_reason": "case raised and client are working on it",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "8ef56d6c7da9ec35",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132474210.json",
+      "incident_id": "132474210",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "target": "hostName:PC-TSI-DC,",
+      "events_count": 13,
+      "sha256": "2e3bac14eeca1e6a57b097a2ea0f573d7c1769f7d9e1c2065e26e415fce18741",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "VERIFIED_FP",
+          "confidence_score": 1.0,
+          "rationale": "Verified FP with analyst rationale: legitimate activity, nothing suspicious observed."
+        },
+        "operational_triage": {
+          "label": "VERIFIED_FP",
+          "confidence_score": 1.0,
+          "rationale": "Verified FP with analyst rationale: legitimate activity, nothing suspicious observed."
+        },
+        "analyst_resolution_raw": "False Positive",
+        "cleared_reason": "legitimate activity, nothing suspicious observed.",
+        "comments": "",
+        "cleared_user": "",
+        "is_automated_or_ml": false
+      },
+      "cluster_hash": "88c166cd8f01c714",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132501348.json",
+      "incident_id": "132501348",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "target": "hostName:DESKTOP-CQ4A60U,",
+      "events_count": 2,
+      "sha256": "0fcc5d60212c072f2beb88bade21b85be873ecfb01f025a7890064d108aba148",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "True Positive",
+        "cleared_reason": "",
+        "comments": "Resolution set by Machine Learning\nWe have observed the Crowdstrike user admin compromise using Disable or Modify Tools detected on DESKTOP-DR1F46U",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "43129bd298529051",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132502453.json",
+      "incident_id": "132502453",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "target": "hostName:DESKTOP-KHU6454,",
+      "events_count": 24,
+      "sha256": "e9881c404d63bab3ca93d81e0e2679b3379dbdb40b621bf63a96feb90df32880",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "True Positive",
+        "cleared_reason": "Informed to client, alert still generating",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "830a56c01c5cea39",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Crowdstrike Suspicious Activity/IncidnetId_132527297.json",
+      "incident_id": "132527297",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "target": "hostName:TSI-IT-002-95,",
+      "events_count": 2,
+      "sha256": "237a1245f83e5ee73ffefb8c8e24ace0ba2239e30e5082ba217008606edb54ee",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "True Positive",
+        "cleared_reason": "Endpoint security has blocked the ultraviewer.exe",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "a5b79cd7072311f3",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132499009.json",
+      "incident_id": "132499009",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "target": "appName:surveysensum-base,",
+      "events_count": 1,
+      "sha256": "158717e0c0d4af0ac3210cf4aa9be1cd7358a0395eba89310babdf966509a95d",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "VERIFIED_FP",
+          "confidence_score": 1.0,
+          "rationale": "Verified FP with analyst rationale: No suspicious activity was identified during the analysis"
+        },
+        "operational_triage": {
+          "label": "VERIFIED_FP",
+          "confidence_score": 1.0,
+          "rationale": "Verified FP with analyst rationale: No suspicious activity was identified during the analysis"
+        },
+        "analyst_resolution_raw": "False Positive",
+        "cleared_reason": "No suspicious activity was identified during the analysis",
+        "comments": "",
+        "cleared_user": "",
+        "is_automated_or_ml": false
+      },
+      "cluster_hash": "76915202e84514d4",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132499023.json",
+      "incident_id": "132499023",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "target": "appName:web-browsing,",
+      "events_count": 1,
+      "sha256": "7802374f11d163e0cd0324619a2b4046ff0dc08b32b185cc698dd72dce0c830f",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "False Positive",
+        "cleared_reason": "file does not found suspicious hence marking as fp",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "3c65e7165bd72bd0",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132499745.json",
+      "incident_id": "132499745",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "target": "appName:web-browsing,",
+      "events_count": 1,
+      "sha256": "52dc5477c0b58d04c5c367a53b5deee98d2ffed9d9089126cfda2a520ae02442",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "False Positive",
+        "cleared_reason": "file does not found suspicious hence marking as fp",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "3c65e7165bd72bd0",
+      "is_duplicate": true,
+      "quarantined": true,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132578774.json",
+      "incident_id": "132578774",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "target": "appName:web-browsing,",
+      "events_count": 1,
+      "sha256": "86a93736faec3e9db7410b0dc5b4e1d7108d718694d0f7cd61fd434ca3f4bcb0",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "False Positive",
+        "cleared_reason": "file observed is not suspicious",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "3c65e7165bd72bd0",
+      "is_duplicate": true,
+      "quarantined": true,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132591888.json",
+      "incident_id": "132591888",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "target": "appName:teamviewer-base,",
+      "events_count": 3,
+      "sha256": "709555d5633b425cb42bd9d705bdb4c765747774260e75a29723c9ea874c58e1",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "False Positive",
+        "cleared_reason": "file observed is not suspicious",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "0961ae145714e9db",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132595592.json",
+      "incident_id": "132595592",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "target": "appName:web-browsing,",
+      "events_count": 1,
+      "sha256": "8ddcdb3471df3640aef3d575f4334a31ed64615950de1977cc9a35c7b380cb8f",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "operational_triage": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.5,
+          "rationale": "Resolution was generated by previous ML model or automated rule without human adjudication."
+        },
+        "analyst_resolution_raw": "True Positive",
+        "cleared_reason": "Mail has been sent already",
+        "comments": "Resolution set by Machine Learning",
+        "cleared_user": "",
+        "is_automated_or_ml": true
+      },
+      "cluster_hash": "3c65e7165bd72bd0",
+      "is_duplicate": true,
+      "quarantined": true,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132596403.json",
+      "incident_id": "132596403",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "target": "appName:web-browsing,",
+      "events_count": 1,
+      "sha256": "ea718fcb802f1cfe59d84379f3d6f11d3751312dcf724fe3dfdf24fff9ba7a23",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.6,
+          "rationale": "Operational escalation or notification note 'Mail has been sent already' alone without forensic attack confirmation cannot prove True Positive."
+        },
+        "operational_triage": {
+          "label": "VERIFIED_TP",
+          "confidence_score": 1.0,
+          "rationale": "Verified TP with analyst rationale: Mail has been sent already"
+        },
+        "analyst_resolution_raw": "True Positive",
+        "cleared_reason": "Mail has been sent already",
+        "comments": "",
+        "cleared_user": "",
+        "is_automated_or_ml": false
+      },
+      "cluster_hash": "3c65e7165bd72bd0",
+      "is_duplicate": true,
+      "quarantined": true,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132599145.json",
+      "incident_id": "132599145",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "target": "appName:indonis,",
+      "events_count": 2,
+      "sha256": "4ce6aeaeba82dccd9c4a04ff6322e500d18ea506588cad20478d7d04591255f7",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.6,
+          "rationale": "Operational escalation or notification note 'Case has been raised for the similar incidents.' alone without forensic attack confirmation cannot prove True Positive."
+        },
+        "operational_triage": {
+          "label": "VERIFIED_TP",
+          "confidence_score": 1.0,
+          "rationale": "Verified TP with analyst rationale: Case has been raised for the similar incidents."
+        },
+        "analyst_resolution_raw": "True Positive",
+        "cleared_reason": "Case has been raised for the similar incidents.",
+        "comments": "",
+        "cleared_user": "",
+        "is_automated_or_ml": false
+      },
+      "cluster_hash": "4052a7e6ec6af5fd",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132599146.json",
+      "incident_id": "132599146",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "target": "appName:indonis,",
+      "events_count": 11,
+      "sha256": "b4a6f242713d6a65e4773eb2ee2ee5f5eaee58063b2ca183a63ad39766d1b178",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.6,
+          "rationale": "Operational escalation or notification note 'Case has been raised for the similar incidents.' alone without forensic attack confirmation cannot prove True Positive."
+        },
+        "operational_triage": {
+          "label": "VERIFIED_TP",
+          "confidence_score": 1.0,
+          "rationale": "Verified TP with analyst rationale: Case has been raised for the similar incidents."
+        },
+        "analyst_resolution_raw": "True Positive",
+        "cleared_reason": "Case has been raised for the similar incidents.",
+        "comments": "",
+        "cleared_user": "",
+        "is_automated_or_ml": false
+      },
+      "cluster_hash": "35bbeb588c5e2899",
+      "is_duplicate": false,
+      "quarantined": false,
+      "anti_leakage_clean": true
+    },
+    {
+      "source_file": "Incident json/Prisma SASE Suspicious File Threat Detection/incidentId_132599330.json",
+      "incident_id": "132599330",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "target": "appName:indonis,",
+      "events_count": 2,
+      "sha256": "7ac1419a5bb5d0465519e0ba1b484e9b8a028571fdde71fab0ad32182d93d807",
+      "ground_truth": {
+        "strict_forensic": {
+          "label": "UNVERIFIED",
+          "confidence_score": 0.6,
+          "rationale": "Operational escalation or notification note 'Case has been raised for the similar incidents.' alone without forensic attack confirmation cannot prove True Positive."
+        },
+        "operational_triage": {
+          "label": "VERIFIED_TP",
+          "confidence_score": 1.0,
+          "rationale": "Verified TP with analyst rationale: Case has been raised for the similar incidents."
+        },
+        "analyst_resolution_raw": "True Positive",
+        "cleared_reason": "Case has been raised for the similar incidents.",
+        "comments": "",
+        "cleared_user": "",
+        "is_automated_or_ml": false
+      },
+      "cluster_hash": "4052a7e6ec6af5fd",
+      "is_duplicate": true,
+      "quarantined": true,
+      "anti_leakage_clean": true
+    }
+  ]
+}

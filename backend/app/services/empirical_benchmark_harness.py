@@ -80,6 +80,7 @@ class BenchmarkIncidentRecord:
     source_origin: str = "ZIP"  # ZIP, DB, UNIFIED
     leakage_detected: bool = False
     leakage_keys_found: List[str] = field(default_factory=list)
+    events_count: int = 0
 
 
 @dataclass
@@ -209,6 +210,17 @@ class EmpiricalBenchmarkReport:
     incident_results: List[BenchmarkIncidentResult] = field(default_factory=list)
 
 
+class EventAdapter:
+    """Lightweight adapter exposing event attributes for raw event dictionaries."""
+    def __init__(self, data: Dict[str, Any], idx: int = 0):
+        self.id = str(data.get("id") or data.get("eventId") or f"EVT_{idx}")
+        self.event_id = self.id
+        self.event_type = str(data.get("eventType") or data.get("eventName") or "")
+        self.event_receive_time = data.get("receiveTime") or data.get("eventReceiveTime") or data.get("firstSeen")
+        self.raw_log = str(data.get("rawMessage") or data.get("rawLog") or data.get("rawEventLog") or "")
+        self.attributes = data
+
+
 class IncidentAdapter:
     """Lightweight adapter exposing model-like attributes for dictionary incident payloads."""
     def __init__(self, data: Dict[str, Any], incident_id: str):
@@ -236,7 +248,8 @@ class IncidentAdapter:
         self.last_seen_epoch = data.get("lastSeen") or data.get("updatedAt")
         self.created_at_epoch = data.get("createdAt")
         self.raw_payload = data
-        self.events = []
+        raw_evs = data.get("rawEvents") or data.get("events") or []
+        self.events = [EventAdapter(e, i) if isinstance(e, dict) else e for i, e in enumerate(raw_evs)]
 
 
 class EmpiricalBenchmarkHarness:
@@ -309,13 +322,16 @@ class EmpiricalBenchmarkHarness:
                 data = json.loads(raw_bytes.decode("utf-8", errors="ignore"))
 
                 # Determine rule metadata
-                rule_id = "PH_RULE_UNKNOWN"
-                rule_name = "Generic Detection Rule"
+                rule_name = str(data.get("eventName") or data.get("ruleName") or "Generic Detection Rule")
+                rule_id = str(data.get("eventType") or data.get("ruleId") or "PH_RULE_UNKNOWN")
                 for folder_key, meta in cls.RULE_METADATA_MAP.items():
                     if folder_key.lower() in filename.lower():
                         rule_id = meta["rule_id"]
                         rule_name = meta["rule_name"]
                         break
+
+                raw_events = data.get("rawEvents") or data.get("events") or []
+                events_count = len(raw_events)
 
                 inc_id = str(data.get("incidentId") or data.get("id") or filename.split("/")[-1].replace(".json", ""))
                 res_raw = data.get("resolution")
@@ -324,6 +340,7 @@ class EmpiricalBenchmarkHarness:
                 cleared_user = data.get("clearedUser")
                 cleared_epoch = data.get("clearedTime")
                 inc_time = data.get("firstSeen") or data.get("createdAt")
+                target = str(data.get("target") or data.get("incidentTarget") or data.get("reportingDevice") or "none").strip()
 
                 # Adjudicate ground truth label
                 label_enum, score, rationale = HistoricalGroundTruthValidator.adjudicate_label(
@@ -347,15 +364,13 @@ class EmpiricalBenchmarkHarness:
                     label_str = "UNVERIFIED"
 
                 # Check for duplicate cluster key
-                cluster_key = None
-                is_duplicate = False
-                if cleared_epoch and cleared_reason and len(cleared_reason.strip()) >= 8:
-                    raw_k = f"{rule_id}|{label_str}|{cleared_epoch}|{cleared_reason.strip().lower()}"
-                    cluster_key = hashlib.sha256(raw_k.encode("utf-8")).hexdigest()[:16]
-                    if cluster_key in cluster_tracker:
-                        is_duplicate = True
-                    else:
-                        cluster_tracker[cluster_key] = inc_id
+                raw_k = f"{rule_id}|{target}|{events_count}"
+                cluster_key = hashlib.sha256(raw_k.encode("utf-8")).hexdigest()[:16]
+                if cluster_key in cluster_tracker:
+                    is_duplicate = True
+                else:
+                    is_duplicate = False
+                    cluster_tracker[cluster_key] = inc_id
 
                 # Data Blinding & Anti-Leakage Check
                 sanitized = HistoricalGroundTruthValidator.sanitize_incident_for_inference(data)
@@ -386,6 +401,7 @@ class EmpiricalBenchmarkHarness:
                         source_origin="ZIP",
                         leakage_detected=bool(leakage_keys),
                         leakage_keys_found=leakage_keys,
+                        events_count=events_count,
                     )
                 )
 
@@ -508,6 +524,7 @@ class EmpiricalBenchmarkHarness:
                         source_origin="DB",
                         leakage_detected=bool(leakage_keys),
                         leakage_keys_found=leakage_keys,
+                        events_count=len(payload.get("rawEvents") or payload.get("events") or []),
                     )
                 )
         finally:
