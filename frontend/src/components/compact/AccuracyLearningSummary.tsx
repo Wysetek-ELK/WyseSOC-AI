@@ -55,7 +55,7 @@ export function AccuracyLearningSummary({
     text: string;
   } | null>(null);
 
-  // Population Scope Selection: "current" (13 incidents) or "historical" (45 reviews)
+  // Population Scope Selection: "current" (operational incident inventory) or "historical" (cumulative cohort)
   const [populationScope, setPopulationScope] = useState<"current" | "historical">("current");
 
   const fetchData = async () => {
@@ -126,22 +126,22 @@ export function AccuracyLearningSummary({
   // --- Authoritative Population Scope Metrics ---
   const isCurrentScope = populationScope === "current";
 
-  // Current scope metrics (Current Incident Inventory: 13 operational incidents)
-  const currentTotal = evalSummary?.current_inventory?.verified_reviews ?? evalSummary?.matched_verified_reviews ?? evalSummary?.total_incidents ?? 13;
+  // Current scope metrics (Current Incident Inventory: dynamic from evaluation summary)
+  const currentTotal = evalSummary?.current_inventory?.verified_reviews ?? evalSummary?.matched_verified_reviews ?? evalSummary?.total_incidents ?? 0;
   const currentTp = evalSummary?.current_inventory?.verified_tp ?? evalSummary?.verified_tp_count ?? 0;
-  const currentFp = evalSummary?.current_inventory?.verified_fp ?? evalSummary?.verified_fp_count ?? (currentTotal - currentTp);
-  const currentAbstained = evalSummary?.current_inventory?.abstained ?? evalSummary?.abstained ?? 13;
+  const currentFp = evalSummary?.current_inventory?.verified_fp ?? evalSummary?.verified_fp_count ?? Math.max(0, currentTotal - currentTp);
+  const currentAbstained = evalSummary?.current_inventory?.abstained ?? evalSummary?.abstained ?? 0;
   const currentMissing = evalSummary?.current_inventory?.missing_evaluations_among_reviewed ?? evalSummary?.missing_evaluations_among_reviewed ?? 0;
   const currentDecisive = evalSummary?.current_inventory?.evaluated_decisive ?? evalSummary?.evaluated_decisive ?? 0;
   const currentRejected = evalSummary?.current_inventory?.validation_rejected ?? evalSummary?.validation_rejected ?? 0;
   const currentFailed = evalSummary?.current_inventory?.failed ?? evalSummary?.evaluation_failed ?? 0;
 
-  // Historical scope metrics (Cumulative Historical Ground Truth: 45 reviews)
-  const histTotal = profile?.total_analyst_reviews ?? evalSummary?.historical_cohort?.total_reviews ?? 45;
+  // Historical scope metrics (Cumulative Historical Ground Truth: dynamic from learning profile)
+  const histTotal = profile?.total_analyst_reviews ?? evalSummary?.historical_cohort?.total_reviews ?? 0;
   const histTp = profile?.verified_tp_count ?? evalSummary?.historical_cohort?.verified_tp ?? 0;
-  const histFp = profile?.verified_fp_count ?? evalSummary?.historical_cohort?.verified_fp ?? 45;
-  const histAbstained = profile?.error_distribution?.analyst_resolved_abstention ?? evalSummary?.historical_cohort?.abstained ?? 30;
-  const histMissing = profile?.error_distribution?.analyst_only_initial_benchmark ?? evalSummary?.historical_cohort?.initial_benchmarks_missing_inference ?? 15;
+  const histFp = profile?.verified_fp_count ?? evalSummary?.historical_cohort?.verified_fp ?? Math.max(0, histTotal - histTp);
+  const histAbstained = profile?.error_distribution?.analyst_resolved_abstention ?? evalSummary?.historical_cohort?.abstained ?? 0;
+  const histMissing = profile?.error_distribution?.analyst_only_initial_benchmark ?? evalSummary?.historical_cohort?.initial_benchmarks_missing_inference ?? 0;
   const histDecisive = profile?.error_distribution?.decisive_evaluations ?? evalSummary?.historical_cohort?.decisive ?? 0;
   const histRejected = evalSummary?.validation_rejected ?? 0;
   const histFailed = evalSummary?.evaluation_failed ?? 0;
@@ -283,7 +283,7 @@ export function AccuracyLearningSummary({
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    Current Incident Inventory (13)
+                    Current Incident Inventory ({currentTotal})
                   </button>
                   <button
                     onClick={() => setPopulationScope("historical")}
@@ -293,7 +293,7 @@ export function AccuracyLearningSummary({
                         : "text-slate-400 hover:text-slate-200"
                     }`}
                   >
-                    Cumulative Historical Cohort (45)
+                    Cumulative Historical Cohort ({histTotal})
                   </button>
                 </div>
               </div>
@@ -447,7 +447,7 @@ export function AccuracyLearningSummary({
             </span>
           </div>
           <span className="text-[10px] text-slate-500 block">
-            {isCurrentScope ? "13 operational incidents in queue" : "45 cumulative reviewed cases in profile"}
+            {isCurrentScope ? `${currentTotal} operational incidents in queue` : `${histTotal} cumulative reviewed cases in profile`}
           </span>
         </div>
 

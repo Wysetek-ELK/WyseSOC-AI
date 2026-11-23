@@ -402,3 +402,74 @@ async def test_evaluation_snapshot_partition_invariant_and_fields():
             assert summary["accuracy_eligibility"] == "NOT_MEASURABLE_ZERO_DECISIVE_DENOMINATOR"
             assert summary.get("non_measurable_reason") is not None
             assert summary.get("accuracy_numerator") is None
+
+
+@pytest.mark.asyncio
+async def test_deterministic_snapshot_consistency_across_queries():
+    """
+    AIS 2.1b.1 Objective A & Issue C:
+    Verify that repeated queries against unchanging database state return
+    an IDENTICAL deterministic snapshot_id, snapshot_fingerprint, and partition counts.
+    Verify that mutating records deterministically produces a new snapshot_id.
+    """
+    async with AsyncSessionLocal() as db:
+        # First query
+        res1 = await AisEvaluationService.get_rule_evaluation_tracking_overview(
+            db=db,
+            rule_uuid=RULE_UUID,
+            version_number=7,
+            customer="DEFAULT",
+        )
+        snap1 = res1["summary"]["snapshot_id"]
+        fp1 = res1["summary"]["snapshot_fingerprint"]
+
+        # Second query (same DB state)
+        res2 = await AisEvaluationService.get_rule_evaluation_tracking_overview(
+            db=db,
+            rule_uuid=RULE_UUID,
+            version_number=7,
+            customer="DEFAULT",
+        )
+        snap2 = res2["summary"]["snapshot_id"]
+        fp2 = res2["summary"]["snapshot_fingerprint"]
+
+        # Strict deterministic identity: identical state MUST produce identical snapshot token
+        assert snap1 == snap2, f"Snapshot token unstable across identical queries: {snap1} != {snap2}"
+        assert fp1 == fp2, f"Snapshot fingerprint mismatch: {fp1} != {fp2}"
+        assert snap1.startswith("snap-v7-"), f"Snapshot token must prefix policy version: {snap1}"
+        assert res1["summary"]["historical_cohort"]["snapshot_id"] == snap1
+        assert res1["summary"]["current_inventory"]["snapshot_id"] == snap1
+
+        # Now simulate an ingestion mutation: insert a new incident
+        mutation_id = "test-pop-mut-99"
+        db.add(Incident(
+            id=mutation_id,
+            incident_id=mutation_id,
+            rule_id=RULE_UUID,
+            event_type=RULE_EVENT_TYPE,
+            customer="DEFAULT",
+            severity="MEDIUM",
+            title="Mutation Ingestion Incident",
+            status_name="Open",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ))
+        await db.commit()
+
+        # Third query (mutated DB state)
+        res3 = await AisEvaluationService.get_rule_evaluation_tracking_overview(
+            db=db,
+            rule_uuid=RULE_UUID,
+            version_number=7,
+            customer="DEFAULT",
+        )
+        snap3 = res3["summary"]["snapshot_id"]
+        fp3 = res3["summary"]["snapshot_fingerprint"]
+
+        assert snap3 != snap1, f"Snapshot token failed to update after state mutation: {snap3} == {snap1}"
+        assert fp3 != fp1
+        assert res3["summary"]["total_incidents"] == res1["summary"]["total_incidents"] + 1
+
+        # Cleanup mutation incident
+        await db.execute(delete(Incident).where(Incident.id == mutation_id))
+        await db.commit()
+

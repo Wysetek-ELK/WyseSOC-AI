@@ -2014,6 +2014,22 @@ function AgentIntelligenceStudioContent() {
             }
             archetype={showRuleDetails ? (ruleError ? undefined : (intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE")) : undefined}
             siemStatus={ruleError ? undefined : deriveSiemRuleStatus(selectedRule?.status)}
+            activePolicy={
+              ruleError || versionError || !activeVersion
+                ? undefined
+                : {
+                    versionNumber: activeVersion.version_number,
+                    status: activeVersion.status || "APPROVED",
+                  }
+            }
+            draftPolicy={
+              ruleError || versionError || !candidateDraft || candidateDraft.id === activeVersion?.id
+                ? undefined
+                : {
+                    versionNumber: candidateDraft.version_number,
+                    status: candidateDraft.status || "DRAFT",
+                  }
+            }
             lifecycleStatus={
               ruleError
                 ? undefined
@@ -2740,7 +2756,7 @@ function AgentIntelligenceStudioContent() {
           <AccuracyLearningSummary
             ruleId={selectedRuleId}
             ruleName={rulePrompt?.rule_name || selectedRule?.name}
-            selectedVersionId={selectedVersionId}
+            selectedVersionId={selectedVersionId || activeVersion?.id || undefined}
             learningProfile={learningProfile}
             qualityAssessment={qualityAssessment}
             onStartReviews={() => {

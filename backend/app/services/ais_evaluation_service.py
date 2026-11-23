@@ -15,11 +15,12 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timezone
+import hashlib
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Set
 import uuid
 
-from sqlalchemy import select, and_, or_, desc, func, not_, exists
+from sqlalchemy import select, and_, or_, desc, func, not_, exists, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -456,6 +457,15 @@ class AisEvaluationService:
         for the given rule and policy version.
         Applies server-side tenant isolation and double-blind masking.
         """
+        # Guarantee transaction-level snapshot isolation under PostgreSQL
+        # Ensures all subsequent multi-table queries observe an identical MVCC point-in-time snapshot.
+        try:
+            bind = db.get_bind()
+            if getattr(bind.dialect, "name", "") == "postgresql":
+                await db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;"))
+        except Exception as iso_err:
+            logger.debug("Transaction isolation set skipped or not supported: %s", iso_err)
+
         # 1. Resolve canonical rule and tokens
         canonical_uuid, rule_tokens = await AnalystReviewService._resolve_rule_aliases(db, rule_uuid)
         if not canonical_uuid:
@@ -840,11 +850,32 @@ class AisEvaluationService:
             else:
                 active_binding_status = "ORPHANED_BINDING"
 
-        snapshot_token = f"snap-{uuid.uuid4().hex[:12]}"
+        # Deterministic Evaluation Snapshot Identity (AIS 2.1b.1)
+        # Binds exact data state (rule, version, tenant, outcome counts, latest records)
+        # to a reproducible snapshot hash, guaranteeing cross-tab and cross-request consistency.
+        latest_inc_dt = inc_rows[0].created_at.isoformat() if inc_rows and inc_rows[0].created_at else "no_inc"
+        latest_inc_id = inc_rows[0].id if inc_rows else "no_inc_id"
+        latest_cap_time = ""
+        for caps in captures_by_inc.values():
+            if caps and caps[0].captured_at:
+                c_iso = caps[0].captured_at.isoformat()
+                if c_iso > latest_cap_time:
+                    latest_cap_time = c_iso
+
+        snap_fingerprint_raw = (
+            f"{target_rule_db_id}:{target_ver_num}:{target_ver_id}:{effective_customer}:"
+            f"{total_incidents}:{cnt_evaluated_decisive}:{cnt_abstained}:{cnt_validation_rejected}:"
+            f"{cnt_evaluation_failed}:{cnt_not_evaluated}:{cnt_verified_reviews}:{hist_total_reviews}:"
+            f"{latest_inc_id}:{latest_inc_dt}:{latest_cap_time}"
+        )
+        snap_hash = hashlib.sha256(snap_fingerprint_raw.encode("utf-8")).hexdigest()[:12]
+        snapshot_token = f"snap-v{target_ver_num or 0}-{snap_hash}"
         snapshot_time = utc_now().isoformat()
 
         summary = {
             "snapshot_id": snapshot_token,
+            "snapshot_fingerprint": snap_fingerprint_raw,
+            "snapshot_version": f"v{target_ver_num or 0}",
             "rule_uuid": target_rule_db_id,
             "policy_version_number": target_ver_num,
             "policy_version_id": target_ver_id,
@@ -906,6 +937,7 @@ class AisEvaluationService:
                 "population_name": "Current Incident Inventory",
                 "snapshot_id": snapshot_token,
                 "snapshot_at": snapshot_time,
+                "snapshot_fingerprint": snap_fingerprint_raw,
                 "operational_scope": "CURRENT_INVENTORY",
                 "total_incidents": total_incidents,
                 "verified_reviews": cnt_verified_reviews,
@@ -929,6 +961,10 @@ class AisEvaluationService:
             },
             "historical_cohort": {
                 "population_name": "Cumulative Historical Ground Truth",
+                "snapshot_id": snapshot_token,
+                "snapshot_at": snapshot_time,
+                "snapshot_fingerprint": snap_fingerprint_raw,
+                "historical_scope": "CUMULATIVE_GROUND_TRUTH",
                 "total_reviews": hist_total_reviews,
                 "verified_tp": hist_verified_tp,
                 "verified_fp": hist_verified_fp,

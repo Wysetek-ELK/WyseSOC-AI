@@ -47,6 +47,14 @@ export interface CompactPageHeaderProps {
     badgeClass: string;
     dotClass: string;
   };
+  activePolicy?: {
+    versionNumber: number;
+    status: string;
+  };
+  draftPolicy?: {
+    versionNumber: number;
+    status: string;
+  };
   backAction?: {
     label: string;
     onClick: () => void;
@@ -61,12 +69,14 @@ export function CompactPageHeader({
   archetype,
   lifecycleStatus,
   siemStatus,
+  activePolicy,
+  draftPolicy,
   backAction,
   actions,
   selector,
 }: CompactPageHeaderProps) {
   return (
-    <div className="p-3 sm:px-4 rounded-xl theme-glass-panel border border-slate-800/80 bg-slate-950/70 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div data-testid="ais-compact-toolbar" className="p-3 sm:px-4 rounded-xl theme-glass-panel border border-slate-800/80 bg-slate-950/70 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
       <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
         {backAction && (
           <button
@@ -97,6 +107,26 @@ export function CompactPageHeader({
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${siemStatus.dotClass}`} />
                 {siemStatus.label}
+              </span>
+            )}
+            {activePolicy && (
+              <span
+                data-testid="header-active-policy-status"
+                className="px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1.5 shrink-0 bg-emerald-950/70 border-emerald-800 text-emerald-300 font-mono"
+                title="Active production policy baseline"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                v{activePolicy.versionNumber} {activePolicy.status || "APPROVED"}
+              </span>
+            )}
+            {draftPolicy && (
+              <span
+                data-testid="header-draft-policy-status"
+                className="px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1.5 shrink-0 bg-sky-950/70 border-sky-800 text-sky-300 font-mono"
+                title="Candidate draft policy in authoring/validation"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                v{draftPolicy.versionNumber} {draftPolicy.status || "DRAFT"}
               </span>
             )}
             {lifecycleStatus && (
