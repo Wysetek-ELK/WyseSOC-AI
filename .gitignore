@@ -39,4 +39,7 @@ test_llm_config_state.json*
 # Maintenance Flags
 *.flag
 
+# Chrome Testing Artifacts
+temp_chrome_*
+
 

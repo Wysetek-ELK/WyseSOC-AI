@@ -35,11 +35,15 @@
     "uplaGovernanceStatus": "PASSED (WARNING non-blocking baseline exceptions)"
   },
   "uplaGovernance": {
-    "executionId": "upla-20261122-064605-3abc60",
+    "executionId": "upla-20261122-064926-40ca43",
     "profile": "release",
     "mode": "FULL_WORKFLOW",
-    "blocked": false,
-    "nextStep": "GATE_1_GITHUB_APPROVAL"
+    "status": "COMPLETED_FULL_WORKFLOW",
+    "gate1Status": "SYNCED_AND_VERIFIED",
+    "gate1CommitSha": "d0046375b86ba84db06eff15811bd3ea4bdcf01a",
+    "gate2Status": "DEPLOYED_AND_VERIFIED",
+    "targetServer": "Server 1 (172.26.41.240)",
+    "rollbackStatus": "NOT_NEEDED"
   },
   "recommendation": "GO for AIS 2.2"
 }
