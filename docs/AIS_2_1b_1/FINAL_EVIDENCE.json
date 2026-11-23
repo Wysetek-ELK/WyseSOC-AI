@@ -1,0 +1,92 @@
+{
+  "release": "AIS 2.1b.1",
+  "project": "Verdictum AI",
+  "organization": "Wysetek Systems Technologists Pvt. Ltd.",
+  "targetRule": {
+    "name": "Heavy TCP Host Scan On Fixed Port",
+    "uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "activePolicy": {
+      "version": "v7",
+      "id": "d79fb576-c6b9-4f63-9167-3c7a2419b70a",
+      "status": "APPROVED"
+    },
+    "draftPolicy": {
+      "version": "v8",
+      "id": "20d4f788-85a5-437d-afbe-fe7fd80abca1",
+      "status": "DRAFT"
+    }
+  },
+  "git": {
+    "branch": "feature/phase3-compact-ui",
+    "commitSha": "7a3c98b9995db971769d7d8452f1a19c4bb76f3b",
+    "remoteVerified": true
+  },
+  "upla": {
+    "executionId": "upla-20261123-032533-48e024",
+    "profile": "release",
+    "gate1ApprovalId": "apr-2f4225271f06",
+    "gate2ApprovalId": "apr-b98233ed30b2",
+    "finalStatus": "COMPLETED_FULL_WORKFLOW"
+  },
+  "remoteDeployment": {
+    "targetHost": "172.26.41.240",
+    "portFrontend": 3000,
+    "portBackend": 8000,
+    "status": "DEPLOYED_AND_VERIFIED",
+    "servicesRestarted": [
+      "ai-verdict-backend.service",
+      "ai-verdict-frontend.service"
+    ]
+  },
+  "regressionTests": {
+    "backendPassed": 25,
+    "backendFailed": 0,
+    "frontendPassed": 88,
+    "frontendFailed": 0,
+    "nextJsBuildRoutes": 32,
+    "nextJsBuildErrors": 0
+  },
+  "populationMetrics": {
+    "operationalScope": {
+      "totalIncidents": 35,
+      "decisive": 0,
+      "abstained": 33,
+      "rejected": 0,
+      "failed": 0,
+      "notEvaluated": 2,
+      "analystReviews": 33,
+      "verifiedTp": 0,
+      "verifiedFp": 33,
+      "partitionSumValid": true
+    },
+    "cumulativeHistoricalScope": {
+      "totalReviews": 65,
+      "verifiedTp": 0,
+      "verifiedFp": 65,
+      "initialBenchmarkReviews": 16,
+      "operationalReviews": 49
+    },
+    "accuracy": {
+      "status": "NOT_MEASURABLE",
+      "selectiveAccuracy": null,
+      "eligibleDecisiveDenominator": 0
+    }
+  },
+  "guiAcceptance": {
+    "dualBranding": true,
+    "targetRuleDisplayed": true,
+    "hasV7Approved": true,
+    "hasV8Draft": true,
+    "threeTabsFunctional": true,
+    "tableTopPx": 550,
+    "tableVisibleAboveFold": true,
+    "zeroHorizontalOverflow": {
+      "vp1280x800": true,
+      "vp1440x900": true,
+      "vp1727x972": true,
+      "vp1920x1080": true
+    },
+    "screenshotsCount": 9
+  },
+  "recommendation": "CONDITIONAL GO FOR AIS 2.2"
+}
