@@ -363,6 +363,10 @@ class EvidenceCompactionService:
 
         for r_dict in wire_dicts:
             f_norm = r_dict["source_field"].lower()
+            # Deduplicate binary name aliases in core: if an equivalent alias with the exact same value is already in core, keep it in auxiliary
+            if f_norm in ("process.file_name", "file.name") and any(r["source_field"].lower() in ("process.name", "process.file_name", "file.name") and r["observed_value"] == r_dict["observed_value"] for r in core_records):
+                auxiliary_records.append(r_dict)
+                continue
             is_forensic = f_norm in DO_NOT_COLLAPSE_FIELDS or any(term in f_norm for term in DO_NOT_COLLAPSE_FIELDS)
             is_scan_agg = f_norm.startswith("scan.") or f_norm == "network.destination_ip_list"
             is_contract_field = (
