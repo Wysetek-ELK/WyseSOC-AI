@@ -199,9 +199,13 @@ class EvidenceCompactionService:
         # -------------------------------------------------------------
         # Fields that represent unique forensic entities and should not be collapsed across distinct events
         DO_NOT_COLLAPSE_FIELDS = frozenset({
+            "process.name",
+            "process.file_name",
+            "process.parent_name",
             "process.command_line",
             "process.parent_command_line",
             "process.file_path",
+            "file.name",
             "file.hash_sha256",
             "file.hash_md5",
         })
@@ -254,7 +258,13 @@ class EvidenceCompactionService:
             f_lower = rec.source_field.lower()
 
             # Priority 1: Evidence Contract Required Field (Must NEVER be lost)
-            if f_lower in contract_fields:
+            is_contract_match = (
+                f_lower in contract_fields
+                or (f_lower in ("process.file_name", "process.name", "file.name") and any(cf in contract_fields for cf in ("process.file_name", "process.name", "file.name")))
+                or (f_lower == "process.parent_name" and "process.parent_name" in contract_fields)
+                or (f_lower in ("file.hash_sha256", "file.sha256") and any(cf in contract_fields for cf in ("file.hash_sha256", "file.sha256")))
+            )
+            if is_contract_match:
                 score += 1000
 
             # Priority 1b: Deterministic Scan Aggregates (compact 100+ raw events into exact scan metrics)
@@ -271,7 +281,7 @@ class EvidenceCompactionService:
                 score += 400
 
             # Priority 3: Core SOC Identifiers
-            if any(term in f_lower for term in ("command_line", "destination_port", "destport", "protocol", "proto", "destination_ip", "source_ip", "user.name", "hostname", "url", "webcategory", "method", "status_code")):
+            if any(term in f_lower for term in ("command_line", "destination_port", "destport", "protocol", "proto", "destination_ip", "source_ip", "user.name", "hostname", "url", "webcategory", "method", "status_code", "process.name", "process.file_name", "process.parent_name", "file.name", "file_name", "parent_name")):
                 score += 300
 
             # Priority 4: Security Action, Severity, Alert Title
@@ -351,9 +361,14 @@ class EvidenceCompactionService:
             f_norm = r_dict["source_field"].lower()
             is_forensic = f_norm in DO_NOT_COLLAPSE_FIELDS or any(term in f_norm for term in DO_NOT_COLLAPSE_FIELDS)
             is_scan_agg = f_norm.startswith("scan.") or f_norm == "network.destination_ip_list"
+            is_contract_field = (
+                f_norm in contract_fields
+                or (f_norm in ("process.file_name", "process.name", "file.name") and any(cf in contract_fields for cf in ("process.file_name", "process.name", "file.name")))
+                or (f_norm == "process.parent_name" and "process.parent_name" in contract_fields)
+            )
             is_core_candidate = (
                 is_scan_agg
-                or f_norm in contract_fields
+                or is_contract_field
                 or is_forensic
                 or "time_range" in f_norm
                 or (not has_scan_aggregates and "cluster" in r_dict["evidence_id"].lower())

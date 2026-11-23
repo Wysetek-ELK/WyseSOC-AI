@@ -619,6 +619,47 @@ class EvidenceNormalizationService:
                         raw_field_name=str(key),
                         transformation=trans,
                     )
+                    # Canonical Field Aliasing: Provide both process.name and process.file_name
+                    # so both detection archetypes (MALWARE_EXECUTION, NETWORK_THREAT) and
+                    # evidence contracts reliably locate the binary name.
+                    if mapping["field"] == "process.file_name":
+                        add_fn(
+                            source_field="process.name",
+                            observed_value=val,
+                            evidence_type="PROCESS_EXECUTION",
+                            source_event_id=source_event_id,
+                            observed_at=observed_at,
+                            raw_field_name=str(key),
+                            transformation="ALIASED",
+                        )
+                        add_fn(
+                            source_field="file.name",
+                            observed_value=val,
+                            evidence_type="ENDPOINT_TELEMETRY",
+                            source_event_id=source_event_id,
+                            observed_at=observed_at,
+                            raw_field_name=str(key),
+                            transformation="ALIASED",
+                        )
+                    elif mapping["field"] == "process.name" and norm_k in ("filename", "file name", "file_name", "app", "application_name", "application name"):
+                        add_fn(
+                            source_field="process.file_name",
+                            observed_value=val,
+                            evidence_type="PROCESS_EXECUTION",
+                            source_event_id=source_event_id,
+                            observed_at=observed_at,
+                            raw_field_name=str(key),
+                            transformation="ALIASED",
+                        )
+                        add_fn(
+                            source_field="file.name",
+                            observed_value=val,
+                            evidence_type="ENDPOINT_TELEMETRY",
+                            source_event_id=source_event_id,
+                            observed_at=observed_at,
+                            raw_field_name=str(key),
+                            transformation="ALIASED",
+                        )
                 else:
                     # Record unmapped field
                     if unmapped_fields is not None:

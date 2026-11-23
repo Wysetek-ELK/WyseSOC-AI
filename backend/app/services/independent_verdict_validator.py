@@ -88,6 +88,8 @@ class IndependentVerdictValidator:
             clean_prop_verdict = "REQUIRES_ATTENTION"
             reason_codes.append("MODEL_OUTPUT_INVALID")
 
+        action_directive: str = "Invalid model verdict output format." if invalid_output_flag else "Verdict verified against canonical evidence contract."
+
         # Confidence Calibration & Scale Validation (V8.2)
         norm_conf = ConfidenceNormalizer.normalize(raw_model_confidence, confidence_scale)
         if not norm_conf.is_valid:
@@ -103,7 +105,6 @@ class IndependentVerdictValidator:
         final_verdict = clean_prop_verdict
         validation_status = "INVALID_MODEL_OUTPUT" if invalid_output_flag else "VALIDATED"
         is_decisive = False
-        action_directive = action_directive if invalid_output_flag else "Verdict verified against canonical evidence contract."
 
         # Check 1: Policy & Contract Authorization
         if contract.status != "APPROVED":

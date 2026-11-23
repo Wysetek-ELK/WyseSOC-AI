@@ -195,6 +195,21 @@ class ModelClaimExtractor:
                     claim_text=f"Observed process execution of {proc.lower()}",
                 ))
 
+        return cls.ground_claims(incident_id, claims, normalization_result)
+
+    @classmethod
+    def ground_claims(
+        cls,
+        incident_id: str,
+        claims: List[ModelSupportingClaim],
+        normalization_result: EvidenceNormalizationResult,
+    ) -> ClaimGroundingResult:
+        """
+        Grounds parsed or structured claims directly against canonical evidence.
+        """
+        evidence_by_id: Dict[str, CanonicalEvidenceRecord] = {r.evidence_id: r for r in normalization_result.records}
+        evidence_by_field: Dict[str, List[CanonicalEvidenceRecord]] = normalization_result.evidence_by_field
+
         # 3. Ground Each Claim against Canonical Evidence
         grounded_count = 0
         unsupported_count = 0
@@ -213,6 +228,19 @@ class ModelClaimExtractor:
                 for eid in claim.evidence_ids:
                     rec = evidence_by_id.get(eid)
                     if not rec:
+                        # Resilient alias lookup: check if model referenced an evidence alias or slight field variant
+                        clean_eid_field = str(eid).lower().replace(".", "_")
+                        for r_cand in normalization_result.records:
+                            if compare_evidence_values(r_cand.source_field, claim.asserted_value, r_cand.observed_value):
+                                clean_cf = r_cand.source_field.lower().replace(".", "_")
+                                if (
+                                    clean_cf in clean_eid_field
+                                    or (clean_cf in ("process_file_name", "process_name", "file_name") and any(k in clean_eid_field for k in ("file_name", "process_name", "filename")))
+                                    or (clean_cf in ("process_parent_name", "parent_name") and any(k in clean_eid_field for k in ("parent", "parent_file_name")))
+                                ):
+                                    rec = r_cand
+                                    break
+                    if not rec:
                         all_ids_valid = False
                         status = "EVIDENCE_REFERENCE_NOT_FOUND"
                         reason_diag = f"Cited evidence ID '{eid}' does not exist in incident telemetry."
@@ -226,13 +254,24 @@ class ModelClaimExtractor:
                     actual_val = str(rec.observed_value)
                     matched_id = rec.evidence_id
 
-                    # Check type-aware value match
-                    if compare_evidence_values(claim.field, claim.asserted_value, actual_val):
+                    # Check type-aware value match and field alias compatibility
+                    clean_rec_f = rec.source_field.lower().replace(".", "_")
+                    clean_claim_f = claim.field.lower().replace(".", "_")
+                    fields_compatible = (
+                        rec.source_field == claim.field
+                        or claim.field == "unknown"
+                        or clean_rec_f == clean_claim_f
+                        or (clean_rec_f in ("process_name", "process_file_name", "file_name", "process") and clean_claim_f in ("process_name", "process_file_name", "file_name", "process"))
+                        or (clean_rec_f in ("process_parent_name", "parent_name", "parent_file_name", "parent_process") and clean_claim_f in ("process_parent_name", "parent_name", "parent_file_name", "parent_process"))
+                        or (clean_rec_f in ("file_hash_sha256", "file_sha256", "sha256") and clean_claim_f in ("file_hash_sha256", "file_sha256", "sha256"))
+                    )
+
+                    if compare_evidence_values(claim.field, claim.asserted_value, actual_val) and fields_compatible:
                         pass
                     else:
                         all_ids_valid = False
                         status = "EVIDENCE_VALUE_MISMATCH"
-                        if rec.source_field != claim.field and claim.field != "unknown":
+                        if not fields_compatible and claim.field != "unknown":
                             reason_diag = f"Evidence ID '{eid}' records '{rec.source_field}' ('{actual_val}'), not '{claim.field}' ('{claim.asserted_value}')."
                         else:
                             reason_diag = f"Value mismatch for '{claim.field}': claimed '{claim.asserted_value}', actual is '{actual_val}'."

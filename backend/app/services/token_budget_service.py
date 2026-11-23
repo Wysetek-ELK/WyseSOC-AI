@@ -53,8 +53,9 @@ class TokenBudgetService:
             return max(512, min(int(target_input_budget), headroom))
         return headroom
 
-    @staticmethod
-    def estimate_tokens(obj: Any) -> int:
+    @classmethod
+    def estimate_tokens(cls, obj: Any) -> int:
+        """Accurately estimate token count for strings or serialized JSON objects."""
         if obj is None:
             return 0
         if isinstance(obj, str):
