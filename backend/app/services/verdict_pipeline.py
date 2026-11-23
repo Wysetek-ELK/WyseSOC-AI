@@ -822,7 +822,7 @@ async def run_shared_verdict_pipeline(
         else configured_ctx
     )
     reserved_comp_tokens = int(model_profile.get("reserved_output_tokens") or getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
-    if effective_max_ctx <= 4096 and reserved_comp_tokens > 768:
+    if effective_max_ctx <= 4096:
         reserved_comp_tokens = 768
     target_input = int(model_profile.get("target_input_budget") or getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192)
 

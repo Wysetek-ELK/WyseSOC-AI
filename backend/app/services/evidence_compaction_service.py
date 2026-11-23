@@ -211,12 +211,16 @@ class EvidenceCompactionService:
         })
 
         grouped_records: Dict[Tuple[str, str], List[CanonicalEvidenceRecord]] = {}
+        seen_forensic_values: Set[Tuple[str, str]] = set()
         for r in other_records:
             f_norm = r.source_field.lower()
             val_clean = str(r.observed_value).strip()
             if f_norm in DO_NOT_COLLAPSE_FIELDS:
-                # Keep distinct forensic executions intact
-                aggregated_records.append(r)
+                # Keep distinct forensic executions intact (deduplicate identical values across repeating events)
+                val_key = (f_norm, val_clean)
+                if val_key not in seen_forensic_values:
+                    seen_forensic_values.add(val_key)
+                    aggregated_records.append(r)
             else:
                 key = (f_norm, val_clean)
                 grouped_records.setdefault(key, []).append(r)
