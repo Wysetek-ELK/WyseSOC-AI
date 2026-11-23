@@ -410,6 +410,8 @@ class EvidenceCompactionService:
                 "scan.destination_scope",
                 "scan.firewall_action_summary",
                 "scan.tcp_behavior_summary",
+                "scan.policy_and_service",
+                "scan.sample_context",
             })
             secondary_priority = {
                 "scan.policy_and_service": 0,
