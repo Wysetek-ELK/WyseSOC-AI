@@ -454,7 +454,7 @@ class IndependentVerdictValidator:
                 action_directive = f"True positive rejected: telemetry contains benign administrative context ({benign_context_detail}). Routed to Advisory Triage."
             elif preflight.evidence_completeness < 0.6 or claim_grounding.grounded_claims == 0 or not has_grounded_security_tradecraft:
                 final_verdict = "REQUIRES_ATTENTION"
-                if validation_status not in ("REJECTED", "ABSTAINED"):
+                if validation_status not in ("REJECTED", "ABSTAINED", "REASONING_CONTRADICTION", "VERDICT_EVIDENCE_CONFLICT"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
                 if "TP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("TP_CRITERIA_UNSATISFIED")
@@ -777,7 +777,7 @@ class IndependentVerdictValidator:
             # Evaluate Gates:
             if preflight.preflight_status == "INSUFFICIENT" or preflight.evidence_completeness < 0.5 or claim_grounding.grounded_claims == 0:
                 final_verdict = "REQUIRES_ATTENTION"
-                if validation_status not in ("REJECTED", "ABSTAINED"):
+                if validation_status not in ("REJECTED", "ABSTAINED", "REASONING_CONTRADICTION", "VERDICT_EVIDENCE_CONFLICT"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
                 if "FP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("FP_CRITERIA_UNSATISFIED")
@@ -870,7 +870,7 @@ class IndependentVerdictValidator:
 
             elif only_unprivileged_identities or not has_grounded_authorization:
                 final_verdict = "REQUIRES_ATTENTION"
-                if validation_status not in ("REJECTED", "ABSTAINED"):
+                if validation_status not in ("REJECTED", "ABSTAINED", "REASONING_CONTRADICTION", "VERDICT_EVIDENCE_CONFLICT"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
                 if "FP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("FP_CRITERIA_UNSATISFIED")
