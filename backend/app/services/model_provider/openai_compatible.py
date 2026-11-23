@@ -4,6 +4,7 @@ import re
 from typing import List, Dict, Any, Optional, Tuple
 import httpx
 
+from app.config import settings
 from app.services.model_provider.base import BaseModelProvider, ProviderHealthResponse, StructuredModelVerdict
 from app.services.confidence_normalizer import ConfidenceNormalizer
 from app.services.tokenizer_service import ModelTokenizerService
@@ -330,29 +331,44 @@ class OpenAICompatibleProvider(BaseModelProvider):
         # Enforce Section 10 instruction boundary delimiters around untrusted telemetry
         user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
 
-        # Pre-dispatch Wire Token Verification & Capacity Headroom Enforcement (AIS 2.3b.1)
+        # Pre-dispatch Wire Token Verification & Capacity Headroom Enforcement (AIS 2.4 Context Expansion)
         wire_prompt_tokens = ModelTokenizerService.count_wire_prompt_tokens(
             system_prompt=system_instruction,
             user_message=user_content,
             model_name=self.model_name,
         )
 
+        configured_max_context = getattr(self, "context_budget", None) or getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 4096)
+        if kwargs.get("max_context_tokens"):
+            try:
+                configured_max_context = int(kwargs["max_context_tokens"])
+            except Exception:
+                pass
+
         effective_max_tokens = 768
         max_tokens_override = kwargs.get("max_tokens_override")
         if max_tokens_override is not None:
             try:
                 override_int = int(max_tokens_override)
-                if override_int > 0:
-                    effective_max_tokens = min(override_int, 768)
+                if override_int >= 768:
+                    effective_max_tokens = override_int
             except Exception:
                 pass
 
-        # Invariant: Complete model-facing prompt <= 3,328 tokens, completion reserve = 768 tokens
-        if wire_prompt_tokens > 3328:
+        # If context budget is 4,096 or less, enforce the 3,328-token wire ceiling
+        # If context budget is expanded (e.g. 8,192), wire ceiling is max_context - effective_max_tokens
+        if configured_max_context <= 4096:
+            effective_max_tokens = 768
+            wire_prompt_ceiling = 3328
+        else:
+            wire_prompt_ceiling = configured_max_context - effective_max_tokens
+
+        # Invariant: Complete model-facing prompt <= wire_prompt_ceiling, completion reserve >= 768 tokens
+        if wire_prompt_tokens > wire_prompt_ceiling:
             err_msg = (
                 f"CONTEXT_WINDOW_EXCEEDED: Wire prompt ({wire_prompt_tokens} tokens) exceeds "
-                f"maximum wire prompt ceiling (3,328 tokens) for 4,096-token context limit with "
-                f"768 reserved completion tokens. Refusing naive truncation."
+                f"maximum wire prompt ceiling ({wire_prompt_ceiling} tokens) for {configured_max_context}-token context limit with "
+                f"{effective_max_tokens} reserved completion tokens. Refusing naive truncation."
             )
             return StructuredModelVerdict(
                 incident_id=incident_id,

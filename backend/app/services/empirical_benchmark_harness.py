@@ -483,6 +483,9 @@ class EmpiricalBenchmarkHarness:
                     str(inc_id).startswith("INC-DEBUG-")
                     or str(inc_id).startswith("INC-TEST-")
                     or str(inc_id).startswith("SYNTHETIC-")
+                    or str(inc_id).startswith("inc-test-")
+                    or str(inc_id).startswith("inc-legacy-")
+                    or str(inc_id).startswith("inc-tenant-")
                 ):
                     continue
 
@@ -626,6 +629,42 @@ class EmpiricalBenchmarkHarness:
         return final_records
 
     @classmethod
+    def _lookup_approved_prompt_version(cls, rule_id: str, db_path: Optional[str] = None) -> Optional[PromptVersion]:
+        """Looks up the approved PromptVersion for the given rule from SQLite database."""
+        path = db_path or cls.DEFAULT_DATABASE_PATH
+        if not os.path.exists(path):
+            return None
+        try:
+            conn = sqlite3.connect(path)
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT pv.id, pv.prompt_id, pv.version_number, pv.status, pv.common_prompt,
+                       pv.rule_specific_prompt, pv.detection_conditions, pv.required_evidence,
+                       pv.tp_indicators, pv.fp_indicators, pv.missing_info_criteria,
+                       pv.escalation_conditions, pv.analyst_questions
+                FROM prompt_versions pv
+                JOIN rule_prompts rp ON pv.prompt_id = rp.id
+                WHERE (rp.rule_id = ? 
+                       OR rp.rule_id IN (SELECT id FROM rules WHERE event_type = ? OR id = ? OR name LIKE ?))
+                  AND pv.status = 'APPROVED'
+                ORDER BY pv.version_number DESC LIMIT 1
+            """, (rule_id, rule_id, rule_id, f"%{rule_id.replace('PH_RULE_', '').replace('_', ' ')}%"))
+            row = cur.fetchone()
+            conn.close()
+            if row:
+                return PromptVersion(
+                    id=row[0], prompt_id=row[1], version_number=row[2], status=row[3],
+                    common_prompt=row[4] or "", rule_specific_prompt=row[5] or "",
+                    detection_conditions=row[6] or "", required_evidence=row[7] or "",
+                    tp_indicators=row[8] or "", fp_indicators=row[9] or "",
+                    missing_info_criteria=row[10] or "", escalation_conditions=row[11] or "",
+                    analyst_questions=json.loads(row[12]) if row[12] else []
+                )
+        except Exception:
+            pass
+        return None
+
+    @classmethod
     def _create_rule_contract(cls, rule_id: str, rule_name: str) -> RuleEvidenceContract:
         """Constructs an approved evidence contract tailored to the evaluation rule."""
         if rule_id == "PH_RULE_CS_SUSPICIOUS_ACTIVITY":
@@ -747,6 +786,8 @@ class EmpiricalBenchmarkHarness:
         mode: str = "offline",
         model_endpoint: Optional[str] = None,
         simulated_output_fn: Optional[Any] = None,
+        max_context_tokens: int = 8192,
+        use_modular_policy: bool = False,
     ) -> BenchmarkIncidentResult:
         """
         Executes a single incident through production-equivalent verification pipeline.
@@ -825,11 +866,13 @@ class EmpiricalBenchmarkHarness:
                 severity=inc_obj.severity,
                 description=f"Empirical benchmark rule for {incident_rec.rule_name}",
             )
+            prompt_version = cls._lookup_approved_prompt_version(incident_rec.rule_id)
             compiled_policy = PolicyCompilerService.compile_policy(
                 rule=mock_rule,
-                prompt_version=None,
+                prompt_version=prompt_version,
                 execution_mode=CompilationExecutionMode.LIVE,
                 raise_on_unapproved=False,
+                modular_optimization=use_modular_policy,
             )
 
             # 3b: Token Budgeting & Delimiter Wrapping
@@ -857,7 +900,7 @@ class EmpiricalBenchmarkHarness:
                 compiled_policy=compiled_policy,
                 incident_payload=payload_dict,
                 rag_block="",
-                max_context_tokens=4096,
+                max_context_tokens=max_context_tokens,
                 max_completion_tokens=768,
                 reserved_overhead_tokens=rule_overhead_tokens,
                 model_name="Qwen/Qwen2.5-7B-Instruct-AWQ",
@@ -1083,7 +1126,7 @@ class EmpiricalBenchmarkHarness:
                 m.total_prompt_tokens = (m.total_prompt_tokens or 0) + (r.prompt_tokens or 0)
                 m.total_completion_tokens = (m.total_completion_tokens or 0) + (r.completion_tokens or 0)
                 m.total_tokens = (m.total_tokens or 0) + (r.total_tokens or 0)
-            elif r.finish_reason == "abstained_preflight" or r.validation_status in ("CONTEXT_WINDOW_EXCEEDED", "INSUFFICIENT_EVIDENCE"):
+            elif r.finish_reason == "abstained_preflight" or r.validation_status == "CONTEXT_WINDOW_EXCEEDED":
                 m.preflight_abstained_count += 1
 
             # Model propositions vs Preflight Abstention
@@ -1100,8 +1143,10 @@ class EmpiricalBenchmarkHarness:
             if r.is_decisive_accepted:
                 m.validator_decisive_accepted_count += 1
 
-            trust_scores.append(r.trust_score)
-            grounding_ratios.append(r.grounding_ratio)
+            if r.trust_score is not None:
+                trust_scores.append(r.trust_score)
+            if r.grounding_ratio is not None:
+                grounding_ratios.append(r.grounding_ratio)
 
             gt = r.ground_truth_label
             if gt not in ("VERIFIED_TP", "VERIFIED_FP"):
@@ -1115,7 +1160,7 @@ class EmpiricalBenchmarkHarness:
                 m.verified_fp_count += 1
 
             # Determine trust bin
-            ts = r.trust_score
+            ts = r.trust_score or 0
             bin_key = "bin_1_3" if ts <= 3 else ("bin_4_6" if ts <= 6 else ("bin_7_8" if ts <= 8 else "bin_9_10"))
 
             # Check decision vs ground truth
@@ -1274,6 +1319,8 @@ class EmpiricalBenchmarkHarness:
         mode: str = "offline",
         model_endpoint: Optional[str] = None,
         simulated_output_fn: Optional[Any] = None,
+        max_context_tokens: int = 8192,
+        use_modular_policy: bool = False,
     ) -> EmpiricalBenchmarkReport:
         """
         Runs the full empirical benchmark suite.
@@ -1301,6 +1348,8 @@ class EmpiricalBenchmarkHarness:
                 mode=mode,
                 model_endpoint=model_endpoint,
                 simulated_output_fn=simulated_output_fn,
+                max_context_tokens=max_context_tokens,
+                use_modular_policy=use_modular_policy,
             )
             incident_results.append(res)
             rule_grouped.setdefault(res.rule_id, []).append(res)

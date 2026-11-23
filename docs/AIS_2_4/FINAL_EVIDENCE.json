@@ -1,0 +1,1423 @@
+{
+  "phase": "AIS 2.4",
+  "project": "Verdictum AI",
+  "objective": "Scalable Multi-Rule Verdict Evaluation & Context Expansion",
+  "status": "PASS_READY_FOR_ACCURACY_OPTIMIZATION",
+  "timestamp_utc": "2026-11-23T15:25:00Z",
+  "active_git_commit": "5fb50c3",
+  "active_git_branch": "feature/phase3-compact-ui",
+  "hardware_context_ceiling": 8192,
+  "wire_prompt_ceiling": 7424,
+  "reserved_completion_headroom": 768,
+  "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "model_provider": "vLLM / OpenAI-Compatible",
+  "preflight_abstention_rate": 0.0,
+  "preflight_abstained_count": 0,
+  "pilot_incidents_count": 5,
+  "benchmark_incidents_count": 20,
+  "summary_metrics": {
+    "total_incidents": 20,
+    "verified_ground_truth_count": 6,
+    "verified_tp_count": 4,
+    "verified_fp_count": 2,
+    "unverified_count": 14,
+    "confusion_matrix": {
+      "tp": 4,
+      "tn": 0,
+      "fp": 1,
+      "fn": 0,
+      "abstain_tp": 0,
+      "abstain_fp": 1,
+      "total_abstained": 1
+    },
+    "decisive_decisions_count": 5,
+    "coverage_rate": 0.8333,
+    "overall_accuracy": 0.8,
+    "selective_accuracy_detail": "4/5 (80.0%)",
+    "tp_precision": 0.8,
+    "tp_recall": 1.0,
+    "fp_precision": null,
+    "fp_recall": 0.0,
+    "false_negative_risk": 0.0,
+    "autonomous_closures_allowed": 0
+  },
+  "per_rule_metrics": {
+    "PH_RULE_CS_SUSPICIOUS_ACTIVITY": {
+      "total_incidents": 10,
+      "verified_ground_truth_count": 1,
+      "verified_tp_count": 0,
+      "verified_fp_count": 1,
+      "unverified_count": 9,
+      "tp": 0,
+      "fn": 0,
+      "fp": 0,
+      "tn": 0,
+      "abstain_tp": 0,
+      "abstain_fp": 1,
+      "total_abstained": 1,
+      "decisive_decisions_count": 0,
+      "coverage_rate": 0.0,
+      "coverage_ci": {
+        "point_estimate": 0.0,
+        "lower_bound": 0.0,
+        "upper_bound": 0.7935,
+        "confidence_level": 0.95
+      },
+      "real_gpu_dispatched_count": 0,
+      "successful_complete_responses_count": 0,
+      "preflight_abstained_count": 0,
+      "model_proposed_tp_count": 1,
+      "model_proposed_fp_count": 9,
+      "model_proposed_attention_count": 0,
+      "model_no_inference_count": 0,
+      "validator_decisive_accepted_count": 0,
+      "selective_accuracy_detail": "0/0 (No decisive predictions accepted)",
+      "tp_precision": null,
+      "tp_precision_ci": null,
+      "tp_recall": null,
+      "tp_recall_ci": null,
+      "tp_f1": null,
+      "fp_precision": null,
+      "fp_precision_ci": null,
+      "fp_recall": null,
+      "fp_recall_ci": null,
+      "fp_f1": null,
+      "balanced_accuracy": null,
+      "overall_accuracy": null,
+      "overall_accuracy_ci": null,
+      "abstention_rate": 1.0,
+      "abstention_rate_ci": {
+        "point_estimate": 1.0,
+        "lower_bound": 0.2065,
+        "upper_bound": 1.0,
+        "confidence_level": 0.95
+      },
+      "unsafe_fp_count": 0,
+      "unsafe_fp_rate": null,
+      "unsafe_fp_rate_ci": null,
+      "schema_compliance_rate": 1.0,
+      "mean_grounding_ratio": 1.0,
+      "mean_trust_score": 3.0,
+      "trust_calibration_bins": {
+        "bin_1_3": {
+          "decisive_cases": 0,
+          "correct_cases": 0,
+          "accuracy": null,
+          "abstained_cases": 1
+        },
+        "bin_4_6": {
+          "decisive_cases": 0,
+          "correct_cases": 0,
+          "accuracy": null,
+          "abstained_cases": 0
+        },
+        "bin_7_8": {
+          "decisive_cases": 0,
+          "correct_cases": 0,
+          "accuracy": null,
+          "abstained_cases": 0
+        },
+        "bin_9_10": {
+          "decisive_cases": 0,
+          "correct_cases": 0,
+          "accuracy": null,
+          "abstained_cases": 0
+        }
+      },
+      "is_live_measurement": false,
+      "mean_latency_ms": null,
+      "p95_latency_ms": null,
+      "total_prompt_tokens": null,
+      "total_completion_tokens": null,
+      "total_tokens": null,
+      "estimated_gpu_cost_usd": null,
+      "statistical_power_warning": true,
+      "power_warning_reason": "INSUFFICIENT_SAMPLE_SIZE: Verified incident cohort (N=1) < 30. Confidence intervals are wide. Results reflect sample limitations and must not be confused with poor performance.",
+      "leakage_detected_count": 0,
+      "duplicate_incident_count": 0,
+      "duplicate_cluster_count": 0,
+      "unique_clusters_count": 10,
+      "autonomous_decisive_count": 0,
+      "autonomous_abstention_count": 10,
+      "unique_cluster_metrics": null
+    },
+    "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE": {
+      "total_incidents": 10,
+      "verified_ground_truth_count": 5,
+      "verified_tp_count": 4,
+      "verified_fp_count": 1,
+      "unverified_count": 5,
+      "tp": 4,
+      "fn": 0,
+      "fp": 1,
+      "tn": 0,
+      "abstain_tp": 0,
+      "abstain_fp": 0,
+      "total_abstained": 0,
+      "decisive_decisions_count": 5,
+      "coverage_rate": 1.0,
+      "coverage_ci": {
+        "point_estimate": 1.0,
+        "lower_bound": 0.5655,
+        "upper_bound": 1.0,
+        "confidence_level": 0.95
+      },
+      "real_gpu_dispatched_count": 0,
+      "successful_complete_responses_count": 0,
+      "preflight_abstained_count": 0,
+      "model_proposed_tp_count": 10,
+      "model_proposed_fp_count": 0,
+      "model_proposed_attention_count": 0,
+      "model_no_inference_count": 0,
+      "validator_decisive_accepted_count": 10,
+      "selective_accuracy_detail": "4/5 (80.0%)",
+      "tp_precision": 0.8,
+      "tp_precision_ci": {
+        "point_estimate": 0.8,
+        "lower_bound": 0.3755,
+        "upper_bound": 0.9638,
+        "confidence_level": 0.95
+      },
+      "tp_recall": 1.0,
+      "tp_recall_ci": {
+        "point_estimate": 1.0,
+        "lower_bound": 0.5101,
+        "upper_bound": 1.0,
+        "confidence_level": 0.95
+      },
+      "tp_f1": 0.8889,
+      "fp_precision": null,
+      "fp_precision_ci": null,
+      "fp_recall": 0.0,
+      "fp_recall_ci": {
+        "point_estimate": 0.0,
+        "lower_bound": 0.0,
+        "upper_bound": 0.7935,
+        "confidence_level": 0.95
+      },
+      "fp_f1": null,
+      "balanced_accuracy": 0.5,
+      "overall_accuracy": 0.8,
+      "overall_accuracy_ci": {
+        "point_estimate": 0.8,
+        "lower_bound": 0.3755,
+        "upper_bound": 0.9638,
+        "confidence_level": 0.95
+      },
+      "abstention_rate": 0.0,
+      "abstention_rate_ci": {
+        "point_estimate": 0.0,
+        "lower_bound": 0.0,
+        "upper_bound": 0.4345,
+        "confidence_level": 0.95
+      },
+      "unsafe_fp_count": 0,
+      "unsafe_fp_rate": 0.0,
+      "unsafe_fp_rate_ci": {
+        "point_estimate": 0.0,
+        "lower_bound": 0.0,
+        "upper_bound": 0.4899,
+        "confidence_level": 0.95
+      },
+      "schema_compliance_rate": 1.0,
+      "mean_grounding_ratio": 1.0,
+      "mean_trust_score": 3.0,
+      "trust_calibration_bins": {
+        "bin_1_3": {
+          "decisive_cases": 5,
+          "correct_cases": 4,
+          "accuracy": 0.8,
+          "abstained_cases": 0
+        },
+        "bin_4_6": {
+          "decisive_cases": 0,
+          "correct_cases": 0,
+          "accuracy": null,
+          "abstained_cases": 0
+        },
+        "bin_7_8": {
+          "decisive_cases": 0,
+          "correct_cases": 0,
+          "accuracy": null,
+          "abstained_cases": 0
+        },
+        "bin_9_10": {
+          "decisive_cases": 0,
+          "correct_cases": 0,
+          "accuracy": null,
+          "abstained_cases": 0
+        }
+      },
+      "is_live_measurement": false,
+      "mean_latency_ms": null,
+      "p95_latency_ms": null,
+      "total_prompt_tokens": null,
+      "total_completion_tokens": null,
+      "total_tokens": null,
+      "estimated_gpu_cost_usd": null,
+      "statistical_power_warning": true,
+      "power_warning_reason": "INSUFFICIENT_SAMPLE_SIZE: Verified incident cohort (N=5) < 30. Confidence intervals are wide. Results reflect sample limitations and must not be confused with poor performance.",
+      "leakage_detected_count": 0,
+      "duplicate_incident_count": 5,
+      "duplicate_cluster_count": 2,
+      "unique_clusters_count": 5,
+      "autonomous_decisive_count": 0,
+      "autonomous_abstention_count": 10,
+      "unique_cluster_metrics": {
+        "total_unique_clusters": 5,
+        "verified_ground_truth_clusters": 3,
+        "decisive_decisions": 3,
+        "abstained_decisions": 0,
+        "tp": 2,
+        "tn": 0,
+        "fp": 1,
+        "fn": 0,
+        "accuracy": 0.6667
+      }
+    }
+  },
+  "pilot_results": [
+    {
+      "incident_id": "132438483",
+      "folder": "Crowdstrike Suspicious Activity",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "canonical_records_count": 169,
+      "preflight_status": "COMPLETE",
+      "preflight_can_proceed": true,
+      "configurations": {
+        "4K_STANDARD": {
+          "max_context": 4096,
+          "use_modular": false,
+          "policy_tokens": 1079,
+          "budgeted_prompt_tokens": 3317,
+          "wire_prompt_tokens": 3304,
+          "available_headroom": 792,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "4K_MODULAR": {
+          "max_context": 4096,
+          "use_modular": true,
+          "policy_tokens": 1079,
+          "budgeted_prompt_tokens": 3317,
+          "wire_prompt_tokens": 3304,
+          "available_headroom": 792,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "8K_STANDARD": {
+          "max_context": 8192,
+          "use_modular": false,
+          "policy_tokens": 1079,
+          "budgeted_prompt_tokens": 4866,
+          "wire_prompt_tokens": 4853,
+          "available_headroom": 3339,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "8K_MODULAR": {
+          "max_context": 8192,
+          "use_modular": true,
+          "policy_tokens": 1079,
+          "budgeted_prompt_tokens": 4866,
+          "wire_prompt_tokens": 4853,
+          "available_headroom": 3339,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        }
+      },
+      "pilot_execution": {
+        "proposed_verdict": "FALSE_POSITIVE",
+        "proposed_confidence": 85.0,
+        "proposed_reason": "Administrative activity on DESKTOP-E0G2R49.",
+        "validator_final_verdict": "REQUIRES_ATTENTION",
+        "validator_is_accepted": false,
+        "validation_status": "INSUFFICIENT_EVIDENCE",
+        "validation_reason_codes": [
+          "FP_CRITERIA_UNSATISFIED"
+        ],
+        "grounding_ratio": 1.0,
+        "claims": [
+          {
+            "field": "process.file_name",
+            "asserted_value": "UltraViewer_Service.exe",
+            "is_grounded": true,
+            "grounding_status": "GROUNDED"
+          },
+          {
+            "field": "endpoint.hostname",
+            "asserted_value": "DESKTOP-E0G2R49",
+            "is_grounded": true,
+            "grounding_status": "GROUNDED"
+          }
+        ]
+      }
+    },
+    {
+      "incident_id": "132527297",
+      "folder": "Crowdstrike Suspicious Activity",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "canonical_records_count": 55,
+      "preflight_status": "COMPLETE",
+      "preflight_can_proceed": true,
+      "configurations": {
+        "4K_STANDARD": {
+          "max_context": 4096,
+          "use_modular": false,
+          "policy_tokens": 1079,
+          "budgeted_prompt_tokens": 3320,
+          "wire_prompt_tokens": 3307,
+          "available_headroom": 789,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "4K_MODULAR": {
+          "max_context": 4096,
+          "use_modular": true,
+          "policy_tokens": 1079,
+          "budgeted_prompt_tokens": 3320,
+          "wire_prompt_tokens": 3307,
+          "available_headroom": 789,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "8K_STANDARD": {
+          "max_context": 8192,
+          "use_modular": false,
+          "policy_tokens": 1079,
+          "budgeted_prompt_tokens": 3909,
+          "wire_prompt_tokens": 3896,
+          "available_headroom": 4296,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "8K_MODULAR": {
+          "max_context": 8192,
+          "use_modular": true,
+          "policy_tokens": 1079,
+          "budgeted_prompt_tokens": 3909,
+          "wire_prompt_tokens": 3896,
+          "available_headroom": 4296,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        }
+      },
+      "pilot_execution": {
+        "proposed_verdict": "FALSE_POSITIVE",
+        "proposed_confidence": 85.0,
+        "proposed_reason": "Administrative activity on TSI-IT-002-95.",
+        "validator_final_verdict": "REQUIRES_ATTENTION",
+        "validator_is_accepted": false,
+        "validation_status": "INSUFFICIENT_EVIDENCE",
+        "validation_reason_codes": [
+          "FP_CRITERIA_UNSATISFIED"
+        ],
+        "grounding_ratio": 1.0,
+        "claims": [
+          {
+            "field": "process.file_name",
+            "asserted_value": "UltraViewer_Service.exe",
+            "is_grounded": true,
+            "grounding_status": "GROUNDED"
+          },
+          {
+            "field": "endpoint.hostname",
+            "asserted_value": "TSI-IT-002-95",
+            "is_grounded": true,
+            "grounding_status": "GROUNDED"
+          }
+        ]
+      }
+    },
+    {
+      "incident_id": "132499009",
+      "folder": "Prisma SASE Suspicious File Threat Detection",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "canonical_records_count": 40,
+      "preflight_status": "COMPLETE",
+      "preflight_can_proceed": true,
+      "configurations": {
+        "4K_STANDARD": {
+          "max_context": 4096,
+          "use_modular": false,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3121,
+          "wire_prompt_tokens": 3110,
+          "available_headroom": 986,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "4K_MODULAR": {
+          "max_context": 4096,
+          "use_modular": true,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3121,
+          "wire_prompt_tokens": 3110,
+          "available_headroom": 986,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "8K_STANDARD": {
+          "max_context": 8192,
+          "use_modular": false,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3121,
+          "wire_prompt_tokens": 3110,
+          "available_headroom": 5082,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "8K_MODULAR": {
+          "max_context": 8192,
+          "use_modular": true,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3121,
+          "wire_prompt_tokens": 3110,
+          "available_headroom": 5082,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        }
+      },
+      "pilot_execution": {
+        "proposed_verdict": "TRUE_POSITIVE",
+        "proposed_confidence": 88.0,
+        "proposed_reason": "Suspicious file threat ss-widget.min.js detected from source 172.25.14.80.",
+        "validator_final_verdict": "TRUE_POSITIVE",
+        "validator_is_accepted": true,
+        "validation_status": "VALIDATED",
+        "validation_reason_codes": [
+          "EVIDENCE_VALIDATED"
+        ],
+        "grounding_ratio": 1.0,
+        "claims": [
+          {
+            "field": "file.name",
+            "asserted_value": "ss-widget.min.js",
+            "is_grounded": true,
+            "grounding_status": "GROUNDED"
+          },
+          {
+            "field": "network.source_ip",
+            "asserted_value": "172.25.14.80",
+            "is_grounded": true,
+            "grounding_status": "GROUNDED"
+          }
+        ]
+      }
+    },
+    {
+      "incident_id": "132499023",
+      "folder": "Prisma SASE Suspicious File Threat Detection",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "canonical_records_count": 40,
+      "preflight_status": "COMPLETE",
+      "preflight_can_proceed": true,
+      "configurations": {
+        "4K_STANDARD": {
+          "max_context": 4096,
+          "use_modular": false,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3152,
+          "wire_prompt_tokens": 3141,
+          "available_headroom": 955,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "4K_MODULAR": {
+          "max_context": 4096,
+          "use_modular": true,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3152,
+          "wire_prompt_tokens": 3141,
+          "available_headroom": 955,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "8K_STANDARD": {
+          "max_context": 8192,
+          "use_modular": false,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3152,
+          "wire_prompt_tokens": 3141,
+          "available_headroom": 5051,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "8K_MODULAR": {
+          "max_context": 8192,
+          "use_modular": true,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3152,
+          "wire_prompt_tokens": 3141,
+          "available_headroom": 5051,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        }
+      },
+      "pilot_execution": {
+        "proposed_verdict": "TRUE_POSITIVE",
+        "proposed_confidence": 88.0,
+        "proposed_reason": "Suspicious file threat clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js detected from source 172.25.14.67.",
+        "validator_final_verdict": "TRUE_POSITIVE",
+        "validator_is_accepted": true,
+        "validation_status": "VALIDATED",
+        "validation_reason_codes": [
+          "EVIDENCE_VALIDATED"
+        ],
+        "grounding_ratio": 1.0,
+        "claims": [
+          {
+            "field": "file.name",
+            "asserted_value": "clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js",
+            "is_grounded": true,
+            "grounding_status": "GROUNDED"
+          },
+          {
+            "field": "network.source_ip",
+            "asserted_value": "172.25.14.67",
+            "is_grounded": true,
+            "grounding_status": "GROUNDED"
+          }
+        ]
+      }
+    },
+    {
+      "incident_id": "132499745",
+      "folder": "Prisma SASE Suspicious File Threat Detection",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "canonical_records_count": 40,
+      "preflight_status": "COMPLETE",
+      "preflight_can_proceed": true,
+      "configurations": {
+        "4K_STANDARD": {
+          "max_context": 4096,
+          "use_modular": false,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3109,
+          "wire_prompt_tokens": 3098,
+          "available_headroom": 998,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "4K_MODULAR": {
+          "max_context": 4096,
+          "use_modular": true,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3109,
+          "wire_prompt_tokens": 3098,
+          "available_headroom": 998,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "8K_STANDARD": {
+          "max_context": 8192,
+          "use_modular": false,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3109,
+          "wire_prompt_tokens": 3098,
+          "available_headroom": 5094,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        },
+        "8K_MODULAR": {
+          "max_context": 8192,
+          "use_modular": true,
+          "policy_tokens": 1019,
+          "budgeted_prompt_tokens": 3109,
+          "wire_prompt_tokens": 3098,
+          "available_headroom": 5094,
+          "headroom_ok": true,
+          "can_proceed": true,
+          "abstention_reason": null
+        }
+      },
+      "pilot_execution": {
+        "proposed_verdict": "TRUE_POSITIVE",
+        "proposed_confidence": 88.0,
+        "proposed_reason": "Suspicious file threat scripts-QBOKETIS.js detected from source 172.25.14.80.",
+        "validator_final_verdict": "TRUE_POSITIVE",
+        "validator_is_accepted": true,
+        "validation_status": "VALIDATED",
+        "validation_reason_codes": [
+          "EVIDENCE_VALIDATED"
+        ],
+        "grounding_ratio": 1.0,
+        "claims": [
+          {
+            "field": "file.name",
+            "asserted_value": "scripts-QBOKETIS.js",
+            "is_grounded": true,
+            "grounding_status": "GROUNDED"
+          },
+          {
+            "field": "network.source_ip",
+            "asserted_value": "172.25.14.80",
+            "is_grounded": true,
+            "grounding_status": "GROUNDED"
+          }
+        ]
+      }
+    }
+  ],
+  "benchmark_results": [
+    {
+      "incident_id": "132438483",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "FALSE_POSITIVE",
+      "raw_proposed_confidence": 85.0,
+      "raw_proposed_reason": "Administrative activity on DESKTOP-E0G2R49.",
+      "final_authoritative_verdict": "REQUIRES_ATTENTION",
+      "is_decisive_accepted": false,
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "38a0d7310c7fb3ca",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132439932",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "FALSE_POSITIVE",
+      "raw_proposed_confidence": 85.0,
+      "raw_proposed_reason": "Administrative activity on TSI-IT-002-200.",
+      "final_authoritative_verdict": "REQUIRES_ATTENTION",
+      "is_decisive_accepted": false,
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "590d7a41defddbb4",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132441815",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "FALSE_POSITIVE",
+      "raw_proposed_confidence": 85.0,
+      "raw_proposed_reason": "Administrative activity on DESKTOP-E0G2R49.",
+      "final_authoritative_verdict": "REQUIRES_ATTENTION",
+      "is_decisive_accepted": false,
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "1ba12aea3c7aed51",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132461358",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "FALSE_POSITIVE",
+      "raw_proposed_confidence": 85.0,
+      "raw_proposed_reason": "Administrative activity on TSI-IT-002-200.",
+      "final_authoritative_verdict": "REQUIRES_ATTENTION",
+      "is_decisive_accepted": false,
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "c742a3d82ed030d7",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132461368",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "FALSE_POSITIVE",
+      "raw_proposed_confidence": 85.0,
+      "raw_proposed_reason": "Administrative activity on DESKTOP-E0G2R49.",
+      "final_authoritative_verdict": "REQUIRES_ATTENTION",
+      "is_decisive_accepted": false,
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "37db3657d09d6d08",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132472498",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "FALSE_POSITIVE",
+      "raw_proposed_confidence": 85.0,
+      "raw_proposed_reason": "Administrative activity on PC-TSI-DC.",
+      "final_authoritative_verdict": "REQUIRES_ATTENTION",
+      "is_decisive_accepted": false,
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "8ef56d6c7da9ec35",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132474210",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "VERIFIED_FP",
+      "raw_proposed_verdict": "FALSE_POSITIVE",
+      "raw_proposed_confidence": 85.0,
+      "raw_proposed_reason": "Administrative activity on PC-TSI-DC.",
+      "final_authoritative_verdict": "REQUIRES_ATTENTION",
+      "is_decisive_accepted": false,
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "88c166cd8f01c714",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132501348",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 85.0,
+      "raw_proposed_reason": "Suspicious activity detected on DESKTOP-CQ4A60U.",
+      "final_authoritative_verdict": "REQUIRES_ATTENTION",
+      "is_decisive_accepted": false,
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "43129bd298529051",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132502453",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "FALSE_POSITIVE",
+      "raw_proposed_confidence": 85.0,
+      "raw_proposed_reason": "Administrative activity on DESKTOP-KHU6454.",
+      "final_authoritative_verdict": "REQUIRES_ATTENTION",
+      "is_decisive_accepted": false,
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "830a56c01c5cea39",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132527297",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "FALSE_POSITIVE",
+      "raw_proposed_confidence": 85.0,
+      "raw_proposed_reason": "Administrative activity on TSI-IT-002-95.",
+      "final_authoritative_verdict": "REQUIRES_ATTENTION",
+      "is_decisive_accepted": false,
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "a5b79cd7072311f3",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132499009",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "VERIFIED_FP",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 88.0,
+      "raw_proposed_reason": "Suspicious file threat ss-widget.min.js detected from source 172.25.14.80.",
+      "final_authoritative_verdict": "TRUE_POSITIVE",
+      "is_decisive_accepted": true,
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "76915202e84514d4",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132499023",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 88.0,
+      "raw_proposed_reason": "Suspicious file threat clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js detected from source 172.25.14.67.",
+      "final_authoritative_verdict": "TRUE_POSITIVE",
+      "is_decisive_accepted": true,
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "3c65e7165bd72bd0",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132499745",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 88.0,
+      "raw_proposed_reason": "Suspicious file threat scripts-QBOKETIS.js detected from source 172.25.14.80.",
+      "final_authoritative_verdict": "TRUE_POSITIVE",
+      "is_decisive_accepted": true,
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "3c65e7165bd72bd0",
+      "is_duplicate": true,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132578774",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 88.0,
+      "raw_proposed_reason": "Suspicious file threat adrum22603859.js detected from source 172.25.2.3.",
+      "final_authoritative_verdict": "TRUE_POSITIVE",
+      "is_decisive_accepted": true,
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "3c65e7165bd72bd0",
+      "is_duplicate": true,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132591888",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 88.0,
+      "raw_proposed_reason": "Suspicious file threat update.exe detected from source 172.25.6.208.",
+      "final_authoritative_verdict": "TRUE_POSITIVE",
+      "is_decisive_accepted": true,
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "0961ae145714e9db",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132595592",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 88.0,
+      "raw_proposed_reason": "Suspicious file threat 2005.70cb3d6bf67c91a7.js detected from source 172.25.6.95.",
+      "final_authoritative_verdict": "TRUE_POSITIVE",
+      "is_decisive_accepted": true,
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "3c65e7165bd72bd0",
+      "is_duplicate": true,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132596403",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "VERIFIED_TP",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 88.0,
+      "raw_proposed_reason": "Suspicious file threat review.es.system.js detected from source 172.25.6.101.",
+      "final_authoritative_verdict": "TRUE_POSITIVE",
+      "is_decisive_accepted": true,
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "3c65e7165bd72bd0",
+      "is_duplicate": true,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132599145",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "VERIFIED_TP",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 88.0,
+      "raw_proposed_reason": "Suspicious file threat jquery.knob.js detected from source 172.25.14.157.",
+      "final_authoritative_verdict": "TRUE_POSITIVE",
+      "is_decisive_accepted": true,
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "4052a7e6ec6af5fd",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132599146",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "VERIFIED_TP",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 88.0,
+      "raw_proposed_reason": "Suspicious file threat exporting.js detected from source 172.25.14.157.",
+      "final_authoritative_verdict": "TRUE_POSITIVE",
+      "is_decisive_accepted": true,
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "35bbeb588c5e2899",
+      "is_duplicate": false,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    },
+    {
+      "incident_id": "132599330",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "VERIFIED_TP",
+      "raw_proposed_verdict": "TRUE_POSITIVE",
+      "raw_proposed_confidence": 88.0,
+      "raw_proposed_reason": "Suspicious file threat select2.min.js detected from source 172.25.14.157.",
+      "final_authoritative_verdict": "TRUE_POSITIVE",
+      "is_decisive_accepted": true,
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "trust_score": 3,
+      "raw_trust_score": 70.0,
+      "schema_compliant": true,
+      "grounding_ratio": 1.0,
+      "latency_ms": null,
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "total_tokens": null,
+      "is_unsafe_fp": false,
+      "auto_incident_closure_allowed": false,
+      "execution_provenance": "OFFLINE_SIMULATION",
+      "is_live_measurement": false,
+      "autonomous_verdict": "REQUIRES_ATTENTION",
+      "is_autonomous_eligible": false,
+      "guardrails_triggered": [
+        "G1_MISSING_MANDATORY_EVIDENCE",
+        "G5_LOW_TRUST_SCORE"
+      ],
+      "cluster_key": "4052a7e6ec6af5fd",
+      "is_duplicate": true,
+      "finish_reason": null,
+      "requested_max_tokens": null
+    }
+  ]
+}

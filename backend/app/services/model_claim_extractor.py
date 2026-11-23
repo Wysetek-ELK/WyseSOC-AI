@@ -228,30 +228,84 @@ class ModelClaimExtractor:
                 "signature.valid", "file.is_signed", "code_signing.status",
                 "file.signature", "digital_signature.status", "digital_signature"
             )
-            if not any(rec_field.startswith(sf) or rec_field == sf for sf in sig_fields):
+            has_sig_field = any(rec_field.startswith(sf) or rec_field == sf for sf in sig_fields)
+            if not has_sig_field:
                 return (
                     False,
                     "UNSUPPORTED_PREDICATE",
                     f"Claim asserts signature status ('{claim_text or asserted_val}'), but cited evidence '{matched_rec.source_field}' only provides a file/process identifier, not authentic signature telemetry."
                 )
+            # Direct value verification: check for value-level contradiction
+            if any(kw in claim_corpus for kw in ("not signed", "unsigned", "invalid signature", "unverified signature", "signature invalid")):
+                if any(pos in rec_val for pos in ("signed", "valid", "verified", "trusted")):
+                    return (
+                        False,
+                        "UNSUPPORTED_PREDICATE",
+                        f"Claim asserts binary is unsigned ('{claim_text or asserted_val}'), but cited evidence '{matched_rec.source_field}' confirms value is '{matched_rec.observed_value}' (direct contradiction)."
+                    )
+            elif any(kw in claim_corpus for kw in ("is signed", "valid signature", "signed by", "signature is valid", "signature verified")):
+                if any(neg in rec_val for neg in ("unsigned", "not signed", "invalid", "unverified", "revoked", "failed")):
+                    return (
+                        False,
+                        "UNSUPPORTED_PREDICATE",
+                        f"Claim asserts binary is signed ('{claim_text or asserted_val}'), but cited evidence '{matched_rec.source_field}' confirms value is '{matched_rec.observed_value}' (direct contradiction)."
+                    )
 
-        # 2. Threat Intel / Malware / Reputation Predicate
-        reputation_keywords = (
-            "known malware", "malicious hash", "blacklisted", "known benign",
-            "threat intel", "reputation", "ioc match", "malicious domain", "malicious ip",
-            "c2 ip", "malware family", "trojan", "ransomware", "malicious binary",
-            "known attack tool"
+        # 2a. Trusted / Benign Reputation Predicate (Filename alone does not prove trusted reputation)
+        trusted_keywords = (
+            "known benign", "benign software", "legitimate tool", "trusted software",
+            "standard windows binary", "harmless", "safe application", "benign application",
+            "standard administrative software", "trusted", "known legitimate", "legitimate program",
+            "legitimate application", "trusted program", "trusted utility", "trusted binary",
+            "trusted reputation"
         )
-        if any(kw in claim_corpus for kw in reputation_keywords):
+        if any(kw in claim_corpus for kw in trusted_keywords):
+            if rec_field in ("process.name", "process.file_name", "file.name", "filename"):
+                return (
+                    False,
+                    "UNSUPPORTED_PREDICATE",
+                    f"Claim asserts trusted/benign reputation ('{claim_text or asserted_val}'), but cited evidence is only a file/process name ('{matched_rec.source_field}'). Filename alone does not prove trusted reputation."
+                )
+
+        # 2b. Threat Intel / Malware / Reputation Predicate
+        # Confirmed malicious behavior may be supported by:
+        # A) Threat intel / reputation feeds (threat_intel.*, reputation.*, etc.)
+        # B) Direct forensic evidence (process.command_line, process.parent_command_line, LOLBin abuse)
+        # BUT a control action block alone or bare filename alone must NOT establish malicious execution!
+        reputation_keywords = (
+            "known malware", "malicious hash", "blacklisted", "threat intel", "reputation",
+            "ioc match", "malicious domain", "malicious ip", "c2 ip", "malware family",
+            "trojan", "ransomware", "malicious binary", "known attack tool", "malicious execution",
+            "malicious process", "malicious activity"
+        )
+        if any(kw in claim_corpus for kw in reputation_keywords) and not any(neg in claim_corpus for neg in ("not malicious", "non-malicious", "no malware")):
+            if rec_field in ("security.action", "endpoint.process_blocked", "endpoint.file_quarantined", "action"):
+                return (
+                    False,
+                    "UNSUPPORTED_PREDICATE",
+                    f"Claim asserts malicious activity ('{claim_text or asserted_val}'), but cited evidence is only a security control action ('{matched_rec.source_field}'). A blocked process alone does not establish malicious execution."
+                )
+            if rec_field in ("process.name", "file.name", "filename") and not any(k in rec_val for k in ("mimikatz", "cobaltstrike", "meterpreter")):
+                return (
+                    False,
+                    "UNSUPPORTED_PREDICATE",
+                    f"Claim asserts malicious activity ('{claim_text or asserted_val}'), but cited evidence is only a filename ('{matched_rec.source_field}'). Filename alone does not prove malice without forensic or reputation evidence."
+                )
             ti_fields = (
                 "threat_intel.", "reputation.", "antivirus.", "virustotal.", "ioc.",
                 "security_event.threat_name", "mitre."
             )
-            if not any(rec_field.startswith(tf) or tf in rec_field for tf in ti_fields):
+            direct_forensic_fields = (
+                "process.command_line", "process.parent_command_line", "event.raw_log",
+                "file.hash_sha256", "file.hash_md5"
+            )
+            has_ti = any(rec_field.startswith(tf) or tf in rec_field for tf in ti_fields)
+            has_forensic = any(rec_field.startswith(df) or rec_field == df for df in direct_forensic_fields)
+            if not has_ti and not has_forensic:
                 return (
                     False,
                     "UNSUPPORTED_PREDICATE",
-                    f"Claim asserts malware/reputation status ('{claim_text or asserted_val}'), but cited evidence '{matched_rec.source_field}' only records an entity identifier without threat intelligence corroboration."
+                    f"Claim asserts malware/reputation status ('{claim_text or asserted_val}'), but cited evidence '{matched_rec.source_field}' only records an entity identifier without threat intelligence or direct forensic corroboration."
                 )
 
         # 3. Authorization / Maintenance Predicate
@@ -283,12 +337,19 @@ class ModelClaimExtractor:
                 )
 
         # 5. Evidence Type & Field Category Compatibility
-        if claim.claim_type == "PROCESS_EXECUTION" or any(kw in claim_corpus for kw in ("process executed", "executed process", "binary executed")):
-            if matched_rec.evidence_type in ("NETWORK_CONNECTION", "DNS_QUERY"):
+        # 5a. Network file download cannot be interpreted as OS process execution
+        if claim.claim_type == "PROCESS_EXECUTION" or any(kw in claim_corpus for kw in ("process executed", "executed process", "binary executed", "operating system process")):
+            if matched_rec.evidence_type in ("NETWORK_CONNECTION", "DNS_QUERY", "NETWORK_FILE_DOWNLOAD"):
                 return (
                     False,
                     "INCOMPATIBLE_EVIDENCE_TYPE",
-                    f"Claim asserts process execution ('{claim_text or asserted_val}'), but cited evidence type is '{matched_rec.evidence_type}'."
+                    f"Claim asserts OS process execution ('{claim_text or asserted_val}'), but cited evidence is '{matched_rec.evidence_type}'. Network file downloads must not be interpreted as operating-system process execution."
+                )
+            if "download" in rec_field or "url" in rec_field or "http" in rec_field:
+                return (
+                    False,
+                    "INCOMPATIBLE_EVIDENCE_TYPE",
+                    f"Claim asserts OS process execution ('{claim_text or asserted_val}'), but cited evidence '{matched_rec.source_field}' represents web download telemetry, not process execution."
                 )
 
         if claim.claim_type == "FILE_HASH" and "hash" not in rec_field:

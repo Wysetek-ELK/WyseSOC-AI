@@ -755,6 +755,20 @@ class IndependentVerdictValidator:
         sig_payload = f"{incident_id}:{contract.contract_id}:{proposed_verdict}:{final_verdict}:{cls.VALIDATOR_VERSION}{comp_part}"
         replay_sig = hashlib.sha256(sig_payload.encode("utf-8")).hexdigest()[:16]
 
+        # Compile reasoning integrity results (AIS 2.4: reflect contradictions even on safe abstentions)
+        reasoning_integ_status = "NOT_EVALUATED"
+        reasoning_contra_list: List[str] = []
+        if 'reasoning_res' in locals() and reasoning_res:
+            reasoning_integ_status = reasoning_res.validation_status
+            reasoning_contra_list = list(reasoning_res.detected_contradictions)
+
+        if contradictions:
+            for c_item in contradictions:
+                if c_item not in reasoning_contra_list:
+                    reasoning_contra_list.append(c_item)
+            if reasoning_integ_status in ("NOT_EVALUATED", "VALIDATED", "GROUNDED") or "REASONING_CONTRADICTION" in reason_codes or "EVIDENCE_CONTRADICTION" in reason_codes:
+                reasoning_integ_status = "REASONING_CONTRADICTION"
+
         return VerdictValidationResult(
             incident_id=incident_id,
             proposed_verdict=clean_prop_verdict,
@@ -779,8 +793,8 @@ class IndependentVerdictValidator:
             confidence_scale=norm_conf.raw_scale,
             confidence_interpretation=norm_conf.interpretation,
             normalized_confidence_percent=norm_conf.normalized_percent if norm_conf.is_valid else None,
-            reasoning_integrity_status=reasoning_res.validation_status if 'reasoning_res' in locals() else "NOT_EVALUATED",
-            reasoning_contradictions=reasoning_res.detected_contradictions if 'reasoning_res' in locals() else [],
+            reasoning_integrity_status=reasoning_integ_status,
+            reasoning_contradictions=reasoning_contra_list,
             semantic_review_notes=reasoning_res.semantic_review_notes if 'reasoning_res' in locals() else [],
             validated_confidence_display=(norm_conf.normalized_percent if (is_decisive and norm_conf.is_valid and norm_conf.normalized_percent is not None) else 0.0),
             replay_signature=replay_sig,
