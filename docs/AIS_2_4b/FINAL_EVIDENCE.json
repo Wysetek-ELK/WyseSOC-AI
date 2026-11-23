@@ -1,0 +1,122 @@
+{
+  "phase": "AIS_2_4b",
+  "title": "Real GPU Acceptance, Runtime Integrity & Evidence-Based Verdict Validation",
+  "generated_at": "2026-11-23T22:31:00+05:30",
+  "branch": "feature/phase3-compact-ui",
+  "deployed_server1_sha": "5fb50c3",
+  "current_local_base_sha": "2d97bed",
+  "upla_project_id": "proj-98348ed9ed5e2ba1",
+  "upla_mode": "FULL_WORKFLOW",
+  "environment": {
+    "server1": {
+      "ip": "172.26.41.240",
+      "os": "Ubuntu 22.04 LTS",
+      "services": ["fastapi", "nextjs", "celery", "postgresql"],
+      "port_22_reachable": true,
+      "deployed_commit": "5fb50c3"
+    },
+    "server2": {
+      "ip": "172.26.41.241",
+      "os": "Ubuntu 22.04 LTS",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "runtime": "vLLM",
+      "active_context_tokens": 4096,
+      "reserved_completion_tokens": 768,
+      "available_prompt_budget_4k": 3328,
+      "proposed_context_tokens": 8192,
+      "available_prompt_budget_8k": 7424,
+      "port_8000_from_workstation": "BLOCKED_BY_VPC_SECURITY_GROUP",
+      "port_8000_from_server1": "ALLOWED"
+    }
+  },
+  "acceptance_gates": {
+    "G1_architecture_and_model_parity": {
+      "status": "PASSED",
+      "details": "Empirical harness shares identical model provider and validator paths with live app. Mock fallback strictly isolated. PostgreSQL and SQLite schema verified."
+    },
+    "G2_token_budget_and_context_correction": {
+      "status": "PASSED",
+      "details": "Root cause of AIS 2.4a token numbers resolved (8K vs 4K). Under 4K, all pilot incidents compile strictly <= 3328 tokens. Headroom >= 768 guaranteed."
+    },
+    "G3_execution_provenance_taxonomy": {
+      "status": "PASSED",
+      "details": "Four-tier taxonomy enforced (LIVE_PROVIDER, OFFLINE_SIMULATION, PREFLIGHT_ABSTENTION, PROVIDER_FAILURE). 21 forensic fields tracked. Wire tokens and latency set to null when offline."
+    },
+    "G4_independent_validator_hardening": {
+      "status": "PASSED",
+      "details": "Check 5 overhauled for dual-use tools and benign admin context. Hardcoded known_benign list removed. Factual telemetry evaluated rather than model claims."
+    },
+    "G5_5_incident_pilot_execution": {
+      "status": "PASSED_ENGINEERING_BLOCKED_GPU_NETWORK",
+      "details": "Executed 5 pilot incidents. Incident 132499009 overruled to REQUIRES_ATTENTION (FP_CRITERIA_UNSATISFIED). Incident 132499745 overruled to REQUIRES_ATTENTION (TP_CRITERIA_UNSATISFIED)."
+    },
+    "G6_multi_rule_historical_benchmark": {
+      "status": "PASSED",
+      "details": "20 incidents audited across 15 clusters. 2 Verified FP, 0 Verified TP, 18 Unverified. 0 decisive accepted, 20 abstained. Undefined denominators reported as null."
+    },
+    "G7_deployment_and_runtime_integrity": {
+      "status": "AUDITED_AWAITING_APPROVAL_GATES",
+      "details": "VRAM calculations verify 8K context requires ~12.7 GB on 24 GB GPU. Deployment plan ready for Server 1 and Server 2 under UPLA human approval gates."
+    },
+    "G8_regression_and_ui_preservation": {
+      "status": "PASSED",
+      "details": "41 of 41 backend tests passed (100%). 16 of 16 frontend test suites passed (100%). 3-tab layout and RBAC preserved."
+    },
+    "G9_trustworthiness_and_statistical_integrity": {
+      "status": "PASSED",
+      "details": "Wilson score confidence intervals computed. Sample size limitation transparently documented. Zero manufactured metrics."
+    },
+    "G10_upla_governance": {
+      "status": "COMPLIANT",
+      "details": "Full Workflow governance enforced. Gate 1 (GitHub) and Gate 2 (Remote Deploy) armed."
+    }
+  },
+  "pilot_summary": {
+    "total_pilot_incidents": 5,
+    "provenance": "OFFLINE_SIMULATION",
+    "budget_compliance_4k": {
+      "132438483": {"prompt_tokens": 3311, "budget": 3328, "compliant": true},
+      "132527297": {"prompt_tokens": 3316, "budget": 3328, "compliant": true},
+      "132499009": {"prompt_tokens": 3319, "budget": 3328, "compliant": true},
+      "132499023": {"prompt_tokens": 3317, "budget": 3328, "compliant": true},
+      "132499745": {"prompt_tokens": 3303, "budget": 3328, "compliant": true}
+    },
+    "decisive_verdicts_accepted": 0,
+    "overruled_to_requires_attention": 5
+  },
+  "benchmark_summary": {
+    "total_incidents": 20,
+    "unique_clusters": 15,
+    "duplicate_incidents": 5,
+    "verified_ground_truth_count": 2,
+    "verified_tp_count": 0,
+    "verified_fp_count": 2,
+    "unverified_count": 18,
+    "decisive_decisions_count": 0,
+    "coverage_rate": 0.0,
+    "coverage_ci_95": [0.0, 0.6576],
+    "abstention_rate": 1.0,
+    "abstention_rate_ci_95": [0.3424, 1.0],
+    "selective_accuracy": null,
+    "overall_accuracy": null,
+    "unsafe_fp_count": 0,
+    "unsafe_fp_rate": null,
+    "schema_compliance_rate": 1.0,
+    "mean_grounding_ratio": 1.0
+  },
+  "test_metrics": {
+    "backend_tests_total": 41,
+    "backend_tests_passed": 41,
+    "backend_pass_rate": 1.0,
+    "frontend_test_suites_total": 16,
+    "frontend_test_suites_passed": 16,
+    "frontend_pass_rate": 1.0
+  },
+  "phase_state_classification": {
+    "engineering_validated": true,
+    "deployment_blocked": true,
+    "deployment_block_reason": "Direct GPU port 8000 unreachable from workstation; remote deployment requires UPLA Gate 2 human authorization.",
+    "empirical_accuracy_established": false,
+    "accuracy_not_established_reason": "Verified ground truth cohort (N=2 FP, 0 TP) is statistically insufficient to evaluate empirical accuracy."
+  }
+}

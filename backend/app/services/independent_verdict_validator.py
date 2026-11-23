@@ -294,7 +294,7 @@ class IndependentVerdictValidator:
         # Check 5: Verdict-Specific Decision Criteria
         if clean_prop_verdict == "TRUE_POSITIVE":
             # For TP: must meet evidence completeness AND provide at least one grounded claim representing genuine security tradecraft
-            # (An automated EDR block or bare binary filename alone does NOT establish adversary malice or tradecraft)
+            # (An automated EDR block, alert trigger, or bare binary filename alone does NOT establish adversary malice or tradecraft)
             control_action_fields = {
                 "security.action", "endpoint.process_blocked", "endpoint.file_quarantined", "action",
                 "security.alert_title", "security.event_type", "event.type", "alert.name", "rule.name",
@@ -307,61 +307,162 @@ class IndependentVerdictValidator:
                 "device.ip", "reporting_ip", "url.domain", "url.hostname", "application.name",
                 "application.category", "collector_name", "reporting_device", "collector.id"
             }
-            has_grounded_security_tradecraft = False
+
+            # Check for Benign Administrative Context / Contradictory Telemetry that refutes malicious breach
+            has_benign_administrative_context = False
+            benign_context_detail = ""
+
+            approved_management_binaries = {
+                "ccmexec.exe", "tanclient.exe", "qualysagent.exe", "nessusagent.exe",
+                "archive_agent.exe", "endpointagent.exe", "backup_agent.exe"
+            }
+            proc_names_all = [str(r.observed_value).strip().lower() for r in normalization_result.records if r.source_field in ("process.name", "process.file_name")]
+            if any(p in approved_management_binaries for p in proc_names_all):
+                has_benign_administrative_context = True
+                benign_context_detail = "Activity originates from enterprise administrative management agent."
+
+            authoritative_auth_fields = {
+                "authorization.ticket_id", "authorization.change_ticket", "authorization.change_request",
+                "itsm.ticket_id", "change_management.ticket", "policy.approved_baseline",
+                "authorization.ticket", "itsm.change_id"
+            }
+            if any(r.source_field in authoritative_auth_fields for r in normalization_result.records):
+                has_benign_administrative_context = True
+                benign_context_detail = "Activity correlates with authoritative enterprise change ticket."
+
+            # Categorized attack tradecraft vs suspicious dual-use activity
+            has_definitive_malicious_tradecraft = False
+            has_suspicious_dual_use_activity = False
+            has_corroborating_attack_indicator = False
+
+            # Definitive malicious tradecraft: unambiguous attack tools, credential theft syntax, stealth obfuscation
+            definitive_forensic_patterns = (
+                r"\b(?:mimikatz|sekurlsa|privilege::debug)\b",
+                r"\blsass(?:\.exe)?\s+.*dump\b|\bprocdump(?:\.exe)?\s+.*lsass\b",
+                r"\b(?:cobaltstrike|meterpreter|beacon)\b",
+                r"\bvssadmin(?:\.exe)?\s+delete\s+shadows\b|\bdelete\s+shadows\s+(?:\/all|\/quiet)\b",
+                r"\bpowershell(?:\.exe)?\s+.*(?:-enc\b|-encodedcommand\b)",
+                r"\b(?:downloadstring|iex\s*\(|invoke[-_]expression)\b.*https?:\/\/",
+                r"\bcertutil(?:\.exe)?\s+.*(?:-urlcache|-f)\s+.*https?:\/\/",
+            )
+
+            # Dual-use administrative tools / LOLBins: require corroborating indicators
+            dual_use_cmd_patterns = (
+                r"\bwhoami(?:\.exe)?\b",
+                r"\bnet(?:\.exe)?\s+(?:user|group|localgroup)\b",
+                r"\bcertutil(?:\.exe)?\b",
+                r"\brundll32(?:\.exe)?\b",
+                r"\bmshta(?:\.exe)?\b",
+                r"\bschtasks(?:\.exe)?\s+\/create\b",
+                r"\breg(?:\.exe)?\s+add\b",
+                r"\bpowershell(?:\.exe)?\b",
+                r"\bvssadmin(?:\.exe)?\b",
+            )
+
+            # Corroborating indicators across canonical records
+            all_records = normalization_result.records
+            # 1. Untrusted external network connection
+            for r in all_records:
+                if r.source_field in ("network.destination_ip", "destination_ip", "dest_ip"):
+                    s_ip = str(r.observed_value).strip().lower()
+                    if s_ip and not (
+                        s_ip.startswith("10.") or s_ip.startswith("172.16.") or s_ip.startswith("172.17.")
+                        or s_ip.startswith("172.18.") or s_ip.startswith("172.19.") or s_ip.startswith("172.20.")
+                        or s_ip.startswith("172.21.") or s_ip.startswith("172.22.") or s_ip.startswith("172.23.")
+                        or s_ip.startswith("172.24.") or s_ip.startswith("172.25.") or s_ip.startswith("172.26.")
+                        or s_ip.startswith("172.27.") or s_ip.startswith("172.28.") or s_ip.startswith("172.29.")
+                        or s_ip.startswith("172.30.") or s_ip.startswith("172.31.") or s_ip.startswith("192.168.")
+                        or s_ip in ("127.0.0.1", "::1", "localhost")
+                    ):
+                        has_corroborating_attack_indicator = True
+                        break
+
+            # 2. Suspicious writable execution path (e.g. \Temp\, \AppData\, /tmp/)
+            suspicious_exec_paths = (r"\\temp\\", r"\\tmp\\", r"\\appdata\\", r"\\downloads\\", r"/tmp/", r"/dev/shm/")
+            for r in all_records:
+                if r.source_field in ("process.executable_path", "process.path", "file.path"):
+                    val_p = str(r.observed_value).strip().lower()
+                    if any(re.search(sp, val_p, re.IGNORECASE) for sp in suspicious_exec_paths):
+                        has_corroborating_attack_indicator = True
+                        break
+
+            # 3. Verified Threat Intelligence / Malware Hit
+            for r in all_records:
+                f_low = str(r.source_field or "").lower()
+                v_low = str(r.observed_value or "").lower()
+                ti_prefixes = ("threat_intel.", "reputation.", "antivirus.", "virustotal.", "ioc.", "malware.")
+                if any(f_low.startswith(tp) or tp in f_low for tp in ti_prefixes):
+                    if v_low not in ("clean", "benign", "safe", "false", "0", "none", "unknown"):
+                        has_corroborating_attack_indicator = True
+                        has_definitive_malicious_tradecraft = True
+                        break
 
             for c in claim_grounding.claims:
                 if c.is_grounded:
                     c_field_lower = str(c.field or "").lower()
                     c_type_str = str(c.claim_type or "").upper()
-                    c_text_lower = str(c.claim_text or "").lower()
                     c_val_lower = str(c.asserted_value or "").lower()
 
-                    # A control block, alert trigger, or bare network/entity identifier alone does not prove malice
+                    # Control block, alert trigger, or bare network/entity identifier alone does not prove malice
                     if c_field_lower in control_action_fields or c_field_lower in identifier_fields:
                         continue
 
                     # Direct forensic evidence fields: command lines, raw log with forensic attack syntax
                     if c_field_lower in ("process.command_line", "process.parent_command_line", "event.raw_log"):
-                        forensic_attack_markers = (
-                            "delete shadows", "vssadmin", "-enc", "encodedcommand", "mimikatz",
-                            "downloadstring", "invoke-webrequest", "bypass", "unquoted",
-                            "net user", "whoami", "certutil", "schtasks /create", "reg add",
-                            "cobaltstrike", "meterpreter", "beacon", "privilege escalation",
-                            "lsass", "procdump", "rundll32", "mshta", "powershell -w hidden",
-                            "powershell.exe -enc"
-                        )
-                        if any(fam in c_val_lower or fam in c_text_lower for fam in forensic_attack_markers):
-                            has_grounded_security_tradecraft = True
+                        # Check definitive malicious tradecraft
+                        if any(re.search(dp, c_val_lower, re.IGNORECASE) for dp in definitive_forensic_patterns):
+                            has_definitive_malicious_tradecraft = True
                             break
-                        continue
+                        # Check dual-use / LOLBin patterns
+                        if any(re.search(dup, c_val_lower, re.IGNORECASE) for dup in dual_use_cmd_patterns):
+                            has_suspicious_dual_use_activity = True
 
-                    # Confirmed Threat Intelligence / AV / Malware feeds
+                    # Threat intelligence fields
                     ti_fields = ("threat_intel.", "reputation.", "antivirus.", "virustotal.", "ioc.", "malware.")
                     if any(c_field_lower.startswith(tf) or tf in c_field_lower for tf in ti_fields):
-                        has_grounded_security_tradecraft = True
-                        break
+                        if c_val_lower not in ("clean", "benign", "safe", "false", "0", "none", "unknown"):
+                            has_definitive_malicious_tradecraft = True
+                            break
 
-                    # Specific affirmative security tradecraft types
+                    # Specific affirmative security tradecraft types (evaluated against factual observed value, NOT claim text)
                     if c_type_str in ("PROCESS_EXECUTION", "NETWORK_CONNECTION", "FILE_HASH", "OBSERVED_FACT", "TELEMETRY_OBSERVATION", "CORRELATION_ASSERTION"):
-                        attack_markers = (
-                            "exploit", "c2", "beacon", "malware", "trojan", "ransomware", "backdoor",
-                            "payload", "shellcode", "buffer overflow", "injection", "lateral movement",
-                            "port scan", "brute force", "exfiltration", "tunneling"
-                        )
-                        if any(am in c_val_lower or am in c_text_lower for am in attack_markers):
-                            known_benign = ("ss-widget", "clientlib-site", "jquery", "select2", "adrum", "surveysensum")
-                            if not any(kb in c_val_lower for kb in known_benign):
-                                has_grounded_security_tradecraft = True
+                        static_web_extensions = (".js", ".css", ".png", ".jpg", ".jpeg", ".svg", ".json", ".woff", ".ico")
+                        if not any(c_val_lower.endswith(ext) or ext in c_val_lower for ext in static_web_extensions):
+                            attack_markers = (
+                                "exploit", "c2", "beacon", "malware", "trojan", "ransomware", "backdoor",
+                                "shellcode", "buffer overflow", "injection", "lateral movement",
+                                "port scan", "brute force", "exfiltration", "tunneling"
+                            )
+                            if any(am in c_val_lower for am in attack_markers):
+                                has_definitive_malicious_tradecraft = True
                                 break
 
-            if preflight.evidence_completeness < 0.6 or claim_grounding.grounded_claims == 0 or not has_grounded_security_tradecraft:
+            # Evaluate Tradecraft Grounding:
+            has_grounded_security_tradecraft = False
+            if has_benign_administrative_context:
+                has_grounded_security_tradecraft = False
+            elif has_definitive_malicious_tradecraft:
+                has_grounded_security_tradecraft = True
+            elif has_suspicious_dual_use_activity and has_corroborating_attack_indicator:
+                has_grounded_security_tradecraft = True
+
+            if has_benign_administrative_context:
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                if "BENIGN_CONTEXT_CONTRADICTION" not in reason_codes:
+                    reason_codes.append("BENIGN_CONTEXT_CONTRADICTION")
+                action_directive = f"True positive rejected: telemetry contains benign administrative context ({benign_context_detail}). Routed to Advisory Triage."
+            elif preflight.evidence_completeness < 0.6 or claim_grounding.grounded_claims == 0 or not has_grounded_security_tradecraft:
                 final_verdict = "REQUIRES_ATTENTION"
                 if validation_status not in ("REJECTED", "ABSTAINED"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
                 if "TP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("TP_CRITERIA_UNSATISFIED")
                 if "Model fabricated" not in action_directive:
-                    action_directive = "Insufficient grounded tradecraft or corroborating evidence to confirm malicious attack. Control blocks or binary names alone do not confirm malice."
+                    if has_suspicious_dual_use_activity and not has_corroborating_attack_indicator:
+                        action_directive = "Dual-use administrative command or LOLBin execution supports suspicious activity hypothesis, but lacks corroborating indicators (external C2, suspicious path, or malware detection) to confirm True Positive. Routed to Advisory Triage."
+                    else:
+                        action_directive = "Insufficient grounded tradecraft or corroborating evidence to confirm malicious attack. Control blocks, binary names, internal IPs, or alert triggers alone do not confirm malice."
             elif not reason_codes and final_verdict == "TRUE_POSITIVE":
                 is_decisive = True
                 reason_codes.append("EVIDENCE_VALIDATED")

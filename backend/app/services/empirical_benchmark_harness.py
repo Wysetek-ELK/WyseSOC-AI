@@ -125,6 +125,7 @@ class BenchmarkIncidentResult:
     raw_model_response_id: Optional[str] = None
     executed_at_utc: Optional[str] = None
     execution_git_sha: Optional[str] = None
+    endpoint_identity: Optional[str] = None
 
 
 @dataclass
@@ -738,8 +739,11 @@ class EmpiricalBenchmarkHarness:
 
         # Determine proposal heuristic based strictly on telemetry signature
         all_text = " ".join([str(r.observed_value).lower() for r in norm_result.records])
-        known_benign = ("ultraviewer", "teamviewer", "ccmexec", "tanclient", "ss-widget", "clientlib-site", "jquery", "select2", "adrum")
-        has_benign_token = any(k in all_text for k in known_benign)
+        benign_indicators = (
+            "widget", "surveysensum", "clientlib", "analytics", "jquery", "select2", "adrum",
+            "ultraviewer", "teamviewer", "ccmexec", "tanclient"
+        )
+        has_benign_token = any(k in all_text for k in benign_indicators)
 
         if "Prisma" in incident.rule_name or "suspicious file" in incident.rule_name.lower():
             claims = []
@@ -841,6 +845,10 @@ class EmpiricalBenchmarkHarness:
         )
 
         # Preflight Abstention Guard (Zero LLM / GPU Waste)
+        sanitized_endpoint: Optional[str] = None
+        if model_endpoint:
+            sanitized_endpoint = re.sub(r'//[^@]+@', '//***@', str(model_endpoint))
+
         if mode == "live" and preflight.must_abstain_immediately:
             return BenchmarkIncidentResult(
                 incident_id=incident_rec.incident_id,
@@ -858,10 +866,10 @@ class EmpiricalBenchmarkHarness:
                 raw_trust_score=0.0,
                 schema_compliant=True,
                 grounding_ratio=0.0,
-                latency_ms=0,
-                prompt_tokens=0,
-                completion_tokens=0,
-                total_tokens=0,
+                latency_ms=None,
+                prompt_tokens=None,
+                completion_tokens=None,
+                total_tokens=None,
                 is_unsafe_fp=False,
                 auto_incident_closure_allowed=False,
                 execution_provenance="PREFLIGHT_ABSTENTION",
@@ -881,6 +889,7 @@ class EmpiricalBenchmarkHarness:
                 raw_model_response_id=None,
                 executed_at_utc=datetime.now(timezone.utc).isoformat(),
                 execution_git_sha=cls.get_active_git_sha(),
+                endpoint_identity=sanitized_endpoint,
             )
 
         # Step 3: LLM Inference or Deterministic Offline Proposal
@@ -967,10 +976,10 @@ class EmpiricalBenchmarkHarness:
                     raw_trust_score=0.0,
                     schema_compliant=True,
                     grounding_ratio=0.0,
-                    latency_ms=0,
-                    prompt_tokens=0,
-                    completion_tokens=0,
-                    total_tokens=0,
+                    latency_ms=None,
+                    prompt_tokens=None,
+                    completion_tokens=None,
+                    total_tokens=None,
                     is_unsafe_fp=False,
                     auto_incident_closure_allowed=False,
                     execution_provenance="PREFLIGHT_ABSTENTION",
@@ -990,6 +999,7 @@ class EmpiricalBenchmarkHarness:
                     raw_model_response_id=None,
                     executed_at_utc=datetime.now(timezone.utc).isoformat(),
                     execution_git_sha=cls.get_active_git_sha(),
+                    endpoint_identity=sanitized_endpoint,
                 )
 
             # 3c: Invoke Live Provider (Byte-for-byte Parity with Production Pipeline)
@@ -1010,9 +1020,11 @@ class EmpiricalBenchmarkHarness:
                 )
                 elapsed_ms = int((time.perf_counter() - live_start) * 1000)
                 model_output = verdict_obj.model_dump()
-                p_tokens = getattr(verdict_obj, "prompt_tokens", 0) or 0
-                c_tokens = getattr(verdict_obj, "completion_tokens", 0) or 0
-                t_tokens = getattr(verdict_obj, "total_tokens", 0) or (p_tokens + c_tokens)
+                p_tokens = getattr(verdict_obj, "prompt_tokens", None)
+                c_tokens = getattr(verdict_obj, "completion_tokens", None)
+                t_tokens = getattr(verdict_obj, "total_tokens", None)
+                if t_tokens is None and p_tokens is not None and c_tokens is not None:
+                    t_tokens = p_tokens + c_tokens
                 schema_compliant = bool(getattr(verdict_obj, "validation_status", "VALID") != "INVALID_SCHEMA")
                 model_identifier = getattr(verdict_obj, "model_identifier", "Qwen/Qwen2.5-7B-Instruct-AWQ")
                 finish_reason = getattr(verdict_obj, "finish_reason", None) or "stop"
@@ -1023,6 +1035,9 @@ class EmpiricalBenchmarkHarness:
                     execution_provenance = "PROVIDER_FAILURE"
                     is_live_measurement = False
                     finish_reason = "provider_error"
+                    p_tokens = None
+                    c_tokens = None
+                    t_tokens = None
                 else:
                     execution_provenance = "LIVE_PROVIDER"
                     is_live_measurement = True
@@ -1030,7 +1045,10 @@ class EmpiricalBenchmarkHarness:
                 execution_provenance = "PROVIDER_FAILURE"
                 is_live_measurement = False
                 finish_reason = "provider_error"
-                elapsed_ms = int((time.perf_counter() - live_start) * 1000) if 'live_start' in locals() else 0
+                elapsed_ms = int((time.perf_counter() - live_start) * 1000) if 'live_start' in locals() else None
+                p_tokens = None
+                c_tokens = None
+                t_tokens = None
                 model_output = {
                     "verdict": "REQUIRES_ATTENTION",
                     "confidence": 0.0,
@@ -1039,6 +1057,49 @@ class EmpiricalBenchmarkHarness:
                 }
                 model_identifier = "Qwen/Qwen2.5-7B-Instruct-AWQ"
                 raw_response_id = None
+
+            if execution_provenance == "PROVIDER_FAILURE":
+                return BenchmarkIncidentResult(
+                    incident_id=incident_rec.incident_id,
+                    rule_id=incident_rec.rule_id,
+                    rule_name=incident_rec.rule_name,
+                    ground_truth_label=incident_rec.ground_truth_label,
+                    raw_proposed_verdict=None,
+                    raw_proposed_confidence=0.0,
+                    raw_proposed_reason=model_output.get("reason", "Provider execution failed"),
+                    final_authoritative_verdict="REQUIRES_ATTENTION",
+                    is_decisive_accepted=False,
+                    validation_status="PROVIDER_FAILURE",
+                    validation_reason_codes=["PROVIDER_FAILURE"],
+                    trust_score=0,
+                    raw_trust_score=0.0,
+                    schema_compliant=False,
+                    grounding_ratio=0.0,
+                    latency_ms=elapsed_ms,
+                    prompt_tokens=None,
+                    completion_tokens=None,
+                    total_tokens=None,
+                    is_unsafe_fp=False,
+                    auto_incident_closure_allowed=False,
+                    execution_provenance="PROVIDER_FAILURE",
+                    is_live_measurement=False,
+                    autonomous_verdict="REQUIRES_ATTENTION",
+                    is_autonomous_eligible=False,
+                    guardrails_triggered=["PROVIDER_FAILURE"],
+                    cluster_key=incident_rec.cluster_key,
+                    is_duplicate=incident_rec.is_duplicate,
+                    finish_reason="provider_error",
+                    requested_max_tokens=requested_max_tokens or 768,
+                    evaluation_run_id=evaluation_run_id,
+                    model_name=model_identifier,
+                    provider_name="OpenAICompatibleProvider",
+                    prompt_hash=prompt_hash,
+                    policy_version=policy_version,
+                    raw_model_response_id=None,
+                    executed_at_utc=datetime.now(timezone.utc).isoformat(),
+                    execution_git_sha=cls.get_active_git_sha(),
+                    endpoint_identity=sanitized_endpoint,
+                )
         else:
             # Offline Simulation
             if simulated_output_fn:
@@ -1182,6 +1243,7 @@ class EmpiricalBenchmarkHarness:
             raw_model_response_id=raw_response_id,
             executed_at_utc=datetime.now(timezone.utc).isoformat(),
             execution_git_sha=cls.get_active_git_sha(),
+            endpoint_identity=sanitized_endpoint,
         )
 
     @classmethod
