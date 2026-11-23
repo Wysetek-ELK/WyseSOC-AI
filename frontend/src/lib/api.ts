@@ -191,9 +191,18 @@ export interface AisEvaluationSummary {
   is_one_class_dataset?: boolean;
   one_class_notice?: string;
   population_scope?: string;
+  operational_scope?: string;
+  snapshot_id?: string;
   snapshot_at?: string;
+  accuracy_numerator?: number | null;
+  accuracy_denominator?: number;
+  accuracy_eligibility?: string;
+  non_measurable_reason?: string | null;
   current_inventory?: {
     population_name: string;
+    snapshot_id?: string;
+    snapshot_at?: string;
+    operational_scope?: string;
     total_incidents: number;
     verified_reviews: number;
     verified_tp: number;
@@ -204,6 +213,12 @@ export interface AisEvaluationSummary {
     missing_evaluations_among_reviewed: number;
     not_evaluated: number;
     failed: number;
+    queued?: number;
+    running?: number;
+    accuracy_numerator?: number | null;
+    accuracy_denominator?: number;
+    accuracy_eligibility?: string;
+    non_measurable_reason?: string | null;
     decision_coverage_percent: number;
     selective_accuracy?: number | null;
     accuracy_status: string;
@@ -1352,6 +1367,7 @@ export interface RuleItem {
   description: string;
   severity: string;
   status: string;
+  customer?: string;
   data_source: string;
   detection_tech: string;
   evaluation_mode: string;

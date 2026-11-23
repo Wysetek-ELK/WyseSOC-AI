@@ -17,6 +17,7 @@ import asyncio
 from datetime import datetime, timezone
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Set
+import uuid
 
 from sqlalchemy import select, and_, or_, desc, func, not_, exists
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -627,11 +628,7 @@ class AisEvaluationService:
             )
 
             st = resolved["status"]
-            if st == STATUS_NOT_EVALUATED:
-                cnt_not_evaluated += 1
-                if resolved.get("is_mock_only"):
-                    cnt_mock_only += 1
-            elif st == STATUS_EVALUATED_DECISIVE:
+            if st == STATUS_EVALUATED_DECISIVE:
                 cnt_evaluated_decisive += 1
             elif st == STATUS_ABSTAINED:
                 cnt_abstained += 1
@@ -639,10 +636,16 @@ class AisEvaluationService:
                 cnt_validation_rejected += 1
             elif st == STATUS_EVALUATION_FAILED:
                 cnt_evaluation_failed += 1
-            elif st == STATUS_QUEUED:
-                cnt_queued += 1
-            elif st == STATUS_RUNNING:
-                cnt_running += 1
+            elif st in (STATUS_NOT_EVALUATED, STATUS_QUEUED, STATUS_RUNNING):
+                cnt_not_evaluated += 1
+                if st == STATUS_QUEUED:
+                    cnt_queued += 1
+                elif st == STATUS_RUNNING:
+                    cnt_running += 1
+                if resolved.get("is_mock_only"):
+                    cnt_mock_only += 1
+            else:
+                cnt_not_evaluated += 1
 
             # Check review matching
             rev_verdict = review.analyst_verdict if review else None
@@ -761,6 +764,14 @@ class AisEvaluationService:
 
         # Empirical accuracy calculations (strictly on eligible decisive pairs)
         accuracy_status = "NOT_MEASURABLE"
+        accuracy_numerator = None
+        accuracy_denominator = cnt_eligible_decisive_pairs
+        accuracy_eligibility = "NOT_MEASURABLE_ZERO_DECISIVE_DENOMINATOR"
+        non_measurable_reason = (
+            "No eligible decisive AI predictions are matched to verified analyst verdicts."
+            if cnt_eligible_decisive_pairs == 0
+            else None
+        )
         selective_accuracy = None
         fp_precision = None
         tp_recall = None
@@ -769,7 +780,10 @@ class AisEvaluationService:
 
         if cnt_eligible_decisive_pairs > 0:
             accuracy_status = "MEASURABLE"
+            accuracy_eligibility = "ELIGIBLE"
+            non_measurable_reason = None
             correct = cnt_agreement_tp + cnt_agreement_fp
+            accuracy_numerator = correct
             selective_accuracy = round(float(correct) / float(cnt_eligible_decisive_pairs), 4)
 
             pred_fp = cnt_agreement_fp + cnt_critical_missed_tp
@@ -826,7 +840,11 @@ class AisEvaluationService:
             else:
                 active_binding_status = "ORPHANED_BINDING"
 
+        snapshot_token = f"snap-{uuid.uuid4().hex[:12]}"
+        snapshot_time = utc_now().isoformat()
+
         summary = {
+            "snapshot_id": snapshot_token,
             "rule_uuid": target_rule_db_id,
             "policy_version_number": target_ver_num,
             "policy_version_id": target_ver_id,
@@ -836,7 +854,8 @@ class AisEvaluationService:
             "active_version_id": bound_active_version_id,
             "customer": effective_customer,
             "population_scope": "CURRENT_INVENTORY",
-            "snapshot_at": utc_now().isoformat(),
+            "operational_scope": "CURRENT_INVENTORY",
+            "snapshot_at": snapshot_time,
             "total_incidents": total_incidents,
             "not_evaluated": cnt_not_evaluated,
             "evaluated_decisive": cnt_evaluated_decisive,
@@ -851,6 +870,10 @@ class AisEvaluationService:
             "verified_tp_count": cnt_current_verified_tp,
             "verified_fp_count": cnt_current_verified_fp,
             "eligible_decisive_comparisons": cnt_eligible_decisive_pairs,
+            "accuracy_numerator": accuracy_numerator,
+            "accuracy_denominator": accuracy_denominator,
+            "accuracy_eligibility": accuracy_eligibility,
+            "non_measurable_reason": non_measurable_reason,
             "missing_evaluations_among_reviewed": cnt_missing_among_reviewed,
             "decision_coverage_percent": round(decision_coverage * 100, 1),
             "abstention_rate_percent": round(abstention_rate * 100, 1),
@@ -881,6 +904,9 @@ class AisEvaluationService:
             "historical_total_processed": hist_total_processed,
             "current_inventory": {
                 "population_name": "Current Incident Inventory",
+                "snapshot_id": snapshot_token,
+                "snapshot_at": snapshot_time,
+                "operational_scope": "CURRENT_INVENTORY",
                 "total_incidents": total_incidents,
                 "verified_reviews": cnt_verified_reviews,
                 "verified_tp": cnt_current_verified_tp,
@@ -891,6 +917,12 @@ class AisEvaluationService:
                 "missing_evaluations_among_reviewed": cnt_missing_among_reviewed,
                 "not_evaluated": cnt_not_evaluated,
                 "failed": cnt_evaluation_failed,
+                "queued": cnt_queued,
+                "running": cnt_running,
+                "accuracy_numerator": accuracy_numerator,
+                "accuracy_denominator": accuracy_denominator,
+                "accuracy_eligibility": accuracy_eligibility,
+                "non_measurable_reason": non_measurable_reason,
                 "decision_coverage_percent": round(decision_coverage * 100, 1),
                 "selective_accuracy": selective_accuracy,
                 "accuracy_status": accuracy_status,

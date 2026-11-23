@@ -1,0 +1,45 @@
+{
+  "release": "AIS 2.1b",
+  "project": "Verdictum AI",
+  "organization": "Wysetek Systems Technologists Pvt. Ltd.",
+  "timestamp": "2026-11-22T06:50:00Z",
+  "targetRule": {
+    "name": "Heavy TCP Host Scan On Fixed Port",
+    "uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "activePolicyVersion": 7,
+    "activePolicyStatus": "APPROVED",
+    "candidateDraftVersion": 8,
+    "candidateDraftStatus": "DRAFT"
+  },
+  "invariantsVerified": {
+    "partitionInvariant": "Total (15) == Decisive (0) + Abstained (15) + Rejected (0) + Failed (0) + NotEvaluated (0)",
+    "currentInventoryVerified": "Verified Reviews (15) == Verified TP (0) + Verified FP (15)",
+    "historicalCohortVerified": "Total Reviews (47) == Verified TP (0) + Verified FP (47)",
+    "consistencyInvariant": "Current Verified Reviews (15) <= Historical Total Reviews (47)",
+    "zeroDenominatorSafety": "Denom == 0 -> NOT MEASURABLE, selective_accuracy == null",
+    "doubleBlindProtection": "Enforced server-side and client-side pre-submission",
+    "testFixtureExclusion": "Patterned synthetic UUIDs excluded from empirical calibration"
+  },
+  "uiRefinementMetrics": {
+    "headerHeightReduction": "113px -> 42px (-63%)",
+    "actionBannerReduction": "78px -> 36px (-54%)",
+    "primaryTabsHeight": "44px -> 34px (-23%)",
+    "tableTopOffset1440x900": "675px -> 338px (-337px, dominant above fold)",
+    "zeroHorizontalScroll1280plus": true
+  },
+  "testExecutionSummary": {
+    "backendPopulationTests": "4 / 4 PASSED",
+    "backendEvaluationTrackingTests": "20 / 20 PASSED",
+    "frontendBuildRoutes": "32 / 32 OPTIMIZED",
+    "frontendUnitTests": "88 / 88 PASSED",
+    "uplaGovernanceStatus": "PASSED (WARNING non-blocking baseline exceptions)"
+  },
+  "uplaGovernance": {
+    "executionId": "upla-20261122-064605-3abc60",
+    "profile": "release",
+    "mode": "FULL_WORKFLOW",
+    "blocked": false,
+    "nextStep": "GATE_1_GITHUB_APPROVAL"
+  },
+  "recommendation": "GO for AIS 2.2"
+}

@@ -115,6 +115,7 @@ function AgentIntelligenceStudioContent() {
   const [feedback, setFeedback] = useState<{ type: "success" | "error" | "warning"; text: string } | null>(null);
   const [ruleError, setRuleError] = useState<{ code: number; title: string; message: string } | null>(null);
   const [versionError, setVersionError] = useState<{ code: number; title: string; message: string; requestedVersionId: string } | null>(null);
+  const [showRuleDetails, setShowRuleDetails] = useState(false);
   const promptRequestIdRef = useRef<number>(0);
 
   // Rule Intelligence & Semantics State
@@ -2003,15 +2004,15 @@ function AgentIntelligenceStudioContent() {
            COMPACT MODE (3 TABS): SIMPLE BY DEFAULT — ADVANCED ON DEMAND
            ========================================================================= */
         <>
+          {/* SECTION 1: COMPACT RULE TOOLBAR */}
           <CompactPageHeader
             title={ruleError ? "Rule Not Found" : (selectedRule?.name || selectedRuleId)}
             subtitle={
-              ruleError
-                ? "The requested detection rule could not be found in the SIEM registry."
-                : (intelligenceData?.semantics?.detection_objective ||
-                  "Governed policy generation, quality validation, evidence contract alignment, and simulation regression testing.")
+              showRuleDetails
+                ? (intelligenceData?.semantics?.detection_objective || "Governed policy generation, quality validation, evidence contract alignment, and simulation regression testing.")
+                : undefined
             }
-            archetype={ruleError ? undefined : (intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE")}
+            archetype={showRuleDetails ? (ruleError ? undefined : (intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE")) : undefined}
             siemStatus={ruleError ? undefined : deriveSiemRuleStatus(selectedRule?.status)}
             lifecycleStatus={
               ruleError
@@ -2029,7 +2030,7 @@ function AgentIntelligenceStudioContent() {
               onClick: handleBackToTable,
             }}
             selector={
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
                   Rule:
                 </label>
@@ -2037,7 +2038,7 @@ function AgentIntelligenceStudioContent() {
                   value={selectedRuleId}
                   onChange={(e) => handleSwitchRuleInStudio(e.target.value)}
                   disabled={loadingRules}
-                  className="px-2.5 py-1.5 text-xs rounded-lg border border-cyan-500/40 bg-slate-950/90 text-slate-200 font-medium focus:outline-none focus:border-cyan-400 min-w-[200px] max-w-[320px] truncate"
+                  className="px-2 py-1 text-xs rounded-lg border border-cyan-500/40 bg-slate-900 text-slate-200 font-medium focus:outline-none focus:border-cyan-400 max-w-[220px] truncate"
                 >
                   {selectedRuleId && !rules.some((r) => r.id === selectedRuleId) && (
                     <option value={selectedRuleId} disabled>
@@ -2053,9 +2054,25 @@ function AgentIntelligenceStudioContent() {
               </div>
             }
             actions={
-              <div className="flex items-center gap-2.5">
-                <span className="hidden lg:inline text-[10px] font-mono text-slate-400 border-r border-slate-800 pr-2.5">
-                  <strong className="text-cyan-400">Verdictum AI 2.1</strong> • Powered by WYSETEK Systems
+              <div className="flex items-center gap-2">
+                {!ruleError && (
+                  <button
+                    type="button"
+                    onClick={() => setShowRuleDetails(!showRuleDetails)}
+                    className={`px-2 py-1 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-colors ${
+                      showRuleDetails
+                        ? "border-cyan-500 bg-cyan-950/60 text-cyan-200"
+                        : "border-slate-800 bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200"
+                    }`}
+                    title="Toggle rule metadata and detection objective details"
+                  >
+                    <Info className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Details</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${showRuleDetails ? "rotate-180" : ""}`} />
+                  </button>
+                )}
+                <span className="hidden xl:inline text-[10px] font-mono text-slate-400 border-l border-slate-800 pl-2">
+                  <strong className="text-cyan-400">Verdictum AI 2.1</strong> • WYSETEK Systems
                 </span>
                 <button
                   type="button"
@@ -2065,14 +2082,49 @@ function AgentIntelligenceStudioContent() {
                       localStorage.setItem("VERDICTUM_COMPACT_UI_ENABLED", "false");
                     }
                   }}
-                  className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-mono"
+                  className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-mono"
                   title="Switch to detailed legacy 7-tab layout"
                 >
-                  Legacy 7-Tab View
+                  Legacy View
                 </button>
               </div>
             }
           />
+
+          {/* Expandable Secondary Rule Details Drawer */}
+          {showRuleDetails && !ruleError && (
+            <div data-testid="rule-details-drawer" className="p-3 rounded-xl border border-slate-800/80 bg-slate-900/80 text-xs space-y-2 animate-in fade-in duration-150">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/60 pb-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-slate-300">Archetype:</span>
+                  <span className="font-mono text-cyan-300 bg-slate-950 px-2 py-0.5 rounded border border-cyan-800/50">
+                    {intelligenceData?.classification?.primary_archetype || "DETECTION ENGINE"}
+                  </span>
+                  <span className="text-slate-600">•</span>
+                  <span className="font-semibold text-slate-300">SIEM Status:</span>
+                  <span className="font-mono text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                    {selectedRule?.status === "ACTIVE" ? "SIEM Active" : selectedRule?.status ? `SIEM ${selectedRule.status}` : "SIEM Inactive"}
+                  </span>
+                  <span className="text-slate-600">•</span>
+                  <span className="font-semibold text-slate-300">Tenant:</span>
+                  <span className="font-mono text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                    {selectedRule?.customer || "DEFAULT"}
+                  </span>
+                  <span className="text-slate-600">•</span>
+                  <span className="font-semibold text-slate-300">Stage:</span>
+                  <span className="font-mono text-violet-300 bg-violet-950/60 px-2 py-0.5 rounded border border-violet-800/60">
+                    {learningProfile?.is_production_eligible ? "Production Verified" : (learningProfile?.total_analyst_reviews || 0) >= 30 ? "Validation Ready" : (learningProfile?.total_analyst_reviews || 0) > 0 ? "Supervised Learning" : "Awaiting Reviews"}
+                  </span>
+                </div>
+                <div className="font-mono text-[10px] text-slate-500">
+                  UUID: {selectedRule?.id || selectedRuleId}
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                {intelligenceData?.semantics?.detection_objective || "Governed policy generation, quality validation, evidence contract alignment, and simulation regression testing."}
+              </p>
+            </div>
+          )}
 
           {/* Fail-Safe Handling: Rule Not Found (404) */}
           {ruleError ? (
@@ -2161,104 +2213,81 @@ function AgentIntelligenceStudioContent() {
             </div>
           ) : (
             <>
-              {/* Authoritative Decoupled Rule Status Strip */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-800/80 bg-slate-900/60 text-xs">
-                <div className="flex items-center gap-2 truncate">
-                  <span className="font-semibold text-slate-200 truncate">
-                    {selectedRule?.name || selectedRuleId}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5 ml-auto">
-                  {/* SIEM Status */}
-                  <span className="px-2 py-0.5 rounded-md font-mono text-[11px] font-medium bg-slate-800/80 text-slate-300 border border-slate-700/60">
-                    {selectedRule?.status === "ACTIVE" ? "SIEM Active" : selectedRule?.status ? `SIEM ${selectedRule.status}` : "SIEM Inactive"}
-                  </span>
-                  {/* Active Policy Version */}
-                  <span className="px-2 py-0.5 rounded-md font-mono text-[11px] font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/70">
-                    {activeVersion ? `v${activeVersion.version_number} Approved` : "No Active Version"}
-                  </span>
-                  {/* Candidate Draft Version */}
-                  <span className="px-2 py-0.5 rounded-md font-mono text-[11px] font-medium bg-sky-950/80 text-sky-300 border border-sky-800/70">
-                    {candidateDraft ? `v${candidateDraft.version_number} Draft` : "No Draft"}
-                  </span>
-                  {/* Learning Stage */}
-                  <span className="px-2 py-0.5 rounded-md font-mono text-[11px] font-medium bg-violet-950/80 text-violet-300 border border-violet-800/70">
-                    {learningProfile?.is_production_eligible ? "Production Verified" : (learningProfile?.total_analyst_reviews || 0) >= 30 ? "Validation Ready" : (learningProfile?.total_analyst_reviews || 0) > 0 ? "Supervised Learning" : "Awaiting Reviews"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Next Recommended Action Banner */}
-              <div className="p-3 rounded-xl border border-cyan-800/60 bg-gradient-to-r from-cyan-950/40 via-slate-900/60 to-slate-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
-                <div className="flex items-start sm:items-center gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-cyan-900/50 border border-cyan-700 text-cyan-300 shrink-0 mt-0.5 sm:mt-0">
-                    <Sparkles className="w-4 h-4" />
+              {/* SECTION 2: COMPACT RECOMMENDED NEXT ACTION NOTICE */}
+              <div className="p-2 sm:px-3 rounded-xl border border-cyan-800/50 bg-gradient-to-r from-cyan-950/30 via-slate-900/50 to-slate-950/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="p-1 rounded-md bg-cyan-900/40 border border-cyan-700/60 text-cyan-300 shrink-0">
+                    <Sparkles className="w-3.5 h-3.5" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-cyan-200">Next Recommended Action:</span>
-                      <span className="font-semibold text-slate-100">{nextRecommendedAction.label}</span>
-                      <span className={`px-2 py-0.2 rounded-full text-[10px] font-mono border ${nextRecommendedAction.badgeColor}`}>
-                        {nextRecommendedAction.badge}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{nextRecommendedAction.description}</p>
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="font-bold text-cyan-200 shrink-0" title="Next Recommended Action:">
+                      Next Recommended Action: Action needed:
+                    </span>
+                    <span className="text-slate-300 truncate">
+                      {nextRecommendedAction.description}
+                    </span>
+                    <span className={`hidden md:inline px-1.5 py-0.2 rounded text-[10px] font-mono border shrink-0 ${nextRecommendedAction.badgeColor}`}>
+                      {nextRecommendedAction.badge}
+                    </span>
                   </div>
                 </div>
                 <button
                   type="button"
                   data-testid="next-action-button"
                   onClick={nextRecommendedAction.action}
-                  className="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 shrink-0 shadow-sm transition-all"
+                  className="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 shrink-0 shadow-sm transition-all"
                 >
                   {nextRecommendedAction.buttonText}
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
 
-              {/* Primary 3-Tab Bar (Simplified Guided Workspace) + Settings */}
+              {/* SECTION 3: PRIMARY 3-TAB BAR + SECONDARY SETTINGS */}
               <div data-testid="ais-primary-tabs" className="flex items-center justify-between border-b border-slate-800/90 pb-0 text-xs">
                 <div className="flex space-x-1">
                   {/* TAB 1: Review Incidents */}
                   <button
                     data-testid="tab-overview"
                     onClick={() => handleNavigateTab("incidents")}
-                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "incidents" || primaryTab === "overview"
-                      ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
-                      : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
-                      }`}
+                    className={`px-3 py-1.5 font-bold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-lg ${
+                      primaryTab === "incidents" || primaryTab === "overview"
+                        ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                        : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                    }`}
+                    title="Overview: Review incoming FortiSIEM incidents and record ground-truth analyst verdicts"
                   >
                     <Inbox className="w-4 h-4 text-cyan-400" />
                     <span>Review Incidents</span>
-                    <span className="text-[10px] text-slate-500 font-normal hidden sm:inline">(Overview)</span>
                   </button>
 
                   {/* TAB 2: Test AI */}
                   <button
                     data-testid="tab-test-ai"
                     onClick={() => handleNavigateTab("ai_evaluation")}
-                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "ai_evaluation" || primaryTab === "test_ai"
-                      ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
-                      : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
-                      }`}
+                    className={`px-3 py-1.5 font-bold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-lg ${
+                      primaryTab === "ai_evaluation" || primaryTab === "test_ai"
+                        ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                        : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                    }`}
+                    title="Test AI inference against incidents and track model evaluation performance"
                   >
                     <FlaskConical className="w-4 h-4 text-amber-400" />
                     <span>Test AI</span>
-                    <span className="text-[10px] text-slate-500 font-normal hidden sm:inline">(AI Evaluation)</span>
                   </button>
 
                   {/* TAB 3: Accuracy & Learning */}
                   <button
                     data-testid="tab-learning"
                     onClick={() => handleNavigateTab("accuracy")}
-                    className={`px-4 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "accuracy" || primaryTab === "learning"
-                      ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
-                      : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
-                      }`}
+                    className={`px-3 py-1.5 font-bold border-b-2 transition-colors flex items-center gap-1.5 rounded-t-lg ${
+                      primaryTab === "accuracy" || primaryTab === "learning"
+                        ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                        : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                    }`}
+                    title="Analyst Review & Learning: Empirical accuracy, class balance calibration, and Tier 2 pilot eligibility"
                   >
                     <Shield className="w-4 h-4 text-emerald-400" />
                     <span>Accuracy &amp; Learning</span>
-                    <span className="text-[10px] text-slate-500 font-normal hidden sm:inline">(Analyst Review &amp; Learning)</span>
                     {learningProfile?.total_analyst_reviews !== undefined && (
                       <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
                         {learningProfile.total_analyst_reviews}
@@ -2267,20 +2296,21 @@ function AgentIntelligenceStudioContent() {
                   </button>
                 </div>
 
-                {/* ADMINISTRATIVE SETTINGS CONTROL */}
+                {/* ADMINISTRATIVE SETTINGS CONTROL (SECONDARY) */}
                 <div className="flex items-center gap-2">
                   <button
                     data-testid="tab-advanced"
                     onClick={() => handleNavigateTab("settings")}
-                    className={`px-3.5 py-2 font-bold border-b-2 transition-colors flex items-center gap-2 rounded-t-lg ${primaryTab === "settings" || primaryTab === "advanced"
-                      ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
-                      : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
-                      }`}
-                    title="Administrative policy controls and configuration"
+                    className={`px-2.5 py-1.5 font-medium border-b-2 transition-colors flex items-center gap-1.5 rounded-t-lg ${
+                      primaryTab === "settings" || primaryTab === "advanced"
+                        ? "border-cyan-400 text-cyan-300 bg-slate-900/60"
+                        : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/30"
+                    }`}
+                    title="Advanced Configuration: Administrative policy controls and configuration"
                   >
-                    <Sliders className="w-4 h-4 text-sky-400" />
-                    <span>Advanced Settings</span>
-                    <span className="text-[10px] text-slate-500 font-normal hidden sm:inline">(Advanced Configuration)</span>
+                    <Sliders className="w-3.5 h-3.5 text-sky-400" />
+                    <span className="hidden sm:inline">Advanced Settings</span>
+                    <span className="sm:hidden">Settings</span>
                     {blockingIssuesList.length > 0 && (
                       <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-950 text-amber-300 border border-amber-800">
                         {blockingIssuesList.length}

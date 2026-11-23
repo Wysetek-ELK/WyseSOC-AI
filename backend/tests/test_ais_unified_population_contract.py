@@ -345,3 +345,60 @@ async def test_zero_decisive_comparisons_returns_not_measurable():
         assert "No eligible decisive" in summary["accuracy_explanation"]
         assert "current_inventory" in summary
         assert "historical_cohort" in summary
+
+
+@pytest.mark.asyncio
+async def test_evaluation_snapshot_partition_invariant_and_fields():
+    """
+    AIS 2.1b Objective A:
+    Verify exact partition invariant:
+    Current Incidents = Decisive + Abstained + Rejected + Failed/Timeout + Not Evaluated
+    And verify snapshot token, timestamp, operational scope, and accuracy denominator metadata.
+    """
+    async with AsyncSessionLocal() as db:
+        res = await AisEvaluationService.get_rule_evaluation_tracking_overview(
+            db=db,
+            rule_uuid=RULE_UUID,
+            version_number=7,
+            customer="DEFAULT",
+        )
+
+        summary = res["summary"]
+        curr = summary["current_inventory"]
+
+        # Exact partition invariant on summary
+        partition_sum = (
+            summary["evaluated_decisive"]
+            + summary["abstained"]
+            + summary["validation_rejected"]
+            + summary["evaluation_failed"]
+            + summary["not_evaluated"]
+        )
+        assert summary["total_incidents"] == partition_sum, (
+            f"Summary partition mismatch: {summary['total_incidents']} != {partition_sum}"
+        )
+
+        # Exact partition invariant on current_inventory
+        curr_partition_sum = (
+            curr["evaluated_decisive"]
+            + curr["abstained"]
+            + curr["validation_rejected"]
+            + curr["failed"]
+            + curr["not_evaluated"]
+        )
+        assert curr["total_incidents"] == curr_partition_sum, (
+            f"Current inventory partition mismatch: {curr['total_incidents']} != {curr_partition_sum}"
+        )
+
+        # Snapshot token and timestamp
+        assert summary.get("snapshot_id") and summary["snapshot_id"].startswith("snap-")
+        assert summary.get("snapshot_at")
+        assert summary.get("operational_scope") == "CURRENT_INVENTORY"
+
+        # Accuracy eligibility and denominator fields
+        assert summary["accuracy_denominator"] == summary["eligible_decisive_comparisons"]
+        assert "accuracy_eligibility" in summary
+        if summary["accuracy_denominator"] == 0:
+            assert summary["accuracy_eligibility"] == "NOT_MEASURABLE_ZERO_DECISIVE_DENOMINATOR"
+            assert summary.get("non_measurable_reason") is not None
+            assert summary.get("accuracy_numerator") is None

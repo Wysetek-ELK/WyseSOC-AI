@@ -361,38 +361,47 @@ export function AiTestWorkbench({
 
   return (
     <div className="space-y-4">
-      {/* Top Technical Metadata Bar */}
-      <div className="p-3.5 rounded-xl border border-slate-800 bg-slate-950/70 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-cyan-400" />
-            <span className="font-bold text-slate-200">Active Model:</span>
-            <span className="font-mono text-cyan-300 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/60">
+      {/* SECTION 4: SLIM MODEL & POLICY CONTEXT STRIP */}
+      <div className="p-2.5 sm:px-3 rounded-xl border border-slate-800/80 bg-slate-950/70 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-slate-400 font-medium">Model:</span>
+            <span className="font-mono text-cyan-300 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-800/60 text-[11px] font-semibold">
               Qwen/Qwen2.5-7B-Instruct-AWQ
             </span>
           </div>
 
-          <span className="text-slate-600">•</span>
+          <span className="text-slate-700">•</span>
 
-          <div className="flex items-center gap-1.5 text-slate-400">
-            <span>Server 2 GPU:</span>
+          <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+            <span>GPU Server:</span>
             <span
               className={`inline-flex items-center gap-1 font-bold ${
                 llmOnline ? "text-emerald-400" : "text-amber-400"
               }`}
             >
               <span
-                className={`w-2 h-2 rounded-full ${
+                className={`w-1.5 h-1.5 rounded-full ${
                   llmOnline ? "bg-emerald-400" : "bg-amber-400"
                 }`}
               />
-              {llmOnline ? "ONLINE (AWS GPU)" : "CHECKING..."}
+              {llmOnline ? "ONLINE (Server 2)" : "CHECKING..."}
+            </span>
+          </div>
+
+          <span className="text-slate-700">•</span>
+
+          <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+            <span>Policy:</span>
+            <span className="font-mono text-emerald-300 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/60 font-semibold">
+              v{activeVersion?.version_number ?? 7} Active
             </span>
           </div>
         </div>
 
         {/* Policy Version Context & Batch Missing Action */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {isAdmin && missingCount > 0 && (
             <button
               onClick={() => {
@@ -400,20 +409,20 @@ export function AiTestWorkbench({
                 setBatchConfirmed(false);
                 setShowBatchModal(true);
               }}
-              className="px-2.5 py-1 rounded bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-800 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+              className="px-2 py-1 rounded bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-800 text-[11px] font-semibold flex items-center gap-1 transition-colors shadow-sm"
               title="Run controlled batch inference for reviewed incidents without stored AI evaluations"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Evaluate Missing Incidents ({missingCount})
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              Evaluate Missing ({missingCount})
             </button>
           )}
 
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400">Target Policy:</span>
+          <div className="flex items-center gap-1.5 text-[11px]">
+            <span className="text-slate-400">Target:</span>
             <select
               value={targetVer?.id || ""}
               onChange={(e) => onSelectVersion?.(e.target.value)}
-              className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono focus:ring-1 focus:ring-cyan-500"
+              className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono focus:ring-1 focus:ring-cyan-500"
             >
               {versions.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -440,78 +449,87 @@ export function AiTestWorkbench({
         </div>
       )}
 
-      {/* SECTION A: Evaluation Coverage Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
-        <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
-          <span className="text-slate-400 font-medium text-[11px]">Current Incidents</span>
-          <span className="text-xl font-bold font-mono text-slate-100 mt-1">
-            {evalSummary?.total_incidents ?? ruleEvalItems.length}
-          </span>
-          <span className="text-[10px] text-slate-500 font-mono mt-0.5">Current Operational Scope</span>
+      {/* SECTION 5: PRIORITIZED EVALUATION SUMMARY */}
+      <div className="space-y-1.5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+          {/* Card 1: Current Incidents */}
+          <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between">
+            <span className="text-slate-400 font-medium text-[11px]">Current Incidents</span>
+            <span className="text-xl font-bold font-mono text-slate-100 mt-0.5">
+              {evalSummary?.total_incidents ?? ruleEvalItems.length}
+            </span>
+            <span className="text-[10px] text-slate-500 font-mono">Current Operational Scope · Total Incidents</span>
+          </div>
+
+          {/* Card 2: Decisive Verdicts */}
+          <div className="p-2.5 rounded-xl border border-emerald-900/50 bg-emerald-950/20 flex flex-col justify-between">
+            <span className="text-emerald-400 font-medium text-[11px] flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              Decisive Verdicts
+            </span>
+            <span className="text-xl font-bold font-mono text-emerald-300 mt-0.5">
+              {evalSummary?.evaluated_decisive ?? 0}
+            </span>
+            <span className="text-[10px] text-emerald-500 font-mono">
+              {evalSummary?.decision_coverage_percent ? `${evalSummary.decision_coverage_percent}% coverage` : "TP / FP"}
+            </span>
+          </div>
+
+          {/* Card 3: Abstained */}
+          <div className="p-2.5 rounded-xl border border-amber-900/50 bg-amber-950/20 flex flex-col justify-between">
+            <span className="text-amber-400 font-medium text-[11px] flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3 text-amber-400" />
+              Abstained
+            </span>
+            <span className="text-xl font-bold font-mono text-amber-300 mt-0.5">
+              {evalSummary?.abstained ?? 0}
+            </span>
+            <span className="text-[10px] text-amber-500 font-mono">
+              {evalSummary?.abstention_rate_percent ? `${evalSummary.abstention_rate_percent}% rate` : "Requires Attention"}
+            </span>
+          </div>
+
+          {/* Card 4: Not Evaluated */}
+          <div className="p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 flex flex-col justify-between">
+            <span className="text-slate-400 font-medium text-[11px] flex items-center gap-1">
+              <HelpCircle className="w-3 h-3 text-slate-400" />
+              Not Evaluated
+            </span>
+            <span className="text-xl font-bold font-mono text-slate-300 mt-0.5">
+              {evalSummary?.not_evaluated ?? 0}
+            </span>
+            <span className="text-[10px] text-slate-500 font-mono">Missing Inference</span>
+          </div>
         </div>
 
-        <div className="p-3 rounded-xl border border-emerald-900/50 bg-emerald-950/20 flex flex-col justify-between">
-          <span className="text-emerald-400 font-medium text-[11px] flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-            Decisive Verdicts
-          </span>
-          <span className="text-xl font-bold font-mono text-emerald-300 mt-1">
-            {evalSummary?.evaluated_decisive ?? 0}
-          </span>
-          <span className="text-[10px] text-emerald-500 font-mono mt-0.5">
-            {evalSummary?.decision_coverage_percent ? `${evalSummary.decision_coverage_percent}% coverage` : "TP / FP"}
-          </span>
-        </div>
-
-        <div className="p-3 rounded-xl border border-amber-900/50 bg-amber-950/20 flex flex-col justify-between">
-          <span className="text-amber-400 font-medium text-[11px] flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3 text-amber-400" />
-            Abstained
-          </span>
-          <span className="text-xl font-bold font-mono text-amber-300 mt-1">
-            {evalSummary?.abstained ?? 0}
-          </span>
-          <span className="text-[10px] text-amber-500 font-mono mt-0.5">
-            {evalSummary?.abstention_rate_percent ? `${evalSummary.abstention_rate_percent}% rate` : "Requires Attention"}
-          </span>
-        </div>
-
-        <div className="p-3 rounded-xl border border-rose-900/50 bg-rose-950/20 flex flex-col justify-between">
-          <span className="text-rose-400 font-medium text-[11px] flex items-center gap-1">
-            <ShieldAlert className="w-3 h-3 text-rose-400" />
-            Rejected
-          </span>
-          <span className="text-xl font-bold font-mono text-rose-300 mt-1">
-            {evalSummary?.validation_rejected ?? 0}
-          </span>
-          <span className="text-[10px] text-rose-500 font-mono mt-0.5">Evidence Grounding</span>
-        </div>
-
-        <div className="p-3 rounded-xl border border-red-900/50 bg-red-950/20 flex flex-col justify-between">
-          <span className="text-red-400 font-medium text-[11px] flex items-center gap-1">
-            <X className="w-3 h-3 text-red-400" />
-            Failed / Timeout
-          </span>
-          <span className="text-xl font-bold font-mono text-red-300 mt-1">
-            {evalSummary?.evaluation_failed ?? 0}
-          </span>
-          <span className="text-[10px] text-red-500 font-mono mt-0.5">Execution Errors</span>
-        </div>
-
-        <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/40 flex flex-col justify-between">
-          <span className="text-slate-400 font-medium text-[11px] flex items-center gap-1">
-            <HelpCircle className="w-3 h-3 text-slate-400" />
-            Not Evaluated
-          </span>
-          <span className="text-xl font-bold font-mono text-slate-300 mt-1">
-            {evalSummary?.not_evaluated ?? 0}
-          </span>
-          <span className="text-[10px] text-slate-500 font-mono mt-0.5">Missing Inference</span>
+        {/* Secondary Outcomes Strip: Rejected & Failed/Timeout */}
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1 rounded-lg bg-slate-950/40 border border-slate-800/60 text-[11px]">
+          <div className="flex items-center gap-3">
+            <span className="text-slate-400 font-medium">Secondary Outcomes:</span>
+            <span className={`inline-flex items-center gap-1 font-mono ${
+              (evalSummary?.validation_rejected ?? 0) > 0 ? "text-rose-300 font-bold" : "text-slate-400"
+            }`}>
+              <ShieldAlert className="w-3 h-3 text-rose-400" />
+              Rejected: <strong className="text-slate-200">{evalSummary?.validation_rejected ?? 0}</strong>
+            </span>
+            <span className="text-slate-700">•</span>
+            <span className={`inline-flex items-center gap-1 font-mono ${
+              (evalSummary?.evaluation_failed ?? 0) > 0 ? "text-red-300 font-bold" : "text-slate-400"
+            }`}>
+              <X className="w-3 h-3 text-red-400" />
+              Failed / Timeout: <strong className="text-slate-200">{evalSummary?.evaluation_failed ?? 0}</strong>
+            </span>
+          </div>
+          {evalSummary?.snapshot_at && (
+            <span className="text-[10px] text-slate-500 font-mono">
+              Snapshot: {new Date(evalSummary.snapshot_at).toLocaleTimeString()}
+            </span>
+          )}
         </div>
       </div>
 
       {/* SECTION B: Incident Evaluation Tracking Table */}
-      <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-3">
+      <div className="p-3 sm:px-3.5 rounded-xl border border-slate-800 bg-slate-900/60 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-cyan-400" />
