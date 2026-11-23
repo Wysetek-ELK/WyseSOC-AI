@@ -115,6 +115,8 @@ class BenchmarkIncidentResult:
     guardrails_triggered: List[str] = field(default_factory=list)
     cluster_key: Optional[str] = None
     is_duplicate: bool = False
+    finish_reason: Optional[str] = None
+    requested_max_tokens: Optional[int] = None
 
 
 @dataclass
@@ -845,6 +847,8 @@ class EmpiricalBenchmarkHarness:
                     guardrails_triggered=["CONTEXT_WINDOW_EXCEEDED"],
                     cluster_key=incident_rec.cluster_key,
                     is_duplicate=incident_rec.is_duplicate,
+                    finish_reason="abstained_preflight",
+                    requested_max_tokens=768,
                 )
 
             # 3c: Invoke Live Provider (Byte-for-byte Parity with Production Pipeline)
@@ -867,6 +871,8 @@ class EmpiricalBenchmarkHarness:
             t_tokens = getattr(verdict_obj, "total_tokens", 0) or (p_tokens + c_tokens)
             schema_compliant = bool(getattr(verdict_obj, "validation_status", "VALID") != "INVALID_SCHEMA")
             model_identifier = getattr(verdict_obj, "model_identifier", "Qwen/Qwen2.5-7B-Instruct-AWQ")
+            finish_reason = getattr(verdict_obj, "finish_reason", None)
+            requested_max_tokens = getattr(verdict_obj, "requested_max_tokens", None)
         else:
             # Offline Simulation
             if simulated_output_fn:
@@ -878,6 +884,8 @@ class EmpiricalBenchmarkHarness:
             p_tokens = None
             c_tokens = None
             t_tokens = None
+            finish_reason = None
+            requested_max_tokens = None
 
         raw_proposed_verdict = str(model_output.get("verdict") or "REQUIRES_ATTENTION").upper().strip()
         raw_proposed_confidence = float(model_output.get("confidence") or 0.0)
@@ -993,6 +1001,8 @@ class EmpiricalBenchmarkHarness:
             guardrails_triggered=guardrails_triggered,
             cluster_key=incident_rec.cluster_key,
             is_duplicate=incident_rec.is_duplicate,
+            finish_reason=finish_reason,
+            requested_max_tokens=requested_max_tokens,
         )
 
     @classmethod

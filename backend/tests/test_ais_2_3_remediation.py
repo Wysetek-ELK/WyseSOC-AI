@@ -584,10 +584,10 @@ async def test_4_context_budget_readiness_across_all_archetypes_and_verified_cap
                         "destPort": 1000 + idx,
                         "protocol": "TCP",
                         "user": f"svc_scan_{idx}",
-                        "commandLine": f"nmap -sS -p {1000 + idx} 198.51.100.{10 + idx} --scan-id {idx:03d} " + ("X" * 120),
+                        "commandLine": f"nmap -sS -p {1000 + idx} 198.51.100.{10 + idx} --scan-id {idx:03d} " + ("X" * 300),
                     },
                 )
-                for idx in range(12)
+                for idx in range(30)
             ],
         )
         db_session.add(huge_inc)

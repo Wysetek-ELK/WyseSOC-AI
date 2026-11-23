@@ -587,6 +587,13 @@ class EvidenceNormalizationService:
         is_kv_extracted: bool = False,
     ) -> None:
         """Recursively parses a dictionary, mapping known SOC attributes to canonical fields."""
+        has_proc_ctx = any(
+            str(k).strip().lower() in (
+                "pid", "processid", "process id", "ppid", "command", "cmdline",
+                "processcommandline", "process blocked", "process_id", "process_name", "processname"
+            )
+            for k in data.keys()
+        )
         for key, val in data.items():
             if val is None or val == "":
                 continue
@@ -606,23 +613,20 @@ class EvidenceNormalizationService:
                     if isinstance(item, dict):
                         cls._extract_from_dict(item, source_event_id, observed_at, add_fn, unmapped_fields, is_kv_extracted)
             else:
-                # Check mapping via literal and cleaned key lookup
-                mapping = resolve_field_mapping(key)
-                if mapping:
-                    trans = "KEY_VALUE_EXTRACTED" if is_kv_extracted else "ALIASED"
-                    add_fn(
-                        source_field=mapping["field"],
-                        observed_value=val,
-                        evidence_type=mapping["type"],
-                        source_event_id=source_event_id,
-                        observed_at=observed_at,
-                        raw_field_name=str(key),
-                        transformation=trans,
-                    )
-                    # Canonical Field Aliasing: Provide both process.name and process.file_name
-                    # so both detection archetypes (MALWARE_EXECUTION, NETWORK_THREAT) and
-                    # evidence contracts reliably locate the binary name.
-                    if mapping["field"] == "process.file_name":
+                trans = "KEY_VALUE_EXTRACTED" if is_kv_extracted else "ALIASED"
+
+                # Semantic Distinction: File Name vs Process Execution
+                if norm_k in ("filename", "file name", "file_name"):
+                    if has_proc_ctx:
+                        add_fn(
+                            source_field="process.file_name",
+                            observed_value=val,
+                            evidence_type="PROCESS_EXECUTION",
+                            source_event_id=source_event_id,
+                            observed_at=observed_at,
+                            raw_field_name=str(key),
+                            transformation=trans,
+                        )
                         add_fn(
                             source_field="process.name",
                             observed_value=val,
@@ -641,9 +645,77 @@ class EvidenceNormalizationService:
                             raw_field_name=str(key),
                             transformation="ALIASED",
                         )
-                    elif mapping["field"] == "process.name" and norm_k in ("filename", "file name", "file_name", "app", "application_name", "application name"):
+                    else:
+                        add_fn(
+                            source_field="file.name",
+                            observed_value=val,
+                            evidence_type="SECURITY_EVENT",
+                            source_event_id=source_event_id,
+                            observed_at=observed_at,
+                            raw_field_name=str(key),
+                            transformation=trans,
+                        )
+                    continue
+
+                # Semantic Distinction: Application Name vs Process Execution
+                if norm_k in ("app", "application name", "applicationname", "application_name", "application"):
+                    if has_proc_ctx:
+                        add_fn(
+                            source_field="process.name",
+                            observed_value=val,
+                            evidence_type="PROCESS_EXECUTION",
+                            source_event_id=source_event_id,
+                            observed_at=observed_at,
+                            raw_field_name=str(key),
+                            transformation=trans,
+                        )
                         add_fn(
                             source_field="process.file_name",
+                            observed_value=val,
+                            evidence_type="PROCESS_EXECUTION",
+                            source_event_id=source_event_id,
+                            observed_at=observed_at,
+                            raw_field_name=str(key),
+                            transformation="ALIASED",
+                        )
+                    else:
+                        add_fn(
+                            source_field="application.name",
+                            observed_value=val,
+                            evidence_type="NETWORK_CONNECTION",
+                            source_event_id=source_event_id,
+                            observed_at=observed_at,
+                            raw_field_name=str(key),
+                            transformation=trans,
+                        )
+                        add_fn(
+                            source_field="network.application",
+                            observed_value=val,
+                            evidence_type="NETWORK_CONNECTION",
+                            source_event_id=source_event_id,
+                            observed_at=observed_at,
+                            raw_field_name=str(key),
+                            transformation="ALIASED",
+                        )
+                    continue
+
+                # Check mapping via literal and cleaned key lookup
+                mapping = resolve_field_mapping(key)
+                if mapping:
+                    add_fn(
+                        source_field=mapping["field"],
+                        observed_value=val,
+                        evidence_type=mapping["type"],
+                        source_event_id=source_event_id,
+                        observed_at=observed_at,
+                        raw_field_name=str(key),
+                        transformation=trans,
+                    )
+                    # Canonical Field Aliasing: Provide both process.name and process.file_name
+                    # when explicitly mapped to process.file_name with process context
+                    if mapping["field"] == "process.file_name":
+                        add_fn(
+                            source_field="process.name",
                             observed_value=val,
                             evidence_type="PROCESS_EXECUTION",
                             source_event_id=source_event_id,

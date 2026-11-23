@@ -26,6 +26,7 @@ class TokenBudgetService:
     DEFAULT_MAX_CONTEXT = 16384
     DEFAULT_MAX_COMPLETION = 1024
     DEFAULT_TARGET_INPUT_BUDGET = 8192
+    CHAT_TEMPLATE_OVERHEAD_TOKENS = 125
 
     @classmethod
     def calculate_available_input_tokens(
@@ -37,11 +38,10 @@ class TokenBudgetService:
     ) -> int:
         """
         Dynamically calculates available input tokens based on model context capacity,
-        reserved output tokens, and optional target input budget.
-        - Headroom: max(512, max_context_tokens - comp_tokens).
-        - When target_input_budget is provided, effective input is bounded by available headroom
-          and target_input_budget.
-        Guarantees at least 512 prompt tokens if context allows.
+        reserved output tokens, and chat template overhead.
+        Enforces a minimum of 768 tokens of completion headroom for 4,096-token hardware contexts,
+        guaranteeing that input prompt tokens plus completion headroom plus chat template
+        strictly comply with the physical context ceiling.
         """
         comp_tokens = (
             int(reserved_output_tokens)
@@ -55,16 +55,16 @@ class TokenBudgetService:
 
     @classmethod
     def estimate_tokens(cls, obj: Any) -> int:
-        """Accurately estimate token count for strings or serialized JSON objects."""
+        """Accurately count tokens using model-compatible BPE tokenizer."""
         if obj is None:
             return 0
         if isinstance(obj, str):
             text = obj
         elif isinstance(obj, (dict, list)):
-            text = json.dumps(obj)
+            text = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
         else:
             text = str(obj)
-        return max(1, len(text) // 4)
+        return max(1, ModelTokenizerService.count_tokens(text))
 
     @classmethod
     def get_token_accounting(
@@ -120,11 +120,16 @@ class TokenBudgetService:
                 compacted.append(item)
                 continue
             # Avoid duplicating the raw log string twice when events[0].raw_log is already present
+            src_f = str(item.get("source_field") or item.get("field") or "").lower()
             if (
                 has_event_raw_log
-                and item.get("source_field") == "security.raw_log"
+                and src_f in ("security.raw_log", "security.raw_message", "security.raw_event_log")
                 and len(can_ev) > 1
             ):
+                changed = True
+                continue
+            # Strip non-contract geographic and vendor telemetry reporting metadata
+            if src_f.startswith("telemetry.reporting ") and not any(k in src_f for k in ("device", "ip")):
                 changed = True
                 continue
             minimal: Dict[str, Any] = {}
@@ -307,16 +312,27 @@ class TokenBudgetService:
 
         # Trimming Step 3b: Event attribute and log compaction for remaining events
         if total_tokens > available_budget and payload_work.get("events"):
-            contract_fields = set(contract_info.get("required_fields") or [])
-            if cls._compact_events(payload_work, contract_fields):
+            if payload_work.get("canonical_evidence"):
+                slim_events = []
+                for ev in payload_work["events"][:1]:
+                    if isinstance(ev, dict):
+                        slim_ev = {k: ev[k] for k in ("event_id", "event_type", "event_receive_time") if k in ev}
+                        if ev.get("raw_log"):
+                            slim_ev["raw_log_preview"] = str(ev["raw_log"])[:120]
+                        slim_events.append(slim_ev)
+                payload_work["events"] = slim_events
                 events_compacted = True
-                remaining_events = payload_work.get("events") or []
-                p5_events_tokens = cls.estimate_tokens(remaining_events[1:]) if len(remaining_events) > 1 else 0
-                total_tokens = (
-                    cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                    + cls.estimate_tokens(payload_work)
-                    + max(0, int(reserved_overhead_tokens))
-                )
+            else:
+                contract_fields = set(contract_info.get("required_fields") or [])
+                if cls._compact_events(payload_work, contract_fields):
+                    events_compacted = True
+            remaining_events = payload_work.get("events") or []
+            p5_events_tokens = cls.estimate_tokens(remaining_events[1:]) if len(remaining_events) > 1 else 0
+            total_tokens = (
+                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
+                + cls.estimate_tokens(payload_work)
+                + max(0, int(reserved_overhead_tokens))
+            )
 
         # Trimming Step 3c: Canonical evidence metadata compaction
         # Strips non-reasoning forensic digest/null metadata inside canonical_evidence
@@ -358,14 +374,14 @@ class TokenBudgetService:
                 + list(contract_info.get("conditional_fields") or [])
                 + _orig_conditional_fields
             ))
+            payload_no_ev = {k: v for k, v in payload_work.items() if k != "canonical_evidence"}
             overhead = (
                 cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                + cls.estimate_tokens(contract_info)
-                + cls.estimate_tokens(payload_work.get("title"))
+                + cls.estimate_tokens(payload_no_ev)
                 + max(0, int(reserved_overhead_tokens))
-                + 95  # wire margin + cleaned incident header fields + slimmed events[0]
+                + 65  # wire margin for Qwen chat template tags and JSON delimiters
             )
-            avail_ev_budget = max(400, available_budget - overhead)
+            avail_ev_budget = max(550 if has_scan_aggs else 150, available_budget - overhead)
 
             rec_objs = []
             for item in can_ev:

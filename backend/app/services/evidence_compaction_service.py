@@ -216,11 +216,8 @@ class EvidenceCompactionService:
             f_norm = r.source_field.lower()
             val_clean = str(r.observed_value).strip()
             if f_norm in DO_NOT_COLLAPSE_FIELDS:
-                # Keep distinct forensic executions intact (deduplicate identical values across repeating events)
-                val_key = (f_norm, val_clean)
-                if val_key not in seen_forensic_values:
-                    seen_forensic_values.add(val_key)
-                    aggregated_records.append(r)
+                # Keep distinct forensic executions intact
+                aggregated_records.append(r)
             else:
                 key = (f_norm, val_clean)
                 grouped_records.setdefault(key, []).append(r)
@@ -405,6 +402,8 @@ class EvidenceCompactionService:
             essential_scan_fields = frozenset({
                 "network.source_ip",
                 "network.destination_port",
+                "network.protocol",
+                "event.timestamp",
                 "scan.raw_events_count",
                 "scan.connection_count",
                 "scan.unique_destination_hosts",

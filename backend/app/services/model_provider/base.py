@@ -35,6 +35,8 @@ class StructuredModelVerdict(BaseModel):
     prompt_tokens: int = Field(0, ge=0, description="Tokens used for input prompt")
     completion_tokens: int = Field(0, ge=0, description="Tokens generated in output")
     total_tokens: int = Field(0, ge=0, description="Total tokens consumed by inference")
+    finish_reason: Optional[str] = Field(None, description="Model generation finish reason: stop, length, etc.")
+    requested_max_tokens: Optional[int] = Field(None, description="Requested max generation capacity")
     prompt_capture_id: Optional[str] = Field(None, description="Linked ActualLLMPromptCapture ID")
     prompt_request_sha256: Optional[str] = Field(None, description="SHA-256 hash of canonical outbound request payload")
     prompt_integrity_status: Optional[str] = Field(None, description="VERIFIED, MISMATCH, or UNVERIFIED")

@@ -50,13 +50,14 @@ class SimulatedModelProvider(BaseModelProvider):
         }, separators=(",", ":"))
         user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
 
+        effective_max_tokens = int(kwargs.get("max_tokens_override") or 1024)
         payload = {
             "model": self.model_name,
             "messages": [
                 {"role": "system", "content": prompt_text},
                 {"role": "user", "content": user_content},
             ],
-            "max_tokens": 1024,
+            "max_tokens": effective_max_tokens,
             "temperature": 0.0,
         }
 
@@ -71,7 +72,7 @@ class SimulatedModelProvider(BaseModelProvider):
                     user_message=user_content,
                     generation_settings={
                         "model": self.model_name,
-                        "max_tokens": 1024,
+                        "max_tokens": effective_max_tokens,
                         "temperature": 0.0,
                         "endpoint": "SIMULATED_PROVIDER",
                     },
@@ -180,6 +181,8 @@ class SimulatedModelProvider(BaseModelProvider):
             prompt_tokens=p_tokens,
             completion_tokens=c_tokens,
             total_tokens=t_tokens,
+            finish_reason="stop",
+            requested_max_tokens=effective_max_tokens,
             prompt_capture_id=getattr(capture_meta, "id", None) if capture_meta else None,
             prompt_request_sha256=getattr(capture_meta, "request_sha256", None) if capture_meta else None,
             prompt_integrity_status="VERIFIED",

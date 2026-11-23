@@ -235,7 +235,8 @@ class ModelClaimExtractor:
                                 clean_cf = r_cand.source_field.lower().replace(".", "_")
                                 if (
                                     clean_cf in clean_eid_field
-                                    or (clean_cf in ("process_file_name", "process_name", "file_name") and any(k in clean_eid_field for k in ("file_name", "process_name", "filename")))
+                                    or (clean_cf in ("process_file_name", "process_name") and any(k in clean_eid_field for k in ("process_name", "process_file_name", "process")))
+                                    or (clean_cf in ("file_name", "filename") and any(k in clean_eid_field for k in ("file_name", "filename", "file_path")))
                                     or (clean_cf in ("process_parent_name", "parent_name") and any(k in clean_eid_field for k in ("parent", "parent_file_name")))
                                 ):
                                     rec = r_cand
@@ -261,7 +262,8 @@ class ModelClaimExtractor:
                         rec.source_field == claim.field
                         or claim.field == "unknown"
                         or clean_rec_f == clean_claim_f
-                        or (clean_rec_f in ("process_name", "process_file_name", "file_name", "process") and clean_claim_f in ("process_name", "process_file_name", "file_name", "process"))
+                        or (clean_rec_f in ("process_name", "process_file_name", "process") and clean_claim_f in ("process_name", "process_file_name", "process"))
+                        or (clean_rec_f in ("file_name", "filename", "file_path", "target_filename") and clean_claim_f in ("file_name", "filename", "file_path", "target_filename"))
                         or (clean_rec_f in ("process_parent_name", "parent_name", "parent_file_name", "parent_process") and clean_claim_f in ("process_parent_name", "parent_name", "parent_file_name", "parent_process"))
                         or (clean_rec_f in ("file_hash_sha256", "file_sha256", "sha256") and clean_claim_f in ("file_hash_sha256", "file_sha256", "sha256"))
                     )

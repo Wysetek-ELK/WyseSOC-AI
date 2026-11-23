@@ -90,6 +90,8 @@ class VerdictPipelineResult:
     prompt_execution_id: Optional[str] = None
     prompt_sha256: Optional[str] = None
     prompt_integrity_status: str = "UNVERIFIED"
+    finish_reason: Optional[str] = None
+    requested_max_tokens: Optional[int] = None
 
 
 def build_sanitized_model_payload(
@@ -1289,6 +1291,8 @@ async def run_shared_verdict_pipeline(
         "prompt_execution_id": execution_id,
         "prompt_sha256": getattr(verdict_obj, "prompt_request_sha256", None),
         "prompt_integrity_status": getattr(verdict_obj, "prompt_integrity_status", "UNVERIFIED"),
+        "finish_reason": getattr(verdict_obj, "finish_reason", None),
+        "requested_max_tokens": getattr(verdict_obj, "requested_max_tokens", None) or reserved_comp_tokens,
         **gov_meta,
     }
 
@@ -1364,5 +1368,7 @@ async def run_shared_verdict_pipeline(
         prompt_execution_id=execution_id,
         prompt_sha256=getattr(verdict_obj, "prompt_request_sha256", None),
         prompt_integrity_status=getattr(verdict_obj, "prompt_integrity_status", "UNVERIFIED"),
+        finish_reason=getattr(verdict_obj, "finish_reason", None),
+        requested_max_tokens=getattr(verdict_obj, "requested_max_tokens", None) or reserved_comp_tokens,
     )
 

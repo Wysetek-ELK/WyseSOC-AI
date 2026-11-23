@@ -33,9 +33,9 @@ class ModelTokenizerService:
     _encoder_initialized = False
 
     # Regex for pure-Python subword BPE pre-tokenization
-    # Splits contractions, words, numbers, punctuation, and whitespace
+    # Splits contractions, words, numbers, punctuation runs, and whitespace
     _FALLBACK_SPLIT_REGEX = re.compile(
-        r"""'s|'t|'re|'ve|'m|'ll|'d|[A-Za-z]+|\d+|[^\w\s]|\s+"""
+        r"""'s|'t|'re|'ve|'m|'ll|'d|[A-Za-z]+|\d+|[^\w\s]+|\s+"""
     )
 
     @classmethod
@@ -102,8 +102,9 @@ class ModelTokenizerService:
                 else:
                     tokens += (match_len + 3) // 4
             else:
-                # Punctuation / symbol: conservative 1 token per symbol (handles JSON/code safely)
-                tokens += match_len
+                # Punctuation / symbols run
+                # In cl100k_base / Qwen2.5, punctuation sequences like '": "' or '",\n' are 1-2 tokens
+                tokens += max(1, (match_len + 1) // 2)
 
         return max(1, tokens)
 
