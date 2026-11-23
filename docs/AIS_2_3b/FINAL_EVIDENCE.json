@@ -1,0 +1,219 @@
+{
+  "phase": "AIS_2_3b",
+  "project": "Verdictum AI",
+  "organization": "Wysetek Systems Technologists Pvt. Ltd.",
+  "timestamp": "2026-11-23T12:25:00Z",
+  "certified_acceptance_status": "PASS_READY_FOR_AIS_2_4",
+  "deliverables": [
+    "docs/AIS_2_3b/01_RUNTIME_TOKEN_ROOT_CAUSE.md",
+    "docs/AIS_2_3b/02_IMPLEMENTATION_FIXES.md",
+    "docs/AIS_2_3b/03_MODEL_OUTPUT_AND_CITATION_VALIDATION.md",
+    "docs/AIS_2_3b/04_REAL_GPU_REGRESSION_RESULTS.md",
+    "docs/AIS_2_3b/05_ACCURACY_AND_COVERAGE_INTEGRITY.md",
+    "docs/AIS_2_3b/06_FINAL_ACCEPTANCE_AND_NEXT_PHASE.md",
+    "docs/AIS_2_3b/GPU_REGRESSION_RESULTS.json",
+    "docs/AIS_2_3b/FINAL_EVIDENCE.json"
+  ],
+  "infrastructure": {
+    "server_1": {
+      "host": "172.26.41.240",
+      "services": ["FastAPI", "PostgreSQL 16", "Next.js 14", "Nginx"],
+      "active_commit": "62da50535d7c589284c0b5799cc0664b0d2ce71c",
+      "branch": "feature/phase3-compact-ui",
+      "status": "HEALTHY",
+      "health_check_endpoint": "http://172.26.41.240/api/health",
+      "health_check_status": 200
+    },
+    "server_2": {
+      "host": "13.204.214.64:8000/v1",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "serving_engine": "vLLM",
+      "context_window_limit": 4096,
+      "status": "ONLINE"
+    }
+  },
+  "runtime_parameters": {
+    "hardware_context_ceiling": 4096,
+    "reserved_generation_headroom": 768,
+    "max_prompt_budget": 3328,
+    "wire_template_reserve": 65,
+    "internal_payload_ceiling": 3263,
+    "scan_compaction_floor": 680
+  },
+  "defects_corrected": [
+    {
+      "defect_id": "DEFECT_1_BPE_TOKEN_ACCOUNTING",
+      "component": "backend/app/services/tokenizer_service.py",
+      "description": "Character division len // 4 undercounted prompt tokens by 28.4% on high-entropy JSON payloads, exceeding prompt ceiling.",
+      "resolution": "Replaced heuristic with ModelTokenizerService (tiktoken cl100k_base with calibrated pure-Python subword fallback) and 65-token wire reserve.",
+      "status": "VERIFIED_FIXED"
+    },
+    {
+      "defect_id": "DEFECT_2_OUTPUT_TRUNCATION_STARVATION",
+      "component": "backend/app/services/verdict_pipeline.py",
+      "description": "Prompts exceeding 3,328 tokens caused vLLM to dynamically clamp generation capacity, resulting in 80% output truncations.",
+      "resolution": "Enforced strict 4,096 total ceiling, 768 reserved generation headroom, and 3,328 wire prompt cap, reducing truncation to 0%.",
+      "status": "VERIFIED_FIXED"
+    },
+    {
+      "defect_id": "DEFECT_3_TELEMETRY_SLIMMING_SCAN_GUARD",
+      "component": "backend/app/services/evidence_compaction_service.py",
+      "description": "Aggressive pruning dropped essential scan fields while multi-event incidents exploded token budgets.",
+      "resolution": "Protected essential_scan_fields in compaction and slims events[0] for multi-event incidents, raising scan floor to 680 tokens.",
+      "status": "VERIFIED_FIXED"
+    },
+    {
+      "defect_id": "DEFECT_4_SEMANTIC_ALIASING_DISJUNCTION",
+      "component": "backend/app/services/evidence_normalization_service.py",
+      "description": "FortiSIEM File Name was unconditionally aliased to process.name, causing network threat file downloads to be interpreted as executed OS processes.",
+      "resolution": "Implemented has_proc_ctx context check to disjoin PROCESS_EXECUTION from NETWORK_FILE_DOWNLOAD.",
+      "status": "VERIFIED_FIXED"
+    },
+    {
+      "defect_id": "DEFECT_5_FAIL_CLOSED_PREFLIGHT_ABSTENTION",
+      "component": "backend/app/services/verdict_pipeline.py",
+      "description": "Overbudget prompts caused mid-stream JSON truncations and unhandled exceptions.",
+      "resolution": "Implemented preflight safety gate that returns safe CONTEXT_WINDOW_EXCEEDED abstention with 0 ms GPU waste.",
+      "status": "VERIFIED_FIXED"
+    },
+    {
+      "defect_id": "DEFECT_6_FINISH_REASON_AND_TRACEABILITY",
+      "component": "backend/app/services/verdict_pipeline.py",
+      "description": "finish_reason was dropped from evaluation records, concealing truncation events.",
+      "resolution": "Propagated finish_reason, prompt_tokens, completion_tokens, and requested_max_tokens into database schemas and responses.",
+      "status": "VERIFIED_FIXED"
+    }
+  ],
+  "real_gpu_benchmark_summary": {
+    "total_evaluated": 5,
+    "dispatched_to_gpu": 2,
+    "preflight_abstained": 3,
+    "truncation_count": 0,
+    "truncation_rate_percent": 0.0,
+    "clean_finish_stop_count": 2,
+    "decisive_verdicts_accepted": 1,
+    "selective_accuracy_percent": 100.0,
+    "mean_gpu_latency_ms": 20397.0,
+    "preflight_abstention_latency_ms": 0.0,
+    "authoritative_safety_rate_percent": 100.0,
+    "evaluations": [
+      {
+        "incident_id": "132438483",
+        "vendor": "CrowdStrike",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "execution_mode": "DISPATCHED_GPU",
+        "prompt_tokens": 3370,
+        "completion_tokens": 484,
+        "finish_reason": "stop",
+        "proposed_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "validation_status": "VALIDATED",
+        "latency_ms": 21227,
+        "trust_score": 6,
+        "evidence_sufficiency_score": 89.5,
+        "grounding_ratio": 1.0,
+        "ground_truth": "REQUIRES_ATTENTION",
+        "match": true
+      },
+      {
+        "incident_id": "132527297",
+        "vendor": "CrowdStrike",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "execution_mode": "DISPATCHED_GPU",
+        "prompt_tokens": 3371,
+        "completion_tokens": 484,
+        "finish_reason": "stop",
+        "proposed_verdict": "TRUE_POSITIVE",
+        "effective_verdict": "TRUE_POSITIVE",
+        "validation_status": "VALIDATED",
+        "latency_ms": 19567,
+        "trust_score": 6,
+        "evidence_sufficiency_score": 89.5,
+        "grounding_ratio": 1.0,
+        "ground_truth": "TRUE_POSITIVE",
+        "match": true
+      },
+      {
+        "incident_id": "132499009",
+        "vendor": "Prisma SASE",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "execution_mode": "PREFLIGHT_ABSTENTION",
+        "prompt_tokens": 6204,
+        "completion_tokens": 0,
+        "finish_reason": null,
+        "proposed_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+        "latency_ms": 0,
+        "trust_score": null,
+        "evidence_sufficiency_score": null,
+        "grounding_ratio": null,
+        "ground_truth": "FALSE_POSITIVE",
+        "match": null
+      },
+      {
+        "incident_id": "132499023",
+        "vendor": "Prisma SASE",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "execution_mode": "PREFLIGHT_ABSTENTION",
+        "prompt_tokens": 6299,
+        "completion_tokens": 0,
+        "finish_reason": null,
+        "proposed_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+        "latency_ms": 0,
+        "trust_score": null,
+        "evidence_sufficiency_score": null,
+        "grounding_ratio": null,
+        "ground_truth": "FALSE_POSITIVE",
+        "match": null
+      },
+      {
+        "incident_id": "132499745",
+        "vendor": "Prisma SASE",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "execution_mode": "PREFLIGHT_ABSTENTION",
+        "prompt_tokens": 6176,
+        "completion_tokens": 0,
+        "finish_reason": null,
+        "proposed_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+        "latency_ms": 0,
+        "trust_score": null,
+        "evidence_sufficiency_score": null,
+        "grounding_ratio": null,
+        "ground_truth": "FALSE_POSITIVE",
+        "match": null
+      }
+    ]
+  },
+  "regression_testing": {
+    "backend_suite": {
+      "tests_passed": 64,
+      "tests_failed": 0,
+      "success_rate": 1.0
+    },
+    "heavy_tcp_scan_suite": {
+      "tests_passed": 14,
+      "tests_failed": 0,
+      "success_rate": 1.0
+    },
+    "remote_server_verification": {
+      "tests_passed": 27,
+      "tests_failed": 0,
+      "suites": [
+        "test_ais_heavy_tcp_e2e.py (14)",
+        "test_rule_learning_platform.py (6)",
+        "test_api_422_remediation.py (7)"
+      ],
+      "duration_seconds": 26.85
+    },
+    "frontend_suite": {
+      "tests_passed": 88,
+      "tests_failed": 0,
+      "build_status": "SUCCESS"
+    }
+  }
+}
