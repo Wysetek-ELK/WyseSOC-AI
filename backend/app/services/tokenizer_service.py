@@ -84,12 +84,14 @@ class ModelTokenizerService:
             match_len = len(match)
             if match.isspace():
                 # In Qwen2.5 / cl100k_base BPE, a single inter-word space merges into the next word token.
-                # Only newlines and multi-space indentation consume standalone tokens.
+                # Runs of 1-3 newlines collapse into 1-2 tokens (token 198 / 271).
                 if match == " ":
                     continue
                 newlines = match.count("\n")
-                other_ws = match_len - newlines
-                tokens += newlines + (other_ws // 4)
+                if newlines > 0:
+                    tokens += (newlines + 1) // 2 + ((match_len - newlines) // 4)
+                else:
+                    tokens += match_len // 4
             elif match.isdigit():
                 # Qwen2.5 splits digits aggressively (1-2 digits/token); keep conservative
                 tokens += match_len if match_len <= 3 else (match_len + 1) // 2
@@ -103,8 +105,8 @@ class ModelTokenizerService:
                     tokens += (match_len + 3) // 4
             else:
                 # Punctuation / symbols run
-                # In cl100k_base / Qwen2.5, punctuation sequences like '": "' or '",\n' are 1-2 tokens
-                tokens += max(1, (match_len + 1) // 2)
+                # In cl100k_base / Qwen2.5, punctuation sequences like '": "', '",\n', '###', '---' are 1-2 tokens
+                tokens += max(1, (match_len + 2) // 3)
 
         return max(1, tokens)
 

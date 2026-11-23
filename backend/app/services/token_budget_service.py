@@ -381,7 +381,7 @@ class TokenBudgetService:
                 + max(0, int(reserved_overhead_tokens))
                 + 65  # wire margin for Qwen chat template tags and JSON delimiters
             )
-            avail_ev_budget = max(550 if has_scan_aggs else 150, available_budget - overhead)
+            avail_ev_budget = max(680 if has_scan_aggs else 150, available_budget - overhead)
 
             rec_objs = []
             for item in can_ev:
