@@ -473,3 +473,36 @@ async def test_deterministic_snapshot_consistency_across_queries():
         await db.execute(delete(Incident).where(Incident.id == mutation_id))
         await db.commit()
 
+
+@pytest.mark.asyncio
+async def test_transaction_isolation_safety_and_aborted_transaction_recovery():
+    """
+    Validates that get_rule_evaluation_tracking_overview executes cleanly without
+    failing when an active transaction is already open, ensuring no aborted transaction
+    state (25P02) blocks subsequent queries or degrades into HTTP 500.
+    """
+    async with AsyncSessionLocal() as db:
+        # 1. Run a preparatory query to ensure transaction is started
+        prep_res = await db.execute(select(Rule.id).where(Rule.id == RULE_UUID))
+        assert prep_res.scalar_one_or_none() is not None
+
+        # 2. Invoke evaluation tracking overview while session was already active
+        res = await AisEvaluationService.get_rule_evaluation_tracking_overview(
+            db=db,
+            rule_uuid=RULE_UUID,
+            version_number=7,
+            customer="DEFAULT",
+        )
+
+        assert res is not None
+        assert "summary" in res
+        assert "items" in res
+        summary = res["summary"]
+        assert "current_inventory" in summary
+        assert "historical_cohort" in summary
+
+        # 3. Verify session is still fully healthy for further queries
+        post_res = await db.execute(select(Rule.name).where(Rule.id == RULE_UUID))
+        assert post_res.scalar_one_or_none() == RULE_NAME
+
+

@@ -147,6 +147,10 @@ export function AiTestWorkbench({
       setRuleEvalItems(res.items || []);
     } catch (err: any) {
       console.error("Failed to fetch rule evaluation summary:", err);
+      setFeedback({
+        type: "warning",
+        text: `Evaluation status query notice: ${err?.message || "Using cached or default metrics while evaluating."}`,
+      });
     } finally {
       setLoadingSummary(false);
     }

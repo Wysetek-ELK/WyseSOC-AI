@@ -1,0 +1,266 @@
+{
+  "benchmark_version": "2.2.0",
+  "generated_at": "2026-11-23T04:23:40.485839+00:00",
+  "random_seed": 42,
+  "split_strategy": "deterministic_stratified_time_cluster_isolated",
+  "target_rule": {
+    "canonical_uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+    "name": "Heavy TCP Host Scan On Fixed Port",
+    "nature": "ONE_CLASS_DATASET"
+  },
+  "policies": {
+    "v7": {
+      "version_number": 7,
+      "id": "d79fb576-c6b9-4f63-9167-3c7a2419b70a",
+      "status": "APPROVED",
+      "role": "CURRENT_APPROVED_BASELINE"
+    },
+    "v8": {
+      "version_number": 8,
+      "id": "20d4f788-85a5-437d-afbe-fe7fd80abca1",
+      "status": "DRAFT",
+      "role": "CANDIDATE_UNDER_EVALUATION"
+    }
+  },
+  "authoritative_populations": {
+    "server1_current_inventory": {
+      "total_incidents": 35,
+      "verified_analyst_reviews": 33,
+      "verified_tp": 0,
+      "verified_fp": 33,
+      "not_evaluated": 2,
+      "abstained": 33,
+      "decisive": 0
+    },
+    "server1_cumulative_historical_cohort": {
+      "total_reviews": 65,
+      "verified_tp": 0,
+      "verified_fp": 65,
+      "initial_benchmarks_missing_inference": 32,
+      "abstained": 33,
+      "decisive": 0
+    },
+    "zip_fixtures_historical_incidents": {
+      "total": 20,
+      "verified_tp": 0,
+      "verified_fp": 1,
+      "unverified": 19
+    }
+  },
+  "dataset_splits": {
+    "development_cohort": [
+      {
+        "incident_id": "132599330",
+        "rule_name": "Unknown Rule",
+        "sha256": "f6c170ff8f044f03689b7a0d22e1e30b5002e4c4654c2801d73d16aa6e5e50b6",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132472498",
+        "rule_name": "Unknown Rule",
+        "sha256": "f32509874ef3bc2ac40205580ba877c5f1cc1ce312968d2bc48d7cb9674f74cc",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132591888",
+        "rule_name": "Unknown Rule",
+        "sha256": "5fef4bc8a0b947d105364e2af80d9d0ea2d0a9321a5c9b56418f805fd30cddfd",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132461368",
+        "rule_name": "Unknown Rule",
+        "sha256": "de981e0b1d0eaf80495a287eb15399e536273c2a5a230b55d21b276c747afe7e",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132527297",
+        "rule_name": "Unknown Rule",
+        "sha256": "b5cdd13266d60a312dd7c348b2a33106f207f5b68c7961789e97ae21647732ec",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132578774",
+        "rule_name": "Unknown Rule",
+        "sha256": "586fe5c1644430c9302eac8d20456af3b9e92f87bbd32dae46f616ab8e3e17d0",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      }
+    ],
+    "validation_cohort": [
+      {
+        "incident_id": "132595592",
+        "rule_name": "Unknown Rule",
+        "sha256": "64ad8872f2b9b6ccbceba53187a864137fd9e20e042c9ef7390dee27acf8ef2d",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132599146",
+        "rule_name": "Unknown Rule",
+        "sha256": "f5c44fb13e9faed78fe6401a0a2a15a553aafe021aa0b860f92a6495f52bbef5",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132474210",
+        "rule_name": "Unknown Rule",
+        "sha256": "b3edb608a37b4952490c9bec0b03ccc412563e067c36ffa78630977b5c2d197e",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132499745",
+        "rule_name": "Unknown Rule",
+        "sha256": "61cb17b3e9580dde6a15b702af1a053e735624d214500cdb6c183baf8d01d02a",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132599145",
+        "rule_name": "Unknown Rule",
+        "sha256": "79d8c336917d3e3dde5d430416bc518ead1397bf294fdc439915576b12753a69",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132499009",
+        "rule_name": "Unknown Rule",
+        "sha256": "604ba4f28d5a7affc65843007e77ce4d167fa5e6c6f27202859369704e369e8f",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      }
+    ],
+    "held_out_blind_cohort": [
+      {
+        "incident_id": "132439932",
+        "rule_name": "Unknown Rule",
+        "sha256": "0e0087505de1ca954d94746e0ca6adae62bd09dafa2f618129f76bfa4d980f30",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132499023",
+        "rule_name": "Unknown Rule",
+        "sha256": "9291f6733f83e5b3894eda451d0b6456c1b4319f470ad74039fe23cbd4c50f76",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132441815",
+        "rule_name": "Unknown Rule",
+        "sha256": "4aac3f75020e0bcc0b4ec503995e64b872e9765669bc4e987bac7290d289db41",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132596403",
+        "rule_name": "Unknown Rule",
+        "sha256": "bacdd0a6974f5e683ea8e7edf65d1c0cb7179bedb1403a7605909344e4ffaa88",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132501348",
+        "rule_name": "Unknown Rule",
+        "sha256": "f4e667394711258fb49a8a99a2b2b33f749d82220157a19c1f8ba6fcc96bc700",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132502453",
+        "rule_name": "Unknown Rule",
+        "sha256": "2ccc775b8982da223ab37ff87eaaf05d0903c0f537ff2cefeaeceb21d88a44f3",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132438483",
+        "rule_name": "Unknown Rule",
+        "sha256": "0e20ce78b8ba436d420ee679d363a86635a82fc8ae317e3a1ddf73b725ed4a7a",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      },
+      {
+        "incident_id": "132461358",
+        "rule_name": "Unknown Rule",
+        "sha256": "00cbf7dadd811712d6fcf1b27b479d7c20af1b390225a592fb4b8e39f755f0eb",
+        "events_count": 0,
+        "ground_truth_withheld": true
+      }
+    ]
+  },
+  "anti_leakage_controls": {
+    "fields_sanitized": [
+      "incidentResDescription",
+      "clearedReason",
+      "incidentComments",
+      "clearedUser",
+      "clearedTime",
+      "incidentStatus",
+      "status_name",
+      "analyst_verdict",
+      "analyst_notes",
+      "resolution_notes"
+    ],
+    "leakage_audited_count": 20,
+    "leaks_detected": 0,
+    "status": "PASS"
+  },
+  "duplicate_quarantine": [
+    {
+      "cluster_key": "Unknown Rule_0",
+      "incident_ids": [
+        "132438483",
+        "132439932",
+        "132441815",
+        "132461358",
+        "132461368",
+        "132472498",
+        "132474210",
+        "132501348",
+        "132502453",
+        "132527297",
+        "132499009",
+        "132499023",
+        "132499745",
+        "132578774",
+        "132591888",
+        "132595592",
+        "132596403",
+        "132599145",
+        "132599146",
+        "132599330"
+      ],
+      "primary_id": "132438483",
+      "quarantined_duplicates": [
+        "132439932",
+        "132441815",
+        "132461358",
+        "132461368",
+        "132472498",
+        "132474210",
+        "132501348",
+        "132502453",
+        "132527297",
+        "132499009",
+        "132499023",
+        "132499745",
+        "132578774",
+        "132591888",
+        "132595592",
+        "132596403",
+        "132599145",
+        "132599146",
+        "132599330"
+      ],
+      "reason": "Identical rule and event structure cluster"
+    }
+  ]
+}

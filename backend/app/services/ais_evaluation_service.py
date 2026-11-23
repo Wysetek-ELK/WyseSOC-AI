@@ -462,9 +462,20 @@ class AisEvaluationService:
         try:
             bind = db.get_bind()
             if getattr(bind.dialect, "name", "") == "postgresql":
+                # In PostgreSQL, SET TRANSACTION ISOLATION LEVEL must be issued before any query
+                # in the transaction block. If an implicit read transaction already started (e.g. from user auth),
+                # rollback the clean read transaction first so the snapshot isolation command succeeds.
+                if db.in_transaction():
+                    await db.rollback()
                 await db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;"))
         except Exception as iso_err:
             logger.debug("Transaction isolation set skipped or not supported: %s", iso_err)
+            # Crucial: if setting transaction isolation level failed, PostgreSQL marks the transaction
+            # as aborted (TBLOCK_ABORT / 25P02). We must rollback so subsequent queries are not rejected!
+            try:
+                await db.rollback()
+            except Exception:
+                pass
 
         # 1. Resolve canonical rule and tokens
         canonical_uuid, rule_tokens = await AnalystReviewService._resolve_rule_aliases(db, rule_uuid)

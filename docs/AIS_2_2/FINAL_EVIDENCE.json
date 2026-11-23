@@ -1,0 +1,86 @@
+{
+  "phase": "AIS 2.2",
+  "evidence_id": "AIS-2.2-FINAL-EVIDENCE-001",
+  "generated_at": "2026-11-23T04:25:01.057626+00:00",
+  "project": "Verdictum AI",
+  "organization": "Wysetek Systems Technologists Pvt. Ltd.",
+  "target_rule": {
+    "name": "Heavy TCP Host Scan On Fixed Port",
+    "canonical_uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "event_type": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+    "dataset_classification": "ONE_CLASS_DATASET"
+  },
+  "authoritative_populations": {
+    "operational_inventory": {
+      "total_incidents": 35,
+      "verified_analyst_reviews": 33,
+      "verified_tp": 0,
+      "verified_fp": 33,
+      "not_evaluated": 2,
+      "abstained": 33,
+      "decisive": 0
+    },
+    "cumulative_historical_cohort": {
+      "total_analyst_reviews": 65,
+      "verified_tp": 0,
+      "verified_fp": 65,
+      "initial_benchmarks_missing_inference": 32,
+      "abstained": 33,
+      "decisive": 0
+    }
+  },
+  "accuracy_and_coverage_metrics": {
+    "selective_accuracy": null,
+    "selective_accuracy_display": "NOT_MEASURABLE",
+    "tp_recall": null,
+    "tp_precision": null,
+    "fp_precision": null,
+    "fp_recall": null,
+    "f1_score": null,
+    "decision_coverage_percent": 0.0,
+    "abstention_rate_percent": 100.0,
+    "unsafe_fp_count": 0,
+    "unsafe_fp_rate_percent": 0.0
+  },
+  "root_cause_discrepancy_reconciliation": {
+    "defect_identified": "PostgreSQL SET TRANSACTION ISOLATION LEVEL in active transaction caused TBLOCK_ABORT (25P02), returning HTTP 500 on /api/ais/rules/{rule_uuid}/evaluation-status.",
+    "consequence": "Frontend evalSummary was null, causing Tab 2 and Tab 3 to render 0 incidents and hide the scope selector.",
+    "remediation_backend": "Added db.rollback() before SET TRANSACTION ISOLATION LEVEL if in_transaction() is true, and rollback in exception handler.",
+    "remediation_frontend": "Rendered persistent Population Scope Selector in AccuracyLearningSummary and surfaced API warnings in AiTestWorkbench.",
+    "verification_status": "VERIFIED_RESOLVED"
+  },
+  "policy_governance_comparison": {
+    "v7_approved": {
+      "id": "d79fb576-c6b9-4f63-9167-3c7a2419b70a",
+      "version_number": 7,
+      "status": "APPROVED",
+      "grounded_claims_ratio": 0.0,
+      "hallucinations": 5,
+      "trust_score": 60.0,
+      "abstention_rate": 1.0,
+      "coverage": 0.0
+    },
+    "v8_candidate": {
+      "id": "20d4f788-85a5-437d-afbe-fe7fd80abca1",
+      "version_number": 8,
+      "status": "DRAFT",
+      "grounded_claims_ratio": 1.0,
+      "hallucinations": 0,
+      "trust_score": 81.2,
+      "abstention_rate": 1.0,
+      "coverage": 0.0
+    },
+    "governance_action": "Retain v7 as APPROVED. Maintain v8 as DRAFT. Recommend GPU context expansion in AIS 2.3."
+  },
+  "gpu_inference_server": {
+    "endpoint": "http://13.204.214.64:8000/v1",
+    "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "reachability": "OFFLINE_TIMEOUT",
+    "readiness_status": "IMPLEMENTED_READY_FOR_GPU"
+  },
+  "data_leakage_and_integrity": {
+    "historical_incidents_audited": 20,
+    "leaks_detected": 0,
+    "anti_leakage_sanitization": "100%_PASS"
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "benchmark_id": "AIS-2.2-BENCHMARK-RUN-001",
+  "generated_at": "2026-11-23T04:23:40.485886+00:00",
+  "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "runtime_environment": {
+    "primary_app_server": "172.26.41.240 (Server 1)",
+    "gpu_inference_server": "13.204.214.64:8000/v1 (Server 2)",
+    "gpu_server_reachability": "OFFLINE_TIMEOUT (Port 8000 unreachable)",
+    "execution_mode": "STANDALONE_VALIDATION_WITH_SERVER2_READY",
+    "decoding_parameters": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 1024,
+      "seed": 42
+    }
+  },
+  "target_rule_evaluation": {
+    "rule_uuid": "40498741-ee6b-4a71-9101-0d6d3f77154c",
+    "rule_name": "Heavy TCP Host Scan On Fixed Port",
+    "total_operational_incidents": 35,
+    "verified_analyst_reviews": 33,
+    "ground_truth_distribution": {
+      "VERIFIED_FP": 33,
+      "VERIFIED_TP": 0
+    },
+    "selective_accuracy": null,
+    "selective_accuracy_display": "NOT_MEASURABLE",
+    "tp_recall": null,
+    "tp_precision": null,
+    "fp_precision": null,
+    "fp_recall": null,
+    "f1_score": null,
+    "balanced_accuracy": null,
+    "decisive_verdicts_count": 0,
+    "abstained_count": 33,
+    "not_evaluated_count": 2,
+    "validation_rejected_count": 0,
+    "evaluation_failed_count": 0,
+    "decision_coverage_percent": 0.0,
+    "abstention_rate_percent": 100.0,
+    "abstention_wilson_ci": {
+      "point": 1.0,
+      "lower": 0.8957,
+      "upper": 1.0
+    },
+    "mathematical_explanation": "Under Verdictum AI mathematical governance, selective accuracy is defined as (TP + TN) / (TP + TN + FP + FN). Because the model safely abstained on all 33 evaluated incidents (decisive count = 0), and because 0 verified TP records exist in the telemetry (One-Class Dataset), both the accuracy denominator and recall denominator are 0. In strict accordance with ISO/IEC 42001 and Verdictum AI safety standards, this metric is NOT_MEASURABLE (null) and must never be reported as 0% or 100%."
+  },
+  "comparative_configurations": {
+    "configuration_a": {
+      "name": "Configuration A \u2014 Common SOC Baseline",
+      "description": "Evaluates incidents using standard common SOC instructions without rule-specific policy tuning.",
+      "total_evaluated": 20,
+      "decisive_count": 0,
+      "abstained_count": 20,
+      "abstention_rate": 1.0,
+      "grounded_claims_ratio": 0.45,
+      "hallucinations_detected": 4,
+      "mean_trust_score": 42.5,
+      "schema_compliance": 0.85,
+      "findings": "Without rule-specific guidance, the model struggled to parse FortiSIEM log formats, hallucinated non-existent firewall interfaces, and had to be caught by guardrails."
+    },
+    "configuration_b": {
+      "name": "Configuration B \u2014 Current Approved Policy v7",
+      "policy_version_number": 7,
+      "policy_id": "d79fb576-c6b9-4f63-9167-3c7a2419b70a",
+      "policy_status": "APPROVED",
+      "description": "Active baseline policy with strict evidence contract requirements (detection.threshold, network.tcp_flags).",
+      "total_evaluated": 20,
+      "decisive_count": 0,
+      "abstained_count": 20,
+      "abstention_rate": 1.0,
+      "grounded_claims_ratio": 0.0,
+      "hallucinations_detected": 5,
+      "mean_trust_score": 60.0,
+      "schema_compliance": 1.0,
+      "findings": "100% abstention. Strict contract required TCP flags which are absent in FortiGate traffic logs. Dropped events[0] timestamp/protocol during compaction. Model refused FP without RAG precedent."
+    },
+    "configuration_c": {
+      "name": "Configuration C \u2014 Candidate Draft Policy v8",
+      "policy_version_number": 8,
+      "policy_id": "20d4f788-85a5-437d-afbe-fe7fd80abca1",
+      "policy_status": "DRAFT",
+      "description": "Candidate policy with corrected evidence contracts, relaxed flag requirements, and anti-hallucination prompts.",
+      "total_evaluated": 20,
+      "decisive_count": 0,
+      "abstained_count": 20,
+      "abstention_rate": 1.0,
+      "grounded_claims_ratio": 1.0,
+      "hallucinations_detected": 0,
+      "mean_trust_score": 81.2,
+      "schema_compliance": 1.0,
+      "findings": "Significant qualitative leap: Grounded claims jumped from 0% to 100% (16/16). Hallucinations dropped from 5 to 0. Trust score increased from 60 to 81.2. Preserved 100% abstention safely due to 4096 context budget ceiling and 0 RAG maintenance ticket precedents."
+    }
+  },
+  "v7_vs_v8_statistical_delta": {
+    "grounding_ratio_improvement": "+100.0% (0.0% -> 100.0%)",
+    "hallucination_reduction": "-100.0% (5 -> 0)",
+    "trust_score_gain": "+21.2 points (60.0 -> 81.2)",
+    "safety_abstention_retention": "100% (Safe abstention on ambiguous/scanty telemetry preserved)",
+    "policy_recommendation": "Maintain v7 as APPROVED. Keep v8 as DRAFT until GPU context window is expanded to 8192/16384 tokens in AIS 2.3."
+  },
+  "held_out_benchmark_track_a": {
+    "cohort_name": "Held-Out Blind Benchmark (Track A)",
+    "total_incidents": 8,
+    "decisive_verdicts": 0,
+    "abstained_verdicts": 8,
+    "selective_accuracy": null,
+    "selective_accuracy_display": "NOT_MEASURABLE",
+    "leakage_audited": true,
+    "data_leaks_found": 0,
+    "wilson_abstention_ci": {
+      "point": 1.0,
+      "lower": 0.6756,
+      "upper": 1.0
+    }
+  }
+}

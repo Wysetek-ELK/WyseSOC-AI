@@ -208,6 +208,39 @@ export function AccuracyLearningSummary({
         </div>
       )}
 
+      {/* Population Scope Selector: Always rendered and accessible regardless of zero-count scopes */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-950/80">
+        <div className="flex items-center gap-2">
+          <Layers className="w-4 h-4 text-cyan-400" />
+          <span className="text-xs text-slate-300 font-medium">Population Scope:</span>
+          <span className="text-[11px] text-slate-400 font-mono">
+            {isCurrentScope ? "Operational Incident Inventory" : "Cumulative Historical Reviews"}
+          </span>
+        </div>
+        <div className="inline-flex rounded-lg border border-slate-800 bg-slate-900/90 p-0.5 text-xs">
+          <button
+            onClick={() => setPopulationScope("current")}
+            className={`px-3 py-1 rounded font-medium transition-colors ${
+              isCurrentScope
+                ? "bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Current Incident Inventory ({currentTotal})
+          </button>
+          <button
+            onClick={() => setPopulationScope("historical")}
+            className={`px-3 py-1 rounded font-medium transition-colors ${
+              !isCurrentScope
+                ? "bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Cumulative Historical Cohort ({histTotal})
+          </button>
+        </div>
+      </div>
+
       {/* Top Banner: Condition check if accuracy is measurable */}
       {!hasVerifiedLabels ? (
         <div className="p-4 rounded-xl border border-amber-800/60 bg-amber-950/20 text-xs space-y-3">
@@ -219,11 +252,16 @@ export function AccuracyLearningSummary({
                   Accuracy: NOT MEASURABLE
                 </span>
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-900/60 text-amber-200">
-                  ZERO GROUND TRUTH LABELS
+                  ZERO GROUND TRUTH LABELS IN {scopeLabel.toUpperCase()}
                 </span>
               </div>
               <p className="text-slate-300 text-xs leading-relaxed">
                 Objective empirical accuracy cannot be computed until independent double-blind analyst determinations are recorded on real telemetry samples. Antigravity strictly suppresses fabricated 100% scores and empty charts.
+                {isCurrentScope && histTotal > 0 && (
+                  <span className="block mt-1.5 text-cyan-300 font-medium">
+                    Note: Cumulative Historical Cohort contains {histTotal} verified labels ({histFp} FP, {histTp} TP). Click the scope switcher above to view historical baseline metrics.
+                  </span>
+                )}
               </p>
             </div>
           </div>

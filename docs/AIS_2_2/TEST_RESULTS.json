@@ -1,0 +1,331 @@
+{
+  "report_id": "AIS-2.2-REGRESSION-SUITE-001",
+  "generated_at": "2026-11-23T04:25:01.057602+00:00",
+  "status": "PASSED",
+  "summary": {
+    "total_tests": 118,
+    "total_passed": 118,
+    "total_failed": 0,
+    "pass_rate": 100.0
+  },
+  "backend": {
+    "framework": "pytest 9.2.0 (Python 3.13.17)",
+    "total_tests": 33,
+    "passed": 33,
+    "failed": 0,
+    "duration_seconds": 19.43,
+    "key_suites_verified": [
+      "test_ais_unified_population_contract.py",
+      "test_ais_evaluation_tracking.py",
+      "test_api_422_remediation.py"
+    ],
+    "transaction_isolation_safety_verified": true,
+    "tests": [
+      {
+        "classname": "tests.test_ais_unified_population_contract",
+        "name": "test_dual_scope_mathematical_invariants",
+        "time": 0.162,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_unified_population_contract",
+        "name": "test_synthetic_patterned_fixture_exclusion",
+        "time": 0.135,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_unified_population_contract",
+        "name": "test_zero_decisive_comparisons_returns_not_measurable",
+        "time": 0.095,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_unified_population_contract",
+        "name": "test_evaluation_snapshot_partition_invariant_and_fields",
+        "time": 0.09,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_unified_population_contract",
+        "name": "test_deterministic_snapshot_consistency_across_queries",
+        "time": 0.107,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_unified_population_contract",
+        "name": "test_transaction_isolation_safety_and_aborted_transaction_recovery",
+        "time": 0.097,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_01_not_evaluated_status_when_no_execution_exists",
+        "time": 0.905,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_02_evaluated_decisive_status_for_valid_tp_or_fp_inference",
+        "time": 0.764,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_03_abstained_status_for_requires_attention",
+        "time": 0.755,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_04_validation_rejected_status_when_validator_rejects_output",
+        "time": 0.741,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_05_evaluation_failed_status_on_timeout_or_error",
+        "time": 0.772,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_06_mock_or_simulation_output_marked_is_mock_only_and_excluded",
+        "time": 0.757,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_07_policy_version_isolation_v7_does_not_satisfy_v8",
+        "time": 0.761,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_08_status_list_filtering_by_status_policy_version_and_search",
+        "time": 0.79,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_09_summary_api_count_accuracy_no_double_counting",
+        "time": 0.816,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_10_evaluation_history_preserves_all_attempts_in_chronological_order",
+        "time": 0.78,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_11_controlled_batch_inference_evaluates_only_eligible_missing_incidents",
+        "time": 0.777,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_12_controlled_batch_inference_graceful_cancellation",
+        "time": 2.268,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_13_double_blind_protection_unreviewed_incident_masks_verdicts",
+        "time": 0.786,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_14_authorized_admin_can_inspect_full_evaluation_details",
+        "time": 0.786,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_15_non_admin_cannot_trigger_batch_inference",
+        "time": 0.752,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_16_tenant_isolation_enforced",
+        "time": 0.743,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_17_invalid_rule_uuid_returns_404",
+        "time": 0.761,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_18_missing_incident_id_returns_404",
+        "time": 0.742,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_19_re_evaluating_incident_creates_new_history_and_updates_latest_status",
+        "time": 0.766,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_ais_evaluation_tracking",
+        "name": "test_20_empirical_accuracy_summary_not_measurable_when_zero_decisive_comparisons",
+        "time": 0.776,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_api_422_remediation",
+        "name": "test_submit_review_true_positive",
+        "time": 0.217,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_api_422_remediation",
+        "name": "test_submit_review_false_positive",
+        "time": 0.251,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_api_422_remediation",
+        "name": "test_submit_review_insufficient_evidence_safeguard",
+        "time": 0.238,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_api_422_remediation",
+        "name": "test_double_blind_isolation",
+        "time": 0.21,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_api_422_remediation",
+        "name": "test_metric_update_exact_once_guarantee",
+        "time": 0.248,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_api_422_remediation",
+        "name": "test_cross_tenant_review_isolation",
+        "time": 0.212,
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.test_api_422_remediation",
+        "name": "test_lifecycle_transition_and_promotion_eligibility_enforcement",
+        "time": 0.245,
+        "status": "PASSED"
+      }
+    ]
+  },
+  "frontend": {
+    "framework": "node:test (Node.js v22.18.0)",
+    "total_suites": 16,
+    "total_tests": 85,
+    "passed": 85,
+    "failed": 0,
+    "dual_scope_selector_verified": true,
+    "zero_ground_truth_guardrail_verified": true,
+    "suites": [
+      {
+        "file": "tests/admin-guide.test.mjs",
+        "tests": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "file": "tests/phase3-compact-ui.test.mjs",
+        "tests": 7,
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "file": "tests/production-readiness.test.mjs",
+        "tests": 7,
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "file": "tests/compact-redesign-v1.test.mjs",
+        "tests": 7,
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "file": "tests/quality-export.test.mjs",
+        "tests": 4,
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "file": "tests/v1_2_targeted_ui.test.mjs",
+        "tests": 4,
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "file": "tests/v1_2_1_ui_safety.test.mjs",
+        "tests": 4,
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "file": "tests/v1_2_2_readiness_integrity.test.mjs",
+        "tests": 5,
+        "passed": 5,
+        "failed": 0
+      },
+      {
+        "file": "tests/v1_2_2b_security_integrity.test.mjs",
+        "tests": 5,
+        "passed": 5,
+        "failed": 0
+      },
+      {
+        "file": "tests/v1_2_3_ui_integrity.test.mjs",
+        "tests": 4,
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "file": "tests/v1_2_3a_failsafe.test.mjs",
+        "tests": 4,
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "file": "tests/sidebar-multicolor-icons.test.mjs",
+        "tests": 7,
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "file": "tests/version-governance-and-simplified-ui.test.mjs",
+        "tests": 4,
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "file": "tests/branding.test.mjs",
+        "tests": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "file": "tests/blind-review-and-analyst-workflow.test.mjs",
+        "tests": 3,
+        "passed": 3,
+        "failed": 0
+      },
+      {
+        "file": "tests/evaluate-accuracy-and-empirical-readiness.test.mjs",
+        "tests": 4,
+        "passed": 4,
+        "failed": 0
+      }
+    ]
+  }
+}
