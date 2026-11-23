@@ -120,25 +120,41 @@ class IndependentVerdictValidator:
             reason_codes.append("EVIDENCE_MISSING")
             action_directive = f"Collect missing mandatory telemetry ({', '.join(preflight.critical_missing_fields)}) before closing incident."
 
-        # Check 3: Source Grounding & Unsupported Model Claims
-        if claim_grounding.has_hallucinations and clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+        # Check 3: Source Grounding & Unsupported Model Claims (Semantic Predicate Validation)
+        if (claim_grounding.has_hallucinations or claim_grounding.unsupported_claims > 0) and clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
             final_verdict = "REQUIRES_ATTENTION"
             validation_status = "REJECTED"
 
             # Discern specific grounding failure reasons
             for c in claim_grounding.claims:
                 if not c.is_grounded:
-                    if c.grounding_status == "EVIDENCE_REFERENCE_NOT_FOUND":
+                    if c.grounding_status == "UNSUPPORTED_PREDICATE":
+                        if "UNSUPPORTED_PREDICATE" not in reason_codes:
+                            reason_codes.append("UNSUPPORTED_PREDICATE")
+                        if "UNSUPPORTED_CLAIM" not in reason_codes:
+                            reason_codes.append("UNSUPPORTED_CLAIM")
+                    elif c.grounding_status == "INCOMPATIBLE_EVIDENCE_TYPE":
+                        if "INCOMPATIBLE_EVIDENCE_TYPE" not in reason_codes:
+                            reason_codes.append("INCOMPATIBLE_EVIDENCE_TYPE")
+                        if "UNSUPPORTED_CLAIM" not in reason_codes:
+                            reason_codes.append("UNSUPPORTED_CLAIM")
+                    elif c.grounding_status == "EVIDENCE_REFERENCE_NOT_FOUND":
                         if "EVIDENCE_REFERENCE_NOT_FOUND" not in reason_codes:
                             reason_codes.append("EVIDENCE_REFERENCE_NOT_FOUND")
+                        if "UNSUPPORTED_CLAIM" not in reason_codes:
+                            reason_codes.append("UNSUPPORTED_CLAIM")
                     elif c.grounding_status == "EVIDENCE_VALUE_MISMATCH":
                         if "EVIDENCE_VALUE_MISMATCH" not in reason_codes:
                             reason_codes.append("EVIDENCE_VALUE_MISMATCH")
+                        if "UNSUPPORTED_CLAIM" not in reason_codes:
+                            reason_codes.append("UNSUPPORTED_CLAIM")
                     else:
                         if "CLAIM_NOT_VERIFIABLE" not in reason_codes:
                             reason_codes.append("CLAIM_NOT_VERIFIABLE")
+                        if "UNSUPPORTED_CLAIM" not in reason_codes:
+                            reason_codes.append("UNSUPPORTED_CLAIM")
 
-            action_directive = "Model fabricated or asserted unverified evidence claims. Human Tier 2 investigation required."
+            action_directive = "Model fabricated or asserted semantically unsupported evidence claims. Human Tier 2 investigation required."
 
         # Check 4: Evidence Consistency & Contradictions
         # Detect model-telemetry contradictions
@@ -237,13 +253,59 @@ class IndependentVerdictValidator:
                     validation_status = consistency_res.validation_status or "VERDICT_EVIDENCE_CONFLICT"
                 action_directive = consistency_res.analyst_action_directive
 
+        # Check 4e (AIS 2.3b.1): Negative Evidence Contradiction Cross-Validation
+        # Detect if model rationale claims critical fields are missing when canonical telemetry confirms they are PRESENT_VALID
+        if model_reason:
+            reason_lower = model_reason.lower()
+            field_name_map = {
+                "file.hash_sha256": ("file.hash_sha256", "hash_sha256", "sha256", "file hash"),
+                "process.parent_command_line": ("process.parent_command_line", "parent_command_line", "parent command line"),
+                "process.command_line": ("process.command_line", "command_line", "command line"),
+                "process.parent_name": ("process.parent_name", "parent_name", "parent process name"),
+                "process.name": ("process.name", "process name", "binary name"),
+            }
+            records_by_field = {r.source_field: r for r in normalization_result.records}
+            for canon_field, aliases in field_name_map.items():
+                if canon_field in records_by_field:
+                    rec_val = records_by_field[canon_field].observed_value
+                    if rec_val not in (None, "", "null"):
+                        for alias in aliases:
+                            missing_patterns = [
+                                rf"\b(?:missing|lacks?|no|without|absence of)\b(?:(?!\.\s).)*?\b{re.escape(alias)}\b",
+                                rf"\b{re.escape(alias)}\b(?:(?!\.\s).)*?\b(?:is|are|was|were)?\s*(?:missing|absent|not\s+(?:found|observed|available|provided|present|recorded))\b",
+                            ]
+                            for mp in missing_patterns:
+                                if re.search(mp, reason_lower, re.IGNORECASE):
+                                    contra_msg = (
+                                        f"Contradiction: Model rationale asserts '{canon_field}' is missing, "
+                                        f"but canonical incident telemetry confirms it is PRESENT_VALID (value='{str(rec_val)[:60]}')."
+                                    )
+                                    if contra_msg not in contradictions:
+                                        contradictions.append(contra_msg)
+                                    if "EVIDENCE_CONTRADICTION" not in reason_codes:
+                                        reason_codes.append("EVIDENCE_CONTRADICTION")
+                                    if "REASONING_CONTRADICTION" not in reason_codes:
+                                        reason_codes.append("REASONING_CONTRADICTION")
+                                    if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                                        final_verdict = "REQUIRES_ATTENTION"
+                                        validation_status = "REASONING_CONTRADICTION"
+                                        action_directive = "Model reasoning contradicts observed canonical telemetry by asserting present fields are missing."
+
         # Check 5: Verdict-Specific Decision Criteria
         if clean_prop_verdict == "TRUE_POSITIVE":
-            # For TP: must meet evidence completeness AND provide at least one grounded claim representing security tradecraft
+            # For TP: must meet evidence completeness AND provide at least one grounded claim representing genuine security tradecraft
+            # (An automated EDR block or bare binary filename alone does NOT establish adversary malice or tradecraft)
+            control_action_fields = {"security.action", "endpoint.process_blocked", "endpoint.file_quarantined", "action"}
+            identifier_fields = {"process.name", "process.file_name", "file.name", "user.name", "endpoint.hostname"}
             has_grounded_security_tradecraft = False
+
             for c in claim_grounding.claims:
                 if c.is_grounded:
+                    c_field_lower = str(c.field or "").lower()
                     c_type_str = str(c.claim_type or "").upper()
+                    # A control block or bare identifier alone does not prove malice
+                    if c_field_lower in control_action_fields or c_field_lower in identifier_fields:
+                        continue
                     if c_type_str in (
                         "PROCESS_EXECUTION", "NETWORK_CONNECTION", "FILE_HASH",
                         "OBSERVED_FACT", "TELEMETRY_OBSERVATION", "CORRELATION_ASSERTION"
@@ -258,7 +320,7 @@ class IndependentVerdictValidator:
                 if "TP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("TP_CRITERIA_UNSATISFIED")
                 if "Model fabricated" not in action_directive:
-                    action_directive = "Insufficient grounded claims or corroborating evidence to confirm malicious attack. Manual triage required."
+                    action_directive = "Insufficient grounded tradecraft or corroborating evidence to confirm malicious attack. Control blocks or binary names alone do not confirm malice."
             elif not reason_codes and final_verdict == "TRUE_POSITIVE":
                 is_decisive = True
                 reason_codes.append("EVIDENCE_VALIDATED")

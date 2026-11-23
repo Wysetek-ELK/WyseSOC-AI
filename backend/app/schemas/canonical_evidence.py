@@ -1,6 +1,22 @@
 import hashlib
+from enum import Enum
 from typing import Optional, Any, Dict, List
 from pydantic import BaseModel, Field
+
+
+class EvidenceLifecycleStage(str, Enum):
+    """
+    Forensic Evidence Availability Lifecycle Stages (AIS 2.3b.1).
+    Distinguishes the exact state of each telemetry attribute through the pipeline:
+    Raw Event -> Normalized Evidence -> Compacted Evidence -> Model-Facing Prompt -> Model Claims -> Validator.
+    """
+    NOT_IN_RAW_SOURCE = "NOT_IN_RAW_SOURCE"
+    PRESENT_IN_RAW_SOURCE = "PRESENT_IN_RAW_SOURCE"
+    NORMALIZATION_MISSING = "NORMALIZATION_MISSING"
+    OMITTED_FROM_PROMPT = "OMITTED_FROM_PROMPT"
+    PRESENT_IN_PROMPT = "PRESENT_IN_PROMPT"
+    VERIFIED_CLAIM = "VERIFIED_CLAIM"
+    UNSUPPORTED_CLAIM = "UNSUPPORTED_CLAIM"
 
 
 class CanonicalEvidenceRecord(BaseModel):

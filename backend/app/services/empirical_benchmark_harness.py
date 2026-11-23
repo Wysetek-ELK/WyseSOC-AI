@@ -91,17 +91,17 @@ class BenchmarkIncidentResult:
     rule_id: str
     rule_name: str
     ground_truth_label: str  # VERIFIED_TP, VERIFIED_FP, UNVERIFIED
-    raw_proposed_verdict: str  # TRUE_POSITIVE, FALSE_POSITIVE, REQUIRES_ATTENTION
-    raw_proposed_confidence: float
-    raw_proposed_reason: str
-    final_authoritative_verdict: str  # TRUE_POSITIVE, FALSE_POSITIVE, REQUIRES_ATTENTION (Advisory Triage)
-    is_decisive_accepted: bool
-    validation_status: str
-    validation_reason_codes: List[str]
-    trust_score: int
-    raw_trust_score: float
-    schema_compliant: bool
-    grounding_ratio: float
+    raw_proposed_verdict: Optional[str] = None  # TRUE_POSITIVE, FALSE_POSITIVE, REQUIRES_ATTENTION, or None (preflight abstention)
+    raw_proposed_confidence: float = 0.0
+    raw_proposed_reason: str = ""
+    final_authoritative_verdict: str = "REQUIRES_ATTENTION"  # TRUE_POSITIVE, FALSE_POSITIVE, REQUIRES_ATTENTION (Advisory Triage)
+    is_decisive_accepted: bool = False
+    validation_status: str = "VALIDATED"
+    validation_reason_codes: List[str] = field(default_factory=list)
+    trust_score: int = 0
+    raw_trust_score: float = 0.0
+    schema_compliant: bool = True
+    grounding_ratio: float = 0.0
     latency_ms: Optional[int] = None
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
@@ -149,6 +149,17 @@ class BenchmarkMetrics:
     decisive_decisions_count: int = 0
     coverage_rate: Optional[float] = None
     coverage_ci: Optional[WilsonScoreInterval] = None
+
+    # Accounting Separation (AIS 2.3b.1)
+    real_gpu_dispatched_count: int = 0
+    successful_complete_responses_count: int = 0
+    preflight_abstained_count: int = 0
+    model_proposed_tp_count: int = 0
+    model_proposed_fp_count: int = 0
+    model_proposed_attention_count: int = 0
+    model_no_inference_count: int = 0
+    validator_decisive_accepted_count: int = 0
+    selective_accuracy_detail: str = ""
     
     tp_precision: Optional[float] = None
     tp_precision_ci: Optional[WilsonScoreInterval] = None
@@ -758,6 +769,41 @@ class EmpiricalBenchmarkHarness:
             normalization_result=norm_result,
         )
 
+        # Preflight Abstention Guard (Zero LLM / GPU Waste)
+        if mode == "live" and preflight.must_abstain_immediately:
+            return BenchmarkIncidentResult(
+                incident_id=incident_rec.incident_id,
+                rule_id=incident_rec.rule_id,
+                rule_name=incident_rec.rule_name,
+                ground_truth_label=incident_rec.ground_truth_label,
+                raw_proposed_verdict=None,  # Preflight abstention: NO model inference occurred!
+                raw_proposed_confidence=0.0,
+                raw_proposed_reason=preflight.reason or "CRITICAL_TELEMETRY_MISSING",
+                final_authoritative_verdict="REQUIRES_ATTENTION",
+                is_decisive_accepted=False,
+                validation_status=preflight.preflight_status or "INSUFFICIENT_EVIDENCE",
+                validation_reason_codes=["EVIDENCE_MISSING"] if preflight.critical_missing_fields else ["EVIDENCE_CONTRACT_UNVERIFIED"],
+                trust_score=0,
+                raw_trust_score=0.0,
+                schema_compliant=True,
+                grounding_ratio=0.0,
+                latency_ms=0,
+                prompt_tokens=0,
+                completion_tokens=0,
+                total_tokens=0,
+                is_unsafe_fp=False,
+                auto_incident_closure_allowed=False,
+                execution_provenance="REAL_LOCAL_LLM",
+                is_live_measurement=False,
+                autonomous_verdict="REQUIRES_ATTENTION",
+                is_autonomous_eligible=False,
+                guardrails_triggered=["EVIDENCE_MISSING"],
+                cluster_key=incident_rec.cluster_key,
+                is_duplicate=incident_rec.is_duplicate,
+                finish_reason="abstained_preflight",
+                requested_max_tokens=768,
+            )
+
         # Step 3: LLM Inference or Deterministic Offline Proposal
         p_tokens: Optional[int] = None
         c_tokens: Optional[int] = None
@@ -823,7 +869,7 @@ class EmpiricalBenchmarkHarness:
                     rule_id=incident_rec.rule_id,
                     rule_name=incident_rec.rule_name,
                     ground_truth_label=incident_rec.ground_truth_label,
-                    raw_proposed_verdict="REQUIRES_ATTENTION",
+                    raw_proposed_verdict=None,  # Preflight abstention: NO model inference occurred!
                     raw_proposed_confidence=0.0,
                     raw_proposed_reason=budgeted.abstention_reason or "CONTEXT_WINDOW_EXCEEDED",
                     final_authoritative_verdict="REQUIRES_ATTENTION",
@@ -835,13 +881,13 @@ class EmpiricalBenchmarkHarness:
                     schema_compliant=True,
                     grounding_ratio=0.0,
                     latency_ms=0,
-                    prompt_tokens=budgeted.breakdown.total_prompt_tokens,
+                    prompt_tokens=0,
                     completion_tokens=0,
-                    total_tokens=budgeted.breakdown.total_prompt_tokens,
+                    total_tokens=0,
                     is_unsafe_fp=False,
                     auto_incident_closure_allowed=False,
                     execution_provenance="REAL_LOCAL_LLM",
-                    is_live_measurement=True,
+                    is_live_measurement=False,
                     autonomous_verdict="REQUIRES_ATTENTION",
                     is_autonomous_eligible=False,
                     guardrails_triggered=["CONTEXT_WINDOW_EXCEEDED"],
@@ -1026,14 +1072,36 @@ class EmpiricalBenchmarkHarness:
         }
 
         for r in results:
-            if r.is_live_measurement and r.latency_ms is not None:
-                latencies.append(r.latency_ms)
-            trust_scores.append(r.trust_score)
-            grounding_ratios.append(r.grounding_ratio)
-            if r.is_live_measurement:
+            # Accounting Separation (AIS 2.3b.1)
+            is_dispatched = bool(r.is_live_measurement and r.finish_reason not in (None, "abstained_preflight") and (r.latency_ms or 0) > 0)
+            if is_dispatched:
+                m.real_gpu_dispatched_count += 1
+                if r.finish_reason in ("stop", "length"):
+                    m.successful_complete_responses_count += 1
+                if r.latency_ms is not None:
+                    latencies.append(r.latency_ms)
                 m.total_prompt_tokens = (m.total_prompt_tokens or 0) + (r.prompt_tokens or 0)
                 m.total_completion_tokens = (m.total_completion_tokens or 0) + (r.completion_tokens or 0)
                 m.total_tokens = (m.total_tokens or 0) + (r.total_tokens or 0)
+            elif r.finish_reason == "abstained_preflight" or r.validation_status in ("CONTEXT_WINDOW_EXCEEDED", "INSUFFICIENT_EVIDENCE"):
+                m.preflight_abstained_count += 1
+
+            # Model propositions vs Preflight Abstention
+            raw_prop = (r.raw_proposed_verdict or "").upper().strip()
+            if raw_prop == "TRUE_POSITIVE":
+                m.model_proposed_tp_count += 1
+            elif raw_prop == "FALSE_POSITIVE":
+                m.model_proposed_fp_count += 1
+            elif raw_prop in ("REQUIRES_ATTENTION", "REQUIRES_ANALYST_ATTENTION"):
+                m.model_proposed_attention_count += 1
+            else:
+                m.model_no_inference_count += 1
+
+            if r.is_decisive_accepted:
+                m.validator_decisive_accepted_count += 1
+
+            trust_scores.append(r.trust_score)
+            grounding_ratios.append(r.grounding_ratio)
 
             gt = r.ground_truth_label
             if gt not in ("VERIFIED_TP", "VERIFIED_FP"):
@@ -1118,6 +1186,10 @@ class EmpiricalBenchmarkHarness:
         if decisive_total > 0:
             m.overall_accuracy = round((m.tp + m.tn) / decisive_total, 4)
             m.overall_accuracy_ci = cls.calculate_wilson_ci(m.tp + m.tn, decisive_total)
+            m.selective_accuracy_detail = f"{m.tp + m.tn}/{decisive_total} ({round((m.tp + m.tn) / decisive_total * 100, 1)}%)"
+        else:
+            m.overall_accuracy = None
+            m.selective_accuracy_detail = "0/0 (No decisive predictions accepted)"
         if m.tp_recall is not None and m.fp_recall is not None:
             m.balanced_accuracy = round((m.tp_recall + m.fp_recall) / 2.0, 4)
 

@@ -6,6 +6,7 @@ import httpx
 
 from app.services.model_provider.base import BaseModelProvider, ProviderHealthResponse, StructuredModelVerdict
 from app.services.confidence_normalizer import ConfidenceNormalizer
+from app.services.tokenizer_service import ModelTokenizerService
 
 
 def robust_parse_model_verdict_json(raw_text: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
@@ -329,16 +330,52 @@ class OpenAICompatibleProvider(BaseModelProvider):
         # Enforce Section 10 instruction boundary delimiters around untrusted telemetry
         user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
 
-        effective_max_tokens = self.max_tokens
+        # Pre-dispatch Wire Token Verification & Capacity Headroom Enforcement (AIS 2.3b.1)
+        wire_prompt_tokens = ModelTokenizerService.count_wire_prompt_tokens(
+            system_prompt=system_instruction,
+            user_message=user_content,
+            model_name=self.model_name,
+        )
+
+        effective_max_tokens = 768
         max_tokens_override = kwargs.get("max_tokens_override")
         if max_tokens_override is not None:
             try:
                 override_int = int(max_tokens_override)
                 if override_int > 0:
-                    # Honor pipeline-verified token-budget override (bounded safely <= 1024)
-                    effective_max_tokens = min(override_int, max(self.max_tokens, 1024))
+                    effective_max_tokens = min(override_int, 768)
             except Exception:
                 pass
+
+        # Invariant: Complete model-facing prompt <= 3,328 tokens, completion reserve = 768 tokens
+        if wire_prompt_tokens > 3328:
+            err_msg = (
+                f"CONTEXT_WINDOW_EXCEEDED: Wire prompt ({wire_prompt_tokens} tokens) exceeds "
+                f"maximum wire prompt ceiling (3,328 tokens) for 4,096-token context limit with "
+                f"768 reserved completion tokens. Refusing naive truncation."
+            )
+            return StructuredModelVerdict(
+                incident_id=incident_id,
+                rule_id=rule_id,
+                verdict="REQUIRES_ATTENTION",
+                confidence=0.0,
+                reason=err_msg,
+                supporting_evidence=[],
+                missing_evidence=["Reduced prompt size within wire limit"],
+                analyst_questions=["Review raw incident logs in SIEM"],
+                latency_ms=0,
+                model_identifier=self.model_name,
+                prompt_version_number=prompt_version_number,
+                validation_status="CONTEXT_WINDOW_EXCEEDED",
+                is_simulated=False,
+                prompt_tokens=wire_prompt_tokens,
+                completion_tokens=0,
+                total_tokens=wire_prompt_tokens,
+                finish_reason=None,
+                requested_max_tokens=effective_max_tokens,
+                prompt_integrity_status="UNVERIFIED",
+                raw_model_response="",
+            )
 
         payload = {
             "model": self.model_name,

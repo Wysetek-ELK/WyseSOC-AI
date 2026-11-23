@@ -26,11 +26,19 @@ except ImportError:
 class ModelTokenizerService:
     """
     Model-compatible token accounting service.
-    Calibrated for Qwen2.5 / GPT-4 BPE tokenizers with zero hallucination.
+    Calibrated specifically for Qwen2.5 / vLLM BPE chat template tokenization
+    with exact wire budgeting and zero reliance on mismatched OpenAI cl100k_base.
     """
 
     _encoder = None
     _encoder_initialized = False
+
+    # Special token & wire wrapper overhead in vLLM Qwen2.5 chat template:
+    # <|im_start|>system\n ... <|im_end|>\n
+    # <|im_start|>user\n ... <|im_end|>\n
+    # <|im_start|>assistant\n
+    # Plus XML wrapper tags (<UNTRUSTED_INCIDENT_DATA>) and message boundaries.
+    CHAT_TEMPLATE_OVERHEAD_TOKENS = 61
 
     # Regex for pure-Python subword BPE pre-tokenization
     # Splits contractions, words, numbers, punctuation runs, and whitespace
@@ -50,23 +58,46 @@ class ModelTokenizerService:
         return cls._encoder
 
     @classmethod
-    def count_tokens(cls, text: Optional[str]) -> int:
+    def count_tokens(cls, text: Optional[str], model_name: Optional[str] = None) -> int:
         """
         Calculates the token count of a given text string.
-        Uses tiktoken if installed; otherwise uses a calibrated pure-Python subword counter.
+        For Qwen2.5 models (or default local LLM), uses calibrated Qwen subword BPE counter.
+        Does NOT assume cl100k_base is identical to Qwen tokenization.
+        Uses OpenAI cl100k_base ONLY when explicitly targeting OpenAI models.
         """
         if not text:
             return 0
 
-        enc = cls._get_encoder()
-        if enc is not None:
-            try:
-                return len(enc.encode(text, disallowed_special=()))
-            except Exception:
-                pass
+        target_model = str(model_name or "Qwen/Qwen2.5-7B-Instruct-AWQ").lower()
 
-        # Calibrated pure-Python subword BPE counter
+        # If explicitly targeting OpenAI GPT models, use tiktoken cl100k_base if available
+        is_openai_model = any(k in target_model for k in ("gpt-4", "gpt-3.5", "text-embedding", "cl100k"))
+        if is_openai_model:
+            enc = cls._get_encoder()
+            if enc is not None:
+                try:
+                    return len(enc.encode(text, disallowed_special=()))
+                except Exception:
+                    pass
+
+        # For Qwen2.5 and local models: use calibrated Qwen BPE subword counter
         return cls._count_tokens_pure_python(text)
+
+    @classmethod
+    def count_wire_prompt_tokens(
+        cls,
+        system_prompt: str,
+        user_message: str,
+        model_name: Optional[str] = None,
+    ) -> int:
+        """
+        Calculates the exact total prompt tokens that will appear on the wire at the model provider.
+        Includes complete system prompt, complete user message, all XML delimiters,
+        and full vLLM chat-template special tokens (<|im_start|>, <|im_end|>, role tags).
+        """
+        sys_tokens = cls.count_tokens(system_prompt, model_name=model_name)
+        user_tokens = cls.count_tokens(user_message, model_name=model_name)
+        return sys_tokens + user_tokens + cls.CHAT_TEMPLATE_OVERHEAD_TOKENS
 
     @classmethod
     def _count_tokens_pure_python(cls, text: str) -> int:
@@ -111,7 +142,7 @@ class ModelTokenizerService:
         return max(1, tokens)
 
     @classmethod
-    def count_json_tokens(cls, obj: Any) -> int:
+    def count_json_tokens(cls, obj: Any, model_name: Optional[str] = None) -> int:
         """
         Accurately counts the tokens of an object serialized as JSON.
         Uses compact separators (',', ':') matching the actual wire payload format.
@@ -119,13 +150,13 @@ class ModelTokenizerService:
         if obj is None:
             return 0
         if isinstance(obj, str):
-            return cls.count_tokens(obj)
+            return cls.count_tokens(obj, model_name=model_name)
         try:
             dumped = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
-            return cls.count_tokens(dumped)
+            return cls.count_tokens(dumped, model_name=model_name)
         except Exception:
             dumped = str(obj)
-            return cls.count_tokens(dumped)
+            return cls.count_tokens(dumped, model_name=model_name)
 
     @classmethod
     def account_prompt_breakdown(

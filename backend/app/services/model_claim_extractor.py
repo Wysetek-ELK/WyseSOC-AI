@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 from app.schemas.canonical_evidence import CanonicalEvidenceRecord, EvidenceNormalizationResult
 from app.schemas.evidence_claim import ModelSupportingClaim, ClaimGroundingResult
@@ -198,6 +198,116 @@ class ModelClaimExtractor:
         return cls.ground_claims(incident_id, claims, normalization_result)
 
     @classmethod
+    def verify_semantic_predicate(
+        cls,
+        claim: ModelSupportingClaim,
+        matched_rec: CanonicalEvidenceRecord,
+        all_records: List[CanonicalEvidenceRecord],
+    ) -> Tuple[bool, str, str]:
+        """
+        Validates that cited evidence supports the COMPLETE factual predicate asserted in the claim,
+        not merely containing a matching filename, IP address, or string.
+        Enforces predicate validation, evidence type compatibility, and explicit proof requirements
+        for signature, reputation, authorization, execution, and security-action assertions.
+        """
+        claim_text = str(claim.claim_text or "").strip()
+        asserted_val = str(claim.asserted_value or "").strip()
+        claim_corpus = f"{claim_text} {asserted_val}".lower()
+        rec_field = matched_rec.source_field.lower()
+        rec_val = str(matched_rec.observed_value or "").strip().lower()
+
+        # 1. Digital Signature Predicate
+        sig_keywords = (
+            "not signed", "unsigned", "is signed", "valid signature", "signed by",
+            "signature status", "code signing", "signature is valid", "unverified signature",
+            "digital signature", "valid digital", "signature verified", "signature invalid"
+        )
+        if any(kw in claim_corpus for kw in sig_keywords):
+            sig_fields = (
+                "file.signature_status", "code_signature.status", "signature.status",
+                "signature.valid", "file.is_signed", "code_signing.status",
+                "file.signature", "digital_signature.status", "digital_signature"
+            )
+            if not any(rec_field.startswith(sf) or rec_field == sf for sf in sig_fields):
+                return (
+                    False,
+                    "UNSUPPORTED_PREDICATE",
+                    f"Claim asserts signature status ('{claim_text or asserted_val}'), but cited evidence '{matched_rec.source_field}' only provides a file/process identifier, not authentic signature telemetry."
+                )
+
+        # 2. Threat Intel / Malware / Reputation Predicate
+        reputation_keywords = (
+            "known malware", "malicious hash", "blacklisted", "known benign",
+            "threat intel", "reputation", "ioc match", "malicious domain", "malicious ip",
+            "c2 ip", "malware family", "trojan", "ransomware", "malicious binary",
+            "known attack tool"
+        )
+        if any(kw in claim_corpus for kw in reputation_keywords):
+            ti_fields = (
+                "threat_intel.", "reputation.", "antivirus.", "virustotal.", "ioc.",
+                "security_event.threat_name", "mitre."
+            )
+            if not any(rec_field.startswith(tf) or tf in rec_field for tf in ti_fields):
+                return (
+                    False,
+                    "UNSUPPORTED_PREDICATE",
+                    f"Claim asserts malware/reputation status ('{claim_text or asserted_val}'), but cited evidence '{matched_rec.source_field}' only records an entity identifier without threat intelligence corroboration."
+                )
+
+        # 3. Authorization / Maintenance Predicate
+        auth_keywords = (
+            "authorized", "approved", "maintenance window", "scheduled task",
+            "change ticket", "change request", "approved maintenance"
+        )
+        if any(kw in claim_corpus for kw in auth_keywords) and not any(neg in claim_corpus for neg in ("not authorized", "unauthorized", "unapproved", "no change", "without approved", "absence of")):
+            auth_fields = (
+                "authorization.", "itsm.", "change.", "maintenance.", "asset.scanner_role",
+                "asset.is_authorized_scanner"
+            )
+            if not any(rec_field.startswith(af) or af in rec_field for af in auth_fields):
+                return (
+                    False,
+                    "UNSUPPORTED_PREDICATE",
+                    f"Claim asserts administrative authorization ('{claim_text or asserted_val}'), but cited evidence '{matched_rec.source_field}' lacks authoritative ITSM/change telemetry."
+                )
+
+        # 4. Security Action Predicate (Blocked, Quarantined, Terminated)
+        sec_action_keywords = ("blocked", "quarantined", "terminated", "dropped", "prevented")
+        if any(kw in claim_corpus for kw in sec_action_keywords) and not any(neg in claim_corpus for neg in ("not blocked", "unblocked", "not quarantined")):
+            action_fields = ("security.action", "endpoint.process_blocked", "endpoint.file_quarantined", "action", "security.event_type")
+            if not any(rec_field.startswith(af) or af == rec_field for af in action_fields):
+                return (
+                    False,
+                    "UNSUPPORTED_PREDICATE",
+                    f"Claim asserts security action ('{claim_text or asserted_val}'), but cited evidence '{matched_rec.source_field}' does not record an EDR/firewall action."
+                )
+
+        # 5. Evidence Type & Field Category Compatibility
+        if claim.claim_type == "PROCESS_EXECUTION" or any(kw in claim_corpus for kw in ("process executed", "executed process", "binary executed")):
+            if matched_rec.evidence_type in ("NETWORK_CONNECTION", "DNS_QUERY"):
+                return (
+                    False,
+                    "INCOMPATIBLE_EVIDENCE_TYPE",
+                    f"Claim asserts process execution ('{claim_text or asserted_val}'), but cited evidence type is '{matched_rec.evidence_type}'."
+                )
+
+        if claim.claim_type == "FILE_HASH" and "hash" not in rec_field:
+            return (
+                False,
+                "INCOMPATIBLE_EVIDENCE_TYPE",
+                f"Claim type is FILE_HASH, but cited field '{matched_rec.source_field}' is not a hash."
+            )
+
+        if claim.claim_type == "NETWORK_CONNECTION" and matched_rec.evidence_type in ("PROCESS_EXECUTION", "USER_CONTEXT", "FILE_HASH"):
+            return (
+                False,
+                "INCOMPATIBLE_EVIDENCE_TYPE",
+                f"Claim type is NETWORK_CONNECTION, but cited evidence is '{matched_rec.evidence_type}'."
+            )
+
+        return (True, "GROUNDED", "")
+
+    @classmethod
     def ground_claims(
         cls,
         incident_id: str,
@@ -314,6 +424,20 @@ class ModelClaimExtractor:
                     if not found_anywhere:
                         status = "CLAIM_NOT_VERIFIABLE"
                         reason_diag = f"Fabricated claim: Value '{claim.asserted_value}' for field '{target_field}' was never observed in incident telemetry."
+
+            # Semantic Predicate Validation (Complete Factual Claim Grounding)
+            if is_grounded and matched_id:
+                matched_rec = evidence_by_id.get(matched_id)
+                if matched_rec:
+                    pred_valid, pred_status, pred_reason = cls.verify_semantic_predicate(
+                        claim=claim,
+                        matched_rec=matched_rec,
+                        all_records=normalization_result.records,
+                    )
+                    if not pred_valid:
+                        is_grounded = False
+                        status = pred_status
+                        reason_diag = pred_reason
 
             claim.is_grounded = is_grounded
             claim.grounding_status = status

@@ -1,0 +1,152 @@
+{
+  "phase": "AIS 2.3b.1",
+  "project": "Verdictum AI",
+  "objective": "Wire Token Reservation & Semantic Verdict Grounding Integrity",
+  "status": "PASS_READY_FOR_AIS_2_4",
+  "timestamp_utc": "2026-11-23T14:03:00Z",
+  "hardware_context_ceiling": 4096,
+  "wire_prompt_ceiling": 3328,
+  "reserved_completion_headroom": 768,
+  "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "model_provider": "vLLM / OpenAI-Compatible",
+  "evaluated_incidents": [
+    {
+      "incident_id": "132438483",
+      "db_id": "f382827c-1068-409d-9e4d-6baf4e2e3b86",
+      "vendor": "CrowdStrike",
+      "rule_id": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "execution_mode": "DISPATCHED_INFERENCE",
+      "wire_prompt_tokens": 3013,
+      "wire_prompt_ceiling": 3328,
+      "wire_compliance": "PASS",
+      "available_completion_headroom": 1083,
+      "requested_max_tokens": 768,
+      "finish_reason": "stop",
+      "is_truncated": false,
+      "proposed_verdict": "REQUIRES_ATTENTION",
+      "raw_model_confidence": 50.0,
+      "effective_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "contradictions_detected": [
+        "Model rationale claims 'file.hash_sha256' is missing, but telemetry confirms it is PRESENT_VALID."
+      ],
+      "grounded_claims": [
+        {
+          "field": "process.command_line",
+          "asserted_value": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+          "grounding_status": "GROUNDED"
+        },
+        {
+          "field": "process.parent_name",
+          "asserted_value": "services.exe",
+          "grounding_status": "GROUNDED"
+        }
+      ]
+    },
+    {
+      "incident_id": "132527297",
+      "db_id": "028c79e6-7397-4c49-a0ed-15b9997fdd7a",
+      "vendor": "CrowdStrike",
+      "rule_id": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "execution_mode": "DISPATCHED_INFERENCE",
+      "wire_prompt_tokens": 3013,
+      "wire_prompt_ceiling": 3328,
+      "wire_compliance": "PASS",
+      "available_completion_headroom": 1083,
+      "requested_max_tokens": 768,
+      "finish_reason": "stop",
+      "is_truncated": false,
+      "proposed_verdict": "TRUE_POSITIVE",
+      "raw_model_confidence": 85.0,
+      "effective_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "validation_reason_codes": [
+        "UNSUPPORTED_PREDICATE",
+        "UNSUPPORTED_CLAIM",
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "claim_evaluations": [
+        {
+          "claim_text": "Executing binary is not signed.",
+          "field": "process.name",
+          "asserted_value": "UltraViewer_Service.exe",
+          "is_grounded": false,
+          "grounding_status": "UNSUPPORTED_PREDICATE",
+          "reason": "Signature claim requires authentic digital signature record"
+        },
+        {
+          "claim_text": "Process was blocked by the Crowdstrike agent.",
+          "field": "security.action",
+          "asserted_value": "block",
+          "is_grounded": true,
+          "grounding_status": "GROUNDED",
+          "reason": "Control action block does not alone satisfy TP malice criteria"
+        }
+      ]
+    },
+    {
+      "incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "execution_mode": "PREFLIGHT_ABSTENTION",
+      "wire_prompt_tokens": 0,
+      "completion_tokens": 0,
+      "gpu_time_ms": 0,
+      "proposed_verdict": null,
+      "effective_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+      "abstention_reason": "Oversized telemetry and policy exceed 3,328-token wire ceiling."
+    },
+    {
+      "incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "execution_mode": "PREFLIGHT_ABSTENTION",
+      "wire_prompt_tokens": 0,
+      "completion_tokens": 0,
+      "gpu_time_ms": 0,
+      "proposed_verdict": null,
+      "effective_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+      "abstention_reason": "Oversized telemetry and policy exceed 3,328-token wire ceiling."
+    },
+    {
+      "incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "execution_mode": "PREFLIGHT_ABSTENTION",
+      "wire_prompt_tokens": 0,
+      "completion_tokens": 0,
+      "gpu_time_ms": 0,
+      "proposed_verdict": null,
+      "effective_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+      "abstention_reason": "Oversized telemetry and policy exceed 3,328-token wire ceiling."
+    }
+  ],
+  "empirical_metrics": {
+    "total_evaluated": 5,
+    "real_gpu_dispatched_count": 2,
+    "successful_complete_responses_count": 2,
+    "preflight_abstained_count": 3,
+    "model_proposed_tp_count": 1,
+    "model_proposed_fp_count": 0,
+    "model_proposed_attention_count": 1,
+    "model_no_inference_count": 3,
+    "validator_decisive_accepted_count": 0,
+    "validator_overruled_to_attention_count": 1,
+    "selective_accuracy": "NOT_MEASURABLE",
+    "decision_coverage": 0.0,
+    "safe_disposition_rate": 1.0,
+    "fabrication_detected": false
+  },
+  "test_suite_results": {
+    "backend_pytest_passed": 23,
+    "backend_pytest_failed": 0,
+    "targeted_regression_tests_passed": 8,
+    "frontend_test_suites_passed": 16,
+    "frontend_test_suites_failed": 0
+  }
+}

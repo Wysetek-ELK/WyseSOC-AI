@@ -520,7 +520,7 @@ async def run_shared_verdict_pipeline(
 
         verdict_data = {
             "incident_id": incident.incident_id,
-            "proposed_verdict": "REQUIRES_ATTENTION",
+            "proposed_verdict": None,
             "verdict": "REQUIRES_ATTENTION",
             "confidence": 0.0,
             "raw_model_confidence": 0.0,
@@ -596,7 +596,7 @@ async def run_shared_verdict_pipeline(
         )
         verdict_data = {
             "incident_id": incident.incident_id,
-            "proposed_verdict": "REQUIRES_ATTENTION",
+            "proposed_verdict": None,
             "verdict": "REQUIRES_ATTENTION",
             "confidence": 0.0,
             "raw_model_confidence": 0.0,
@@ -693,7 +693,7 @@ async def run_shared_verdict_pipeline(
     ):
         verdict_data = {
             "incident_id": incident.incident_id,
-            "proposed_verdict": "REQUIRES_ATTENTION",
+            "proposed_verdict": None,
             "verdict": "REQUIRES_ATTENTION",
             "confidence": 0.0,
             "raw_model_confidence": 0.0,
@@ -850,7 +850,7 @@ async def run_shared_verdict_pipeline(
     if not budgeted.can_proceed_to_inference:
         verdict_data = {
             "incident_id": incident.incident_id,
-            "proposed_verdict": "REQUIRES_ATTENTION",
+            "proposed_verdict": None,
             "verdict": "REQUIRES_ATTENTION",
             "confidence": 0.0,
             "raw_model_confidence": 0.0,

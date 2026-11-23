@@ -26,7 +26,9 @@ class TokenBudgetService:
     DEFAULT_MAX_CONTEXT = 16384
     DEFAULT_MAX_COMPLETION = 1024
     DEFAULT_TARGET_INPUT_BUDGET = 8192
-    CHAT_TEMPLATE_OVERHEAD_TOKENS = 125
+    CHAT_TEMPLATE_OVERHEAD_TOKENS = 61
+    WIRE_PROMPT_CEILING = 3328
+    RESERVED_COMPLETION_HEADROOM = 768
 
     @classmethod
     def calculate_available_input_tokens(
@@ -41,20 +43,25 @@ class TokenBudgetService:
         reserved output tokens, and chat template overhead.
         Enforces a minimum of 768 tokens of completion headroom for 4,096-token hardware contexts,
         guaranteeing that input prompt tokens plus completion headroom plus chat template
-        strictly comply with the physical context ceiling.
+        strictly comply with the physical context ceiling (prompt <= 3,328, completion = 768, total <= 4,096).
         """
         comp_tokens = (
             int(reserved_output_tokens)
             if reserved_output_tokens is not None
             else (int(max_completion_tokens) if max_completion_tokens is not None else cls.DEFAULT_MAX_COMPLETION)
         )
+        if int(max_context_tokens) <= 4096:
+            comp_tokens = max(cls.RESERVED_COMPLETION_HEADROOM, comp_tokens)
+            headroom = max(512, int(max_context_tokens) - comp_tokens)
+            return min(cls.WIRE_PROMPT_CEILING, headroom)
+
         headroom = max(512, int(max_context_tokens) - comp_tokens)
         if target_input_budget is not None and int(target_input_budget) > 0:
             return max(512, min(int(target_input_budget), headroom))
         return headroom
 
     @classmethod
-    def estimate_tokens(cls, obj: Any) -> int:
+    def estimate_tokens(cls, obj: Any, model_name: Optional[str] = None) -> int:
         """Accurately count tokens using model-compatible BPE tokenizer."""
         if obj is None:
             return 0
@@ -64,7 +71,7 @@ class TokenBudgetService:
             text = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
         else:
             text = str(obj)
-        return max(1, ModelTokenizerService.count_tokens(text))
+        return max(1, ModelTokenizerService.count_tokens(text, model_name=model_name))
 
     @classmethod
     def get_token_accounting(
@@ -100,6 +107,7 @@ class TokenBudgetService:
         Strips non-reasoning forensic digest/null metadata from canonical_evidence
         while strictly preserving every evidence_id, source_field, observed_value,
         and evidence_type required for grounded LLM citations.
+        Deduplicates redundant fields and duplicate (source_field, observed_value) entries.
         Returns True if payload_work changed.
         """
         can_ev = payload_work.get("canonical_evidence")
@@ -112,26 +120,40 @@ class TokenBudgetService:
             and isinstance(payload_work["events"][0], dict)
             and payload_work["events"][0].get("raw_log")
         )
+        has_sha256 = any(
+            str(item.get("source_field") or item.get("field") or "").lower() == "file.hash_sha256"
+            for item in can_ev if isinstance(item, dict)
+        )
         compacted: List[Dict[str, Any]] = []
         changed = False
         preserved_keys = ("evidence_id", "source_field", "field", "observed_value", "value", "evidence_type")
+
         for item in can_ev:
             if not isinstance(item, dict):
                 compacted.append(item)
                 continue
-            # Avoid duplicating the raw log string twice when events[0].raw_log is already present
             src_f = str(item.get("source_field") or item.get("field") or "").lower()
+            val_str = str(item.get("observed_value") if item.get("observed_value") is not None else item.get("value", "")).strip()
+
+            # Avoid duplicating verbose raw log strings when canonical evidence already carries structured telemetry
             if (
-                has_event_raw_log
-                and src_f in ("security.raw_log", "security.raw_message", "security.raw_event_log")
-                and len(can_ev) > 1
+                src_f in ("security.raw_log", "security.raw_message", "security.raw_event_log")
+                and len(can_ev) > 3
+                and (has_event_raw_log or len(str(item.get("observed_value") or item.get("value") or "")) > 80)
             ):
                 changed = True
                 continue
+
             # Strip non-contract geographic and vendor telemetry reporting metadata
             if src_f.startswith("telemetry.reporting ") and not any(k in src_f for k in ("device", "ip")):
                 changed = True
                 continue
+
+            # Deduplicate redundant hash algorithm / hash code when file.hash_sha256 is present
+            if has_sha256 and src_f in ("telemetry.hash algorithm", "telemetry.hash code", "hash algorithm", "hash code"):
+                changed = True
+                continue
+
             minimal: Dict[str, Any] = {}
             for keep_key in preserved_keys:
                 if keep_key in item and item[keep_key] is not None:
@@ -255,12 +277,34 @@ class TokenBudgetService:
         # Measure Priority 7: Historical RAG precedents
         p7_rag_tokens = cls.estimate_tokens(rag_work)
 
-        total_tokens = (
-            cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-            + cls.estimate_tokens(payload_work)
-            + p7_rag_tokens
-            + max(0, int(reserved_overhead_tokens))
-        )
+        rule_spec_for_wire = {
+            "id": str(payload_work.get("rule_id", "")),
+            "rule_id": str(payload_work.get("rule_id", "")),
+            "name": str(payload_work.get("rule_name", payload_work.get("title", ""))),
+            "severity": str(payload_work.get("severity", "")),
+            "description": str(payload_work.get("rule_description", "")),
+        }
+
+        def _calc_wire_tokens() -> int:
+            c_json = json.dumps({"incident": payload_work, "rule": rule_spec_for_wire}, separators=(",", ":"))
+            c_json = (
+                c_json
+                .replace("</UNTRUSTED_INCIDENT_DATA>", "&lt;/UNTRUSTED_INCIDENT_DATA&gt;")
+                .replace("</untrusted_incident_data>", "&lt;/untrusted_incident_data&gt;")
+                .replace("</VERIFIED_HISTORICAL_PRECEDENTS>", "&lt;/VERIFIED_HISTORICAL_PRECEDENTS&gt;")
+                .replace("</verified_historical_precedents>", "&lt;/verified_historical_precedents&gt;")
+            )
+            u_msg = f"<UNTRUSTED_INCIDENT_DATA>\n{c_json}\n</UNTRUSTED_INCIDENT_DATA>"
+            sys_p = compiled_policy.compiled_system_prompt
+            if rag_work:
+                sys_p = f"{sys_p}\n\n{rag_work}"
+            return ModelTokenizerService.count_wire_prompt_tokens(
+                system_prompt=sys_p,
+                user_message=u_msg,
+                model_name=model_name,
+            )
+
+        total_tokens = _calc_wire_tokens()
 
         rag_trimmed = False
         enrichment_trimmed = False
@@ -275,11 +319,7 @@ class TokenBudgetService:
             rag_work = ""
             rag_trimmed = True
             p7_rag_tokens = 0
-            total_tokens = (
-                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                + cls.estimate_tokens(payload_work)
-                + max(0, int(reserved_overhead_tokens))
-            )
+            total_tokens = _calc_wire_tokens()
 
         # Trimming Step 2: If still over budget, trim optional enrichment (P6)
         if total_tokens > available_budget and p6_enrichment_tokens > 0:
@@ -287,11 +327,7 @@ class TokenBudgetService:
                 del payload_work["enrichment"]
             enrichment_trimmed = True
             p6_enrichment_tokens = 0
-            total_tokens = (
-                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                + cls.estimate_tokens(payload_work)
-                + max(0, int(reserved_overhead_tokens))
-            )
+            total_tokens = _calc_wire_tokens()
 
         # Trimming Step 3a: Progressive pruning of secondary events (P5)
         # Pruning from the last secondary event backwards, preserving events[0]
@@ -304,11 +340,7 @@ class TokenBudgetService:
                 payload_work["events"] = current_events
                 events_pruned = orig_count - len(current_events)
                 p5_events_tokens = cls.estimate_tokens(current_events[1:]) if len(current_events) > 1 else 0
-                total_tokens = (
-                    cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                    + cls.estimate_tokens(payload_work)
-                    + max(0, int(reserved_overhead_tokens))
-                )
+                total_tokens = _calc_wire_tokens()
 
         # Trimming Step 3b: Event attribute and log compaction for remaining events
         if total_tokens > available_budget and payload_work.get("events"):
@@ -328,11 +360,7 @@ class TokenBudgetService:
                     events_compacted = True
             remaining_events = payload_work.get("events") or []
             p5_events_tokens = cls.estimate_tokens(remaining_events[1:]) if len(remaining_events) > 1 else 0
-            total_tokens = (
-                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                + cls.estimate_tokens(payload_work)
-                + max(0, int(reserved_overhead_tokens))
-            )
+            total_tokens = _calc_wire_tokens()
 
         # Trimming Step 3c: Canonical evidence metadata compaction
         # Strips non-reasoning forensic digest/null metadata inside canonical_evidence
@@ -341,11 +369,7 @@ class TokenBudgetService:
             if cls._compact_canonical_evidence(payload_work):
                 evidence_compacted = True
                 p4_critical_tokens = cls.estimate_tokens(payload_work.get("canonical_evidence") or []) + cls.estimate_tokens(payload_work.get("title"))
-                total_tokens = (
-                    cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                    + cls.estimate_tokens(payload_work)
-                    + max(0, int(reserved_overhead_tokens))
-                )
+                total_tokens = _calc_wire_tokens()
 
         # Trimming Step 3d: Advanced evidence deduplication, clustering & relevance compaction
         # Solves massive telemetry overflows (e.g. 100 duplicate firewall logs/timestamps)
@@ -418,36 +442,54 @@ class TokenBudgetService:
                 }
             evidence_compacted = True
             p4_critical_tokens = cls.estimate_tokens(payload_work.get("canonical_evidence") or []) + cls.estimate_tokens(payload_work.get("title"))
-            total_tokens = (
-                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                + cls.estimate_tokens(payload_work)
-                + max(0, int(reserved_overhead_tokens))
-            )
+            total_tokens = _calc_wire_tokens()
 
         # Trimming Step 3e: Deduplicate verbose events[0] raw_log/attributes if still over budget
         # and canonical_evidence already carries normalized/aggregated telemetry.
-        if total_tokens > available_budget and payload_work.get("events") and payload_work.get("canonical_evidence"):
+        if (total_tokens > available_budget or int(max_context_tokens) <= 4096) and payload_work.get("events") and payload_work.get("canonical_evidence"):
             slim_events = []
             for ev in payload_work["events"][:1]:
                 if isinstance(ev, dict):
                     slim_ev = {k: ev[k] for k in ("event_id", "event_type", "event_receive_time") if k in ev}
-                    if ev.get("raw_log"):
+                    if ev.get("raw_log") and int(max_context_tokens) > 4096:
                         slim_ev["raw_log_preview"] = str(ev["raw_log"])[:200]
                     slim_events.append(slim_ev)
             payload_work["events"] = slim_events
             events_compacted = True
-            total_tokens = (
-                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                + cls.estimate_tokens(payload_work)
-                + max(0, int(reserved_overhead_tokens))
-            )
+            total_tokens = _calc_wire_tokens()
+
+        # Step 3f: Final Exact Wire Token Calculation & Progressive Trimming of Non-Contract Telemetry
+        CORE_PROTECTED_FIELDS = {
+            "process.command_line", "process.name", "process.file_name", "process.parent_name",
+            "process.parent_command_line", "file.hash_sha256", "file.hash_md5", "security.action",
+            "user.name", "endpoint.hostname", "network.source_ip", "network.destination_ip",
+        }
+        if total_tokens > available_budget and payload_work.get("canonical_evidence"):
+            contract_req_set = set(
+                list(contract_info.get("required_fields") or [])
+                + list(contract_info.get("conditional_fields") or [])
+                + _orig_conditional_fields
+            ) | CORE_PROTECTED_FIELDS
+            can_ev = list(payload_work["canonical_evidence"])
+            idx = len(can_ev) - 1
+            while idx >= 0 and total_tokens > available_budget:
+                item = can_ev[idx]
+                f_name = str((item.get("source_field") or item.get("field") if isinstance(item, dict) else getattr(item, "source_field", "")) or "").lower()
+                if f_name not in contract_req_set and not f_name.startswith("scan."):
+                    can_ev.pop(idx)
+                    payload_work["canonical_evidence"] = can_ev
+                    evidence_compacted = True
+                    total_tokens = _calc_wire_tokens()
+                idx -= 1
+
+        total_tokens = _calc_wire_tokens()
 
         # Trimming Step 4: Check if mandatory core (P1 + P2 + P3 + P4) still exceeds budget
         if total_tokens > available_budget:
             overflow_detected = True
             overflow_reason = (
                 f"CONTEXT_WINDOW_EXCEEDED: Mandatory policy directives and critical telemetry "
-                f"({total_tokens} tokens) exceed available prompt budget ({available_budget} tokens). "
+                f"({total_tokens} wire tokens) exceed available prompt budget ({available_budget} tokens). "
                 "Refusing naive truncation to preserve evidence integrity."
             )
 
