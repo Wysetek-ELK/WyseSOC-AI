@@ -1,0 +1,11 @@
+{
+  "host": "https://siem-supervisor.example.org",
+  "username": "svc_soc_ai",
+  "verify_ssl": false,
+  "timeout": 30.0,
+  "mock_fallback": true,
+  "auto_poll_enabled": false,
+  "poll_interval_seconds": 180,
+  "auto_ai_verdict": true,
+  "updated_at": 1795413712.836854
+}

@@ -56,6 +56,7 @@ from app.services.historical_ground_truth_validator import HistoricalGroundTruth
 from app.services.token_budget_service import TokenBudgetService
 from app.services.policy_compiler_service import PolicyCompilerService
 from app.services.empirical_accuracy_evaluator import EmpiricalAccuracyEvaluator
+from app.services.model_payload_allowlist import build_model_facing_payload
 
 logger = logging.getLogger("ai_verdict.empirical_benchmark")
 
@@ -215,10 +216,33 @@ class EventAdapter:
     def __init__(self, data: Dict[str, Any], idx: int = 0):
         self.id = str(data.get("id") or data.get("eventId") or f"EVT_{idx}")
         self.event_id = self.id
-        self.event_type = str(data.get("eventType") or data.get("eventName") or "")
-        self.event_receive_time = data.get("receiveTime") or data.get("eventReceiveTime") or data.get("firstSeen")
-        self.raw_log = str(data.get("rawMessage") or data.get("rawLog") or data.get("rawEventLog") or "")
-        self.attributes = data
+        attr = data.get("attribute") if isinstance(data.get("attribute"), dict) else {}
+        self.event_type = str(
+            data.get("eventType")
+            or data.get("eventName")
+            or attr.get("Event Type")
+            or attr.get("Event Name")
+            or ""
+        )
+        self.event_receive_time = (
+            data.get("receiveTime")
+            or data.get("eventReceiveTime")
+            or data.get("firstSeen")
+            or attr.get("Event Receive Time")
+        )
+        self.raw_log = str(
+            data.get("rawMessage")
+            or data.get("rawLog")
+            or data.get("rawEventLog")
+            or attr.get("Raw Event Log")
+            or attr.get("rawEventLog")
+            or ""
+        )
+        merged = dict(attr)
+        for k, v in data.items():
+            if k != "attribute" and k not in merged:
+                merged[k] = v
+        self.attributes = merged
 
 
 class IncidentAdapter:
@@ -761,7 +785,12 @@ class EmpiricalBenchmarkHarness:
             )
 
             # 3b: Token Budgeting & Delimiter Wrapping
-            payload_dict = copy.deepcopy(incident_rec.sanitized_payload)
+            payload_dict = build_model_facing_payload(
+                incident=inc_obj,
+                rule=mock_rule,
+                events=inc_obj.events,
+                max_events=10,
+            )
             payload_dict["canonical_evidence"] = [r.model_dump() for r in norm_result.records]
             payload_dict["evidence_contract"] = {
                 "contract_id": contract.contract_id,
@@ -780,8 +809,8 @@ class EmpiricalBenchmarkHarness:
                 compiled_policy=compiled_policy,
                 incident_payload=payload_dict,
                 rag_block="",
-                max_context_tokens=16384,
-                max_completion_tokens=1024,
+                max_context_tokens=4096,
+                max_completion_tokens=768,
                 reserved_overhead_tokens=rule_overhead_tokens,
                 model_name="Qwen/Qwen2.5-7B-Instruct-AWQ",
             )

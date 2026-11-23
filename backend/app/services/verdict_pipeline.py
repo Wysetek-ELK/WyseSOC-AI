@@ -97,7 +97,13 @@ def build_sanitized_model_payload(
     rule: Optional[Rule],
 ) -> Tuple[Any, Dict[str, Any]]:
     """Normalize incident telemetry and construct a leakage-sanitized model payload."""
-    raw_events = incident.__dict__.get("events") or []
+    raw_events = getattr(incident, "events", None) or incident.__dict__.get("events") or []
+    if not raw_events and hasattr(incident, "raw_payload") and isinstance(incident.raw_payload, dict):
+        raw_p = incident.raw_payload
+        raw_list = raw_p.get("rawEvents") or raw_p.get("events") or []
+        if raw_list:
+            from app.services.empirical_benchmark_harness import EventAdapter
+            raw_events = [EventAdapter(e, i) if isinstance(e, dict) else e for i, e in enumerate(raw_list)]
     norm_result = EvidenceNormalizationService.normalize_incident_evidence(
         incident=incident,
         events=raw_events,

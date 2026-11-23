@@ -1,0 +1,332 @@
+{
+  "benchmark_manifest_version": "2.3.0",
+  "generated_at": "2026-11-23T06:13:57.329879+00:00",
+  "split_strategy": "evidence_aware_entity_cluster_isolated_partitioning",
+  "target_detection_rules": [
+    {
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "name": "Crowdstrike: Suspicious Activity",
+      "total_incidents": 10,
+      "clusters_count": 6
+    },
+    {
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "name": "Prisma SASE: Suspicious File Threat Detection",
+      "total_incidents": 10,
+      "clusters_count": 8
+    }
+  ],
+  "ground_truth_census": {
+    "multi_tier_breakdown": {
+      "verified_analyst_fp": 7,
+      "provisional_analyst_fp": 3,
+      "provisional_analyst_tp": 9,
+      "automated_resolution_ml": 1,
+      "verified_analyst_tp": 0
+    },
+    "operational_triage_standards": {
+      "true_positive": 9,
+      "false_positive": 10,
+      "unverified_automated": 1
+    },
+    "strict_forensic_standards": {
+      "verified_true_positive": 0,
+      "verified_false_positive": 7,
+      "unverified_provisional_or_automated": 13
+    }
+  },
+  "duplicate_and_cluster_analysis": {
+    "exact_duplicate_event_ids": 0,
+    "pairwise_event_overlap_detected": false,
+    "total_entity_clusters": 14,
+    "cluster_isolation_invariant": "dev_clusters \u2229 val_clusters \u2229 held_clusters = \u2205",
+    "cluster_isolation_satisfied": true,
+    "quarantined_duplicates_count": 0,
+    "quarantined_ids": [],
+    "reinstated_incidents": [
+      "132499745",
+      "132578774",
+      "132595592",
+      "132596403",
+      "132599330"
+    ],
+    "reinstatement_rationale": "Evidence-aware analysis proved incidents represent distinct telemetry occurrences with unique timestamps, distinct source IPs, distinct file names, and 0 shared event IDs."
+  },
+  "cohort_splits": {
+    "development_cohort": {
+      "count": 9,
+      "clusters": [
+        "CS_HOST_DESKTOP_CQ4A60U",
+        "CS_HOST_DESKTOP_E0G2R49",
+        "PRISMA_IP_172_25_14_157",
+        "PRISMA_IP_172_25_14_67_CLIENTLIB",
+        "PRISMA_IP_172_25_6_95_2005"
+      ],
+      "incidents": [
+        {
+          "incident_id": "132438483",
+          "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+          "entity": "DESKTOP-E0G2R49",
+          "cluster_id": "CS_HOST_DESKTOP_E0G2R49",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_FP",
+          "operational_label": "FALSE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "REQUIRES_ATTENTION",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "VALIDATED"
+        },
+        {
+          "incident_id": "132441815",
+          "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+          "entity": "DESKTOP-E0G2R49",
+          "cluster_id": "CS_HOST_DESKTOP_E0G2R49",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_FP",
+          "operational_label": "FALSE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "REQUIRES_ATTENTION",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "VALIDATED"
+        },
+        {
+          "incident_id": "132461368",
+          "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+          "entity": "DESKTOP-E0G2R49",
+          "cluster_id": "CS_HOST_DESKTOP_E0G2R49",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_TP",
+          "operational_label": "TRUE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "REQUIRES_ATTENTION",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "VALIDATED"
+        },
+        {
+          "incident_id": "132501348",
+          "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+          "entity": "DESKTOP-CQ4A60U",
+          "cluster_id": "CS_HOST_DESKTOP_CQ4A60U",
+          "ground_truth_tier": "AUTOMATED_RESOLUTION",
+          "operational_label": "UNVERIFIED",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "REQUIRES_ATTENTION",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "VALIDATED"
+        },
+        {
+          "incident_id": "132599145",
+          "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+          "entity": "172.25.14.157 (indonis)",
+          "cluster_id": "PRISMA_IP_172_25_14_157",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_TP",
+          "operational_label": "TRUE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "FALSE_POSITIVE",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "REJECTED"
+        },
+        {
+          "incident_id": "132599146",
+          "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+          "entity": "172.25.14.157 (indonis)",
+          "cluster_id": "PRISMA_IP_172_25_14_157",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_TP",
+          "operational_label": "TRUE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "FALSE_POSITIVE",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "REJECTED"
+        },
+        {
+          "incident_id": "132599330",
+          "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+          "entity": "172.25.14.157 (indonis)",
+          "cluster_id": "PRISMA_IP_172_25_14_157",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_TP",
+          "operational_label": "TRUE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "FALSE_POSITIVE",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "REJECTED"
+        },
+        {
+          "incident_id": "132499023",
+          "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+          "entity": "172.25.14.67 (web-browsing)",
+          "cluster_id": "PRISMA_IP_172_25_14_67_CLIENTLIB",
+          "ground_truth_tier": "VERIFIED_ANALYST_FP",
+          "operational_label": "FALSE_POSITIVE",
+          "strict_label": "FALSE_POSITIVE",
+          "model_proposed_verdict": "FALSE_POSITIVE",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "REJECTED"
+        },
+        {
+          "incident_id": "132595592",
+          "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+          "entity": "172.25.6.95 (web-browsing)",
+          "cluster_id": "PRISMA_IP_172_25_6_95_2005",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_TP",
+          "operational_label": "TRUE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "FALSE_POSITIVE",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "REJECTED"
+        }
+      ]
+    },
+    "validation_cohort": {
+      "count": 6,
+      "clusters": [
+        "CS_HOST_DESKTOP_KHU6454",
+        "CS_HOST_TSI_IT_002_200",
+        "PRISMA_IP_172_25_14_80_SCRIPTS",
+        "PRISMA_IP_172_25_14_80_SURVEY",
+        "PRISMA_IP_172_25_6_101_REVIEW"
+      ],
+      "incidents": [
+        {
+          "incident_id": "132439932",
+          "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+          "entity": "TSI-IT-002-200",
+          "cluster_id": "CS_HOST_TSI_IT_002_200",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_FP",
+          "operational_label": "FALSE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "REQUIRES_ATTENTION",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "VALIDATED"
+        },
+        {
+          "incident_id": "132461358",
+          "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+          "entity": "TSI-IT-002-200",
+          "cluster_id": "CS_HOST_TSI_IT_002_200",
+          "ground_truth_tier": "VERIFIED_ANALYST_FP",
+          "operational_label": "FALSE_POSITIVE",
+          "strict_label": "FALSE_POSITIVE",
+          "model_proposed_verdict": "REQUIRES_ATTENTION",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "VALIDATED"
+        },
+        {
+          "incident_id": "132502453",
+          "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+          "entity": "DESKTOP-KHU6454",
+          "cluster_id": "CS_HOST_DESKTOP_KHU6454",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_TP",
+          "operational_label": "TRUE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "REQUIRES_ATTENTION",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "VALIDATED"
+        },
+        {
+          "incident_id": "132499009",
+          "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+          "entity": "172.25.14.80 (surveysensum)",
+          "cluster_id": "PRISMA_IP_172_25_14_80_SURVEY",
+          "ground_truth_tier": "VERIFIED_ANALYST_FP",
+          "operational_label": "FALSE_POSITIVE",
+          "strict_label": "FALSE_POSITIVE",
+          "model_proposed_verdict": "FALSE_POSITIVE",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "REJECTED"
+        },
+        {
+          "incident_id": "132499745",
+          "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+          "entity": "172.25.14.80 (web-browsing)",
+          "cluster_id": "PRISMA_IP_172_25_14_80_SCRIPTS",
+          "ground_truth_tier": "VERIFIED_ANALYST_FP",
+          "operational_label": "FALSE_POSITIVE",
+          "strict_label": "FALSE_POSITIVE",
+          "model_proposed_verdict": "FALSE_POSITIVE",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "REJECTED"
+        },
+        {
+          "incident_id": "132596403",
+          "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+          "entity": "172.25.6.101 (web-browsing)",
+          "cluster_id": "PRISMA_IP_172_25_6_101_REVIEW",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_TP",
+          "operational_label": "TRUE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "FALSE_POSITIVE",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "REJECTED"
+        }
+      ]
+    },
+    "held_out_blind_cohort": {
+      "count": 5,
+      "clusters": [
+        "CS_HOST_PC_TSI_DC",
+        "CS_HOST_TSI_IT_002_95",
+        "PRISMA_IP_172_25_2_3_ADRUM",
+        "PRISMA_IP_172_25_6_208_TEAMVIEWER"
+      ],
+      "incidents": [
+        {
+          "incident_id": "132472498",
+          "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+          "entity": "PC-TSI-DC",
+          "cluster_id": "CS_HOST_PC_TSI_DC",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_TP",
+          "operational_label": "TRUE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "REQUIRES_ATTENTION",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "VALIDATED"
+        },
+        {
+          "incident_id": "132474210",
+          "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+          "entity": "PC-TSI-DC",
+          "cluster_id": "CS_HOST_PC_TSI_DC",
+          "ground_truth_tier": "VERIFIED_ANALYST_FP",
+          "operational_label": "FALSE_POSITIVE",
+          "strict_label": "FALSE_POSITIVE",
+          "model_proposed_verdict": "REQUIRES_ATTENTION",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "VALIDATED"
+        },
+        {
+          "incident_id": "132527297",
+          "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+          "entity": "TSI-IT-002-95",
+          "cluster_id": "CS_HOST_TSI_IT_002_95",
+          "ground_truth_tier": "PROVISIONAL_ANALYST_TP",
+          "operational_label": "TRUE_POSITIVE",
+          "strict_label": "UNVERIFIED",
+          "model_proposed_verdict": "REQUIRES_ATTENTION",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "VALIDATED"
+        },
+        {
+          "incident_id": "132591888",
+          "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+          "entity": "172.25.6.208 (teamviewer)",
+          "cluster_id": "PRISMA_IP_172_25_6_208_TEAMVIEWER",
+          "ground_truth_tier": "VERIFIED_ANALYST_FP",
+          "operational_label": "FALSE_POSITIVE",
+          "strict_label": "FALSE_POSITIVE",
+          "model_proposed_verdict": "FALSE_POSITIVE",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "REJECTED"
+        },
+        {
+          "incident_id": "132578774",
+          "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+          "entity": "172.25.2.3 (web-browsing)",
+          "cluster_id": "PRISMA_IP_172_25_2_3_ADRUM",
+          "ground_truth_tier": "VERIFIED_ANALYST_FP",
+          "operational_label": "FALSE_POSITIVE",
+          "strict_label": "FALSE_POSITIVE",
+          "model_proposed_verdict": "FALSE_POSITIVE",
+          "effective_verdict": "REQUIRES_ATTENTION",
+          "validation_status": "REJECTED"
+        }
+      ]
+    }
+  }
+}

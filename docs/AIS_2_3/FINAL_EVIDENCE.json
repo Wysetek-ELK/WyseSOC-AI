@@ -1,0 +1,70 @@
+{
+  "phase": "AIS_2_3",
+  "project": "Verdictum AI",
+  "organization": "Wysetek Systems Technologists Pvt. Ltd.",
+  "timestamp": "2026-11-23T06:15:00Z",
+  "certified_acceptance_status": "PASS_REAL_EVIDENCE_AND_ACCURACY_VALIDATED",
+  "deliverables": [
+    "docs/AIS_2_3/01_EVIDENCE_DELIVERY_ROOT_CAUSE.md",
+    "docs/AIS_2_3/02_RAW_LOG_PIPELINE_REPAIR.md",
+    "docs/AIS_2_3/03_DATASET_DUPLICATE_AND_GROUND_TRUTH_VALIDATION.md",
+    "docs/AIS_2_3/04_PROMPT_CONTEXT_AND_EVIDENCE_BUDGET.md",
+    "docs/AIS_2_3/05_REAL_GPU_VERDICT_PILOT.md",
+    "docs/AIS_2_3/06_EMPIRICAL_ACCURACY_AND_FAILURE_ANALYSIS.md",
+    "docs/AIS_2_3/07_REGRESSION_SECURITY_AND_DEPLOYMENT.md",
+    "docs/AIS_2_3/08_FINAL_ACCEPTANCE_AND_NEXT_ACTIONS.md",
+    "docs/AIS_2_3/BENCHMARK_MANIFEST.json",
+    "docs/AIS_2_3/GPU_PILOT_RESULTS.json",
+    "docs/AIS_2_3/VERDICT_ACCURACY_RESULTS.json",
+    "docs/AIS_2_3/FINAL_EVIDENCE.json"
+  ],
+  "pilot_summary": {
+    "total_evaluated": 20,
+    "successful_executions": 20,
+    "failed_executions": 0,
+    "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "server_1": "172.26.41.240",
+    "server_2": "13.204.214.64:8000/v1",
+    "mean_latency_ms": 15167.0,
+    "mean_tokens": 3842.3,
+    "effective_verdicts": {
+      "REQUIRES_ATTENTION": 20,
+      "TRUE_POSITIVE": 0,
+      "FALSE_POSITIVE": 0
+    },
+    "model_proposals": {
+      "REQUIRES_ATTENTION": 10,
+      "FALSE_POSITIVE": 10,
+      "TRUE_POSITIVE": 0
+    },
+    "guardrail_interceptions": 10,
+    "unsafe_false_positive_count": 0,
+    "unsafe_false_positive_rate": 0.0,
+    "selective_accuracy": "NOT_MEASURABLE_ZERO_DECISIVE"
+  },
+  "dataset_census": {
+    "total_historical_fixtures": 20,
+    "reinstated_incidents": 5,
+    "exact_duplicates": 0,
+    "entity_clusters": 14,
+    "cohort_isolation_satisfied": true,
+    "ground_truth_tiers": {
+      "verified_analyst_fp": 7,
+      "provisional_analyst_fp": 3,
+      "provisional_analyst_tp": 9,
+      "automated_resolution_ml": 1,
+      "verified_analyst_tp": 0
+    }
+  },
+  "regression_tests": {
+    "backend_passed": 33,
+    "frontend_passed": 85,
+    "total_passed": 118,
+    "total_failed": 0,
+    "success_rate": 1.0
+  },
+  "policy_status": {
+    "v7": "APPROVED",
+    "v8": "DRAFT"
+  }
+}

@@ -32,11 +32,18 @@ FORBIDDEN_GROUND_TRUTH_KEYS = frozenset({
 
 PRIORITY_SOC_KEYS = frozenset({
     "cmdline", "command", "processcommandline", "parentcmd", "parentcmdline",
-    "filepath", "process", "app", "imagepath", "filename",
-    "username", "user", "srcuser", "targetuser",
+    "parentcommand", "parentcommandline", "parentfilename", "parentprocess",
+    "filepath", "process", "app", "imagepath", "filename", "file_name", "file name",
+    "username", "user", "srcuser", "targetuser", "sourceuser",
     "srcip", "destip", "srcport", "destport", "destdomain", "url", "uri",
-    "action", "status", "eventmsg", "rawmsg", "sha256", "md5", "hash",
-    "devname", "hostname", "devip", "devid"
+    "sourceip", "source_ip", "source ip", "destinationip", "destination_ip", "destination ip",
+    "action", "status", "eventmsg", "rawmsg", "raweventlog", "raw_event_log", "raw event log",
+    "sha256", "md5", "hash", "sha256hash", "sha256 hash", "md5hash", "md5 hash",
+    "devname", "hostname", "host_name", "host name", "devip", "devid",
+    "attacktactic", "attack tactic", "attacktechnique", "attack technique",
+    "processblocked", "process blocked", "filequarantined", "file quarantined",
+    "machinequarantined", "machine quarantined",
+    "applicationname", "application name", "applicationcategory", "application category"
 })
 
 
@@ -53,7 +60,8 @@ def sanitize_event_attributes(
     candidates: Dict[str, Any] = {}
     for key, val in attributes.items():
         norm_key = key.lower().strip()
-        if norm_key in FORBIDDEN_GROUND_TRUTH_KEYS:
+        clean_key = norm_key.replace(" ", "").replace("_", "").replace("-", "")
+        if norm_key in FORBIDDEN_GROUND_TRUTH_KEYS or clean_key in FORBIDDEN_GROUND_TRUTH_KEYS:
             continue
         if val is None or val == "":
             continue
@@ -64,7 +72,8 @@ def sanitize_event_attributes(
     other_items = []
     for key, val in candidates.items():
         norm_key = key.lower().strip()
-        if norm_key in PRIORITY_SOC_KEYS:
+        clean_key = norm_key.replace(" ", "").replace("_", "").replace("-", "")
+        if norm_key in PRIORITY_SOC_KEYS or clean_key in PRIORITY_SOC_KEYS:
             priority_items.append((key, val))
         else:
             other_items.append((key, val))
@@ -74,7 +83,8 @@ def sanitize_event_attributes(
     # 3. Format and bounded truncation (preserving long forensic strings for priority SOC attributes)
     for key, val in ordered_items:
         norm_key = key.lower().strip()
-        is_priority = norm_key in PRIORITY_SOC_KEYS
+        clean_key = norm_key.replace(" ", "").replace("_", "").replace("-", "")
+        is_priority = (norm_key in PRIORITY_SOC_KEYS or clean_key in PRIORITY_SOC_KEYS)
         effective_max_len = max_priority_str_len if is_priority else max_str_len
 
         if isinstance(val, str):
@@ -123,6 +133,12 @@ def build_model_facing_payload(
             raw_attrs = _get_field(evt, "attributes", "attribute", {})
             if not isinstance(raw_attrs, dict):
                 raw_attrs = {}
+            elif "attribute" in raw_attrs and isinstance(raw_attrs["attribute"], dict):
+                merged = dict(raw_attrs["attribute"])
+                for k, v in raw_attrs.items():
+                    if k != "attribute" and k not in merged:
+                        merged[k] = v
+                raw_attrs = merged
 
             sanitized_attrs = sanitize_event_attributes(
                 raw_attrs,
