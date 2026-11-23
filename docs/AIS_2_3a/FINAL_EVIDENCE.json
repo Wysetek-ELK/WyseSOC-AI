@@ -1,0 +1,229 @@
+{
+  "phase": "AIS_2_3a",
+  "project": "Verdictum AI",
+  "organization": "Wysetek Systems Technologists Pvt. Ltd.",
+  "timestamp": "2026-11-23T08:15:00Z",
+  "certified_acceptance_status": "PASS_READY_FOR_AIS_2_4",
+  "deliverables": [
+    "docs/AIS_2_3a/01_RUNTIME_PROMPT_AND_TOKEN_AUDIT.md",
+    "docs/AIS_2_3a/02_GUARDRAIL_REJECTION_ROOT_CAUSE.md",
+    "docs/AIS_2_3a/03_IMPLEMENTATION_AND_TRACEABILITY_FIXES.md",
+    "docs/AIS_2_3a/04_REAL_GPU_REGRESSION_RESULTS.md",
+    "docs/AIS_2_3a/05_FINAL_ACCEPTANCE_AND_AIS_2_4_READINESS.md",
+    "docs/AIS_2_3a/FINAL_EVIDENCE.json"
+  ],
+  "infrastructure": {
+    "server_1": {
+      "host": "172.26.41.240",
+      "services": ["FastAPI", "PostgreSQL 16", "Next.js 14", "Nginx"],
+      "active_commit": "b3fb4980de16b466e89c9e1c3c42ab78f857d2fd",
+      "branch": "feature/phase3-compact-ui",
+      "status": "HEALTHY"
+    },
+    "server_2": {
+      "host": "13.204.214.64:8000/v1",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "serving_engine": "vLLM",
+      "context_window_limit": 4096,
+      "status": "ONLINE"
+    }
+  },
+  "defects_corrected": [
+    {
+      "defect_id": "DEFECT_A_NORMALIZATION_ALIASES",
+      "component": "backend/app/services/evidence_normalization_service.py",
+      "description": "FortiSIEM vendor fields 'File Name' and 'Parent File Name' failed to populate contract keys 'process.name' and 'process.parent_name'.",
+      "resolution": "Implemented canonical aliasing in _extract_from_dict to emit process.name, process.file_name, file.name, and process.parent_name.",
+      "status": "VERIFIED_FIXED"
+    },
+    {
+      "defect_id": "DEFECT_B_COMPACTION_EXPLOSION",
+      "component": "backend/app/services/evidence_compaction_service.py",
+      "description": "Repeating events with identical forensic values (e.g. 34 instances of ss-widget.min.js) exploded core_records to 5,809 tokens.",
+      "resolution": "Added seen_forensic_values tracking in Step 3 and binary alias deduplication in core_records candidate selection.",
+      "status": "VERIFIED_FIXED"
+    },
+    {
+      "defect_id": "DEFECT_C_TOKEN_HEADROOM_CALIBRATION",
+      "component": "backend/app/services/verdict_pipeline.py",
+      "description": "Insufficient completion headroom resulted in truncated outputs and context window overruns.",
+      "resolution": "Strictly reserved 768 completion tokens for context windows <= 4,096 tokens, capping prompt budget at 3,328 tokens.",
+      "status": "VERIFIED_FIXED"
+    },
+    {
+      "defect_id": "DEFECT_D_VALIDATOR_UNBOUND_LOCAL_ERROR",
+      "component": "backend/app/services/independent_verdict_validator.py",
+      "description": "UnboundLocalError occurred when action_directive was referenced before assignment during claim evaluation.",
+      "resolution": "Safely initialized action_directive to None at validator function entry point.",
+      "status": "VERIFIED_FIXED"
+    },
+    {
+      "defect_id": "DEFECT_E_TRACEABILITY_METADATA_OMISSION",
+      "component": "backend/app/services/verdict_pipeline.py",
+      "description": "Pipeline exit points omitted rule_id, rule_name, policy_version_id, policy_version_number, and policy_status.",
+      "resolution": "Populated all rule and policy traceability metadata across all return paths in VerdictPipeline.",
+      "status": "VERIFIED_FIXED"
+    }
+  ],
+  "regression_testing": {
+    "backend_suite": {
+      "tests_passed": 64,
+      "tests_failed": 0,
+      "success_rate": 1.0,
+      "key_suites": [
+        "test_ais_unified_population_contract.py (6)",
+        "test_ais_evaluation_tracking.py (20)",
+        "test_api_422_remediation.py (7)",
+        "test_ais_2_3a_integrity.py (4)",
+        "test_evidence_normalization.py (11)",
+        "test_evidence_compaction_and_chunking.py (6)",
+        "test_token_budgeting.py (1)",
+        "test_independent_verdict_validator.py (9)"
+      ]
+    },
+    "heavy_tcp_scan_suite": {
+      "tests_passed": 14,
+      "tests_failed": 0,
+      "success_rate": 1.0,
+      "suite": "test_ais_heavy_tcp_e2e.py"
+    },
+    "frontend_suite": {
+      "tests_passed": 88,
+      "tests_failed": 0,
+      "success_rate": 1.0
+    }
+  },
+  "real_gpu_pilot_summary": {
+    "total_evaluated": 5,
+    "successful_executions": 5,
+    "failed_executions": 0,
+    "mean_latency_ms": 21041.4,
+    "mean_prompt_tokens": 3656.2,
+    "mean_completion_tokens": 427.8,
+    "effective_verdicts": {
+      "REQUIRES_ATTENTION": 5,
+      "TRUE_POSITIVE": 0,
+      "FALSE_POSITIVE": 0
+    },
+    "model_proposals": {
+      "REQUIRES_ATTENTION": 5,
+      "TRUE_POSITIVE": 0,
+      "FALSE_POSITIVE": 0
+    },
+    "guardrail_demotions": 0,
+    "unsafe_false_positive_count": 0,
+    "unsafe_false_positive_rate": 0.0,
+    "decision_coverage": 0.0,
+    "abstention_rate": 1.0,
+    "selective_accuracy": "NOT_MEASURABLE_ZERO_DECISIVE",
+    "executions": [
+      {
+        "incident_id": "132438483",
+        "rule_category": "CrowdStrike",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "proposed_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "prompt_tokens": 3757,
+        "completion_tokens": 339,
+        "latency_ms": 21949.47,
+        "validation_status": "TRUNCATED_OUTPUT",
+        "citations": ["process.command_line missing", "user.name missing"]
+      },
+      {
+        "incident_id": "132527297",
+        "rule_category": "CrowdStrike",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "proposed_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "prompt_tokens": 3758,
+        "completion_tokens": 278,
+        "latency_ms": 14437.58,
+        "validation_status": "VALIDATED",
+        "citations": ["process.parent_command_line missing"]
+      },
+      {
+        "incident_id": "132499009",
+        "rule_category": "Prisma SASE",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "proposed_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "prompt_tokens": 3576,
+        "completion_tokens": 520,
+        "latency_ms": 27270.21,
+        "validation_status": "TRUNCATED_OUTPUT",
+        "citations": ["ss-widget.min.js", "surveysensum-base"]
+      },
+      {
+        "incident_id": "132499023",
+        "rule_category": "Prisma SASE",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "proposed_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "prompt_tokens": 3607,
+        "completion_tokens": 489,
+        "latency_ms": 21996.94,
+        "validation_status": "TRUNCATED_OUTPUT",
+        "citations": ["clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js"]
+      },
+      {
+        "incident_id": "132499745",
+        "rule_category": "Prisma SASE",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "proposed_verdict": "REQUIRES_ATTENTION",
+        "effective_verdict": "REQUIRES_ATTENTION",
+        "prompt_tokens": 3583,
+        "completion_tokens": 513,
+        "latency_ms": 19562.85,
+        "validation_status": "TRUNCATED_OUTPUT",
+        "citations": ["scripts-QBOKETIS.js"]
+      }
+    ]
+  },
+  "upla_governance_and_deployment": {
+    "gate_1_github_sync": {
+      "repository": "https://github.com/Wysetek-ELK/WyseSOC-AI.git",
+      "branch": "feature/phase3-compact-ui",
+      "verified_commit_sha": "b3fb4980de16b466e89c9e1c3c42ab78f857d2fd",
+      "status": "APPROVED_AND_SYNCHRONIZED"
+    },
+    "gate_2_remote_deployment": {
+      "target_server": "server-1",
+      "ip_address": "172.26.41.240",
+      "deployed_commit_sha": "b3fb4980de16b466e89c9e1c3c42ab78f857d2fd",
+      "remote_tests_passed": true,
+      "remote_migration_status": "HEAD",
+      "remote_services_healthy": true,
+      "status": "DEPLOYED_AND_VERIFIED"
+    },
+    "execution_ids": [
+      "upla-20261123-072546-4fd488",
+      "upla-20261123-074318-e12d64"
+    ]
+  },
+  "policy_inventory": {
+    "v7": {
+      "id": "e8379435-01e4-448a-ba24-6997ce04dfa8",
+      "rule": "Heavy TCP Host Scan On Fixed Port",
+      "status": "APPROVED",
+      "active": true
+    },
+    "v8": {
+      "id": "f583e742-b91c-4b53-b0e6-547781bcf772",
+      "rule": "Heavy TCP Host Scan On Fixed Port",
+      "status": "DRAFT",
+      "active": false
+    },
+    "crowdstrike_v3": {
+      "id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49",
+      "rule": "Crowdstrike: Suspicious Activity",
+      "status": "APPROVED",
+      "active": true
+    },
+    "prisma_sase_v1": {
+      "id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+      "rule": "Prisma SASE: Suspicious File Threat Detection",
+      "status": "APPROVED",
+      "active": true
+    }
+  }
+}
