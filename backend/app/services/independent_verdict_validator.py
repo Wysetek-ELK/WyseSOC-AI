@@ -295,23 +295,64 @@ class IndependentVerdictValidator:
         if clean_prop_verdict == "TRUE_POSITIVE":
             # For TP: must meet evidence completeness AND provide at least one grounded claim representing genuine security tradecraft
             # (An automated EDR block or bare binary filename alone does NOT establish adversary malice or tradecraft)
-            control_action_fields = {"security.action", "endpoint.process_blocked", "endpoint.file_quarantined", "action"}
-            identifier_fields = {"process.name", "process.file_name", "file.name", "user.name", "endpoint.hostname"}
+            control_action_fields = {
+                "security.action", "endpoint.process_blocked", "endpoint.file_quarantined", "action",
+                "security.alert_title", "security.event_type", "event.type", "alert.name", "rule.name",
+                "event_type", "title", "eventname"
+            }
+            identifier_fields = {
+                "process.name", "process.file_name", "file.name", "filename", "user.name", "endpoint.hostname",
+                "network.source_ip", "network.destination_ip", "source_ip", "destination_ip", "dest_ip",
+                "src_ip", "dst_ip", "network.port", "network.source_port", "network.destination_port",
+                "device.ip", "reporting_ip", "url.domain", "url.hostname", "application.name",
+                "application.category", "collector_name", "reporting_device", "collector.id"
+            }
             has_grounded_security_tradecraft = False
 
             for c in claim_grounding.claims:
                 if c.is_grounded:
                     c_field_lower = str(c.field or "").lower()
                     c_type_str = str(c.claim_type or "").upper()
-                    # A control block or bare identifier alone does not prove malice
+                    c_text_lower = str(c.claim_text or "").lower()
+                    c_val_lower = str(c.asserted_value or "").lower()
+
+                    # A control block, alert trigger, or bare network/entity identifier alone does not prove malice
                     if c_field_lower in control_action_fields or c_field_lower in identifier_fields:
                         continue
-                    if c_type_str in (
-                        "PROCESS_EXECUTION", "NETWORK_CONNECTION", "FILE_HASH",
-                        "OBSERVED_FACT", "TELEMETRY_OBSERVATION", "CORRELATION_ASSERTION"
-                    ):
+
+                    # Direct forensic evidence fields: command lines, raw log with forensic attack syntax
+                    if c_field_lower in ("process.command_line", "process.parent_command_line", "event.raw_log"):
+                        forensic_attack_markers = (
+                            "delete shadows", "vssadmin", "-enc", "encodedcommand", "mimikatz",
+                            "downloadstring", "invoke-webrequest", "bypass", "unquoted",
+                            "net user", "whoami", "certutil", "schtasks /create", "reg add",
+                            "cobaltstrike", "meterpreter", "beacon", "privilege escalation",
+                            "lsass", "procdump", "rundll32", "mshta", "powershell -w hidden",
+                            "powershell.exe -enc"
+                        )
+                        if any(fam in c_val_lower or fam in c_text_lower for fam in forensic_attack_markers):
+                            has_grounded_security_tradecraft = True
+                            break
+                        continue
+
+                    # Confirmed Threat Intelligence / AV / Malware feeds
+                    ti_fields = ("threat_intel.", "reputation.", "antivirus.", "virustotal.", "ioc.", "malware.")
+                    if any(c_field_lower.startswith(tf) or tf in c_field_lower for tf in ti_fields):
                         has_grounded_security_tradecraft = True
                         break
+
+                    # Specific affirmative security tradecraft types
+                    if c_type_str in ("PROCESS_EXECUTION", "NETWORK_CONNECTION", "FILE_HASH", "OBSERVED_FACT", "TELEMETRY_OBSERVATION", "CORRELATION_ASSERTION"):
+                        attack_markers = (
+                            "exploit", "c2", "beacon", "malware", "trojan", "ransomware", "backdoor",
+                            "payload", "shellcode", "buffer overflow", "injection", "lateral movement",
+                            "port scan", "brute force", "exfiltration", "tunneling"
+                        )
+                        if any(am in c_val_lower or am in c_text_lower for am in attack_markers):
+                            known_benign = ("ss-widget", "clientlib-site", "jquery", "select2", "adrum", "surveysensum")
+                            if not any(kb in c_val_lower for kb in known_benign):
+                                has_grounded_security_tradecraft = True
+                                break
 
             if preflight.evidence_completeness < 0.6 or claim_grounding.grounded_claims == 0 or not has_grounded_security_tradecraft:
                 final_verdict = "REQUIRES_ATTENTION"

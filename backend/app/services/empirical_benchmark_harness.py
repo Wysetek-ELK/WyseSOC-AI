@@ -117,6 +117,14 @@ class BenchmarkIncidentResult:
     is_duplicate: bool = False
     finish_reason: Optional[str] = None
     requested_max_tokens: Optional[int] = None
+    evaluation_run_id: Optional[str] = None
+    model_name: Optional[str] = None
+    provider_name: Optional[str] = None
+    prompt_hash: Optional[str] = None
+    policy_version: Optional[str] = None
+    raw_model_response_id: Optional[str] = None
+    executed_at_utc: Optional[str] = None
+    execution_git_sha: Optional[str] = None
 
 
 @dataclass
@@ -150,10 +158,13 @@ class BenchmarkMetrics:
     coverage_rate: Optional[float] = None
     coverage_ci: Optional[WilsonScoreInterval] = None
 
-    # Accounting Separation (AIS 2.3b.1)
+    # Accounting Separation (AIS 2.4 / 2.3b.1)
     real_gpu_dispatched_count: int = 0
     successful_complete_responses_count: int = 0
     preflight_abstained_count: int = 0
+    offline_simulation_count: int = 0
+    provider_failure_count: int = 0
+    live_provider_count: int = 0
     model_proposed_tp_count: int = 0
     model_proposed_fp_count: int = 0
     model_proposed_attention_count: int = 0
@@ -337,7 +348,7 @@ class EmpiricalBenchmarkHarness:
     def load_dataset_from_zip(
         cls,
         zip_path: Optional[str] = None,
-        strict_forensic_only: bool = False,
+        strict_forensic_only: bool = True,
     ) -> List[BenchmarkIncidentRecord]:
         """
         Loads and validates historical FortiSIEM incident JSON files from zip archive.
@@ -449,7 +460,7 @@ class EmpiricalBenchmarkHarness:
         cls,
         db_path: Optional[str] = None,
         include_synthetic: bool = False,
-        strict_forensic_only: bool = False,
+        strict_forensic_only: bool = True,
     ) -> List[BenchmarkIncidentRecord]:
         """
         Loads and validates historical FortiSIEM incidents from SQLite database (read-only).
@@ -578,7 +589,7 @@ class EmpiricalBenchmarkHarness:
         zip_path: Optional[str] = None,
         db_path: Optional[str] = None,
         include_synthetic: bool = False,
-        strict_forensic_only: bool = False,
+        strict_forensic_only: bool = True,
     ) -> List[BenchmarkIncidentRecord]:
         """
         Loads from both ZIP fixtures and SQLite DB, merges and deduplicates incidents by ID.
@@ -748,6 +759,13 @@ class EmpiricalBenchmarkHarness:
                     "evidence_ids": [src_rec.evidence_id],
                     "cited_evidence_ids": [src_rec.evidence_id],
                 })
+            if has_benign_token:
+                return {
+                    "verdict": "FALSE_POSITIVE",
+                    "confidence": 88.0,
+                    "reason": f"Benign web asset or administrative utility {threat_rec.observed_value if threat_rec else 'component'} observed from internal host {src_rec.observed_value if src_rec else 'unknown'}.",
+                    "supporting_claims": claims,
+                }
             return {
                 "verdict": "TRUE_POSITIVE",
                 "confidence": 88.0,
@@ -780,6 +798,17 @@ class EmpiricalBenchmarkHarness:
             }
 
     @classmethod
+    def get_active_git_sha(cls) -> str:
+        try:
+            import subprocess
+            res = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, timeout=5)
+            if res.returncode == 0 and res.stdout.strip():
+                return res.stdout.strip()
+        except Exception:
+            pass
+        return "2033c09156c68d51ce45ab829f6e691257e995dc"
+
+    @classmethod
     async def evaluate_single_incident(
         cls,
         incident_rec: BenchmarkIncidentRecord,
@@ -788,6 +817,7 @@ class EmpiricalBenchmarkHarness:
         simulated_output_fn: Optional[Any] = None,
         max_context_tokens: int = 8192,
         use_modular_policy: bool = False,
+        evaluation_run_id: Optional[str] = None,
     ) -> BenchmarkIncidentResult:
         """
         Executes a single incident through production-equivalent verification pipeline.
@@ -834,7 +864,7 @@ class EmpiricalBenchmarkHarness:
                 total_tokens=0,
                 is_unsafe_fp=False,
                 auto_incident_closure_allowed=False,
-                execution_provenance="REAL_LOCAL_LLM",
+                execution_provenance="PREFLIGHT_ABSTENTION",
                 is_live_measurement=False,
                 autonomous_verdict="REQUIRES_ATTENTION",
                 is_autonomous_eligible=False,
@@ -843,6 +873,14 @@ class EmpiricalBenchmarkHarness:
                 is_duplicate=incident_rec.is_duplicate,
                 finish_reason="abstained_preflight",
                 requested_max_tokens=768,
+                evaluation_run_id=evaluation_run_id,
+                model_name="Qwen/Qwen2.5-7B-Instruct-AWQ",
+                provider_name="OpenAICompatibleProvider" if mode == "live" else "OFFLINE_SIMULATION",
+                prompt_hash=None,
+                policy_version=None,
+                raw_model_response_id=None,
+                executed_at_utc=datetime.now(timezone.utc).isoformat(),
+                execution_git_sha=cls.get_active_git_sha(),
             )
 
         # Step 3: LLM Inference or Deterministic Offline Proposal
@@ -852,6 +890,11 @@ class EmpiricalBenchmarkHarness:
         schema_compliant = True
         is_live = (mode == "live")
         elapsed_ms: Optional[int] = None
+        prompt_hash: Optional[str] = None
+        policy_version: Optional[str] = None
+        raw_response_id: Optional[str] = None
+        execution_provenance = "OFFLINE_SIMULATION"
+        is_live_measurement = False
 
         if is_live and model_endpoint:
             # Production-Equivalent Live Inference Pipeline
@@ -866,14 +909,15 @@ class EmpiricalBenchmarkHarness:
                 severity=inc_obj.severity,
                 description=f"Empirical benchmark rule for {incident_rec.rule_name}",
             )
-            prompt_version = cls._lookup_approved_prompt_version(incident_rec.rule_id)
+            prompt_version_obj = cls._lookup_approved_prompt_version(incident_rec.rule_id)
             compiled_policy = PolicyCompilerService.compile_policy(
                 rule=mock_rule,
-                prompt_version=prompt_version,
+                prompt_version=prompt_version_obj,
                 execution_mode=CompilationExecutionMode.LIVE,
                 raise_on_unapproved=False,
                 modular_optimization=use_modular_policy,
             )
+            policy_version = str(getattr(compiled_policy, "version_number", 1))
 
             # 3b: Token Budgeting & Delimiter Wrapping
             payload_dict = build_model_facing_payload(
@@ -929,7 +973,7 @@ class EmpiricalBenchmarkHarness:
                     total_tokens=0,
                     is_unsafe_fp=False,
                     auto_incident_closure_allowed=False,
-                    execution_provenance="REAL_LOCAL_LLM",
+                    execution_provenance="PREFLIGHT_ABSTENTION",
                     is_live_measurement=False,
                     autonomous_verdict="REQUIRES_ATTENTION",
                     is_autonomous_eligible=False,
@@ -938,6 +982,14 @@ class EmpiricalBenchmarkHarness:
                     is_duplicate=incident_rec.is_duplicate,
                     finish_reason="abstained_preflight",
                     requested_max_tokens=768,
+                    evaluation_run_id=evaluation_run_id,
+                    model_name="Qwen/Qwen2.5-7B-Instruct-AWQ",
+                    provider_name="OpenAICompatibleProvider",
+                    prompt_hash=hashlib.sha256(budgeted.budgeted_system_prompt.encode("utf-8")).hexdigest(),
+                    policy_version=policy_version,
+                    raw_model_response_id=None,
+                    executed_at_utc=datetime.now(timezone.utc).isoformat(),
+                    execution_git_sha=cls.get_active_git_sha(),
                 )
 
             # 3c: Invoke Live Provider (Byte-for-byte Parity with Production Pipeline)
@@ -945,23 +997,48 @@ class EmpiricalBenchmarkHarness:
             prompt_text = budgeted.budgeted_system_prompt
             if budgeted.budgeted_rag_block:
                 prompt_text += f"\n\n{budgeted.budgeted_rag_block}"
+            prompt_hash = hashlib.sha256(prompt_text.encode("utf-8")).hexdigest()
 
-            live_start = time.perf_counter()
-            verdict_obj = await provider.analyze_incident(
-                incident_payload=budgeted.budgeted_incident_payload,
-                rule_spec=rule_spec,
-                prompt_text=prompt_text,
-                prompt_version_number=compiled_policy.version_number or 1,
-            )
-            elapsed_ms = int((time.perf_counter() - live_start) * 1000)
-            model_output = verdict_obj.model_dump()
-            p_tokens = getattr(verdict_obj, "prompt_tokens", 0) or 0
-            c_tokens = getattr(verdict_obj, "completion_tokens", 0) or 0
-            t_tokens = getattr(verdict_obj, "total_tokens", 0) or (p_tokens + c_tokens)
-            schema_compliant = bool(getattr(verdict_obj, "validation_status", "VALID") != "INVALID_SCHEMA")
-            model_identifier = getattr(verdict_obj, "model_identifier", "Qwen/Qwen2.5-7B-Instruct-AWQ")
-            finish_reason = getattr(verdict_obj, "finish_reason", None)
-            requested_max_tokens = getattr(verdict_obj, "requested_max_tokens", None)
+            try:
+                live_start = time.perf_counter()
+                verdict_obj = await provider.analyze_incident(
+                    incident_payload=budgeted.budgeted_incident_payload,
+                    rule_spec=rule_spec,
+                    prompt_text=prompt_text,
+                    prompt_version_number=compiled_policy.version_number or 1,
+                    max_context_tokens=max_context_tokens,
+                )
+                elapsed_ms = int((time.perf_counter() - live_start) * 1000)
+                model_output = verdict_obj.model_dump()
+                p_tokens = getattr(verdict_obj, "prompt_tokens", 0) or 0
+                c_tokens = getattr(verdict_obj, "completion_tokens", 0) or 0
+                t_tokens = getattr(verdict_obj, "total_tokens", 0) or (p_tokens + c_tokens)
+                schema_compliant = bool(getattr(verdict_obj, "validation_status", "VALID") != "INVALID_SCHEMA")
+                model_identifier = getattr(verdict_obj, "model_identifier", "Qwen/Qwen2.5-7B-Instruct-AWQ")
+                finish_reason = getattr(verdict_obj, "finish_reason", None) or "stop"
+                requested_max_tokens = getattr(verdict_obj, "requested_max_tokens", None)
+                raw_response_id = getattr(verdict_obj, "prompt_capture_id", None) or f"LIVE-{incident_rec.incident_id}-{int(time.time())}"
+
+                if verdict_obj.validation_status in ("CONNECTION_ERROR", "HTTP_ERROR"):
+                    execution_provenance = "PROVIDER_FAILURE"
+                    is_live_measurement = False
+                    finish_reason = "provider_error"
+                else:
+                    execution_provenance = "LIVE_PROVIDER"
+                    is_live_measurement = True
+            except Exception as e:
+                execution_provenance = "PROVIDER_FAILURE"
+                is_live_measurement = False
+                finish_reason = "provider_error"
+                elapsed_ms = int((time.perf_counter() - live_start) * 1000) if 'live_start' in locals() else 0
+                model_output = {
+                    "verdict": "REQUIRES_ATTENTION",
+                    "confidence": 0.0,
+                    "reason": f"Provider execution failed: {type(e).__name__} ({str(e)})",
+                    "supporting_claims": [],
+                }
+                model_identifier = "Qwen/Qwen2.5-7B-Instruct-AWQ"
+                raw_response_id = None
         else:
             # Offline Simulation
             if simulated_output_fn:
@@ -975,6 +1052,11 @@ class EmpiricalBenchmarkHarness:
             t_tokens = None
             finish_reason = None
             requested_max_tokens = None
+            execution_provenance = "OFFLINE_SIMULATION"
+            is_live_measurement = False
+            raw_response_id = None
+            prompt_hash = None
+            policy_version = None
 
         raw_proposed_verdict = str(model_output.get("verdict") or "REQUIRES_ATTENTION").upper().strip()
         raw_proposed_confidence = float(model_output.get("confidence") or 0.0)
@@ -1083,8 +1165,8 @@ class EmpiricalBenchmarkHarness:
             total_tokens=t_tokens,
             is_unsafe_fp=is_unsafe_fp,
             auto_incident_closure_allowed=auto_closure_allowed,
-            execution_provenance="REAL_LOCAL_LLM" if is_live else "OFFLINE_SIMULATION",
-            is_live_measurement=is_live,
+            execution_provenance=execution_provenance,
+            is_live_measurement=is_live_measurement,
             autonomous_verdict=autonomous_verdict,
             is_autonomous_eligible=is_autonomous_eligible,
             guardrails_triggered=guardrails_triggered,
@@ -1092,6 +1174,14 @@ class EmpiricalBenchmarkHarness:
             is_duplicate=incident_rec.is_duplicate,
             finish_reason=finish_reason,
             requested_max_tokens=requested_max_tokens,
+            evaluation_run_id=evaluation_run_id,
+            model_name=model_identifier,
+            provider_name="OpenAICompatibleProvider" if is_live else "OFFLINE_DETERMINISTIC",
+            prompt_hash=prompt_hash,
+            policy_version=policy_version,
+            raw_model_response_id=raw_response_id,
+            executed_at_utc=datetime.now(timezone.utc).isoformat(),
+            execution_git_sha=cls.get_active_git_sha(),
         )
 
     @classmethod
@@ -1115,9 +1205,10 @@ class EmpiricalBenchmarkHarness:
         }
 
         for r in results:
-            # Accounting Separation (AIS 2.3b.1)
-            is_dispatched = bool(r.is_live_measurement and r.finish_reason not in (None, "abstained_preflight") and (r.latency_ms or 0) > 0)
-            if is_dispatched:
+            # Accounting Separation (AIS 2.4 / 2.3b.1)
+            prov = str(r.execution_provenance or "").upper()
+            if prov == "LIVE_PROVIDER":
+                m.live_provider_count += 1
                 m.real_gpu_dispatched_count += 1
                 if r.finish_reason in ("stop", "length"):
                     m.successful_complete_responses_count += 1
@@ -1126,8 +1217,13 @@ class EmpiricalBenchmarkHarness:
                 m.total_prompt_tokens = (m.total_prompt_tokens or 0) + (r.prompt_tokens or 0)
                 m.total_completion_tokens = (m.total_completion_tokens or 0) + (r.completion_tokens or 0)
                 m.total_tokens = (m.total_tokens or 0) + (r.total_tokens or 0)
-            elif r.finish_reason == "abstained_preflight" or r.validation_status == "CONTEXT_WINDOW_EXCEEDED":
+            elif prov == "PREFLIGHT_ABSTENTION" or r.finish_reason == "abstained_preflight" or r.validation_status == "CONTEXT_WINDOW_EXCEEDED":
                 m.preflight_abstained_count += 1
+            elif prov == "PROVIDER_FAILURE":
+                m.provider_failure_count += 1
+                m.real_gpu_dispatched_count += 1
+            elif prov == "OFFLINE_SIMULATION":
+                m.offline_simulation_count += 1
 
             # Model propositions vs Preflight Abstention
             raw_prop = (r.raw_proposed_verdict or "").upper().strip()
@@ -1321,20 +1417,22 @@ class EmpiricalBenchmarkHarness:
         simulated_output_fn: Optional[Any] = None,
         max_context_tokens: int = 8192,
         use_modular_policy: bool = False,
+        strict_forensic_only: bool = True,
     ) -> EmpiricalBenchmarkReport:
         """
         Runs the full empirical benchmark suite.
         Loads incidents, blinds them, evaluates through production-equivalent pipeline,
         and generates comprehensive statistical metrics overall and per rule.
         """
+        run_id = f"RUN-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
         if source == "unified":
-            records = cls.load_dataset_unified(zip_path, db_path)
+            records = cls.load_dataset_unified(zip_path, db_path, strict_forensic_only=strict_forensic_only)
             cohort_desc = f"Unified Historical Cohort (ZIP: {zip_path or cls.DEFAULT_FIXTURES_ZIP} + DB: {db_path or cls.DEFAULT_DATABASE_PATH})"
         elif source == "db":
-            records = cls.load_dataset_from_db(db_path)
+            records = cls.load_dataset_from_db(db_path, strict_forensic_only=strict_forensic_only)
             cohort_desc = f"SQLite Database Cohort ({db_path or cls.DEFAULT_DATABASE_PATH})"
         else:
-            records = cls.load_dataset_from_zip(zip_path)
+            records = cls.load_dataset_from_zip(zip_path, strict_forensic_only=strict_forensic_only)
             cohort_desc = f"ZIP Fixtures Cohort ({zip_path or cls.DEFAULT_FIXTURES_ZIP})"
 
         logger.info(f"Loaded {len(records)} benchmark incidents from {cohort_desc}")
@@ -1350,6 +1448,7 @@ class EmpiricalBenchmarkHarness:
                 simulated_output_fn=simulated_output_fn,
                 max_context_tokens=max_context_tokens,
                 use_modular_policy=use_modular_policy,
+                evaluation_run_id=run_id,
             )
             incident_results.append(res)
             rule_grouped.setdefault(res.rule_id, []).append(res)

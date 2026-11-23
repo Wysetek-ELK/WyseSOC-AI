@@ -42,4 +42,7 @@ test_llm_config_state.json*
 # Chrome Testing Artifacts
 temp_chrome_*
 
+# Scratch scripts and temporary evaluation outputs
+scratch/
+
 

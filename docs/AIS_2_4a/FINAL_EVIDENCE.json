@@ -1,0 +1,169 @@
+{
+  "phase": "AIS 2.4a",
+  "project": "Verdictum AI",
+  "subsystem": "Agent Intelligence Studio (AIS)",
+  "date": "2026-11-23T21:40:00Z",
+  "status": "COMPLETED",
+  "active_git_commit": "2033c09156c68d51ce45ab829f6e691257e995dc",
+  "branch": "feature/phase3-compact-ui",
+  "upla_mode": "FULL_WORKFLOW",
+  "provenance_remediation": {
+    "taxonomy": [
+      "LIVE_PROVIDER",
+      "PREFLIGHT_ABSTENTION",
+      "PROVIDER_FAILURE",
+      "OFFLINE_SIMULATION"
+    ],
+    "prohibition_of_fabrication": true,
+    "audit_fields_added": [
+      "evaluation_run_id",
+      "model_name",
+      "provider_name",
+      "prompt_hash",
+      "policy_version",
+      "raw_model_response_id",
+      "executed_at_utc",
+      "execution_git_sha"
+    ]
+  },
+  "tp_grounding_remediation": {
+    "incident_132499009": {
+      "subject": "ss-widget.min.js (SurveySensum widget from 172.25.14.80)",
+      "defect_in_ais_2_4": "Accepted as TRUE_POSITIVE despite being certified FALSE_POSITIVE",
+      "root_cause": "network.source_ip was not in identifier_fields and was treated as security tradecraft",
+      "remediation": "Overhauled Check 5 in IndependentVerdictValidator.py; filenames and IPs classified as identifiers",
+      "corrected_verdict": "REQUIRES_ATTENTION",
+      "reason_code": "TP_CRITERIA_UNSATISFIED"
+    },
+    "tradecraft_criteria": {
+      "direct_forensic_markers_accepted": true,
+      "lolbins_accepted_without_ti": true,
+      "alert_triggers_alone_rejected": true,
+      "filenames_and_ips_alone_rejected": true
+    }
+  },
+  "ground_truth_audit": {
+    "total_incidents": 20,
+    "strict_forensic_only": true,
+    "certified_fp_count": 2,
+    "certified_tp_count": 0,
+    "unverified_count": 18,
+    "duplicate_incident_count": 5,
+    "duplicate_cluster_count": 4,
+    "unique_clusters_count": 15,
+    "escalation_ticket_incidents_marked_unverified": [
+      "132596403",
+      "132599145",
+      "132599146",
+      "132599330"
+    ]
+  },
+  "pilot_evaluation_five_incidents": {
+    "execution_mode": "OFFLINE_SIMULATION",
+    "is_live_measurement": false,
+    "incidents": [
+      {
+        "id": "132438483",
+        "rule": "Crowdstrike: Suspicious Activity",
+        "proposed_verdict": "FALSE_POSITIVE",
+        "final_verdict": "REQUIRES_ATTENTION",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "reason_code": "FP_CRITERIA_UNSATISFIED",
+        "budgeted_tokens": 5073
+      },
+      {
+        "id": "132527297",
+        "rule": "Crowdstrike: Suspicious Activity",
+        "proposed_verdict": "FALSE_POSITIVE",
+        "final_verdict": "REQUIRES_ATTENTION",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "reason_code": "FP_CRITERIA_UNSATISFIED",
+        "budgeted_tokens": 4117
+      },
+      {
+        "id": "132499009",
+        "rule": "Prisma SASE: ss-widget.min.js",
+        "proposed_verdict": "FALSE_POSITIVE",
+        "final_verdict": "REQUIRES_ATTENTION",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "reason_code": "FP_CRITERIA_UNSATISFIED",
+        "budgeted_tokens": 3556
+      },
+      {
+        "id": "132499023",
+        "rule": "Prisma SASE: clientlib-site.min.js",
+        "proposed_verdict": "FALSE_POSITIVE",
+        "final_verdict": "REQUIRES_ATTENTION",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "reason_code": "FP_CRITERIA_UNSATISFIED",
+        "budgeted_tokens": 3679
+      },
+      {
+        "id": "132499745",
+        "rule": "Prisma SASE: scripts-QBOKETIS.js",
+        "proposed_verdict": "TRUE_POSITIVE",
+        "final_verdict": "REQUIRES_ATTENTION",
+        "status": "INSUFFICIENT_EVIDENCE",
+        "reason_code": "TP_CRITERIA_UNSATISFIED",
+        "budgeted_tokens": 3540
+      }
+    ],
+    "unexpected_truncations": 0,
+    "completion_headroom_reserved": 768
+  },
+  "benchmark_metrics": {
+    "total_incidents": 20,
+    "verified_ground_truth_count": 2,
+    "verified_tp_count": 0,
+    "verified_fp_count": 2,
+    "unverified_count": 18,
+    "decisive_decisions_count": 0,
+    "coverage_rate": 0.0,
+    "abstention_rate": 1.0,
+    "unsafe_fp_count": 0,
+    "unsafe_fp_rate": null,
+    "schema_compliance_rate": 1.0,
+    "leakage_detected_count": 0,
+    "statistical_power_warning": true,
+    "power_warning_reason": "INSUFFICIENT_SAMPLE_SIZE: Verified incident cohort (N=2) < 30. Confidence intervals are wide. Results reflect sample limitations and must not be confused with poor performance.",
+    "unique_cluster_metrics": {
+      "total_unique_clusters": 15,
+      "verified_ground_truth_clusters": 2,
+      "decisive_decisions": 0,
+      "abstained_decisions": 2,
+      "tp": 0,
+      "tn": 0,
+      "fp": 0,
+      "fn": 0,
+      "accuracy": null
+    }
+  },
+  "runtime_verification": {
+    "server_1": {
+      "host": "172.26.41.240",
+      "deployed_git_sha": "5fb50c3",
+      "database": "PostgreSQL",
+      "deployment_status": "Gate 2 Remote Deployment was declined in AIS 2.4; Server 1 remains on baseline 5fb50c3"
+    },
+    "server_2": {
+      "host": "172.26.41.241 / 172.26.15.110",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "active_context_length": 4096,
+      "runtime_status": "Baseline 4,096 tokens active; 8,192 expansion calculated but not deployed"
+    },
+    "live_inference_status": "BLOCKED_GPU_UNAVAILABLE / NOT_MEASURED"
+  },
+  "test_verification": {
+    "total_tests": 34,
+    "passing_tests": 34,
+    "failing_tests": 0,
+    "pass_rate": "100%",
+    "suites_passed": [
+      "test_ais_2_4a_tp_grounding.py (9/9)",
+      "test_ais_2_4_regression.py (8/8)",
+      "test_ais_2_3b_1_regression.py (8/8)",
+      "test_ais_2_3a_integrity.py (4/4)",
+      "test_ais_2_3_remediation.py (5/5)"
+    ]
+  }
+}
