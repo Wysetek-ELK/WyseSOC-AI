@@ -1,12 +1,12 @@
 {
   "phase": "AIS_2_5",
   "title": "Certified Evidence, Controlled 8K Inference & Real LLM Accuracy Benchmark",
-  "generated_at": "2026-11-24T10:08:00+05:30",
+  "generated_at": "2026-11-24T10:16:00+05:30",
   "branch": "feature/phase3-compact-ui",
-  "deployed_server1_sha": "c9a2a172658dbc6661a7fe117a581d42684d3d5a",
-  "previous_reported_server1_sha": "14fe8a48680029d5d0eaac206cd6cba62ce1dd8e",
-  "sha_reconciliation_status": "RECONCILED_VERIFIED_ON_SERVER1_UPLA_53F0BC",
-  "upla_execution_id": "upla-20261124-034752-53f0bc",
+  "deployed_server1_sha": "64349401c6165c23d49a549924fabb128699b9d8",
+  "previous_reported_server1_sha": "c9a2a172658dbc6661a7fe117a581d42684d3d5a",
+  "sha_reconciliation_status": "RECONCILED_VERIFIED_ON_SERVER1_UPLA_6C7805",
+  "upla_execution_id": "upla-20261124-044030-6c7805",
   "upla_project_id": "proj-98348ed9ed5e2ba1",
   "upla_mode": "FULL_WORKFLOW",
   "environment": {
@@ -17,7 +17,7 @@
       "port_22_reachable": true,
       "port_80_reachable": true,
       "port_8000_reachable": true,
-      "deployed_commit": "c9a2a172658dbc6661a7fe117a581d42684d3d5a",
+      "deployed_commit": "64349401c6165c23d49a549924fabb128699b9d8",
       "api_health": "healthy",
       "memory_used_gb": 9.14,
       "memory_total_gb": 15.36,
@@ -62,7 +62,7 @@
     },
     "A3_server1_deployed_sha": {
       "status": "PASS",
-      "details": "Verified latest UPLA deployment execution upla-20261124-034752-53f0bc deployed commit c9a2a172658dbc6661a7fe117a581d42684d3d5a to Server 1. Fixed premature evidence generation ordering defect from AIS 2.4c."
+      "details": "Verified latest UPLA deployment execution upla-20261124-044030-6c7805 deployed commit 64349401c6165c23d49a549924fabb128699b9d8 to Server 1. Fixed premature evidence generation ordering defect from AIS 2.4c by verifying evidence strictly post-deployment."
     },
     "A4_gpu_service_identity_and_security": {
       "status": "PASS",

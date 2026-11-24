@@ -5,10 +5,10 @@
 - **Document ID:** `09_FINAL_ACCEPTANCE_AND_NEXT_PHASE.md`
 - **Generated At:** 2026-11-24T10:09:00+05:30
 - **Lead Roles:** Principal SOC AI Architect, LLM/MLOps Engineer, Detection Engineer, Independent Empirical Evaluation Auditor
-- **Deployed Server 1 Commit:** `c9a2a172658dbc6661a7fe117a581d42684d3d5a`
+- **Deployed Server 1 Commit:** `64349401c6165c23d49a549924fabb128699b9d8`
 - **GPU Inference Server:** AWS Server 2 (`13.204.214.64:8000`)
 - **Model Identity:** `Qwen/Qwen2.5-7B-Instruct-AWQ` via vLLM
-- **UPLA Operating Mode:** `FULL_WORKFLOW` (Execution ID: `upla-20261124-034752-53f0bc`)
+- **UPLA Operating Mode:** `FULL_WORKFLOW` (Execution ID: `upla-20261124-044030-6c7805`)
 
 ---
 
@@ -42,7 +42,7 @@ Each evaluation criterion is graded using the authorized status taxonomy:
 | :--- | :--- | :---: | :--- |
 | **G1** | **Historical Cohort Authenticity** | **PASS** | Audited `fixtures/Incident json.zip` containing exactly 20 authentic incident records (10 CrowdStrike, 10 Prisma SASE). Purged 14 synthetic placeholder IDs from AIS 2.4b and corrected 12-ID substitution from AIS 2.4c. Confirmed 15 unique clusters and 5 duplicate telemetry records. SHA-256 digests cryptographically locked. |
 | **G2** | **Ground-Truth Certification** | **PASS** | Exhaustive audit confirmed only 2 incidents qualify as certified False Positives (`132474210` on DC host, `132499009` on SurveySensum widget). Zero natural True Positives exist in historical logs. Incident `132499023` was reverted from FP to `UNVERIFIED` due to non-whitelisted Mixpanel telemetry. |
-| **G3** | **Server 1 Deployed SHA Reconciliation** | **PASS** | Verified that latest UPLA deployment `upla-20261124-034752-53f0bc` deployed commit `c9a2a172658dbc6661a7fe117a581d42684d3d5a` to Server 1 (`172.26.41.240`). Fixed premature evidence generation defect by recording evidence strictly post-deployment. |
+| **G3** | **Server 1 Deployed SHA Reconciliation** | **PASS** | Verified that latest UPLA deployment `upla-20261124-044030-6c7805` deployed commit `64349401c6165c23d49a549924fabb128699b9d8` (superseding `c9a2a172658dbc6661a7fe117a581d42684d3d5a`) to Server 1 (`172.26.41.240`). Fixed premature evidence generation defect by recording evidence strictly post-deployment. |
 | **G4** | **GPU Service Identity & Network Security** | **PASS** | Audited Server 2 (`13.204.214.64:8000`). Verified dedicated physical 24 GB GPU running genuine vLLM with `Qwen/Qwen2.5-7B-Instruct-AWQ`. Port 8000 filtered by AWS Security Group. Documented VPC private IP connection refusal and established authorized transport route. |
 | **G5** | **Actual 8K Context Activation** | **PASS** | Explicit human approval granted via UPLA Gate 2. Context expanded to 8,192 tokens with 768 completion reserve, unlocking 7,424 prompt wire tokens. VRAM usage verified: 5.5 GB base, 7.9 GB at concurrency 1, 15.1 GB at concurrency 4, preserving 8.9 GB (37.1%) safety headroom. Zero budget rejections occurred. |
 | **G6** | **Five-Incident Pilot Completion** | **PASS** | 5/5 pilot incidents completed on real GPU (19,978 tokens, 16.6s mean latency). Raw proposals: 1 TP, 2 FP, 2 Abstain. Independent validator overruled all 3 decisive proposals to `REQUIRES_ATTENTION`. 0 unsafe False Positives escaped to analysts. |
