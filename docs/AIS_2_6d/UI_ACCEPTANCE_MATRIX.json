@@ -1,0 +1,15 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T17:00:00Z",
+  "ui_module": "Agent Intelligence Studio (Compact UI)",
+  "route": "/agent-intelligence-studio",
+  "criteria": [
+    {"id": "UI-01", "name": "Blind Review Workspace", "status": "PASS"},
+    {"id": "UI-02", "name": "Three-Choice Verdict Controls (TP/FP/Inconclusive)", "status": "PASS"},
+    {"id": "UI-03", "name": "Mandatory Reasoning on Decisive Submissions", "status": "PASS"},
+    {"id": "UI-04", "name": "Zero-Leakage Telemetry Rendering", "status": "PASS"},
+    {"id": "UI-05", "name": "Queue Progress and Provenance Counter", "status": "PASS"},
+    {"id": "UI-06", "name": "Production Compilation (Next.js 15.1.0)", "status": "PASS"}
+  ],
+  "overall_ui_acceptance": "PASS"
+}

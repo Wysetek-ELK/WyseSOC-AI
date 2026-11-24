@@ -1,0 +1,14 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:55:00Z",
+  "model_under_evaluation": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "retention_decision": "INSUFFICIENT_EVIDENCE_FOR_MODEL_DECISION",
+  "historical_claim_status": "DISCARDED_AS_UNVERIFIED_SIMULATION_HYPOTHESIS",
+  "criteria_status": {
+    "empirical_accuracy": "NOT_DEMONSTRATED",
+    "unsafe_fp_suppression": "NOT_DEMONSTRATED",
+    "decisive_coverage": "NOT_DEMONSTRATED",
+    "latency_and_stability": "NOT_DEMONSTRATED"
+  },
+  "recommendation": "Maintain model deployment on Server 2 for empirical benchmarking; defer production sign-off until live results are captured."
+}

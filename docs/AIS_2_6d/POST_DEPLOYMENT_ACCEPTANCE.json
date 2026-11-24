@@ -1,0 +1,21 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T17:40:00Z",
+  "upla_execution_id": "upla-20261124-162935-590fb4",
+  "workspace_fingerprint": "9da7e7fa5a9449bdd7da0fae42260892e748ed0b3ff4bcf985bd23fb533c8611",
+  "gate_1_github_sync": {
+    "policy": "HUMAN_APPROVAL_GATE_1_ENFORCED",
+    "status": "AWAITING_OPERATOR_GATE_1_DECISION",
+    "notes": "Governance checks passed (Exit 0, 0 blockers). Push denied pending operator explicit YES/NO approval."
+  },
+  "gate_2_remote_deployment": {
+    "policy": "HUMAN_APPROVAL_GATE_2_ENFORCED",
+    "status": "DENIED_BY_DEFAULT",
+    "notes": "Remote deployment strictly barred until Gate 1 git sync completes and operator explicitly approves Gate 2."
+  },
+  "runtime_state": {
+    "server_1_status": "CURRENT_DEPLOYMENT_HEALTHY",
+    "server_2_gpu_status": "STOPPED_CHECKPOINT_B_ACTIVE",
+    "local_workspace_status": "INTEGRITY_VERIFIED_ALL_REGRESSIONS_PASS"
+  }
+}

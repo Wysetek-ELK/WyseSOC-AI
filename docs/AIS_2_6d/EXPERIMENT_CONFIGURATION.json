@@ -1,0 +1,28 @@
+{
+  "phase": "AIS 2.6d",
+  "generated_at_utc": "2026-11-24T16:06:44.488560+00:00",
+  "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "inference_engine": "vLLM",
+  "context_window_limit": 8192,
+  "max_completion_tokens": 768,
+  "target_input_budget": 7424,
+  "sampling_temperature": 0.0,
+  "top_p": 1.0,
+  "modes": {
+    "MODE_A": {
+      "name": "Neutral Core LLM Intelligence",
+      "system_prompt_identifier": "NEUTRAL_SOC_BASELINE_V1",
+      "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+      "purpose": "Measures core LLM reasoning without rule-specific policy priming"
+    },
+    "MODE_B": {
+      "name": "Approved Rule-Specific Policy",
+      "compiler_version": "v3.0.0",
+      "purpose": "Measures effect of current approved policy directives on model proposals"
+    },
+    "MODE_C": {
+      "name": "Independent Validated Pipeline",
+      "purpose": "Applies deterministic validator and guardrails to Mode B proposals with ZERO additional GPU inference calls"
+    }
+  }
+}

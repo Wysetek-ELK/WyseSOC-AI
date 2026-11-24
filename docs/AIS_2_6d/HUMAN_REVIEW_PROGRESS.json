@@ -1,0 +1,25 @@
+{
+  "phase": "AIS 2.6d",
+  "last_updated_utc": "2026-11-24T16:02:24.836525+00:00",
+  "overall_status": "BLOCKED_PENDING_HUMAN_GROUND_TRUTH",
+  "total_incidents": 20,
+  "pending_review": 20,
+  "reviewed": 0,
+  "true_positive": 0,
+  "false_positive": 0,
+  "inconclusive": 0,
+  "independently_corroborated_level_3": 0,
+  "formally_certified_level_4": 0,
+  "priority_batch_ready": {
+    "batch_size": 5,
+    "incidents": [
+      "132474210",
+      "132596403",
+      "132599145",
+      "132438483",
+      "132591888"
+    ],
+    "status": "READY_FOR_OPERATOR_REVIEW"
+  },
+  "checkpoint_status": "CHECKPOINT_A_ACTIVE"
+}

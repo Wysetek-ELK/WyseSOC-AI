@@ -1,0 +1,269 @@
+{
+  "phase": "AIS 2.6d",
+  "generated_at_utc": "2026-11-24T16:05:01.135228+00:00",
+  "total_audited": 20,
+  "all_leakage_contained": true,
+  "leakage_in_sanitized_inputs": 0,
+  "records": [
+    {
+      "incident_id": "132438483",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132439932",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132441815",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132461358",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132461368",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132472498",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132474210",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132501348",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132502453",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132527297",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132499009",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132499023",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132499745",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132578774",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132591888",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132595592",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132596403",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132599145",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132599146",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    },
+    {
+      "incident_id": "132599330",
+      "raw_payload_leakage_keys": [
+        "clearedReason",
+        "clearedTime",
+        "clearedUser",
+        "resolution"
+      ],
+      "sanitized_payload_leakage_keys": [],
+      "is_leakage_contained": true,
+      "inference_input_blinded": true,
+      "human_review_input_blinded": true
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:20:00Z",
+  "gate_name": "FIVE_INCIDENT_PILOT_GO_NO_GO",
+  "decision": "NO_GO_BLOCKED_GPU_UNAVAILABLE",
+  "criteria": {
+    "gpu_connectivity": {
+      "required": "HTTP 200 from http://13.204.214.64:8000/v1/models",
+      "observed": "TCP_CONNECT_TIMEOUT",
+      "status": "FAIL_BLOCKED"
+    },
+    "zero_simulation_enforcement": {
+      "required": "100% live GPU calls, zero synthetic or offline mock records",
+      "observed": "Enforced; zero synthetic records written",
+      "status": "PASS"
+    },
+    "human_ground_truth_ready": {
+      "required": "At least 5 pilot incidents reviewed at Ground Truth Level 2+",
+      "observed": "0 incidents reviewed in analyst_verdict_reviews",
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW"
+    }
+  },
+  "next_required_action": "Operator must start AWS GPU Server 2 and SOC analysts must complete 5 priority reviews."
+}

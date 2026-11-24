@@ -1,0 +1,40 @@
+{
+  "phase": "AIS 2.6d",
+  "generated_at_utc": "2026-11-24T17:35:00Z",
+  "action_sequence": [
+    {
+      "step": 1,
+      "name": "Complete Human Reviews in Agent Intelligence Studio",
+      "action_type": "HUMAN_OPERATION",
+      "details": "Navigate to http://localhost:3000/agent-intelligence-studio. Review priority incidents (132474210, 132596403, 132599145, 132438483, 132591888) and submit double-blind verdicts with reasoning.",
+      "unlocks": "Checkpoint A (Level 2 Ground Truth)"
+    },
+    {
+      "step": 2,
+      "name": "Start AWS GPU Server 2",
+      "action_type": "INFRASTRUCTURE_MANAGEMENT",
+      "details": "Power on AWS EC2 GPU instance (Host: 13.204.214.64). Ensure vLLM container is active on port 8000.",
+      "unlocks": "Checkpoint B (Live Inference Engine)"
+    },
+    {
+      "step": 3,
+      "name": "Execute Governed 5-Incident Pilot",
+      "action_type": "BENCHMARK_EXECUTION",
+      "details": "Run the live 5-incident pilot. Verify HTTP 200, schema compliance, latency (<15s), and token usage.",
+      "estimated_duration_minutes": 8
+    },
+    {
+      "step": 4,
+      "name": "Execute Governed Complete Three-Mode Benchmark",
+      "action_type": "BENCHMARK_EXECUTION",
+      "details": "Execute Mode A (Neutral Baseline), Mode B (Approved Policy), and Mode C (Independent Validator) across the 20 frozen incidents.",
+      "estimated_duration_minutes": 15
+    },
+    {
+      "step": 5,
+      "name": "Compute Empirical Accuracy & Model Decision",
+      "action_type": "STATISTICAL_CERTIFICATION",
+      "details": "Generate empirical confusion matrices against Level 2 human ground truth, determine F1 score and Unsafe FP rate, and sign off on model retention/replacement."
+    }
+  ]
+}

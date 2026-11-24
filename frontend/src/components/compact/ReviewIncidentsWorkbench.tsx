@@ -535,8 +535,8 @@ export function ReviewIncidentsWorkbench({
                           : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
                       }`}
                     >
-                      <span>Insufficient Evidence</span>
-                      <span className="text-[10px] font-normal text-slate-400">Requires Information</span>
+                      <span>Inconclusive</span>
+                      <span className="text-[10px] font-normal text-slate-400">Insufficient Evidence</span>
                     </button>
                   </div>
 

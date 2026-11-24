@@ -1,0 +1,31 @@
+{
+  "phase": "AIS 2.6d",
+  "audit_target": "Zero-Denominator Invariant and Claim Suppression",
+  "invariants": [
+    {
+      "metric": "Precision",
+      "formula": "TP / (TP + FP)",
+      "condition": "TP + FP == 0",
+      "handling": "Evaluates to null; NEVER returns 0.0 or 1.0; status=NOT_DEMONSTRATED"
+    },
+    {
+      "metric": "Recall / Sensitivity",
+      "formula": "TP / (TP + FN)",
+      "condition": "TP + FN == 0",
+      "handling": "Evaluates to null; NEVER returns 0.0 or 1.0; status=NOT_DEMONSTRATED"
+    },
+    {
+      "metric": "False Positive Rate",
+      "formula": "FP / (FP + TN)",
+      "condition": "FP + TN == 0",
+      "handling": "Evaluates to null; NEVER returns 0.0% when denominator is zero; status=NOT_DEMONSTRATED"
+    },
+    {
+      "metric": "F1 Score",
+      "formula": "2 * (Precision * Recall) / (Precision + Recall)",
+      "condition": "Precision is null OR Recall is null",
+      "handling": "Evaluates to null; status=NOT_DEMONSTRATED"
+    }
+  ],
+  "verification": "Passed in test_zero_denominator_metric_safety in backend/tests/test_ais_2_6d_empirical_integrity.py"
+}

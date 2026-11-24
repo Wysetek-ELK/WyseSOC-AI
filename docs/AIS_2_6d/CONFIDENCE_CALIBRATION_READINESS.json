@@ -1,0 +1,9 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:50:00Z",
+  "readiness_status": "READY_FOR_CALIBRATION_PIPELINE",
+  "bins_configured": 10,
+  "required_sample_size": 50,
+  "current_sample_size": 0,
+  "blocking_dependencies": ["LIVE_GPU_INFERENCE", "LEVEL_2_HUMAN_GROUND_TRUTH"]
+}

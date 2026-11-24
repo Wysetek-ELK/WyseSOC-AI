@@ -1,0 +1,13 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:45:00Z",
+  "validator_summary": {
+    "total_inferences_validated": 0,
+    "agreed_verdicts": 0,
+    "overridden_to_attention": 0,
+    "contradictions_caught": 0,
+    "false_rejections": 0,
+    "unsafe_acceptances": 0,
+    "status": "BLOCKED_ON_MODE_B_LIVE_INFERENCE"
+  }
+}

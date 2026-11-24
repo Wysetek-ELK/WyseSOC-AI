@@ -1,0 +1,12 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:25:00Z",
+  "cohort_size": 20,
+  "modes_configured": ["MODE_A_NEUTRAL_BASELINE", "MODE_B_APPROVED_POLICY", "MODE_C_INDEPENDENT_VALIDATION"],
+  "neutral_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+  "approved_policy_prompt_hash": "fe1c4184cc5b8f020ee006c8175ba0144b0e82ba246b29a752490748e0ad65cc",
+  "live_endpoint": "http://13.204.214.64:8000/v1",
+  "model_target": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "execution_status": "BLOCKED_GPU_UNAVAILABLE",
+  "readiness": "READY_FOR_EXECUTION_UPON_GPU_START"
+}

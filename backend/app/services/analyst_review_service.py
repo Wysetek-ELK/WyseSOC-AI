@@ -195,9 +195,11 @@ class AnalystReviewService:
 
         # 2. Extract stored AI verdict and validate analyst verdict
         norm_verdict = analyst_verdict.upper().strip()
+        if norm_verdict == "INCONCLUSIVE":
+            norm_verdict = "INSUFFICIENT_EVIDENCE"
         if norm_verdict not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "INSUFFICIENT_EVIDENCE"):
             raise ValueError(
-                f"Invalid analyst verdict '{analyst_verdict}'. Allowed values are strictly: TRUE_POSITIVE, FALSE_POSITIVE, INSUFFICIENT_EVIDENCE. "
+                f"Invalid analyst verdict '{analyst_verdict}'. Allowed values are strictly: TRUE_POSITIVE, FALSE_POSITIVE, INSUFFICIENT_EVIDENCE, INCONCLUSIVE. "
                 "Derived outcomes (e.g. AGREEMENT_TP, AI_FALSE_ALARM) are computed post-submission."
             )
 
@@ -433,7 +435,7 @@ class AnalystReviewService:
         norm_analyst = analyst_verdict.upper().strip()
         norm_ai = ai_verdict.upper().strip() if ai_verdict else None
 
-        if norm_analyst in ("INSUFFICIENT_EVIDENCE", "ABSTAIN"):
+        if norm_analyst in ("INSUFFICIENT_EVIDENCE", "ABSTAIN", "INCONCLUSIVE"):
             return "ANALYST_INSUFFICIENT_EVIDENCE", "Analyst determined evidence is insufficient to verify ground truth."
 
         if not norm_ai:

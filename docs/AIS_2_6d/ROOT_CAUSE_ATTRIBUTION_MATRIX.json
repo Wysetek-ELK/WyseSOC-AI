@@ -1,0 +1,15 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:35:00Z",
+  "taxonomy": [
+    {"code": "H1", "name": "Policy Directive Bias", "status": "HYPOTHESIS_PENDING_LIVE_TEST"},
+    {"code": "H2", "name": "Evidence Omission", "status": "HYPOTHESIS_PENDING_LIVE_TEST"},
+    {"code": "H3", "name": "Prompt Truncation", "status": "HYPOTHESIS_PENDING_LIVE_TEST"},
+    {"code": "H4", "name": "Model Reasoning Failure", "status": "HYPOTHESIS_PENDING_LIVE_TEST"},
+    {"code": "H5", "name": "Ground Truth Ambiguity", "status": "HYPOTHESIS_PENDING_LIVE_TEST"},
+    {"code": "H6", "name": "Validator Over-Rejection", "status": "HYPOTHESIS_PENDING_LIVE_TEST"},
+    {"code": "H7", "name": "Telemetry Inconsistency", "status": "HYPOTHESIS_PENDING_LIVE_TEST"}
+  ],
+  "attributed_errors_count": 0,
+  "status": "AWAITING_LIVE_INFERENCE_AND_HUMAN_GROUND_TRUTH"
+}

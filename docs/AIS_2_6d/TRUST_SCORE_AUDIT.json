@@ -1,0 +1,12 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:50:00Z",
+  "trust_score_formula": "0.35 * evidence_grounding + 0.25 * rule_alignment + 0.20 * validator_agreement + 0.20 * provenance_factor",
+  "calibration_metrics": {
+    "expected_calibration_error": null,
+    "brier_score": null,
+    "status": "NOT_CALCULATED_ZERO_PAIRS"
+  },
+  "confidence_inflation_risk": "HIGH_IF_RAW_CONFIDENCE_USED_DIRECTLY",
+  "mitigation": "Trust Score strictly separates model self-confidence from verifiable factual corroboration."
+}

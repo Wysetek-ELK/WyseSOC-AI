@@ -1,0 +1,23 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:30:00Z",
+  "sample_size": 20,
+  "limitations": [
+    {
+      "factor": "Sample Size",
+      "description": "N = 20 incidents provides limited statistical power. A single misclassification represents a 5% shift in accuracy."
+    },
+    {
+      "factor": "Confidence Interval",
+      "description": "Wilson score 95% confidence interval at N=20 with 90% observed accuracy spans [69.9%, 97.2%]."
+    },
+    {
+      "factor": "Rule Coverage",
+      "description": "Limited to 2 rules (CrowdStrike Suspicious Activity and Prisma SASE Suspicious File); does not represent the full FortiSIEM catalog."
+    },
+    {
+      "factor": "Ground Truth Maturity",
+      "description": "Awaiting initial Level 2 human reviews. Zero Level 3/4 corroborated labels exist."
+    }
+  ]
+}

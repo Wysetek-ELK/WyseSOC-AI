@@ -1,0 +1,20 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:30:00Z",
+  "rules": {
+    "PH_RULE_CS_SUSPICIOUS_ACTIVITY": {
+      "incidents_count": 10,
+      "historical_tp": 10,
+      "verified_gt_level_2": 0,
+      "accuracy": null,
+      "status": "NOT_DEMONSTRATED"
+    },
+    "Prisma_SASE_Suspicious_File_Threat_Detection_": {
+      "incidents_count": 10,
+      "historical_tp": 10,
+      "verified_gt_level_2": 0,
+      "accuracy": null,
+      "status": "NOT_DEMONSTRATED"
+    }
+  }
+}

@@ -1,0 +1,187 @@
+{
+  "phase": "AIS 2.6d",
+  "generated_at_utc": "2026-11-24T16:06:44.487548+00:00",
+  "total_records": 20,
+  "records": [
+    {
+      "incident_id": "132438483",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "raw_evidence_hash": "0e20ce78b8ba436d420ee679d363a86635a82fc8ae317e3a1ddf73b725ed4a7a",
+      "canonical_evidence_hash": "c1dba6e16440474668134fa3eb238a64bcc4e1970725e7cb33529d254f891355",
+      "rule_definition_hash": "6b492f299394bd4f9a2d040ca48d81530deeba3a6b2d049d50e64cb953e0f5b8",
+      "mode_a_wire_prompt_hash": "efcaa7c5659f303f942889a32493ea1e61a31872bcf7643aff9ed16a436d8715",
+      "mode_b_wire_prompt_hash": "14551af458a1cd7ec25dc0f30df43803d0a272bc8a5001d5fb452c248d397ac3"
+    },
+    {
+      "incident_id": "132439932",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "raw_evidence_hash": "0e0087505de1ca954d94746e0ca6adae62bd09dafa2f618129f76bfa4d980f30",
+      "canonical_evidence_hash": "061a36a979643864b564c1738743b373ee5fb0cec5eae6af9a6faa6aa4a81aa7",
+      "rule_definition_hash": "6b492f299394bd4f9a2d040ca48d81530deeba3a6b2d049d50e64cb953e0f5b8",
+      "mode_a_wire_prompt_hash": "f4dc6fb405a14f24d0f757c4bab8b37cca9d6329d94241e31c5b637478ccce70",
+      "mode_b_wire_prompt_hash": "eda0cfb5505c8b153b484e5820b0ce5cbc2cda8aed319e62dfae5ef38f4a5032"
+    },
+    {
+      "incident_id": "132441815",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "raw_evidence_hash": "4aac3f75020e0bcc0b4ec503995e64b872e9765669bc4e987bac7290d289db41",
+      "canonical_evidence_hash": "7c0e409f9418e3d18ba7627379749ab7d2c1ef552e43c146d804b8b56812aab3",
+      "rule_definition_hash": "6b492f299394bd4f9a2d040ca48d81530deeba3a6b2d049d50e64cb953e0f5b8",
+      "mode_a_wire_prompt_hash": "ee388a78a1fbe0b0121c8f68413412dbe5fa94efb6f7d68736bfe8763d90ab11",
+      "mode_b_wire_prompt_hash": "cfa019f3201ec8c18fd9796367b56c197fe4907893ff6beaa91d8f6bdae2ccea"
+    },
+    {
+      "incident_id": "132461358",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "raw_evidence_hash": "00cbf7dadd811712d6fcf1b27b479d7c20af1b390225a592fb4b8e39f755f0eb",
+      "canonical_evidence_hash": "a2692a332af61d4ab9cc0e1664dce3a60171cdbf6fe23a94ab139bf3fa9dcbac",
+      "rule_definition_hash": "6b492f299394bd4f9a2d040ca48d81530deeba3a6b2d049d50e64cb953e0f5b8",
+      "mode_a_wire_prompt_hash": "e923f74a407004f022ca9f5b1c065ee213c38329b1a5ec0367ec5891b8e458d8",
+      "mode_b_wire_prompt_hash": "8a92a1c186ea37339710adac918a9fd18a6a96807fb06e3e5bb503c9593a7289"
+    },
+    {
+      "incident_id": "132461368",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "raw_evidence_hash": "de981e0b1d0eaf80495a287eb15399e536273c2a5a230b55d21b276c747afe7e",
+      "canonical_evidence_hash": "ec9db8e5d6185c970b8597b76ebaba61839c1c6cbec4d15610511775fcf9f363",
+      "rule_definition_hash": "6b492f299394bd4f9a2d040ca48d81530deeba3a6b2d049d50e64cb953e0f5b8",
+      "mode_a_wire_prompt_hash": "a8e8fbfc3e406e5d3242cfd778ef1fb18cb34f3cbb6dd1846968e5b943d85b6b",
+      "mode_b_wire_prompt_hash": "b2c01f3ff052a61c992a0029424ce191f7ddceb2c153c86a5b89de7e24b81dfc"
+    },
+    {
+      "incident_id": "132472498",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "raw_evidence_hash": "f32509874ef3bc2ac40205580ba877c5f1cc1ce312968d2bc48d7cb9674f74cc",
+      "canonical_evidence_hash": "f1a5a44ff65e1320aa435bfc466804fba56e3750207599166b38c1b7fe1c3d9c",
+      "rule_definition_hash": "6b492f299394bd4f9a2d040ca48d81530deeba3a6b2d049d50e64cb953e0f5b8",
+      "mode_a_wire_prompt_hash": "a76b077ef03e6d5bc2c1f25cb3d73d8af192d13e3716595388bf32aace61108a",
+      "mode_b_wire_prompt_hash": "c4022527026b3d50b44a1002cfa9351b5227ede560b09e7df0814e16ec0ca81a"
+    },
+    {
+      "incident_id": "132474210",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "raw_evidence_hash": "b3edb608a37b4952490c9bec0b03ccc412563e067c36ffa78630977b5c2d197e",
+      "canonical_evidence_hash": "a44708187e0832c9ad7c6fd822f0693222051f948dba864e17756b2cd4d0e1b8",
+      "rule_definition_hash": "6b492f299394bd4f9a2d040ca48d81530deeba3a6b2d049d50e64cb953e0f5b8",
+      "mode_a_wire_prompt_hash": "5bf53036806a9a1e923822785a3564b229cbd161396f0954e0f895f16396bd5b",
+      "mode_b_wire_prompt_hash": "bd2e81c5ddd82475d85a114f33b4624aaec031499482ab0b82f44dfd53dfa66a"
+    },
+    {
+      "incident_id": "132501348",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "raw_evidence_hash": "f4e667394711258fb49a8a99a2b2b33f749d82220157a19c1f8ba6fcc96bc700",
+      "canonical_evidence_hash": "38450c072ff3a3eff38ece6315a14a49ca9118c9cb92614cff01178074694066",
+      "rule_definition_hash": "6b492f299394bd4f9a2d040ca48d81530deeba3a6b2d049d50e64cb953e0f5b8",
+      "mode_a_wire_prompt_hash": "91e1d21cd84d21e0b938b8f9bc10008728baeddcb2298154d7f246e394bd4fe1",
+      "mode_b_wire_prompt_hash": "96588cb3632ccc01b893bb85f2965788285ef951852dc0fa3cabb96ae44ec9ce"
+    },
+    {
+      "incident_id": "132502453",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "raw_evidence_hash": "2ccc775b8982da223ab37ff87eaaf05d0903c0f537ff2cefeaeceb21d88a44f3",
+      "canonical_evidence_hash": "8027c7cd731021b6bd5467e45b7cd390f697d0aefb486428b1975c71cc75bb84",
+      "rule_definition_hash": "6b492f299394bd4f9a2d040ca48d81530deeba3a6b2d049d50e64cb953e0f5b8",
+      "mode_a_wire_prompt_hash": "ef81c11823296ecc906e9ff34c60ac33a8b89a050af06fa99729f26dd382ab00",
+      "mode_b_wire_prompt_hash": "5b083384efd5fb122d49fec9a5e8e3fda7e58c897baed3df846f78a7b47a8d90"
+    },
+    {
+      "incident_id": "132527297",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "raw_evidence_hash": "b5cdd13266d60a312dd7c348b2a33106f207f5b68c7961789e97ae21647732ec",
+      "canonical_evidence_hash": "030330abaecaa95a79f308fe9ac841c824665fe236457bfebd13b43963c9d550",
+      "rule_definition_hash": "6b492f299394bd4f9a2d040ca48d81530deeba3a6b2d049d50e64cb953e0f5b8",
+      "mode_a_wire_prompt_hash": "8bea3ee635745ac26b512a44a8317a7e944ce24847d705e2dead34593fcb5aad",
+      "mode_b_wire_prompt_hash": "f3fa5a6644b3b15ffdd1871f2585d7c40acd2438c002de5e909c9d4b5efe4a71"
+    },
+    {
+      "incident_id": "132499009",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "raw_evidence_hash": "604ba4f28d5a7affc65843007e77ce4d167fa5e6c6f27202859369704e369e8f",
+      "canonical_evidence_hash": "4add5465fe40b8661584f83737f57c3ab252dd29d4c6e35ea30ad49a9a54f521",
+      "rule_definition_hash": "3e163fc3e3a9e505e4256b0678a8de7fc594acec9c5c2a969a79ce9c384a7b48",
+      "mode_a_wire_prompt_hash": "d245aaac0efc07b1e845c880435a90451ed5b71808731d1d101d0194f9e94c78",
+      "mode_b_wire_prompt_hash": "ae689c07ccb1ec47fa714e8e874438a5b527719375f8debf01496f4791007fb0"
+    },
+    {
+      "incident_id": "132499023",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "raw_evidence_hash": "9291f6733f83e5b3894eda451d0b6456c1b4319f470ad74039fe23cbd4c50f76",
+      "canonical_evidence_hash": "6cae8665e250db8e97c54e3189422160ae767d21830e3edfdb0a6d7558f82fdf",
+      "rule_definition_hash": "3e163fc3e3a9e505e4256b0678a8de7fc594acec9c5c2a969a79ce9c384a7b48",
+      "mode_a_wire_prompt_hash": "bd1e182e6260101413d4984bf06bd010647e6c349ade678ad33415562f97bb97",
+      "mode_b_wire_prompt_hash": "92f983d9eb9115df4379e62c7e88ed29bd2ea160cfd6b114a57dfb4ba45b1b4d"
+    },
+    {
+      "incident_id": "132499745",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "raw_evidence_hash": "61cb17b3e9580dde6a15b702af1a053e735624d214500cdb6c183baf8d01d02a",
+      "canonical_evidence_hash": "00104f74f7819489489c012de93c690de9ba3f142327269e0872ecd363cc0ba8",
+      "rule_definition_hash": "3e163fc3e3a9e505e4256b0678a8de7fc594acec9c5c2a969a79ce9c384a7b48",
+      "mode_a_wire_prompt_hash": "184154bd5f43c7834bd7b8e001c708d0327b8d5c50c4ba8cf16b0345aafc27a1",
+      "mode_b_wire_prompt_hash": "1e2ded92b85cc230350d8150e02e4794d484cf22437afc1e25a19ed92403d03f"
+    },
+    {
+      "incident_id": "132578774",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "raw_evidence_hash": "586fe5c1644430c9302eac8d20456af3b9e92f87bbd32dae46f616ab8e3e17d0",
+      "canonical_evidence_hash": "3b9e40bd50719584815781b1624784d04542405f2cbb4f35e311c269b23d70d3",
+      "rule_definition_hash": "3e163fc3e3a9e505e4256b0678a8de7fc594acec9c5c2a969a79ce9c384a7b48",
+      "mode_a_wire_prompt_hash": "94672317bdc1e6d2a23da0f4eb6a9f47ccd18943ac9897088d8ba5bc3ff8fa0c",
+      "mode_b_wire_prompt_hash": "ed2dffea7f00d5b8a3b16b127e0f822e463cf2c27b80ab5a1323581b2e1e91d0"
+    },
+    {
+      "incident_id": "132591888",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "raw_evidence_hash": "5fef4bc8a0b947d105364e2af80d9d0ea2d0a9321a5c9b56418f805fd30cddfd",
+      "canonical_evidence_hash": "cd28cf91d5decc0a79e0a0be94022e1494c91781e21caba608da2eae1ff3e466",
+      "rule_definition_hash": "3e163fc3e3a9e505e4256b0678a8de7fc594acec9c5c2a969a79ce9c384a7b48",
+      "mode_a_wire_prompt_hash": "dbc47a7792a045d456acbb729b2596d99cec89725f4c8fa025ee45b2ae916c47",
+      "mode_b_wire_prompt_hash": "e1d4abb135c32f57ec503b0a1034568bab7d878f7a8939fd2f8f912fe92f5d8a"
+    },
+    {
+      "incident_id": "132595592",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "raw_evidence_hash": "64ad8872f2b9b6ccbceba53187a864137fd9e20e042c9ef7390dee27acf8ef2d",
+      "canonical_evidence_hash": "a65e1c1e6924a5ea941d18fa343d91acd81b19a9b2a82098e31cd808c15db5e8",
+      "rule_definition_hash": "3e163fc3e3a9e505e4256b0678a8de7fc594acec9c5c2a969a79ce9c384a7b48",
+      "mode_a_wire_prompt_hash": "b27eebee8470f81eaa93efa04efb463483290685870b50c668e6fd5b24d72411",
+      "mode_b_wire_prompt_hash": "adc7e7e3f33bb4fb6ce07c4c8f1845f6759f680cdba70bbf6b3705ae7b373002"
+    },
+    {
+      "incident_id": "132596403",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "raw_evidence_hash": "bacdd0a6974f5e683ea8e7edf65d1c0cb7179bedb1403a7605909344e4ffaa88",
+      "canonical_evidence_hash": "73cec39d8dbbe35e3bfdcd3ba62034cfbae490927a1de385f1ca05a84e286480",
+      "rule_definition_hash": "3e163fc3e3a9e505e4256b0678a8de7fc594acec9c5c2a969a79ce9c384a7b48",
+      "mode_a_wire_prompt_hash": "cfaa7af3e9a7175a3c6f86a8b58d2aacc8d578ddc410e88b5bc53e282898dc11",
+      "mode_b_wire_prompt_hash": "4fda1bc790851d84c7ebb78d0592ada0170d5a94bd1ff4f7425e43d9388f20fc"
+    },
+    {
+      "incident_id": "132599145",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "raw_evidence_hash": "79d8c336917d3e3dde5d430416bc518ead1397bf294fdc439915576b12753a69",
+      "canonical_evidence_hash": "9a220ff90f1863da2d1a4ffdf743986a3a7a2807873b2425a1e6f5cc2337e558",
+      "rule_definition_hash": "3e163fc3e3a9e505e4256b0678a8de7fc594acec9c5c2a969a79ce9c384a7b48",
+      "mode_a_wire_prompt_hash": "e4f0c79f0ee559967a1c8706884c7f5173519b322a1780c2f84bbae0213a82ca",
+      "mode_b_wire_prompt_hash": "7435d86f98f17543b8550004a53f339cc586db7988bacfae8f3fef824370a8da"
+    },
+    {
+      "incident_id": "132599146",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "raw_evidence_hash": "f5c44fb13e9faed78fe6401a0a2a15a553aafe021aa0b860f92a6495f52bbef5",
+      "canonical_evidence_hash": "d1e186496472357f06ffd9091b277e04c8b69b9bd657f4024d21c99153165708",
+      "rule_definition_hash": "3e163fc3e3a9e505e4256b0678a8de7fc594acec9c5c2a969a79ce9c384a7b48",
+      "mode_a_wire_prompt_hash": "f182fee671d12ae2a5acc7a025d8eeb38b3f728d9f0f96b8ad5993962268488d",
+      "mode_b_wire_prompt_hash": "541df49b9801f8598f5abf8442834b418c3dcb5058d18ea49ece1d036a7cb92b"
+    },
+    {
+      "incident_id": "132599330",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "raw_evidence_hash": "f6c170ff8f044f03689b7a0d22e1e30b5002e4c4654c2801d73d16aa6e5e50b6",
+      "canonical_evidence_hash": "1a02f17bf3be32ec4a74fd7b8b6ac93babcd349efc00be7db40ded88f33eb11d",
+      "rule_definition_hash": "3e163fc3e3a9e505e4256b0678a8de7fc594acec9c5c2a969a79ce9c384a7b48",
+      "mode_a_wire_prompt_hash": "ab26b2b6aff4506014fd6cf817316719eefb038e381852a8d4f20fdf04ba1c8d",
+      "mode_b_wire_prompt_hash": "733eee574a63c050b91740e2a20af9b6e8507b6af1e2877a70ca57b2957c8060"
+    }
+  ]
+}

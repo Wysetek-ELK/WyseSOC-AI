@@ -1,0 +1,11 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:40:00Z",
+  "policy_impact": {
+    "total_counterfactual_trials": 11,
+    "completed_trials": 0,
+    "verdict_shift_count": null,
+    "bias_remediation_delta": null,
+    "status": "BLOCKED_GPU_UNAVAILABLE"
+  }
+}

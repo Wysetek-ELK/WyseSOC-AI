@@ -1,0 +1,38 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:15:00Z",
+  "security_suite": "Blind Review & Anti-Leakage Security Verification",
+  "controls_audited": [
+    {
+      "control_id": "SEC-01",
+      "name": "Server-Side Ground Truth Suppression",
+      "status": "PASS",
+      "verification": "GET /api/incidents/{id}?blind_review=true purges historical resolution, closure comments, and ground_truth object from JSON responses."
+    },
+    {
+      "control_id": "SEC-02",
+      "name": "Server-Side AI Verdict Masking",
+      "status": "PASS",
+      "verification": "safe_ai_verdict is set to null in unsubmitted blind review responses. No AI predictions are serialized."
+    },
+    {
+      "control_id": "SEC-03",
+      "name": "Prompt Injection Mitigation",
+      "status": "PASS",
+      "verification": "Raw logs containing closing XML tags are sanitized to HTML entities (&lt;/UNTRUSTED_INCIDENT_DATA&gt;)."
+    },
+    {
+      "control_id": "SEC-04",
+      "name": "Multi-Tenant Isolation",
+      "status": "PASS",
+      "verification": "Fail-closed check enforces tenant boundaries. Default/Platform Admins access global evaluation population; tenant analysts restricted to tenant scope."
+    },
+    {
+      "control_id": "SEC-05",
+      "name": "Immutable Review Audit Trail",
+      "status": "PASS",
+      "verification": "AnalystVerdictReview persists reviewer_id, UTC timestamp, review_version, and ground_truth_status without overwriting historical records."
+    }
+  ],
+  "overall_security_status": "PASS"
+}

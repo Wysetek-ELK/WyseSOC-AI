@@ -1,0 +1,7 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:30:00Z",
+  "mode_a": {"TP": 0, "FP": 0, "TN": 0, "FN": 0, "INCONCLUSIVE": 0, "status": "NOT_DEMONSTRATED"},
+  "mode_b": {"TP": 0, "FP": 0, "TN": 0, "FN": 0, "INCONCLUSIVE": 0, "status": "NOT_DEMONSTRATED"},
+  "mode_c": {"TP": 0, "FP": 0, "TN": 0, "FN": 0, "INCONCLUSIVE": 0, "status": "NOT_DEMONSTRATED"}
+}

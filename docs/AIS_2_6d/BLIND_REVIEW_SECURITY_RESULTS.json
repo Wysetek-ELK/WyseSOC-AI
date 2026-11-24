@@ -1,0 +1,65 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:15:00Z",
+  "suite": "Blind Review Isolation & Ground Truth Leakage Prevention",
+  "tested_incidents": [
+    "132474210",
+    "132596403",
+    "132599145",
+    "132438483",
+    "132591888"
+  ],
+  "results": [
+    {
+      "incident_id": "132474210",
+      "rule": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "target_asset": "PC-TSI-DC",
+      "raw_leakage_keys_present_in_storage": ["resolution", "clearedReason", "clearedUser", "clearedTime"],
+      "keys_exposed_to_reviewer": [],
+      "ground_truth_object_exposed": false,
+      "ai_verdict_exposed": false,
+      "status": "PASS_BLIND_PROTECTED"
+    },
+    {
+      "incident_id": "132596403",
+      "rule": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "target_asset": "172.25.6.101",
+      "raw_leakage_keys_present_in_storage": ["resolution", "clearedReason", "clearedUser", "clearedTime"],
+      "keys_exposed_to_reviewer": [],
+      "ground_truth_object_exposed": false,
+      "ai_verdict_exposed": false,
+      "status": "PASS_BLIND_PROTECTED"
+    },
+    {
+      "incident_id": "132599145",
+      "rule": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "target_asset": "172.25.14.157",
+      "raw_leakage_keys_present_in_storage": ["resolution", "clearedReason", "clearedUser", "clearedTime"],
+      "keys_exposed_to_reviewer": [],
+      "ground_truth_object_exposed": false,
+      "ai_verdict_exposed": false,
+      "status": "PASS_BLIND_PROTECTED"
+    },
+    {
+      "incident_id": "132438483",
+      "rule": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "target_asset": "DESKTOP-E0G2R49",
+      "raw_leakage_keys_present_in_storage": ["resolution", "clearedReason", "clearedUser", "clearedTime"],
+      "keys_exposed_to_reviewer": [],
+      "ground_truth_object_exposed": false,
+      "ai_verdict_exposed": false,
+      "status": "PASS_BLIND_PROTECTED"
+    },
+    {
+      "incident_id": "132591888",
+      "rule": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "target_asset": "172.25.6.208",
+      "raw_leakage_keys_present_in_storage": ["resolution", "clearedReason", "clearedUser", "clearedTime"],
+      "keys_exposed_to_reviewer": [],
+      "ground_truth_object_exposed": false,
+      "ai_verdict_exposed": false,
+      "status": "PASS_BLIND_PROTECTED"
+    }
+  ],
+  "overall_blind_isolation_status": "PASS"
+}

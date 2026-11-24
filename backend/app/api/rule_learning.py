@@ -59,11 +59,11 @@ class SubmitReviewRequest(BaseModel):
             return "TRUE_POSITIVE"
         if v_clean in ("FP", "FALSE_POSITIVE", "FALSEPOSITIVE", "BENIGN"):
             return "FALSE_POSITIVE"
-        if v_clean in ("INSUFFICIENT_EVIDENCE", "INSUFFICIENT", "ABSTAIN", "REQUIRES_ATTENTION", "UNKNOWN", "UNCERTAIN"):
+        if v_clean in ("INSUFFICIENT_EVIDENCE", "INSUFFICIENT", "INCONCLUSIVE", "ABSTAIN", "REQUIRES_ATTENTION", "UNKNOWN", "UNCERTAIN"):
             return "INSUFFICIENT_EVIDENCE"
         if v_clean not in ("TRUE_POSITIVE", "FALSE_POSITIVE", "INSUFFICIENT_EVIDENCE"):
             raise ValueError(
-                f"Invalid analyst verdict '{v}'. Allowed values are strictly: TRUE_POSITIVE, FALSE_POSITIVE, INSUFFICIENT_EVIDENCE."
+                f"Invalid analyst verdict '{v}'. Allowed values are strictly: TRUE_POSITIVE, FALSE_POSITIVE, INSUFFICIENT_EVIDENCE, INCONCLUSIVE."
             )
         return v_clean
 

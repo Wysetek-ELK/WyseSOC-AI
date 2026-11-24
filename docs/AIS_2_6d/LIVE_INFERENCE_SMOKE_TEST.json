@@ -1,0 +1,18 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:10:00Z",
+  "smoke_test_status": "BLOCKED_GPU_UNAVAILABLE",
+  "target_endpoint": "http://13.204.214.64:8000/v1/chat/completions",
+  "model_identifier": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "probe_outcome": {
+    "attempted_at_utc": "2026-11-24T16:09:00Z",
+    "http_status": null,
+    "error_type": "ConnectionTimeout",
+    "error_message": "Failed to connect to 13.204.214.64 port 8000 after 5000 ms: Timed out",
+    "is_mock_substituted": false,
+    "mock_fallback_allowed": false,
+    "actual_gpu_requests_executed": 0
+  },
+  "governance_rule_applied": "Never substitute simulated responses for live LLM responses. Never automatically start billable GPU infrastructure without operator authorization.",
+  "required_operator_action": "Start AWS EC2 GPU Server 2 and confirm vLLM service is running on port 8000."
+}

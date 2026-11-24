@@ -1,0 +1,428 @@
+{
+  "phase": "AIS 2.6d",
+  "generated_at_utc": "2026-11-24T16:06:44.485557+00:00",
+  "total_prompts": 20,
+  "all_prompts_fit_context": false,
+  "prompts": [
+    {
+      "incident_id": "132438483",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "d9ce986740a431564edace120d1b09f863ff372b36215c5a547b80993b617ead",
+        "wire_prompt_hash": "efcaa7c5659f303f942889a32493ea1e61a31872bcf7643aff9ed16a436d8715",
+        "estimated_prompt_tokens": 58730,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+        "system_prompt_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "user_content_hash": "d9ce986740a431564edace120d1b09f863ff372b36215c5a547b80993b617ead",
+        "wire_prompt_hash": "14551af458a1cd7ec25dc0f30df43803d0a272bc8a5001d5fb452c248d397ac3",
+        "estimated_prompt_tokens": 59541,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132439932",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "daaf0eaa2901298c7f9794a0113c788f5db77c07dc96c148a08ed844cd0777ff",
+        "wire_prompt_hash": "f4dc6fb405a14f24d0f757c4bab8b37cca9d6329d94241e31c5b637478ccce70",
+        "estimated_prompt_tokens": 24097,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+        "system_prompt_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "user_content_hash": "daaf0eaa2901298c7f9794a0113c788f5db77c07dc96c148a08ed844cd0777ff",
+        "wire_prompt_hash": "eda0cfb5505c8b153b484e5820b0ce5cbc2cda8aed319e62dfae5ef38f4a5032",
+        "estimated_prompt_tokens": 24908,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132441815",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "80fac14bcdcd6def7c8bb2d0e47ee3bf040e1c4b8dc5080a993b4f717db0725b",
+        "wire_prompt_hash": "ee388a78a1fbe0b0121c8f68413412dbe5fa94efb6f7d68736bfe8763d90ab11",
+        "estimated_prompt_tokens": 39892,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+        "system_prompt_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "user_content_hash": "80fac14bcdcd6def7c8bb2d0e47ee3bf040e1c4b8dc5080a993b4f717db0725b",
+        "wire_prompt_hash": "cfa019f3201ec8c18fd9796367b56c197fe4907893ff6beaa91d8f6bdae2ccea",
+        "estimated_prompt_tokens": 40703,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132461358",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "5da472fa681e6b74846c29d4bba272ad795489461dbed085248fd953a1569071",
+        "wire_prompt_hash": "e923f74a407004f022ca9f5b1c065ee213c38329b1a5ec0367ec5891b8e458d8",
+        "estimated_prompt_tokens": 72373,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+        "system_prompt_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "user_content_hash": "5da472fa681e6b74846c29d4bba272ad795489461dbed085248fd953a1569071",
+        "wire_prompt_hash": "8a92a1c186ea37339710adac918a9fd18a6a96807fb06e3e5bb503c9593a7289",
+        "estimated_prompt_tokens": 73184,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132461368",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "6e26e7fc69106cbb58e73fa0d9d6336e5dc5c773cd7dd50a8f3810eb0de1f2cc",
+        "wire_prompt_hash": "a8e8fbfc3e406e5d3242cfd778ef1fb18cb34f3cbb6dd1846968e5b943d85b6b",
+        "estimated_prompt_tokens": 46677,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+        "system_prompt_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "user_content_hash": "6e26e7fc69106cbb58e73fa0d9d6336e5dc5c773cd7dd50a8f3810eb0de1f2cc",
+        "wire_prompt_hash": "b2c01f3ff052a61c992a0029424ce191f7ddceb2c153c86a5b89de7e24b81dfc",
+        "estimated_prompt_tokens": 47488,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132472498",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "cc6dc35bd486584a26ab2a455a3bbd510d5da9a2817fbb2012cb424cd15999f3",
+        "wire_prompt_hash": "a76b077ef03e6d5bc2c1f25cb3d73d8af192d13e3716595388bf32aace61108a",
+        "estimated_prompt_tokens": 63398,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+        "system_prompt_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "user_content_hash": "cc6dc35bd486584a26ab2a455a3bbd510d5da9a2817fbb2012cb424cd15999f3",
+        "wire_prompt_hash": "c4022527026b3d50b44a1002cfa9351b5227ede560b09e7df0814e16ec0ca81a",
+        "estimated_prompt_tokens": 64209,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132474210",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "805092ae0ef57098e01c0d4688233e6ca34800a93ca08541deea9a84965f4f5d",
+        "wire_prompt_hash": "5bf53036806a9a1e923822785a3564b229cbd161396f0954e0f895f16396bd5b",
+        "estimated_prompt_tokens": 33425,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+        "system_prompt_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "user_content_hash": "805092ae0ef57098e01c0d4688233e6ca34800a93ca08541deea9a84965f4f5d",
+        "wire_prompt_hash": "bd2e81c5ddd82475d85a114f33b4624aaec031499482ab0b82f44dfd53dfa66a",
+        "estimated_prompt_tokens": 34236,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132501348",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "4836ba3859d5edf024a1cc82da64bb0f47e4489af3e65b1c21606f0837a1619e",
+        "wire_prompt_hash": "91e1d21cd84d21e0b938b8f9bc10008728baeddcb2298154d7f246e394bd4fe1",
+        "estimated_prompt_tokens": 14965,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+        "system_prompt_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "user_content_hash": "4836ba3859d5edf024a1cc82da64bb0f47e4489af3e65b1c21606f0837a1619e",
+        "wire_prompt_hash": "96588cb3632ccc01b893bb85f2965788285ef951852dc0fa3cabb96ae44ec9ce",
+        "estimated_prompt_tokens": 15776,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132502453",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "1c6c57627fd6fcd97b259ffa7356ebf2c0caec63b522447a757caafd5182d515",
+        "wire_prompt_hash": "ef81c11823296ecc906e9ff34c60ac33a8b89a050af06fa99729f26dd382ab00",
+        "estimated_prompt_tokens": 52226,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+        "system_prompt_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "user_content_hash": "1c6c57627fd6fcd97b259ffa7356ebf2c0caec63b522447a757caafd5182d515",
+        "wire_prompt_hash": "5b083384efd5fb122d49fec9a5e8e3fda7e58c897baed3df846f78a7b47a8d90",
+        "estimated_prompt_tokens": 53037,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132527297",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "c9177b6f5b960f52ff1c5fbfeb0b1148255beca0e4a7e53a9c8235ed89528071",
+        "wire_prompt_hash": "8bea3ee635745ac26b512a44a8317a7e944ce24847d705e2dead34593fcb5aad",
+        "estimated_prompt_tokens": 13007,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+        "system_prompt_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "user_content_hash": "c9177b6f5b960f52ff1c5fbfeb0b1148255beca0e4a7e53a9c8235ed89528071",
+        "wire_prompt_hash": "f3fa5a6644b3b15ffdd1871f2585d7c40acd2438c002de5e909c9d4b5efe4a71",
+        "estimated_prompt_tokens": 13818,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132499009",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "dba9cc15076bae6e91938ecb798ed220af8baac97b8fe5633e37af193bd18cab",
+        "wire_prompt_hash": "d245aaac0efc07b1e845c880435a90451ed5b71808731d1d101d0194f9e94c78",
+        "estimated_prompt_tokens": 8768,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+        "system_prompt_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "user_content_hash": "dba9cc15076bae6e91938ecb798ed220af8baac97b8fe5633e37af193bd18cab",
+        "wire_prompt_hash": "ae689c07ccb1ec47fa714e8e874438a5b527719375f8debf01496f4791007fb0",
+        "estimated_prompt_tokens": 8965,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132499023",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "4457e0ee487d63a276b032bdf68d0a2fcc77b603f582cd9f2978913a816a92fb",
+        "wire_prompt_hash": "bd1e182e6260101413d4984bf06bd010647e6c349ade678ad33415562f97bb97",
+        "estimated_prompt_tokens": 8858,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+        "system_prompt_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "user_content_hash": "4457e0ee487d63a276b032bdf68d0a2fcc77b603f582cd9f2978913a816a92fb",
+        "wire_prompt_hash": "92f983d9eb9115df4379e62c7e88ed29bd2ea160cfd6b114a57dfb4ba45b1b4d",
+        "estimated_prompt_tokens": 9055,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132499745",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "5d9bfeca38cd5ceff4abe12030715bd41eed63e2a178f5d755b9e5c3f6f85d67",
+        "wire_prompt_hash": "184154bd5f43c7834bd7b8e001c708d0327b8d5c50c4ba8cf16b0345aafc27a1",
+        "estimated_prompt_tokens": 8734,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+        "system_prompt_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "user_content_hash": "5d9bfeca38cd5ceff4abe12030715bd41eed63e2a178f5d755b9e5c3f6f85d67",
+        "wire_prompt_hash": "1e2ded92b85cc230350d8150e02e4794d484cf22437afc1e25a19ed92403d03f",
+        "estimated_prompt_tokens": 8931,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132578774",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "293cac5356009e2100ad24af9275e3a1a5a3908f62c4889621ad42f75b3f1acb",
+        "wire_prompt_hash": "94672317bdc1e6d2a23da0f4eb6a9f47ccd18943ac9897088d8ba5bc3ff8fa0c",
+        "estimated_prompt_tokens": 8741,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+        "system_prompt_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "user_content_hash": "293cac5356009e2100ad24af9275e3a1a5a3908f62c4889621ad42f75b3f1acb",
+        "wire_prompt_hash": "ed2dffea7f00d5b8a3b16b127e0f822e463cf2c27b80ab5a1323581b2e1e91d0",
+        "estimated_prompt_tokens": 8938,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132591888",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "2e4d8c0da5ecc08d93966f23fae2e78fa6f08c2ade27deef7652a658ab70a01d",
+        "wire_prompt_hash": "dbc47a7792a045d456acbb729b2596d99cec89725f4c8fa025ee45b2ae916c47",
+        "estimated_prompt_tokens": 11187,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+        "system_prompt_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "user_content_hash": "2e4d8c0da5ecc08d93966f23fae2e78fa6f08c2ade27deef7652a658ab70a01d",
+        "wire_prompt_hash": "e1d4abb135c32f57ec503b0a1034568bab7d878f7a8939fd2f8f912fe92f5d8a",
+        "estimated_prompt_tokens": 11384,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132595592",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "94f70226ca32357391e07aba04d3e93f8bf827eb216887a65b623baba924b6f2",
+        "wire_prompt_hash": "b27eebee8470f81eaa93efa04efb463483290685870b50c668e6fd5b24d72411",
+        "estimated_prompt_tokens": 8808,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+        "system_prompt_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "user_content_hash": "94f70226ca32357391e07aba04d3e93f8bf827eb216887a65b623baba924b6f2",
+        "wire_prompt_hash": "adc7e7e3f33bb4fb6ce07c4c8f1845f6759f680cdba70bbf6b3705ae7b373002",
+        "estimated_prompt_tokens": 9005,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132596403",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "0120b03f24a46f5f6ce9b61865b2f5636b406c2137ef7ad1650469cb7042e259",
+        "wire_prompt_hash": "cfaa7af3e9a7175a3c6f86a8b58d2aacc8d578ddc410e88b5bc53e282898dc11",
+        "estimated_prompt_tokens": 8736,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+        "system_prompt_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "user_content_hash": "0120b03f24a46f5f6ce9b61865b2f5636b406c2137ef7ad1650469cb7042e259",
+        "wire_prompt_hash": "4fda1bc790851d84c7ebb78d0592ada0170d5a94bd1ff4f7425e43d9388f20fc",
+        "estimated_prompt_tokens": 8933,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132599145",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "a0f36301b10c7e946cca4f9cee9df0d7c5e2c4dcc1bd5a1822489b3814575dce",
+        "wire_prompt_hash": "e4f0c79f0ee559967a1c8706884c7f5173519b322a1780c2f84bbae0213a82ca",
+        "estimated_prompt_tokens": 10474,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+        "system_prompt_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "user_content_hash": "a0f36301b10c7e946cca4f9cee9df0d7c5e2c4dcc1bd5a1822489b3814575dce",
+        "wire_prompt_hash": "7435d86f98f17543b8550004a53f339cc586db7988bacfae8f3fef824370a8da",
+        "estimated_prompt_tokens": 10671,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132599146",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "43330f748cf74723647e59e911bedaffef4b8a5ee361f67be8cf79e468c4a072",
+        "wire_prompt_hash": "f182fee671d12ae2a5acc7a025d8eeb38b3f728d9f0f96b8ad5993962268488d",
+        "estimated_prompt_tokens": 25215,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+        "system_prompt_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "user_content_hash": "43330f748cf74723647e59e911bedaffef4b8a5ee361f67be8cf79e468c4a072",
+        "wire_prompt_hash": "541df49b9801f8598f5abf8442834b418c3dcb5058d18ea49ece1d036a7cb92b",
+        "estimated_prompt_tokens": 25412,
+        "fits_in_context": false
+      }
+    },
+    {
+      "incident_id": "132599330",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "mode_a": {
+        "system_prompt_name": "NEUTRAL_SOC_BASELINE_V1",
+        "system_prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+        "user_content_hash": "e9bb265d489df08a34476f2154ba1cf1b4e2ccf8717f7ffebad1049e6bd96441",
+        "wire_prompt_hash": "ab26b2b6aff4506014fd6cf817316719eefb038e381852a8d4f20fdf04ba1c8d",
+        "estimated_prompt_tokens": 10469,
+        "fits_in_context": false
+      },
+      "mode_b": {
+        "policy_version": 1,
+        "policy_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
+        "system_prompt_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "user_content_hash": "e9bb265d489df08a34476f2154ba1cf1b4e2ccf8717f7ffebad1049e6bd96441",
+        "wire_prompt_hash": "733eee574a63c050b91740e2a20af9b6e8507b6af1e2877a70ca57b2957c8060",
+        "estimated_prompt_tokens": 10666,
+        "fits_in_context": false
+      }
+    }
+  ]
+}

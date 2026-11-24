@@ -52,6 +52,16 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
+        source: "/agent-studio/ground-truth",
+        destination: "/agent-intelligence-studio",
+        permanent: false,
+      },
+      {
+        source: "/agent-studio",
+        destination: "/agent-intelligence-studio",
+        permanent: false,
+      },
+      {
         source: "/learning-history",
         destination: "/agent-memory",
         permanent: false,

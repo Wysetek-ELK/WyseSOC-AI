@@ -1,0 +1,42 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T17:35:00Z",
+  "phase_title": "Human Ground Truth Completion, Actual GPU Intelligence Measurement, Controlled Prompt Remediation & Verdict Accuracy Certification",
+  "provenance_standard": "ZERO_SIMULATION_STRICT_EMPIRICAL_INTEGRITY",
+  "mission_statement_answer": "CURRENTLY_UNVERIFIED_PENDING_CHECKPOINTS_A_AND_B",
+  "summary_metrics": {
+    "frozen_cohort_incidents": 20,
+    "human_ground_truth_level_2_completed": 0,
+    "live_gpu_inferences_completed": 0,
+    "simulated_inferences_fabricated": 0,
+    "empirical_accuracy": null,
+    "empirical_f1_score": null,
+    "unsafe_false_positive_rate": null,
+    "decisive_verdict_coverage": null
+  },
+  "acceptance_gates_summary": {
+    "total_gates": 33,
+    "passed": 28,
+    "blocked_pending_human_review": 1,
+    "blocked_gpu_unavailable": 4,
+    "failed": 0
+  },
+  "regression_and_security": {
+    "unit_integration_tests_passed": 17,
+    "unit_integration_tests_failed": 0,
+    "frontend_routes_compiled": 32,
+    "frontend_typescript_errors": 0,
+    "blind_isolation_leakage_detected": false
+  },
+  "upla_governance": {
+    "project_id": "proj-98348ed9ed5e2ba1",
+    "mode": "FULL_WORKFLOW",
+    "execution_id": "upla-20261124-162217-c3a77a",
+    "status": "PASS_WITH_WARNING_NON_BLOCKING",
+    "blocking_issues_count": 0
+  },
+  "infrastructure_status": {
+    "server_1_app": "172.26.41.240 (Active, Staging)",
+    "server_2_gpu": "13.204.214.64 (Stopped, Offline, Billing Protected)"
+  }
+}

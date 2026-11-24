@@ -1,0 +1,30 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:10:00Z",
+  "decision": "NO_GO_BLOCKED_GPU_UNAVAILABLE",
+  "blocker_reason": "GPU Server 2 (vLLM inference endpoint at http://13.204.214.64:8000/v1) is stopped or unreachable. Under Rule 18 and Rule 2, the agent must never automatically start billable GPU instances or fabricate simulated responses.",
+  "workload_estimate": {
+    "smoke_test_requests": 1,
+    "pilot_mode_a_requests": 5,
+    "pilot_mode_b_requests": 5,
+    "pilot_mode_c_requests": 0,
+    "full_benchmark_mode_a_requests": 20,
+    "full_benchmark_mode_b_requests": 20,
+    "full_benchmark_mode_c_requests": 0,
+    "remediation_counterfactual_requests": 5,
+    "total_estimated_gpu_requests": 51,
+    "estimated_concurrency": 2,
+    "estimated_wall_clock_time_minutes": 20
+  },
+  "prerequisite_checklist": {
+    "offline_prompt_compiler_ready": true,
+    "wire_prompt_token_accounting_passed": true,
+    "frozen_cohort_manifest_verified": true,
+    "anti_leakage_audit_passed": true,
+    "human_review_queue_ready": true,
+    "operator_review_checkpoint_active": true,
+    "operator_gpu_authorization_granted": false,
+    "live_connectivity_verified": false
+  },
+  "resumption_command": "Upon operator starting GPU Server 2: verify 'curl http://13.204.214.64:8000/v1/models' returns HTTP 200, then execute live pilot."
+}

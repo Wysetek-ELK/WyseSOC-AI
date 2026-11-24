@@ -1,0 +1,41 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:30:00Z",
+  "ground_truth_level_used": "LEVEL_2_HUMAN_REVIEW_TARGET",
+  "denominator_guard_active": true,
+  "metrics": {
+    "mode_a_neutral_baseline": {
+      "sample_size": 20,
+      "decisive_verdicts": 0,
+      "abstentions": 0,
+      "coverage": null,
+      "precision": null,
+      "recall": null,
+      "f1_score": null,
+      "false_positive_rate": null,
+      "status": "NOT_DEMONSTRATED_AWAITING_DATA"
+    },
+    "mode_b_approved_policy": {
+      "sample_size": 20,
+      "decisive_verdicts": 0,
+      "abstentions": 0,
+      "coverage": null,
+      "precision": null,
+      "recall": null,
+      "f1_score": null,
+      "false_positive_rate": null,
+      "status": "NOT_DEMONSTRATED_AWAITING_DATA"
+    },
+    "mode_c_independent_validation": {
+      "sample_size": 20,
+      "decisive_verdicts": 0,
+      "abstentions": 0,
+      "coverage": null,
+      "precision": null,
+      "recall": null,
+      "f1_score": null,
+      "false_positive_rate": null,
+      "status": "NOT_DEMONSTRATED_AWAITING_DATA"
+    }
+  }
+}

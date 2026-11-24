@@ -1,0 +1,23 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T17:35:00Z",
+  "total_blockers": 2,
+  "blockers": [
+    {
+      "id": "BLOCKER-01",
+      "code": "CHECKPOINT_A_HUMAN_GROUND_TRUTH_EMPTY",
+      "name": "Pending Human Ground Truth Review Submissions",
+      "description": "Zero independent human reviews have been submitted in analyst_verdict_reviews. Empirical accuracy cannot be certified without Level 2 human ground truth labels.",
+      "remediation": "SOC analysts or project owner must log into /agent-intelligence-studio and review the 5 priority incidents (and remaining 15 cohort incidents).",
+      "affected_gates": ["G10"]
+    },
+    {
+      "id": "BLOCKER-02",
+      "code": "CHECKPOINT_B_GPU_SERVER_2_UNAVAILABLE",
+      "name": "AWS GPU Server 2 Offline / Stopped",
+      "description": "TCP connection to http://13.204.214.64:8000/v1 timed out after 5000 ms. Rule 18 prohibits automatic starting of billable cloud GPU infrastructure.",
+      "remediation": "Operator must start AWS EC2 GPU Server 2 and confirm vLLM health check on port 8000.",
+      "affected_gates": ["G07", "G25", "G27", "G31"]
+    }
+  ]
+}

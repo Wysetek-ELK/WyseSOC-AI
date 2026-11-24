@@ -1,0 +1,12 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:55:00Z",
+  "benchmark_protocol_ready": true,
+  "candidate_comparison_models": [
+    "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "meta-llama/Llama-3.1-8B-Instruct-AWQ",
+    "mistralai/Mistral-7B-Instruct-v0.3-AWQ"
+  ],
+  "harness_compatibility": "OpenAI-compatible vLLM API",
+  "readiness": "READY_UPON_GPU_AVAILABILITY"
+}

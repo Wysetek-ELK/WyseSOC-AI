@@ -1,0 +1,38 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:10:00Z",
+  "gpu_server_identity": {
+    "server_name": "GPU Server 2 (Verdictum Cortex Inference Engine)",
+    "target_ip": "13.204.214.64",
+    "port": 8000,
+    "inference_endpoint": "http://13.204.214.64:8000/v1",
+    "health_endpoint": "http://13.204.214.64:8000/v1/models",
+    "connection_status": "OFFLINE_UNREACHABLE",
+    "probe_result": "ConnectTimeout (Connection timed out after 5000 ms)",
+    "infrastructure_type": "AWS EC2 Billable GPU Instance",
+    "management_policy": "NEVER_AUTO_START_BILLABLE_GPU (Requires explicit operator start)"
+  },
+  "runtime_specification": {
+    "expected_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "inference_engine": "vLLM (OpenAI-compatible server)",
+    "quantization": "AWQ (4-bit activation-aware weight quantization)",
+    "expected_context_budget": 8192,
+    "target_input_budget": 7424,
+    "max_completion_tokens": 768,
+    "chat_template": "qwen2",
+    "sampling_parameters": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "repetition_penalty": 1.05
+    }
+  },
+  "readiness_audit": {
+    "offline_prompt_compiler_ready": true,
+    "token_budgeting_ready": true,
+    "wire_prompt_delimiters_ready": true,
+    "evidence_normalization_ready": true,
+    "independent_validator_ready": true,
+    "live_connectivity": false
+  },
+  "overall_status": "BLOCKED_GPU_UNAVAILABLE"
+}

@@ -1,0 +1,630 @@
+{
+  "phase": "AIS 2.6d",
+  "generated_at_utc": "2026-11-24T16:02:24.834640+00:00",
+  "total_queue_count": 20,
+  "priority_review_count": 5,
+  "pending_review_count": 20,
+  "completed_review_count": 0,
+  "review_queue": [
+    {
+      "incident_id": "132474210",
+      "db_uuid": "4a575b5f-965c-4026-8d6b-321eee34a5f9",
+      "priority_rank": 1,
+      "is_priority_review": true,
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "severity": "MEDIUM",
+      "source_ip": "Internal",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on PC-TSI-DC",
+      "observed_entity": "UltraViewer_Service.exe",
+      "historical_operational_label": "False Positive",
+      "historical_operational_note": "legitimate activity, nothing suspicious observed.",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132474210",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "triggered_condition": "Process execution of remote management tool",
+        "observed_attributes": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132596403",
+      "db_uuid": "2387afb1-8f85-41a9-a867-15035f468ae2",
+      "priority_rank": 2,
+      "is_priority_review": true,
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "severity": "MEDIUM",
+      "source_ip": "172.25.6.101",
+      "title": "Prisma SASE review.es.system.js Suspicious File Threat Detection from 172.25.6.101",
+      "observed_entity": "review.es.system.js",
+      "historical_operational_label": "True Positive",
+      "historical_operational_note": "Mail has been sent already",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132596403",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "triggered_condition": "Gateway download of suspicious file asset",
+        "observed_attributes": "{fileName=review.es.system.js, appCategory=travel}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132599145",
+      "db_uuid": "4cf8a5a6-1fc4-4825-9bab-187767ddfdd3",
+      "priority_rank": 3,
+      "is_priority_review": true,
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "severity": "MEDIUM",
+      "source_ip": "172.25.14.157",
+      "title": "Prisma SASE jquery.knob.js Suspicious File Threat Detection from 172.25.14.157",
+      "observed_entity": "jquery.knob.js",
+      "historical_operational_label": "True Positive",
+      "historical_operational_note": "Case has been raised for the similar incidents.",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132599145",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "triggered_condition": "Gateway download of suspicious file asset",
+        "observed_attributes": "{fileName=jquery.knob.js, appCategory=business-and-economy}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132438483",
+      "db_uuid": "0ca59fc8-6970-488e-ade9-27d287c25ec7",
+      "priority_rank": 4,
+      "is_priority_review": true,
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "severity": "MEDIUM",
+      "source_ip": "Internal",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on DESKTOP-E0G2R49",
+      "observed_entity": "UltraViewer_Service.exe",
+      "historical_operational_label": "False Positive",
+      "historical_operational_note": "kill process is true",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132438483",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "triggered_condition": "Process execution of remote management tool",
+        "observed_attributes": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132591888",
+      "db_uuid": "db2d18a1-c873-41a8-92f7-185a3e2a825f",
+      "priority_rank": 5,
+      "is_priority_review": true,
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "severity": "MEDIUM",
+      "source_ip": "172.25.6.208",
+      "title": "Prisma SASE update.exe Suspicious File Threat Detection from 172.25.6.208",
+      "observed_entity": "update.exe",
+      "historical_operational_label": "False Positive",
+      "historical_operational_note": "file observed is not suspicious",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132591888",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "triggered_condition": "Gateway download of suspicious file asset",
+        "observed_attributes": "{fileName=update.exe, appCategory=remote-access}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132439932",
+      "db_uuid": "5019c46c-eb3d-411a-9bcd-7652f6966023",
+      "priority_rank": 11,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "severity": "MEDIUM",
+      "source_ip": "Internal",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on TSI-IT-002-200",
+      "observed_entity": "UltraViewer_Service.exe",
+      "historical_operational_label": "False Positive",
+      "historical_operational_note": "kill process is true",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132439932",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "triggered_condition": "Process execution of remote management tool",
+        "observed_attributes": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132441815",
+      "db_uuid": "bc91751c-4536-41f5-beab-5aaf913eff8e",
+      "priority_rank": 12,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "severity": "MEDIUM",
+      "source_ip": "Internal",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on DESKTOP-E0G2R49",
+      "observed_entity": "UltraViewer_Service.exe",
+      "historical_operational_label": "False Positive",
+      "historical_operational_note": "proccess is kiled",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132441815",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "triggered_condition": "Process execution of remote management tool",
+        "observed_attributes": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132461358",
+      "db_uuid": "497adb1a-cd5c-4288-af94-76b061e0c269",
+      "priority_rank": 13,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "severity": "MEDIUM",
+      "source_ip": "Internal",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on TSI-IT-002-200",
+      "observed_entity": "UltraViewer_Service.exe",
+      "historical_operational_label": "False Positive",
+      "historical_operational_note": "hash value is clean",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132461358",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "triggered_condition": "Process execution of remote management tool",
+        "observed_attributes": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132461368",
+      "db_uuid": "e05a5d8e-f34c-424b-b338-923546d7e6f1",
+      "priority_rank": 14,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "severity": "MEDIUM",
+      "source_ip": "Internal",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on DESKTOP-E0G2R49",
+      "observed_entity": "UltraViewer_Service.exe",
+      "historical_operational_label": "True Positive",
+      "historical_operational_note": "case raised and client are working on it",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132461368",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "triggered_condition": "Process execution of remote management tool",
+        "observed_attributes": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132472498",
+      "db_uuid": "2d667197-6733-4c14-bf9b-9921737f078a",
+      "priority_rank": 15,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "severity": "MEDIUM",
+      "source_ip": "Internal",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on PC-TSI-DC",
+      "observed_entity": "UltraViewer_Service.exe",
+      "historical_operational_label": "True Positive",
+      "historical_operational_note": "case raised and client are working on it",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132472498",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "triggered_condition": "Process execution of remote management tool",
+        "observed_attributes": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132501348",
+      "db_uuid": "e9b0ab37-4ce5-4056-864c-3237352e604d",
+      "priority_rank": 16,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "severity": "MEDIUM",
+      "source_ip": "Internal",
+      "title": "Crowdstrike suspicious activity using Disable or Modify Tools detected on DESKTOP-CQ4A60U",
+      "observed_entity": "Unknown",
+      "historical_operational_label": "True Positive",
+      "historical_operational_note": "Resolution set by Machine Learning\nWe have observed the Crowdstrike user admin compromise using Disable or Modify Tools detected on DESKTOP-DR1F46U",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132501348",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "triggered_condition": "Process execution of remote management tool",
+        "observed_attributes": "{attackTactic=Defense Evasion, subtype=, attackTechnique=Disable or Modify Tools, command=C:\\Users\\admin\\AppData\\Local\\MEGAsync\\MEGAsync.exe}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132502453",
+      "db_uuid": "2ed5d3e8-575a-4734-9bf7-23f87010a9ce",
+      "priority_rank": 17,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "severity": "MEDIUM",
+      "source_ip": "Internal",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on DESKTOP-KHU6454",
+      "observed_entity": "UltraViewer_Service.exe",
+      "historical_operational_label": "True Positive",
+      "historical_operational_note": "Informed to client, alert still generating",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132502453",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "triggered_condition": "Process execution of remote management tool",
+        "observed_attributes": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132527297",
+      "db_uuid": "9ccef344-d210-42bb-8455-17ba058a135e",
+      "priority_rank": 18,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "severity": "MEDIUM",
+      "source_ip": "Internal",
+      "title": "Crowdstrike suspicious activity using Indicator of Attack detected on TSI-IT-002-95",
+      "observed_entity": "UltraViewer_Service.exe",
+      "historical_operational_label": "True Positive",
+      "historical_operational_note": "Endpoint security has blocked the ultraviewer.exe",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132527297",
+        "rule_name": "Crowdstrike: Suspicious Activity",
+        "triggered_condition": "Process execution of remote management tool",
+        "observed_attributes": "{attackTactic=Custom Intelligence, subtype=, attackTechnique=Indicator of Attack, command=\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132499009",
+      "db_uuid": "8cb05b4a-0429-4f31-a20b-bc866e80a0db",
+      "priority_rank": 19,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "severity": "MEDIUM",
+      "source_ip": "172.25.14.80",
+      "title": "Prisma SASE ss-widget.min.js Suspicious File Threat Detection from 172.25.14.80",
+      "observed_entity": "ss-widget.min.js",
+      "historical_operational_label": "False Positive",
+      "historical_operational_note": "No suspicious activity was identified during the analysis",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132499009",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "triggered_condition": "Gateway download of suspicious file asset",
+        "observed_attributes": "{fileName=ss-widget.min.js, appCategory=business-and-economy}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132499023",
+      "db_uuid": "92d70e13-e9bb-4be0-aeb7-f031a8f7ab3b",
+      "priority_rank": 20,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "severity": "MEDIUM",
+      "source_ip": "172.25.14.67",
+      "title": "Prisma SASE clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js Suspicious File Threat Detection from 172.25.14.67",
+      "observed_entity": "clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js",
+      "historical_operational_label": "False Positive",
+      "historical_operational_note": "file does not found suspicious hence marking as fp",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132499023",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "triggered_condition": "Gateway download of suspicious file asset",
+        "observed_attributes": "{fileName=clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js, appCategory=travel}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132499745",
+      "db_uuid": "d5560b05-ba76-4f60-87fb-980393bc838e",
+      "priority_rank": 21,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "severity": "MEDIUM",
+      "source_ip": "172.25.14.80",
+      "title": "Prisma SASE scripts-QBOKETIS.js Suspicious File Threat Detection from 172.25.14.80",
+      "observed_entity": "scripts-QBOKETIS.js",
+      "historical_operational_label": "False Positive",
+      "historical_operational_note": "file does not found suspicious hence marking as fp",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132499745",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "triggered_condition": "Gateway download of suspicious file asset",
+        "observed_attributes": "{fileName=scripts-QBOKETIS.js, appCategory=web-hosting}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132578774",
+      "db_uuid": "9c8ba231-c228-4fb6-9b18-55aa455b0caf",
+      "priority_rank": 22,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "severity": "MEDIUM",
+      "source_ip": "172.25.2.3",
+      "title": "Prisma SASE adrum22603859.js Suspicious File Threat Detection from 172.25.2.3",
+      "observed_entity": "adrum22603859.js",
+      "historical_operational_label": "False Positive",
+      "historical_operational_note": "file observed is not suspicious",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132578774",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "triggered_condition": "Gateway download of suspicious file asset",
+        "observed_attributes": "{fileName=adrum22603859.js, appCategory=business-and-economy}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132595592",
+      "db_uuid": "306d5c0d-f17a-4123-a101-d2b6ea5b1a64",
+      "priority_rank": 23,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "severity": "MEDIUM",
+      "source_ip": "172.25.6.95",
+      "title": "Prisma SASE 2005.70cb3d6bf67c91a7.js Suspicious File Threat Detection from 172.25.6.95",
+      "observed_entity": "2005.70cb3d6bf67c91a7.js",
+      "historical_operational_label": "True Positive",
+      "historical_operational_note": "Mail has been sent already",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132595592",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "triggered_condition": "Gateway download of suspicious file asset",
+        "observed_attributes": "{fileName=2005.70cb3d6bf67c91a7.js, appCategory=business-and-economy}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132599146",
+      "db_uuid": "d38aabd2-ffdb-4f47-ba96-08ad40947d52",
+      "priority_rank": 24,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "severity": "MEDIUM",
+      "source_ip": "172.25.14.157",
+      "title": "Prisma SASE exporting.js Suspicious File Threat Detection from 172.25.14.157",
+      "observed_entity": "exporting.js",
+      "historical_operational_label": "True Positive",
+      "historical_operational_note": "Case has been raised for the similar incidents.",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132599146",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "triggered_condition": "Gateway download of suspicious file asset",
+        "observed_attributes": "{fileName=exporting.js, appCategory=business-and-economy}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    },
+    {
+      "incident_id": "132599330",
+      "db_uuid": "9b874e06-ab3e-4515-91b3-c9395d9ec1df",
+      "priority_rank": 25,
+      "is_priority_review": false,
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "event_type": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "severity": "MEDIUM",
+      "source_ip": "172.25.14.157",
+      "title": "Prisma SASE select2.min.js Suspicious File Threat Detection from 172.25.14.157",
+      "observed_entity": "select2.min.js",
+      "historical_operational_label": "True Positive",
+      "historical_operational_note": "Case has been raised for the similar incidents.",
+      "blind_review_status": "PENDING_ANALYST_REVIEW",
+      "current_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+      "blind_review_package": {
+        "incident_id": "132599330",
+        "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+        "triggered_condition": "Gateway download of suspicious file asset",
+        "observed_attributes": "{fileName=select2.min.js, appCategory=business-and-economy}",
+        "masked_fields_from_reviewer": [
+          "historical_resolution",
+          "cleared_reason",
+          "ai_verdict",
+          "ai_confidence",
+          "ai_reason",
+          "trust_score"
+        ]
+      }
+    }
+  ]
+}

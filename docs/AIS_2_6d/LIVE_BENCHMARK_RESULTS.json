@@ -1,0 +1,11 @@
+{
+  "phase": "AIS 2.6d",
+  "evaluated_at_utc": "2026-11-24T16:25:00Z",
+  "execution_summary": {
+    "mode_a": {"total": 20, "completed": 0, "status": "BLOCKED_GPU_UNAVAILABLE"},
+    "mode_b": {"total": 20, "completed": 0, "status": "BLOCKED_GPU_UNAVAILABLE"},
+    "mode_c": {"total": 20, "completed": 0, "status": "BLOCKED_GPU_UNAVAILABLE"}
+  },
+  "empirical_metrics": "NOT_DEMONSTRATED",
+  "blocker": "AWS GPU Server 2 is stopped. Awaiting operator authorization (Checkpoint B)."
+}

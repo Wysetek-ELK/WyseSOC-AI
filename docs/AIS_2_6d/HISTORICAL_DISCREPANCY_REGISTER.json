@@ -1,0 +1,66 @@
+[
+  {
+    "discrepancy_id": "DISC-26D-01",
+    "category": "POLICY_IDENTITY_MISMATCH",
+    "title": "CrowdStrike Policy Version Label Conflation (v3 vs v1)",
+    "reported_in_2_6c": "CrowdStrike Policy v3 inverted burden of proof ('without approved IT ticket -> TP')",
+    "authoritative_finding": "The active approved policy in the persistent SQLite database is PromptVersion 'bd751fac-9bfb-4994-b150-8850bb94dd6c' with version_number = 1. The execution ledger correctly recorded policy_version = 1 and policy_content_hash = fe1c4184cc5b8f020ee006c8175ba0144b0e82ba246b29a752490748e0ad65cc. The 2.6c report conflated the PolicyCompilerService compiler version ('v3.0.0') and the hardcoded fallback definition ('version_number=3') with the actual database prompt version.",
+    "effective_policy_id": "08c59656-c002-4a76-b100-3c8d6d645eb2",
+    "effective_version_number": 1,
+    "effective_status": "APPROVED",
+    "compiler_version": "v3.0.0",
+    "policy_content_hash": "fe1c4184cc5b8f020ee006c8175ba0144b0e82ba246b29a752490748e0ad65cc",
+    "reconciliation_action": "Correct report references to reflect Prompt Version 1 (compiled via PolicyCompilerService v3.0.0). Retain cryptographic linkage to ledger hash fe1c4184cc5b."
+  },
+  {
+    "discrepancy_id": "DISC-26D-02",
+    "category": "INCIDENT_IDENTITY_MISMATCH",
+    "title": "Identity Inversion Between Incident 132591888 and Incident 132596403",
+    "reported_in_2_6c": "In AIS 2.6c docs 11, 13, 15, and 20, incident 132596403 was referred to as 'update.exe' and incident 132591888 as 'review.es.system.js' or web tracking script.",
+    "authoritative_finding": "Authoritative database records and original raw zip telemetry conclusively prove:\n- Incident 132591888 is Windows PE executable 'update.exe' (appCategory=remote-access, source_ip=172.25.6.208).\n- Incident 132596403 is JavaScript asset 'review.es.system.js' (appCategory=travel, source_ip=172.25.6.101).",
+    "authoritative_132591888": {
+      "incident_id": "132591888",
+      "observed_entity": "update.exe",
+      "entity_type": "PE_EXECUTABLE",
+      "app_category": "remote-access",
+      "source_ip": "172.25.6.208",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE"
+    },
+    "authoritative_132596403": {
+      "incident_id": "132596403",
+      "observed_entity": "review.es.system.js",
+      "entity_type": "JAVASCRIPT_WEB_ASSET",
+      "app_category": "travel",
+      "source_ip": "172.25.6.101",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE"
+    },
+    "reconciliation_action": "Reconciled all metadata registers, manifests, and documentation to strictly match authoritative telemetry."
+  },
+  {
+    "discrepancy_id": "DISC-26D-03",
+    "category": "GROUND_TRUTH_PROVENANCE_MISMATCH",
+    "title": "Promotion of Historical Operational Text to VERIFIED_FP Without Human Review",
+    "reported_in_2_6c": "Execution ledgers in Mode A, B, and C labeled incidents 132474210 and 132499009 as VERIFIED_FP, despite zero human reviews having been performed.",
+    "authoritative_finding": "HistoricalGroundTruthValidator.adjudicate_label() automatically mapped Level 1 historical FortiSIEM closure comments containing 'False Positive' to GroundTruthLabel.VERIFIED_FP. In reality, zero Level 2 independent human reviews had been submitted in Verdictum AI. No Level 3 corroboration or Level 4 formal certification existed.",
+    "affected_incidents": ["132474210", "132499009"],
+    "true_provenance_level": "LEVEL_1_HISTORICAL_OPERATIONAL",
+    "reconciliation_action": "Demoted all unreviewed historical labels from VERIFIED_FP/TP to LEVEL_1_HISTORICAL_OPERATIONAL (UNVERIFIED for live empirical accuracy evaluation). Formally enforce that only Level 2/3/4 human reviews submitted through the Review workspace can serve as verified ground truth for empirical benchmarking."
+  },
+  {
+    "discrepancy_id": "DISC-26D-04",
+    "category": "UNSUPPORTED_CAUSAL_PERCENTAGES",
+    "title": "Speculative Numerical Attribution of Model Proposal Bias",
+    "reported_in_2_6c": "Informal attributions such as '50% policy directive bias, 30% evidence omission, 10% prompt compiler bias'.",
+    "authoritative_finding": "These numerical percentages were heuristic estimates without counterfactual experimental measurement. Attributing exact percentage fractions to interconnected prompt components without controlled single-variable ablation is scientifically unsound.",
+    "reconciliation_action": "Removed all arbitrary numerical causal percentages. Replaced with rigorous qualitative hypothesis classifications (H1 to H7) and established controlled single-variable live experiments."
+  },
+  {
+    "discrepancy_id": "DISC-26D-05",
+    "category": "ACCEPTANCE_GATE_INTEGRITY",
+    "title": "Passage of Live Empirical Gates on Offline Simulation Evidence",
+    "reported_in_2_6c": "32 of 33 acceptance gates were marked PASS in AIS 2.6c, including live inference and model evaluation gates, even though all executions were offline simulations (execution_provenance = OFFLINE_SIMULATION).",
+    "authoritative_finding": "Live GPU Server 2 was unreachable (timeout at http://13.204.214.64:8000/v1). While offline deterministic simulations proved pipeline wiring and guardrail logic, gates specifying live empirical model capability cannot pass on simulation evidence alone.",
+    "affected_gates": ["G12", "G17", "G18", "G19", "G23", "G24"],
+    "reconciliation_action": "Reclassified all gates dependent on live GPU inference and human ground truth to BLOCKED_GPU_UNAVAILABLE or BLOCKED_PENDING_HUMAN_REVIEW until actual live execution occurs."
+  }
+]
