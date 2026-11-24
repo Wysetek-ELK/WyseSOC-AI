@@ -1046,6 +1046,7 @@ class EmpiricalBenchmarkHarness:
                 max_completion_tokens=768,
                 reserved_overhead_tokens=rule_overhead_tokens,
                 model_name="Qwen/Qwen2.5-7B-Instruct-AWQ",
+                target_input_budget=6400 if max_context_tokens > 4096 else None,
             )
 
             rule_definition_hash = hashlib.sha256(json.dumps(rule_spec, sort_keys=True).encode("utf-8")).hexdigest()

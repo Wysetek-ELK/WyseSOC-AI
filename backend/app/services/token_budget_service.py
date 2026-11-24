@@ -225,14 +225,10 @@ class TokenBudgetService:
         model_name: Optional[str] = None,
         target_input_budget: Optional[int] = None,
     ) -> BudgetedPromptResult:
-        effective_target_budget = target_input_budget
-        if effective_target_budget is None and max_context_tokens > 4096:
-            effective_target_budget = cls.DEFAULT_TARGET_INPUT_BUDGET
-
         available_budget = cls.calculate_available_input_tokens(
             max_context_tokens=max_context_tokens,
             reserved_output_tokens=max_completion_tokens,
-            target_input_budget=effective_target_budget,
+            target_input_budget=target_input_budget,
         )
 
         # Deepcopy payload so original is unmutated
