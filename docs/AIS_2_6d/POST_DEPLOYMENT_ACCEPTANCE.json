@@ -1,20 +1,24 @@
 {
   "phase": "AIS 2.6d",
-  "evaluated_at_utc": "2026-11-24T17:40:00Z",
-  "upla_execution_id": "upla-20261124-162935-590fb4",
-  "workspace_fingerprint": "9da7e7fa5a9449bdd7da0fae42260892e748ed0b3ff4bcf985bd23fb533c8611",
+  "evaluated_at_utc": "2026-11-24T17:45:00Z",
+  "upla_execution_id": "upla-20261124-163214-0351a7",
+  "workspace_fingerprint": "b358ec8cb7bf5e7bdd9ca581cdd4c81d7b1ee9eeff1d862a2e5339abfacf17d4",
   "gate_1_github_sync": {
     "policy": "HUMAN_APPROVAL_GATE_1_ENFORCED",
-    "status": "AWAITING_OPERATOR_GATE_1_DECISION",
-    "notes": "Governance checks passed (Exit 0, 0 blockers). Push denied pending operator explicit YES/NO approval."
+    "status": "APPROVED_AND_SYNCED",
+    "commit_sha": "8770e07117e1a80d15bd4600c15c56f778669f63",
+    "remote_verified": true,
+    "approval_id": "apr-52b6fcd27b8a"
   },
   "gate_2_remote_deployment": {
     "policy": "HUMAN_APPROVAL_GATE_2_ENFORCED",
-    "status": "DENIED_BY_DEFAULT",
-    "notes": "Remote deployment strictly barred until Gate 1 git sync completes and operator explicitly approves Gate 2."
+    "status": "APPROVED_AND_DEPLOYED",
+    "approval_id": "apr-4b455da61828",
+    "deployed_server": "server-1 (172.26.41.240)",
+    "deployment_code": "DEPLOYED_AND_VERIFIED"
   },
   "runtime_state": {
-    "server_1_status": "CURRENT_DEPLOYMENT_HEALTHY",
+    "server_1_status": "DEPLOYED_AND_VERIFIED_HEALTHY",
     "server_2_gpu_status": "STOPPED_CHECKPOINT_B_ACTIVE",
     "local_workspace_status": "INTEGRITY_VERIFIED_ALL_REGRESSIONS_PASS"
   }

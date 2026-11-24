@@ -1,17 +1,19 @@
 {
   "phase": "AIS 2.6d",
-  "evaluated_at_utc": "2026-11-24T17:40:00Z",
+  "evaluated_at_utc": "2026-11-24T17:45:00Z",
   "project_id": "proj-98348ed9ed5e2ba1",
   "project_name": "SOC-AI-Agent",
   "upla_mode": "FULL_WORKFLOW",
-  "upla_execution_id": "upla-20261124-162935-590fb4",
-  "workspace_fingerprint": "9da7e7fa5a9449bdd7da0fae42260892e748ed0b3ff4bcf985bd23fb533c8611",
+  "upla_execution_id": "upla-20261124-163214-0351a7",
+  "upla_final_status": "COMPLETED_FULL_WORKFLOW",
+  "deployed_git_sha": "8770e07117e1a80d15bd4600c15c56f778669f63",
+  "workspace_fingerprint": "b358ec8cb7bf5e7bdd9ca581cdd4c81d7b1ee9eeff1d862a2e5339abfacf17d4",
   "governance_status": "PASS_WITH_WARNING_NON_BLOCKING",
   "security_scan_status": "PASS",
   "repository": {
     "remote_url": "https://github.com/Wysetek-ELK/WyseSOC-AI.git",
     "active_branch": "feature/phase3-compact-ui",
-    "git_head_commit": "HEAD"
+    "git_head_commit": "8770e07117e1a80d15bd4600c15c56f778669f63"
   },
   "servers": {
     "server_1": {
@@ -21,8 +23,10 @@
       "host": "172.26.41.240",
       "deploy_dir": "/opt/wysesoc-ai",
       "environment": "staging",
+      "deployed_commit_sha": "8770e07117e1a80d15bd4600c15c56f778669f63",
       "services": ["ai-verdict-backend.service", "ai-verdict-frontend.service"],
-      "health_endpoints": ["http://127.0.0.1:3000/login", "http://127.0.0.1:8000/api/health"]
+      "health_endpoints": ["http://127.0.0.1:3000/login", "http://127.0.0.1:8000/api/health"],
+      "deployment_status": "DEPLOYED_AND_VERIFIED"
     },
     "server_2": {
       "id": "server-2",
