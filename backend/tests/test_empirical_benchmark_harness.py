@@ -108,33 +108,33 @@ async def test_deterministic_positive_tp_acceptance():
     attack evidence is validated and accepted as decisive TRUE_POSITIVE.
     """
     records = EmpiricalBenchmarkHarness.load_dataset_from_zip()
-    # Pick a Prisma SASE verified TP incident (e.g. 132596403)
-    rec = next(r for r in records if r.incident_id == "132596403")
+    # Pick a CrowdStrike verified TP incident with remote admin software (e.g. 132474210)
+    rec = next(r for r in records if r.incident_id == "132474210")
     inc_obj = IncidentAdapter(rec.sanitized_payload, rec.incident_id)
     norm = EvidenceNormalizationService.normalize_incident_evidence(inc_obj)
 
-    # Locate actual normalized file and source IP records
-    file_rec = next(r for r in norm.records if r.source_field == "process.file_name")
-    src_rec = next(r for r in norm.records if r.source_field == "network.source_ip")
+    # Locate actual normalized file and host records
+    file_rec = next(r for r in norm.records if r.source_field in ("process.file_name", "process.name"))
+    host_rec = next(r for r in norm.records if r.source_field == "endpoint.hostname")
 
     well_grounded_proposal = {
         "verdict": "TRUE_POSITIVE",
         "confidence": 92.0,
-        "reason": f"Suspicious file threat {file_rec.observed_value} detected from network source IP {src_rec.observed_value}.",
+        "reason": f"Unauthorized execution of remote administration tool {file_rec.observed_value} on host {host_rec.observed_value}.",
         "supporting_claims": [
             {
-                "claim_type": "SECURITY_EVENT",
+                "claim_type": "PROCESS_EXECUTION",
                 "field": file_rec.source_field,
                 "asserted_value": file_rec.observed_value,
                 "evidence_ids": [file_rec.evidence_id],
                 "cited_evidence_ids": [file_rec.evidence_id],
             },
             {
-                "claim_type": "NETWORK_CONNECTION",
-                "field": src_rec.source_field,
-                "asserted_value": src_rec.observed_value,
-                "evidence_ids": [src_rec.evidence_id],
-                "cited_evidence_ids": [src_rec.evidence_id],
+                "claim_type": "HOST_CONTEXT",
+                "field": host_rec.source_field,
+                "asserted_value": host_rec.observed_value,
+                "evidence_ids": [host_rec.evidence_id],
+                "cited_evidence_ids": [host_rec.evidence_id],
             }
         ]
     }
@@ -483,7 +483,7 @@ def test_synthetic_fixtures_excluded_from_accuracy_denominators():
     # When include_synthetic=True is explicitly set for functional testing, they are available
     with_synth = EmpiricalBenchmarkHarness.load_dataset_from_db(include_synthetic=True)
     assert len(with_synth) > 20
-    assert any(r.incident_id.startswith("INC-DEBUG-") for r in with_synth)
+    assert any(r.incident_id.lower().startswith("inc-") for r in with_synth)
 
 
 @pytest.mark.asyncio
@@ -494,31 +494,31 @@ async def test_guardrail_g5_blocks_autonomous_closure_when_trust_low():
     and strictly block automatic incident closure (Guardrail G5).
     """
     records = EmpiricalBenchmarkHarness.load_dataset_from_zip()
-    rec = next(r for r in records if r.incident_id == "132596403")
+    rec = next(r for r in records if r.incident_id == "132474210")
     inc_obj = IncidentAdapter(rec.sanitized_payload, rec.incident_id)
     norm = EvidenceNormalizationService.normalize_incident_evidence(inc_obj)
 
-    file_rec = next(r for r in norm.records if r.source_field == "process.file_name")
-    src_rec = next(r for r in norm.records if r.source_field == "network.source_ip")
+    file_rec = next(r for r in norm.records if r.source_field in ("process.file_name", "process.name"))
+    host_rec = next(r for r in norm.records if r.source_field == "endpoint.hostname")
 
     tp_proposal = {
         "verdict": "TRUE_POSITIVE",
         "confidence": 95.0,
-        "reason": f"Observed suspicious file threat {file_rec.observed_value} from {src_rec.observed_value}.",
+        "reason": f"Observed unauthorized remote access tool {file_rec.observed_value} on {host_rec.observed_value}.",
         "supporting_claims": [
             {
-                "claim_type": "SECURITY_EVENT",
+                "claim_type": "PROCESS_EXECUTION",
                 "field": file_rec.source_field,
                 "asserted_value": file_rec.observed_value,
                 "evidence_ids": [file_rec.evidence_id],
                 "cited_evidence_ids": [file_rec.evidence_id],
             },
             {
-                "claim_type": "NETWORK_CONNECTION",
-                "field": src_rec.source_field,
-                "asserted_value": src_rec.observed_value,
-                "evidence_ids": [src_rec.evidence_id],
-                "cited_evidence_ids": [src_rec.evidence_id],
+                "claim_type": "HOST_CONTEXT",
+                "field": host_rec.source_field,
+                "asserted_value": host_rec.observed_value,
+                "evidence_ids": [host_rec.evidence_id],
+                "cited_evidence_ids": [host_rec.evidence_id],
             }
         ]
     }

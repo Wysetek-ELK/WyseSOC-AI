@@ -286,7 +286,8 @@ class OpenAICompatibleProvider(BaseModelProvider):
         if "SECTION 11:" in prompt_text:
             system_instruction = (
                 f"{prompt_text}\n\n"
-                "Note: Populate supporting_claims[].cited_evidence_ids (or evidence_ids) strictly from incident.canonical_evidence[].evidence_id."
+                "Note: Populate supporting_claims[].cited_evidence_ids (or evidence_ids) strictly from incident.canonical_evidence[].evidence_id.\n"
+                "IMPORTANT: Output ONLY compact JSON. Keep 'reason' concise (< 120 words). Limit 'supporting_claims' to max 3 factual items. Do NOT dump raw logs."
             )
         else:
             system_instruction = (
@@ -295,7 +296,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 "{\n"
                 '  "verdict": "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ATTENTION",\n'
                 '  "confidence": <float 0-100>,\n'
-                '  "reason": "<string>",\n'
+                '  "reason": "<concise analytical summary under 120 words>",\n'
                 '  "supporting_claims": [\n'
                 '    {\n'
                 '      "claim_type": "OBSERVED_FACT" | "TELEMETRY_OBSERVATION" | "PROCESS_EXECUTION" | "NETWORK_CONNECTION" | "FILE_HASH" | "USER_CONTEXT",\n'
@@ -306,11 +307,12 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 '      "evidence_ids": ["<canonical evidence_id from incident.canonical_evidence>"]\n'
                 "    }\n"
                 "  ],\n"
-                '  "supporting_evidence": ["<string>"],\n'
-                '  "contradictory_evidence": ["<string>"],\n'
-                '  "missing_evidence": ["<string>"],\n'
-                '  "analyst_questions": ["<string>"]\n'
-                "}"
+                '  "supporting_evidence": ["<concise string>"],\n'
+                '  "contradictory_evidence": ["<concise string>"],\n'
+                '  "missing_evidence": ["<concise string>"],\n'
+                '  "analyst_questions": ["<concise string>"]\n'
+                "}\n"
+                "IMPORTANT: Output ONLY the compact JSON object. Keep 'reason' strictly under 120 words. Limit 'supporting_claims' to at most 3 factual items. Do NOT echo raw event logs or prompt text."
             )
 
         # Construct compact valid JSON prompt for local LLM (avoids indent bloat inside finite context window)
