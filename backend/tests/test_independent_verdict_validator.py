@@ -87,6 +87,12 @@ def test_scenario_21_verified_tp_accepted():
                 "field": "process.name",
                 "asserted_value": "powershell.exe",
                 "evidence_ids": [records[0].evidence_id],
+            },
+            {
+                "claim_type": "PROCESS_EXECUTION",
+                "field": "process.command_line",
+                "asserted_value": "powershell.exe -w hidden -enc JABzAD0A",
+                "evidence_ids": [records[1].evidence_id],
             }
         ]
     }
