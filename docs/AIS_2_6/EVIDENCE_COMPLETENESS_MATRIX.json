@@ -1,0 +1,47 @@
+{
+  "evaluation_version": "AIS 2.6",
+  "total_incidents": 20,
+  "categories": {
+    "CrowdStrike": {
+      "required_fields": [
+        "process.file_name",
+        "endpoint.hostname",
+        "process.command_line"
+      ],
+      "observed_completeness": 1.0,
+      "missing_critical_telemetry": false,
+      "primary_evidence_gap": "Absence of corroborating external C2 or unauthorized privilege escalation tradecraft, and absence of verified enterprise authorization/ITSM tickets to corroborate benign administrative use.",
+      "cause_of_abstention": "Model proposed 4 TP (rejected by validator due to dual-use binary without attack tradecraft) and 6 abstentions (corroborating evidence absent and rationale contained reasoning contradictions)."
+    },
+    "Prisma SASE": {
+      "required_fields": [
+        "process.file_name",
+        "network.source_ip",
+        "network.destination_ip",
+        "url.domain"
+      ],
+      "observed_completeness": 0.45,
+      "missing_critical_telemetry": true,
+      "primary_evidence_gap": "Full HTTP request headers, file hashes, and parent process context are absent from raw syslog export. Furthermore, the incident payload exceeded Server 2 4K prompt budget (3,549\u20133,747 tokens > 3,328 budget).",
+      "cause_of_abstention": "Preflight interception by TOKEN_BUDGET_GUARD under active 4,096 context window to prevent silent truncation and token overflow on Server 2."
+    }
+  },
+  "enrichment_audit": {
+    "active_enrichments": [
+      {
+        "enrichment_type": "ASSET_MANAGEMENT",
+        "source": "INTERNAL_CMDB_MOCK",
+        "provenance": "UNTRUSTED_SIMULATED",
+        "in_evaluation_inputs": false,
+        "notes": "CMDB asset tags strictly excluded from model prompts to prevent historical evaluation leakage."
+      },
+      {
+        "enrichment_type": "THREAT_INTEL",
+        "source": "VIRUSTOTAL_REPUTATION_CACHE",
+        "provenance": "STRICT_CANONICAL_ONLY",
+        "in_evaluation_inputs": false,
+        "notes": "Reputation data only admitted when explicitly present in historical incident telemetry."
+      }
+    ]
+  }
+}

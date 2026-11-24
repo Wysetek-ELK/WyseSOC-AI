@@ -1,0 +1,80 @@
+{
+  "project": "Verdictum AI",
+  "phase": "AIS 2.6",
+  "objective": "Certified Dataset, Actual 8K Runtime Activation & Real Verdict Intelligence Validation",
+  "evaluation_id": "upla-20261124-070638-6cd7fe",
+  "deployed_sha": "71bf3ba2969e3082c9e2d6b522abdaaef2613c80",
+  "github_branch": "feature/phase3-compact-ui",
+  "github_remote_verified": true,
+  "server_1": {
+    "host": "172.26.41.240",
+    "status": "HEALTHY",
+    "services": [
+      "ai-verdict-backend",
+      "ai-verdict-frontend",
+      "redis",
+      "postgresql"
+    ],
+    "deployed_sha": "71bf3ba2969e3082c9e2d6b522abdaaef2613c80"
+  },
+  "server_2": {
+    "host": "13.204.214.64:8000",
+    "gpu_model": "NVIDIA A10G (24GB VRAM)",
+    "vllm_max_model_len": 4096,
+    "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "reserved_completion_tokens": 768,
+    "available_prompt_budget": 3328,
+    "8k_activation_status": "BLOCKED_HOST_ACCESS"
+  },
+  "metrics_summary": {
+    "total_evaluated_incidents": 20,
+    "live_gpu_executions": 10,
+    "preflight_interceptions": 10,
+    "total_live_gpu_prompt_tokens": 33702,
+    "total_live_gpu_completion_tokens": 4633,
+    "total_gpu_tokens_consumed": 38335,
+    "preflight_evaluated_tokens": 36518,
+    "model_proposed_tp": 4,
+    "model_proposed_fp": 0,
+    "model_proposed_abstentions": 6,
+    "validator_accepted_decisive": 0,
+    "coverage_rate": 0.0,
+    "coverage_ci_95": [
+      0.0,
+      0.1611
+    ],
+    "precision": null,
+    "recall": null,
+    "specificity": null,
+    "fpr": null,
+    "fnr": null,
+    "selective_accuracy": null
+  },
+  "deliverables": {
+    "json_artifacts": [
+      "DATASET_MANIFEST.json",
+      "GROUND_TRUTH_MANIFEST.json",
+      "DATASET_PARTITION_MANIFEST.json",
+      "LIVE_EXECUTION_LEDGER.jsonl",
+      "EVIDENCE_COMPLETENESS_MATRIX.json",
+      "ACCEPTANCE_GATE_MATRIX.json",
+      "DATASET_SHORTFALL.json",
+      "FINAL_EVIDENCE.json"
+    ],
+    "markdown_reports": [
+      "01_AIS_2_5A_RESIDUAL_INTEGRITY_CLOSEOUT.md",
+      "02_ACTUAL_8K_GPU_RUNTIME_ACTIVATION.md",
+      "03_HISTORICAL_DATASET_DISCOVERY_AND_ACQUISITION.md",
+      "04_RULE_SPECIFIC_GROUND_TRUTH_CERTIFICATION.md",
+      "05_EVIDENCE_COMPLETENESS_AND_CONTEXT_ENRICHMENT.md",
+      "06_DATASET_PARTITIONING_AND_LEAKAGE_VALIDATION.md",
+      "07_VALIDATOR_AND_EVIDENCE_QUALITY_CORRECTIONS.md",
+      "08_FIVE_INCIDENT_REAL_GPU_PILOT.md",
+      "09_FULL_HISTORICAL_LIVE_BENCHMARK.md",
+      "10_CERTIFIED_DEVELOPMENT_COHORT_BASELINE.md",
+      "11_EMPIRICAL_ACCURACY_AND_COVERAGE.md",
+      "12_SECURITY_UI_REGRESSION_AND_DEPLOYMENT.md",
+      "13_FINAL_ACCEPTANCE_AND_AIS_2_7_READINESS.md"
+    ]
+  }
+}

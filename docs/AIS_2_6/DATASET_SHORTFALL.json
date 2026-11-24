@@ -1,0 +1,20 @@
+{
+  "target_certified_tp_count": 30,
+  "target_certified_fp_count": 30,
+  "target_total_certified": 60,
+  "discovered_historical_incidents": 20,
+  "discovered_raw_tp_resolutions": 10,
+  "discovered_raw_fp_resolutions": 10,
+  "independently_certified_tp_count": 0,
+  "independently_certified_fp_count": 0,
+  "shortfall_certified_tp": 30,
+  "shortfall_certified_fp": 30,
+  "total_shortfall": 60,
+  "root_cause_analysis": {
+    "siem_database_state": "Server 1 PostgreSQL database contains 8,770 incidents; 8,335 are Website Access Policy Violations without resolutions; only 25 incidents have resolution tags.",
+    "historical_export_state": "fixtures/Incident json.zip contains 20 authentic incidents with analyst resolution strings ('True Positive', 'False Positive').",
+    "certification_barrier": "Zero incidents have received independent, double-blind cryptographic certification from senior security architects with ground-truth forensics. The historical SIEM analyst resolutions represent operational triage closures rather than independently audited ground truth.",
+    "fortisiem_live_harvesting": "Live FortiSIEM supervisor (https://172.26.26.31) is reachable (26ms RTT) but returned HTTP 401 Unauthorized for super/test. Automated harvesting of additional historical incidents is blocked pending valid credentials."
+  },
+  "remediation_roadmap": "AIS 2.7 requires establishing a certified SOC analyst review committee to independently adjudicate and cryptographically certify at least 30 TPs and 30 FPs using dual-analyst blind consensus."
+}

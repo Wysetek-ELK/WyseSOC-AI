@@ -1,0 +1,72 @@
+{
+  "partition_strategy": "LEAKAGE_FREE_CLUSTER_AWARE_PARTITIONING",
+  "version": "AIS 2.6",
+  "cluster_integrity_guarantee": "All members of a telemetry cluster reside strictly within one partition. Zero cross-partition cluster leakage.",
+  "partitions": {
+    "PARTITION_A_DEVELOPMENT_CALIBRATION": {
+      "purpose": "Algorithm development, prompt engineering, policy compilation calibration, and validator tuning.",
+      "leakage_boundary": "Eligible for prompt development and error analysis. Never used for final held-out accuracy reporting.",
+      "total_incidents": 8,
+      "clusters_assigned": [
+        "CLUSTER-1"
+      ],
+      "cluster_members_count": 5,
+      "independent_incidents_count": 3,
+      "incident_ids": [
+        "132438483",
+        "132439932",
+        "132441815",
+        "132461358",
+        "132461368",
+        "132472498",
+        "132474210",
+        "132502453"
+      ]
+    },
+    "PARTITION_B_INDEPENDENT_HELD_OUT_EVALUATION": {
+      "purpose": "Independent, held-out evaluation of empirical accuracy and selective coverage.",
+      "leakage_boundary": "Strictly held-out. Never accessible during prompt authoring or retrieval indexing.",
+      "total_incidents": 7,
+      "clusters_assigned": [
+        "CLUSTER-2"
+      ],
+      "cluster_members_count": 2,
+      "independent_incidents_count": 5,
+      "incident_ids": [
+        "132501348",
+        "132527297",
+        "132499009",
+        "132499023",
+        "132499745",
+        "132578774",
+        "132591888"
+      ]
+    },
+    "PARTITION_C_AMBIGUOUS_INSUFFICIENT_EVIDENCE": {
+      "purpose": "Stress testing of abstention safety, context truncation detection, and ambiguous evidence handling.",
+      "leakage_boundary": "Isolated cohort for abstention and token-budget guardrail validation.",
+      "total_incidents": 5,
+      "clusters_assigned": [
+        "CLUSTER-3"
+      ],
+      "cluster_members_count": 3,
+      "independent_incidents_count": 2,
+      "incident_ids": [
+        "132599145",
+        "132599146",
+        "132599330",
+        "132595592",
+        "132596403"
+      ]
+    }
+  },
+  "partition_totals_verification": {
+    "partition_a_count": 8,
+    "partition_b_count": 7,
+    "partition_c_count": 5,
+    "grand_total": 20,
+    "cluster_1_cross_contamination": false,
+    "cluster_2_cross_contamination": false,
+    "cluster_3_cross_contamination": false
+  }
+}

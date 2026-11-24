@@ -1,0 +1,86 @@
+{
+  "benchmark_version": "AIS 2.6",
+  "generation_timestamp": "2026-11-24T12:42:00Z",
+  "evaluation_id": "upla-20261124-070638-6cd7fe",
+  "deployed_application_sha": "71bf3ba2969e3082c9e2d6b522abdaaef2613c80",
+  "total_incidents": 20,
+  "categories": {
+    "CrowdStrike": {
+      "incident_count": 10,
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "execution_provenance": "LIVE_PROVIDER",
+      "dispatched_to_gpu": 10,
+      "preflight_intercepted": 0,
+      "total_prompt_tokens": 33702,
+      "total_completion_tokens": 4633,
+      "total_gpu_tokens": 38335
+    },
+    "Prisma SASE": {
+      "incident_count": 10,
+      "rule_name": "Prisma SASE: Suspicious File Download",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "execution_provenance": "PREFLIGHT_ABSTENTION",
+      "reason_code": "TOKEN_BUDGET_GUARD",
+      "dispatched_to_gpu": 0,
+      "preflight_intercepted": 10,
+      "total_prompt_tokens": 0,
+      "total_completion_tokens": 0,
+      "total_gpu_tokens": 0,
+      "total_estimated_prompt_tokens": 36518
+    }
+  },
+  "token_accounting_summary": {
+    "live_prompt_tokens": 33702,
+    "live_completion_tokens": 4633,
+    "total_live_gpu_consumed_tokens": 38335,
+    "preflight_evaluated_unconsumed_tokens": 36518,
+    "combined_accounting_total": 74853,
+    "accounting_separation_enforced": true,
+    "provenance_types": [
+      "LIVE_PROVIDER",
+      "PREFLIGHT_ABSTENTION"
+    ]
+  },
+  "cluster_summary": {
+    "total_clustered_incidents": 10,
+    "total_clusters": 3,
+    "total_independent_incidents": 10,
+    "clusters": {
+      "CLUSTER-1": {
+        "rule": "CrowdStrike",
+        "member_count": 5,
+        "incident_ids": [
+          "132438483",
+          "132439932",
+          "132441815",
+          "132461358",
+          "132461368"
+        ],
+        "target_host": "DESKTOP-E0G2R49",
+        "binary": "UltraViewer_setup.exe"
+      },
+      "CLUSTER-2": {
+        "rule": "CrowdStrike",
+        "member_count": 2,
+        "incident_ids": [
+          "132501348",
+          "132527297"
+        ],
+        "target_host": "TSI-IT-002-95",
+        "binary": "UltraViewer_setup.exe"
+      },
+      "CLUSTER-3": {
+        "rule": "Prisma SASE",
+        "member_count": 3,
+        "incident_ids": [
+          "132599145",
+          "132599146",
+          "132599330"
+        ],
+        "target_host": "10.66.19.16",
+        "source_domain": "surveysensum.com"
+      }
+    }
+  }
+}

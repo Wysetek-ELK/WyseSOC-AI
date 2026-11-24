@@ -1,0 +1,43 @@
+# 09 — Full Historical Live Benchmark Execution Report
+
+## Executive Summary
+
+This report documents the complete 20-incident live benchmark evaluation across CrowdStrike and Prisma SASE rules. The authoritative execution ledger has been compiled under `docs/AIS_2_6/LIVE_EXECUTION_LEDGER.jsonl` with normalized execution provenances.
+
+---
+
+## 1. Benchmark Execution Ledger Summary
+
+| Incident ID | Rule Category | Provenance | Latency | Prompt Tok | Comp Tok | Proposed Verdict | Final Verdict | Validation Status |
+|---|---|---|---|---|---|---|---|---|
+| `132438483` | CrowdStrike | LIVE_PROVIDER | 23,835 ms | 3,365 | 491 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | ABSTENTION_WITH_CONTRADICTION |
+| `132439932` | CrowdStrike | LIVE_PROVIDER | 21,774 ms | 3,375 | 484 | TRUE_POSITIVE | REQUIRES_ATTENTION | REJECTED |
+| `132441815` | CrowdStrike | LIVE_PROVIDER | 21,873 ms | 3,365 | 484 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | ABSTENTION_WITH_CONTRADICTION |
+| `132461358` | CrowdStrike | LIVE_PROVIDER | 21,743 ms | 3,375 | 484 | TRUE_POSITIVE | REQUIRES_ATTENTION | REJECTED |
+| `132461368` | CrowdStrike | LIVE_PROVIDER | 21,980 ms | 3,365 | 484 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | ABSTENTION_WITH_CONTRADICTION |
+| `132472498` | CrowdStrike | LIVE_PROVIDER | 21,650 ms | 3,347 | 444 | TRUE_POSITIVE | REQUIRES_ATTENTION | REJECTED |
+| `132474210` | CrowdStrike | LIVE_PROVIDER | 21,540 ms | 3,347 | 444 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | ABSTENTION_WITH_CONTRADICTION |
+| `132501348` | CrowdStrike | LIVE_PROVIDER | 22,530 ms | 3,375 | 484 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | ABSTENTION_WITH_CONTRADICTION |
+| `132502453` | CrowdStrike | LIVE_PROVIDER | 23,410 ms | 3,418 | 490 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | ABSTENTION_WITH_CONTRADICTION |
+| `132527297` | CrowdStrike | LIVE_PROVIDER | 20,853 ms | 3,370 | 444 | TRUE_POSITIVE | REQUIRES_ATTENTION | REJECTED |
+| `132499009` | Prisma SASE | PREFLIGHT_ABSTENTION | 445 ms | 0 | 0 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| `132499023` | Prisma SASE | PREFLIGHT_ABSTENTION | 454 ms | 0 | 0 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| `132499745` | Prisma SASE | PREFLIGHT_ABSTENTION | 448 ms | 0 | 0 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| `132578774` | Prisma SASE | PREFLIGHT_ABSTENTION | 442 ms | 0 | 0 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| `132591888` | Prisma SASE | PREFLIGHT_ABSTENTION | 451 ms | 0 | 0 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| `132595592` | Prisma SASE | PREFLIGHT_ABSTENTION | 449 ms | 0 | 0 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| `132596403` | Prisma SASE | PREFLIGHT_ABSTENTION | 446 ms | 0 | 0 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| `132599145` | Prisma SASE | PREFLIGHT_ABSTENTION | 453 ms | 0 | 0 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| `132599146` | Prisma SASE | PREFLIGHT_ABSTENTION | 455 ms | 0 | 0 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| `132599330` | Prisma SASE | PREFLIGHT_ABSTENTION | 447 ms | 0 | 0 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+
+---
+
+## 2. Resource & Cost Metrics
+- **Total Live GPU Invocations**: 10
+- **Total Preflight Interceptions**: 10
+- **Live GPU Prompt Tokens**: 33,702
+- **Live GPU Completion Tokens**: 4,633
+- **Total Live GPU Consumed Tokens**: 38,335 tokens
+- **Preflight Estimated Unconsumed Tokens**: 36,518 tokens
+- **Estimated GPU Compute Cost**: ~$0.08 USD (AWS g5.xlarge on-demand)
