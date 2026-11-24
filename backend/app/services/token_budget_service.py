@@ -446,7 +446,7 @@ class TokenBudgetService:
 
         # Trimming Step 3e: Deduplicate verbose events[0] raw_log/attributes if still over budget
         # and canonical_evidence already carries normalized/aggregated telemetry.
-        if (total_tokens > available_budget or int(max_context_tokens) <= 4096) and payload_work.get("events") and payload_work.get("canonical_evidence"):
+        if total_tokens > available_budget and payload_work.get("events") and payload_work.get("canonical_evidence"):
             slim_events = []
             for ev in payload_work["events"][:1]:
                 if isinstance(ev, dict):
@@ -460,7 +460,7 @@ class TokenBudgetService:
 
         # Step 3f: Final Exact Wire Token Calculation & Progressive Trimming of Non-Contract Telemetry
         CORE_PROTECTED_FIELDS = {
-            "process.command_line", "process.name", "process.file_name", "process.parent_name",
+            "process.command_line", "process.cmdline", "cmdline", "process.name", "process.file_name", "process.parent_name",
             "process.parent_command_line", "file.hash_sha256", "file.hash_md5", "security.action",
             "user.name", "endpoint.hostname", "network.source_ip", "network.destination_ip",
         }
