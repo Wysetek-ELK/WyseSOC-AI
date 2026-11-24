@@ -247,30 +247,73 @@ class PolicyCompilerService:
             estimated_tokens=cls._estimate_tokens(s4_content),
         )
 
-        # 5. Section 5: TRUE_POSITIVE_INDICATORS
-        s5_content = (prompt_version.tp_indicators.strip() if prompt_version and prompt_version.tp_indicators else "Confirmed malicious execution, LOLBin abuse, credential dumping, or active C2 beaconing.")
+        # 5. Section 5: TRUE_POSITIVE_INDICATORS (Rule-aware criteria)
+        r_id_upper = str(getattr(rule, "rule_id", "") or "").upper()
+        r_name_upper = str(getattr(rule, "name", "") or "").upper()
+
+        if prompt_version and prompt_version.tp_indicators and prompt_version.tp_indicators.strip():
+            s5_content = prompt_version.tp_indicators.strip()
+        elif "CS_SUSPICIOUS_ACTIVITY" in r_id_upper or "CROWDSTRIKE" in r_name_upper or "ULTRAVIEWER" in r_name_upper:
+            s5_content = (
+                "Unauthorized installation, service registration, or execution of remote administration tools "
+                "(e.g. UltraViewer, TeamViewer, AnyDesk) on a managed endpoint without approved corporate change authorization. "
+                "The detection match and unauthorized execution attempt constitute a True Positive security policy violation "
+                "regardless of whether automated endpoint security intervened or secondary malware was dropped."
+            )
+        elif "PRISMA_SASE" in r_id_upper or "PRISMA" in r_name_upper or "SUSPICIOUS FILE" in r_name_upper:
+            s5_content = (
+                "Malicious executable or script download matching known threat intelligence, malicious payload destination, "
+                "or unauthorized transfer of restricted executable types in violation of gateway policy."
+            )
+        else:
+            s5_content = "Confirmed malicious activity, unauthorized tool execution, or detection condition match violating security policy."
+
         sec5 = CompiledPromptSection(
             section_index=5,
             section_id=PolicySectionType.TRUE_POSITIVE_INDICATORS,
-            title="TRUE POSITIVE INDICATORS (MALICIOUS ATTACK)",
+            title="TRUE POSITIVE INDICATORS (SECURITY OBJECTIVE / POLICY VIOLATION)",
             content=s5_content,
             is_trusted=True,
             estimated_tokens=cls._estimate_tokens(s5_content),
         )
 
-        # 6. Section 6: FALSE_POSITIVE_INDICATORS
-        s6_content = (prompt_version.fp_indicators.strip() if prompt_version and prompt_version.fp_indicators else "Identical source and destination (loopback/reflection), routine health probes, or authorized IT management.")
+        # 6. Section 6: FALSE_POSITIVE_INDICATORS (Rule-aware criteria)
+        if prompt_version and prompt_version.fp_indicators and prompt_version.fp_indicators.strip():
+            s6_content = prompt_version.fp_indicators.strip()
+        elif "CS_SUSPICIOUS_ACTIVITY" in r_id_upper or "CROWDSTRIKE" in r_name_upper or "ULTRAVIEWER" in r_name_upper:
+            s6_content = (
+                "Authorized IT remote support or administrative maintenance supported by an authoritative change ticket "
+                "(CHG/CR/ITSM), verified system administrator role, or false process identification where remote control "
+                "software was not executed."
+            )
+        elif "PRISMA_SASE" in r_id_upper or "PRISMA" in r_name_upper or "SUSPICIOUS FILE" in r_name_upper:
+            s6_content = (
+                "Benign static web application asset, stylesheet, UI client library, or SaaS feedback widget "
+                "(e.g., jquery.knob.js, clientlibs, surveysensum.com, analytics scripts) downloaded during normal SaaS "
+                "web application activity from clean destinations without malicious payloads."
+            )
+        else:
+            s6_content = "Authorized legitimate activity, routine operational probes, verified benign software, or false detection condition match."
+
         sec6 = CompiledPromptSection(
             section_index=6,
             section_id=PolicySectionType.FALSE_POSITIVE_INDICATORS,
-            title="FALSE POSITIVE INDICATORS (BENIGN OPERATIONAL NOISE)",
+            title="FALSE POSITIVE INDICATORS (BENIGN / AUTHORIZED OPERATIONAL ACTIVITY)",
             content=s6_content,
             is_trusted=True,
             estimated_tokens=cls._estimate_tokens(s6_content),
         )
 
         # 7. Section 7: ABSTENTION_CRITERIA
-        s7_content = (prompt_version.missing_info_criteria.strip() if prompt_version and prompt_version.missing_info_criteria else "Critical telemetry missing or conflicting indicators requiring human physical host containment.")
+        if prompt_version and prompt_version.missing_info_criteria and prompt_version.missing_info_criteria.strip():
+            s7_content = prompt_version.missing_info_criteria.strip()
+        elif "CS_SUSPICIOUS_ACTIVITY" in r_id_upper or "CROWDSTRIKE" in r_name_upper:
+            s7_content = "Ambiguous authorization context where remote tool presence is confirmed but user identity, change authorization, or administrative mandate cannot be determined from available telemetry."
+        elif "PRISMA_SASE" in r_id_upper or "PRISMA" in r_name_upper:
+            s7_content = "Unknown file with no threat intelligence reputation and no recognizable business SaaS application context, or contradictory destination telemetry."
+        else:
+            s7_content = "Critical telemetry missing or conflicting indicators requiring human physical host containment."
+
         sec7 = CompiledPromptSection(
             section_index=7,
             section_id=PolicySectionType.ABSTENTION_CRITERIA,

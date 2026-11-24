@@ -23,11 +23,13 @@ class TokenBudgetService:
     Guarantees that critical evidence values, command lines, and evidence IDs are NEVER naively truncated.
     If the mandatory core exceeds available budget, triggers safe fail-closed CONTEXT_WINDOW_EXCEEDED abstention.
     """
-    DEFAULT_MAX_CONTEXT = 16384
-    DEFAULT_MAX_COMPLETION = 1024
-    DEFAULT_TARGET_INPUT_BUDGET = 8192
+    DEFAULT_MAX_CONTEXT = 8192
+    DEFAULT_MAX_COMPLETION = 768
+    DEFAULT_TARGET_INPUT_BUDGET = 7424
     CHAT_TEMPLATE_OVERHEAD_TOKENS = 61
     WIRE_PROMPT_CEILING = 3328
+    WIRE_PROMPT_CEILING_4K = 3328
+    WIRE_PROMPT_CEILING_8K = 7424
     RESERVED_COMPLETION_HEADROOM = 768
 
     @classmethod
@@ -41,21 +43,30 @@ class TokenBudgetService:
         """
         Dynamically calculates available input tokens based on model context capacity,
         reserved output tokens, and chat template overhead.
-        Enforces a minimum of 768 tokens of completion headroom for 4,096-token hardware contexts,
-        guaranteeing that input prompt tokens plus completion headroom plus chat template
-        strictly comply with the physical context ceiling (prompt <= 3,328, completion = 768, total <= 4,096).
+        Enforces a minimum of 768 tokens of completion headroom for 4,096-token hardware contexts
+        (prompt <= 3,328, completion = 768, total <= 4,096) and 8,192-token contexts
+        (prompt <= 7,424, completion = 768, total <= 8,192).
         """
         comp_tokens = (
             int(reserved_output_tokens)
             if reserved_output_tokens is not None
             else (int(max_completion_tokens) if max_completion_tokens is not None else cls.DEFAULT_MAX_COMPLETION)
         )
-        if int(max_context_tokens) <= 4096:
+        ctx = int(max_context_tokens)
+        if ctx <= 4096:
             comp_tokens = max(cls.RESERVED_COMPLETION_HEADROOM, comp_tokens)
-            headroom = max(512, int(max_context_tokens) - comp_tokens)
-            return min(cls.WIRE_PROMPT_CEILING, headroom)
+            headroom = max(512, ctx - comp_tokens)
+            return min(cls.WIRE_PROMPT_CEILING_4K, headroom)
 
-        headroom = max(512, int(max_context_tokens) - comp_tokens)
+        if ctx <= 8192:
+            comp_tokens = max(cls.RESERVED_COMPLETION_HEADROOM, comp_tokens)
+            headroom = max(512, ctx - comp_tokens)
+            effective_headroom = min(cls.WIRE_PROMPT_CEILING_8K, headroom)
+            if target_input_budget is not None and int(target_input_budget) > 0:
+                return max(512, min(int(target_input_budget), effective_headroom))
+            return effective_headroom
+
+        headroom = max(512, ctx - comp_tokens)
         if target_input_budget is not None and int(target_input_budget) > 0:
             return max(512, min(int(target_input_budget), headroom))
         return headroom

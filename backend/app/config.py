@@ -95,10 +95,11 @@ class Settings(BaseSettings):
     LOCAL_LLM_MODEL_NAME: str = os.getenv("LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ")
     LOCAL_LLM_API_KEY: str = os.getenv("LOCAL_LLM_API_KEY", "EMPTY")
     LOCAL_LLM_TIMEOUT: float = float(os.getenv("LOCAL_LLM_TIMEOUT", "60.0"))
-    LOCAL_LLM_CONTEXT_BUDGET: int = int(os.getenv("LOCAL_LLM_CONTEXT_BUDGET", "16384"))
-    LOCAL_LLM_MAX_TOKENS: int = int(os.getenv("LOCAL_LLM_MAX_TOKENS", "1024"))
-    LOCAL_LLM_TARGET_INPUT_BUDGET: int = int(os.getenv("LOCAL_LLM_TARGET_INPUT_BUDGET", "8192"))
+    LOCAL_LLM_CONTEXT_BUDGET: int = int(os.getenv("LOCAL_LLM_CONTEXT_BUDGET", "8192"))
+    LOCAL_LLM_MAX_TOKENS: int = int(os.getenv("LOCAL_LLM_MAX_TOKENS", "768"))
+    LOCAL_LLM_TARGET_INPUT_BUDGET: int = int(os.getenv("LOCAL_LLM_TARGET_INPUT_BUDGET", "7424"))
     LOCAL_LLM_VERIFIED_MAX_MODEL_LEN: Optional[int] = None
+    LOCAL_LLM_DISCOVERED_AT_UTC: Optional[str] = None
     LOCAL_LLM_ALLOW_MOCK_FALLBACK: bool = False
     LOCAL_LLM_PROVENANCE: str = os.getenv("LOCAL_LLM_PROVENANCE", "AUTO")
     TEST_ENVIRONMENT_ID: str = os.getenv("AI_VERDICT_TEST_ENV", "")

@@ -379,6 +379,15 @@ export function AiTestWorkbench({
           <span className="text-slate-700">•</span>
 
           <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+            <span>Context:</span>
+            <span className="font-mono text-purple-300 bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-800/60 font-semibold" title="Runtime capacity: 8,192 tokens | Prompt Budget: 7,424 tokens | Output Reserve: 768 tokens">
+              8,192 tokens (7,424 prompt budget)
+            </span>
+          </div>
+
+          <span className="text-slate-700">•</span>
+
+          <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
             <span>GPU Server:</span>
             <span
               className={`inline-flex items-center gap-1 font-bold ${

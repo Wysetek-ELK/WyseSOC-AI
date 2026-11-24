@@ -121,6 +121,12 @@ class BenchmarkIncidentResult:
     model_name: Optional[str] = None
     provider_name: Optional[str] = None
     prompt_hash: Optional[str] = None
+    canonical_request_payload_hash: Optional[str] = None
+    wire_prompt_hash: Optional[str] = None
+    raw_evidence_hash: Optional[str] = None
+    layer_a_verdict: Optional[str] = None
+    layer_b_verdict: str = "REQUIRES_ATTENTION"
+    layer_c_verdict: str = "REQUIRES_ATTENTION"
     policy_version: Optional[str] = None
     raw_model_response_id: Optional[str] = None
     executed_at_utc: Optional[str] = None
@@ -220,6 +226,12 @@ class BenchmarkMetrics:
     unique_clusters_count: int = 0
     autonomous_decisive_count: int = 0
     autonomous_abstention_count: int = 0
+    layer_a_decisive_count: int = 0
+    layer_b_decisive_count: int = 0
+    layer_c_decisive_count: int = 0
+    layer_a_decisive_rate: Optional[float] = None
+    layer_b_decisive_rate: Optional[float] = None
+    layer_c_decisive_rate: Optional[float] = None
     unique_cluster_metrics: Optional[Dict[str, Any]] = None
 
 
@@ -747,11 +759,6 @@ class EmpiricalBenchmarkHarness:
 
         # Determine proposal heuristic based strictly on telemetry signature
         all_text = " ".join([str(r.observed_value).lower() for r in norm_result.records])
-        benign_indicators = (
-            "widget", "surveysensum", "clientlib", "analytics", "jquery", "select2", "adrum",
-            "ultraviewer", "teamviewer", "ccmexec", "tanclient"
-        )
-        has_benign_token = any(k in all_text for k in benign_indicators)
 
         if "Prisma" in incident.rule_name or "suspicious file" in incident.rule_name.lower():
             claims = []
@@ -771,11 +778,13 @@ class EmpiricalBenchmarkHarness:
                     "evidence_ids": [src_rec.evidence_id],
                     "cited_evidence_ids": [src_rec.evidence_id],
                 })
-            if has_benign_token:
+            web_asset_tokens = ("widget", "surveysensum", "clientlib", "analytics", "jquery", "select2", "adrum", ".js", ".css", ".png")
+            has_web_asset = any(k in all_text for k in web_asset_tokens)
+            if has_web_asset:
                 return {
                     "verdict": "FALSE_POSITIVE",
                     "confidence": 88.0,
-                    "reason": f"Benign web asset or administrative utility {threat_rec.observed_value if threat_rec else 'component'} observed from internal host {src_rec.observed_value if src_rec else 'unknown'}.",
+                    "reason": f"Benign static web asset or software library ({threat_rec.observed_value if threat_rec else 'component'}) observed during routine business browsing from {src_rec.observed_value if src_rec else 'unknown'}.",
                     "supporting_claims": claims,
                 }
             return {
@@ -802,10 +811,28 @@ class EmpiricalBenchmarkHarness:
                     "evidence_ids": [host_rec.evidence_id],
                     "cited_evidence_ids": [host_rec.evidence_id],
                 })
+            admin_agents = ("ccmexec", "tanclient", "qualysagent", "nessusagent")
+            has_admin_agent = any(a in all_text for a in admin_agents)
+            unauth_tools = ("ultraviewer", "teamviewer", "anydesk")
+            has_unauth_tool = any(u in all_text for u in unauth_tools)
+            if has_admin_agent:
+                return {
+                    "verdict": "FALSE_POSITIVE",
+                    "confidence": 88.0,
+                    "reason": f"Authorized enterprise management software ({proc_rec.observed_value if proc_rec else 'agent'}) active on {host_rec.observed_value if host_rec else 'host'}.",
+                    "supporting_claims": claims,
+                }
+            elif has_unauth_tool:
+                return {
+                    "verdict": "TRUE_POSITIVE",
+                    "confidence": 88.0,
+                    "reason": f"Unauthorized remote management software ({proc_rec.observed_value if proc_rec else 'tool'}) executed on {host_rec.observed_value if host_rec else 'host'} without approved IT change ticket.",
+                    "supporting_claims": claims,
+                }
             return {
-                "verdict": "FALSE_POSITIVE" if has_benign_token else "TRUE_POSITIVE",
+                "verdict": "TRUE_POSITIVE",
                 "confidence": 85.0,
-                "reason": f"Administrative activity on {host_rec.observed_value if host_rec else 'host'}." if has_benign_token else f"Suspicious activity detected on {host_rec.observed_value if host_rec else 'host'}.",
+                "reason": f"Suspicious activity detected on {host_rec.observed_value if host_rec else 'host'}.",
                 "supporting_claims": claims,
             }
 
@@ -843,6 +870,8 @@ class EmpiricalBenchmarkHarness:
             incident=inc_obj,
             events=None,
         )
+        raw_evidence_json = json.dumps([r.model_dump() for r in norm_result.records], sort_keys=True)
+        raw_evidence_hash = hashlib.sha256(raw_evidence_json.encode("utf-8")).hexdigest()
 
         # Step 2: Preflight Validation against Approved Contract
         contract = cls._create_rule_contract(incident_rec.rule_id, incident_rec.rule_name)
@@ -893,6 +922,12 @@ class EmpiricalBenchmarkHarness:
                 model_name="Qwen/Qwen2.5-7B-Instruct-AWQ",
                 provider_name="OpenAICompatibleProvider" if mode == "live" else "OFFLINE_SIMULATION",
                 prompt_hash=None,
+                canonical_request_payload_hash=None,
+                wire_prompt_hash=None,
+                raw_evidence_hash=raw_evidence_hash,
+                layer_a_verdict=None,
+                layer_b_verdict="REQUIRES_ATTENTION",
+                layer_c_verdict="REQUIRES_ATTENTION",
                 policy_version=None,
                 raw_model_response_id=None,
                 executed_at_utc=datetime.now(timezone.utc).isoformat(),
@@ -1003,6 +1038,12 @@ class EmpiricalBenchmarkHarness:
                     model_name="Qwen/Qwen2.5-7B-Instruct-AWQ",
                     provider_name="OpenAICompatibleProvider",
                     prompt_hash=hashlib.sha256(budgeted.budgeted_system_prompt.encode("utf-8")).hexdigest(),
+                    canonical_request_payload_hash=None,
+                    wire_prompt_hash=None,
+                    raw_evidence_hash=raw_evidence_hash,
+                    layer_a_verdict=None,
+                    layer_b_verdict="REQUIRES_ATTENTION",
+                    layer_c_verdict="REQUIRES_ATTENTION",
                     policy_version=policy_version,
                     raw_model_response_id=None,
                     executed_at_utc=datetime.now(timezone.utc).isoformat(),
@@ -1015,7 +1056,16 @@ class EmpiricalBenchmarkHarness:
             prompt_text = budgeted.budgeted_system_prompt
             if budgeted.budgeted_rag_block:
                 prompt_text += f"\n\n{budgeted.budgeted_rag_block}"
-            prompt_hash = hashlib.sha256(prompt_text.encode("utf-8")).hexdigest()
+            wire_prompt_hash = hashlib.sha256(prompt_text.encode("utf-8")).hexdigest()
+            prompt_hash = wire_prompt_hash
+            canon_req = {
+                "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+                "estimated_prompt_tokens": budgeted.estimated_wire_prompt_tokens,
+                "system_prompt": budgeted.budgeted_system_prompt,
+                "incident_payload": budgeted.budgeted_incident_payload,
+                "rule_spec": rule_spec,
+            }
+            canonical_request_payload_hash = hashlib.sha256(json.dumps(canon_req, sort_keys=True).encode("utf-8")).hexdigest()
 
             try:
                 live_start = time.perf_counter()
@@ -1102,6 +1152,12 @@ class EmpiricalBenchmarkHarness:
                     model_name=model_identifier,
                     provider_name="OpenAICompatibleProvider",
                     prompt_hash=prompt_hash,
+                    canonical_request_payload_hash=canonical_request_payload_hash,
+                    wire_prompt_hash=wire_prompt_hash,
+                    raw_evidence_hash=raw_evidence_hash,
+                    layer_a_verdict=None,
+                    layer_b_verdict="REQUIRES_ATTENTION",
+                    layer_c_verdict="REQUIRES_ATTENTION",
                     policy_version=policy_version,
                     raw_model_response_id=None,
                     executed_at_utc=datetime.now(timezone.utc).isoformat(),
@@ -1124,7 +1180,16 @@ class EmpiricalBenchmarkHarness:
             execution_provenance = "OFFLINE_SIMULATION"
             is_live_measurement = False
             raw_response_id = None
-            prompt_hash = None
+            canon_offline_text = f"OFFLINE_SIMULATION:{incident_rec.incident_id}:{incident_rec.rule_id}:{model_output.get('verdict')}"
+            wire_prompt_hash = hashlib.sha256(canon_offline_text.encode("utf-8")).hexdigest()
+            prompt_hash = wire_prompt_hash
+            canon_req = {
+                "incident_id": incident_rec.incident_id,
+                "rule_id": incident_rec.rule_id,
+                "offline_verdict": model_output.get("verdict"),
+                "offline_reason": model_output.get("reason"),
+            }
+            canonical_request_payload_hash = hashlib.sha256(json.dumps(canon_req, sort_keys=True).encode("utf-8")).hexdigest()
             policy_version = None
 
         raw_proposed_verdict = str(model_output.get("verdict") or "REQUIRES_ATTENTION").upper().strip()
@@ -1247,6 +1312,12 @@ class EmpiricalBenchmarkHarness:
             model_name=model_identifier,
             provider_name="OpenAICompatibleProvider" if is_live else "OFFLINE_DETERMINISTIC",
             prompt_hash=prompt_hash,
+            canonical_request_payload_hash=canonical_request_payload_hash,
+            wire_prompt_hash=wire_prompt_hash,
+            raw_evidence_hash=raw_evidence_hash,
+            layer_a_verdict=raw_proposed_verdict,
+            layer_b_verdict=val_res.final_verdict,
+            layer_c_verdict=autonomous_verdict,
             policy_version=policy_version,
             raw_model_response_id=raw_response_id,
             executed_at_utc=datetime.now(timezone.utc).isoformat(),
@@ -1394,15 +1465,27 @@ class EmpiricalBenchmarkHarness:
             m.fp_f1 = round(2.0 * (m.fp_precision * m.fp_recall) / (m.fp_precision + m.fp_recall), 4)
 
         # Overall & Balanced Accuracy
-        if decisive_total > 0:
+        if decisive_total > 0 and m.verified_ground_truth_count > 0:
             m.overall_accuracy = round((m.tp + m.tn) / decisive_total, 4)
             m.overall_accuracy_ci = cls.calculate_wilson_ci(m.tp + m.tn, decisive_total)
             m.selective_accuracy_detail = f"{m.tp + m.tn}/{decisive_total} ({round((m.tp + m.tn) / decisive_total * 100, 1)}%)"
         else:
             m.overall_accuracy = None
-            m.selective_accuracy_detail = "0/0 (No decisive predictions accepted)"
+            if m.verified_ground_truth_count == 0:
+                m.selective_accuracy_detail = "Not measured — certified ground truth unavailable"
+            else:
+                m.selective_accuracy_detail = "0/0 (No decisive predictions accepted)"
         if m.tp_recall is not None and m.fp_recall is not None:
             m.balanced_accuracy = round((m.tp_recall + m.fp_recall) / 2.0, 4)
+
+        # Layer Decisive Tracking (Layers A, B, C)
+        m.layer_a_decisive_count = sum(1 for r in results if r.raw_proposed_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"))
+        m.layer_b_decisive_count = sum(1 for r in results if r.is_decisive_accepted)
+        m.layer_c_decisive_count = sum(1 for r in results if r.autonomous_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"))
+        if m.total_incidents > 0:
+            m.layer_a_decisive_rate = round(m.layer_a_decisive_count / m.total_incidents, 4)
+            m.layer_b_decisive_rate = round(m.layer_b_decisive_count / m.total_incidents, 4)
+            m.layer_c_decisive_rate = round(m.layer_c_decisive_count / m.total_incidents, 4)
 
         # Means and Percentiles (Live inference only)
         if has_live and latencies:

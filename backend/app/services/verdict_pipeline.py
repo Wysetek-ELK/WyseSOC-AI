@@ -826,10 +826,13 @@ async def run_shared_verdict_pipeline(
         if verified_model_len is not None and int(verified_model_len) > 0
         else configured_ctx
     )
-    reserved_comp_tokens = int(model_profile.get("reserved_output_tokens") or getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
-    if effective_max_ctx <= 4096:
+    reserved_comp_tokens = int(model_profile.get("reserved_output_tokens") or getattr(settings, "LOCAL_LLM_MAX_TOKENS", 768) or 768)
+    if effective_max_ctx <= 8192:
         reserved_comp_tokens = 768
-    target_input = int(model_profile.get("target_input_budget") or getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192)
+    target_input = min(
+        max(512, effective_max_ctx - reserved_comp_tokens),
+        int(model_profile.get("target_input_budget") or getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 7424) or 7424)
+    )
 
     rule_spec = {
         "id": rule.id if rule else (incident.rule_id or "UNKNOWN"),

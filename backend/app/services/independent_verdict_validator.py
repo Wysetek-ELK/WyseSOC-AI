@@ -293,6 +293,25 @@ class IndependentVerdictValidator:
                                         action_directive = "Model reasoning contradicts observed canonical telemetry by asserting present fields are missing."
 
         # Check 5: Verdict-Specific Decision Criteria
+        # Rule archetype and rule identity
+        rule_id_str = str(getattr(contract, "rule_id", "") or "").lower()
+        archetype_str = str(getattr(contract, "detection_archetype", "") or "").lower()
+        is_suspicious_activity_rule = (
+            "cs_suspicious" in rule_id_str
+            or "crowdstrike" in rule_id_str
+            or "suspicious_activity" in rule_id_str
+            or "malware_execution" in archetype_str
+            or "unauthorized_access" in archetype_str
+            or "policy_violation" in archetype_str
+        )
+        is_file_threat_rule = (
+            "prisma" in rule_id_str
+            or "file_threat" in rule_id_str
+            or "suspicious_file" in rule_id_str
+            or "network_threat" in archetype_str
+            or "file_malware" in archetype_str
+        )
+
         if clean_prop_verdict == "TRUE_POSITIVE":
             # For TP: must meet evidence completeness AND provide at least one grounded claim representing genuine security tradecraft
             # (An automated EDR block, alert trigger, or bare binary filename alone does NOT establish adversary malice or tradecraft)
@@ -335,6 +354,29 @@ class IndependentVerdictValidator:
             has_definitive_malicious_tradecraft = False
             has_suspicious_dual_use_activity = False
             has_corroborating_attack_indicator = False
+
+            # Unauthorized Remote Administration / PUA Software (Rule 1 — Crowdstrike: Suspicious Activity)
+            unauthorized_remote_tools = (
+                "ultraviewer", "teamviewer", "anydesk", "remoteutilities",
+                "screenconnect", "logmein", "atera", "splashtop"
+            )
+            has_grounded_unauthorized_remote_tool = False
+            if is_suspicious_activity_rule:
+                for c in claim_grounding.claims:
+                    if c.is_grounded:
+                        c_val_l = str(c.asserted_value or "").lower()
+                        c_field_l = str(c.field or "").lower()
+                        if any(tool in c_val_l for tool in unauthorized_remote_tools):
+                            if c_field_l in ("process.name", "process.file_name", "process.command_line", "file.name", "process.file_path", "security.raw_log"):
+                                has_grounded_unauthorized_remote_tool = True
+                                break
+                if not has_grounded_unauthorized_remote_tool:
+                    for r in normalization_result.records:
+                        if r.source_field in ("process.name", "process.file_name", "process.command_line", "file.name", "process.file_path"):
+                            val_l = str(r.observed_value or "").lower()
+                            if any(tool in val_l for tool in unauthorized_remote_tools):
+                                has_grounded_unauthorized_remote_tool = True
+                                break
 
             # Definitive malicious tradecraft: unambiguous attack tools, credential theft syntax, stealth obfuscation
             definitive_forensic_patterns = (
@@ -446,6 +488,9 @@ class IndependentVerdictValidator:
                 has_grounded_security_tradecraft = True
             elif has_suspicious_dual_use_activity and has_corroborating_attack_indicator:
                 has_grounded_security_tradecraft = True
+            elif is_suspicious_activity_rule and has_grounded_unauthorized_remote_tool and not has_benign_administrative_context:
+                # Validated execution of unauthorized remote management software on endpoint without IT approval
+                has_grounded_security_tradecraft = True
 
             if has_benign_administrative_context:
                 final_verdict = "REQUIRES_ATTENTION"
@@ -467,7 +512,10 @@ class IndependentVerdictValidator:
             elif not reason_codes and final_verdict == "TRUE_POSITIVE":
                 is_decisive = True
                 reason_codes.append("EVIDENCE_VALIDATED")
-                action_directive = "High-confidence malicious attack confirmed with verified evidence. Escalate to IR team."
+                if is_suspicious_activity_rule and has_grounded_unauthorized_remote_tool:
+                    action_directive = "Unauthorized remote management software execution confirmed without IT authorization. Escalate to IR team."
+                else:
+                    action_directive = "High-confidence malicious attack confirmed with verified evidence. Escalate to IR team."
 
         elif clean_prop_verdict == "FALSE_POSITIVE":
             # For FP: must have verified telemetry, at least one grounded claim, and independently verifiable authorization
@@ -762,6 +810,44 @@ class IndependentVerdictValidator:
             # 10. Check for Grounded Affirmative Authorization or Trusted Administrative Software (Phase A - Item 2)
             # Signed binaries and approved paths alone CANNOT establish benign authorization.
             has_grounded_authorization = False
+            has_grounded_benign_web_asset = False
+
+            # Rule 2 — Prisma SASE: Suspicious File Threat Detection (Gateway File Downloads)
+            # Benign static web asset or software library (.js, .css, .png, etc.) during normal business browsing
+            static_web_extensions = (".js", ".css", ".png", ".jpg", ".jpeg", ".svg", ".json", ".woff", ".ico", ".gif")
+            benign_web_libraries = ("jquery", "widget", "clientlib", "analytics", "surveysensum", "adrum", "select2", "bootstrap")
+
+            all_file_names = [
+                str(r.observed_value).strip().lower()
+                for r in normalization_result.records
+                if r.source_field in ("file.name", "process.file_name", "target_file", "downloaded_file", "security.alert_title")
+            ]
+            all_app_names = [
+                str(r.observed_value).strip().lower()
+                for r in normalization_result.records
+                if r.source_field in ("application.name", "network.application", "application.category", "network.application_category", "urlcategory", "url_category")
+            ]
+
+            has_static_file = any(
+                any(fn.endswith(ext) or ext in fn for ext in static_web_extensions)
+                or any(lib in fn for lib in benign_web_libraries)
+                for fn in all_file_names
+            )
+            has_clean_ti_indicators = not any(
+                str(r.source_field).startswith("threat_intel.") and str(r.observed_value).lower() not in ("clean", "benign", "safe", "false", "0", "none", "unknown", "")
+                for r in normalization_result.records
+            )
+
+            if is_file_threat_rule and has_static_file and has_clean_ti_indicators and not has_adversary_tradecraft:
+                # Normal business browsing downloading static web scripts/libraries
+                has_grounded_benign_web_asset = True
+                has_grounded_authorization = True
+
+            # Rule 1 — Crowdstrike: Suspicious Activity FP:
+            # Benign software or enterprise admin tool mistakenly flagged
+            if is_suspicious_activity_rule:
+                if any(p in approved_management_binaries for p in proc_names) and not has_spoofed_admin_binary:
+                    has_grounded_authorization = True
             for c in grounded_claims:
                 c_field_lower = str(c.field or "").lower()
                 c_val_lower = str(c.asserted_value or "").lower()
@@ -894,18 +980,21 @@ class IndependentVerdictValidator:
                     reason_codes.append("UNVERIFIED_BINARY_PROVENANCE")
                 action_directive = f"False positive rejected: {unverified_binary_detail}"
 
-            elif only_unprivileged_identities or not has_grounded_authorization:
+            elif (only_unprivileged_identities or not has_grounded_authorization) and not has_grounded_benign_web_asset:
                 final_verdict = "REQUIRES_ATTENTION"
                 if validation_status not in ("REJECTED", "ABSTAINED", "REASONING_CONTRADICTION", "VERDICT_EVIDENCE_CONFLICT"):
                     validation_status = "INSUFFICIENT_EVIDENCE"
                 if "FP_CRITERIA_UNSATISFIED" not in reason_codes:
                     reason_codes.append("FP_CRITERIA_UNSATISFIED")
-                action_directive = "False positive rejected: requires independently verified affirmative authorization evidence. Internal IP, service accounts, or routine assertions alone cannot justify False Positive."
+                action_directive = "False positive rejected: requires independently verified affirmative authorization evidence or verified benign web asset criteria. Internal IP, service accounts, or routine assertions alone cannot justify False Positive."
 
             elif not reason_codes and final_verdict == "FALSE_POSITIVE":
                 is_decisive = True
                 reason_codes.append("EVIDENCE_VALIDATED")
-                action_directive = "Activity verified benign against approved detection baseline and verified authorization evidence."
+                if has_grounded_benign_web_asset:
+                    action_directive = "Activity verified as benign static web asset or software library download during routine business browsing with clean indicators."
+                else:
+                    action_directive = "Activity verified benign against approved detection baseline and verified authorization evidence."
 
         elif clean_prop_verdict == "REQUIRES_ATTENTION":
             final_verdict = "REQUIRES_ATTENTION"
