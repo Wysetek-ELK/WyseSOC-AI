@@ -1,0 +1,25 @@
+{
+  "phase": "AIS 2.6c",
+  "wire_protocol": "OpenAI Compatible Chat Completion API (/v1/chat/completions)",
+  "request_specification": {
+    "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "max_tokens": 768,
+    "response_format": {
+      "type": "json_object"
+    },
+    "delimiters": {
+      "system_prompt": "Plaintext instructions containing role definition, evidentiary thresholds, and JSON schema",
+      "user_content": "<UNTRUSTED_INCIDENT_DATA>\n{incident_json}\n</UNTRUSTED_INCIDENT_DATA>"
+    }
+  },
+  "budget_reservation": {
+    "total_context_tokens": 8192,
+    "completion_reservation": 768,
+    "target_input_budget": 6400,
+    "overhead_reservation": 1024
+  },
+  "response_schema_definition": "docs/AIS_2_6c/EXPERIMENT_RESPONSE_SCHEMA.json",
+  "wire_capture_policy": "Full prompt hash and raw reply hash captured in BenchmarkIncidentResult"
+}

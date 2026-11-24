@@ -1,0 +1,14 @@
+{
+  "phase": "AIS 2.6c",
+  "run_id": "EXP-AIS-2.6c-DEV-RUN",
+  "cohort_size": 20,
+  "total_mode_evaluations": 60,
+  "files_generated": [
+    "MODE_A_EXECUTION_LEDGER.jsonl",
+    "MODE_B_EXECUTION_LEDGER.jsonl",
+    "MODE_C_VALIDATION_LEDGER.jsonl",
+    "PILOT_EXECUTION_LEDGER.jsonl",
+    "UNIFIED_EXPERIMENT_RESULTS.json"
+  ],
+  "active_git_sha": "d854a5ef7471b74dab408473963a4511eab4dc66"
+}

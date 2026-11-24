@@ -1,0 +1,21 @@
+{
+  "model_configuration": {
+    "model_name": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "provider": "OpenAICompatibleProvider (vLLM)",
+    "quantization": "AWQ (4-bit)",
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "seed": 42,
+    "max_context_limit": 8192,
+    "requested_max_completion_tokens": 768,
+    "target_input_budget": 6400,
+    "verified_endpoint": "http://13.204.214.64:8000/v1"
+  },
+  "runtime_variable_control": {
+    "temperature_fixed": true,
+    "reproducibility_seed_fixed": true,
+    "context_overflow_prevention": "TokenBudgetService exact budget check before dispatch",
+    "no_mid_cohort_prompt_modifications": true,
+    "prompt_hash_locking": true
+  }
+}

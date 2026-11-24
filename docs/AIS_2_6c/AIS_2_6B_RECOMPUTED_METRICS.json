@@ -1,0 +1,80 @@
+{
+  "source_file": "docs/AIS_2_6b/LIVE_EXECUTION_LEDGER.jsonl",
+  "evaluation_phase": "AIS_2_6b_RECOMPUTED",
+  "cohort_size": 20,
+  "live_inference_executions": 20,
+  "model_proposals": {
+    "true_positives": 20,
+    "false_positives": 0,
+    "requires_attention": 0,
+    "proposal_tp_rate": 100.0
+  },
+  "final_authoritative_verdicts": {
+    "true_positives": 9,
+    "false_positives": 0,
+    "requires_attention": 11,
+    "decisive_verdicts_count": 9,
+    "coverage_rate": 45.0,
+    "abstention_rate": 55.0
+  },
+  "rule_breakdown": {
+    "PH_RULE_CS_SUSPICIOUS_ACTIVITY": {
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "total_incidents": 10,
+      "raw_proposed_tp": 10,
+      "final_tp": 9,
+      "final_ra": 1,
+      "decisive_count": 9,
+      "coverage_rate": 90.0,
+      "abstention_rate": 10.0,
+      "avg_latency_ms": 37431.2,
+      "avg_prompt_tokens": 5311.9,
+      "avg_completion_tokens": 566.9
+    },
+    "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE": {
+      "rule_name": "Prisma SASE: Suspicious File Threat",
+      "total_incidents": 10,
+      "raw_proposed_tp": 10,
+      "final_tp": 0,
+      "final_ra": 10,
+      "decisive_count": 0,
+      "coverage_rate": 0.0,
+      "abstention_rate": 100.0,
+      "avg_latency_ms": 25260.9,
+      "avg_prompt_tokens": 3405.3,
+      "avg_completion_tokens": 565.8
+    }
+  },
+  "telemetry_averages": {
+    "avg_latency_ms": 31346.05,
+    "avg_latency_seconds": 31.35,
+    "avg_prompt_tokens": 4358.6,
+    "avg_completion_tokens": 566.35,
+    "total_tokens": 98499
+  },
+  "trust_scores": {
+    "unique_scores": [
+      3
+    ],
+    "mean_trust_score": 3.0,
+    "calibration_status": "NOT_CALIBRATED",
+    "calibration_status_reason": "Zero independently certified human ground truth labels available"
+  },
+  "ground_truth_and_accuracy": {
+    "certified_ground_truth_count": 0,
+    "certified_selective_accuracy": null,
+    "accuracy_status": "NOT_MEASURED",
+    "unsafe_false_positive_count": 0,
+    "unsafe_false_positive_rate": null,
+    "unsafe_fp_denominator": 0,
+    "safety_capability_status": "NOT_DEMONSTRATED",
+    "historical_operational_matches": 8,
+    "historical_operational_total": 20,
+    "historical_operational_agreement_rate": 0.4
+  },
+  "git_provenance": {
+    "recorded_git_sha": "2033c09156c68d51ce45ab829f6e691257e995dc",
+    "commit_status": "STALE_FALLBACK",
+    "root_cause": "Hardcoded fallback SHA in empirical_benchmark_harness.py line 886"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "trust_score_scale": "Ordinal 1 to 10",
+  "score_interpretation": {
+    "1_3": "LOW TRUST (Insufficient evidence, missing mandatory fields, or unsupported claims)",
+    "4_6": "MODERATE TRUST (Sufficient evidence, uncalibrated rule < 30 cases, human review required)",
+    "7_8": "HIGH TRUST (Sufficient evidence, verified claims, calibrated rule >= 30 cases)",
+    "9_10": "VERY HIGH TRUST (Multi-source corroboration, calibrated rule, high accuracy)"
+  },
+  "dimensions": [
+    {
+      "dimension": "dim1_direct_claim_support",
+      "max_points": 35.0,
+      "description": "Percentage of model claims verified by canonical evidence"
+    },
+    {
+      "dimension": "dim2_source_reliability",
+      "max_points": 20.0,
+      "description": "EDR vs Firewall vs Syslog vs Synthetic provenance score"
+    },
+    {
+      "dimension": "dim3_contradiction_handling",
+      "max_points": 15.0,
+      "description": "Absence of unacknowledged contradictions in telemetry"
+    },
+    {
+      "dimension": "dim4_independent_corroboration",
+      "max_points": 15.0,
+      "description": "Multi-event correlation across distinct devices"
+    },
+    {
+      "dimension": "dim5_historical_validation",
+      "max_points": 15.0,
+      "description": "Historical selective accuracy and calibration state"
+    }
+  ],
+  "invariants": [
+    "Missing mandatory contract evidence strictly clamps score to <= 3/10",
+    "Uncalibrated rule (< 30 verified cases) strictly clamps score to <= 6/10",
+    "Autonomous decision eligibility strictly requires trust_score >= 7 AND calibrated state"
+  ]
+}

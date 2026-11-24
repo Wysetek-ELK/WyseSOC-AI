@@ -1,0 +1,19 @@
+{
+  "phase": "AIS 2.6c",
+  "deployment_target": "Server 1 (Verdictum AI Application Server)",
+  "deployment_identity": {
+    "target_host": "172.26.41.240",
+    "deploy_directory": "/opt/wysesoc-ai",
+    "deploy_user": "root",
+    "ssh_key": "C:\\Users\\amits\\.ssh\\upla_server1_ed25519",
+    "git_sha_to_deploy": "d854a5ef7471b74dab408473963a4511eab4dc66"
+  },
+  "upla_governance": {
+    "project_id": "proj-98348ed9ed5e2ba1",
+    "project_name": "SOC-AI-Agent",
+    "mode": "FULL_WORKFLOW",
+    "gate_1_github_sync": "REQUIRES_EXPLICIT_HUMAN_APPROVAL",
+    "gate_2_remote_deployment": "REQUIRES_EXPLICIT_HUMAN_APPROVAL",
+    "preflight_status": "READY_FOR_GATED_APPROVAL"
+  }
+}

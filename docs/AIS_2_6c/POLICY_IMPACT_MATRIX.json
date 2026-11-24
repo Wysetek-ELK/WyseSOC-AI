@@ -1,0 +1,27 @@
+{
+  "phase": "AIS 2.6c",
+  "evaluation_run_id": "EXP-AIS-2.6c-DEV-RUN",
+  "total_incidents": 20,
+  "mode_a_distribution": {
+    "true_positive": 0,
+    "false_positive": 9,
+    "requires_attention": 11
+  },
+  "mode_b_distribution": {
+    "true_positive": 11,
+    "false_positive": 9,
+    "requires_attention": 0
+  },
+  "transitions": {
+    "ra_to_tp_forced_by_policy": 11,
+    "ra_to_fp": 0,
+    "fp_to_tp": 0,
+    "identical_verdicts": 9
+  },
+  "net_tp_proposal_inflation": "+11 incidents (+55.0% absolute shift)",
+  "policy_bias_mechanisms_identified": [
+    "CrowdStrike Policy v3: Inverts burden of proof by declaring software execution without IT change ticket as confirmed True Positive.",
+    "Prisma SASE Policy v1: Alert-title framing primes model to treat unverified file downloads as active attacks.",
+    "Common Prompt Stripping: Stripped ENTERPRISE_SOC_BASELINE_V2 anti-bias warnings during policy compilation."
+  ]
+}

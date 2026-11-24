@@ -1,0 +1,41 @@
+{
+  "phase": "AIS 2.6c",
+  "evaluation_run_id": "EXP-AIS-2.6c-DEV-RUN",
+  "cohort_size": 20,
+  "modes": {
+    "mode_a_neutral_baseline": {
+      "total_incidents": 20,
+      "decisive_count": 9,
+      "coverage_rate": 0.45,
+      "abstention_count": 11,
+      "abstention_rate": 0.55,
+      "proposed_tp": 0,
+      "proposed_fp": 9,
+      "certified_accuracy": "NOT_MEASURED (Pending certified ground truth adjudication)",
+      "unsafe_fp_rate": "NOT_DEMONSTRATED (0/0 decisive predictions on certified TP)"
+    },
+    "mode_b_approved_policy": {
+      "total_incidents": 20,
+      "decisive_count": 20,
+      "coverage_rate": 1.0,
+      "abstention_count": 0,
+      "abstention_rate": 0.0,
+      "proposed_tp": 11,
+      "proposed_fp": 9,
+      "certified_accuracy": "NOT_MEASURED (Pending certified ground truth adjudication)",
+      "unsafe_fp_rate": "NOT_DEMONSTRATED (0/0 decisive predictions on certified TP)"
+    },
+    "mode_c_validated_pipeline": {
+      "total_incidents": 20,
+      "decisive_count": 0,
+      "coverage_rate": 0.0,
+      "abstention_count": 20,
+      "abstention_rate": 1.0,
+      "final_tp": 0,
+      "final_fp": 0,
+      "final_attention": 20,
+      "certified_accuracy": "NOT_MEASURED (0 decisive accepted predictions)",
+      "unsafe_fp_rate": "NOT_DEMONSTRATED (0/0 decisive predictions on certified TP)"
+    }
+  }
+}

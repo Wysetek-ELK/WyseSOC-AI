@@ -1,0 +1,53 @@
+{
+  "experiment_id": "EXP-AIS-2.6c-THREE-MODE",
+  "experimental_modes": {
+    "Mode_A": {
+      "name": "Neutral Baseline LLM",
+      "purpose": "Measure underlying LLM ability to understand SOC incidents without policy directives or semantic validation.",
+      "prompt_template": "AIS26C_NEUTRAL_SOC_BASELINE_V1",
+      "prompt_hash": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+      "semantic_validator_applied": false,
+      "trustworthiness_engine_applied": false,
+      "isolation": "Isolated experimental branch"
+    },
+    "Mode_B": {
+      "name": "Approved Policy LLM",
+      "purpose": "Measure effect of approved rule-specific prompt policies on the exact same model and evidence.",
+      "prompt_template": "PolicyCompilerService v3.0.0 (Production Compiler)",
+      "policy_versions": {
+        "CrowdStrike": 3,
+        "Prisma_SASE": 1
+      },
+      "semantic_validator_applied": false,
+      "trustworthiness_engine_applied": false,
+      "captures_raw_proposal": true
+    },
+    "Mode_C": {
+      "name": "Full Validated Pipeline",
+      "purpose": "Measure incremental effect of deterministic semantic validation and trustworthiness guardrails.",
+      "prompt_template": "Mode B output reuse",
+      "semantic_validator_applied": true,
+      "validator_engine": "IndependentVerdictValidator",
+      "trustworthiness_engine_applied": true,
+      "trust_engine": "VerdictTrustworthinessEngine",
+      "additional_gpu_calls": 0
+    }
+  },
+  "experimental_relationships": {
+    "Mode_A_vs_Mode_B": "Measures net impact of approved rule-specific prompt policy on LLM classification.",
+    "Mode_B_vs_Mode_C": "Measures net impact of independent deterministic validator and guardrails.",
+    "Mode_A_vs_Mode_C": "Measures combined impact of prompt policy and independent validation relative to raw baseline."
+  },
+  "cohort_specification": {
+    "cohort_size": 20,
+    "pilot_size": 5,
+    "pilot_incident_ids": [
+      "132474210",
+      "132596403",
+      "132599145",
+      "132438483",
+      "132591888"
+    ],
+    "remaining_cohort_size": 15
+  }
+}

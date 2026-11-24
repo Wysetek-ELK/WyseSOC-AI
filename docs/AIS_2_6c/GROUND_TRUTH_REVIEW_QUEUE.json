@@ -1,0 +1,482 @@
+[
+  {
+    "incident_id": "132438483",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "review_priority": 1,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "False Positive",
+    "historical_operational_note": "kill process is true (ML generated)",
+    "packet": {
+      "incident_title": "Crowdstrike: Suspicious Activity on DESKTOP-E0G2R49",
+      "triggered_rule_definition": "FortiSIEM detection rule for Crowdstrike: Suspicious Activity",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_evidence_sha256": "9098ef0d2f2e26ae021b333eb5c13d0aaf4780304b247883a7a2d9351762f045",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132439932",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "False Positive",
+    "historical_operational_note": "kill process is true",
+    "packet": {
+      "incident_title": "Crowdstrike: Suspicious Activity on TSI-IT-002-200",
+      "triggered_rule_definition": "FortiSIEM detection rule for Crowdstrike: Suspicious Activity",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_evidence_sha256": "ac4ce163dd3ec1675ec003660a29255f56c7f88454b938507b0fd32ddf682ab8",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132441815",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "False Positive",
+    "historical_operational_note": "proccess is kiled",
+    "packet": {
+      "incident_title": "Crowdstrike: Suspicious Activity on DESKTOP-E0G2R49",
+      "triggered_rule_definition": "FortiSIEM detection rule for Crowdstrike: Suspicious Activity",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_evidence_sha256": "de63af26337fb86a37f07c6e78c6d022ba75f05ee4f15611203d8b3439d46284",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132461358",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "False Positive",
+    "historical_operational_note": "hash value is clean (ML generated)",
+    "packet": {
+      "incident_title": "Crowdstrike: Suspicious Activity on TSI-IT-002-200",
+      "triggered_rule_definition": "FortiSIEM detection rule for Crowdstrike: Suspicious Activity",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_evidence_sha256": "cc24912c447c4be8882fe2274d57a8172aff3eee8f9c2ac5e98420fce187f1cb",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132461368",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "True Positive",
+    "historical_operational_note": "case raised and client are working on it (ML generated)",
+    "packet": {
+      "incident_title": "Crowdstrike: Suspicious Activity on DESKTOP-E0G2R49",
+      "triggered_rule_definition": "FortiSIEM detection rule for Crowdstrike: Suspicious Activity",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_evidence_sha256": "b50dfa2c05d6024ddfc500235816f5557c3ffa80117fa73ffccece410356af1f",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132472498",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "True Positive",
+    "historical_operational_note": "case raised and client are working on it (ML generated)",
+    "packet": {
+      "incident_title": "Crowdstrike: Suspicious Activity on PC-TSI-DC",
+      "triggered_rule_definition": "FortiSIEM detection rule for Crowdstrike: Suspicious Activity",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_evidence_sha256": "60c83d110051a4627195ecfb8951f388fb8c4417fcf3bb46bb200e7a5504f441",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132474210",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "review_priority": 1,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "False Positive",
+    "historical_operational_note": "legitimate activity, nothing suspicious observed.",
+    "packet": {
+      "incident_title": "Crowdstrike: Suspicious Activity on PC-TSI-DC",
+      "triggered_rule_definition": "FortiSIEM detection rule for Crowdstrike: Suspicious Activity",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_evidence_sha256": "085cc8d93ee462e0d92303330f3c4f533836a3f849bd160233073d38037d54ca",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132501348",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "True Positive",
+    "historical_operational_note": "user admin compromise using Disable or Modify Tools (ML generated)",
+    "packet": {
+      "incident_title": "Crowdstrike: Suspicious Activity on DESKTOP-CQ4A60U",
+      "triggered_rule_definition": "FortiSIEM detection rule for Crowdstrike: Suspicious Activity",
+      "observed_entity": "MEGAsync.exe",
+      "raw_evidence_sha256": "f27f6167b4a86ecac1021d857aa1fded7dc11282edcd0d65848a0079c5c1f1fc",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132502453",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "True Positive",
+    "historical_operational_note": "Informed to client, alert still generating (ML generated)",
+    "packet": {
+      "incident_title": "Crowdstrike: Suspicious Activity on DESKTOP-KHU6454",
+      "triggered_rule_definition": "FortiSIEM detection rule for Crowdstrike: Suspicious Activity",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_evidence_sha256": "b10e5bc171530128a6544e4ea4ce356390c7d92fb9a6bf2eab4f799635e8dad0",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132527297",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "True Positive",
+    "historical_operational_note": "Endpoint security has blocked the ultraviewer.exe (ML generated)",
+    "packet": {
+      "incident_title": "Crowdstrike: Suspicious Activity on TSI-IT-002-95",
+      "triggered_rule_definition": "FortiSIEM detection rule for Crowdstrike: Suspicious Activity",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_evidence_sha256": "4cda6f16083628a643ecdf45ce27c9321023bdc035d9449e377a9457de585bb5",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132499009",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "False Positive",
+    "historical_operational_note": "No suspicious activity was identified during the analysis",
+    "packet": {
+      "incident_title": "Prisma SASE: Suspicious File Threat Detection on HOST-35.244.35.245",
+      "triggered_rule_definition": "FortiSIEM detection rule for Prisma SASE: Suspicious File Threat Detection",
+      "observed_entity": "ss-widget.min.js",
+      "raw_evidence_sha256": "01c9276a8f694ce211b366cc3977f45157ba3389b6abf01d416cf1dbf2f31834",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132499023",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "False Positive",
+    "historical_operational_note": "file does not found suspicious hence marking as fp (ML generated)",
+    "packet": {
+      "incident_title": "Prisma SASE: Suspicious File Threat Detection on HOST-35.244.35.245",
+      "triggered_rule_definition": "FortiSIEM detection rule for Prisma SASE: Suspicious File Threat Detection",
+      "observed_entity": "clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js",
+      "raw_evidence_sha256": "5eea96edb0178293dde8cd08058b856f8dd3823b57b0931a58250508d1334873",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132499745",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "False Positive",
+    "historical_operational_note": "file does not found suspicious hence marking as fp (ML generated)",
+    "packet": {
+      "incident_title": "Prisma SASE: Suspicious File Threat Detection on HOST-35.244.35.245",
+      "triggered_rule_definition": "FortiSIEM detection rule for Prisma SASE: Suspicious File Threat Detection",
+      "observed_entity": "scripts-QBOKETIS.js",
+      "raw_evidence_sha256": "752c01ad34ac1256a470af5520a2af2691cf0d5e7e8f7d4436de1eeaf844758f",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132578774",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "False Positive",
+    "historical_operational_note": "file observed is not suspicious (ML generated)",
+    "packet": {
+      "incident_title": "Prisma SASE: Suspicious File Threat Detection on HOST-35.244.35.245",
+      "triggered_rule_definition": "FortiSIEM detection rule for Prisma SASE: Suspicious File Threat Detection",
+      "observed_entity": "adrum22603859.js",
+      "raw_evidence_sha256": "982681eb1d7664faab970f8319284e61fdb80495cfd10127f970afd532999646",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132591888",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "review_priority": 1,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "False Positive",
+    "historical_operational_note": "file observed is not suspicious (ML generated)",
+    "packet": {
+      "incident_title": "Prisma SASE: Suspicious File Threat Detection on HOST-35.244.35.245",
+      "triggered_rule_definition": "FortiSIEM detection rule for Prisma SASE: Suspicious File Threat Detection",
+      "observed_entity": "update.exe",
+      "raw_evidence_sha256": "e6b132ebfb1a915893eafff94285bbc63266574c64d5a63424c2f0685e353195",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132595592",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "True Positive",
+    "historical_operational_note": "Mail has been sent already (ML generated)",
+    "packet": {
+      "incident_title": "Prisma SASE: Suspicious File Threat Detection on HOST-35.244.35.245",
+      "triggered_rule_definition": "FortiSIEM detection rule for Prisma SASE: Suspicious File Threat Detection",
+      "observed_entity": "2005.70cb3d6bf67c91a7.js",
+      "raw_evidence_sha256": "e83807a02d4d49e3b830c82aaf060d1898671b3939a09c8d414795f6478240ad",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132596403",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "review_priority": 1,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "True Positive",
+    "historical_operational_note": "Mail has been sent already",
+    "packet": {
+      "incident_title": "Prisma SASE: Suspicious File Threat Detection on HOST-35.244.35.245",
+      "triggered_rule_definition": "FortiSIEM detection rule for Prisma SASE: Suspicious File Threat Detection",
+      "observed_entity": "review.es.system.js",
+      "raw_evidence_sha256": "8af6198e38e9d0e38798eb8e3b8e54e059585d2f8120368d4f8c3f17f4362332",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132599145",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "review_priority": 1,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "True Positive",
+    "historical_operational_note": "Case has been raised for the similar incidents.",
+    "packet": {
+      "incident_title": "Prisma SASE: Suspicious File Threat Detection on HOST-35.244.35.245",
+      "triggered_rule_definition": "FortiSIEM detection rule for Prisma SASE: Suspicious File Threat Detection",
+      "observed_entity": "jquery.knob.js",
+      "raw_evidence_sha256": "647dd60b0de7832a77090e2de86b7bd89e735285005ce53d59c9f3bf6447d7d4",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132599146",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "True Positive",
+    "historical_operational_note": "Case has been raised for the similar incidents.",
+    "packet": {
+      "incident_title": "Prisma SASE: Suspicious File Threat Detection on HOST-35.244.35.245",
+      "triggered_rule_definition": "FortiSIEM detection rule for Prisma SASE: Suspicious File Threat Detection",
+      "observed_entity": "exporting.js",
+      "raw_evidence_sha256": "bda36916ea7b588f67b16d18c15f6cb844d56d2f1cb2cc6bda4685d5fa7e87e8",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  },
+  {
+    "incident_id": "132599330",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "review_priority": 2,
+    "blind_review_status": "PENDING_ANALYST_REVIEW",
+    "current_provenance_level": "LEVEL_1_OPERATIONAL_LABEL",
+    "historical_operational_label": "True Positive",
+    "historical_operational_note": "Case has been raised for the similar incidents.",
+    "packet": {
+      "incident_title": "Prisma SASE: Suspicious File Threat Detection on HOST-35.244.35.245",
+      "triggered_rule_definition": "FortiSIEM detection rule for Prisma SASE: Suspicious File Threat Detection",
+      "observed_entity": "select2.min.js",
+      "raw_evidence_sha256": "ba3063564318064be5c6dd5215113b0b0f88a10c875d8d1695f0a44276c54136",
+      "hidden_fields_from_reviewer": [
+        "ai_verdict",
+        "ai_confidence",
+        "ai_reason",
+        "model_proposals",
+        "trust_score",
+        "validator_disposition"
+      ]
+    }
+  }
+]

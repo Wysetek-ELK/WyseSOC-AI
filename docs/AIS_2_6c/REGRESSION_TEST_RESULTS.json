@@ -1,0 +1,41 @@
+{
+  "phase": "AIS 2.6c",
+  "evaluated_at_utc": "2026-11-24T15:11:00Z",
+  "active_git_sha": "d854a5ef7471b74dab408473963a4511eab4dc66",
+  "git_branch": "feature/phase3-compact-ui",
+  "test_suites_executed": [
+    "backend/tests/test_ais_2_6c_three_mode_and_bias_isolation.py",
+    "backend/tests/test_empirical_benchmark_harness.py",
+    "backend/tests/test_ais_2_6b_counterfactual_validation.py",
+    "backend/tests/test_ais_2_6a_empirical_validation.py",
+    "backend/tests/test_ais_2_6_boundary_and_provenance.py",
+    "backend/tests/test_ais_2_4b_validator_integrity.py",
+    "backend/tests/test_ais_2_4a_tp_grounding.py",
+    "backend/tests/test_ais_2_4_regression.py",
+    "backend/tests/test_ais_2_3b_1_regression.py",
+    "backend/tests/test_ais_2_3a_integrity.py",
+    "backend/tests/test_evidence_normalization.py",
+    "backend/tests/test_evidence_preflight.py",
+    "backend/tests/test_policy_compiler.py",
+    "backend/tests/test_token_budgeting.py",
+    "backend/tests/test_independent_verdict_validator.py"
+  ],
+  "backend_summary": {
+    "total_tests_executed": 126,
+    "passed": 126,
+    "failed": 0,
+    "skipped": 0,
+    "exit_code": 0
+  },
+  "frontend_summary": {
+    "framework": "Next.js 16.4.5 (Turbopack)",
+    "test_runner": "Jest / React Testing Library",
+    "test_suites_passed": 16,
+    "tests_passed": 80,
+    "tests_failed": 0,
+    "production_build_status": "SUCCESS",
+    "static_pages_generated": 32,
+    "build_duration_sec": 1.1
+  },
+  "overall_regression_status": "PASS"
+}

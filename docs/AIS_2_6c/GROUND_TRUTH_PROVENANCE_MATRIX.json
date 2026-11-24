@@ -1,0 +1,602 @@
+[
+  {
+    "incident_id": "132438483",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "False Positive",
+      "provenance": "kill process is true (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132439932",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "False Positive",
+      "provenance": "kill process is true",
+      "is_ml_generated": false
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132441815",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "False Positive",
+      "provenance": "proccess is kiled",
+      "is_ml_generated": false
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132461358",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "False Positive",
+      "provenance": "hash value is clean (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132461368",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "True Positive",
+      "provenance": "case raised and client are working on it (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132472498",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "True Positive",
+      "provenance": "case raised and client are working on it (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132474210",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "False Positive",
+      "provenance": "legitimate activity, nothing suspicious observed.",
+      "is_ml_generated": false
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132501348",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "True Positive",
+      "provenance": "user admin compromise using Disable or Modify Tools (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132502453",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "True Positive",
+      "provenance": "Informed to client, alert still generating (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132527297",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "True Positive",
+      "provenance": "Endpoint security has blocked the ultraviewer.exe (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132499009",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "False Positive",
+      "provenance": "No suspicious activity was identified during the analysis",
+      "is_ml_generated": false
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132499023",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "False Positive",
+      "provenance": "file does not found suspicious hence marking as fp (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132499745",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "False Positive",
+      "provenance": "file does not found suspicious hence marking as fp (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132578774",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "False Positive",
+      "provenance": "file observed is not suspicious (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132591888",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "False Positive",
+      "provenance": "file observed is not suspicious (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132595592",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "True Positive",
+      "provenance": "Mail has been sent already (ML generated)",
+      "is_ml_generated": true
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132596403",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "True Positive",
+      "provenance": "Mail has been sent already",
+      "is_ml_generated": false
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132599145",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "True Positive",
+      "provenance": "Case has been raised for the similar incidents.",
+      "is_ml_generated": false
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132599146",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "True Positive",
+      "provenance": "Case has been raised for the similar incidents.",
+      "is_ml_generated": false
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  },
+  {
+    "incident_id": "132599330",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "level_0_unreviewed": false,
+    "level_1_historical_operational": {
+      "available": true,
+      "label": "True Positive",
+      "provenance": "Case has been raised for the similar incidents.",
+      "is_ml_generated": false
+    },
+    "level_2_independent_human_reviewed": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    "level_3_independently_corroborated": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "second_reviewer_id": null,
+      "adjudication_status": null
+    },
+    "level_4_formally_certified": {
+      "completed": false,
+      "status": "BLOCKED_PENDING_HUMAN_REVIEW",
+      "certified_by": [],
+      "certified_at": null
+    }
+  }
+]

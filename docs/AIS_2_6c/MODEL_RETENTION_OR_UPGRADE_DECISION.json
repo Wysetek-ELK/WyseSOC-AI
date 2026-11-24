@@ -1,0 +1,19 @@
+{
+  "phase": "AIS 2.6c",
+  "evaluated_at_utc": "2026-11-24T15:25:00Z",
+  "current_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "hardware_platform": "AWS GPU Server (NVIDIA A10G, 24GB VRAM)",
+  "runtime_inference_engine": "vLLM (OpenAI Compatible API)",
+  "empirical_findings": {
+    "model_instruction_compliance": "EXCELLENT (Follows explicit policy directives with high fidelity)",
+    "baseline_semantic_discernment": "STRONG (Mode A correctly identified 9/9 benign web assets without policy overrides)",
+    "primary_failure_point": "POLICY_DIRECTIVE_AND_PROMPT_BIAS (CrowdStrike Policy v3 inverted burden of proof)",
+    "secondary_failure_point": "EVIDENCE_DEFICIENCY (Missing enterprise ITSM authorization context in FortiSIEM alerts)",
+    "hardware_or_model_limitation_role": "MINOR (Model size is not the limiting factor in verdict accuracy)"
+  },
+  "model_decision": {
+    "action": "RETAIN_CURRENT_MODEL",
+    "rationale": "Empirical evidence from the Three-Mode experiment confirms that Qwen/Qwen2.5-7B-Instruct-AWQ is fully capable of distinguishing benign web activity from security threats under balanced prompts. Upgrading to a larger model (e.g. 14B, 32B, 70B) would NOT solve the 100% TP proposal rate because a larger model would follow the flawed Policy v3 directives with even higher fidelity, resulting in identical false positive inflation. Replacing the model before correcting prompt directives and evidence contracts would waste AWS compute budget without improving accuracy.",
+    "immediate_recommendation": "Correct CrowdStrike Policy v3 and Prisma SASE Policy v1 to restore anti-bias warnings and require affirmative evidence of attack before proposing True Positive."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "phase": "AIS 2.6c",
+  "phenomenon_investigated": "100% (20/20) True Positive model proposal rate observed in AIS 2.6b",
+  "attributed_causes": [
+    {
+      "component": "Approved Policy Directives (CrowdStrike Policy v3)",
+      "impact_share_pct": 50.0,
+      "mechanism": "Directive defining execution without verified enterprise IT ticket as True Positive.",
+      "evidence": "10/10 CrowdStrike incidents flipped from REQUIRES_ATTENTION (Mode A) to TRUE_POSITIVE (Mode B)."
+    },
+    {
+      "component": "Evidence Deficiencies (Missing ITSM Context)",
+      "impact_share_pct": 30.0,
+      "mechanism": "FortiSIEM alerts omit corporate ticketing and employee approval logs, creating systematic ambiguity.",
+      "evidence": "Zero authorization logs present across all 20 historical raw payloads."
+    },
+    {
+      "component": "Prompt Compilation Architecture",
+      "impact_share_pct": 10.0,
+      "mechanism": "Substituting common_prompt stripped ENTERPRISE_SOC_BASELINE_V2's anti-bias and mandatory abstention guidelines.",
+      "evidence": "Audit in Workstream 2 revealed common_prompt was reduced to a single generic sentence."
+    },
+    {
+      "component": "Alert Title / Metadata Priming",
+      "impact_share_pct": 5.0,
+      "mechanism": "Rule name containing 'Suspicious File' primed model to assume maliciousness.",
+      "evidence": "Incident 132596403 flipped from RA (Mode A) to TP (Mode B)."
+    },
+    {
+      "component": "Model Semantic Capabilities",
+      "impact_share_pct": 5.0,
+      "mechanism": "7B parameter instruction-following model strictly obeys explicit policy instructions over latent commonsense.",
+      "evidence": "Model proposed TP even when its own reason text noted routine web browsing."
+    },
+    {
+      "component": "Verdict Parser / Schema Conversion",
+      "impact_share_pct": 0.0,
+      "mechanism": "None. Response parser strictly defaults schema errors to REQUIRES_ATTENTION.",
+      "evidence": "Audited in Workstream 2; verified in test_ais_2_6b_counterfactual_validation.py."
+    }
+  ],
+  "authoritative_conclusion": "The 100% TP proposal rate was 90% driven by policy directives, missing evidence, and prompt compilation defects. The model architecture itself is NOT the primary failure point."
+}

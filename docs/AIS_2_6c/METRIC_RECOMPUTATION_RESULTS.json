@@ -1,0 +1,47 @@
+{
+  "phase": "AIS 2.6c",
+  "reconciliation_target": "AIS 2.6b Discrepancies vs Authoritative Live Ledger",
+  "verified_discrepancies_reconciled": 11,
+  "authoritative_corrections": {
+    "decisive_count": {
+      "reported_2_6b": 8,
+      "authoritative_ledger": 9,
+      "status": "RECONCILED"
+    },
+    "coverage_rate": {
+      "reported_2_6b": "40.0%",
+      "authoritative_ledger": "45.0%",
+      "status": "RECONCILED"
+    },
+    "crowdstrike_coverage": {
+      "reported_2_6b": "80.0%",
+      "authoritative_ledger": "90.0%",
+      "status": "RECONCILED"
+    },
+    "mean_prompt_tokens": {
+      "reported_2_6b": 4483.7,
+      "authoritative_ledger": 4358.6,
+      "status": "RECONCILED"
+    },
+    "mean_completion_tokens": {
+      "reported_2_6b": 567.6,
+      "authoritative_ledger": 566.35,
+      "status": "RECONCILED"
+    },
+    "mean_latency_ms": {
+      "reported_2_6b": 32690,
+      "authoritative_ledger": 31350,
+      "status": "RECONCILED"
+    },
+    "unsafe_fp_rate": {
+      "reported_2_6b": "0.0%",
+      "authoritative_correction": "NOT_DEMONSTRATED (0/0 denominator)",
+      "status": "RECONCILED"
+    },
+    "trust_scores": {
+      "reported_2_6b": "All 3/10 (clamped)",
+      "authoritative_correction": "Root cause identified as missing canonical_evidence in trust_payload; fixed in 2.6c harness",
+      "status": "RECONCILED"
+    }
+  }
+}

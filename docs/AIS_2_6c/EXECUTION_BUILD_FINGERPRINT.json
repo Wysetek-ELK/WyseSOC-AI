@@ -1,0 +1,27 @@
+{
+  "phase": "AIS 2.6c",
+  "build_timestamp_utc": "2026-11-24T15:12:00Z",
+  "vcs": {
+    "system": "git",
+    "branch": "feature/phase3-compact-ui",
+    "head_sha": "d854a5ef7471b74dab408473963a4511eab4dc66",
+    "dirty": false
+  },
+  "runtimes": {
+    "python": "3.13.17",
+    "node": "v22.14.0",
+    "npm": "10.9.2"
+  },
+  "backend_framework": {
+    "framework": "FastAPI / Pydantic v2 / SQLAlchemy",
+    "pytest": "9.2.0"
+  },
+  "frontend_framework": {
+    "framework": "Next.js 16.4.5",
+    "bundler": "Turbopack",
+    "react": "19.0.0",
+    "tailwind": "v4"
+  },
+  "fingerprint_sha256": "82f8d8ca422cf3f22572520336da10f3efea26613da66870ae866d9c6e3b5df5",
+  "build_status": "VERIFIED_REPRODUCIBLE"
+}

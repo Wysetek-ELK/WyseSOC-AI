@@ -1,0 +1,48 @@
+{
+  "evaluation_phase": "AIS 2.6c",
+  "investigated_phenomenon": "100% (20/20) True Positive proposal rate by local LLM (Qwen/Qwen2.5-7B-Instruct-AWQ)",
+  "hypotheses_and_classifications": [
+    {
+      "id": "H1_POLICY_WORDING_AUTHORIZATION_BIAS",
+      "hypothesis": "Approved policy wording defined TP as execution without IT authorization/change tickets, prompting the model to classify absent authorization evidence as confirmed unauthorized execution.",
+      "classification": "CONFIRMED",
+      "evidence": "In all 9 UltraViewer and 1 MEGAsync proposals, the model's reason explicitly echoed the policy phrase: 'executed UltraViewer_Service.exe without verified enterprise authorization'. FortiSIEM events never contain ITSM tickets, creating a deterministic bias toward TP."
+    },
+    {
+      "id": "H2_ALERT_TRIGGER_EQUATED_WITH_TP",
+      "hypothesis": "The prompt framing led the model to treat the occurrence of a SIEM detection alert as proof of a True Positive condition.",
+      "classification": "CONFIRMED",
+      "evidence": "In Prisma SASE incidents 132499023, 132499745, and 132599145, the model stated: 'The file name and source IP are present, meeting the mandatory evidence requirements' and 'the event is flagged as a security alert', concluding TRUE_POSITIVE. In incident 132595592, the model explicitly noted the file was a 'standard web asset downloaded during ordinary web browsing' (the exact FP definition), yet still proposed TRUE_POSITIVE because the alert was triggered."
+    },
+    {
+      "id": "H3_COMMON_SOC_BASELINE_SUPPRESSION",
+      "hypothesis": "The policy compiler used prompt_version.common_prompt, which truncated the comprehensive ENTERPRISE_SOC_BASELINE_V2 protocol to a single sentence, stripping critical anti-bias directives.",
+      "classification": "CONFIRMED",
+      "evidence": "PolicyCompilerService line 164 uses prompt_version.common_prompt if non-empty. PromptVersion 3 defined common_prompt as 'Authoritative enterprise investigation policy for suspicious endpoint activity.', completely omitting Section 1's anti-bias instructions ('DISTINGUISH SUSPICION FROM CONFIRMATION', 'MANDATORY ABSTENTION ON DEFICIENT EVIDENCE')."
+    },
+    {
+      "id": "H4_RESPONSE_PARSER_DEFAULT_TP_BIAS",
+      "hypothesis": "The JSON parser or schema validator defaults invalid or ambiguous responses to TRUE_POSITIVE.",
+      "classification": "NOT_SUPPORTED",
+      "evidence": "Source code audit of BaseModelProvider.validate_verdict_schema and OpenAICompatibleProvider.analyze_incident confirms that parsing failures, missing verdicts, schema errors, and truncation strictly default to 'REQUIRES_ATTENTION' with confidence 0.0. The LLM explicitly generated 'TRUE_POSITIVE' in its valid JSON response for all 20 incidents."
+    },
+    {
+      "id": "H5_FEW_SHOT_EXAMPLE_BIAS",
+      "hypothesis": "Few-shot demonstration examples in the prompt biased the model toward TP.",
+      "classification": "NOT_SUPPORTED",
+      "evidence": "Zero few-shot examples were included in the compiled system prompt or user payload (zero-shot prompt compiler)."
+    },
+    {
+      "id": "H6_RESPONSE_SCHEMA_DEFAULT_BIAS",
+      "hypothesis": "The response schema supplied a default verdict value of TRUE_POSITIVE.",
+      "classification": "NOT_SUPPORTED",
+      "evidence": "The JSON schema specified verdict enum ['TRUE_POSITIVE', 'FALSE_POSITIVE', 'INSUFFICIENT_EVIDENCE', 'REQUIRES_ATTENTION'] without default values."
+    },
+    {
+      "id": "H7_MODEL_INSTRUCTION_FOLLOWING_LIMITATION",
+      "hypothesis": "The underlying 7B model has inherent difficulty distinguishing benign web assets or handling unknown authorization in zero-shot security prompts.",
+      "classification": "SUPPORTED_HYPOTHESIS",
+      "evidence": "To be conclusively isolated in Mode A (neutral baseline without policy bias) vs Mode B (approved policy prompt)."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "phase": "AIS 2.6c",
+  "verified_at_utc": "2026-11-24T15:12:00Z",
+  "active_git_sha": "d854a5ef7471b74dab408473963a4511eab4dc66",
+  "verified_artifacts": {
+    "baseline_soc_prompt": {
+      "path": "docs/AIS_2_6c/BASELINE_SOC_PROMPT.txt",
+      "sha256": "459915e17e42d2caf9e040d127de4713ec41057d8c9edcd689a66b79ed448f6f",
+      "verification_status": "MATCHED"
+    },
+    "experiment_response_schema": {
+      "path": "docs/AIS_2_6c/EXPERIMENT_RESPONSE_SCHEMA.json",
+      "sha256": "fc48e582cd0d13f9a427eea6a0625877b8f5b6b4bb100761083b662fdc295c22",
+      "verification_status": "MATCHED"
+    },
+    "empirical_benchmark_harness": {
+      "path": "backend/app/services/empirical_benchmark_harness.py",
+      "sha256": "64814f0c1ccc8b2e7f7890fecd7d18ec082db17c4fcb165d4042389b8d3f6b6f",
+      "verification_status": "MATCHED"
+    },
+    "frozen_cohort_manifest": {
+      "path": "docs/AIS_2_6c/FROZEN_COHORT_MANIFEST.json",
+      "total_incidents": 20,
+      "sha256_verified": true,
+      "verification_status": "MATCHED"
+    }
+  },
+  "overall_integrity_status": "VERIFIED"
+}

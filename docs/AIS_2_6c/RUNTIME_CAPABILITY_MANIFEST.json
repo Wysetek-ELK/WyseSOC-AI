@@ -1,0 +1,25 @@
+{
+  "server_1": {
+    "role": "Application Server",
+    "ip": "172.26.41.240",
+    "services": [
+      "Verdictum AI Backend (FastAPI)",
+      "Frontend (Next.js)",
+      "PostgreSQL",
+      "Redis",
+      "Celery"
+    ]
+  },
+  "server_2": {
+    "role": "Local LLM GPU Server",
+    "ip": "13.204.214.64",
+    "endpoint": "http://13.204.214.64:8000/v1",
+    "hardware": "AWS GPU instance (NVIDIA A10G)",
+    "engine": "vLLM",
+    "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "runtime_context_tokens": 8192,
+    "max_completion_tokens": 768,
+    "target_input_budget": 6400,
+    "wire_admission_invariant": "wire_prompt_tokens + requested_completion_tokens <= 8192"
+  }
+}

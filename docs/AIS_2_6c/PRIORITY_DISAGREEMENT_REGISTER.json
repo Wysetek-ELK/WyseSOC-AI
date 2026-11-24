@@ -1,0 +1,67 @@
+[
+  {
+    "disagreement_id": "DISAGREE-01",
+    "incident_id": "132474210",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "observed_entity": "UltraViewer_Service.exe",
+    "historical_operational_label": "False Positive",
+    "historical_provenance": "legitimate activity, nothing suspicious observed. (Human analyst ticket closure)",
+    "ais_2_6a_verdict": "TRUE_POSITIVE",
+    "ais_2_6b_verdict": "TRUE_POSITIVE (Proposed TP, Accepted by Validator)",
+    "conflict_analysis": "Historical analyst marked legitimate remote support; AI classified as unauthorized dual-use tool execution because ITSM authorization ticket was not present in FortiSIEM event. Neither observed file execution alone nor absent authorization proves malicious compromise.",
+    "evidence_sufficiency": "PARTIAL (Process execution confirmed; IT maintenance authorization unknown)",
+    "recommended_action": "High-priority blind adjudication by Level-2 senior analyst"
+  },
+  {
+    "disagreement_id": "DISAGREE-02",
+    "incident_id": "132596403",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "observed_entity": "review.es.system.js",
+    "historical_operational_label": "True Positive",
+    "historical_provenance": "Mail has been sent already (Operational notification note)",
+    "ais_2_6a_verdict": "FALSE_POSITIVE",
+    "ais_2_6b_verdict": "REQUIRES_ATTENTION (Proposed TP, Demoted by Validator: TP_CRITERIA_UNSATISFIED)",
+    "conflict_analysis": "Historical note 'Mail has been sent already' is an operational tracking note, not a forensic certification of malicious compromise. The file is a JavaScript asset; no sandbox report or malicious detonation was observed. Validator correctly refused decisive TP.",
+    "evidence_sufficiency": "SUFFICIENT for web asset; INSUFFICIENT for threat compromise",
+    "recommended_action": "Blind human review of URL domain reputation and script content"
+  },
+  {
+    "disagreement_id": "DISAGREE-03",
+    "incident_id": "132599145",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "observed_entity": "jquery.knob.js",
+    "historical_operational_label": "True Positive",
+    "historical_provenance": "Case has been raised for the similar incidents. (Operational ticketing note)",
+    "ais_2_6a_verdict": "FALSE_POSITIVE",
+    "ais_2_6b_verdict": "REQUIRES_ATTENTION (Proposed TP, Demoted by Validator: TP_CRITERIA_UNSATISFIED)",
+    "conflict_analysis": "Historical label was assigned because an analyst opened a ticket for similar alerts, NOT because jquery.knob.js was malicious. In 2.6a AI called it FP; in 2.6b AI proposed TP due to policy prompt bias; validator intervened to demote to RA.",
+    "evidence_sufficiency": "SUFFICIENT for library download; INSUFFICIENT for malicious payload",
+    "recommended_action": "Adjudicate whether standard UI libraries without malicious signatures should be classified as FP or RA"
+  },
+  {
+    "disagreement_id": "DISAGREE-04",
+    "incident_id": "132438483",
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "observed_entity": "UltraViewer_Service.exe",
+    "historical_operational_label": "False Positive",
+    "historical_provenance": "kill process is true (Resolution set by Machine Learning script)",
+    "ais_2_6a_verdict": "TRUE_POSITIVE",
+    "ais_2_6b_verdict": "TRUE_POSITIVE (Proposed TP, Accepted by Validator)",
+    "conflict_analysis": "The LLM claimed unsupported unauthorized software reasoning: 'The file path and command line indicate unauthorized use'. Process was executed from standard Program Files path; Falcon EPP blocked/killed the process. Historical FP was set by automated ML script because process was killed.",
+    "evidence_sufficiency": "PARTIAL (Execution blocked; corporate authorization unknown)",
+    "recommended_action": "Verify whether corporate policy bans UltraViewer or if IT maintenance was pre-approved"
+  },
+  {
+    "disagreement_id": "DISAGREE-05",
+    "incident_id": "132591888",
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "observed_entity": "update.exe",
+    "historical_operational_label": "False Positive",
+    "historical_provenance": "file observed is not suspicious (Resolution set by Machine Learning script)",
+    "ais_2_6a_verdict": "FALSE_POSITIVE",
+    "ais_2_6b_verdict": "REQUIRES_ATTENTION (Proposed TP, Demoted by Validator)",
+    "conflict_analysis": "Contrary to assumption that all Prisma incidents are static JS files, this incident downloaded 'update.exe' (a PE executable). The model proposed TP because it was an executable alert; the validator demoted to RA because no sandbox execution or threat intel confirmed maliciousness.",
+    "evidence_sufficiency": "PARTIAL (Executable transfer confirmed; malware status unknown without WildFire detonation)",
+    "recommended_action": "Prioritize sandbox hash detonation analysis"
+  }
+]

@@ -1,0 +1,101 @@
+[
+  {
+    "discrepancy_id": "DISC-01",
+    "metric": "Final True Positive Verdicts",
+    "reported_value": 8,
+    "recomputed_ledger_value": 9,
+    "variance": "+1 TP in ledger",
+    "affected_artifact": "docs/AIS_2_6b/BENCHMARK_METRICS.json",
+    "root_cause": "Stale aggregate calculation carried over from AIS 2.6a where CrowdStrike decisive was 8 instead of actual 9 in 2.6b ledger"
+  },
+  {
+    "discrepancy_id": "DISC-02",
+    "metric": "Final Requires Attention (Abstentions)",
+    "reported_value": 12,
+    "recomputed_ledger_value": 11,
+    "variance": "-1 RA in ledger",
+    "affected_artifact": "docs/AIS_2_6b/BENCHMARK_METRICS.json",
+    "root_cause": "Derived from stale TP count (20 - 8 = 12 reported; actual 20 - 9 = 11 in ledger)"
+  },
+  {
+    "discrepancy_id": "DISC-03",
+    "metric": "Decisive Coverage Rate",
+    "reported_value": "40.0%",
+    "recomputed_ledger_value": "45.0%",
+    "variance": "+5.0% in ledger",
+    "affected_artifact": "docs/AIS_2_6b/BENCHMARK_METRICS.json",
+    "root_cause": "Calculated as 8/20 (40.0%) instead of actual 9/20 (45.0%)"
+  },
+  {
+    "discrepancy_id": "DISC-04",
+    "metric": "CrowdStrike Decisive Count & Coverage",
+    "reported_value": "8 (80.0%)",
+    "recomputed_ledger_value": "9 (90.0%)",
+    "variance": "+1 decisive / +10.0%",
+    "affected_artifact": "docs/AIS_2_6b/BENCHMARK_METRICS.json",
+    "root_cause": "Incident 132474210 was accepted as TP by validator in 2.6b but omitted from reported decisive count"
+  },
+  {
+    "discrepancy_id": "DISC-05",
+    "metric": "Original LLM TP Proposal Rate",
+    "reported_value": "Not emphasized in executive summary",
+    "recomputed_ledger_value": "20 / 20 (100.0%)",
+    "variance": "Severe diagnostic finding omitted from primary executive view",
+    "affected_artifact": "docs/AIS_2_6b/20_FINAL_EXECUTIVE_ACCEPTANCE_AND_AIS_2_7_READINESS.md",
+    "root_cause": "Executive summary conflated post-validator decisive acceptance (8 or 9) with raw model proposals (20/20 TP)"
+  },
+  {
+    "discrepancy_id": "DISC-06",
+    "metric": "Average Prompt Tokens",
+    "reported_value": 4483.7,
+    "recomputed_ledger_value": 4358.6,
+    "variance": "-125.10 tokens",
+    "affected_artifact": "docs/AIS_2_6b/BENCHMARK_METRICS.json",
+    "root_cause": "Reported value used unweighted mean of rule averages (5462.1 + 3505.3)/2 = 4483.7 from preliminary run rather than ledger entries"
+  },
+  {
+    "discrepancy_id": "DISC-07",
+    "metric": "Average Completion Tokens",
+    "reported_value": 567.6,
+    "recomputed_ledger_value": 566.35,
+    "variance": "-1.25 tokens",
+    "affected_artifact": "docs/AIS_2_6b/BENCHMARK_METRICS.json",
+    "root_cause": "Manual arithmetic rounding / preliminary run artifact"
+  },
+  {
+    "discrepancy_id": "DISC-08",
+    "metric": "Average Latency",
+    "reported_value": "32.69 seconds (32685.7 ms)",
+    "recomputed_ledger_value": "31.35 seconds (31346.05 ms)",
+    "variance": "-1.34 seconds",
+    "affected_artifact": "docs/AIS_2_6b/BENCHMARK_METRICS.json",
+    "root_cause": "Arithmetic mean of preliminary rule summaries rather than exact per-record sum / 20"
+  },
+  {
+    "discrepancy_id": "DISC-09",
+    "metric": "Unsafe False Positive Rate",
+    "reported_value": "0.0%",
+    "recomputed_ledger_value": "null (NOT_DEMONSTRATED)",
+    "variance": "Mathematically undefined denominator (0 FP predictions)",
+    "affected_artifact": "docs/AIS_2_6b/BENCHMARK_METRICS.json",
+    "root_cause": "Zero FP predictions in denominator (0/0); reporting 0.0% falsely implied proven FP safety when zero FP predictions were made"
+  },
+  {
+    "discrepancy_id": "DISC-10",
+    "metric": "Execution Git SHA",
+    "reported_value": "2033c09156c68d51ce45ab829f6e691257e995dc",
+    "recomputed_ledger_value": "2033c09156c68d51ce45ab829f6e691257e995dc (STALE)",
+    "variance": "Points to AIS 2.4 instead of deployed AIS 2.6b commit",
+    "affected_artifact": "docs/AIS_2_6b/LIVE_EXECUTION_LEDGER.jsonl",
+    "root_cause": "Hardcoded fallback in empirical_benchmark_harness.py get_active_git_sha() when git command fails"
+  },
+  {
+    "discrepancy_id": "DISC-11",
+    "metric": "Trust Score Categorization & Calibration",
+    "reported_value": "Reported as calibrated / categorized as high in one artifact",
+    "recomputed_ledger_value": "All 20 records have trust_score = 3 (LOW); calibration status = NOT_CALIBRATED",
+    "variance": "Contradictory classification",
+    "affected_artifact": "docs/AIS_2_6b/TRUST_SCORE_CALIBRATION.json",
+    "root_cause": "Trust score 3 was clamped by G1_MISSING_MANDATORY_EVIDENCE because canonical_evidence was missing from trust_payload"
+  }
+]

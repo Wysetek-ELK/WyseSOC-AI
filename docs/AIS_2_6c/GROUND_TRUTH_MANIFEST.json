@@ -1,0 +1,11 @@
+{
+  "evaluation_phase": "AIS 2.6c",
+  "cohort_size": 20,
+  "level_0_count": 0,
+  "level_1_operational_count": 20,
+  "level_2_human_reviewed_count": 0,
+  "level_3_corroborated_count": 0,
+  "level_4_certified_count": 0,
+  "certification_status": "BLOCKED_PENDING_HUMAN_REVIEW",
+  "governance_contract": "Explicit human SOC analyst review required; AI cannot certify itself."
+}

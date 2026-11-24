@@ -1,0 +1,54 @@
+{
+  "phase_progression": [
+    {
+      "phase": "AIS 2.5a",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "cohort_size": 20,
+      "coverage_reported": "100.0% (Simulated)",
+      "decisive_proposals": "20",
+      "validation_engine": "Rule-based regex",
+      "trust_engine": "Initial uncalibrated",
+      "ground_truth_status": "Historical operational labels assumed true"
+    },
+    {
+      "phase": "AIS 2.6",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "cohort_size": 20,
+      "coverage_reported": "45.0%",
+      "decisive_proposals": "20 (all TP)",
+      "validation_engine": "IndependentVerdictValidator v1",
+      "trust_engine": "Ordinal clamping to 3/10",
+      "ground_truth_status": "Discovered script-generated operational labels"
+    },
+    {
+      "phase": "AIS 2.6a",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "cohort_size": 20,
+      "coverage_reported": "50.0%",
+      "decisive_proposals": "20 (all TP)",
+      "validation_engine": "IndependentVerdictValidator v2",
+      "trust_engine": "Ordinal clamping to 3/10",
+      "ground_truth_status": "Priority disagreements identified"
+    },
+    {
+      "phase": "AIS 2.6b",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "cohort_size": 20,
+      "coverage_reported": "40.0% (Report) / 45.0% (Ledger)",
+      "decisive_proposals": "20 (all TP)",
+      "validation_engine": "IndependentVerdictValidator v2.1",
+      "trust_engine": "Ordinal clamping to 3/10",
+      "ground_truth_status": "Zero certified labels documented"
+    },
+    {
+      "phase": "AIS 2.6c",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "cohort_size": 20,
+      "coverage_reported": "Three-Mode: Mode A 45%, Mode B 100%, Mode C 0%",
+      "decisive_proposals": "Mode A: 9 FP, 11 RA; Mode B: 11 TP, 9 FP",
+      "validation_engine": "IndependentVerdictValidator with Three-Mode & Fixed Trust Payload",
+      "trust_engine": "Canonical evidence attached; unclamped; G1-G7 strictly enforced",
+      "ground_truth_status": "5-Level Provenance Taxonomy; 20 Blind Review Packets; BLOCKED_PENDING_HUMAN_REVIEW"
+    }
+  ]
+}

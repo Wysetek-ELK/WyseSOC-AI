@@ -1,0 +1,29 @@
+{
+  "phase": "AIS 2.6c",
+  "total_incidents": 20,
+  "mode_b_proposals": {
+    "proposed_tp": 11,
+    "proposed_fp": 9,
+    "proposed_attention": 0
+  },
+  "mode_c_dispositions": {
+    "accepted_tp": 0,
+    "accepted_fp": 0,
+    "demoted_to_attention": 20
+  },
+  "demotions": {
+    "tp_demoted_to_ra": 11,
+    "fp_demoted_to_ra": 9,
+    "reasons": {
+      "G1_MISSING_MANDATORY_EVIDENCE": 0,
+      "G6_NEGATIVE_FP_PROHIBITION": 9,
+      "INSUFFICIENT_EVIDENCE_FOR_TP": 11
+    }
+  },
+  "safety_intervention_efficacy": {
+    "unsupported_decisions_blocked": 20,
+    "false_alarm_leakage_prevented": 9,
+    "unguaranteed_closure_blocked": 20,
+    "validator_reliability_score": "100.0% (Deterministic Enforcement)"
+  }
+}

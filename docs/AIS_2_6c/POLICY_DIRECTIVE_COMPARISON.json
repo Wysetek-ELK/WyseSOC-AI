@@ -1,0 +1,60 @@
+{
+  "comparison_target": "CrowdStrike & Prisma SASE Approved Policies vs. Neutral SOC Baseline",
+  "active_deployed_versions": {
+    "CrowdStrike": {
+      "active_version": 3,
+      "status": "APPROVED (Harness Fallback)",
+      "tp_indicator": "Execution of unauthorized remote administration tool without approved IT change request.",
+      "fp_indicator": "Approved enterprise management agent executing from standard vendor path with valid digital signature.",
+      "detection_condition": "Process execution of remote management tool or suspicious dual-use utility without verified enterprise authorization."
+    },
+    "Prisma_SASE": {
+      "active_version": 1,
+      "status": "APPROVED (Harness Fallback)",
+      "tp_indicator": "Executable payload or malicious script confirmed by threat intelligence or sandbox analysis.",
+      "fp_indicator": "Standard web asset (JavaScript library, CSS, image) downloaded during ordinary web browsing from reputable CDN or SaaS provider.",
+      "detection_condition": "Gateway detection of suspicious file download or script transfer over HTTP/HTTPS."
+    }
+  },
+  "database_stored_versions": {
+    "CrowdStrike_v1": {
+      "version": 1,
+      "status": "APPROVED",
+      "tp_indicators": "Process execution from unusual temp directories, Encoded PowerShell, Suspicious child processes, Known LOLBins",
+      "fp_indicators": "Approved enterprise software deployments (SCCM, Tanium, InTune), Scheduled administrative scripts"
+    },
+    "Prisma_SASE_v1": {
+      "version": 1,
+      "status": "APPROVED",
+      "tp_indicators": "Gateway malware download, C2 script beaconing",
+      "fp_indicators": "Standard web assets"
+    }
+  },
+  "neutral_baseline_prompt": {
+    "prompt_id": "AIS26C_NEUTRAL_SOC_BASELINE_V1",
+    "core_invariants": [
+      "A security alert indicates detection condition triggered; does NOT establish malicious activity or policy violation.",
+      "Do not assume software execution is unauthorized merely because authorization evidence is absent.",
+      "Do not assume common software or filenames are automatically benign.",
+      "Do not invent change tickets, threat intelligence, or sandbox results.",
+      "Do not favor one verdict category over another."
+    ]
+  },
+  "material_differences": [
+    {
+      "dimension": "Authorization framing",
+      "approved_policy_v3": "Defines TP as execution 'without verified enterprise authorization' or 'without approved IT change request'. Since raw FortiSIEM events never include ITSM tickets, the model treats absent authorization as confirmed policy violation.",
+      "neutral_baseline": "Explicitly instructs: 'Do not assume that software execution is unauthorized merely because authorization evidence is absent.'"
+    },
+    {
+      "dimension": "Alert-trigger assumption",
+      "approved_policy_v3": "States: 'The detection match and unauthorized execution attempt constitute a True Positive security policy violation'. Equates matching SIEM alert with True Positive.",
+      "neutral_baseline": "Explicitly instructs: 'A security alert indicates that a detection condition was triggered. It does not automatically establish malicious activity, unauthorized behavior, policy violation, or compromise.'"
+    },
+    {
+      "dimension": "Common SOC Baseline inclusion",
+      "approved_policy_v3": "Replaced the multi-paragraph ENTERPRISE_SOC_BASELINE_V2 (which contained warnings against suspicion vs confirmation) with a single sentence: 'Authoritative enterprise investigation policy for suspicious endpoint activity.'",
+      "neutral_baseline": "Fully articulates 6 balanced investigative questions covering both malicious and benign hypotheses."
+    }
+  ]
+}

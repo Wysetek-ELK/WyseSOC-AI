@@ -1,0 +1,23 @@
+{
+  "phase": "AIS 2.6c",
+  "effective_version": "AIS-2.6c-PROD-REC",
+  "runtime_budget_configuration": {
+    "max_context_tokens": 8192,
+    "max_completion_tokens": 768,
+    "target_input_budget": 6400,
+    "reserved_overhead_tokens": 1024,
+    "temperature": 0.0,
+    "top_p": 1.0
+  },
+  "prompt_engineering_recommendations": {
+    "policy_compiler": "Reinstate ENTERPRISE_SOC_BASELINE_V2 core anti-bias directives into compiled system prompts.",
+    "evidentiary_standard": "Explicitly forbid defining absence of authorization logs as proof of malicious execution.",
+    "alert_framing": "Strip sensationalist alert titles from system instructions; present telemetry neutrally.",
+    "delimiter_enforcement": "Maintain strict <UNTRUSTED_INCIDENT_DATA> escaping."
+  },
+  "trustworthiness_configuration": {
+    "trust_payload_fix": "Always attach canonical_evidence and events to trust_payload in EmpiricalBenchmarkHarness to prevent false 3/10 score clamping.",
+    "calibration_requirement": "Keep autonomous incident closure locked until at least 30 Level-4 certified incidents are adjudicated.",
+    "operational_mode": "SHADOW_MODE_ONLY"
+  }
+}

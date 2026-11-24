@@ -1,0 +1,269 @@
+{
+  "phase": "AIS 2.6c",
+  "evaluation_run_id": "EXP-AIS-2.6c-DEV-RUN",
+  "total_cohort_size": 20,
+  "mode": "OFFLINE_DETERMINISTIC_BENCHMARK_PROPOSAL",
+  "git_sha": "d854a5ef7471b74dab408473963a4511eab4dc66",
+  "summary": {
+    "mode_a_baseline": {
+      "proposed_tp": 0,
+      "proposed_fp": 9,
+      "proposed_attention": 11,
+      "decisive_count": 1
+    },
+    "mode_b_policy": {
+      "proposed_tp": 11,
+      "proposed_fp": 9,
+      "proposed_attention": 0,
+      "decisive_count": 2
+    },
+    "mode_c_validated": {
+      "final_tp": 0,
+      "final_fp": 0,
+      "final_attention": 20,
+      "validator_accepted_decisive": 0
+    }
+  },
+  "paired_comparisons": [
+    {
+      "incident_id": "132438483",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132439932",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132441815",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132461358",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132461368",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132472498",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132474210",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "VERIFIED_FP",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132501348",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132502453",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132527297",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132499009",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "VERIFIED_FP",
+      "mode_a_baseline": "FALSE_POSITIVE",
+      "mode_b_policy": "FALSE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "IDENTICAL",
+      "validator_impact": "FALSE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132499023",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "FALSE_POSITIVE",
+      "mode_b_policy": "FALSE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "IDENTICAL",
+      "validator_impact": "FALSE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132499745",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "FALSE_POSITIVE",
+      "mode_b_policy": "FALSE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "IDENTICAL",
+      "validator_impact": "FALSE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132578774",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "FALSE_POSITIVE",
+      "mode_b_policy": "FALSE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "IDENTICAL",
+      "validator_impact": "FALSE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132591888",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "REQUIRES_ATTENTION",
+      "mode_b_policy": "TRUE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "REQUIRES_ATTENTION -> TRUE_POSITIVE",
+      "validator_impact": "TRUE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132595592",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "FALSE_POSITIVE",
+      "mode_b_policy": "FALSE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "IDENTICAL",
+      "validator_impact": "FALSE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132596403",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "FALSE_POSITIVE",
+      "mode_b_policy": "FALSE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "IDENTICAL",
+      "validator_impact": "FALSE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132599145",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "FALSE_POSITIVE",
+      "mode_b_policy": "FALSE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "IDENTICAL",
+      "validator_impact": "FALSE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132599146",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "FALSE_POSITIVE",
+      "mode_b_policy": "FALSE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "IDENTICAL",
+      "validator_impact": "FALSE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    },
+    {
+      "incident_id": "132599330",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "ground_truth_label": "UNVERIFIED",
+      "mode_a_baseline": "FALSE_POSITIVE",
+      "mode_b_policy": "FALSE_POSITIVE",
+      "mode_c_validated": "REQUIRES_ATTENTION",
+      "policy_impact": "IDENTICAL",
+      "validator_impact": "FALSE_POSITIVE -> REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "trust_score": 3
+    }
+  ]
+}

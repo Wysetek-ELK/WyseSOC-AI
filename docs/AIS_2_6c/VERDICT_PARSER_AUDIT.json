@@ -1,0 +1,71 @@
+{
+  "parser_component": "app.services.model_provider.openai_compatible.OpenAICompatibleProvider",
+  "parser_functions": [
+    "robust_parse_model_verdict_json",
+    "_regex_fallback_extract",
+    "_repair_truncated_json",
+    "validate_verdict_schema"
+  ],
+  "audit_findings": {
+    "does_parsing_failure_default_to_tp": {
+      "finding": false,
+      "classification": "NOT_SUPPORTED",
+      "evidence": "In base.py lines 84-95, validate_verdict_schema validates verdict enum and reason. If invalid or missing, returns (False, 'INVALID_SCHEMA' or 'UNEXPECTED_VERDICT'). In openai_compatible.py lines 525-543, schema validation failure explicitly returns StructuredModelVerdict with verdict='REQUIRES_ATTENTION' and confidence=0.0."
+    },
+    "does_unknown_enum_default_to_tp": {
+      "finding": false,
+      "classification": "NOT_SUPPORTED",
+      "evidence": "In base.py lines 90-91: if verdict not in valid_verdicts: return False, 'UNEXPECTED_VERDICT'. In openai_compatible.py: triggers REQUIRES_ATTENTION."
+    },
+    "does_empty_or_missing_verdict_default_to_tp": {
+      "finding": false,
+      "classification": "NOT_SUPPORTED",
+      "evidence": "In base.py line 87: if not verdict: return False, 'INVALID_SCHEMA', 'Missing required field: verdict'."
+    },
+    "does_truncated_output_default_to_tp": {
+      "finding": false,
+      "classification": "NOT_SUPPORTED",
+      "evidence": "In openai_compatible.py lines 707-735: if is_truncated: returns StructuredModelVerdict with verdict='REQUIRES_ATTENTION', confidence=0.0."
+    },
+    "does_regex_recovery_accept_tp": {
+      "finding": false,
+      "classification": "NOT_SUPPORTED",
+      "evidence": "In openai_compatible.py lines 765-776: if is_recovered and raw_verdict_str in ('TRUE_POSITIVE', 'FALSE_POSITIVE'): decisive TP/FP is strictly rejected with verdict='REQUIRES_ATTENTION'."
+    },
+    "did_model_genuinely_emit_tp_tokens": {
+      "finding": true,
+      "classification": "CONFIRMED",
+      "evidence": "All 20 records in LIVE_EXECUTION_LEDGER.jsonl contain raw_proposed_verdict='TRUE_POSITIVE' directly emitted in valid JSON by Qwen/Qwen2.5-7B-Instruct-AWQ."
+    }
+  },
+  "verdict_lifecycle_audit": [
+    {
+      "stage": "1_raw_provider_response",
+      "description": "Raw string returned by vLLM inference engine on Server 2"
+    },
+    {
+      "stage": "2_extracted_assistant_content",
+      "description": "JSON object extracted by robust_parse_model_verdict_json"
+    },
+    {
+      "stage": "3_parsed_verdict_string",
+      "description": "Raw verdict field from JSON: 'TRUE_POSITIVE'"
+    },
+    {
+      "stage": "4_normalized_verdict_enum",
+      "description": "Standardized to UserVisibleVerdict enum"
+    },
+    {
+      "stage": "5_model_proposed_verdict",
+      "description": "Recorded as raw_proposed_verdict in benchmark record"
+    },
+    {
+      "stage": "6_validator_disposition",
+      "description": "IndependentVerdictValidator accepts TP (9 CrowdStrike) or rejects to REQUIRES_ATTENTION (1 CS MEGAsync + 10 Prisma SASE)"
+    },
+    {
+      "stage": "7_final_application_verdict",
+      "description": "Authoritative user-visible triage verdict"
+    }
+  ]
+}

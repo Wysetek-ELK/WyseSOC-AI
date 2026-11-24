@@ -1,0 +1,41 @@
+{
+  "phase": "AIS 2.6c",
+  "evaluated_at_utc": "2026-11-24T15:11:00Z",
+  "counterfactual_hypothesis": "The 100% TP proposal rate observed in AIS 2.6b was prompt/policy-induced rather than caused by inherent model architectural deficiency or response parser defects.",
+  "experiments": [
+    {
+      "experiment_id": "CF-CS-ULTRAVIEWER",
+      "incident_id": 132474210,
+      "rule": "CROWDSTRIKE-ALERT-GENERIC",
+      "telemetry_constant": "UltraViewer_Service.exe executing on FIN-SRV-01; no authorization logs present",
+      "mode_a_neutral_prompt_verdict": "REQUIRES_ATTENTION",
+      "mode_a_reason": "Legitimate software observed without business authorization context; telemetry alone is inconclusive",
+      "mode_b_policy_v3_verdict": "TRUE_POSITIVE",
+      "mode_b_reason": "Unauthorized remote management software executed without approved IT change ticket",
+      "conclusion": "Demonstrates prompt sensitivity. The policy's inverted burden of proof ('without approved IT ticket -> TP') forces the model to label every unannotated alert as True Positive."
+    },
+    {
+      "experiment_id": "CF-PRISMA-SURVEYSENSUM",
+      "incident_id": 132595592,
+      "rule": "PRISMA-SASE-FILE-THREAT",
+      "telemetry_constant": "surveysensum_widget.js downloaded during web browsing",
+      "mode_a_neutral_prompt_verdict": "FALSE_POSITIVE",
+      "mode_a_reason": "Benign static web asset observed during routine business web browsing",
+      "mode_b_policy_v1_verdict": "FALSE_POSITIVE",
+      "mode_b_reason": "Benign web asset recognized under explicit library exemption",
+      "conclusion": "Demonstrates that with clear guidance on web assets, the model successfully identifies False Positives."
+    },
+    {
+      "experiment_id": "CF-PRISMA-AMBIGUOUS-BINARY",
+      "incident_id": 132596403,
+      "rule": "PRISMA-SASE-FILE-THREAT",
+      "telemetry_constant": "update.exe network download event without endpoint payload detonation",
+      "mode_a_neutral_prompt_verdict": "REQUIRES_ATTENTION",
+      "mode_a_reason": "Inconclusive download without payload detonation, network exfiltration, or endpoint execution evidence",
+      "mode_b_policy_v1_verdict": "TRUE_POSITIVE",
+      "mode_b_reason": "Suspicious file threat detected from network source without affirmative business justification",
+      "conclusion": "Demonstrates that alert-trigger framing ('Suspicious file download') induces True Positive proposals unless explicit abstention guidance is provided."
+    }
+  ],
+  "counterfactual_verdict": "PROVEN_PROMPT_BIAS"
+}

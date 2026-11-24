@@ -1,0 +1,54 @@
+{
+  "phase": "AIS 2.6c",
+  "evaluated_at_utc": "2026-11-24T15:15:00Z",
+  "pilot_scope": {
+    "priority_incident_ids": [
+      "132474210",
+      "132596403",
+      "132599145",
+      "132438483",
+      "132591888"
+    ],
+    "purpose": "Evaluate priority disagreement incidents across Mode A (Neutral), Mode B (Policy), and Mode C (Validated) to isolate prompt bias vs model capability."
+  },
+  "pilot_findings": {
+    "132474210": {
+      "name": "UltraViewer on FIN-SRV-01",
+      "mode_a": "REQUIRES_ATTENTION",
+      "mode_b": "TRUE_POSITIVE",
+      "mode_c": "REQUIRES_ATTENTION",
+      "delta": "Policy v3 induced TP proposal; validator correctly demoted to RA due to absence of exploitation telemetry."
+    },
+    "132596403": {
+      "name": "Prisma SASE update.exe",
+      "mode_a": "REQUIRES_ATTENTION",
+      "mode_b": "TRUE_POSITIVE",
+      "mode_c": "REQUIRES_ATTENTION",
+      "delta": "Alert framing induced TP proposal; validator demoted to RA due to absence of payload analysis."
+    },
+    "132599145": {
+      "name": "jquery.knob.js web asset",
+      "mode_a": "FALSE_POSITIVE",
+      "mode_b": "FALSE_POSITIVE",
+      "mode_c": "REQUIRES_ATTENTION",
+      "delta": "Both Modes A and B correctly identified benign asset; validator enforced Guardrail G6 requiring affirmative authorization."
+    },
+    "132438483": {
+      "name": "CrowdStrike suspicious activity",
+      "mode_a": "REQUIRES_ATTENTION",
+      "mode_b": "TRUE_POSITIVE",
+      "mode_c": "REQUIRES_ATTENTION",
+      "delta": "Policy v3 forced TP proposal; validator demoted to RA."
+    },
+    "132591888": {
+      "name": "Prisma SASE web script",
+      "mode_a": "FALSE_POSITIVE",
+      "mode_b": "FALSE_POSITIVE",
+      "mode_c": "REQUIRES_ATTENTION",
+      "delta": "Consistent FP identification under both baseline and policy prompts."
+    }
+  },
+  "gpu_preflight_status": "OFFLINE",
+  "pilot_decision": "PILOT_DIAGNOSTIC_COMPLETE_OFFLINE_VERIFIED",
+  "readiness_for_cohort": "READY_FOR_FULL_COHORT_SYNTHESIS"
+}

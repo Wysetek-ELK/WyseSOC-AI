@@ -1,0 +1,77 @@
+{
+  "title": "AIS26C_ExperimentResponseSchema",
+  "type": "object",
+  "required": [
+    "verdict",
+    "confidence",
+    "observed_activity",
+    "rule_trigger_assessment",
+    "supporting_evidence",
+    "contradictory_evidence",
+    "missing_evidence",
+    "reason"
+  ],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "TRUE_POSITIVE",
+        "FALSE_POSITIVE",
+        "REQUIRES_ATTENTION"
+      ],
+      "description": "Objective security triage classification. No default value provided."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 100.0,
+      "description": "Model raw subjective confidence score (uncalibrated)."
+    },
+    "observed_activity": {
+      "type": "string",
+      "description": "Concise factual summary of observed process, network, or file activity."
+    },
+    "rule_trigger_assessment": {
+      "type": "string",
+      "description": "Evaluation of why the FortiSIEM detection rule condition triggered."
+    },
+    "supporting_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "ref",
+          "claim"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Evidence identifier reference (e.g. EV-01)"
+          },
+          "claim": {
+            "type": "string",
+            "description": "Factual assertion grounded in cited evidence"
+          }
+        }
+      }
+    },
+    "contradictory_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Evidence conflicting with the primary hypothesis."
+    },
+    "missing_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Critical telemetry items absent from available incident logs."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Synthesized technical rationale for the proposed verdict."
+    }
+  }
+}

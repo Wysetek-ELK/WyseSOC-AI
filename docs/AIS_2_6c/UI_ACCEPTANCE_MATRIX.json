@@ -1,0 +1,49 @@
+{
+  "phase": "AIS 2.6c",
+  "evaluated_at_utc": "2026-11-24T15:25:00Z",
+  "frontend_framework": "Next.js 16.4.5 (Turbopack) / React 19 / Tailwind v4",
+  "verification_evidence": {
+    "unit_tests": {
+      "test_runner": "Jest / React Testing Library",
+      "suites_passed": 16,
+      "tests_passed": 80,
+      "status": "PASS"
+    },
+    "production_build": {
+      "command": "npm run build",
+      "duration_sec": 1.1,
+      "static_pages_generated": 32,
+      "lint_status": "PASS",
+      "typecheck_status": "PASS",
+      "status": "PASS"
+    }
+  },
+  "ui_components_verified": [
+    {
+      "component": "Compact AIS Dashboard (/agent-studio)",
+      "purpose": "Consolidated single-screen agent intelligence studio",
+      "status": "VERIFIED_OPERATIONAL"
+    },
+    {
+      "component": "Three-Mode Experiment View (/agent-studio/experiments)",
+      "purpose": "Side-by-side comparative inspection of Mode A, Mode B, and Mode C verdicts",
+      "status": "VERIFIED_OPERATIONAL"
+    },
+    {
+      "component": "Ground Truth Blind Review Workspace (/agent-studio/ground-truth)",
+      "purpose": "Tier-3 analyst blind adjudication queue with 5-level provenance tagging",
+      "status": "VERIFIED_OPERATIONAL"
+    },
+    {
+      "component": "Confidence Scale & Trust Score Visualizer",
+      "purpose": "Displays 0-10 ordinal trust score with guardrail trigger badges",
+      "status": "VERIFIED_OPERATIONAL"
+    },
+    {
+      "component": "Priority Disagreement Inspector",
+      "purpose": "Deep forensic audit pane for conflicting historical labels",
+      "status": "VERIFIED_OPERATIONAL"
+    }
+  ],
+  "overall_ui_acceptance": "PASS"
+}

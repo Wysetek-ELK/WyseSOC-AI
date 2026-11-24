@@ -1,0 +1,34 @@
+{
+  "CrowdStrike_Suspicious_Activity": {
+    "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+    "archetype": "MALWARE_EXECUTION / DUAL_USE_TOOL",
+    "semantics": {
+      "detection_trigger": "Process execution of dual-use remote admin utility or IoA rule pattern",
+      "observed_action": "UltraViewer_Service.exe or MEGAsync.exe launched by services.exe",
+      "authorization_distinction": "Unknown authorization in SIEM alert is NOT proof of unauthorized policy violation; requires ITSM verification",
+      "maliciousness_distinction": "Process execution of dual-use software without payload or credential dumping does NOT constitute confirmed breach",
+      "outcome_distinction": "Falcon EPP blocked/killed the process, mitigating host persistence"
+    },
+    "verdict_taxonomy": {
+      "TRUE_POSITIVE": "Confirmed unauthorized adversary installation/execution or active malicious session establishing external C2",
+      "FALSE_POSITIVE": "Authorized administrative remote support, scheduled deployment, or pre-approved maintenance",
+      "REQUIRES_ATTENTION": "Dual-use remote tool observed without ITSM authorization record or live session logs"
+    }
+  },
+  "Prisma_SASE_Suspicious_File": {
+    "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+    "archetype": "PERIMETER_GATEWAY_THREAT",
+    "semantics": {
+      "detection_trigger": "Perimeter gateway HTTP transfer flagged by threat signature or extension",
+      "observed_action": "HTTP GET transfer of JavaScript asset or PE executable",
+      "authorization_distinction": "Public CDN and SaaS browsing is expected corporate traffic",
+      "maliciousness_distinction": "Standard jQuery/SaaS UI libraries are benign; executables require WildFire sandbox detonation",
+      "outcome_distinction": "Gateway permitted transfer; endpoint impact requires host telemetry"
+    },
+    "verdict_taxonomy": {
+      "TRUE_POSITIVE": "Confirmed malware payload, malicious script beacon, or exploit confirmed by WildFire or threat intelligence",
+      "FALSE_POSITIVE": "Standard web asset, stylesheet, or SaaS analytics library downloaded during normal browsing",
+      "REQUIRES_ATTENTION": "Unclassified executable binary (e.g. update.exe) without sandbox detonation report"
+    }
+  }
+}

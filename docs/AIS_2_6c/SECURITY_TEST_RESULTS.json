@@ -1,0 +1,48 @@
+{
+  "phase": "AIS 2.6c",
+  "security_assessment_at_utc": "2026-11-24T15:11:00Z",
+  "active_git_sha": "d854a5ef7471b74dab408473963a4511eab4dc66",
+  "security_invariants": {
+    "untrusted_delimiter_isolation": {
+      "status": "PASS",
+      "mechanism": "All incident and rule data wrapped in <UNTRUSTED_INCIDENT_DATA> with strict closing tag HTML entity escaping (&lt;/UNTRUSTED_INCIDENT_DATA&gt;)",
+      "verified_by": "test_ais_2_6b_counterfactual_validation.py"
+    },
+    "zero_leakage_of_ground_truth": {
+      "status": "PASS",
+      "mechanism": "Model-facing payload builder strips all ground_truth_label, analyst comments, and resolution fields prior to prompt assembly",
+      "verified_by": "test_ground_truth_isolation.py"
+    },
+    "preflight_telemetry_gate": {
+      "status": "PASS",
+      "mechanism": "EvidencePreflightValidator verifies contract status APPROVED and mandatory field presence prior to dispatch; abstains with 0 GPU waste if critical telemetry is missing",
+      "verified_by": "test_evidence_preflight.py"
+    },
+    "claim_grounding_audit": {
+      "status": "PASS",
+      "mechanism": "ModelClaimExtractor grounds 100% of model assertions against canonical evidence IDs; ungrounded claims rejected",
+      "verified_by": "test_evidence_grounding.py"
+    },
+    "guardrails_g1_to_g7": {
+      "status": "PASS",
+      "g1_missing_mandatory_evidence": "ENFORCED",
+      "g2_contradictory_evidence": "ENFORCED",
+      "g3_empty_decisive_claims": "ENFORCED",
+      "g4_incomplete_detection_semantics": "ENFORCED",
+      "g5_low_trust_score": "ENFORCED",
+      "g6_negative_fp_prohibition": "ENFORCED",
+      "g7_alert_firing_alone": "ENFORCED"
+    },
+    "shadow_mode_closure_lock": {
+      "status": "PASS",
+      "mechanism": "auto_incident_closure_allowed is hardcoded to False in Shadow Mode. Autonomous incident closure is unconditionally prohibited",
+      "verified_by": "test_ais_2_6c_three_mode_and_bias_isolation.py"
+    },
+    "zero_secret_exposure": {
+      "status": "PASS",
+      "mechanism": "Endpoint authorization headers and SSH keys sanitized; zero credentials exposed in artifacts or git ledgers",
+      "verified_by": "manual and automated git scanning"
+    }
+  },
+  "overall_security_status": "PASS"
+}

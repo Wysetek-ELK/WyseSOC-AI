@@ -1,0 +1,28 @@
+{
+  "phase": "AIS 2.6c",
+  "evaluated_at_utc": "2026-11-24T15:11:00Z",
+  "target_gpu_server": {
+    "server_id": "Server 2 (AWS GPU Server)",
+    "instance_type": "AWS GPU Instance (NVIDIA A10G)",
+    "target_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "endpoint": "http://13.204.214.64:8000/v1",
+    "models_probe_url": "http://13.204.214.64:8000/v1/models"
+  },
+  "preflight_connectivity_probe": {
+    "probe_timestamp_utc": "2026-11-24T15:08:40Z",
+    "probe_method": "HTTP GET /v1/models (timeout: 5000ms)",
+    "result": "TIMEOUT / UNREACHABLE",
+    "status": "OFFLINE"
+  },
+  "governance_safeguard": {
+    "rule": "Operator authorization required prior to starting, stopping, resizing, or altering AWS infrastructure",
+    "action_taken": "Did NOT start or modify AWS GPU Server 2 without operator command",
+    "safe_mode": "Engage governed offline simulation with deterministic Three-Mode pipeline"
+  },
+  "go_no_go_decision": {
+    "decision": "NO_GO_FOR_LIVE_GPU",
+    "reason": "GPU Server 2 (http://13.204.214.64:8000/v1) is unreachable (instance stopped or security group restricted).",
+    "certification_mode": "ENGINEERING_COMPLETE_GPU_EXPERIMENT_PENDING",
+    "fallback_execution": "Authoritative deterministic offline simulation harness across Modes A, B, and C"
+  }
+}

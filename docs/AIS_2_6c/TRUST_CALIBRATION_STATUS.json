@@ -1,0 +1,9 @@
+{
+  "calibration_status": "NOT_CALIBRATED",
+  "calibrated_rules_count": 0,
+  "uncalibrated_rules_count": 2,
+  "sample_threshold_required": 30,
+  "certified_cases_available": 0,
+  "calibration_rationale": "Empirical trust calibration cannot be certified without independently reviewed ground truth.",
+  "autonomous_closure_allowed": false
+}
