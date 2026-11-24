@@ -773,6 +773,31 @@ class IndependentVerdictValidator:
                     if not has_spoofed_admin_binary and not unverified_binary_provenance:
                         has_grounded_authorization = True
                         break
+                # C: Approved enterprise domain / network baseline (verified non-malicious vendor CDN or allowed domain)
+                if c_field_lower in ("network.destination_domain", "destination_domain", "http.url", "url", "domain.allowlist", "policy.approved_domain"):
+                    has_clean_reputation = any(
+                        r.source_field in ("threat_intel.verdict", "file.reputation", "url.reputation", "reputation.score")
+                        and str(r.observed_value).strip().lower() in ("clean", "benign", "safe", "0")
+                        for r in normalization_result.records
+                    )
+                    has_approved_domain_baseline = any(
+                        r.source_field in ("policy.approved_domain", "domain.allowlist", "policy.approved_baseline")
+                        or (c_val_lower and c_val_lower in str(r.observed_value).lower())
+                        for r in normalization_result.records
+                    )
+                    if (has_clean_reputation or has_approved_domain_baseline) and not has_adversary_tradecraft:
+                        has_grounded_authorization = True
+                        break
+                # D: Authoritative clean file hash or clean threat intelligence
+                if c_field_lower in ("file.hash_sha256", "file.hash_md5", "file.name", "threat_intel.verdict"):
+                    has_clean_file_rep = any(
+                        r.source_field in ("threat_intel.verdict", "file.reputation", "antivirus.verdict")
+                        and str(r.observed_value).strip().lower() in ("clean", "benign", "safe")
+                        for r in normalization_result.records
+                    )
+                    if has_clean_file_rep and not has_adversary_tradecraft:
+                        has_grounded_authorization = True
+                        break
 
             # Evaluate Gates:
             if preflight.preflight_status == "INSUFFICIENT" or preflight.evidence_completeness < 0.5 or claim_grounding.grounded_claims == 0:

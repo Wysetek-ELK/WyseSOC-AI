@@ -278,7 +278,7 @@ class ModelClaimExtractor:
             "trojan", "ransomware", "malicious binary", "known attack tool", "malicious execution",
             "malicious process", "malicious activity"
         )
-        if any(kw in claim_corpus for kw in reputation_keywords) and not any(neg in claim_corpus for neg in ("not malicious", "non-malicious", "no malware")):
+        if any(kw in claim_corpus for kw in reputation_keywords) and not any(neg in claim_corpus for neg in ("not malicious", "non-malicious", "no malware", "clean reputation", "benign reputation", "safe reputation", "clean")):
             if rec_field in ("security.action", "endpoint.process_blocked", "endpoint.file_quarantined", "action"):
                 return (
                     False,
@@ -309,14 +309,19 @@ class ModelClaimExtractor:
                 )
 
         # 3. Authorization / Maintenance Predicate
-        auth_keywords = (
-            "authorized", "approved", "maintenance window", "scheduled task",
-            "change ticket", "change request", "approved maintenance"
+        auth_patterns = (
+            r"\b(?:authorized|approved)\s+(?:activity|maintenance|ticket|request|access|execution|scan|user|process)\b",
+            r"\b(?:maintenance\s+window|scheduled\s+task|change\s+ticket|change\s+request|approved\s+maintenance)\b",
+            r"\b(?:under\s+change\s+control|under\s+approved\s+cr)\b"
         )
-        if any(kw in claim_corpus for kw in auth_keywords) and not any(neg in claim_corpus for neg in ("not authorized", "unauthorized", "unapproved", "no change", "without approved", "absence of")):
+        is_auth_claim = claim.claim_type in ("AUTHORIZATION", "ADMINISTRATIVE_APPROVAL") or (
+            claim_text and any(re.search(p, claim_text.lower()) for p in auth_patterns)
+        )
+        if is_auth_claim and not any(neg in claim_corpus for neg in ("not authorized", "unauthorized", "unapproved", "no change", "without approved", "absence of")):
             auth_fields = (
                 "authorization.", "itsm.", "change.", "maintenance.", "asset.scanner_role",
-                "asset.is_authorized_scanner"
+                "asset.is_authorized_scanner", "policy.approved", "domain.allowlist",
+                "policy.approved_domain", "policy.approved_baseline"
             )
             if not any(rec_field.startswith(af) or af in rec_field for af in auth_fields):
                 return (

@@ -412,14 +412,20 @@ class EmpiricalBenchmarkHarness:
                 ):
                     label_str = "UNVERIFIED"
 
-                # Check for duplicate cluster key
-                raw_k = f"{rule_id}|{target}|{events_count}"
+                # Telemetry clustering & exact deduplication (AIS 2.5a Stage 4)
+                # Cluster key groups related security events (e.g. same rule and target entity)
+                raw_k = f"{rule_id}|{target}"
                 cluster_key = hashlib.sha256(raw_k.encode("utf-8")).hexdigest()[:16]
-                if cluster_key in cluster_tracker:
+
+                # Exact duplicate detection: only records with identical timestamps and event artifacts are exact duplicates
+                detail_str = str(data.get("detail") or "")
+                raw_event_fingerprint = f"{rule_id}|{target}|{inc_time}|{detail_str}"
+                event_hash = hashlib.sha256(raw_event_fingerprint.encode("utf-8")).hexdigest()[:16]
+                if event_hash in cluster_tracker:
                     is_duplicate = True
                 else:
                     is_duplicate = False
-                    cluster_tracker[cluster_key] = inc_id
+                    cluster_tracker[event_hash] = inc_id
 
                 # Data Blinding & Anti-Leakage Check
                 sanitized = HistoricalGroundTruthValidator.sanitize_incident_for_inference(data)
@@ -536,16 +542,18 @@ class EmpiricalBenchmarkHarness:
                 ):
                     label_str = "UNVERIFIED"
 
-                # Check duplicate cluster key
+                # Telemetry clustering & exact deduplication (AIS 2.5a Stage 4)
                 cluster_key = None
                 is_duplicate = False
                 if cleared_epoch and cleared_reason and len(str(cleared_reason).strip()) >= 8:
                     raw_k = f"{rule_id}|{label_str}|{cleared_epoch}|{str(cleared_reason).strip().lower()}"
                     cluster_key = hashlib.sha256(raw_k.encode("utf-8")).hexdigest()[:16]
-                    if cluster_key in cluster_tracker:
+                    detail_str = str(payload.get("detail") or "")
+                    event_hash = hashlib.sha256(f"{rule_id}|{detail_str}".encode("utf-8")).hexdigest()[:16] if detail_str else cluster_key
+                    if event_hash in cluster_tracker:
                         is_duplicate = True
                     else:
-                        cluster_tracker[cluster_key] = inc_id
+                        cluster_tracker[event_hash] = inc_id
 
                 # Data Blinding & Anti-Leakage Check
                 sanitized = HistoricalGroundTruthValidator.sanitize_incident_for_inference(payload)
