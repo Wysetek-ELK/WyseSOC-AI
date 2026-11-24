@@ -99,12 +99,6 @@ class ModelTokenizerService:
         sys_tokens = cls.count_tokens(system_prompt, model_name=model_name)
         user_tokens = cls.count_tokens(user_message, model_name=model_name)
         raw_sum = sys_tokens + user_tokens + cls.CHAT_TEMPLATE_OVERHEAD_TOKENS
-        target_model = str(model_name or "Qwen/Qwen2.5-7B-Instruct-AWQ").lower()
-        if "qwen" in target_model:
-            # Calibrated safety margin (+3.5% + 12 tokens) to guarantee that local preflight admission
-            # never underestimates physical vLLM BPE wire tokens on complex paths and JSON symbols
-            calibrated = int(raw_sum * 1.035) + 12
-            return max(raw_sum, calibrated)
         return raw_sum
 
     @classmethod
