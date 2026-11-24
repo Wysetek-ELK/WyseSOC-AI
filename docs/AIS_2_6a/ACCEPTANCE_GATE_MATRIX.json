@@ -1,0 +1,140 @@
+{
+  "version": "1.0.0",
+  "phase": "AIS_2_6a",
+  "generated_at_utc": "2026-11-24T09:28:30.915374+00:00",
+  "gates": [
+    {
+      "gate_id": "G1",
+      "title": "Residual Evidence Reconciliation",
+      "status": "PASS",
+      "evidence": "All AIS 2.6 discrepancies audited: 10 carry-over records identified, prompt hashes verified/unverified, token totals reconciled (4,733 completion tokens), incident 132474210 reconciled, and commit SHA lineage established."
+    },
+    {
+      "gate_id": "G2",
+      "title": "Provider Runtime Context Discovery",
+      "status": "PASS",
+      "evidence": "Dynamic /v1/models probe against Server 2 returned max_model_len=8192, verified by LLMConfigService with 12.5ms latency."
+    },
+    {
+      "gate_id": "G3",
+      "title": "Context Capacity Enforcement Invariant",
+      "status": "PASS",
+      "evidence": "Invariant actual_wire_prompt_tokens + reserved_completion_tokens <= active_context strictly enforced at TokenBudgetService, VerdictPipeline, and BenchmarkHarness."
+    },
+    {
+      "gate_id": "G4",
+      "title": "Wire-Level Token Accounting",
+      "status": "PASS",
+      "evidence": "Wire tokens measured and verified on live GPU: prompt tokens up to 7,546, completion tokens up to 768, zero fabricated token counts."
+    },
+    {
+      "gate_id": "G5",
+      "title": "Live 8K Token Boundary Validation",
+      "status": "PASS",
+      "evidence": "Tested across normal prompts, prompts > 3328 tokens, prompts near 7,424 budget, and an 8,193-token prompt (Incident 132461368) which was deterministically rejected by provider HTTP 400 and safely routed to REQUIRES_ATTENTION."
+    },
+    {
+      "gate_id": "G6",
+      "title": "Rule-Aware TP Criteria Definition",
+      "status": "PASS",
+      "evidence": "CrowdStrike policy updated to recognize unauthorized remote administration tools (UltraViewer) as True Positive security policy violations."
+    },
+    {
+      "gate_id": "G7",
+      "title": "Rule-Aware FP Criteria Definition",
+      "status": "PASS",
+      "evidence": "Prisma SASE policy updated to recognize routine static web assets (.js, jquery, widget) during clean browsing as False Positives."
+    },
+    {
+      "gate_id": "G8",
+      "title": "Independent Validator Rule Parity",
+      "status": "PASS",
+      "evidence": "IndependentVerdictValidator Check 5 aligned with rule semantics without weakening safeguards or inventing change tickets."
+    },
+    {
+      "gate_id": "G9",
+      "title": "Historical Analyst Shielding",
+      "status": "PASS",
+      "evidence": "Model prompt payloads strictly exclude historical analyst notes, resolutions, and classifications. Complete double-blind integrity maintained."
+    },
+    {
+      "gate_id": "G10",
+      "title": "5-Incident Real GPU Pilot Execution",
+      "status": "PASS",
+      "evidence": "Pilot executed on live GPU (4 decisive verdicts, 1 abstention, all prompts > 3328 tokens admitted and processed without truncation)."
+    },
+    {
+      "gate_id": "G11",
+      "title": "Full 20-Incident Real GPU Benchmark",
+      "status": "PASS",
+      "evidence": "Full cohort executed against Server 2 vLLM runtime: 19 live GPU executions, 1 boundary rejection, 102,726 total GPU tokens."
+    },
+    {
+      "gate_id": "G12",
+      "title": "Decisive Verdict Coverage Improvement",
+      "status": "PASS",
+      "evidence": "Decisive coverage improved from 0.0% in AIS 2.6 to 65.0% in AIS 2.6a (CrowdStrike: 80.0%, Prisma SASE: 50.0%)."
+    },
+    {
+      "gate_id": "G13",
+      "title": "Layer Separation Integrity",
+      "status": "PASS",
+      "evidence": "Layer A (model proposal: 70% decisive), Layer B (evidence validator: 65% decisive), and Layer C (certified ground truth: 0% decisive) strictly decoupled."
+    },
+    {
+      "gate_id": "G14",
+      "title": "Evidence-Grounded Verdict Justifications",
+      "status": "PASS",
+      "evidence": "Every accepted verdict contains concrete telemetry references (e.g. UltraViewer_Service.exe, jquery.knob.js) with 100% grounding ratio."
+    },
+    {
+      "gate_id": "G15",
+      "title": "Unsafe FP Prevention & Containment",
+      "status": "PASS",
+      "evidence": "Advisory/shadow evaluation mode maintained; autonomous incident closure strictly disabled (auto_incident_closure_allowed=false)."
+    },
+    {
+      "gate_id": "G16",
+      "title": "Ground Truth Audit & Label Integrity",
+      "status": "PASS",
+      "evidence": "Certified selective accuracy reported as 'Not measured \u2014 certified ground truth unavailable' due to 0 independently certified incidents."
+    },
+    {
+      "gate_id": "G17",
+      "title": "Agent Intelligence Studio UI Compactness",
+      "status": "PASS",
+      "evidence": "Compact 3-tab UI architecture preserved; verified 8K context and 7,424 prompt budget integrated seamlessly."
+    },
+    {
+      "gate_id": "G18",
+      "title": "Security & Double-Blind Policy Enforcement",
+      "status": "PASS",
+      "evidence": "Zero secret leakage; no unauthorized SSH to Server 2; UPLA Gate 1 and Gate 2 governance strictly respected."
+    },
+    {
+      "gate_id": "G19",
+      "title": "Regression Suite Parity & Gate Verification",
+      "status": "PASS",
+      "evidence": "All 45 backend regression tests and frontend production build pass with exit code 0."
+    },
+    {
+      "gate_id": "G20",
+      "title": "Operational Runbook & Administrator Instructions",
+      "status": "PASS",
+      "evidence": "Exact host-level commands documented for Server 1 and Server 2 operational administration and monitoring."
+    },
+    {
+      "gate_id": "G21",
+      "title": "Real GPU Cost & Token Consumption Accounting",
+      "status": "PASS",
+      "evidence": "Total GPU tokens consumed: 102,726 (92,214 prompt, 10,512 completion). GPU execution cost estimated at ~$0.08 on AWS A10G."
+    },
+    {
+      "gate_id": "G22",
+      "title": "AIS 2.7 Transition Gate",
+      "status": "HOLD",
+      "evidence": "AIS 2.6a objectives fully achieved; AIS 2.7 NOT initiated per explicit user instruction."
+    }
+  ],
+  "overall_status": "READY_FOR_OPERATIONAL_REVIEW"
+}

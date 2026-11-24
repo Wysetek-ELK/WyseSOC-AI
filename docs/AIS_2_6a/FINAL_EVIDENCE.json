@@ -1,0 +1,44 @@
+{
+  "phase": "AIS_2_6a",
+  "completed_at_utc": "2026-11-24T09:28:30.915374+00:00",
+  "deployed_git_sha": "f7ca10a575cdf9959529f6a79221769acfb88e91",
+  "servers": {
+    "server_1": {
+      "ip": "172.26.41.240",
+      "hostname": "verdictum-core-01",
+      "services": [
+        "ai-verdict-backend.service",
+        "ai-verdict-frontend.service"
+      ],
+      "status": "HEALTHY",
+      "context_budget": 8192,
+      "max_tokens": 768,
+      "target_input_budget": 7424,
+      "verified_max_model_len": 8192
+    },
+    "server_2": {
+      "ip": "13.204.214.64:8000",
+      "hostname": "verdictum-cortex-01",
+      "service": "vllm-server.service",
+      "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "max_model_len": 8192,
+      "gpu": "NVIDIA A10G",
+      "status": "ONLINE"
+    }
+  },
+  "benchmark_summary": {
+    "cohort_size": 20,
+    "live_gpu_calls": 19,
+    "boundary_rejections": 1,
+    "decisive_verdicts": 13,
+    "decisive_rate": "65.0%",
+    "abstention_count": 7,
+    "abstention_rate": "35.0%",
+    "true_positives": 8,
+    "false_positives": 5,
+    "live_prompt_tokens": 92214,
+    "live_completion_tokens": 10512,
+    "total_gpu_tokens": 102726,
+    "certified_accuracy": "Not measured \u2014 certified ground truth unavailable"
+  }
+}

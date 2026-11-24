@@ -1,0 +1,40 @@
+{
+  "phase_comparison": {
+    "AIS_2_5a": {
+      "runtime_context": 4096,
+      "max_prompt_budget": 3328,
+      "reserved_completion": 768,
+      "total_incidents": 20,
+      "live_gpu_calls": 10,
+      "decisive_verdicts": 0,
+      "decisive_rate": "0.0%",
+      "abstention_rate": "100.0%",
+      "root_cause_of_0_percent": "Validator required APT-level tradecraft for TP and formal IT change tickets for FP; carry-over prompt token counts violated 4096 ceiling."
+    },
+    "AIS_2_6": {
+      "runtime_context": 4096,
+      "max_prompt_budget": 3328,
+      "reserved_completion": 768,
+      "total_incidents": 20,
+      "live_gpu_calls": 10,
+      "decisive_verdicts": 0,
+      "decisive_rate": "0.0%",
+      "abstention_rate": "100.0%",
+      "root_cause_of_0_percent": "Strict preflight token budget guard intercepted 10 Prisma SASE incidents with prompts > 3328 tokens; validator rejected all 10 CrowdStrike incidents due to rigid criteria."
+    },
+    "AIS_2_6a": {
+      "runtime_context": 8192,
+      "max_prompt_budget": 7424,
+      "reserved_completion": 768,
+      "total_incidents": 20,
+      "live_gpu_calls": 19,
+      "decisive_verdicts": 13,
+      "decisive_rate": "65.0%",
+      "abstention_rate": "35.0%",
+      "crowdstrike_decisive_rate": "80.0%",
+      "prisma_sase_decisive_rate": "50.0%",
+      "total_gpu_tokens": 102726,
+      "improvement_summary": "Expanded verified runtime context from 4096 to 8192 on Server 2; implemented rule-aware adjudication criteria in Section 5/6 and validator Check 5; 100% of admitted prompts exceeded 3328 tokens; 13 decisive verdicts safely validated."
+    }
+  }
+}

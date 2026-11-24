@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "phase": "AIS_2_6a",
+  "generated_at_utc": "2026-11-24T09:28:30.915374+00:00",
+  "audit_findings": {
+    "total_historical_fixtures": 20,
+    "historical_siem_label_distribution": {
+      "crowdstrike": {
+        "historical_tp": 5,
+        "historical_fp": 5
+      },
+      "prisma_sase": {
+        "historical_tp": 5,
+        "historical_fp": 5
+      },
+      "total_historical_tp": 10,
+      "total_historical_fp": 10
+    },
+    "reconciliation_of_incident_132474210": {
+      "incident_id": "132474210",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "original_resolution": "legitimate activity, noth...",
+      "corrected_historical_label": "VERIFIED_FP",
+      "forensic_finding": "Previous review had erroneously misclassified 132474210 as TP in derived counts; raw JSON fixture confirmed resolution was 'legitimate activity' (FP).",
+      "empirical_model_verdict": "TRUE_POSITIVE",
+      "empirical_model_reason": "Process command line showed UltraViewer_Service.exe unauthorized RAT execution, which satisfies rule-aware TP criteria (Policy Violation)."
+    },
+    "certified_ground_truth_count": 0,
+    "certification_gap": "Historical FortiSIEM incident resolutions represent 1-analyst operational notes rather than certified multi-analyst ground truth. Zero incidents are independently certified.",
+    "certified_selective_accuracy": "Not measured \u2014 certified ground truth unavailable"
+  }
+}

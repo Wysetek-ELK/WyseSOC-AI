@@ -1,0 +1,54 @@
+{
+  "evaluation_phase": "AIS_2_6a",
+  "evaluation_timestamp_utc": "2026-11-24T09:27:17.369951+00:00",
+  "deployed_git_sha": "f7ca10a575cdf9959529f6a79221769acfb88e91",
+  "runtime_endpoint": "http://13.204.214.64:8000/v1",
+  "model_name": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "effective_runtime_context": 8192,
+  "reserved_completion_tokens": 768,
+  "max_prompt_budget": 7424,
+  "cohort_summary": {
+    "total_incidents": 20,
+    "live_gpu_executions": 19,
+    "provider_boundary_rejections": 1,
+    "crowdstrike_total": 10,
+    "crowdstrike_decisive": 8,
+    "crowdstrike_decisive_rate": 0.8,
+    "prisma_sase_total": 10,
+    "prisma_sase_decisive": 5,
+    "prisma_sase_decisive_rate": 0.5,
+    "total_decisive": 13,
+    "overall_decisive_rate": 0.65,
+    "abstention_count": 7,
+    "abstention_rate": 0.35,
+    "true_positives": 8,
+    "false_positives": 5,
+    "unsafe_false_positives": 2,
+    "unsafe_fp_rate": 0.1
+  },
+  "gpu_token_accounting": {
+    "live_prompt_tokens": 92214,
+    "live_completion_tokens": 10512,
+    "total_gpu_tokens": 102726,
+    "average_prompt_tokens": 4853.4,
+    "average_completion_tokens": 553.3
+  },
+  "layer_separation_metrics": {
+    "layer_a_proposed_decisive": 14,
+    "layer_a_decisive_rate": 0.7,
+    "layer_b_validated_decisive": 13,
+    "layer_b_decisive_rate": 0.65,
+    "layer_c_certified_decisive": 0,
+    "layer_c_decisive_rate": 0.0
+  },
+  "historical_vs_certified_accuracy": {
+    "independently_certified_incidents": 0,
+    "certified_selective_accuracy": "Not measured \u2014 certified ground truth unavailable",
+    "historical_operational_label_agreement": {
+      "decisive_evaluations": 13,
+      "historical_label_matches": 1,
+      "uncertified_agreement_rate": 0.0769,
+      "caveat": "Historical FortiSIEM incident resolutions represent 1-analyst operational notes rather than multi-analyst certified ground truth."
+    }
+  }
+}

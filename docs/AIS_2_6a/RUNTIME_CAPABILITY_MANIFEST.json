@@ -1,0 +1,61 @@
+{
+  "manifest_version": "1.0.0",
+  "phase": "AIS_2_6a",
+  "generated_at_utc": "2026-11-24T09:05:00Z",
+  "status": "VERIFIED_ONLINE",
+  "runtime_environment": {
+    "server_1": {
+      "host": "172.26.41.240",
+      "role": "application_control_plane",
+      "deployed_git_sha": "f7ca10a575cdf9959529f6a79221769acfb88e91",
+      "backend_service": "ai-verdict-backend.service",
+      "service_status": "active",
+      "context_budget": 8192,
+      "max_tokens": 768,
+      "target_input_budget": 7424,
+      "available_input_tokens": 7424,
+      "verified_max_model_len": 8192,
+      "context_budget_verified": true,
+      "context_budget_warning": null,
+      "operating_mode": "advisory"
+    },
+    "server_2": {
+      "host": "13.204.214.64",
+      "port": 8000,
+      "role": "gpu_inference_host",
+      "service": "vllm-server.service",
+      "inference_engine": "vLLM",
+      "gpu": "NVIDIA A10G",
+      "model_id": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "quantization": "awq",
+      "advertised_max_model_len": 8192,
+      "gpu_memory_utilization": 0.90,
+      "reserved_completion_tokens": 768,
+      "max_prompt_budget": 7424,
+      "probe_endpoint": "http://13.204.214.64:8000/v1/models",
+      "probe_latency_ms": 12.5,
+      "probe_status_code": 200,
+      "raw_model_permission": {
+        "allow_create_engine": false,
+        "allow_sampling": true,
+        "allow_logprobs": true,
+        "allow_search_indices": false,
+        "allow_view": true,
+        "allow_fine_tuning": false
+      }
+    }
+  },
+  "token_budget_invariants": {
+    "formula": "actual_wire_prompt_tokens + reserved_completion_tokens <= verified_effective_runtime_context",
+    "verified_effective_runtime_context": 8192,
+    "reserved_completion_tokens": 768,
+    "maximum_wire_prompt_budget": 7424,
+    "enforcement_points": [
+      "TokenBudgetService.budget_prompt",
+      "VerdictPipeline._budget_prompt",
+      "EmpiricalBenchmarkHarness.evaluate_single_incident",
+      "PolicyCompilerService.compile_policy",
+      "LLMConfigService._evaluate_context_status"
+    ]
+  }
+}

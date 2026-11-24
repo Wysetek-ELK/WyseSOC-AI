@@ -1,0 +1,192 @@
+{
+  "version": "1.0.0",
+  "phase": "AIS_2_6a",
+  "generated_at_utc": "2026-11-24T09:28:30.915374+00:00",
+  "rules": {
+    "PH_RULE_CS_SUSPICIOUS_ACTIVITY": {
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "category": "Endpoint Threat Detection / Policy Violation",
+      "total_incidents": 10,
+      "decisive_verdicts": 8,
+      "decisive_rate": 0.8,
+      "abstentions": 2,
+      "abstention_rate": 0.2,
+      "tp_count": 8,
+      "fp_count": 0,
+      "adjudication_semantics": {
+        "tp_criteria": "Execution of unauthorized remote administration tools (UltraViewer, TeamViewer, AnyDesk, etc.) or indicators of attack on managed endpoints without an approved IT change ticket/profile is adjudicated as a True Positive (Security Objective / Policy Violation).",
+        "fp_criteria": "Authorized operational maintenance executed by confirmed administrative accounts or IT management agents (Tanium, SCCM) with verified change reference.",
+        "abstention_criteria": "Missing command line, lack of definitive telemetry, context boundary overflow (e.g. Incident 132461368 at 8,193 tokens), or contradictory indicators."
+      },
+      "incidents": [
+        {
+          "id": "132438483",
+          "final_verdict": "TRUE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 5717,
+          "comp_tokens": 506
+        },
+        {
+          "id": "132439932",
+          "final_verdict": "TRUE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 5744,
+          "comp_tokens": 493
+        },
+        {
+          "id": "132441815",
+          "final_verdict": "TRUE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 7546,
+          "comp_tokens": 609
+        },
+        {
+          "id": "132461358",
+          "final_verdict": "TRUE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 6414,
+          "comp_tokens": 592
+        },
+        {
+          "id": "132461368",
+          "final_verdict": "REQUIRES_ATTENTION",
+          "decisive": false,
+          "reason": "PROVIDER_BOUNDARY_OVERFLOW (8,193 tokens)",
+          "prompt_tokens": null,
+          "comp_tokens": null
+        },
+        {
+          "id": "132472498",
+          "final_verdict": "TRUE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 6109,
+          "comp_tokens": 543
+        },
+        {
+          "id": "132474210",
+          "final_verdict": "TRUE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 6918,
+          "comp_tokens": 470
+        },
+        {
+          "id": "132501348",
+          "final_verdict": "REQUIRES_ATTENTION",
+          "decisive": false,
+          "reason": "TP_CRITERIA_UNSATISFIED (Insufficient telemetry in 2 events)",
+          "prompt_tokens": 4412,
+          "comp_tokens": 545
+        },
+        {
+          "id": "132502453",
+          "final_verdict": "TRUE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 5788,
+          "comp_tokens": 502
+        },
+        {
+          "id": "132527297",
+          "final_verdict": "TRUE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 4443,
+          "comp_tokens": 441
+        }
+      ]
+    },
+    "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE": {
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "category": "Network File Download / Web Security",
+      "total_incidents": 10,
+      "decisive_verdicts": 5,
+      "decisive_rate": 0.5,
+      "abstentions": 5,
+      "abstention_rate": 0.5,
+      "tp_count": 0,
+      "fp_count": 5,
+      "adjudication_semantics": {
+        "tp_criteria": "Malicious binary/executable downloads, known weaponized payloads, or unverified script executions communicating with adversary infrastructure.",
+        "fp_criteria": "Routine benign static web assets/libraries (.js, jquery, widget, sensum, clientlib, adrum, .css) downloaded from trusted CDN/destinations during normal business web browsing with clean indicators.",
+        "abstention_criteria": "Missing critical telemetry fields (source/destination IP, filename, URI), output truncation (finish_reason=length at 768 tokens), or ambiguous unclassified file payloads."
+      },
+      "incidents": [
+        {
+          "id": "132499009",
+          "final_verdict": "FALSE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 3560,
+          "comp_tokens": 463
+        },
+        {
+          "id": "132499023",
+          "final_verdict": "FALSE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 3622,
+          "comp_tokens": 475
+        },
+        {
+          "id": "132499745",
+          "final_verdict": "REQUIRES_ATTENTION",
+          "decisive": false,
+          "reason": "MISSING_MANDATORY_EVIDENCE",
+          "prompt_tokens": 3557,
+          "comp_tokens": 768
+        },
+        {
+          "id": "132578774",
+          "final_verdict": "FALSE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 3577,
+          "comp_tokens": 563
+        },
+        {
+          "id": "132591888",
+          "final_verdict": "REQUIRES_ATTENTION",
+          "decisive": false,
+          "reason": "MISSING_MANDATORY_EVIDENCE",
+          "prompt_tokens": 3711,
+          "comp_tokens": 768
+        },
+        {
+          "id": "132595592",
+          "final_verdict": "REQUIRES_ATTENTION",
+          "decisive": false,
+          "reason": "MISSING_MANDATORY_EVIDENCE",
+          "prompt_tokens": 3607,
+          "comp_tokens": 768
+        },
+        {
+          "id": "132596403",
+          "final_verdict": "FALSE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 3549,
+          "comp_tokens": 492
+        },
+        {
+          "id": "132599145",
+          "final_verdict": "FALSE_POSITIVE",
+          "decisive": true,
+          "prompt_tokens": 3857,
+          "comp_tokens": 455
+        },
+        {
+          "id": "132599146",
+          "final_verdict": "REQUIRES_ATTENTION",
+          "decisive": false,
+          "reason": "MISSING_MANDATORY_EVIDENCE",
+          "prompt_tokens": 6225,
+          "comp_tokens": 291
+        },
+        {
+          "id": "132599330",
+          "final_verdict": "REQUIRES_ATTENTION",
+          "decisive": false,
+          "reason": "TRUNCATED_OUTPUT (finish_reason=length)",
+          "prompt_tokens": 3858,
+          "comp_tokens": 768
+        }
+      ]
+    }
+  }
+}

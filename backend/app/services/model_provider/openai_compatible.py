@@ -190,7 +190,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
         self,
         base_url: str = "http://127.0.0.1:8001/v1",
         api_key: Optional[str] = None,
-        model_name: str = "qwen3-8b-instruct",
+        model_name: str = "Qwen/Qwen2.5-7B-Instruct-AWQ",
         timeout_seconds: float = 60.0,
         max_tokens: int = 1024,
         temperature: float = 0.1,

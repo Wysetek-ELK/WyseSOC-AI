@@ -1052,7 +1052,7 @@ class EmpiricalBenchmarkHarness:
                 )
 
             # 3c: Invoke Live Provider (Byte-for-byte Parity with Production Pipeline)
-            provider = OpenAICompatibleProvider(base_url=model_endpoint)
+            provider = OpenAICompatibleProvider(base_url=model_endpoint, model_name="Qwen/Qwen2.5-7B-Instruct-AWQ")
             prompt_text = budgeted.budgeted_system_prompt
             if budgeted.budgeted_rag_block:
                 prompt_text += f"\n\n{budgeted.budgeted_rag_block}"
@@ -1060,7 +1060,7 @@ class EmpiricalBenchmarkHarness:
             prompt_hash = wire_prompt_hash
             canon_req = {
                 "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
-                "estimated_prompt_tokens": budgeted.estimated_wire_prompt_tokens,
+                "estimated_prompt_tokens": getattr(budgeted, "estimated_wire_prompt_tokens", getattr(budgeted.breakdown, "total_prompt_tokens", 0)),
                 "system_prompt": budgeted.budgeted_system_prompt,
                 "incident_payload": budgeted.budgeted_incident_payload,
                 "rule_spec": rule_spec,
