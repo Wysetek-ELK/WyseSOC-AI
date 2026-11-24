@@ -202,12 +202,13 @@ class IndependentVerdictValidator:
                     action_directive = "Model falsely inferred loopback based on rule name; telemetry confirms distinct source and destination IPs. Human review required."
 
         # Check 4b: Unresolved Contradictions Prevent Decisive Classification
-        if contradictions and clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
-            final_verdict = "REQUIRES_ATTENTION"
-            validation_status = "REJECTED"
+        if contradictions:
             if "EVIDENCE_CONTRADICTION" not in reason_codes:
                 reason_codes.append("EVIDENCE_CONTRADICTION")
-            action_directive = "Material contradictory evidence detected in incident telemetry. Human Tier 2 review required."
+            if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                final_verdict = "REQUIRES_ATTENTION"
+                validation_status = "REJECTED"
+                action_directive = "Material contradictory evidence detected in incident telemetry. Human Tier 2 review required."
 
         # Check 4c (V8.2): Deterministic Reasoning Integrity Cross-Validation
         reasoning_res = ReasoningIntegrityEngine.evaluate_reasoning_integrity(
@@ -912,7 +913,14 @@ class IndependentVerdictValidator:
             if invalid_output_flag or "MODEL_OUTPUT_INVALID" in reason_codes:
                 validation_status = "INVALID_MODEL_OUTPUT"
                 action_directive = "Model returned invalid or malformed structured output; safely abstained and routed to analyst review."
+            elif "EVIDENCE_CONTRADICTION" in reason_codes or "REASONING_CONTRADICTION" in reason_codes:
+                validation_status = "ABSTENTION_WITH_CONTRADICTION"
+                action_directive = "Model abstained, but reasoning exhibited evidence or logical contradictions; safely escalated to analyst."
+            elif unsupported_claims or "UNSUPPORTED_CLAIM" in reason_codes or "UNSUPPORTED_PREDICATE" in reason_codes:
+                validation_status = "ABSTENTION_WITH_UNSUPPORTED_CLAIMS"
+                action_directive = "Model abstained with ungrounded claims in reasoning; safely escalated to analyst."
             else:
+                validation_status = "VALIDATED"
                 if not reason_codes:
                     reason_codes.append("EVIDENCE_VALIDATED")
                 action_directive = "Follow standard SOC tier-1 investigation runbook for ambiguous telemetry."

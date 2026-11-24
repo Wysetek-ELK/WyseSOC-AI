@@ -153,18 +153,18 @@ def classify_execution_provenance(
     rec_prov = str(recorded_provenance or "").strip().upper() or None
     test_env = recorded_test_env if recorded_test_env is not None else get_test_environment_id()
 
-    if rec_prov in {"LIVE_PROVIDER", "HTTP_MOCK", "SIMULATED", "OFFLINE", "DEGRADED"} | GUARD_MODEL_IDENTIFIERS:
+    if rec_prov in {"LIVE_PROVIDER", "HTTP_MOCK", "SIMULATED", "OFFLINE", "DEGRADED", "PREFLIGHT_ABSTENTION", "PROVIDER_FAILURE"} | GUARD_MODEL_IDENTIFIERS:
         exec_prov = rec_prov
         configured_provider = (
             "SIMULATED"
             if exec_prov == "SIMULATED"
-            else ("DISABLED" if exec_prov in GUARD_MODEL_IDENTIFIERS else "OPENAI_COMPATIBLE")
+            else ("DISABLED" if (exec_prov in GUARD_MODEL_IDENTIFIERS or exec_prov == "PREFLIGHT_ABSTENTION") else "OPENAI_COMPATIBLE")
         )
     elif is_simulated:
         exec_prov = "SIMULATED"
         configured_provider = "SIMULATED"
-    elif clean_model in GUARD_MODEL_IDENTIFIERS:
-        exec_prov = clean_model
+    elif clean_model == "PREFLIGHT_ABSTENTION" or clean_model in GUARD_MODEL_IDENTIFIERS:
+        exec_prov = "PREFLIGHT_ABSTENTION"
         configured_provider = "POLICY_GUARD"
     elif clean_elig == "FAILED" or "SERVER2_OFFLINE" in clean_err or clean_val == "PROVIDER_UNAVAILABLE":
         exec_prov = "OFFLINE"
