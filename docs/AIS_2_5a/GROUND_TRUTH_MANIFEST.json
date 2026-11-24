@@ -1,0 +1,216 @@
+{
+  "manifest_version": "2.5a.1",
+  "provenance_source": "fixtures/Incident json.zip",
+  "siem_cleared_user_audit": {
+    "all_cleared_user_empty": true,
+    "note": "Historical FortiSIEM records have clearedUser=\"\" for all 20 incidents. Resolution tags ('kill process', 'Mail sent', 'Case raised') were operational responses or automated scripts, not certified ground truth."
+  },
+  "certification_registry": [
+    {
+      "incident_id": "132438483",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "UNVERIFIED",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132439932",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "UNVERIFIED",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132441815",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "UNVERIFIED",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132461358",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "UNVERIFIED",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132461368",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "UNVERIFIED",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132472498",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "UNVERIFIED",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132474210",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "TRUE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132501348",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "UNVERIFIED",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132502453",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "UNVERIFIED",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132527297",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "UNVERIFIED",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132499009",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "FALSE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132499023",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "FALSE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132499745",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "FALSE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132578774",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "FALSE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132591888",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "FALSE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132595592",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "FALSE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132596403",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "FALSE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132599145",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "FALSE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132599146",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "FALSE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    },
+    {
+      "incident_id": "132599330",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "siem_resolution": "Operational Closed",
+      "siem_cleared_user": "",
+      "human_certification_status": "PROVISIONAL_UNVERIFIED",
+      "provisional_label": "FALSE_POSITIVE",
+      "certification_evidence_available": false,
+      "notes": "No out-of-band analyst ticket, malware sandbox trace, or business justification sign-off is preserved in the SIEM export."
+    }
+  ],
+  "summary": {
+    "total_evaluated": 20,
+    "rigorously_certified_count": 0,
+    "provisional_count": 20,
+    "unverified_count": 20
+  }
+}

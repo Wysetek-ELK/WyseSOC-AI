@@ -1,0 +1,44 @@
+# 08 — Full Authentic 20-Incident Live Benchmark Results
+
+## 1. Authoritative Benchmark Ledger
+
+All 20 incidents executed against deployed commit `ff0a4c249dd05cc2f183ab10c8f29b1ee3437248` on Server 1 and Server 2 GPU.
+
+| # | Incident ID | Rule Category | Provenance | Latency | Tokens (P+C=T) | Raw Proposal | Auth Verdict | Validation Status |
+|---|---|---|---|---|---|---|---|---|
+| 1 | `132438483` | CrowdStrike | LIVE_PROVIDER | 23.8s | 3365 + 491 = 3856 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | VALIDATED |
+| 2 | `132439932` | CrowdStrike | LIVE_PROVIDER | 21.8s | 3375 + 484 = 3859 | TRUE_POSITIVE | REQUIRES_ATTENTION | REJECTED |
+| 3 | `132441815` | CrowdStrike | LIVE_PROVIDER | 19.6s | 3365 + 403 = 3768 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | VALIDATED |
+| 4 | `132461358` | CrowdStrike | LIVE_PROVIDER | 24.7s | 3375 + 450 = 3825 | TRUE_POSITIVE | REQUIRES_ATTENTION | REJECTED |
+| 5 | `132461368` | CrowdStrike | LIVE_PROVIDER | 21.3s | 3365 + 476 = 3841 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | VALIDATED |
+| 6 | `132472498` | CrowdStrike | LIVE_PROVIDER | 17.2s | 3347 + 448 = 3795 | TRUE_POSITIVE | REQUIRES_ATTENTION | REJECTED |
+| 7 | `132474210` | CrowdStrike | LIVE_PROVIDER | 27.5s | 3347 + 539 = 3886 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | VALIDATED |
+| 8 | `132501348` | CrowdStrike | LIVE_PROVIDER | 22.6s | 3375 + 502 = 3877 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | VALIDATED |
+| 9 | `132502453` | CrowdStrike | LIVE_PROVIDER | 19.4s | 3418 + 396 = 3814 | REQUIRES_ATTENTION | REQUIRES_ATTENTION | VALIDATED |
+| 10 | `132527297` | CrowdStrike | LIVE_PROVIDER | 20.9s | 3370 + 444 = 3814 | TRUE_POSITIVE | REQUIRES_ATTENTION | REJECTED |
+| 11 | `132499009` | Prisma SASE | TOKEN_BUDGET_GUARD | 0.4s | 3709 + 0 = 3709 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| 12 | `132499023` | Prisma SASE | TOKEN_BUDGET_GUARD | 0.5s | 3747 + 0 = 3747 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| 13 | `132499745` | Prisma SASE | TOKEN_BUDGET_GUARD | 0.4s | 3701 + 0 = 3701 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| 14 | `132578774` | Prisma SASE | TOKEN_BUDGET_GUARD | 0.5s | 3706 + 0 = 3706 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| 15 | `132591888` | Prisma SASE | TOKEN_BUDGET_GUARD | 0.4s | 3549 + 0 = 3549 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| 16 | `132595592` | Prisma SASE | TOKEN_BUDGET_GUARD | 0.5s | 3729 + 0 = 3729 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| 17 | `132596403` | Prisma SASE | TOKEN_BUDGET_GUARD | 0.5s | 3700 + 0 = 3700 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| 18 | `132599145` | Prisma SASE | TOKEN_BUDGET_GUARD | 0.5s | 3559 + 0 = 3559 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| 19 | `132599146` | Prisma SASE | TOKEN_BUDGET_GUARD | 0.7s | 3557 + 0 = 3557 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+| 20 | `132599330` | Prisma SASE | TOKEN_BUDGET_GUARD | 0.5s | 3561 + 0 = 3561 | None | REQUIRES_ATTENTION | CONTEXT_WINDOW_EXCEEDED |
+
+---
+
+## 2. Benchmark Aggregates
+
+- **Total Live GPU Inference Executions**: 10
+- **Total Token Budget Guard Interceptions**: 10
+- **Live GPU Prompt Tokens**: 33,702
+- **Live GPU Completion Tokens**: 4,633
+- **Wire Tokens Evaluated by Preflight Guard**: 36,518
+- **Grand Total Evaluated Benchmark Tokens**: **74,853 tokens**
+- **Average GPU Inference Latency**: 21.89 seconds
+- **Final Accepted TP Verdicts**: 0
+- **Final Accepted FP Verdicts**: 0
+- **Final REQUIRES_ATTENTION Verdicts**: 20
+- **Decisive Coverage**: **0.0%**

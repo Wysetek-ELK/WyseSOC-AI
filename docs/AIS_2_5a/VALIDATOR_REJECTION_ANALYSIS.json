@@ -1,0 +1,296 @@
+[
+  {
+    "incident_id": "132438483",
+    "category": "CrowdStrike",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_proposed_verdict": "REQUIRES_ATTENTION",
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "VALIDATED",
+    "reason_codes": [
+      "EVIDENCE_CONTRADICTION",
+      "REASONING_CONTRADICTION"
+    ],
+    "root_cause_category": "MODEL_VOLUNTARY_ABSTENTION",
+    "detailed_forensic_explanation": "LLM correctly recognized missing process lineage and administrative ticket, voting REQUIRES_ATTENTION, accepted by validator."
+  },
+  {
+    "incident_id": "132439932",
+    "category": "CrowdStrike",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_proposed_verdict": "TRUE_POSITIVE",
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "REJECTED",
+    "reason_codes": [
+      "UNSUPPORTED_PREDICATE",
+      "UNSUPPORTED_CLAIM",
+      "TP_CRITERIA_UNSATISFIED"
+    ],
+    "root_cause_category": "UNGROUNDED_MALICIOUS_PREDICATE",
+    "detailed_forensic_explanation": "LLM proposed TRUE_POSITIVE claiming malicious tradecraft on dual-use administrative tool (UltraViewer), but telemetry lacked external C2, temporary folder execution, or unauthorized exfiltration. Rejected by IndependentVerdictValidator predicates."
+  },
+  {
+    "incident_id": "132441815",
+    "category": "CrowdStrike",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_proposed_verdict": "REQUIRES_ATTENTION",
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "VALIDATED",
+    "reason_codes": [
+      "EVIDENCE_CONTRADICTION",
+      "REASONING_CONTRADICTION"
+    ],
+    "root_cause_category": "MODEL_VOLUNTARY_ABSTENTION",
+    "detailed_forensic_explanation": "LLM correctly recognized missing process lineage and administrative ticket, voting REQUIRES_ATTENTION, accepted by validator."
+  },
+  {
+    "incident_id": "132461358",
+    "category": "CrowdStrike",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_proposed_verdict": "TRUE_POSITIVE",
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "REJECTED",
+    "reason_codes": [
+      "UNSUPPORTED_PREDICATE",
+      "UNSUPPORTED_CLAIM",
+      "TP_CRITERIA_UNSATISFIED"
+    ],
+    "root_cause_category": "UNGROUNDED_MALICIOUS_PREDICATE",
+    "detailed_forensic_explanation": "LLM proposed TRUE_POSITIVE claiming malicious tradecraft on dual-use administrative tool (UltraViewer), but telemetry lacked external C2, temporary folder execution, or unauthorized exfiltration. Rejected by IndependentVerdictValidator predicates."
+  },
+  {
+    "incident_id": "132461368",
+    "category": "CrowdStrike",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_proposed_verdict": "REQUIRES_ATTENTION",
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "VALIDATED",
+    "reason_codes": [
+      "EVIDENCE_CONTRADICTION",
+      "REASONING_CONTRADICTION"
+    ],
+    "root_cause_category": "MODEL_VOLUNTARY_ABSTENTION",
+    "detailed_forensic_explanation": "LLM correctly recognized missing process lineage and administrative ticket, voting REQUIRES_ATTENTION, accepted by validator."
+  },
+  {
+    "incident_id": "132472498",
+    "category": "CrowdStrike",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_proposed_verdict": "TRUE_POSITIVE",
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "REJECTED",
+    "reason_codes": [
+      "UNSUPPORTED_PREDICATE",
+      "UNSUPPORTED_CLAIM",
+      "TP_CRITERIA_UNSATISFIED"
+    ],
+    "root_cause_category": "UNGROUNDED_MALICIOUS_PREDICATE",
+    "detailed_forensic_explanation": "LLM proposed TRUE_POSITIVE claiming malicious tradecraft on dual-use administrative tool (UltraViewer), but telemetry lacked external C2, temporary folder execution, or unauthorized exfiltration. Rejected by IndependentVerdictValidator predicates."
+  },
+  {
+    "incident_id": "132474210",
+    "category": "CrowdStrike",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_proposed_verdict": "REQUIRES_ATTENTION",
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "VALIDATED",
+    "reason_codes": [
+      "EVIDENCE_CONTRADICTION",
+      "REASONING_CONTRADICTION"
+    ],
+    "root_cause_category": "MODEL_VOLUNTARY_ABSTENTION",
+    "detailed_forensic_explanation": "LLM correctly recognized missing process lineage and administrative ticket, voting REQUIRES_ATTENTION, accepted by validator."
+  },
+  {
+    "incident_id": "132501348",
+    "category": "CrowdStrike",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_proposed_verdict": "REQUIRES_ATTENTION",
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "VALIDATED",
+    "reason_codes": [
+      "EVIDENCE_CONTRADICTION",
+      "REASONING_CONTRADICTION"
+    ],
+    "root_cause_category": "MODEL_VOLUNTARY_ABSTENTION",
+    "detailed_forensic_explanation": "LLM correctly recognized missing process lineage and administrative ticket, voting REQUIRES_ATTENTION, accepted by validator."
+  },
+  {
+    "incident_id": "132502453",
+    "category": "CrowdStrike",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_proposed_verdict": "REQUIRES_ATTENTION",
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "VALIDATED",
+    "reason_codes": [
+      "EVIDENCE_CONTRADICTION",
+      "REASONING_CONTRADICTION"
+    ],
+    "root_cause_category": "MODEL_VOLUNTARY_ABSTENTION",
+    "detailed_forensic_explanation": "LLM correctly recognized missing process lineage and administrative ticket, voting REQUIRES_ATTENTION, accepted by validator."
+  },
+  {
+    "incident_id": "132527297",
+    "category": "CrowdStrike",
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "execution_provenance": "LIVE_PROVIDER",
+    "model_proposed_verdict": "TRUE_POSITIVE",
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "REJECTED",
+    "reason_codes": [
+      "UNSUPPORTED_PREDICATE",
+      "UNSUPPORTED_CLAIM",
+      "TP_CRITERIA_UNSATISFIED"
+    ],
+    "root_cause_category": "UNGROUNDED_MALICIOUS_PREDICATE",
+    "detailed_forensic_explanation": "LLM proposed TRUE_POSITIVE claiming malicious tradecraft on dual-use administrative tool (UltraViewer), but telemetry lacked external C2, temporary folder execution, or unauthorized exfiltration. Rejected by IndependentVerdictValidator predicates."
+  },
+  {
+    "incident_id": "132499009",
+    "category": "Prisma SASE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "execution_provenance": "TOKEN_BUDGET_GUARD",
+    "model_proposed_verdict": null,
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+    "reason_codes": [
+      "CONTEXT_WINDOW_EXCEEDED"
+    ],
+    "root_cause_category": "TOKEN_BUDGET_EXCEEDED",
+    "detailed_forensic_explanation": "Prompt size (3549-3747 wire tokens) exceeded physical vLLM context budget (3328 tokens). Intercepted by TokenBudgetService."
+  },
+  {
+    "incident_id": "132499023",
+    "category": "Prisma SASE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "execution_provenance": "TOKEN_BUDGET_GUARD",
+    "model_proposed_verdict": null,
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+    "reason_codes": [
+      "CONTEXT_WINDOW_EXCEEDED"
+    ],
+    "root_cause_category": "TOKEN_BUDGET_EXCEEDED",
+    "detailed_forensic_explanation": "Prompt size (3549-3747 wire tokens) exceeded physical vLLM context budget (3328 tokens). Intercepted by TokenBudgetService."
+  },
+  {
+    "incident_id": "132499745",
+    "category": "Prisma SASE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "execution_provenance": "TOKEN_BUDGET_GUARD",
+    "model_proposed_verdict": null,
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+    "reason_codes": [
+      "CONTEXT_WINDOW_EXCEEDED"
+    ],
+    "root_cause_category": "TOKEN_BUDGET_EXCEEDED",
+    "detailed_forensic_explanation": "Prompt size (3549-3747 wire tokens) exceeded physical vLLM context budget (3328 tokens). Intercepted by TokenBudgetService."
+  },
+  {
+    "incident_id": "132578774",
+    "category": "Prisma SASE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "execution_provenance": "TOKEN_BUDGET_GUARD",
+    "model_proposed_verdict": null,
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+    "reason_codes": [
+      "CONTEXT_WINDOW_EXCEEDED"
+    ],
+    "root_cause_category": "TOKEN_BUDGET_EXCEEDED",
+    "detailed_forensic_explanation": "Prompt size (3549-3747 wire tokens) exceeded physical vLLM context budget (3328 tokens). Intercepted by TokenBudgetService."
+  },
+  {
+    "incident_id": "132591888",
+    "category": "Prisma SASE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "execution_provenance": "TOKEN_BUDGET_GUARD",
+    "model_proposed_verdict": null,
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+    "reason_codes": [
+      "CONTEXT_WINDOW_EXCEEDED"
+    ],
+    "root_cause_category": "TOKEN_BUDGET_EXCEEDED",
+    "detailed_forensic_explanation": "Prompt size (3549-3747 wire tokens) exceeded physical vLLM context budget (3328 tokens). Intercepted by TokenBudgetService."
+  },
+  {
+    "incident_id": "132595592",
+    "category": "Prisma SASE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "execution_provenance": "TOKEN_BUDGET_GUARD",
+    "model_proposed_verdict": null,
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+    "reason_codes": [
+      "CONTEXT_WINDOW_EXCEEDED"
+    ],
+    "root_cause_category": "TOKEN_BUDGET_EXCEEDED",
+    "detailed_forensic_explanation": "Prompt size (3549-3747 wire tokens) exceeded physical vLLM context budget (3328 tokens). Intercepted by TokenBudgetService."
+  },
+  {
+    "incident_id": "132596403",
+    "category": "Prisma SASE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "execution_provenance": "TOKEN_BUDGET_GUARD",
+    "model_proposed_verdict": null,
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+    "reason_codes": [
+      "CONTEXT_WINDOW_EXCEEDED"
+    ],
+    "root_cause_category": "TOKEN_BUDGET_EXCEEDED",
+    "detailed_forensic_explanation": "Prompt size (3549-3747 wire tokens) exceeded physical vLLM context budget (3328 tokens). Intercepted by TokenBudgetService."
+  },
+  {
+    "incident_id": "132599145",
+    "category": "Prisma SASE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "execution_provenance": "TOKEN_BUDGET_GUARD",
+    "model_proposed_verdict": null,
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+    "reason_codes": [
+      "CONTEXT_WINDOW_EXCEEDED"
+    ],
+    "root_cause_category": "TOKEN_BUDGET_EXCEEDED",
+    "detailed_forensic_explanation": "Prompt size (3549-3747 wire tokens) exceeded physical vLLM context budget (3328 tokens). Intercepted by TokenBudgetService."
+  },
+  {
+    "incident_id": "132599146",
+    "category": "Prisma SASE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "execution_provenance": "TOKEN_BUDGET_GUARD",
+    "model_proposed_verdict": null,
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+    "reason_codes": [
+      "CONTEXT_WINDOW_EXCEEDED"
+    ],
+    "root_cause_category": "TOKEN_BUDGET_EXCEEDED",
+    "detailed_forensic_explanation": "Prompt size (3549-3747 wire tokens) exceeded physical vLLM context budget (3328 tokens). Intercepted by TokenBudgetService."
+  },
+  {
+    "incident_id": "132599330",
+    "category": "Prisma SASE",
+    "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+    "execution_provenance": "TOKEN_BUDGET_GUARD",
+    "model_proposed_verdict": null,
+    "final_authoritative_verdict": "REQUIRES_ATTENTION",
+    "validation_status": "CONTEXT_WINDOW_EXCEEDED",
+    "reason_codes": [
+      "CONTEXT_WINDOW_EXCEEDED"
+    ],
+    "root_cause_category": "TOKEN_BUDGET_EXCEEDED",
+    "detailed_forensic_explanation": "Prompt size (3549-3747 wire tokens) exceeded physical vLLM context budget (3328 tokens). Intercepted by TokenBudgetService."
+  }
+]

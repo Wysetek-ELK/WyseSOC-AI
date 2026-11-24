@@ -1,0 +1,46 @@
+{
+  "execution_title": "Verdictum AI AIS 2.5a Final Benchmark Integrity & Decision-Coverage Validation",
+  "completed_at": "2026-11-24T06:17:00Z",
+  "deployed_git_sha": "ff0a4c249dd05cc2f183ab10c8f29b1ee3437248",
+  "upla_execution_id": "upla-20261124-054604-f80e11",
+  "server_1": {
+    "ip": "172.26.41.240",
+    "status": "HEALTHY",
+    "sha": "ff0a4c249dd05cc2f183ab10c8f29b1ee3437248"
+  },
+  "server_2": {
+    "ip": "13.204.214.64:8000",
+    "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "max_model_len": 4096,
+    "status": "ONLINE"
+  },
+  "benchmark_summary": {
+    "total_incidents": 20,
+    "live_gpu_runs": 10,
+    "token_budget_intercepts": 10,
+    "total_prompt_tokens": 70220,
+    "total_completion_tokens": 4633,
+    "grand_total_tokens": 74853,
+    "raw_proposals": {
+      "TRUE_POSITIVE": 4,
+      "FALSE_POSITIVE": 0,
+      "REQUIRES_ATTENTION": 6,
+      "PREFLIGHT_ABSTAIN": 10
+    },
+    "final_authoritative_verdicts": {
+      "TRUE_POSITIVE": 0,
+      "FALSE_POSITIVE": 0,
+      "REQUIRES_ATTENTION": 20
+    },
+    "decisive_coverage_pct": 0.0,
+    "wilson_ci_95_n2": [
+      0.0,
+      65.76
+    ],
+    "wilson_ci_95_n20": [
+      0.0,
+      16.84
+    ]
+  },
+  "gates_status": "ALL_GATES_PASSED_G1_G15"
+}
