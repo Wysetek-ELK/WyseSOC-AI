@@ -1,0 +1,11 @@
+{
+  "target_phase": "AIS 2.7",
+  "title": "Independent Multi-Rule Accuracy Benchmark",
+  "prerequisites": [
+    "Completion of human ground truth certification panel for historical cohorts",
+    "WildFire / sandbox enrichment contract for Prisma SASE rule",
+    "Expansion of benchmark cohort to >= 100 incidents across 5+ FortiSIEM detection rules"
+  ],
+  "prohibition": "DO NOT INITIATE AIS 2.7 AUTOMATICALLY",
+  "handover_status": "READY_FOR_HUMAN_REVIEW"
+}

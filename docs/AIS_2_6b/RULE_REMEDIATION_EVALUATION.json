@@ -1,0 +1,12 @@
+{
+  "PH_RULE_CS_SUSPICIOUS_ACTIVITY": {
+    "status": "ACCURACY_AND_COVERAGE_TARGETS_MET",
+    "decisive_rate": 80.0,
+    "recommendation": "Maintain modular policy v3; ready for broader cohort validation"
+  },
+  "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE": {
+    "status": "BENIGN_CDN_TUNING_REQUIRED",
+    "decisive_rate": 0.0,
+    "recommendation": "Integrate automated URL/CDN allowlisting contract or sandbox enrichment to differentiate malicious files from benign CDN JS libraries"
+  }
+}

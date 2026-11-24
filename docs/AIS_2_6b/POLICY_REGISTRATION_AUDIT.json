@@ -1,0 +1,20 @@
+{
+  "policies": [
+    {
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "registered_version": "3",
+      "observed_in_ledger": "3",
+      "is_authoritative": true,
+      "match_postgres": true
+    },
+    {
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat",
+      "registered_version": "1",
+      "observed_in_ledger": "1",
+      "is_authoritative": true,
+      "match_postgres": true
+    }
+  ]
+}

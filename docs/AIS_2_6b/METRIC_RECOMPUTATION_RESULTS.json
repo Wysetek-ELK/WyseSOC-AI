@@ -1,0 +1,11 @@
+{
+  "formula_verification": {
+    "coverage_rate": "decisive_decisions / total_cohort = 8 / 20 = 40.0%",
+    "abstention_rate": "abstained_decisions / total_cohort = 12 / 20 = 60.0%",
+    "crowdstrike_coverage": "8 / 10 = 80.0%",
+    "prisma_coverage": "0 / 10 = 0.0%",
+    "unsafe_fp_rate": "unsafe_fps / verified_tps = 0 / 4 (operational) = 0.0%",
+    "certified_accuracy": "NOT_MEASURED (certified_ground_truth_count == 0)"
+  },
+  "status": "RECOMPUTATION_VERIFIED_100_PERCENT"
+}

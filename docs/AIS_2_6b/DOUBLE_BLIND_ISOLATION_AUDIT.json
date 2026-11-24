@@ -1,0 +1,15 @@
+{
+  "analyst_ground_truth_fields_scrubbed": [
+    "resolution",
+    "clearedReason",
+    "clearedTime",
+    "clearedUser",
+    "cmsClearUser",
+    "comments",
+    "analyst_verdict",
+    "ground_truth"
+  ],
+  "leakage_checks_performed": 20,
+  "leakage_incidents_detected": 0,
+  "status": "DOUBLE_BLIND_ISOLATION_VERIFIED"
+}

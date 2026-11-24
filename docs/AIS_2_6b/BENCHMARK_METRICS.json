@@ -1,0 +1,60 @@
+{
+  "evaluation_run_id": "BENCHMARK-AIS-2.6b",
+  "cohort_size": 20,
+  "decisive_verdicts_count": 8,
+  "abstained_verdicts_count": 12,
+  "coverage_rate": 40.0,
+  "abstention_rate": 60.0,
+  "rule_breakdown": {
+    "PH_RULE_CS_SUSPICIOUS_ACTIVITY": {
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "rule_category": "CrowdStrike",
+      "policy_version": "3",
+      "total_incidents": 10,
+      "decisive_count": 8,
+      "abstained_count": 2,
+      "coverage_rate": 80.0,
+      "abstention_rate": 20.0,
+      "true_positives": 8,
+      "false_positives": 0,
+      "unsafe_false_positives": 0,
+      "unsafe_fp_rate": 0.0,
+      "avg_latency_ms": 38166.4,
+      "avg_prompt_tokens": 5462.1,
+      "avg_completion_tokens": 569.2
+    },
+    "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE": {
+      "rule_name": "Prisma SASE: Suspicious File Threat",
+      "rule_category": "Prisma SASE",
+      "policy_version": "1",
+      "total_incidents": 10,
+      "decisive_count": 0,
+      "abstained_count": 10,
+      "coverage_rate": 0.0,
+      "abstention_rate": 100.0,
+      "true_positives": 0,
+      "false_positives": 0,
+      "unsafe_false_positives": 0,
+      "unsafe_fp_rate": 0.0,
+      "avg_latency_ms": 27205.0,
+      "avg_prompt_tokens": 3505.3,
+      "avg_completion_tokens": 566.0
+    }
+  },
+  "safety_metrics": {
+    "unsafe_false_positive_count": 0,
+    "unsafe_false_positive_rate": 0.0,
+    "auto_incident_closure_count": 0,
+    "autonomous_closure_allowed": false
+  },
+  "ground_truth_metrics": {
+    "certified_ground_truth_count": 0,
+    "certified_selective_accuracy": null,
+    "status": "NOT_MEASURED_PENDING_HUMAN_CERTIFICATION",
+    "historical_operational_agreement": {
+      "matched_operational_notes": 8,
+      "total_cohort": 20,
+      "note": "Operational shift logs represent 1-analyst unverified actions, not forensically certified ground truth"
+    }
+  }
+}

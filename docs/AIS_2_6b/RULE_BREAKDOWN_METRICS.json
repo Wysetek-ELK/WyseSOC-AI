@@ -1,0 +1,36 @@
+{
+  "PH_RULE_CS_SUSPICIOUS_ACTIVITY": {
+    "rule_name": "Crowdstrike: Suspicious Activity",
+    "rule_category": "CrowdStrike",
+    "policy_version": "3",
+    "total_incidents": 10,
+    "decisive_count": 8,
+    "abstained_count": 2,
+    "coverage_rate": 80.0,
+    "abstention_rate": 20.0,
+    "true_positives": 8,
+    "false_positives": 0,
+    "unsafe_false_positives": 0,
+    "unsafe_fp_rate": 0.0,
+    "avg_latency_ms": 38166.4,
+    "avg_prompt_tokens": 5462.1,
+    "avg_completion_tokens": 569.2
+  },
+  "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE": {
+    "rule_name": "Prisma SASE: Suspicious File Threat",
+    "rule_category": "Prisma SASE",
+    "policy_version": "1",
+    "total_incidents": 10,
+    "decisive_count": 0,
+    "abstained_count": 10,
+    "coverage_rate": 0.0,
+    "abstention_rate": 100.0,
+    "true_positives": 0,
+    "false_positives": 0,
+    "unsafe_false_positives": 0,
+    "unsafe_fp_rate": 0.0,
+    "avg_latency_ms": 27205.0,
+    "avg_prompt_tokens": 3505.3,
+    "avg_completion_tokens": 566.0
+  }
+}

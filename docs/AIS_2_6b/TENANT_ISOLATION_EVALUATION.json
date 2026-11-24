@@ -1,0 +1,9 @@
+{
+  "tenant_header_enforced": true,
+  "cross_tenant_leakage_detected": false,
+  "customer_tenants_tested": [
+    "GDC_NOC",
+    "DEFAULT"
+  ],
+  "status": "TENANT_ISOLATION_VERIFIED"
+}

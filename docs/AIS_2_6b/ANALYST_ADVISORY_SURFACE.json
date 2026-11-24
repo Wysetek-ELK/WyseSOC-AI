@@ -1,0 +1,12 @@
+{
+  "ui_components": [
+    "Verdict Card",
+    "Evidence Summary Tab",
+    "Audit Trail Tab"
+  ],
+  "advisory_format": "Human-in-the-Loop Assistive Cards",
+  "displays_confidence": true,
+  "displays_supporting_evidence": true,
+  "displays_analyst_questions": true,
+  "status": "VERIFIED_OPERATIONAL"
+}

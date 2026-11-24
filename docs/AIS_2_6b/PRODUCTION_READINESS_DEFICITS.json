@@ -1,0 +1,25 @@
+{
+  "deficits": [
+    {
+      "id": "DEF-01",
+      "category": "Ground Truth Certification",
+      "description": "Zero forensically certified ground truth labels signed by 3-analyst panel",
+      "impact": "Empirical accuracy cannot be certified; Gate G28 blocked pending human review",
+      "remediation": "Convene independent 3-expert panel to review and sign off ground truth labels"
+    },
+    {
+      "id": "DEF-02",
+      "category": "Prisma SASE Detection Enrichment",
+      "description": "Static CDN JS assets trigger Suspicious File Threat without sandbox malicious verdict",
+      "impact": "100% abstention rate on Prisma SASE historical incidents",
+      "remediation": "Integrate WildFire sandbox verdict enrichment into Evidence Contract"
+    },
+    {
+      "id": "DEF-03",
+      "category": "Cohort Size & Statistical Power",
+      "description": "20 incidents across 2 rules is insufficient statistical power for production deployment",
+      "impact": "Wide Wilson score confidence intervals; statistical power warning active",
+      "remediation": "Scale cohort to >= 100 multi-rule historical incidents in AIS 2.7"
+    }
+  ]
+}

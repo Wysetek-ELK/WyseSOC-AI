@@ -1,0 +1,11 @@
+{
+  "auto_incident_closure_allowed": false,
+  "operational_mode": "SHADOW_ADVISORY_ONLY",
+  "external_mutations_permitted": false,
+  "incident_closure_executed": 0,
+  "enforced_invariants": [
+    "No autonomous incident status change in FortiSIEM supervisor",
+    "No outbound email or ticket closure dispatch without human confirmation",
+    "Authoritative decisions serve solely as analyst advisory recommendations"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "total_executions": 20,
+  "truncations_detected": 0,
+  "max_completion_tokens_observed": 675,
+  "min_completion_tokens_observed": 494,
+  "avg_completion_tokens": 566.35,
+  "status": "PASS_ZERO_TRUNCATIONS"
+}

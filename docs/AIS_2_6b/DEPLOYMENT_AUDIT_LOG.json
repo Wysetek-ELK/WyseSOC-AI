@@ -1,0 +1,19 @@
+{
+  "server1": {
+    "host": "172.26.41.240",
+    "deployed_commit_sha": "c13c900de810243ec60e773d8b59382de2793ea6",
+    "services": [
+      "ai-verdict-backend",
+      "ai-verdict-frontend"
+    ],
+    "health_check_status": "PASS",
+    "rollback_status": "NOT_NEEDED"
+  },
+  "server2": {
+    "host": "13.204.214.64:8000",
+    "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "service": "vllm-server.service",
+    "max_model_len": 8192,
+    "runtime_status": "ONLINE_VERIFIED"
+  }
+}

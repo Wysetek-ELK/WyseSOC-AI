@@ -1,0 +1,208 @@
+{
+  "evaluation_phase": "AIS_2_6b",
+  "certified_ground_truth_count": 0,
+  "uncertified_operational_incidents_count": 20,
+  "certification_policy": "Minimum 3 independent human sign-offs (Senior SOC Analyst, Detection Engineer, FortiSIEM Specialist)",
+  "incidents": [
+    {
+      "incident_id": "132438483",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132439932",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132441815",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132461358",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132461368",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132472498",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132474210",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "operational_shift_note": "VERIFIED_FP",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132501348",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132502453",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132527297",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132499009",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "operational_shift_note": "VERIFIED_FP",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132499023",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132499745",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132578774",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132591888",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132595592",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "operational_shift_note": "UNVERIFIED",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132596403",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "operational_shift_note": "VERIFIED_TP",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132599145",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "operational_shift_note": "VERIFIED_TP",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132599146",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "operational_shift_note": "VERIFIED_TP",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    },
+    {
+      "incident_id": "132599330",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "operational_shift_note": "VERIFIED_TP",
+      "certified_status": "PENDING_PANEL_REVIEW",
+      "certified_label": null,
+      "certified_by": [],
+      "certification_date": null
+    }
+  ]
+}

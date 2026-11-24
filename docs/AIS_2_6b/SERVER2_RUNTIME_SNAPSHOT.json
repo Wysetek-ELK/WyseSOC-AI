@@ -1,0 +1,9 @@
+{
+  "endpoint": "http://13.204.214.64:8000/v1/models",
+  "verified_at_utc": "2026-11-24T18:23:30Z",
+  "model_id": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "owned_by": "vllm",
+  "max_model_len": 8192,
+  "gpu": "NVIDIA A10G",
+  "gpu_memory_utilization": 0.9
+}

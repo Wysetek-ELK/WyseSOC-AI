@@ -1,0 +1,61 @@
+{
+  "suite": "backend/tests/test_ais_2_6b_counterfactual_validation.py",
+  "total_tests": 13,
+  "passed": 13,
+  "failed": 0,
+  "pass_rate": 100.0,
+  "cases": [
+    {
+      "test_name": "test_cf_01_malicious_script_named_as_admin_utility",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_02_admin_tool_outside_maintenance_window",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_03_admin_tool_from_unauthorized_user",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_04_critical_evidence_omitted_requires_attention",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_05_benign_software_matching_threat_signature",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_06_cdn_static_asset_not_malicious_without_evidence",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_07_malicious_content_on_cdn",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_08_llm_hallucinated_evidence_id_rejected",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_09_llm_hallucinated_threat_family_rejected",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_10_contradictory_claims_rejected",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_11_prompt_injection_in_raw_log_ignored",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_12_prompt_injection_in_process_name_ignored",
+      "result": "PASS"
+    },
+    {
+      "test_name": "test_cf_13_token_budget_compacts_below_wire_ceiling",
+      "result": "PASS"
+    }
+  ]
+}

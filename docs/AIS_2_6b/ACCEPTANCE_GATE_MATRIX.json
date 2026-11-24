@@ -1,0 +1,206 @@
+{
+  "total_gates": 33,
+  "passed": 29,
+  "not_met": 2,
+  "not_measured": 2,
+  "gates": [
+    {
+      "gate_id": "G01",
+      "name": "Preserve Existing Application Functionality",
+      "status": "PASS",
+      "evidence": "All 32 frontend pages build, all regression test suites pass 100%"
+    },
+    {
+      "gate_id": "G02",
+      "name": "Audit Existing Implementation Before Modification",
+      "status": "PASS",
+      "evidence": "Comprehensive codebase audit performed; identified token undercount and wire hash sharing root causes"
+    },
+    {
+      "gate_id": "G03",
+      "name": "Fix Actual Root Causes",
+      "status": "PASS",
+      "evidence": "Clamped target_input_budget=6400, tightened system instruction (<120 words), concatenated model-facing wire prompt"
+    },
+    {
+      "gate_id": "G04",
+      "name": "No Redundant Infrastructure or Databases",
+      "status": "PASS",
+      "evidence": "Zero duplicate tables or services created; reused existing architecture"
+    },
+    {
+      "gate_id": "G05",
+      "name": "Do Not Weaken Evidence Validation",
+      "status": "PASS",
+      "evidence": "Check 5 / Tier B/C evidence requirements strictly preserved; rejected unverified Prisma SASE claims"
+    },
+    {
+      "gate_id": "G06",
+      "name": "Do Not Force Decisive Verdicts",
+      "status": "PASS",
+      "evidence": "12/20 incidents safely abstained to analyst (60.0% abstention rate)"
+    },
+    {
+      "gate_id": "G07",
+      "name": "Strict Double-Blind Ground Truth Isolation",
+      "status": "PASS",
+      "evidence": "Verified zero analyst resolution fields present in prompt_text, user_content, or wire prompt"
+    },
+    {
+      "gate_id": "G08",
+      "name": "Zero Fabricated Evidence or Hashes",
+      "status": "PASS",
+      "evidence": "All 20 executions ran live against Server 2 GPU with genuine vLLM telemetry and real hashes"
+    },
+    {
+      "gate_id": "G09",
+      "name": "No Presentation of Historical Executions as Fresh",
+      "status": "PASS",
+      "evidence": "All 20 records executed fresh with live timestamps (2026-11-24T13:07:18Z - 13:17:50Z)"
+    },
+    {
+      "gate_id": "G10",
+      "name": "Accurate Execution Provenance",
+      "status": "PASS",
+      "evidence": "100% of benchmark cohort recorded as LIVE_PROVIDER (20/20)"
+    },
+    {
+      "gate_id": "G11",
+      "name": "Preserve Historical Evidence and Phase Reports",
+      "status": "PASS",
+      "evidence": "Previous phase reports under /docs/AIS_2_6/ untouched and preserved"
+    },
+    {
+      "gate_id": "G12",
+      "name": "Maintain Compact 3-Tab Agent Intelligence Studio UI",
+      "status": "PASS",
+      "evidence": "Frontend builds with zero TypeScript errors across all 32 routes; compact UI layout preserved"
+    },
+    {
+      "gate_id": "G13",
+      "name": "Shadow Mode Operational Invariant",
+      "status": "PASS",
+      "evidence": "auto_incident_closure_allowed=False enforced unconditionally across all 20 records"
+    },
+    {
+      "gate_id": "G14",
+      "name": "No Autonomous Incident Closure",
+      "status": "PASS",
+      "evidence": "0 incidents closed autonomously; shadow advisory mode strictly enforced"
+    },
+    {
+      "gate_id": "G15",
+      "name": "Evidence-Derived Acceptance Statuses",
+      "status": "PASS",
+      "evidence": "Every gate determination derived directly from empirical execution records"
+    },
+    {
+      "gate_id": "G16",
+      "name": "No Premature Production Readiness Claim",
+      "status": "PASS",
+      "evidence": "Phase status explicitly declared as ENGINEERING_COMPLETE_GROUND_TRUTH_PENDING"
+    },
+    {
+      "gate_id": "G17",
+      "name": "Server 2 8192 Token Context Window Verification",
+      "status": "PASS",
+      "evidence": "vLLM max_model_len: 8192 verified live directly from Server 2 model endpoint"
+    },
+    {
+      "gate_id": "G18",
+      "name": "Wire Prompt Invariant Under 8192 Runtime",
+      "status": "PASS",
+      "evidence": "Maximum prompt tokens observed: 7012; all 20 executions <= 7424 prompt budget"
+    },
+    {
+      "gate_id": "G19",
+      "name": "Zero Completion Truncations",
+      "status": "PASS",
+      "evidence": "finish_reason='stop' for 20/20 executions; 0 truncated at 768 tokens"
+    },
+    {
+      "gate_id": "G20",
+      "name": "Distinct Cryptographic Wire Prompt Hashes",
+      "status": "PASS",
+      "evidence": "20 unique wire prompt hashes across 20 incidents (zero identical hashes)"
+    },
+    {
+      "gate_id": "G21",
+      "name": "Accurate Policy Version Accounting",
+      "status": "PASS",
+      "evidence": "CrowdStrike = Version 3, Prisma SASE = Version 1; zero 'None' versions"
+    },
+    {
+      "gate_id": "G22",
+      "name": "Targeted 5-Incident Real GPU Pilot Succeeded",
+      "status": "PASS",
+      "evidence": "Pilot Go/No-Go evaluated as GO with 0 HTTP 400, 0 truncations, 2 decisive, 0 unsafe FP"
+    },
+    {
+      "gate_id": "G23",
+      "name": "Full 20-Incident Live Historical Benchmark Succeeded",
+      "status": "PASS",
+      "evidence": "20/20 incidents executed live against Server 2 vLLM on AWS A10G"
+    },
+    {
+      "gate_id": "G24",
+      "name": "CrowdStrike Decisive Coverage Target (>= 70%)",
+      "status": "PASS",
+      "evidence": "80.0% decisive coverage achieved (8/10 decisive verdicts)"
+    },
+    {
+      "gate_id": "G25",
+      "name": "Prisma SASE Decisive Coverage Target (>= 50%)",
+      "status": "NOT_MET",
+      "evidence": "0.0% decisive coverage (0/10 decisive verdicts; all 10 safely abstained due to strict criteria)"
+    },
+    {
+      "gate_id": "G26",
+      "name": "Overall Decisive Coverage Target (>= 70%)",
+      "status": "NOT_MET",
+      "evidence": "40.0% decisive coverage achieved (8/20 decisive verdicts; safe abstention on benign CDN JS)"
+    },
+    {
+      "gate_id": "G27",
+      "name": "Zero Unsafe False Positives",
+      "status": "PASS",
+      "evidence": "0 unsafe false positives across all 20 executions (0.0% unsafe FP rate)"
+    },
+    {
+      "gate_id": "G28",
+      "name": "Certified Ground Truth Selective Accuracy (>= 90%)",
+      "status": "NOT_MEASURED",
+      "evidence": "BLOCKED_PENDING_HUMAN_CERTIFICATION: certified ground truth count = 0"
+    },
+    {
+      "gate_id": "G29",
+      "name": "13 Counterfactual and Adversarial Test Invariants",
+      "status": "PASS",
+      "evidence": "All 13 counterfactual test cases pass 100% in test_ais_2_6b_counterfactual_validation.py"
+    },
+    {
+      "gate_id": "G30",
+      "name": "UPLA Governed Deployment and Rollback Verification",
+      "status": "PASS",
+      "evidence": "Gate 1, Gate 2, remote deploy, automatic rollback on regression, and final commit c13c900de verified"
+    },
+    {
+      "gate_id": "G31",
+      "name": "20 Technical Markdown Reports Authored",
+      "status": "PASS",
+      "evidence": "Reports 01 through 20 authored in docs/AIS_2_6b/"
+    },
+    {
+      "gate_id": "G32",
+      "name": "34 Machine-Readable JSON/JSONL Artifacts Emitted",
+      "status": "PASS",
+      "evidence": "All 34 required JSON artifacts populated with genuine empirical data"
+    },
+    {
+      "gate_id": "G33",
+      "name": "Do Not Automatically Initiate AIS 2.7",
+      "status": "PASS",
+      "evidence": "AIS 2.7 not initiated; transition requires human ground truth certification panel"
+    }
+  ]
+}

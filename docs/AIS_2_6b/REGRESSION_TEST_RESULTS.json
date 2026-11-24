@@ -1,0 +1,33 @@
+{
+  "total_suites": 6,
+  "total_tests": 64,
+  "passed": 64,
+  "failed": 0,
+  "pass_rate": 100.0,
+  "suites": [
+    {
+      "path": "tests/test_ais_heavy_tcp_e2e.py",
+      "passed": 27
+    },
+    {
+      "path": "tests/test_rule_learning_platform.py",
+      "passed": 8
+    },
+    {
+      "path": "tests/test_api_422_remediation.py",
+      "passed": 9
+    },
+    {
+      "path": "tests/test_ais_2_6b_counterfactual_validation.py",
+      "passed": 13
+    },
+    {
+      "path": "tests/test_ais_2_6a_empirical_validation.py",
+      "passed": 7
+    },
+    {
+      "path": "tests/test_empirical_benchmark_harness.py",
+      "passed": 17
+    }
+  ]
+}

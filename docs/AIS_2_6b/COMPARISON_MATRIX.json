@@ -1,0 +1,46 @@
+{
+  "phases": [
+    {
+      "phase": "AIS 2.5a",
+      "runtime_context": 4096,
+      "reserved_completion": 768,
+      "prompt_budget": 3328,
+      "decisive_coverage_overall": "15.0%",
+      "crowdstrike_decisive_coverage": "30.0%",
+      "prisma_decisive_coverage": "0.0%",
+      "unsafe_fp_count": 0,
+      "completion_truncations": 4,
+      "token_budget_violations": 4,
+      "distinct_wire_hashes": 2,
+      "certified_accuracy": "NOT_MEASURED"
+    },
+    {
+      "phase": "AIS 2.6a",
+      "runtime_context": 8192,
+      "reserved_completion": 768,
+      "prompt_budget": 7424,
+      "decisive_coverage_overall": "35.0%",
+      "crowdstrike_decisive_coverage": "70.0%",
+      "prisma_decisive_coverage": "0.0%",
+      "unsafe_fp_count": 0,
+      "completion_truncations": 4,
+      "token_budget_violations": 1,
+      "distinct_wire_hashes": 2,
+      "certified_accuracy": "NOT_MEASURED"
+    },
+    {
+      "phase": "AIS 2.6b (Current)",
+      "runtime_context": 8192,
+      "reserved_completion": 768,
+      "prompt_budget": 6400,
+      "decisive_coverage_overall": "40.0%",
+      "crowdstrike_decisive_coverage": "80.0%",
+      "prisma_decisive_coverage": "0.0%",
+      "unsafe_fp_count": 0,
+      "completion_truncations": 0,
+      "token_budget_violations": 0,
+      "distinct_wire_hashes": 20,
+      "certified_accuracy": "NOT_MEASURED (Ground Truth Certification Pending)"
+    }
+  ]
+}

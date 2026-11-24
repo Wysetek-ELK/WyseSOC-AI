@@ -1,0 +1,11 @@
+{
+  "total_records": 20,
+  "distribution": {
+    "score_3_high": 20,
+    "score_2_medium": 0,
+    "score_1_low": 0,
+    "score_0_abstain": 0
+  },
+  "calibration_valid": true,
+  "grounding_ratio_mean": 0.9833500000000001
+}

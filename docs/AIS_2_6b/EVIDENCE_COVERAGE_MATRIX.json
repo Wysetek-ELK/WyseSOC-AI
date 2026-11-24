@@ -1,0 +1,206 @@
+{
+  "incidents": [
+    {
+      "incident_id": "132438483",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132439932",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132441815",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132461358",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132461368",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132472498",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132474210",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132501348",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132502453",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132527297",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132499009",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132499023",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132499745",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132578774",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132591888",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132595592",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132596403",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "validation_status": "REJECTED",
+      "reason_codes": [
+        "EVIDENCE_REFERENCE_NOT_FOUND",
+        "UNSUPPORTED_CLAIM",
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 0.667,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132599145",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132599146",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    },
+    {
+      "incident_id": "132599330",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "missing_evidence": []
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "endpoints_verified": [
+    {
+      "path": "/v1/models",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "/v1/chat/completions",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "/api/health",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "verified": true
+    }
+  ]
+}

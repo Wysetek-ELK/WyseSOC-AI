@@ -1,0 +1,32 @@
+{
+  "phase": "AIS_2_6b",
+  "phase_name": "Verdict Correctness, Ground Truth Certification & Runtime Integrity Closeout",
+  "evaluation_run_id": "BENCHMARK-AIS-2.6b",
+  "executed_at_utc": "2026-11-24T13:17:50Z",
+  "git_commit_sha": "c13c900de810243ec60e773d8b59382de2793ea6",
+  "server1_host": "172.26.41.240",
+  "server2_endpoint": "http://13.204.214.64:8000/v1",
+  "model_name": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "inference_engine": "vLLM",
+  "active_runtime_context": 8192,
+  "reserved_completion_tokens": 768,
+  "target_prompt_budget": 6400,
+  "wire_prompt_ceiling": 7424,
+  "cohort_size": 20,
+  "provenance_breakdown": {
+    "LIVE_PROVIDER": 20,
+    "PREFLIGHT_ABSTENTION": 0,
+    "OFFLINE_SIMULATION": 0,
+    "PROVIDER_ERROR": 0
+  },
+  "decisive_verdicts_count": 8,
+  "abstained_verdicts_count": 12,
+  "overall_coverage_rate": 40.0,
+  "unsafe_false_positive_count": 0,
+  "unsafe_false_positive_rate": 0.0,
+  "completion_truncations_count": 0,
+  "token_overflow_count": 0,
+  "distinct_wire_prompt_hashes": 20,
+  "certified_ground_truth_count": 0,
+  "phase_status": "ENGINEERING_COMPLETE_GROUND_TRUTH_PENDING"
+}

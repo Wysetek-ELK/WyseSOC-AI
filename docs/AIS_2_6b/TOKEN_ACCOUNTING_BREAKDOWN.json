@@ -1,0 +1,228 @@
+{
+  "runtime_context": 8192,
+  "reserved_completion": 768,
+  "prompt_budget": 6400,
+  "wire_ceiling": 7424,
+  "incidents": [
+    {
+      "incident_id": "132438483",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "prompt_tokens": 5183,
+      "completion_tokens": 565,
+      "total_tokens": 5748,
+      "prompt_budget_remaining": 2241,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132439932",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "prompt_tokens": 5210,
+      "completion_tokens": 610,
+      "total_tokens": 5820,
+      "prompt_budget_remaining": 2214,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132441815",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "prompt_tokens": 7012,
+      "completion_tokens": 582,
+      "total_tokens": 7594,
+      "prompt_budget_remaining": 412,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132461358",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "prompt_tokens": 5880,
+      "completion_tokens": 566,
+      "total_tokens": 6446,
+      "prompt_budget_remaining": 1544,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132461368",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "prompt_tokens": 4834,
+      "completion_tokens": 573,
+      "total_tokens": 5407,
+      "prompt_budget_remaining": 2590,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132472498",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "prompt_tokens": 5575,
+      "completion_tokens": 555,
+      "total_tokens": 6130,
+      "prompt_budget_remaining": 1849,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132474210",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "prompt_tokens": 6384,
+      "completion_tokens": 555,
+      "total_tokens": 6939,
+      "prompt_budget_remaining": 1040,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132501348",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "prompt_tokens": 3878,
+      "completion_tokens": 576,
+      "total_tokens": 4454,
+      "prompt_budget_remaining": 3546,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132502453",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "prompt_tokens": 5254,
+      "completion_tokens": 572,
+      "total_tokens": 5826,
+      "prompt_budget_remaining": 2170,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132527297",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "prompt_tokens": 3909,
+      "completion_tokens": 515,
+      "total_tokens": 4424,
+      "prompt_budget_remaining": 3515,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132499009",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "prompt_tokens": 3053,
+      "completion_tokens": 550,
+      "total_tokens": 3603,
+      "prompt_budget_remaining": 4371,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132499023",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "prompt_tokens": 3115,
+      "completion_tokens": 607,
+      "total_tokens": 3722,
+      "prompt_budget_remaining": 4309,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132499745",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "prompt_tokens": 3050,
+      "completion_tokens": 582,
+      "total_tokens": 3632,
+      "prompt_budget_remaining": 4374,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132578774",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "prompt_tokens": 3070,
+      "completion_tokens": 534,
+      "total_tokens": 3604,
+      "prompt_budget_remaining": 4354,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132591888",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "prompt_tokens": 3204,
+      "completion_tokens": 627,
+      "total_tokens": 3831,
+      "prompt_budget_remaining": 4220,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132595592",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "prompt_tokens": 3100,
+      "completion_tokens": 494,
+      "total_tokens": 3594,
+      "prompt_budget_remaining": 4324,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132596403",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "prompt_tokens": 3042,
+      "completion_tokens": 571,
+      "total_tokens": 3613,
+      "prompt_budget_remaining": 4382,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132599145",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "prompt_tokens": 3350,
+      "completion_tokens": 524,
+      "total_tokens": 3874,
+      "prompt_budget_remaining": 4074,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132599146",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "prompt_tokens": 5718,
+      "completion_tokens": 494,
+      "total_tokens": 6212,
+      "prompt_budget_remaining": 1706,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    },
+    {
+      "incident_id": "132599330",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "prompt_tokens": 3351,
+      "completion_tokens": 675,
+      "total_tokens": 4026,
+      "prompt_budget_remaining": 4073,
+      "finish_reason": "stop",
+      "overflow_detected": false,
+      "truncation_detected": false
+    }
+  ]
+}

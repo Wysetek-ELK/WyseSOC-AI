@@ -1,0 +1,12 @@
+{
+  "guardrails_evaluated": [
+    "Preflight Token Budget Boundary (<= 7424 tokens)",
+    "Post-generation Schema Validation",
+    "Check 5 / Tier B/C Evidence Verification",
+    "Anti-Hallucination Evidence ID Citation Check",
+    "Anti-Leakage Ground Truth Sanitization",
+    "Autonomous Closure Disablement"
+  ],
+  "all_guardrails_active": true,
+  "violations_detected": 0
+}

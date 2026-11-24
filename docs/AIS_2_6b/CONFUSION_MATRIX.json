@@ -1,0 +1,30 @@
+{
+  "evaluation_phase": "AIS_2_6b",
+  "certified_ground_truth_matrix": {
+    "description": "Certified Ground Truth (Requires 3-analyst panel consensus)",
+    "certified_tp": 0,
+    "certified_fp": 0,
+    "certified_unverified": 20,
+    "tp": 0,
+    "fp": 0,
+    "tn": 0,
+    "fn": 0,
+    "abstain_tp": 0,
+    "abstain_fp": 0,
+    "abstain_unverified": 12,
+    "selective_accuracy": null,
+    "note": "Certified ground truth is 0 pending human panel certification"
+  },
+  "operational_label_alignment_matrix": {
+    "description": "Alignment against raw uncertified historical ticket dispositions",
+    "operational_tp": 4,
+    "operational_fp": 2,
+    "operational_unverified": 14,
+    "model_decisive_tp": 8,
+    "model_decisive_fp": 0,
+    "model_abstained": 12,
+    "decisive_on_operational_tp": 1,
+    "decisive_on_operational_fp": 1,
+    "decisive_on_operational_unverified": 6
+  }
+}
