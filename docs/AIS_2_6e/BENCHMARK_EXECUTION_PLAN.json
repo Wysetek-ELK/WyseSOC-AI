@@ -1,0 +1,37 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:10:24.954615+00:00",
+  "target_cohort_size": 20,
+  "stages": [
+    {
+      "stage_id": "STAGE_1_SMOKE_TEST",
+      "description": "Single-call live completion smoke test to verify vLLM health, latency, and token reporting",
+      "gpu_calls": 1
+    },
+    {
+      "stage_id": "STAGE_2_PILOT",
+      "description": "5 priority incidents executed under Mode A and Mode B with Mode C validator assessment",
+      "mode_a_calls": 5,
+      "mode_b_calls": 5,
+      "mode_c_calls": 0,
+      "gpu_calls": 10
+    },
+    {
+      "stage_id": "STAGE_3_FULL_BENCHMARK",
+      "description": "Remaining 15 incidents executed under Mode A and Mode B with Mode C validator assessment",
+      "mode_a_calls": 15,
+      "mode_b_calls": 15,
+      "mode_c_calls": 0,
+      "gpu_calls": 30
+    }
+  ],
+  "workload_totals": {
+    "smoke_test_calls": 1,
+    "pilot_calls": 10,
+    "remaining_benchmark_calls": 30,
+    "mode_c_deterministic_calls": 0,
+    "baseline_total_gpu_calls": 41,
+    "optional_counterfactual_calls": 10,
+    "max_authorized_gpu_calls": 51
+  }
+}

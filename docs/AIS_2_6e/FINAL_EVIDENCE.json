@@ -1,0 +1,19 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:21:36.387748+00:00",
+  "status": "STAGE_A_COMPLETED_STOPPED_AT_CHECKPOINT_A",
+  "summary": {
+    "mission": "Establish actual empirical intelligence and correctness of Qwen/Qwen2.5-7B-Instruct-AWQ on real FortiSIEM incidents.",
+    "historical_reconciliation": "All 5 AIS 2.6d discrepancies solved (token budgeting 0/20 overflows, hash lineage normalized, SQLite entities verified, LF/CRLF prompt parity verified, deployment commit 8770e071... verified).",
+    "technical_readiness": "100% PASS (13/13 regression, 18/18 security, 32/32 Next.js routes, Server 1 DB latency 2.2ms).",
+    "human_ground_truth": "0 of 5 priority, 0 of 20 cohort reviews completed. Status: BLOCKED_PENDING_PRIORITY_HUMAN_REVIEW.",
+    "live_gpu_inference": "0 calls dispatched. Server 2 stopped in AWS EC2 ($0.00/hr billing). Status: STOPPED_AT_CHECKPOINT_A.",
+    "empirical_accuracy": "NOT_DEMONSTRATED (evaluates to null to prevent zero-denominator fabrication).",
+    "model_decision": "RETAIN_PROVISIONALLY_FOR_STAGE_B (do NOT fine-tune or swap model without empirical baseline).",
+    "total_baseline_gpu_workload": "41 calls budgeted (~$0.33 USD)."
+  },
+  "checkpoint_a": {
+    "decision": "STOP_AT_CHECKPOINT_A",
+    "operator_action_required": "Complete priority blind reviews and authorize GPU power-on."
+  }
+}

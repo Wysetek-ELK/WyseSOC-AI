@@ -1,0 +1,13 @@
+{
+  "phase": "AIS 2.6e",
+  "evaluated_at_utc": "2026-11-24T17:10:24.954612+00:00",
+  "parity_check": {
+    "evidence_json_identical_between_modes": true,
+    "rule_spec_json_identical_between_modes": true,
+    "context_limit_identical": true,
+    "sampling_parameters_identical": true,
+    "only_intended_independent_variable_differs": true,
+    "independent_variable": "System prompt policy directives (Neutral Baseline vs Approved Domain Policy)"
+  },
+  "status": "PASS_STRICT_PARITY_VERIFIED"
+}

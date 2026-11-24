@@ -1,0 +1,36 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:19:00Z",
+  "checkpoint": "CHECKPOINT_A",
+  "immediate_operator_actions": [
+    {
+      "step": 1,
+      "title": "Complete 5 Priority Incident Blind Reviews",
+      "action": "Navigate to http://172.26.41.240/human-review-queue (or open the workbench locally) and submit independent ground truth reviews for the 5 priority incidents: 10476, 10477, 10478, 10479, 10480.",
+      "ui_route": "/human-review-queue",
+      "required_fields": ["verdict (TRUE_POSITIVE | FALSE_POSITIVE | INCONCLUSIVE)", "confidence_score (0.0-1.0)", "notes", "verified_entity"],
+      "blocking_dependency": "Required to calculate empirical accuracy for Pilot Stage."
+    },
+    {
+      "step": 2,
+      "title": "Complete Remaining 15 Cohort Incident Blind Reviews",
+      "action": "Submit reviews for incidents 10481-10485 and 10496-10505 to establish complete 20-incident certified ground truth.",
+      "ui_route": "/human-review-queue",
+      "blocking_dependency": "Required to calculate complete Three-Mode cohort metrics and confusion matrices."
+    },
+    {
+      "step": 3,
+      "title": "Start AWS EC2 GPU Server 2",
+      "action": "In AWS Console, start EC2 instance g5.xlarge (Server 2). Verify public IP (previously 13.204.214.64) and confirm vLLM service is running on port 8000.",
+      "health_check_command": "curl http://<SERVER2_IP>:8000/v1/models",
+      "expected_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+      "blocking_dependency": "Required for live GPU inference."
+    },
+    {
+      "step": 4,
+      "title": "Authorize Live GPU Benchmark Execution",
+      "action": "Issue explicit prompt authorization: 'Authorize Live GPU Benchmark with Server 2 at <SERVER2_IP>'",
+      "blocking_dependency": "Mandatory authorization gate to dispatch 41 budgeted live requests."
+    }
+  ]
+}

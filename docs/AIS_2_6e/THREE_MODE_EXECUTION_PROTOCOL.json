@@ -1,0 +1,42 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:10:24.954585+00:00",
+  "model_target": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "generation_parameters": {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "max_completion_tokens": 768,
+    "seed": 42
+  },
+  "modes": {
+    "MODE_A_NEUTRAL_BASELINE": {
+      "name": "Neutral Core LLM Reasoning",
+      "prompt_template": "NEUTRAL_SOC_BASELINE_V1",
+      "prompt_hash_lf": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+      "purpose": "Measures model baseline security reasoning without domain policy bias",
+      "rule_directives_included": false
+    },
+    "MODE_B_APPROVED_POLICY": {
+      "name": "Approved Policy-Assisted LLM Reasoning",
+      "policy_version": 1,
+      "policy_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c",
+      "compiler_version": "v3.0.0",
+      "purpose": "Measures impact of approved domain policy on verdict accuracy and coverage",
+      "rule_directives_included": true
+    },
+    "MODE_C_INDEPENDENT_VALIDATION": {
+      "name": "Independent Deterministic Validator Assessment",
+      "evaluator": "IndependentVerdictValidator (Python deterministic rules)",
+      "purpose": "Evaluates whether deterministic post-validation mitigates unsafe verdicts without extra GPU calls",
+      "gpu_calls_required": 0,
+      "silently_rewrite_verdicts": false
+    }
+  },
+  "parity_controls": {
+    "identical_model_revision": true,
+    "identical_evidence_package": true,
+    "identical_rule_definitions": true,
+    "identical_temperature_seed": true,
+    "identical_max_completion_budget": true
+  }
+}

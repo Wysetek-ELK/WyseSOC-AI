@@ -1,0 +1,9 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:18:36.569172+00:00",
+  "model_name": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "capability_assessment": "UNPROVEN_EMPIRICALLY",
+  "current_status": "RETAIN_PROVISIONALLY_FOR_STAGE_B",
+  "justification": "Model demonstrated clean 8k context window adherence and structured JSON compliance during AIS 2.6d unit tests. However, actual security reasoning accuracy remains an unverified hypothesis pending live execution against certified human ground truth.",
+  "recommendation": "Maintain model deployment on Server 2 for authorized Stage B execution. Do NOT attempt fine-tuning, RAG replacement, or model swap until empirical baseline is recorded."
+}

@@ -1,0 +1,29 @@
+{
+  "phase": "AIS 2.6e",
+  "evaluated_at_utc": "2026-11-24T17:07:19.739844+00:00",
+  "overall_status": "BLOCKED_PENDING_PRIORITY_HUMAN_REVIEW",
+  "priority_reviews": {
+    "completed": 0,
+    "total": 5,
+    "status": "BLOCKED_PENDING_PRIORITY_HUMAN_REVIEW"
+  },
+  "full_cohort_reviews": {
+    "completed": 0,
+    "total": 20,
+    "status": "PENDING_HUMAN_REVIEW"
+  },
+  "verdict_distribution": {
+    "verified_true_positive": 0,
+    "verified_false_positive": 0,
+    "inconclusive": 0,
+    "pending": 20
+  },
+  "provenance_breakdown": {
+    "level_0_unreviewed": 0,
+    "level_1_historical_operational": 20,
+    "level_2_independent_human_review": 0,
+    "level_3_corroborated_adjudicated": 0,
+    "level_4_formally_certified": 0
+  },
+  "blocking_remediation": "SOC analysts or project owner must log into http://172.26.41.240:3000/agent-intelligence-studio (or local port 3000) and submit double-blind reviews with reasoning for priority incidents (132474210, 132596403, 132599145, 132438483, 132591888)."
+}

@@ -1,0 +1,84 @@
+{
+  "phase": "AIS 2.6e",
+  "evaluated_at_utc": "2026-11-24T17:07:19.739861+00:00",
+  "controls_audited": [
+    "SEC-01_SERVER_SIDE_BLINDING",
+    "SEC-02_AI_VERDICT_MASKING",
+    "SEC-03_PROMPT_INJECTION_SANITIZATION"
+  ],
+  "priority_incidents_audited": [
+    "132474210",
+    "132596403",
+    "132599145",
+    "132438483",
+    "132591888"
+  ],
+  "results": [
+    {
+      "incident_id": "132474210",
+      "raw_closure_keys_in_db": [
+        "resolution",
+        "clearedReason",
+        "clearedUser",
+        "clearedTime"
+      ],
+      "exposed_in_blind_api": [],
+      "ai_verdict_exposed_pre_submission": false,
+      "ground_truth_object_exposed": false,
+      "status": "PASS_BLIND_PROTECTED"
+    },
+    {
+      "incident_id": "132596403",
+      "raw_closure_keys_in_db": [
+        "resolution",
+        "clearedReason",
+        "clearedUser",
+        "clearedTime"
+      ],
+      "exposed_in_blind_api": [],
+      "ai_verdict_exposed_pre_submission": false,
+      "ground_truth_object_exposed": false,
+      "status": "PASS_BLIND_PROTECTED"
+    },
+    {
+      "incident_id": "132599145",
+      "raw_closure_keys_in_db": [
+        "resolution",
+        "clearedReason",
+        "clearedUser",
+        "clearedTime"
+      ],
+      "exposed_in_blind_api": [],
+      "ai_verdict_exposed_pre_submission": false,
+      "ground_truth_object_exposed": false,
+      "status": "PASS_BLIND_PROTECTED"
+    },
+    {
+      "incident_id": "132438483",
+      "raw_closure_keys_in_db": [
+        "resolution",
+        "clearedReason",
+        "clearedUser",
+        "clearedTime"
+      ],
+      "exposed_in_blind_api": [],
+      "ai_verdict_exposed_pre_submission": false,
+      "ground_truth_object_exposed": false,
+      "status": "PASS_BLIND_PROTECTED"
+    },
+    {
+      "incident_id": "132591888",
+      "raw_closure_keys_in_db": [
+        "resolution",
+        "clearedReason",
+        "clearedUser",
+        "clearedTime"
+      ],
+      "exposed_in_blind_api": [],
+      "ai_verdict_exposed_pre_submission": false,
+      "ground_truth_object_exposed": false,
+      "status": "PASS_BLIND_PROTECTED"
+    }
+  ],
+  "overall_leakage_status": "PASS_ZERO_LEAKAGE"
+}

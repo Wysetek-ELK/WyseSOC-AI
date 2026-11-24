@@ -1,0 +1,27 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:18:36.569172+00:00",
+  "denominator_guardrails": {
+    "empirical_accuracy": {
+      "formula": "(TP + TN) / Total Certified Human Reviews",
+      "numerator": 0,
+      "denominator": 0,
+      "result": null,
+      "guardrail_status": "SAFE (Returned null, avoided division by zero)"
+    },
+    "decisive_coverage": {
+      "formula": "Decisive Verdicts / Total Executed Requests",
+      "numerator": 0,
+      "denominator": 0,
+      "result": null,
+      "guardrail_status": "SAFE (Returned null, avoided division by zero)"
+    },
+    "unsafe_fp_rate": {
+      "formula": "False Positives / Total Actual True Incidents",
+      "numerator": 0,
+      "denominator": 0,
+      "result": null,
+      "guardrail_status": "SAFE (Returned null, avoided division by zero)"
+    }
+  }
+}

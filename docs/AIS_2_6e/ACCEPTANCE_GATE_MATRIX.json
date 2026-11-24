@@ -1,0 +1,270 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:21:36.387748+00:00",
+  "total_gates": 37,
+  "passed_gates": 29,
+  "blocked_gates": 4,
+  "unexecuted_gates": 3,
+  "not_demonstrated_gates": 1,
+  "gates": [
+    {
+      "gate_id": "G01",
+      "name": "AIS 2.6c Discrepancy Reconciliation",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "01_AIS_2_6D_EVIDENCE_RECONCILIATION.md"
+    },
+    {
+      "gate_id": "G02",
+      "name": "Token Accounting Root Cause Resolution",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "02_WIRE_PROMPT_AND_TOKEN_BUDGET_ROOT_CAUSE.md, TOKEN_ACCOUNTING_RESULTS.json (0/20 overflows)"
+    },
+    {
+      "gate_id": "G03",
+      "name": "Context Retention & Compaction Verification",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "03_EVIDENCE_SELECTION_AND_CONTEXT_INTEGRITY.md, max prompt 6,680 tokens"
+    },
+    {
+      "gate_id": "G04",
+      "name": "Frozen Cohort Integrity & Hash Lineage",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "04_FROZEN_COHORT_AND_HASH_LINEAGE.md, EVIDENCE_HASH_LINEAGE.json"
+    },
+    {
+      "gate_id": "G05",
+      "name": "Authoritative Incident Entity Audit",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "SQLite extraction confirmed 9 UltraViewer, 1 MEGAsync, eliminated synthetic entities"
+    },
+    {
+      "gate_id": "G06",
+      "name": "Cohort Duplication & Clustering Audit",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "COHORT_DUPLICATION_AUDIT.json (45% UltraViewer documented)"
+    },
+    {
+      "gate_id": "G07",
+      "name": "Human Ground Truth Review Queue Audit",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "05_HUMAN_GROUND_TRUTH_AND_BLIND_REVIEW.md, GROUND_TRUTH_REVIEW_QUEUE.json"
+    },
+    {
+      "gate_id": "G08",
+      "name": "Double-Blind Review Safeguards Audit",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "GROUND_TRUTH_LEAKAGE_AUDIT.json, 100% blind masking enforced"
+    },
+    {
+      "gate_id": "G09",
+      "name": "Operator Manual Review Guide Availability",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "06_OPERATOR_MANUAL_REVIEW_GUIDE.md"
+    },
+    {
+      "gate_id": "G10",
+      "name": "Three-Mode Protocol Specification & Parity",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "07_THREE_MODE_EXPERIMENTAL_CONTROL.md, PROMPT_PARITY_RESULTS.json"
+    },
+    {
+      "gate_id": "G11",
+      "name": "Policy Identity & Immutability Verification",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "POLICY_IDENTITY_MANIFEST.json (bd751fac..., Version 1 frozen)"
+    },
+    {
+      "gate_id": "G12",
+      "name": "Benchmark Harness Architecture Validation",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "08_EXECUTABLE_BENCHMARK_HARNESS_VALIDATION.md, circuit breaker & pacing validated"
+    },
+    {
+      "gate_id": "G13",
+      "name": "Recalculated GPU Workload & Cost Budget",
+      "category": "OFFLINE_AUDIT",
+      "status": "PASS",
+      "evidence": "GPU_WORKLOAD_AND_COST_ESTIMATE.json (41 baseline calls, ~$0.33 USD)"
+    },
+    {
+      "gate_id": "G14",
+      "name": "Backend Regression Test Suite Execution",
+      "category": "REGRESSION",
+      "status": "PASS",
+      "evidence": "REGRESSION_TEST_RESULTS.json (13/13 core regression tests passed)"
+    },
+    {
+      "gate_id": "G15",
+      "name": "Security & Blind Review Test Suite Execution",
+      "category": "SECURITY",
+      "status": "PASS",
+      "evidence": "SECURITY_TEST_RESULTS.json (18/18 security tests passed)"
+    },
+    {
+      "gate_id": "G16",
+      "name": "Frontend Compilation & Production Build",
+      "category": "FRONTEND",
+      "status": "PASS",
+      "evidence": "Next.js 16.4.5 Turbopack compiled 32/32 routes with 0 errors"
+    },
+    {
+      "gate_id": "G17",
+      "name": "Server 1 Live Empirical Health & Deployment Audit",
+      "category": "INFRASTRUCTURE",
+      "status": "PASS",
+      "evidence": "10_SERVER1_DEPLOYMENT_AND_RUNTIME_TRUTH.md, HTTP 200, commit 8770e071..."
+    },
+    {
+      "gate_id": "G18",
+      "name": "GPU Billing Safeguard Enforcement",
+      "category": "INFRASTRUCTURE",
+      "status": "PASS",
+      "evidence": "Server 2 stopped in AWS EC2 ($0.00/hr accrued)"
+    },
+    {
+      "gate_id": "G19",
+      "name": "Checkpoint A Formal Offline Evaluation",
+      "category": "GOVERNANCE",
+      "status": "PASS",
+      "evidence": "11_GPU_OFF_READINESS_AND_OPERATOR_CHECKPOINT.md, CHECKPOINT_A_STATUS.json"
+    },
+    {
+      "gate_id": "G20",
+      "name": "Operator Go/No-Go Decision Specification",
+      "category": "GOVERNANCE",
+      "status": "PASS",
+      "evidence": "GPU_GO_NO_GO.json (Decision: NO_GO_PENDING_HUMAN_REVIEW_AND_OPERATOR_AUTH)"
+    },
+    {
+      "gate_id": "G21",
+      "name": "Actionable Next Operator Actions Register",
+      "category": "GOVERNANCE",
+      "status": "PASS",
+      "evidence": "NEXT_OPERATOR_ACTIONS.json"
+    },
+    {
+      "gate_id": "G22",
+      "name": "Priority Human Review Completion (5 Incidents)",
+      "category": "HUMAN_GROUND_TRUTH",
+      "status": "BLOCKED",
+      "evidence": "0 of 5 reviews submitted in database; awaiting operator review"
+    },
+    {
+      "gate_id": "G23",
+      "name": "Cohort Human Review Completion (20 Incidents)",
+      "category": "HUMAN_GROUND_TRUTH",
+      "status": "BLOCKED",
+      "evidence": "0 of 20 reviews submitted in database; awaiting operator review"
+    },
+    {
+      "gate_id": "G24",
+      "name": "Explicit Operator GPU Inference Authorization",
+      "category": "GOVERNANCE",
+      "status": "BLOCKED",
+      "evidence": "Awaiting explicit operator authorization to power on GPU"
+    },
+    {
+      "gate_id": "G25",
+      "name": "Server 2 Live GPU Runtime Connectivity",
+      "category": "LIVE_GPU",
+      "status": "BLOCKED",
+      "evidence": "Server 2 stopped in AWS EC2; awaiting power-on"
+    },
+    {
+      "gate_id": "G26",
+      "name": "Five-Incident Actual GPU Pilot Execution",
+      "category": "LIVE_GPU",
+      "status": "UNEXECUTED_PENDING_GPU_AND_GROUND_TRUTH",
+      "evidence": "Blocked at Checkpoint A; zero simulation data substituted"
+    },
+    {
+      "gate_id": "G27",
+      "name": "Pilot Empirical Accuracy & Circuit Verification",
+      "category": "LIVE_GPU",
+      "status": "UNEXECUTED_PENDING_GPU_AND_GROUND_TRUTH",
+      "evidence": "Blocked at Checkpoint A; zero simulation data substituted"
+    },
+    {
+      "gate_id": "G28",
+      "name": "Full 20-Incident Live Three-Mode Benchmark",
+      "category": "LIVE_GPU",
+      "status": "UNEXECUTED_PENDING_GPU_AND_GROUND_TRUTH",
+      "evidence": "Blocked at Checkpoint A; zero simulation data substituted"
+    },
+    {
+      "gate_id": "G29",
+      "name": "Live Telemetry & Append-Only Ledger Integrity",
+      "category": "LIVE_GPU",
+      "status": "PASS",
+      "evidence": "Ledger schemas verified; 0 synthetic records generated"
+    },
+    {
+      "gate_id": "G30",
+      "name": "Empirical Accuracy & Decisive Coverage Measurement",
+      "category": "EVALUATION",
+      "status": "NOT_DEMONSTRATED",
+      "evidence": "Evaluates strictly to null due to zero denominator and unexecuted live GPU"
+    },
+    {
+      "gate_id": "G31",
+      "name": "Zero-Denominator Metric Safeguard Enforcement",
+      "category": "EVALUATION",
+      "status": "PASS",
+      "evidence": "METRIC_DENOMINATOR_AUDIT.json (zero-denominator guardrails enforced)"
+    },
+    {
+      "gate_id": "G32",
+      "name": "Statistical Power & Limitations Formal Audit",
+      "category": "EVALUATION",
+      "status": "PASS",
+      "evidence": "16_STATISTICAL_INTEGRITY_AND_LIMITATIONS.md, STATISTICAL_LIMITATIONS.json"
+    },
+    {
+      "gate_id": "G33",
+      "name": "Incident-Level Error Attribution Taxonomy",
+      "category": "EVALUATION",
+      "status": "PASS",
+      "evidence": "17_INCIDENT_LEVEL_ERROR_ATTRIBUTION.md, ROOT_CAUSE_ATTRIBUTION_MATRIX.json"
+    },
+    {
+      "gate_id": "G34",
+      "name": "Controlled Policy Remediation Governance",
+      "category": "GOVERNANCE",
+      "status": "PASS",
+      "evidence": "18_CONTROLLED_POLICY_AND_VALIDATOR_REMEDIATION.md"
+    },
+    {
+      "gate_id": "G35",
+      "name": "Actual Model Capability & Retention Assessment",
+      "category": "EVALUATION",
+      "status": "PASS",
+      "evidence": "19_ACTUAL_MODEL_CAPABILITY_AND_RETENTION_DECISION.md (Decision: RETAIN_PROVISIONALLY)"
+    },
+    {
+      "gate_id": "G36",
+      "name": "Compact AIS UI & Operator Acceptance Verification",
+      "category": "FRONTEND",
+      "status": "PASS",
+      "evidence": "20_COMPACT_AIS_UI_AND_OPERATOR_ACCEPTANCE.md, UI_ACCEPTANCE_MATRIX.json"
+    },
+    {
+      "gate_id": "G37",
+      "name": "Master Evidence Integrity & Package Delivery",
+      "category": "DELIVERY",
+      "status": "PASS",
+      "evidence": "All 22 reports and manifests present, verified, and packaged"
+    }
+  ]
+}

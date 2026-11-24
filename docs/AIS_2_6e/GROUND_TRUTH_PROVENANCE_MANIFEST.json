@@ -1,0 +1,36 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:07:19.739850+00:00",
+  "provenance_hierarchy": [
+    {
+      "level": "LEVEL_0",
+      "name": "Unreviewed",
+      "description": "No independent decision exists."
+    },
+    {
+      "level": "LEVEL_1",
+      "name": "Historical Operational Resolution",
+      "description": "FortiSIEM operational closure comments or unverified historical labels. Contains closure leakage.",
+      "current_count": 20
+    },
+    {
+      "level": "LEVEL_2",
+      "name": "Independent Human Review",
+      "description": "Authorized SOC analyst double-blind review with mandatory evidence-grounded reasoning.",
+      "current_count": 0
+    },
+    {
+      "level": "LEVEL_3",
+      "name": "Independently Corroborated Ground Truth",
+      "description": "Corroborated by secondary analyst review or formal SOC lead adjudication.",
+      "current_count": 0
+    },
+    {
+      "level": "LEVEL_4",
+      "name": "Formally Certified Production Ground Truth",
+      "description": "Certified gold-standard ground truth approved by SOC Governance Lead.",
+      "current_count": 0
+    }
+  ],
+  "authoritative_target": "LEVEL_2_INDEPENDENT_HUMAN_REVIEW"
+}

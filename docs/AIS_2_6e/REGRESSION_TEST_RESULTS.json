@@ -1,0 +1,58 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:15:00Z",
+  "status": "PASS",
+  "test_framework": "pytest-9.2.0 (Python 3.13.17)",
+  "suites_executed": [
+    {
+      "suite": "backend/tests/test_ais_2_6d_empirical_integrity.py",
+      "tests_collected": 6,
+      "tests_passed": 6,
+      "tests_failed": 0,
+      "status": "PASS",
+      "details": [
+        "test_inconclusive_verdict_accepted_in_submit_request",
+        "test_classify_outcome_handles_inconclusive",
+        "test_sanitize_blind_review_payload_purges_all_ground_truth",
+        "test_token_budget_headroom_invariant",
+        "test_zero_denominator_metric_safety",
+        "test_neutral_baseline_prompt_frozen_hash"
+      ]
+    },
+    {
+      "suite": "backend/tests/test_ais_2_6c_three_mode_and_bias_isolation.py",
+      "tests_collected": 6,
+      "tests_passed": 6,
+      "tests_failed": 0,
+      "status": "PASS",
+      "details": [
+        "test_mode_a_neutral_baseline_evaluation",
+        "test_mode_b_approved_policy_evaluation",
+        "test_mode_c_reused_inference_with_validator",
+        "test_three_mode_benchmark_pipeline",
+        "test_git_sha_resolution_not_stale",
+        "test_zero_denominator_safety_metrics"
+      ]
+    },
+    {
+      "suite": "backend/tests/test_token_budgeting.py",
+      "tests_collected": 1,
+      "tests_passed": 1,
+      "tests_failed": 0,
+      "status": "PASS",
+      "details": [
+        "test_token_budgeting_priority_trimming"
+      ]
+    }
+  ],
+  "frontend_build_verification": {
+    "framework": "Next.js 16.4.5 (Turbopack)",
+    "routes_compiled": 32,
+    "static_routes": 27,
+    "dynamic_routes": 5,
+    "build_errors": 0,
+    "exit_code": 0,
+    "status": "PASS"
+  },
+  "overall_regression_status": "PASS"
+}

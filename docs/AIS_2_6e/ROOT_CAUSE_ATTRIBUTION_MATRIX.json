@@ -1,0 +1,12 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:18:36.569172+00:00",
+  "attribution_taxonomy": [
+    "LLM_HALLUCINATION (Citing non-existent entity or log artifact)",
+    "LLM_REASONING_ERROR (Valid entities but flawed SOC deduction)",
+    "POLICY_AMBIGUITY (Approved policy lacked clear exclusion criteria)",
+    "CONTEXT_COMPACTION_LOSS (Critical log attribute truncated during budgeting)",
+    "GROUND_TRUTH_DISAGREEMENT (Ambiguous telemetry dividing human analysts)"
+  ],
+  "attributed_errors": []
+}

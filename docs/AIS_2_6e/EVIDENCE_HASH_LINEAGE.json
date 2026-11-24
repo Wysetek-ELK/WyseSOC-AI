@@ -1,0 +1,288 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:05:13.241234+00:00",
+  "total_incidents": 20,
+  "serialization_standard": "COMPACT_UTF8_JSON (separators=(',', ':'), sort_keys=True)",
+  "records": [
+    {
+      "incident_id": "132438483",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "51b6cf48ff697edbcdad3ae3ef5867b8d4a2860d99590e8a92fcee3ba31ea2f9",
+        "step_2_canonical_evidence_sha256": "e062a4d90d8cfd0f967edc3c381a1ab8cfcd1e010aa068f05e64389f8c50e314",
+        "step_3_budgeted_evidence_sha256": "6d7fbf19ce202ef7b3c4569a3b2d6247b2c7b7069608856d7c146074bb3ee1d8",
+        "step_4_rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+        "step_5_compiled_policy_sha256": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "step_6_serialized_request_sha256": "e458bf9c1635a6c79a49b3ad9e3793ae44a7231d130fed226d718d12b19db895",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132439932",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "099302e3f7be342a92dd48d6bf5e3b25f7f4ba7ae021cab13713bc60431c1e7f",
+        "step_2_canonical_evidence_sha256": "a0ca3e1e0f957026600a199b96bc372b6275a952c888b542aad9b177be0ea6ba",
+        "step_3_budgeted_evidence_sha256": "1ef919e2d07acd9cd3e3822b38eabe192efe6125314644e0502ad1d3f72de651",
+        "step_4_rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+        "step_5_compiled_policy_sha256": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "step_6_serialized_request_sha256": "93e8ed9c7792d68185d13dc9e6d7b030a85e1c19e8b2c5526af4fc046a6388ff",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132441815",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "3436d390743d102f202f703c181dc873b7a0faed36189d742f1d2e14dbe659ff",
+        "step_2_canonical_evidence_sha256": "38bdd638c109ebaa33bc8e4995ebfb1d82224be47f744123040e979713532db0",
+        "step_3_budgeted_evidence_sha256": "370efb1ca91a64f50fa0b4ede70eee3e3bb6810c92bfeb2935b616fa1551396d",
+        "step_4_rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+        "step_5_compiled_policy_sha256": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "step_6_serialized_request_sha256": "1aa29ffcd545ca3960c36d3a5355f73c6863c9a116fdb53e17b57992fd8194f6",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132461358",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "fd27e5b45f53ef72e58f05e4c555a62806b30817fb15a848e464dd135e1560ac",
+        "step_2_canonical_evidence_sha256": "9f691ddba37eb0f4e8cf29601229b100d17296d231baa8a3c9d76ff2925ba71e",
+        "step_3_budgeted_evidence_sha256": "1ebe78e79987855c1c33898c344b0aad6d7718851e0429ebf2d521826cb22276",
+        "step_4_rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+        "step_5_compiled_policy_sha256": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "step_6_serialized_request_sha256": "61ce503e45937fb318abc0e5114985c0dcba6c40dd5ef32205fdbc5790da9799",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132461368",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "fc3d8baed0453f051d91b54daeaf89c5561b6a1590b0c6dc07ce99bf6633c2df",
+        "step_2_canonical_evidence_sha256": "62aa7e19a71d1eb3a55110575f2cd098983ebe913d5a0ea06afbccacb1dea940",
+        "step_3_budgeted_evidence_sha256": "5c61450e2d9f255e23526df680d56edf5322aa221aa2eb812c85536518c1f9f5",
+        "step_4_rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+        "step_5_compiled_policy_sha256": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "step_6_serialized_request_sha256": "c494ccffeffa5a60261ab8b5dec4ad957ede7ee9c2091af0034b1f5a8d7e15db",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132472498",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "f5f12c0547dcab89858c0822876baed2080f496888eaba769fac7c653f5b753a",
+        "step_2_canonical_evidence_sha256": "4aac9f7566d2dc3170229bb1eeff4c06823ee7703c783ffd5ec88beb9d83c51d",
+        "step_3_budgeted_evidence_sha256": "62fc482c1608833582c02c42e756f588a973bbc6f59e790b1ab463993e46e3a6",
+        "step_4_rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+        "step_5_compiled_policy_sha256": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "step_6_serialized_request_sha256": "b4670fa6ec9d3e610236b937364b5b8e9ea6710600085ea9d602a49a28408fb8",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132474210",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "9e939c6961d403d24b2a2b353a3b69f535c5b6c4b54db7a57aa5b0ee2984b199",
+        "step_2_canonical_evidence_sha256": "f048958e9ef84b64f78a7f010847ffbc5fb40da08c68d84b538ccf824fc0c246",
+        "step_3_budgeted_evidence_sha256": "441e466f283fc066acedeb4042ac38bdb86f76821e75db5a3ab50b8a621da4af",
+        "step_4_rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+        "step_5_compiled_policy_sha256": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "step_6_serialized_request_sha256": "c5181ccdf64f0df9ca3793f89269bf0de5a193bc200874b906264acf7b96de58",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132501348",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "3f3c441c4996317a37e28a9bf8a9ba4f81a5925806fb34c98d9abefd11ddff1f",
+        "step_2_canonical_evidence_sha256": "eb717128c5b7a37157931c4e6e178b46f13c407f99d7414b55e137fa15dfac30",
+        "step_3_budgeted_evidence_sha256": "01a7eb84df48a68150e8f75b54ec65fc85a4755dae7c630f98228ef3d2d46fd5",
+        "step_4_rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+        "step_5_compiled_policy_sha256": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "step_6_serialized_request_sha256": "ee70f48e615c622c89d4320f54c3a03aba4774b2291d095e5cafb3d0a0fd5480",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132502453",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "e5c75dac9b16f9f1ae14e56e036a107b562aed8425d05df006169b3616d624e2",
+        "step_2_canonical_evidence_sha256": "10a4ae34f79ef30b10e310452cc38f528c20f2307d0de9f65d635b9a4e53daf1",
+        "step_3_budgeted_evidence_sha256": "d6c08abcfc4cb92bad5e2ec7fc7b0d9ede15abfabca993c0977620e780abaca2",
+        "step_4_rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+        "step_5_compiled_policy_sha256": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "step_6_serialized_request_sha256": "73c4ee301cb1a659bde185ce062491f7fea8394d90010b9d29b0b56ad438dc0b",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132527297",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "8b980c327ed24f07bc8526c68f695ea2302826f02c9906796529b055a6df38c4",
+        "step_2_canonical_evidence_sha256": "6d7ad97b33be6e71c74bbb2213a9cbe04fd03aaa2335c7d1f5951c3a792b2d7a",
+        "step_3_budgeted_evidence_sha256": "b9c92def6c805277999878bc277ddd4dc8be2f6637cadf4fe60b80553c741395",
+        "step_4_rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+        "step_5_compiled_policy_sha256": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e",
+        "step_6_serialized_request_sha256": "dc6eb35e375988735042d2e73b3d2e2048c1527c45516ec596acbe1c7a0f3acc",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132499009",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "f79abfcd389f50121f6250be2758836b154158b3371febb1840f9500220bacf5",
+        "step_2_canonical_evidence_sha256": "6538826fd571bc9781d7792de6d13a46bce19d5d31986bf8530571ae231bd81a",
+        "step_3_budgeted_evidence_sha256": "86c5a783c28b279b0330298418b5ab4ecf31ef124ac1b7bbacea04102ebd9e2d",
+        "step_4_rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+        "step_5_compiled_policy_sha256": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "step_6_serialized_request_sha256": "f1ee56b32ab4f76bad133d865e1757b16e44cdef451e8c31c79671f4a08a28fa",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132499023",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "a3047f9cc7b61c771ca61867aeeae533fdac6b0b4c6db5c6bca3630f9a3165ec",
+        "step_2_canonical_evidence_sha256": "b8225d7a5d58f0fa75c686b2d1472c3c7c642687ba8c42d19624cdb5485c32bd",
+        "step_3_budgeted_evidence_sha256": "29bb1841c39762380cd8f743c7e31713df622548d3ee1f11d110c660c35f08ec",
+        "step_4_rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+        "step_5_compiled_policy_sha256": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "step_6_serialized_request_sha256": "b9ac613fcb55d2b239dd38c598ec58f9a03bb0d742c41cdbde7b5d8097f7c439",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132499745",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "763dfa184803cf478f464dd3d8752ff8baefa847359bec166d576b82f2ac6387",
+        "step_2_canonical_evidence_sha256": "50d9a7efad5735be13bc217a40530f2c648b0b5a64903fa5d34fe18fde53bee0",
+        "step_3_budgeted_evidence_sha256": "5bc4720228cebe070fafc3cbfd5a90135e9d9bf02264ae3b089d8c613b1d778b",
+        "step_4_rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+        "step_5_compiled_policy_sha256": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "step_6_serialized_request_sha256": "5bfcf16ba3a38cb19f9a6c29b89fa81382ebaffc6205796fdfa9d4f6329f4f69",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132578774",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "1b82b74fa87f7a2bd0eb567be668543de2d05fd66b722ddd9b659c4f1f92cfe2",
+        "step_2_canonical_evidence_sha256": "1583b85ed7382e532bebd82dab30f9c72f72969ed17a355ccad69319d1fa212b",
+        "step_3_budgeted_evidence_sha256": "0ddc054abeeef441b2ccf7658e4744a8492fa3fff187628e8491482ca012c4b2",
+        "step_4_rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+        "step_5_compiled_policy_sha256": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "step_6_serialized_request_sha256": "0c4369d2b02fa7b96bc93c1864378a62551acebb3a773817ce8fbb0b632f6664",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132591888",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "2de9c9706a2d8214eee0c97aa745a1a6ab16999e4ad86cbec5bea20e69806025",
+        "step_2_canonical_evidence_sha256": "3817228c00b3c4f71182c6bd0c486fcfc392315be01a6a5ba080e0e947b988eb",
+        "step_3_budgeted_evidence_sha256": "33a1b782395842dbfe6f479054b5fc89bde8d939050787918e8aa8f1864362fe",
+        "step_4_rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+        "step_5_compiled_policy_sha256": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "step_6_serialized_request_sha256": "4a227e24820a5267bb6f34a89f14964c0c6615b720e17214cf0a0dbd9dad6e41",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132595592",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "3fb4728c3709aefd2372f6c089409681c5c237aac658b2af4837be8380dcaa96",
+        "step_2_canonical_evidence_sha256": "d1c635abb86f06652c8da44369a5bf7c12bd688367f4f12ae302cf67e26be1e7",
+        "step_3_budgeted_evidence_sha256": "5bdddcb8e93e16cf51b4b8a011a218cebaee3767b3be376a01313e303b8c6441",
+        "step_4_rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+        "step_5_compiled_policy_sha256": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "step_6_serialized_request_sha256": "2c7072f4d4e685f6c6f61d74645f44a3249ca36544a25452184fb78c0f36b9d9",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132596403",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "bba4a1a850057afbcaed2bc039d9e0954db68e38c89bc23b70fa69c0016abe2f",
+        "step_2_canonical_evidence_sha256": "60ed5e7279aa64766d509369e6a346632c19f7850409acc0cbfc1ac373ea7039",
+        "step_3_budgeted_evidence_sha256": "d9f81e3d7041827f73bcdbedae2d7772efc305a2f12b841d3b82d30703f42f93",
+        "step_4_rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+        "step_5_compiled_policy_sha256": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "step_6_serialized_request_sha256": "0a0884e7ce2e2ac1583a11b7884b87e0fea957d3daa93c4560fcd29a61f7ae97",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132599145",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "112c8e181166ee83ed554e6eb24fabafb508aa1e84f80d5583a08ae12cdb9ef9",
+        "step_2_canonical_evidence_sha256": "50e50faabed820e16400eff891f5d92a127686884e2274631eff3d3f9bdd8df7",
+        "step_3_budgeted_evidence_sha256": "b749196bf5dbba4963aa945d7a49f37e4f9b17f1701fbcfdcdec09a92b138ddb",
+        "step_4_rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+        "step_5_compiled_policy_sha256": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "step_6_serialized_request_sha256": "7bb57649f2a150be34d57be9a33ec3c4638a8798dc38e42fabc5e8d137262fd4",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132599146",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "6b3ee50d93db9b77cf6178899f2e1376a0ff1c5150d955cd1d84dfd0d7f8c14d",
+        "step_2_canonical_evidence_sha256": "2eff78c4cf64c5fb5e1e75bcba6cd58e83f6f157ea69c933f8b9b6024bebd167",
+        "step_3_budgeted_evidence_sha256": "34f962e4676beba012a69f4a0856b7c25a7e0b560daa7fc7a6ca79664a084aa7",
+        "step_4_rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+        "step_5_compiled_policy_sha256": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "step_6_serialized_request_sha256": "e5273d3c9c3518cddfcb73fd20a0992ab70192d44794f897dbe3566dd6ce0ace",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    },
+    {
+      "incident_id": "132599330",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "lineage": {
+        "step_1_raw_evidence_sha256": "2c4a6a79ebec81680d74b040453fbb9eef3cfab6f3afbe4637c8d7f2f85af5e3",
+        "step_2_canonical_evidence_sha256": "dbf35d87fe84a197b830dcf27624fb90b577bc47092c8ff955fa546e912a06a0",
+        "step_3_budgeted_evidence_sha256": "98d2cb5360ff306802d6a982db5252a32366f9a0a921cf6def7b997047fad2c2",
+        "step_4_rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+        "step_5_compiled_policy_sha256": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60",
+        "step_6_serialized_request_sha256": "00c96d8fa46593fb48bb82b0f6b958f9b9f8dfc96b464e2db252a06e24f4d02a",
+        "step_7_actual_response_sha256": "PENDING_LIVE_GPU_INFERENCE",
+        "step_8_validator_result_sha256": "PENDING_MODE_C_EVALUATION"
+      }
+    }
+  ]
+}

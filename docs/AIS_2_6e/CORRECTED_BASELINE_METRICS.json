@@ -1,0 +1,44 @@
+{
+  "phase": "AIS 2.6e",
+  "evaluated_at_utc": "2026-11-24T17:05:00Z",
+  "context_parameters": {
+    "model_max_context": 8192,
+    "max_completion_reserved": 768,
+    "max_input_budget": 7424
+  },
+  "corrected_token_accounting": {
+    "total_cohort_incidents": 20,
+    "unbudgeted_raw_dump": {
+      "mode_a_max_tokens": 72484,
+      "mode_b_max_tokens": 73295,
+      "overflow_count": 20,
+      "note": "Unbudgeted raw canonical evidence dumps without TokenBudgetService.budget_prompt()"
+    },
+    "budgeted_actual_prompts": {
+      "mode_a_min_tokens": 2262,
+      "mode_a_max_tokens": 5874,
+      "mode_a_avg_tokens": 3415,
+      "mode_b_min_tokens": 2454,
+      "mode_b_max_tokens": 6680,
+      "mode_b_avg_tokens": 4022,
+      "overflow_count": 0,
+      "all_fit_in_context": true,
+      "minimum_headroom_tokens": 744,
+      "compaction_method": "Deterministic metadata compaction preserving all citations"
+    }
+  },
+  "authoritative_cohort_summary": {
+    "crowdstrike_suspicious_activity": {
+      "count": 10,
+      "ultraviewer_service_exe_count": 9,
+      "megasync_exe_count": 1,
+      "net_exe_count": 0,
+      "whoami_exe_count": 0
+    },
+    "prisma_sase_suspicious_file": {
+      "count": 10,
+      "javascript_files_count": 9,
+      "pe_binaries_count": 1
+    }
+  }
+}

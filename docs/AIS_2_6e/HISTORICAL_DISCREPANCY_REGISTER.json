@@ -1,0 +1,48 @@
+{
+  "phase": "AIS 2.6e",
+  "evaluated_at_utc": "2026-11-24T17:05:00Z",
+  "discrepancies": [
+    {
+      "id": "DISC-01",
+      "name": "Token Accounting Contradiction",
+      "manifest_evidence": "TOKEN_ACCOUNTING_RESULTS.json reported 20/20 overflows (72k-73k tokens).",
+      "narrative_claim": "Narrative claimed prompts fit inside 8192 context window (~2.9k-4.3k tokens).",
+      "root_cause": "The scratch measurement script evaluated an unbudgeted raw canonical evidence dump without calling TokenBudgetService.budget_prompt().",
+      "corrected_truth": "Calling TokenBudgetService.budget_prompt() applies deterministic compaction. Mode A prompts range from 2,262 to 5,874 tokens; Mode B prompts range from 2,454 to 6,680 tokens. 100% (20 of 20) fit within the 7,424-token input budget.",
+      "status": "RECONCILED_AND_VERIFIED"
+    },
+    {
+      "id": "DISC-02",
+      "name": "Evidence Hash Mismatches Across Manifests",
+      "manifest_evidence": "FROZEN_COHORT_MANIFEST.json and EVIDENCE_HASH_MANIFEST.json differed from REQUEST_RESPONSE_HASH_MANIFEST.json.",
+      "root_cause": "Serialization formatting difference (json.dumps with compact separators=(',', ':') vs default spaces) and inclusion/exclusion of event_type in rule_spec.",
+      "corrected_truth": "Data in SQLite was identical. Enforced strict deterministic compact UTF-8 JSON hashing standard.",
+      "status": "RECONCILED_AND_STANDARDIZED"
+    },
+    {
+      "id": "DISC-03",
+      "name": "Incident Entity Identity Mismatches",
+      "narrative_claim": "Priority incidents described as net.exe, whoami.exe, and 21447_610850.xlsx.",
+      "database_truth": "Neither net.exe, whoami.exe, nor 21447_610850.xlsx exist in the database. 9 CrowdStrike incidents are UltraViewer_Service.exe, 1 is MEGAsync.exe; Prisma incidents are update.exe, review.es.system.js, jquery.knob.js, etc.",
+      "root_cause": "Narrative documentation copied legacy synthetic test labels instead of querying the authoritative SQLite database.",
+      "corrected_truth": "All incident identities reconciled directly from SQLite rawEvents.",
+      "status": "RECONCILED_WITH_DATABASE_TRUTH"
+    },
+    {
+      "id": "DISC-04",
+      "name": "Neutral Prompt Hash Normalization",
+      "manifest_evidence": "Discrepancy between raw file hash and Python string hash.",
+      "root_cause": "Windows CRLF newlines (459915e1...) vs LF-normalized string (eed5c3be...).",
+      "corrected_truth": "Both hashes documented; eed5c3be... is the canonical LF execution hash.",
+      "status": "RECONCILED_AND_DOCUMENTED"
+    },
+    {
+      "id": "DISC-05",
+      "name": "Deployment & Git SHA Lineage Discrepancy",
+      "manifest_evidence": "Server 1 at 8770e071... while GitHub latest was 03bd11ae...",
+      "root_cause": "Follow-up commit 03bd11ae... contained only documentation manifests; zero application code drifted.",
+      "corrected_truth": "Server 1 is running 100% of the verified application code from 8770e071...",
+      "status": "RECONCILED_AND_VERIFIED"
+    }
+  ]
+}

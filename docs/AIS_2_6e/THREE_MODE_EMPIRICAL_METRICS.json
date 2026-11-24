@@ -1,0 +1,56 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:18:36.569172+00:00",
+  "execution_status": "BLOCKED_AT_CHECKPOINT_A",
+  "blocking_reasons": [
+    "Priority human reviews incomplete (0 of 5 completed)",
+    "Cohort human reviews incomplete (0 of 20 completed)",
+    "GPU Server 2 stopped in AWS EC2",
+    "Operator live GPU authorization pending"
+  ],
+  "provenance": "UNEXECUTED_ZERO_DENOMINATOR_SAFEGUARD",
+  "metrics": {
+    "mode_a_neutral_baseline": {
+      "total_requests": 0,
+      "successful_requests": 0,
+      "failed_requests": 0,
+      "decisive_verdicts": 0,
+      "inconclusive_verdicts": 0,
+      "decisive_coverage": null,
+      "true_positives": 0,
+      "false_positives": 0,
+      "true_negatives": 0,
+      "false_negatives": 0,
+      "empirical_accuracy": null,
+      "precision": null,
+      "recall": null,
+      "f1_score": null,
+      "status": "NOT_DEMONSTRATED"
+    },
+    "mode_b_approved_policy": {
+      "total_requests": 0,
+      "successful_requests": 0,
+      "failed_requests": 0,
+      "decisive_verdicts": 0,
+      "inconclusive_verdicts": 0,
+      "decisive_coverage": null,
+      "true_positives": 0,
+      "false_positives": 0,
+      "true_negatives": 0,
+      "false_negatives": 0,
+      "empirical_accuracy": null,
+      "precision": null,
+      "recall": null,
+      "f1_score": null,
+      "status": "NOT_DEMONSTRATED"
+    },
+    "mode_c_independent_validation": {
+      "total_evaluations": 0,
+      "validator_interceptions": 0,
+      "hallucination_detections": 0,
+      "policy_violation_detections": 0,
+      "status": "NOT_DEMONSTRATED"
+    }
+  },
+  "scientific_conclusion": "In accordance with Non-Negotiable Requirements 1, 2, and 8, accuracy metrics evaluate to null when live inference is unexecuted and ground truth is uncertified."
+}

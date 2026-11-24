@@ -1,0 +1,39 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:21:36.387748+00:00",
+  "blocker_count": 4,
+  "blockers": [
+    {
+      "id": "BLK-01",
+      "title": "Priority Human Ground Truth Reviews Pending",
+      "severity": "CRITICAL",
+      "owner": "Human Operator / SOC Reviewer",
+      "description": "0 of 5 priority incident blind reviews completed in backend/ai_verdict.db. Required before live pilot accuracy can be computed.",
+      "unblock_action": "Operator completes reviews for incidents 10476, 10477, 10478, 10479, 10480 via http://172.26.41.240/human-review-queue."
+    },
+    {
+      "id": "BLK-02",
+      "title": "Full Cohort Ground Truth Reviews Pending",
+      "severity": "HIGH",
+      "owner": "Human Operator / SOC Reviewer",
+      "description": "0 of 20 total cohort incident blind reviews completed. Required before full cohort accuracy and confusion matrices can be computed.",
+      "unblock_action": "Operator completes reviews for incidents 10481-10485 and 10496-10505 via UI."
+    },
+    {
+      "id": "BLK-03",
+      "title": "Server 2 GPU Instance Stopped in AWS EC2",
+      "severity": "CRITICAL",
+      "owner": "Cloud Administrator / Operator",
+      "description": "Server 2 (vLLM, NVIDIA A10G) is powered off to prevent unauthorized cloud expenditure.",
+      "unblock_action": "Operator starts EC2 instance and verifies public IP and vLLM health on port 8000."
+    },
+    {
+      "id": "BLK-04",
+      "title": "Explicit Live GPU Inference Authorization Pending",
+      "severity": "CRITICAL",
+      "owner": "Human Operator",
+      "description": "Non-Negotiable Requirement 14 dictates that live GPU benchmark calls may not be dispatched without explicit operator consent.",
+      "unblock_action": "Operator authorizes live benchmark execution via chat instruction."
+    }
+  ]
+}

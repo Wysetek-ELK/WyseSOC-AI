@@ -1,0 +1,36 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:05:13.241239+00:00",
+  "rules": {
+    "PH_RULE_CS_SUSPICIOUS_ACTIVITY": {
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "rule_spec": {
+        "id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+        "name": "Crowdstrike: Suspicious Activity",
+        "severity": "MEDIUM",
+        "description": "Empirical benchmark rule for Crowdstrike: Suspicious Activity"
+      },
+      "rule_definition_sha256": "cdc9dfee5127cc09294c83200c9763004c602a382f8d00fbc36cc3b92cd8f0e3",
+      "approved_policy_id": "08c59656-c002-4a76-b100-3c8d6d645eb2",
+      "approved_policy_version": 1,
+      "approved_policy_hash": "6b7048bdcef31b7f58d1568660d659b22e8d754d6e79f2eb54a27995b2a9a92e"
+    },
+    "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE": {
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "rule_spec": {
+        "id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+        "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+        "name": "Prisma SASE: Suspicious File Threat Detection",
+        "severity": "MEDIUM",
+        "description": "Empirical benchmark rule for Prisma SASE: Suspicious File Threat Detection"
+      },
+      "rule_definition_sha256": "b98fdec70f0becb9b639770e535c0fa6675486d7816c982935d4583071d61319",
+      "approved_policy_id": "08c59656-c002-4a76-b100-3c8d6d645eb2",
+      "approved_policy_version": 1,
+      "approved_policy_hash": "53209e9b77105cb3a1f7448d43ff8040322b3557c0b0e532487634c80316ec60"
+    }
+  }
+}

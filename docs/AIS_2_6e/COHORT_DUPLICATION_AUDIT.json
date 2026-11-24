@@ -1,0 +1,185 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:05:13.241241+00:00",
+  "total_incidents": 20,
+  "customer_overlap": {
+    "Tosoh": 9,
+    "WSTPL": 1,
+    "Forbes_Marshall": 10
+  },
+  "entity_clusters": [
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "UltraViewer_Service.exe",
+      "incident_count": 9,
+      "incident_ids": [
+        "132438483",
+        "132439932",
+        "132441815",
+        "132461358",
+        "132461368",
+        "132472498",
+        "132474210",
+        "132502453",
+        "132527297"
+      ],
+      "is_correlated_cluster": true,
+      "statistical_independence_warning": "Correlated entity occurrences must not be treated as independent Bernoulli trials."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "MEGAsync.exe",
+      "incident_count": 1,
+      "incident_ids": [
+        "132501348"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "ss-widget.min.js",
+      "incident_count": 1,
+      "incident_ids": [
+        "132499009"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js",
+      "incident_count": 1,
+      "incident_ids": [
+        "132499023"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "scripts-QBOKETIS.js",
+      "incident_count": 1,
+      "incident_ids": [
+        "132499745"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "adrum22603859.js",
+      "incident_count": 1,
+      "incident_ids": [
+        "132578774"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "update.exe",
+      "incident_count": 1,
+      "incident_ids": [
+        "132591888"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "2005.70cb3d6bf67c91a7.js",
+      "incident_count": 1,
+      "incident_ids": [
+        "132595592"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "review.es.system.js",
+      "incident_count": 1,
+      "incident_ids": [
+        "132596403"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "jquery.knob.js",
+      "incident_count": 1,
+      "incident_ids": [
+        "132599145"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "exporting.js",
+      "incident_count": 1,
+      "incident_ids": [
+        "132599146"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    },
+    {
+      "entity_type": "FILE_OR_PROCESS",
+      "entity_name": "select2.min.js",
+      "incident_count": 1,
+      "incident_ids": [
+        "132599330"
+      ],
+      "is_correlated_cluster": false,
+      "statistical_independence_warning": "Unique entity occurrence."
+    }
+  ],
+  "host_clusters": [
+    {
+      "host": "DESKTOP-E0G2R49",
+      "count": 3,
+      "incident_ids": [
+        "132438483",
+        "132441815",
+        "132461368"
+      ]
+    },
+    {
+      "host": "TSI-IT-002-200",
+      "count": 2,
+      "incident_ids": [
+        "132439932",
+        "132461358"
+      ]
+    },
+    {
+      "host": "PC-TSI-DC",
+      "count": 2,
+      "incident_ids": [
+        "132472498",
+        "132474210"
+      ]
+    },
+    {
+      "host": "172.25.14.80",
+      "count": 2,
+      "incident_ids": [
+        "132499009",
+        "132499745"
+      ]
+    },
+    {
+      "host": "172.25.14.157",
+      "count": 3,
+      "incident_ids": [
+        "132599145",
+        "132599146",
+        "132599330"
+      ]
+    }
+  ],
+  "statistical_caveat": "High concentration of UltraViewer_Service.exe (9 of 10 CrowdStrike) and repeated hosts (e.g. DESKTOP-E0G2R49, 172.25.14.157) represents correlated clustered sampling rather than an i.i.d. random population."
+}

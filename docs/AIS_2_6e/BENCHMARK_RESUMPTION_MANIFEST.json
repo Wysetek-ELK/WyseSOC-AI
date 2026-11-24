@@ -1,0 +1,12 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:10:24.954623+00:00",
+  "stage": "STAGE_A_COMPLETED_PENDING_OPERATOR_AUTHORIZATION",
+  "can_resume_immediately_upon_authorization": true,
+  "resumption_command": "cmd /c \"set PYTHONPATH=backend&& backend\\venv\\Scripts\\python.exe -m app.services.empirical_benchmark_harness --live --endpoint http://13.204.214.64:8000/v1\"",
+  "pre_conditions_required": [
+    "AWS EC2 GPU Server 2 powered on",
+    "vLLM health check returns HTTP 200 on port 8000",
+    "Operator provides explicit live inference authorization"
+  ]
+}

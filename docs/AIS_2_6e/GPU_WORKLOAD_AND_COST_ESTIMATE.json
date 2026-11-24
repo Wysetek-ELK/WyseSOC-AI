@@ -1,0 +1,14 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:10:24.954621+00:00",
+  "instance_target": "AWS EC2 g5.xlarge (1x NVIDIA A10G 24GB)",
+  "on_demand_hourly_rate_usd": 1.006,
+  "measured_throughput_calls_per_minute": 2.5,
+  "baseline_workload_calls": 41,
+  "estimated_wall_clock_minutes": 16.4,
+  "estimated_gpu_cost_usd": 0.28,
+  "maximum_workload_calls_with_counterfactuals": 51,
+  "maximum_wall_clock_minutes": 20.4,
+  "maximum_gpu_cost_usd": 0.35,
+  "cost_ceiling_authorized_usd": 1.0
+}

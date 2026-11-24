@@ -1,0 +1,40 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:15:00Z",
+  "status": "PASS",
+  "security_controls_audited": {
+    "ground_truth_isolation": {
+      "suite": "backend/tests/test_ground_truth_isolation.py",
+      "result": "PASS",
+      "tests_passed": 1,
+      "description": "Enforces strict purge of historical analyst notes, ground truth labels, and AI predictions from reviewer feeds and LLM prompt context."
+    },
+    "empirical_safety_verification": {
+      "suite": "backend/tests/test_empirical_safety_verification.py",
+      "result": "PASS",
+      "tests_passed": 6,
+      "description": "Verifies that signed binaries in System32 alone cannot establish FP authorization, expired maintenance windows are rejected, and unverified SIEM provenance blocks closure."
+    },
+    "gpu_circuit_breaker": {
+      "suite": "backend/tests/test_gpu_circuit_breaker.py",
+      "result": "PASS",
+      "tests_passed": 3,
+      "description": "Verifies circuit breaker trips to OPEN upon consecutive failures, recovers in half-open state, and bounds concurrent GPU slots."
+    },
+    "structured_output_and_injection": {
+      "suite": "backend/tests/test_structured_output_and_injection.py",
+      "result": "PASS",
+      "tests_passed": 1,
+      "description": "Verifies adversarial prompt injection payloads embedded in raw logs are completely neutralized by deterministic structural validator."
+    },
+    "auth_and_rbac": {
+      "suite": "backend/tests/test_auth.py",
+      "result": "PASS",
+      "tests_passed": 7,
+      "description": "Verifies password hashing, token expiration, JWT authentication, and strict denial of admin routes for analyst role."
+    }
+  },
+  "total_security_tests_passed": 18,
+  "total_security_tests_failed": 0,
+  "overall_security_status": "PASS"
+}

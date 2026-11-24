@@ -1,0 +1,45 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:16:00Z",
+  "acceptance_profile": "production_runtime_acceptance",
+  "evaluations": {
+    "server1_backend_service": {
+      "target": "ai-verdict-backend.service",
+      "check": "HTTP GET http://172.26.41.240/api/health",
+      "expected_code": 200,
+      "actual_code": 200,
+      "status": "PASS"
+    },
+    "server1_postgresql_database": {
+      "target": "PostgreSQL connection pool",
+      "check": "latency_ms < 50ms and connected == true",
+      "actual_latency_ms": 2.2,
+      "connected": true,
+      "status": "PASS"
+    },
+    "server1_redis_broker": {
+      "target": "Redis / Celery task broker",
+      "check": "reachable == true and live_triage_queue_depth == 0",
+      "reachable": true,
+      "live_triage_queue_depth": 0,
+      "status": "PASS"
+    },
+    "server1_frontend_service": {
+      "target": "ai-verdict-frontend.service",
+      "check": "Next.js production build 32/32 routes compiled",
+      "status": "PASS"
+    },
+    "server1_ais_route": {
+      "target": "/agent-intelligence-studio",
+      "check": "Route compiled and routed via frontend reverse proxy",
+      "status": "PASS"
+    },
+    "server2_vllm_readiness": {
+      "target": "http://13.204.214.64:8000/v1",
+      "check": "Live GPU inference reachability",
+      "status": "BLOCKED_PENDING_OPERATOR_AUTHORIZATION",
+      "reason": "GPU Server 2 is stopped in compliance with billing guardrails and Checkpoint A invariants."
+    }
+  },
+  "overall_deployment_readiness": "READY_FOR_OFFLINE_VERIFICATION"
+}

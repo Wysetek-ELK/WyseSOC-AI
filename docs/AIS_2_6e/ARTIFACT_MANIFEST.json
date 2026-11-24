@@ -1,0 +1,397 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:23:00Z",
+  "total_artifacts": 65,
+  "artifacts": [
+    {
+      "filename": "01_AIS_2_6D_EVIDENCE_RECONCILIATION.md",
+      "size_bytes": 11196,
+      "sha256": "7c3f5ff799d63374cd0426c37f644426d7065847055f93d4d900027e564bc676",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "02_WIRE_PROMPT_AND_TOKEN_BUDGET_ROOT_CAUSE.md",
+      "size_bytes": 3668,
+      "sha256": "62e7e111fbe2334886549e1d96febbf0cf585d4cde297497089ee480e15d0bb6",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "03_EVIDENCE_SELECTION_AND_CONTEXT_INTEGRITY.md",
+      "size_bytes": 2935,
+      "sha256": "8266849d3f6b0c52dedd9c7deb0653aff02a72445dfa17fd63916a10906e6cd6",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "04_FROZEN_COHORT_AND_HASH_LINEAGE.md",
+      "size_bytes": 4287,
+      "sha256": "20d2ca153852671ba9993fe0513459e29ea25ae06316f76a312818982cb4d306",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "05_HUMAN_GROUND_TRUTH_AND_BLIND_REVIEW.md",
+      "size_bytes": 3614,
+      "sha256": "c5551a78ed571d73d4423176ea881c395bda2842727c2e4dea28fb7ed58b1193",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "06_OPERATOR_MANUAL_REVIEW_GUIDE.md",
+      "size_bytes": 2267,
+      "sha256": "de9680bbd21a27aca35e51cb642c46e51b9eb228a7ac10511f2cd500a92ceb20",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "07_THREE_MODE_EXPERIMENTAL_CONTROL.md",
+      "size_bytes": 7529,
+      "sha256": "4898576430861aa730033415eef67aba14be4f47879d734b6abceb5efe4ac200",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "08_EXECUTABLE_BENCHMARK_HARNESS_VALIDATION.md",
+      "size_bytes": 6980,
+      "sha256": "b4e8162c401296644370fa224cd518d8bd0f39b66650de75f184096da8bd1ae7",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "09_REGRESSION_AND_SECURITY_VALIDATION.md",
+      "size_bytes": 5220,
+      "sha256": "9846b184841789dda172fba3b4ac6a4f1579e357a3c872426d5b0511f5744afa",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "10_SERVER1_DEPLOYMENT_AND_RUNTIME_TRUTH.md",
+      "size_bytes": 4753,
+      "sha256": "187584b8bb0f571b6586fd54b13b061f2bec2be02814537c498759622cead72c",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "11_GPU_OFF_READINESS_AND_OPERATOR_CHECKPOINT.md",
+      "size_bytes": 5606,
+      "sha256": "9dd61808813a64ba340a3d0ee0227e155f9dcc81722c9aba9f1fbcbfac98b385",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "12_ACTUAL_GPU_RUNTIME_VERIFICATION.md",
+      "size_bytes": 3416,
+      "sha256": "68e207103c0c8e720f154180f09d3761d66ffa6271b6260bc5408a5b6e514f44",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "13_FIVE_INCIDENT_ACTUAL_GPU_PILOT.md",
+      "size_bytes": 2957,
+      "sha256": "cfafd10ae846ea46babcddd78aee34b63e19478fe3656af40c186cbb1ae6858c",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "14_COMPLETE_LIVE_THREE_MODE_BENCHMARK.md",
+      "size_bytes": 2949,
+      "sha256": "199e5ef9b14a5d7eae3f24c461952c80388e25e02cbdac4c7540935a8bdbf858",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "15_ACTUAL_LLM_ACCURACY_AND_COVERAGE.md",
+      "size_bytes": 3211,
+      "sha256": "93f5ea89ff84018e599c2826bae613479a0e4a2ed658b58c555c95044f296a8e",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "16_STATISTICAL_INTEGRITY_AND_LIMITATIONS.md",
+      "size_bytes": 3257,
+      "sha256": "343689d8910b67eb12b9c2dacb0605698c77125805b1ff29b154329842ffa41e",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "17_INCIDENT_LEVEL_ERROR_ATTRIBUTION.md",
+      "size_bytes": 2895,
+      "sha256": "7228d66883044485bbe2df76c5e4925ac71c13b9fb13703cc112822e0a98206a",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "18_CONTROLLED_POLICY_AND_VALIDATOR_REMEDIATION.md",
+      "size_bytes": 2082,
+      "sha256": "91b1f1b1db9952bf90bab4bcea715301205585e97669020b0aba41e12cb7f08e",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "19_ACTUAL_MODEL_CAPABILITY_AND_RETENTION_DECISION.md",
+      "size_bytes": 2500,
+      "sha256": "cbd143e0fb36f1f9982b1a9d3a690336edccb692297e9084812591cb152f0699",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "20_COMPACT_AIS_UI_AND_OPERATOR_ACCEPTANCE.md",
+      "size_bytes": 2133,
+      "sha256": "caba0473d09834e8bb5b588b2a35f8799bdb41b4e0e41072935453461dea26b0",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "21_FINAL_ACCEPTANCE_GATE_EVALUATION.md",
+      "size_bytes": 7797,
+      "sha256": "0b2b59d25e57b7780693fc1a43a49e94b843854610729d199f1125056b2efdf7",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "22_FINAL_EXECUTIVE_REPORT_AND_NEXT_PHASE.md",
+      "size_bytes": 13098,
+      "sha256": "4273760c2d90af04ae85c88578a0b94b1aad8b4536a72065c72f8b6a8658137a",
+      "kind": "REPORT"
+    },
+    {
+      "filename": "ACCEPTANCE_GATE_MATRIX.json",
+      "size_bytes": 9410,
+      "sha256": "7144fc0ca15938eb6859e7b0336b38a41756f9439345c7329a2cb550606248f3",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "ARTIFACT_MANIFEST.json",
+      "size_bytes": 12823,
+      "sha256": "4125a2c1dbbe366155959f8d1e94a744f470c130007453b2cceefeba4d5cdf21",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "BENCHMARK_EXECUTION_PLAN.json",
+      "size_bytes": 1143,
+      "sha256": "fbcbe4523cf5ed9cec4835496e887b63b3b25712857e10169e0b7956b4339427",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "BENCHMARK_RESUMPTION_MANIFEST.json",
+      "size_bytes": 591,
+      "sha256": "1700a274a6331c64f80993538ec58c2592e123926f82e68321f59b9be8a7e134",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "CHECKPOINT_A_STATUS.json",
+      "size_bytes": 1760,
+      "sha256": "395eff74b947861ac1762686321e1a65d847df4264ff80203474df4af89c9e56",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "COHORT_DUPLICATION_AUDIT.json",
+      "size_bytes": 5029,
+      "sha256": "3f62292e1331e931cedf8abef89832f61d1aef49c43884acbecce61ddd34b579",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "CONFUSION_MATRICES.json",
+      "size_bytes": 774,
+      "sha256": "55f8026a26f3d1bfd43c0aedae8003d86c19dc5e023422c3d3112fd329840e6a",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "CONTEXT_OVERFLOW_REGISTER.json",
+      "size_bytes": 178,
+      "sha256": "0429abd5fb1060a7beb725db6c47e06f3d57feb4d71e5b7aeec4857b8b8f694e",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "CORRECTED_BASELINE_METRICS.json",
+      "size_bytes": 1288,
+      "sha256": "1052d1448dd27fbebfba48c31448fbb21bd4db9a35890ca9ed579a3b95610aae",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "DEPLOYMENT_IDENTITY_MANIFEST.json",
+      "size_bytes": 1843,
+      "sha256": "6da81073eff0f7a4b64184cc99470f7bae564a928dc94a487d576a97fc1cda32",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "EVIDENCE_HASH_LINEAGE.json",
+      "size_bytes": 19053,
+      "sha256": "6aae6ffa0788d3c61a381036d622c1b9047c5be7ee4547ff81969d45fac6391a",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "EVIDENCE_RETENTION_REGISTER.json",
+      "size_bytes": 8435,
+      "sha256": "de3d202c2f356d1b773674059ffb8c461c1f6b14f57fb0cf4d86bfebe126bcc2",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "FINAL_EVIDENCE.json",
+      "size_bytes": 1378,
+      "sha256": "79e50949205b2574520ab2956aa56fc043892e04c52233879860c13a58fa1328",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "FROZEN_COHORT_MANIFEST.json",
+      "size_bytes": 20516,
+      "sha256": "7c2ee984bcaf1839ded859f067daaaa1994bd12caedf5daece01b370800dee02",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "GPU_GO_NO_GO.json",
+      "size_bytes": 925,
+      "sha256": "5deb78a5b354ba01046d86524990a3752f8d87f3aef5a3faf71629d87d11a9d8",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "GPU_WORKLOAD_AND_COST_ESTIMATE.json",
+      "size_bytes": 513,
+      "sha256": "bf541ebd67847694d3b3cde5a94da1917b914cfa80556ccd75de8663cd2d06ea",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "GROUND_TRUTH_LEAKAGE_AUDIT.json",
+      "size_bytes": 2242,
+      "sha256": "f01d5c0a4dd0a21d4fb31ae65026ad5a1c1a8672cdd47b4b5481b61554804eb7",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "GROUND_TRUTH_PROVENANCE_MANIFEST.json",
+      "size_bytes": 1226,
+      "sha256": "481f36daf69660ef63cc5178e075132a660ad5dffd63c5fd4ab39f19c2a8f36a",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "GROUND_TRUTH_REVIEW_QUEUE.json",
+      "size_bytes": 13473,
+      "sha256": "2807dd90655b1721973b31dccc2fe5f189d4c21b417025487a1444e0d6b63e0f",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "HISTORICAL_DISCREPANCY_REGISTER.json",
+      "size_bytes": 3026,
+      "sha256": "db91806076769f4b86eaa555d93ae4dad1195b81884094984b5cf2773de44732",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "HUMAN_REVIEW_PROGRESS.json",
+      "size_bytes": 1037,
+      "sha256": "7a1ebb3c125bb4aee797c3f8a9c0d95321291d793285466f599b85634547cd5e",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "METRIC_DENOMINATOR_AUDIT.json",
+      "size_bytes": 864,
+      "sha256": "defe8787a552fccdc016279d2c9c9eb59eaaddd72192391b97db1d0a5dfa6093",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "MODEL_CAPABILITY_DECISION.json",
+      "size_bytes": 710,
+      "sha256": "5a87a381712b94a514ab4abcb1038b6f85ace4d06fb4f7796befc8334ba3e4e8",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "MODE_A_LIVE_EXECUTION_LEDGER.jsonl",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kind": "LEDGER"
+    },
+    {
+      "filename": "MODE_B_LIVE_EXECUTION_LEDGER.jsonl",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kind": "LEDGER"
+    },
+    {
+      "filename": "MODE_C_VALIDATION_LEDGER.jsonl",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kind": "LEDGER"
+    },
+    {
+      "filename": "NEXT_OPERATOR_ACTIONS.json",
+      "size_bytes": 1847,
+      "sha256": "2b263d00660ba5299b4ab06c5b35fa9967d1b65c24b6338f5fdd581467f24341",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "PER_RULE_ACCURACY.json",
+      "size_bytes": 685,
+      "sha256": "aba2b72290fb439db1d33ee3d568f06eceb4cd15e38458f4580abfd05f1771e2",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "PILOT_EXECUTION_LEDGER.jsonl",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "kind": "LEDGER"
+    },
+    {
+      "filename": "POLICY_IDENTITY_MANIFEST.json",
+      "size_bytes": 758,
+      "sha256": "421027269af077b2aace2e07f57ca1495fbf2830b0fe90eff1a6a649f114657c",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "POST_DEPLOYMENT_ACCEPTANCE.json",
+      "size_bytes": 1560,
+      "sha256": "e4912850e33bc7e520fb6023fc55d2d6c272239bfa29c180ee03fb87e11b6055",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "PROMPT_PARITY_RESULTS.json",
+      "size_bytes": 509,
+      "sha256": "933c94ec0801be2df235deed7a4af3809cf0b9f092627bdead1c542d09fff890",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "REGRESSION_TEST_RESULTS.json",
+      "size_bytes": 1746,
+      "sha256": "0661d79e751958d1900b37491a8e9b402a53ba419d7e4371cf2270c3e27354ff",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "REMAINING_BLOCKERS.json",
+      "size_bytes": 1864,
+      "sha256": "afb0c69b80fb170da90bfe039abd71dd8ee0a4ae01b1953446ec304226aecf88",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "ROOT_CAUSE_ATTRIBUTION_MATRIX.json",
+      "size_bytes": 528,
+      "sha256": "7e07723e77a8e769786d1a45de33f4b4d4dd4f563405604fd0b611bdadc252d2",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "RULE_DEFINITION_MANIFEST.json",
+      "size_bytes": 1702,
+      "sha256": "6099ce732497496de9058040f0417c452b4012b45814d2d2fd786a967548aef0",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "SECURITY_TEST_RESULTS.json",
+      "size_bytes": 1794,
+      "sha256": "70906886fa2776fbcbf50fca24984a74f0c1af0773a643fe62f4a538da4474c8",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "STATISTICAL_LIMITATIONS.json",
+      "size_bytes": 1091,
+      "sha256": "b9e4c97ba3e08352bd1652ecbd85bbfd8e6a6e2472f82773bd4f22b7417586a1",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "THREE_MODE_EMPIRICAL_METRICS.json",
+      "size_bytes": 1858,
+      "sha256": "6deae6b4f9701dcfd85b849910d28f6e0c633f6159761abbbd2cfa66df8d2c9c",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "THREE_MODE_EXECUTION_PROTOCOL.json",
+      "size_bytes": 1634,
+      "sha256": "2404c7ac4188ddd2e1887c7edfa5f86410b093efff4d9ce9041c2729a7bea378",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "TOKEN_ACCOUNTING_RESULTS.json",
+      "size_bytes": 11286,
+      "sha256": "7ef28b2ffd13cd27492ac3f50fe3626c897699e6bad3412663cbc532ea69a397",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "UI_ACCEPTANCE_MATRIX.json",
+      "size_bytes": 830,
+      "sha256": "3950d989dca11c63a684d425bf33d005a5d53100e6c79406b1e67787694dbf0c",
+      "kind": "MANIFEST"
+    },
+    {
+      "filename": "WIRE_PROMPT_MANIFEST.json",
+      "size_bytes": 16888,
+      "sha256": "65512e3dfb699be04d8b116cae77f9250ed3cedf02bb93e740d26e3c337eec82",
+      "kind": "MANIFEST"
+    }
+  ]
+}

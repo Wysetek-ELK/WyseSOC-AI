@@ -1,0 +1,53 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:16:00Z",
+  "server_1": {
+    "role": "Verdictum AI Application Server",
+    "ip_address": "172.26.41.240",
+    "deployment_directory": "/opt/wysesoc-ai",
+    "deployed_commit_sha": "8770e07117e1a80d15bd4600c15c56f778669f63",
+    "latest_github_doc_commit": "03bd11aed372935d37e321eba971965ea314f82a",
+    "working_tree_clean": true,
+    "services": {
+      "backend": {
+        "service_name": "ai-verdict-backend.service",
+        "port": 8000,
+        "runtime_status": "active (running)",
+        "health_endpoint": "http://172.26.41.240/api/health",
+        "health_response_code": 200,
+        "health_status_field": "degraded (due to Server 2 GPU circuit breaker OPEN)",
+        "database_connected": true,
+        "database_type": "postgresql",
+        "database_latency_ms": 2.2,
+        "redis_reachable": true,
+        "celery_queue_depth": 0
+      },
+      "frontend": {
+        "service_name": "ai-verdict-frontend.service",
+        "port": 3000,
+        "runtime_status": "active (running)",
+        "ais_route": "http://172.26.41.240/agent-intelligence-studio",
+        "routes_compiled": 32
+      }
+    },
+    "host_telemetry": {
+      "server_name": "Verdictum Core",
+      "logical_hostname": "verdictum-core-01",
+      "cpu_percent": 11.0,
+      "memory_used_gb": 10.54,
+      "memory_total_gb": 15.36,
+      "memory_percent": 68.6,
+      "disk_percent": 9.6
+    }
+  },
+  "server_2": {
+    "role": "Verdictum LLM Server (GPU)",
+    "reported_ip": "13.204.214.64",
+    "port": 8000,
+    "inference_engine": "vLLM",
+    "expected_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "current_runtime_status": "STOPPED / OFFLINE (AWS EC2 Instance Stopped)",
+    "circuit_breaker_on_server_1": "OPEN",
+    "gpu_billing_status": "SAFE ($0.00 / hr accrued while stopped)"
+  }
+}

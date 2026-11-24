@@ -1,0 +1,31 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:18:36.569172+00:00",
+  "ui_evaluations": {
+    "human_review_queue": {
+      "route": "/human-review-queue",
+      "compiled": true,
+      "blind_review_enforced": true,
+      "status": "PASS"
+    },
+    "agent_intelligence_studio": {
+      "route": "/agent-intelligence-studio",
+      "compiled": true,
+      "three_mode_toggle_present": true,
+      "status": "PASS"
+    },
+    "ai_triage_workbench": {
+      "route": "/ai-triage-workbench",
+      "compiled": true,
+      "compact_view_supported": true,
+      "status": "PASS"
+    },
+    "inference_control": {
+      "route": "/inference-control",
+      "compiled": true,
+      "circuit_breaker_status_visible": true,
+      "status": "PASS"
+    }
+  },
+  "overall_ui_acceptance": "PASS"
+}

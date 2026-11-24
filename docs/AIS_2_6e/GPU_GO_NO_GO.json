@@ -1,0 +1,18 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:18:00Z",
+  "decision": "NO_GO_PENDING_HUMAN_REVIEW_AND_OPERATOR_AUTHORIZATION",
+  "gate_evaluations": {
+    "gate_tech_01_token_accounting": "GO",
+    "gate_tech_02_evidence_hash_lineage": "GO",
+    "gate_tech_03_prompt_parity": "GO",
+    "gate_tech_04_regression_passed": "GO",
+    "gate_tech_05_security_passed": "GO",
+    "gate_tech_06_server1_healthy": "GO",
+    "gate_human_01_priority_reviews_5": "NO_GO (0 of 5 completed)",
+    "gate_human_02_full_cohort_reviews_20": "NO_GO (0 of 20 completed)",
+    "gate_auth_01_operator_gpu_permission": "NO_GO (Not yet authorized)",
+    "gate_infra_01_gpu_server_running": "NO_GO (Server 2 stopped in AWS EC2)"
+  },
+  "mandatory_action": "Do NOT send simulated or live inference requests. Present Checkpoint A findings to the operator and await ground truth review completion and explicit activation authorization."
+}

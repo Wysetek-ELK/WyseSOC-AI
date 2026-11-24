@@ -1,0 +1,23 @@
+{
+  "phase": "AIS 2.6e",
+  "generated_at_utc": "2026-11-24T17:18:36.569172+00:00",
+  "cohort_size": 20,
+  "sampling_design": "Frozen Cohort (10 CrowdStrike + 10 Prisma SASE)",
+  "limitations": [
+    {
+      "limitation": "Correlated Cohort Clustering (Non-i.i.d.)",
+      "severity": "HIGH",
+      "description": "9 of 10 CrowdStrike incidents are the identical binary (UltraViewer_Service.exe). Observations are strongly correlated and do not represent 10 independent samples."
+    },
+    {
+      "limitation": "Small Sample Size (n = 20)",
+      "severity": "HIGH",
+      "description": "With n=20, a 95% Wilson score confidence interval spans approximately +/- 18% to 22%. The benchmark cannot establish fine-grained statistical discrimination between 80% and 90% true model capability."
+    },
+    {
+      "limitation": "Rule Diversity Constraint",
+      "severity": "MEDIUM",
+      "description": "Only 2 FortiSIEM rule families are represented. Findings cannot be generalized to Windows Security Event logs, firewall anomalies, or cloud audit trails."
+    }
+  ]
+}
