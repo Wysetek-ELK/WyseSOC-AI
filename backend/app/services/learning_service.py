@@ -250,10 +250,20 @@ class AgentMemoryEngine:
         candidates = res.scalars().all()
 
         scored_matches: List[Tuple[float, List[str], LearningRecord]] = []
+        from app.services.blind_review_guard import get_benchmark_incident_identifiers
+        benchmark_excluded_ids = await get_benchmark_incident_identifiers(self.db)
 
         for cand in candidates:
             inc = cand.incident
             if not inc:
+                continue
+
+            # Exclude frozen benchmark cohort incidents from Agent Memory / similar-case retrieval
+            if (
+                str(cand.incident_id) in benchmark_excluded_ids
+                or str(inc.id) in benchmark_excluded_ids
+                or (inc.incident_id and str(inc.incident_id) in benchmark_excluded_ids)
+            ):
                 continue
 
             # Don't match the same incident
@@ -344,8 +354,16 @@ class AgentMemoryEngine:
         res = await self.db.execute(query)
         incidents = res.scalars().all()
 
+        from app.services.blind_review_guard import get_benchmark_incident_identifiers
+        benchmark_excluded_ids = await get_benchmark_incident_identifiers(self.db)
+
         added_count = 0
         for inc in incidents:
+            if (
+                str(inc.id) in benchmark_excluded_ids
+                or (inc.incident_id and str(inc.incident_id) in benchmark_excluded_ids)
+            ):
+                continue
             gt = inc.ground_truth
             if not gt or not gt.resolution:
                 continue

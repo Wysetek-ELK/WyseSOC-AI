@@ -451,6 +451,7 @@ class AisEvaluationService:
         page: int = 1,
         page_size: int = 50,
         current_user: Optional[User] = None,
+        blind_review: bool = False,
     ) -> Dict[str, Any]:
         """
         Retrieves the complete incident-level AI evaluation tracking dataset and summary
@@ -697,7 +698,14 @@ class AisEvaluationService:
 
             # Double-blind masking check
             user_has_reviewed = (inc.id in user_reviewed_inc_ids or inc.incident_id in user_reviewed_inc_ids)
-            can_see_ai_verdict = is_admin or user_has_reviewed
+            is_priv = bool(
+                is_admin
+                or getattr(current_user, "role", "") in ("Administrator", "SuperAdmin", "SOC_Manager")
+                or getattr(current_user, "is_superuser", False)
+            )
+            can_see_ai_verdict = (not blind_review) and (
+                is_priv or (getattr(current_user, "role", "") == "SOC Analyst" and user_has_reviewed)
+            )
 
             # Construct item payload
             item_out = {
@@ -1001,6 +1009,7 @@ class AisEvaluationService:
         db: AsyncSession,
         incident_id: str,
         current_user: Optional[User] = None,
+        blind_review: bool = False,
     ) -> Dict[str, Any]:
         """
         Retrieves full chronological history of all AI evaluation attempts across all policy versions
@@ -1036,7 +1045,12 @@ class AisEvaluationService:
             for r in all_revs
         ) if current_user else False
 
-        can_see_ai = is_admin or user_has_reviewed
+        can_see_ai = (not blind_review) and (
+            is_admin
+            or u_role in ("SuperAdmin",)
+            or bool(getattr(current_user, "is_superuser", False))
+            or (u_role == "SOC Analyst" and user_has_reviewed)
+        )
 
         # Fetch all prompt captures
         cap_stmt = select(ActualLLMPromptCapture).where(

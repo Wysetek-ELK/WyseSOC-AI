@@ -213,6 +213,7 @@ async def request_incident_ai_verdict(
 @router.get("/{identifier}/timeline")
 async def get_incident_historical_timeline(
     identifier: str,
+    blind_review: bool = Query(False, description="Mask AI verdict and historical resolution for blind review"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -222,7 +223,11 @@ async def get_incident_historical_timeline(
     """
     from app.services.telemetry_timeline_service import TelemetryTimelineService
     svc = TelemetryTimelineService(db)
-    result = await svc.get_incident_timeline(identifier, current_user=current_user)
+    result = await svc.get_incident_timeline(
+        identifier,
+        current_user=current_user,
+        blind_review=blind_review,
+    )
     if not result.get("success"):
         if result.get("access_denied"):
             raise HTTPException(status_code=403, detail=result.get("error"))

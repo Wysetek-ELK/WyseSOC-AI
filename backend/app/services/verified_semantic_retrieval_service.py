@@ -145,6 +145,9 @@ class VerifiedSemanticRetrievalService:
         eligible_candidates: List[RetrievedPrecedent] = []
         seen_incident_ids: Set[str] = set()
 
+        from app.services.blind_review_guard import get_benchmark_incident_identifiers
+        benchmark_excluded_ids = await get_benchmark_incident_identifiers(db)
+
         for cand in all_candidates:
             # 1. Gate 1: Verification Status (Phase 1 supervisor gate — only VERIFIED/ADJUDICATED TP/FP labels)
             if cand.verification_status not in ("VERIFIED", "ADJUDICATED"):
@@ -154,9 +157,16 @@ class VerifiedSemanticRetrievalService:
                 unverified_count += 1
                 continue
 
-            # 2. Gate 2: Self-exclusion & Training/Evaluation Partition Isolation (zero eval-set leakage)
+            # 2. Gate 2: Self-exclusion, Benchmark Cohort Exclusion & Partition Isolation (zero eval-set leakage)
             cand_inc = cand.incident
             cand_inc_id = cand_inc.incident_id if cand_inc else cand.incident_id
+            if (
+                str(cand.incident_id) in benchmark_excluded_ids
+                or (cand_inc_id and str(cand_inc_id) in benchmark_excluded_ids)
+                or (cand_inc and str(cand_inc.id) in benchmark_excluded_ids)
+            ):
+                future_leakage_count += 1
+                continue
             if cand_inc_id == query_inc_id or (cand_inc and cand_inc.id == incident.id):
                 continue
             try:

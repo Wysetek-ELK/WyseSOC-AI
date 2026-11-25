@@ -338,15 +338,8 @@ class VerdictTriageAgent:
             if not is_shadow_pilot:
                 incident.ai_verdict = verdict_data
                 self.db.add(incident)
-                if pipe_res.early_exit_kind in ("POLICY_NOT_APPROVED", "PREFLIGHT_ABSTENTION"):
-                    inv_q = await self.db.execute(
-                        select(Investigation).where(Investigation.incident_id == incident.id)
-                    )
-                    inv = inv_q.scalars().first()
-                    if inv and not inv.analyst_verdict:
-                        note_entry = f"[AI Verdict (REQUIRES_ATTENTION - 0%)]: {verdict_data['reason']}"
-                        self._upsert_ai_verdict_note(inv, note_entry)
-                        self.db.add(inv)
+                # AIS 2.6f: Do NOT inject AI verdict proposals or reasons into Investigation.analyst_notes
+                # (prevents blind-review contamination in Human Review Queue handover notes).
 
             if pipe_res.early_exit_kind in ("POLICY_NOT_APPROVED", "PREFLIGHT_ABSTENTION"):
                 audit = AuditLog(
@@ -502,16 +495,9 @@ class VerdictTriageAgent:
         )
         self.db.add(timeline_entry)
 
-        # 8. Sync with Investigation queue using authoritative validated verdict (idempotent; skipped in SHADOW pilot mode)
-        if not is_shadow_pilot:
-            inv_q = await self.db.execute(
-                select(Investigation).where(Investigation.incident_id == incident.id)
-            )
-            inv = inv_q.scalars().first()
-            if inv and not inv.analyst_verdict:
-                note_entry = f"[AI Verdict ({final_auth_verdict} - {int(final_confidence_display)}%)]: {verdict_data['reason']}"
-                self._upsert_ai_verdict_note(inv, note_entry)
-                self.db.add(inv)
+        # 8. AIS 2.6f: Do NOT write `[AI Verdict (...)]: ...` into Investigation.analyst_notes.
+        # AI evaluation provenance lives in PilotEvaluationRecord and Incident.ai_verdict and is revealed
+        # only when blind-review policy permits.
 
         # 9. Audit log with authoritative outcome and model proposal provenance
         audit = AuditLog(

@@ -23,17 +23,27 @@ import {
   Check,
   ShieldCheck,
   Info,
+  Award,
 } from "lucide-react";
 import { api, InvestigationListItem, InvestigationDetail, User } from "@/lib/api";
 import { useApp } from "@/context/AppContext";
 import { formatExecutionProvenanceBadge } from "@/lib/provenance";
+import { GroundTruthCertificationPanel } from "@/components/review/GroundTruthCertificationPanel";
 
 export default function HumanReviewQueuePage() {
   const { user, blindReviewMode, setBlindReviewMode } = useApp();
   const canMutate = user?.role === "Administrator" || user?.role === "SOC Analyst";
+  const [activeTab, setActiveTab] = useState<"OPERATIONAL" | "GROUND_TRUTH_CERTIFICATION">("OPERATIONAL");
 
   const [items, setItems] = useState<InvestigationListItem[]>([]);
   const [total, setTotal] = useState(0);
+  const [statusCounts, setStatusCounts] = useState<{
+    total: number;
+    pending_review: number;
+    in_progress: number;
+    reviewed: number;
+    disputed: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
@@ -74,9 +84,11 @@ export default function HumanReviewQueuePage() {
         verdict: verdictFilter || undefined,
         is_disputed: disputedFilter,
         search: search || undefined,
+        blind_review: blindReviewMode,
       });
       setItems(res.items);
       setTotal(res.total);
+      setStatusCounts(res.status_counts || null);
     } catch (err: any) {
       console.error(err);
     } finally {
@@ -86,7 +98,13 @@ export default function HumanReviewQueuePage() {
 
   useEffect(() => {
     fetchQueue();
-  }, [page, statusFilter, verdictFilter, disputedFilter]);
+  }, [page, statusFilter, verdictFilter, disputedFilter, blindReviewMode]);
+
+  useEffect(() => {
+    if (selectedInvestigation) {
+      openInvestigation(selectedInvestigation.id);
+    }
+  }, [blindReviewMode]);
 
   useEffect(() => {
     if (user?.role === "Administrator") {
@@ -104,10 +122,10 @@ export default function HumanReviewQueuePage() {
     setLoadingDetail(true);
     setFeedbackMsg(null);
     try {
-      const detail = await api.getInvestigation(id);
+      const detail = await api.getInvestigation(id, blindReviewMode);
       setSelectedInvestigation(detail);
-      setVerdictChoice(detail.analyst_verdict || detail.ai_assurance?.validated_verdict || "TRUE_POSITIVE");
-      setActionType((detail.ai_assurance?.analyst_feedback_action as any) || "ACCEPTED");
+      setVerdictChoice(detail.analyst_verdict || "TRUE_POSITIVE");
+      setActionType((!blindReviewMode && (detail.ai_assurance?.analyst_feedback_action as any)) || "ACCEPTED");
       setVerdictReason(detail.verdict_reason || "");
       setAnalystNotes(detail.analyst_notes || "");
       setInsufficientReason(detail.insufficient_evidence_reason || "");
@@ -124,7 +142,7 @@ export default function HumanReviewQueuePage() {
     if (!selectedInvestigation) return;
     try {
       await api.assignInvestigation(selectedInvestigation.id, userId);
-      const updated = await api.getInvestigation(selectedInvestigation.id);
+      const updated = await api.getInvestigation(selectedInvestigation.id, blindReviewMode);
       setSelectedInvestigation(updated);
       fetchQueue();
       setFeedbackMsg({ type: "success", text: "Analyst assignment updated." });
@@ -137,7 +155,7 @@ export default function HumanReviewQueuePage() {
     if (!selectedInvestigation) return;
     try {
       await api.updateInvestigationStatus(selectedInvestigation.id, newStatus);
-      const updated = await api.getInvestigation(selectedInvestigation.id);
+      const updated = await api.getInvestigation(selectedInvestigation.id, blindReviewMode);
       setSelectedInvestigation(updated);
       fetchQueue();
       setFeedbackMsg({ type: "success", text: `Status updated to ${newStatus}` });
@@ -152,7 +170,7 @@ export default function HumanReviewQueuePage() {
     try {
       await api.addInvestigationQuestion(selectedInvestigation.id, newQuestion);
       setNewQuestion("");
-      const updated = await api.getInvestigation(selectedInvestigation.id);
+      const updated = await api.getInvestigation(selectedInvestigation.id, blindReviewMode);
       setSelectedInvestigation(updated);
       fetchQueue();
       setFeedbackMsg({ type: "success", text: "Investigation question added." });
@@ -167,7 +185,7 @@ export default function HumanReviewQueuePage() {
       await api.answerInvestigationQuestion(questionId, answerText);
       setAnswerText("");
       setActiveAnswerId(null);
-      const updated = await api.getInvestigation(selectedInvestigation.id);
+      const updated = await api.getInvestigation(selectedInvestigation.id, blindReviewMode);
       setSelectedInvestigation(updated);
       setFeedbackMsg({ type: "success", text: "Question answered." });
     } catch (err: any) {
@@ -188,7 +206,7 @@ export default function HumanReviewQueuePage() {
       setEvidenceKey("");
       setEvidenceContent("");
       setEvidenceRationale("");
-      const updated = await api.getInvestigation(selectedInvestigation.id);
+      const updated = await api.getInvestigation(selectedInvestigation.id, blindReviewMode);
       setSelectedInvestigation(updated);
       fetchQueue();
       setFeedbackMsg({ type: "success", text: "Evidence artifact attached." });
@@ -213,7 +231,7 @@ export default function HumanReviewQueuePage() {
         status: "REVIEWED",
         action_type: actionType,
       });
-      const updated = await api.getInvestigation(selectedInvestigation.id);
+      const updated = await api.getInvestigation(selectedInvestigation.id, blindReviewMode);
       setSelectedInvestigation(updated);
       fetchQueue();
       setFeedbackMsg({ type: "success", text: `Verdict ${verdictChoice} submitted and verified successfully!` });
@@ -302,6 +320,39 @@ export default function HumanReviewQueuePage() {
         </div>
       </div>
 
+      {/* Top-Level Mode Switcher: Operational Queue vs Benchmark Ground Truth Certification */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab("OPERATIONAL")}
+          data-testid="tab-operational-reviews"
+          className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors ${
+            activeTab === "OPERATIONAL"
+              ? "bg-sky-950 text-sky-200 border-sky-700"
+              : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200"
+          }`}
+        >
+          Operational Reviews ({statusCounts?.total ?? total})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("GROUND_TRUTH_CERTIFICATION")}
+          data-testid="tab-ground-truth-certification"
+          className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors flex items-center gap-1.5 ${
+            activeTab === "GROUND_TRUTH_CERTIFICATION"
+              ? "bg-cyan-950 text-cyan-200 border-cyan-700"
+              : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200"
+          }`}
+        >
+          <Award className="w-3.5 h-3.5 text-amber-400" />
+          Ground Truth Certification (AIS 2.6e)
+        </button>
+      </div>
+
+      {activeTab === "GROUND_TRUTH_CERTIFICATION" ? (
+        <GroundTruthCertificationPanel />
+      ) : (
+        <>
       {blindReviewMode && (
         <div className="rounded-lg border border-amber-800/80 bg-amber-950/40 p-2.5 text-xs text-amber-300 flex items-center gap-2.5">
           <EyeOff className="h-3.5 w-3.5 shrink-0 text-amber-400" />
@@ -311,34 +362,34 @@ export default function HumanReviewQueuePage() {
         </div>
       )}
 
-      {/* Summary KPI Cards */}
+      {/* Summary KPI Cards (Database-Wide Operational Aggregates) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         <div className="p-2 sm:p-2.5 rounded-lg border border-slate-800 bg-slate-950 shadow-sm">
           <div className="text-[10px] font-medium text-slate-400">Total Incidents</div>
-          <div className="text-xl font-bold text-slate-100 font-mono mt-0.5">{total}</div>
+          <div className="text-xl font-bold text-slate-100 font-mono mt-0.5">{statusCounts?.total ?? total}</div>
         </div>
         <div className="p-2 sm:p-2.5 rounded-lg border border-amber-900/30 bg-amber-950/20 shadow-sm">
           <div className="text-[10px] font-medium text-amber-400">Pending Review</div>
           <div className="text-xl font-bold text-amber-300 font-mono mt-0.5">
-            {items.filter((i) => i.status === "PENDING_REVIEW").length}
+            {statusCounts?.pending_review ?? items.filter((i) => i.status === "PENDING_REVIEW").length}
           </div>
         </div>
         <div className="p-2 sm:p-2.5 rounded-lg border border-indigo-900/30 bg-indigo-950/20 shadow-sm">
           <div className="text-[10px] font-medium text-indigo-400">In Progress / Assigned</div>
           <div className="text-xl font-bold text-indigo-300 font-mono mt-0.5">
-            {items.filter((i) => i.status === "ASSIGNED" || i.status === "IN_PROGRESS" || i.status === "AWAITING_INFORMATION").length}
+            {statusCounts?.in_progress ?? items.filter((i) => i.status === "ASSIGNED" || i.status === "IN_PROGRESS" || i.status === "AWAITING_INFORMATION").length}
           </div>
         </div>
         <div className="p-2 sm:p-2.5 rounded-lg border border-emerald-900/30 bg-emerald-950/20 shadow-sm">
           <div className="text-[10px] font-medium text-emerald-400">Analyst Reviewed</div>
           <div className="text-xl font-bold text-emerald-300 font-mono mt-0.5">
-            {items.filter((i) => i.status === "REVIEWED").length}
+            {statusCounts?.reviewed ?? items.filter((i) => i.status === "REVIEWED").length}
           </div>
         </div>
         <div className="p-2 sm:p-2.5 rounded-lg border border-rose-900/30 bg-rose-950/20 shadow-sm col-span-2 sm:col-span-1">
           <div className="text-[10px] font-medium text-rose-400">Disputed Cases</div>
           <div className="text-xl font-bold text-rose-300 font-mono mt-0.5">
-            {items.filter((i) => i.is_disputed).length}
+            {statusCounts?.disputed ?? items.filter((i) => i.is_disputed).length}
           </div>
         </div>
       </div>
@@ -495,13 +546,17 @@ export default function HumanReviewQueuePage() {
                     <td className="py-1.5 px-2.5">
                       <div className="space-y-0.5">
                         {getVerdictBadge(item.analyst_verdict)}
-                        {item.ai_validated_verdict && (
+                        {blindReviewMode ? (
+                          <div className="text-[10px] font-mono text-amber-400/90 flex items-center gap-1">
+                            <EyeOff className="w-2.5 h-2.5" /> AI Masked
+                          </div>
+                        ) : item.ai_validated_verdict ? (
                           <div className="text-[10px] font-mono text-indigo-300">
                             AI: {item.ai_validated_verdict}
                             {item.ai_trust_score != null ? ` (${item.ai_trust_score}/10)` : ""}
                             {item.pilot_mode ? ` • ${item.pilot_mode}` : ""}
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     </td>
                     <td className="py-1.5 px-2.5 text-center">
@@ -998,27 +1053,31 @@ export default function HumanReviewQueuePage() {
 
               {/* Verdict Selection */}
               <div>
-                <label className="text-[11px] font-semibold text-slate-300 block mb-1">Analyst Review Action (Preserves AI Recommendation)</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-2.5">
-                  {(["ACCEPTED", "OVERRIDDEN", "DISPUTED", "REQUESTED_EVIDENCE"] as const).map((act) => (
-                    <button
-                      key={act}
-                      type="button"
-                      disabled={!canMutate}
-                      onClick={() => {
-                        setActionType(act);
-                        if (act === "DISPUTED") setIsDisputed(true);
-                      }}
-                      className={`py-1 px-2 text-[10px] font-mono rounded border transition-colors disabled:opacity-40 ${
-                        actionType === act
-                          ? "bg-indigo-950 text-indigo-200 border-indigo-600"
-                          : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800"
-                      }`}
-                    >
-                      {act}
-                    </button>
-                  ))}
-                </div>
+                {!(blindReviewMode && !selectedInvestigation.analyst_verdict) && (
+                  <>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Analyst Review Action (Post-Review AI Comparison)</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-2.5">
+                      {(["ACCEPTED", "OVERRIDDEN", "DISPUTED", "REQUESTED_EVIDENCE"] as const).map((act) => (
+                        <button
+                          key={act}
+                          type="button"
+                          disabled={!canMutate}
+                          onClick={() => {
+                            setActionType(act);
+                            if (act === "DISPUTED") setIsDisputed(true);
+                          }}
+                          className={`py-1 px-2 text-[10px] font-mono rounded border transition-colors disabled:opacity-40 ${
+                            actionType === act
+                              ? "bg-indigo-950 text-indigo-200 border-indigo-600"
+                              : "bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800"
+                          }`}
+                        >
+                          {act}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
 
                 <label className="text-[11px] font-semibold text-slate-300 block mb-1.5">Verdict Outcome</label>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -1150,6 +1209,8 @@ export default function HumanReviewQueuePage() {
             </form>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

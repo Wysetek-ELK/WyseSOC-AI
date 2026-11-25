@@ -7,6 +7,7 @@ from app.api.deps import get_current_active_user, require_analyst, require_admin
 from app.models.user import User
 from app.services.investigation_service import InvestigationService
 from app.services.audit_service import AuditService
+from app.services.blind_review_guard import strip_ai_notes_from_handover
 from app.schemas.investigation import (
     InvestigationQueueResponse,
     InvestigationDetailResponse,
@@ -34,6 +35,7 @@ async def list_investigations_queue(
     is_disputed: Optional[bool] = None,
     rule_id: Optional[str] = None,
     search: Optional[str] = None,
+    blind_review: bool = Query(False, description="Enforce double-blind masking of AI predictions"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -48,7 +50,9 @@ async def list_investigations_queue(
         rule_id=rule_id,
         search=search,
         current_user=current_user,
+        blind_review=blind_review,
     )
+    status_counts = await service.get_queue_status_counts(current_user=current_user)
 
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
 
@@ -58,12 +62,14 @@ async def list_investigations_queue(
         page=page,
         page_size=page_size,
         total_pages=total_pages,
+        status_counts=status_counts,
     )
 
 
 @router.get("/{id}", response_model=InvestigationDetailResponse)
 async def get_investigation(
     id: str,
+    blind_review: bool = Query(False, description="Enforce double-blind masking of AI predictions and handover AI notes"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -75,7 +81,16 @@ async def get_investigation(
     inc = inv.incident
     rule = inc.rule if inc else None
     user = inv.assigned_user
-    ai_assurance = await service.build_ai_assurance(inv, current_user=current_user)
+    ai_assurance = await service.build_ai_assurance(
+        inv,
+        current_user=current_user,
+        blind_review=blind_review,
+    )
+    visible_notes = (
+        strip_ai_notes_from_handover(inv.analyst_notes)
+        if (blind_review or not ai_assurance or ai_assurance.validated_verdict is None)
+        else inv.analyst_notes
+    )
 
     return InvestigationDetailResponse(
         id=inv.id,
@@ -85,7 +100,7 @@ async def get_investigation(
         status=inv.status,
         analyst_verdict=inv.analyst_verdict,
         verdict_reason=inv.verdict_reason,
-        analyst_notes=inv.analyst_notes,
+        analyst_notes=visible_notes,
         is_disputed=inv.is_disputed,
         is_independently_verified=inv.is_independently_verified,
         insufficient_evidence_reason=inv.insufficient_evidence_reason,
@@ -108,6 +123,7 @@ async def get_investigation(
 @router.get("/by-incident/{incident_id}", response_model=InvestigationDetailResponse)
 async def get_investigation_by_incident(
     incident_id: str,
+    blind_review: bool = Query(False, description="Enforce double-blind masking of AI predictions and handover AI notes"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -119,7 +135,16 @@ async def get_investigation_by_incident(
     inc = inv.incident
     rule = inc.rule if inc else None
     user = inv.assigned_user
-    ai_assurance = await service.build_ai_assurance(inv, current_user=current_user)
+    ai_assurance = await service.build_ai_assurance(
+        inv,
+        current_user=current_user,
+        blind_review=blind_review,
+    )
+    visible_notes = (
+        strip_ai_notes_from_handover(inv.analyst_notes)
+        if (blind_review or not ai_assurance or ai_assurance.validated_verdict is None)
+        else inv.analyst_notes
+    )
 
     return InvestigationDetailResponse(
         id=inv.id,
@@ -129,7 +154,7 @@ async def get_investigation_by_incident(
         status=inv.status,
         analyst_verdict=inv.analyst_verdict,
         verdict_reason=inv.verdict_reason,
-        analyst_notes=inv.analyst_notes,
+        analyst_notes=visible_notes,
         is_disputed=inv.is_disputed,
         is_independently_verified=inv.is_independently_verified,
         insufficient_evidence_reason=inv.insufficient_evidence_reason,

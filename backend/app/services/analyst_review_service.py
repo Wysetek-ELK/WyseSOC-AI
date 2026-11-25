@@ -264,20 +264,25 @@ class AnalystReviewService:
                     investigation.verdict_reason = analyst_notes
                     db.add(investigation)
 
-                # Update LearningRecord
-                learn_stmt = select(LearningRecord).where(
-                    and_(
-                        LearningRecord.rule_id == target_rule,
-                        LearningRecord.incident_id == incident.id
-                    )
+                # Update LearningRecord (STRICT ISOLATION: skip frozen/registered benchmark cohort incidents)
+                from app.services.blind_review_guard import is_frozen_benchmark_incident
+                is_benchmark_item = await is_frozen_benchmark_incident(
+                    db, incident.id, incident.incident_id
                 )
-                learn_res = await db.execute(learn_stmt)
-                learn_rec = learn_res.scalar_one_or_none()
-                if learn_rec:
-                    learn_rec.verified_verdict = analyst_verdict
-                    learn_rec.analyst_explanation = analyst_notes
-                    learn_rec.verification_status = ground_truth_status
-                    db.add(learn_rec)
+                if not is_benchmark_item:
+                    learn_stmt = select(LearningRecord).where(
+                        and_(
+                            LearningRecord.rule_id == target_rule,
+                            LearningRecord.incident_id == incident.id
+                        )
+                    )
+                    learn_res = await db.execute(learn_stmt)
+                    learn_rec = learn_res.scalar_one_or_none()
+                    if learn_rec:
+                        learn_rec.verified_verdict = analyst_verdict
+                        learn_rec.analyst_explanation = analyst_notes
+                        learn_rec.verification_status = ground_truth_status
+                        db.add(learn_rec)
 
                 # Recalibrate profile metrics safely
                 profile = await RuleLearningService.get_or_create_profile(
@@ -364,8 +369,13 @@ class AnalystReviewService:
         db.add(review)
         await db.flush()
 
-        # 7. Create / Update LearningRecord (only VERIFIED TP/FP enter verified RAG pool; DISPUTED/INSUFFICIENT excluded)
-        if target_rule and canonical_rule_uuid:
+        # 7. Create / Update LearningRecord (only VERIFIED TP/FP enter verified RAG pool;
+        # DISPUTED/INSUFFICIENT and ALL benchmark cohort incidents are strictly excluded!)
+        from app.services.blind_review_guard import is_frozen_benchmark_incident
+        is_benchmark_item = await is_frozen_benchmark_incident(
+            db, incident.id, incident.incident_id
+        )
+        if target_rule and canonical_rule_uuid and not is_benchmark_item:
             learn_stmt = select(LearningRecord).where(
                 and_(
                     LearningRecord.rule_id == canonical_rule_uuid,
@@ -531,9 +541,11 @@ class AnalystReviewService:
                 inv.is_disputed = False
             db.add(inv)
 
-        # Update LearningRecord
+        # Update LearningRecord (strict isolation: never feed benchmark cohort items into Agent Memory / RAG)
+        from app.services.blind_review_guard import is_frozen_benchmark_incident
+        is_benchmark_item = await is_frozen_benchmark_incident(db, review.incident_id)
         canonical_uuid, _ = await cls._resolve_rule_aliases(db, review.rule_id)
-        if canonical_uuid:
+        if canonical_uuid and not is_benchmark_item:
             learn_res = await db.execute(
                 select(LearningRecord).where(
                     and_(

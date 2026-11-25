@@ -69,18 +69,24 @@ export function IncidentVerdictMatrix({
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
             1. AI Proposed Verdict
           </span>
-          {confidence != null && (
+          {!isBlindMode && confidence != null && (
             <span className="font-mono text-[10px] text-slate-300">{Math.round(confidence)}% Conf</span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span
-            className={`px-2 py-0.5 rounded font-mono font-bold text-xs border uppercase ${getBadgeStyle(
-              proposedVerdict
-            )}`}
-          >
-            {proposedVerdict ? proposedVerdict.replace(/_/g, " ") : "Pending Ingestion"}
-          </span>
+          {isBlindMode ? (
+            <span className="px-2 py-0.5 rounded font-mono text-[11px] bg-amber-950/60 border border-amber-800 text-amber-300 italic">
+              Hidden in Blind Mode
+            </span>
+          ) : (
+            <span
+              className={`px-2 py-0.5 rounded font-mono font-bold text-xs border uppercase ${getBadgeStyle(
+                proposedVerdict
+              )}`}
+            >
+              {proposedVerdict ? proposedVerdict.replace(/_/g, " ") : "Pending Ingestion"}
+            </span>
+          )}
         </div>
         <p className="text-[10px] text-slate-500 leading-tight">
           Uncalibrated direct proposal from Local LLM.
@@ -94,21 +100,27 @@ export function IncidentVerdictMatrix({
             <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
             2. Platform Validation
           </span>
-          {trustScore != null && (
+          {!isBlindMode && trustScore != null && (
             <span className="font-mono text-[10px] text-purple-300">Trust: {trustScore}/10</span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span
-            className={`px-2 py-0.5 rounded font-mono font-bold text-xs border uppercase ${getBadgeStyle(
-              validatedVerdict || validationStatus
-            )}`}
-          >
-            {validatedVerdict ? validatedVerdict.replace(/_/g, " ") : validationStatus || "Unverified"}
-          </span>
+          {isBlindMode ? (
+            <span className="px-2 py-0.5 rounded font-mono text-[11px] bg-amber-950/60 border border-amber-800 text-amber-300 italic">
+              Hidden in Blind Mode
+            </span>
+          ) : (
+            <span
+              className={`px-2 py-0.5 rounded font-mono font-bold text-xs border uppercase ${getBadgeStyle(
+                validatedVerdict || validationStatus
+              )}`}
+            >
+              {validatedVerdict ? validatedVerdict.replace(/_/g, " ") : validationStatus || "Unverified"}
+            </span>
+          )}
         </div>
         <p className="text-[10px] text-slate-500 leading-tight">
-          {groundingRatio != null
+          {!isBlindMode && groundingRatio != null
             ? `${Math.round(groundingRatio * 100)}% claim grounding verified`
             : "Deterministic schema & telemetry safety validator"}
         </p>

@@ -128,9 +128,7 @@ export default function AITriageWorkbenchDetailPage({
       try {
         const data = await api.getIncidentDetail(incidentId, blindReviewMode);
         setIncident(data);
-        if (data.ai_verdict) {
-          setAiVerdict(data.ai_verdict);
-        }
+        setAiVerdict(blindReviewMode ? null : (data.ai_verdict || null));
 
         // Also fetch model payload to demonstrate allowlist compliance
         try {

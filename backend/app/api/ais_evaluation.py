@@ -44,6 +44,7 @@ async def get_rule_evaluation_status(
     search: Optional[str] = Query(None, description="Search query by incident ID or title"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=500, description="Page size"),
+    blind_review: bool = Query(False, description="Enforce blind masking of AI verdicts for reviewers"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -74,6 +75,7 @@ async def get_rule_evaluation_status(
             page=page,
             page_size=page_size,
             current_user=current_user,
+            blind_review=blind_review,
         )
         return res
     except ValueError as ve:
@@ -92,6 +94,7 @@ async def get_rule_evaluation_status(
 @router.get("/incidents/{incident_id}/evaluation-history", response_model=Dict[str, Any])
 async def get_incident_evaluation_history(
     incident_id: str,
+    blind_review: bool = Query(False, description="Enforce blind masking of AI verdict history"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -104,6 +107,7 @@ async def get_incident_evaluation_history(
             db=db,
             incident_id=incident_id,
             current_user=current_user,
+            blind_review=blind_review,
         )
         return res
     except ValueError as ve:

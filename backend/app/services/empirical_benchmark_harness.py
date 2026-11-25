@@ -241,6 +241,7 @@ class BenchmarkMetrics:
     layer_b_decisive_rate: Optional[float] = None
     layer_c_decisive_rate: Optional[float] = None
     unique_cluster_metrics: Optional[Dict[str, Any]] = None
+    inconclusive_ground_truth_count: int = 0
 
 
 @dataclass
@@ -744,13 +745,13 @@ Keep the explanation concise and evidence-backed. Do not reproduce complete raw 
             except Exception:
                 pass
 
-        # Authoritative production policy fallback (aligns with PostgreSQL approved prompt versions)
+        # Authoritative reconciled policy fallback (matches database & POLICY_IDENTITY_MANIFEST)
         rule_lower = str(rule_id or "").lower()
         if "cs_suspicious" in rule_lower or "crowdstrike" in rule_lower:
             return PromptVersion(
-                id="b6d9df2f-aad8-4208-89de-3e94e64e1b49",
-                prompt_id="ebc01046-a6f5-41dd-b9a1-1a2edaa1b79a",
-                version_number=3,
+                id="bd751fac-9bfb-4994-b150-8850bb94dd6c",
+                prompt_id="08c59656-c002-4a76-b100-3c8d6d645eb2",
+                version_number=1,
                 status="APPROVED",
                 common_prompt="Authoritative enterprise investigation policy for suspicious endpoint activity.",
                 rule_specific_prompt="Adjudicate Crowdstrike Suspicious Activity incidents based on verified process execution telemetry, remote access tool presence, and IT authorization.",
@@ -764,8 +765,8 @@ Keep the explanation concise and evidence-backed. Do not reproduce complete raw 
             )
         elif "prisma" in rule_lower or "suspicious_file" in rule_lower:
             return PromptVersion(
-                id="ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece",
-                prompt_id="08c59656-c002-4a76-b100-3c8d6d645eb2",
+                id="8ae7beaa-626a-4061-a0c4-8500f7e6a69d",
+                prompt_id="1fe4e834-bd52-4571-95ca-ee329e40e1b2",
                 version_number=1,
                 status="APPROVED",
                 common_prompt="Authoritative enterprise investigation policy for perimeter web and file threat detection.",
@@ -779,6 +780,140 @@ Keep the explanation concise and evidence-backed. Do not reproduce complete raw 
                 analyst_questions=[],
             )
         return None
+
+    @classmethod
+    async def load_certified_ground_truth_cohort(
+        cls,
+        db: Any,
+        cohort_key: str = "AIS_2_6E_FROZEN_20",
+        include_gt2_exploratory: bool = False,
+    ) -> Tuple[List[BenchmarkIncidentRecord], Dict[str, Any]]:
+        """
+        Loads frozen benchmark cohort items directly from the relational database
+        with strict Ground Truth certification tier enforcement:
+        - GT3_CERTIFIED (TRUE_POSITIVE / FALSE_POSITIVE) -> VERIFIED_TP / VERIFIED_FP
+        - CERTIFIED_INCONCLUSIVE -> CERTIFIED_INCONCLUSIVE (excluded from binary TP/FP accuracy)
+        - GT2_SINGLE_REVIEW -> included ONLY when `include_gt2_exploratory=True` (clearly tagged)
+        - GT0_UNREVIEWED / GT1_HISTORICAL_ONLY / CONFLICT -> UNVERIFIED (excluded from metrics)
+        """
+        from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
+        from app.models.analyst_feedback import AnalystVerdictReview, BenchmarkCohort, BenchmarkCohortItem
+        from app.models.incident import Incident
+
+        cohort_res = await db.execute(
+            select(BenchmarkCohort).where(BenchmarkCohort.cohort_key == cohort_key)
+        )
+        cohort = cohort_res.scalar_one_or_none()
+        if not cohort:
+            return [], {"cohort_key": cohort_key, "total": 0, "gt3_certified": 0, "gt2_single_review": 0}
+
+        items_res = await db.execute(
+            select(BenchmarkCohortItem)
+            .where(BenchmarkCohortItem.cohort_id == cohort.id)
+            .options(selectinload(BenchmarkCohortItem.incident).selectinload(Incident.events))
+            .order_by(BenchmarkCohortItem.priority_rank.asc(), BenchmarkCohortItem.fortisiem_incident_id.asc())
+        )
+        cohort_items = items_res.scalars().all()
+
+        inc_ids = [it.incident_db_id for it in cohort_items if it.incident_db_id]
+        locked_reviews_by_inc: Dict[str, List[AnalystVerdictReview]] = {}
+        if inc_ids:
+            revs = (
+                await db.execute(
+                    select(AnalystVerdictReview).where(
+                        AnalystVerdictReview.incident_id.in_(inc_ids),
+                        AnalystVerdictReview.review_mode == "BENCHMARK_CERTIFICATION",
+                        AnalystVerdictReview.is_locked.is_(True),
+                    )
+                )
+            ).scalars().all()
+            for r in revs:
+                locked_reviews_by_inc.setdefault(r.incident_id, []).append(r)
+
+        records: List[BenchmarkIncidentRecord] = []
+        summary = {
+            "cohort_key": cohort_key,
+            "total": len(cohort_items),
+            "gt3_certified": 0,
+            "certified_inconclusive": 0,
+            "gt2_single_review": 0,
+            "unverified_or_conflict": 0,
+            "include_gt2_exploratory": include_gt2_exploratory,
+        }
+
+        for it in cohort_items:
+            inc = it.incident
+            if not inc:
+                summary["unverified_or_conflict"] += 1
+                continue
+
+            revs = locked_reviews_by_inc.get(inc.id, [])
+            gt_label = "UNVERIFIED"
+            cert_tier = it.certification_status
+
+            if cert_tier == "GT3_CERTIFIED":
+                summary["gt3_certified"] += 1
+                if it.certified_verdict == "TRUE_POSITIVE":
+                    gt_label = "VERIFIED_TP"
+                elif it.certified_verdict == "FALSE_POSITIVE":
+                    gt_label = "VERIFIED_FP"
+            elif cert_tier == "CERTIFIED_INCONCLUSIVE":
+                summary["certified_inconclusive"] += 1
+                gt_label = "CERTIFIED_INCONCLUSIVE"
+            elif cert_tier == "GT2_SINGLE_REVIEW":
+                summary["gt2_single_review"] += 1
+                if include_gt2_exploratory and revs:
+                    single_v = revs[0].analyst_verdict
+                    if single_v == "TRUE_POSITIVE":
+                        gt_label = "VERIFIED_TP"
+                    elif single_v == "FALSE_POSITIVE":
+                        gt_label = "VERIFIED_FP"
+                    elif single_v == "INCONCLUSIVE":
+                        gt_label = "CERTIFIED_INCONCLUSIVE"
+            else:
+                summary["unverified_or_conflict"] += 1
+
+            raw_events_list = [
+                {
+                    "eventId": ev.event_id,
+                    "attribute": ev.attributes or {},
+                    "rawLog": ev.raw_log or "",
+                }
+                for ev in (inc.events or [])
+            ]
+            raw_payload = dict(inc.raw_payload) if isinstance(inc.raw_payload, dict) else {
+                "incidentId": it.fortisiem_incident_id,
+                "eventType": it.rule_id,
+                "title": inc.title or it.rule_name,
+                "description": inc.description or "",
+                "customer": it.customer or inc.customer or "DEFAULT",
+                "sourceIp": inc.source_ip,
+                "reportingDevice": inc.reporting_device,
+                "rawEvents": raw_events_list,
+            }
+            sanitized_payload = HistoricalGroundTruthValidator.sanitize_incident_for_inference(raw_payload)
+            target_cluster_sig = hashlib.sha256(
+                f"{it.rule_id}|{gt_label}|{inc.reporting_device or ''}".encode("utf-8")
+            ).hexdigest()[:16]
+            records.append(
+                BenchmarkIncidentRecord(
+                    incident_id=it.fortisiem_incident_id,
+                    rule_id=it.rule_id,
+                    rule_name=it.rule_name,
+                    ground_truth_label=gt_label,
+                    raw_payload=raw_payload,
+                    sanitized_payload=sanitized_payload,
+                    is_duplicate=False,
+                    cluster_key=target_cluster_sig,
+                    source_origin="DB_CERTIFIED",
+                    leakage_detected=False,
+                    leakage_keys_found=[],
+                    events_count=len(raw_events_list),
+                )
+            )
+
+        return records, summary
 
     @classmethod
     def _create_rule_contract(cls, rule_id: str, rule_name: str) -> RuleEvidenceContract:
@@ -1805,6 +1940,10 @@ Keep the explanation concise and evidence-backed. Do not reproduce complete raw 
                 grounding_ratios.append(r.grounding_ratio)
 
             gt = r.ground_truth_label
+            if gt == "CERTIFIED_INCONCLUSIVE":
+                m.inconclusive_ground_truth_count += 1
+                m.unverified_count += 1
+                continue
             if gt not in ("VERIFIED_TP", "VERIFIED_FP"):
                 m.unverified_count += 1
                 continue

@@ -16,6 +16,11 @@ from app.models.pilot import PilotEvaluationRecord
 from app.models.verdict_intelligence import VerdictTrustAssessmentRecord
 from app.services.provenance import classify_endpoint_status, classify_execution_provenance
 from app.services.verdict_trustworthiness_engine import VerdictTrustworthinessEngine
+from app.services.blind_review_guard import (
+    can_reveal_protected_verdict_info,
+    is_frozen_benchmark_incident,
+    strip_ai_notes_from_handover,
+)
 from app.schemas.investigation import (
     AIAssuranceSummary,
     InvestigationListItem,
@@ -70,6 +75,7 @@ class ReviewOrchestrator:
         rule_id: Optional[str] = None,
         search: Optional[str] = None,
         current_user: Optional[Any] = None,
+        blind_review: bool = False,
     ) -> Tuple[List[InvestigationListItem], int]:
         # Ensure queue is populated
         await self.ensure_all_incidents_have_investigations()
@@ -162,12 +168,13 @@ class ReviewOrchestrator:
             rule = inc.rule if inc else None
             user = inv.assigned_user
 
-            can_see = True
-            if not is_admin:
-                if user_role == "SOC Analyst":
-                    can_see = (str(inv.incident_id) in reviewed_inc_ids) or (inc and str(inc.id) in reviewed_inc_ids)
-                else:
-                    can_see = False
+            can_see = await can_reveal_protected_verdict_info(
+                db=self.db,
+                current_user=current_user,
+                incident_identifiers=[inv.incident_id, inc.id if inc else None, inc.incident_id if inc else None],
+                blind_review=blind_review,
+                reviewed_inc_ids=reviewed_inc_ids,
+            )
 
             norm_av = (VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict) if inc else None) if can_see else None
 
@@ -198,6 +205,46 @@ class ReviewOrchestrator:
             )
 
         return items, total
+
+    async def get_queue_status_counts(self, current_user: Optional[Any] = None) -> Dict[str, int]:
+        """Returns database-wide status distribution for Operational Human Review Queue KPIs."""
+        base_q = select(Investigation.status, Investigation.is_disputed, func.count(Investigation.id)).select_from(Investigation)
+        user_customer = getattr(current_user, "customer", None)
+        user_role = getattr(current_user, "role", "")
+        if user_customer and user_role not in ("Administrator", "SuperAdmin"):
+            base_q = base_q.join(Investigation.incident)
+            if user_customer != "DEFAULT":
+                base_q = base_q.where(Incident.customer == user_customer)
+            else:
+                base_q = base_q.where(
+                    or_(
+                        Incident.customer == "DEFAULT",
+                        Incident.customer == "",
+                        Incident.customer.is_(None),
+                    )
+                )
+        base_q = base_q.group_by(Investigation.status, Investigation.is_disputed)
+        rows = (await self.db.execute(base_q)).all()
+        counts = {
+            "total": 0,
+            "pending_review": 0,
+            "in_progress": 0,
+            "reviewed": 0,
+            "disputed": 0,
+        }
+        for st, disputed, cnt in rows:
+            c = int(cnt or 0)
+            counts["total"] += c
+            st_u = str(st or "").upper()
+            if st_u == "PENDING_REVIEW":
+                counts["pending_review"] += c
+            elif st_u in ("ASSIGNED", "IN_PROGRESS", "AWAITING_INFORMATION"):
+                counts["in_progress"] += c
+            elif st_u == "REVIEWED":
+                counts["reviewed"] += c
+            if disputed:
+                counts["disputed"] += c
+        return counts
 
     async def get_by_incident_id(self, incident_id: str) -> Optional[Investigation]:
         query = select(Investigation).where(Investigation.incident_id == incident_id).options(
@@ -330,47 +377,37 @@ class ReviewOrchestrator:
         await self.db.refresh(ev)
         return ev
 
-    async def build_ai_assurance(self, inv: Investigation, current_user: Optional[Any] = None) -> Optional[AIAssuranceSummary]:
+    async def build_ai_assurance(
+        self,
+        inv: Investigation,
+        current_user: Optional[Any] = None,
+        blind_review: bool = False,
+    ) -> Optional[AIAssuranceSummary]:
         """Builds read-only AI verdict assurance & pilot provenance snapshot for Human Review Queue."""
         inc = inv.incident
         if not inc:
             return None
 
-        user_role = getattr(current_user, "role", "")
-        is_admin = user_role in ("Administrator", "SuperAdmin")
-        if not is_admin:
-            has_reviewed = False
-            if current_user and user_role == "SOC Analyst":
-                user_filters = []
-                if hasattr(current_user, "id") and current_user.id:
-                    user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.id))
-                if hasattr(current_user, "username") and current_user.username:
-                    user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.username))
-                if user_filters:
-                    rev_q = select(AnalystVerdictReview.id).where(
-                        or_(
-                            AnalystVerdictReview.incident_id == str(inv.incident_id),
-                            AnalystVerdictReview.incident_id == str(inc.id),
-                            AnalystVerdictReview.incident_id == str(inc.incident_id),
-                        ),
-                        or_(*user_filters)
-                    ).limit(1)
-                    rev_res = await self.db.execute(rev_q)
-                    has_reviewed = rev_res.scalar_one_or_none() is not None
-            if not has_reviewed:
-                rule = inc.rule
-                return AIAssuranceSummary(
-                    incident_summary=inc.description or inc.title or "",
-                    rule_id=rule.rule_id if rule else inc.rule_id,
-                    rule_name=rule.name if rule else inc.event_type,
-                    proposed_verdict=None,
-                    validated_verdict=None,
-                    trust_score=None,
-                    abstention_reason=None,
-                    supporting_evidence=[],
-                    contradictory_evidence=[],
-                    missing_evidence=[],
-                )
+        can_see = await can_reveal_protected_verdict_info(
+            db=self.db,
+            current_user=current_user,
+            incident_identifiers=[inv.incident_id, inc.id, inc.incident_id],
+            blind_review=blind_review,
+        )
+        if not can_see:
+            rule = inc.rule
+            return AIAssuranceSummary(
+                incident_summary=inc.description or inc.title or "",
+                rule_id=rule.rule_id if rule else inc.rule_id,
+                rule_name=rule.name if rule else inc.event_type,
+                proposed_verdict=None,
+                validated_verdict=None,
+                trust_score=None,
+                abstention_reason=None,
+                supporting_evidence=[],
+                contradictory_evidence=[],
+                missing_evidence=[],
+            )
 
         rule = inc.rule
         norm_av = VerdictTrustworthinessEngine.normalize_ai_verdict_dict(inc.ai_verdict) or {}
@@ -517,7 +554,13 @@ class ReviewOrchestrator:
         inv.updated_at = utc_now()
 
         # If independently verified and not disputed, sync to LearningRecord for AI training Ground Truth
-        if inv.is_independently_verified and not inv.is_disputed:
+        # STRICT ISOLATION (AIS 2.6f): Never write benchmark cohort incidents into LearningRecord!
+        is_benchmark_item = await is_frozen_benchmark_incident(
+            self.db,
+            inv.incident_id,
+            inv.incident.incident_id if inv.incident else None,
+        )
+        if inv.is_independently_verified and not inv.is_disputed and not is_benchmark_item:
             inc = inv.incident
             rule_id = inc.rule_id if (inc and inc.rule_id) else None
             if not rule_id and inc:

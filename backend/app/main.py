@@ -235,6 +235,17 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             print(f"[Startup Warning] Runtime settings sync skipped: {exc}")
 
+        # Idempotently register frozen AIS 2.6e benchmark cohort on app boot (outside unit tests)
+        if settings.APP_ENV.lower() not in ("testing", "test"):
+            try:
+                from app.services.ground_truth_certification_service import GroundTruthCertificationService
+                await GroundTruthCertificationService.ensure_ais_2_6e_cohort_registered(
+                    session, load_from_zip_if_missing=True
+                )
+            except Exception as exc:
+                await session.rollback()
+                print(f"[Startup Warning] Benchmark cohort registration skipped: {exc}")
+
     # Startup background continuous FortiSIEM poller supervisor and resume if enabled
     fortisiem_scheduler.start_supervisor()
     if getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False) or fortisiem_scheduler.is_running:
@@ -293,6 +304,9 @@ app.include_router(rule_learning.router, prefix=settings.API_V1_STR)
 app.include_router(rule_learning.router, prefix="/api/v1")
 app.include_router(ais_evaluation.router, prefix=settings.API_V1_STR)
 app.include_router(ais_evaluation.router, prefix="/api/v1")
+from app.api import ground_truth
+app.include_router(ground_truth.router, prefix=settings.API_V1_STR)
+app.include_router(ground_truth.router, prefix="/api/v1")
 app.include_router(health.router)
 app.include_router(health.router, prefix=settings.API_V1_STR)
 

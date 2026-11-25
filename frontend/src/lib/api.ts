@@ -2012,6 +2012,7 @@ export const api = {
     is_disputed?: boolean;
     rule_id?: string;
     search?: string;
+    blind_review?: boolean;
   } = {}) {
     const q = new URLSearchParams();
     if (params.page) q.set("page", params.page.toString());
@@ -2022,20 +2023,21 @@ export const api = {
     if (params.is_disputed !== undefined) q.set("is_disputed", String(params.is_disputed));
     if (params.rule_id) q.set("rule_id", params.rule_id);
     if (params.search) q.set("search", params.search);
+    if (params.blind_review !== undefined) q.set("blind_review", String(params.blind_review));
 
     const res = await fetchWithAuth(`${API_BASE}/investigations/queue?${q.toString()}`);
     if (!res.ok) throw new Error("Failed to fetch investigations queue");
     return res.json();
   },
 
-  async getInvestigation(id: string): Promise<InvestigationDetail> {
-    const res = await fetchWithAuth(`${API_BASE}/investigations/${id}`);
+  async getInvestigation(id: string, blindReview = true): Promise<InvestigationDetail> {
+    const res = await fetchWithAuth(`${API_BASE}/investigations/${id}?blind_review=${blindReview}`);
     if (!res.ok) throw new Error("Failed to fetch investigation details");
     return res.json();
   },
 
-  async getInvestigationByIncident(incidentId: string): Promise<InvestigationDetail> {
-    const res = await fetchWithAuth(`${API_BASE}/investigations/by-incident/${incidentId}`);
+  async getInvestigationByIncident(incidentId: string, blindReview = true): Promise<InvestigationDetail> {
+    const res = await fetchWithAuth(`${API_BASE}/investigations/by-incident/${incidentId}?blind_review=${blindReview}`);
     if (!res.ok) throw new Error("Failed to fetch investigation for incident");
     return res.json();
   },
@@ -3984,6 +3986,300 @@ export interface HistoricalEligibilityReport {
     holdout_partitions: Record<string, number>;
   }>;
 }
+
+// =================== AIS 2.6f: GROUND TRUTH CERTIFICATION TYPES ===================
+
+export interface CohortProgressCounters {
+  cohort_key: string;
+  total: number;
+  priority_total: number;
+  priority_certified: number;
+  priority_single_reviewed: number;
+  remaining_total: number;
+  remaining_certified: number;
+  gt0_unreviewed: number;
+  gt1_historical_only: number;
+  in_progress: number;
+  gt2_single_review: number;
+  conflict_pending_adjudication: number;
+  gt3_certified: number;
+  certified_inconclusive: number;
+  exposure_risk_count: number;
+  my_locked_reviews: number;
+  my_draft_reviews: number;
+  blind_review_enforced: boolean;
+  excluded_from_learning: boolean;
+  ready_for_priority_benchmark: boolean;
+  ready_for_full_benchmark: boolean;
+}
+
+export interface CohortSummary {
+  id: string;
+  cohort_key: string;
+  name: string;
+  description: string;
+  version: string;
+  is_frozen: boolean;
+  required_reviewers: number;
+  excluded_from_learning: boolean;
+  progress: CohortProgressCounters;
+}
+
+export interface GroundTruthQueueItem {
+  cohort_item_id: string;
+  cohort_key: string;
+  fortisiem_incident_id: string;
+  incident_db_id?: string | null;
+  rule_id: string;
+  rule_name: string;
+  vendor: string;
+  customer: string;
+  title?: string | null;
+  observed_entity?: string | null;
+  target_host?: string | null;
+  is_priority: boolean;
+  priority_rank?: number | null;
+  eligibility_status: string;
+  certification_status: string;
+  certified_verdict?: string | null;
+  locked_reviewers_count: number;
+  my_review_status: "NOT_STARTED" | "DRAFT" | "LOCKED";
+  my_review_verdict?: string | null;
+  exposure_risk_flag: boolean;
+  exposure_risk_reason: string;
+  blind_status: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface GroundTruthQueueResponse {
+  cohort: CohortSummary;
+  items: GroundTruthQueueItem[];
+  total: number;
+}
+
+export interface GroundTruthRawLogEntry {
+  index: number;
+  event_id?: string | null;
+  event_type?: string | null;
+  timestamp?: string | null;
+  source_ip?: string | null;
+  destination_ip?: string | null;
+  host?: string | null;
+  process_name?: string | null;
+  file_name?: string | null;
+  command_line?: string | null;
+  raw_log: string;
+  parsed_attributes: Record<string, any>;
+}
+
+export interface GroundTruthReviewerSubmission {
+  review_id: string;
+  reviewer_id: string;
+  analyst_verdict: string;
+  detection_correctness?: string | null;
+  authorization_context?: string | null;
+  confidence_level?: string | null;
+  evidence_sufficiency_status?: string | null;
+  analyst_notes: string;
+  evidence_references: string[];
+  additional_evidence_json: Array<Record<string, any>>;
+  attestation_flags: Record<string, boolean>;
+  is_locked: boolean;
+  is_draft: boolean;
+  certification_round: number;
+  certification_version: number;
+  created_at?: string | null;
+}
+
+export interface GroundTruthDetailResponse {
+  cohort_item: GroundTruthQueueItem;
+  incident_overview: Record<string, any>;
+  rule_definition: {
+    rule_id: string;
+    rule_name: string;
+    category: string;
+    severity: string;
+    description: string;
+    condition_summary: string;
+    rule_definition_sha256: string;
+    approved_policy_version_id?: string | null;
+    approved_policy_version_number?: number | null;
+    raw_rule_spec: Record<string, any>;
+  };
+  raw_logs: GroundTruthRawLogEntry[];
+  normalized_evidence: Array<Record<string, any>>;
+  additional_evidence: Array<Record<string, any>>;
+  raw_evidence_sha256: string;
+  canonical_evidence_sha256: string;
+  blind_review_guarantees: Record<string, boolean>;
+  my_review?: GroundTruthReviewerSubmission | null;
+  locked_reviewers_count: number;
+  other_reviewer_submitted: boolean;
+  can_submit_lock: boolean;
+  lock_blocked_reason?: string | null;
+  can_adjudicate: boolean;
+  conflict_reviews: GroundTruthReviewerSubmission[];
+  certified_result?: Record<string, any> | null;
+  revisions: Array<Record<string, any>>;
+}
+
+export const groundTruthApi = {
+  async listCohorts(): Promise<CohortSummary[]> {
+    const res = await fetchWithAuth(`${API_BASE}/ground-truth/cohorts`);
+    if (!res.ok) throw new Error("Failed to load benchmark cohorts");
+    return res.json();
+  },
+
+  async ensureCohort(cohortKey = "AIS_2_6E_FROZEN_20"): Promise<CohortSummary> {
+    const res = await fetchWithAuth(`${API_BASE}/ground-truth/cohorts/${cohortKey}/ensure`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Failed to register frozen benchmark cohort");
+    return res.json();
+  },
+
+  async getCohortQueue(
+    cohortKey: string,
+    params: {
+      priority_only?: boolean;
+      certification_status?: string;
+      vendor?: string;
+      customer?: string;
+      exposure_risk_only?: boolean;
+      my_pending_only?: boolean;
+      search?: string;
+    } = {}
+  ): Promise<GroundTruthQueueResponse> {
+    const q = new URLSearchParams();
+    if (params.priority_only !== undefined) q.set("priority_only", String(params.priority_only));
+    if (params.certification_status) q.set("certification_status", params.certification_status);
+    if (params.vendor) q.set("vendor", params.vendor);
+    if (params.customer) q.set("customer", params.customer);
+    if (params.exposure_risk_only !== undefined) q.set("exposure_risk_only", String(params.exposure_risk_only));
+    if (params.my_pending_only !== undefined) q.set("my_pending_only", String(params.my_pending_only));
+    if (params.search) q.set("search", params.search);
+    const res = await fetchWithAuth(`${API_BASE}/ground-truth/cohorts/${cohortKey}/queue?${q.toString()}`);
+    if (!res.ok) throw new Error("Failed to fetch Ground Truth certification queue");
+    return res.json();
+  },
+
+  async getIncidentDetail(cohortKey: string, incidentId: string): Promise<GroundTruthDetailResponse> {
+    const res = await fetchWithAuth(`${API_BASE}/ground-truth/cohorts/${cohortKey}/incidents/${incidentId}`);
+    if (!res.ok) throw new Error("Failed to load Ground Truth incident detail");
+    return res.json();
+  },
+
+  async attachEvidence(
+    cohortKey: string,
+    incidentId: string,
+    payload: {
+      evidence_type: string;
+      reference_key: string;
+      evidence_content: string;
+      analyst_rationale: string;
+    }
+  ) {
+    const res = await fetchWithAuth(`${API_BASE}/ground-truth/cohorts/${cohortKey}/incidents/${incidentId}/evidence`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to attach evidence");
+    }
+    return res.json();
+  },
+
+  async submitReview(
+    cohortKey: string,
+    incidentId: string,
+    payload: {
+      mode: "DRAFT" | "LOCK";
+      human_verdict: "TRUE_POSITIVE" | "FALSE_POSITIVE" | "INCONCLUSIVE";
+      detection_correctness: "MATCHED" | "NOT_MATCHED" | "UNKNOWN";
+      authorization_context: "AUTHORIZED" | "UNAUTHORIZED" | "UNKNOWN" | "NOT_APPLICABLE";
+      confidence_level: "LOW" | "MEDIUM" | "HIGH";
+      evidence_sufficiency_status: "SUFFICIENT" | "PARTIAL" | "INSUFFICIENT";
+      rationale: string;
+      evidence_references: string[];
+      additional_evidence?: Array<Record<string, any>>;
+      attestation_flags: {
+        evidence_reviewed: boolean;
+        no_ai_or_historical_influence: boolean;
+        independent_judgment: boolean;
+      };
+    }
+  ) {
+    const res = await fetchWithAuth(`${API_BASE}/ground-truth/cohorts/${cohortKey}/incidents/${incidentId}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to record Ground Truth review");
+    }
+    return res.json();
+  },
+
+  async adjudicateConflict(
+    cohortKey: string,
+    incidentId: string,
+    payload: {
+      final_verdict: "TRUE_POSITIVE" | "FALSE_POSITIVE" | "INCONCLUSIVE";
+      rationale: string;
+      detection_correctness?: string;
+      authorization_context?: string;
+      evidence_references?: string[];
+    }
+  ) {
+    const res = await fetchWithAuth(`${API_BASE}/ground-truth/cohorts/${cohortKey}/incidents/${incidentId}/adjudicate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to adjudicate conflict");
+    }
+    return res.json();
+  },
+
+  async reopenReview(
+    cohortKey: string,
+    payload: {
+      review_id: string;
+      new_verdict: "TRUE_POSITIVE" | "FALSE_POSITIVE" | "INCONCLUSIVE";
+      new_rationale: string;
+      revision_reason: string;
+    }
+  ) {
+    const res = await fetchWithAuth(`${API_BASE}/ground-truth/cohorts/${cohortKey}/reviews/reopen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to reopen certification review");
+    }
+    return res.json();
+  },
+
+  async getPostCertificationComparison(cohortKey: string, incidentId: string) {
+    const res = await fetchWithAuth(
+      `${API_BASE}/ground-truth/cohorts/${cohortKey}/incidents/${incidentId}/post-certification-comparison`
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Post-certification comparison is locked until GT-3 certification completes");
+    }
+    return res.json();
+  },
+};
+
 
 
 

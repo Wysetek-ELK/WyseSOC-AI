@@ -35,7 +35,12 @@ class TelemetryTimelineService:
         except Exception:
             return "N/A"
 
-    async def get_incident_timeline(self, incident_id: str, current_user: Optional[Any] = None) -> Dict[str, Any]:
+    async def get_incident_timeline(
+        self,
+        incident_id: str,
+        current_user: Optional[Any] = None,
+        blind_review: bool = False,
+    ) -> Dict[str, Any]:
         """
         Builds the complete historical telemetry timeline for an incident from Server 1 persistent storage.
         """
@@ -75,27 +80,13 @@ class TelemetryTimelineService:
                         "milestones": [],
                         "access_denied": True,
                     }
-        can_see_verdict = True
-        if not is_admin:
-            has_reviewed = False
-            if current_user and user_role == "SOC Analyst":
-                from app.models.analyst_feedback import AnalystVerdictReview
-                user_filters = []
-                if hasattr(current_user, "id") and current_user.id:
-                    user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.id))
-                if hasattr(current_user, "username") and current_user.username:
-                    user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.username))
-                if user_filters:
-                    rev_q = select(AnalystVerdictReview.id).where(
-                        or_(
-                            AnalystVerdictReview.incident_id == str(incident.id),
-                            AnalystVerdictReview.incident_id == str(incident.incident_id),
-                        ),
-                        or_(*user_filters)
-                    ).limit(1)
-                    rev_res = await self.db.execute(rev_q)
-                    has_reviewed = rev_res.scalar_one_or_none() is not None
-            can_see_verdict = has_reviewed
+        from app.services.blind_review_guard import can_reveal_protected_verdict_info
+        can_see_verdict = await can_reveal_protected_verdict_info(
+            db=self.db,
+            current_user=current_user,
+            incident_identifiers=[incident.id, incident.incident_id],
+            blind_review=blind_review,
+        )
 
         # Query token consumption records on Server 1 for this incident
         tok_stmt = (

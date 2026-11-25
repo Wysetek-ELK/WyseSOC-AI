@@ -1385,6 +1385,7 @@ async def get_actual_prompt_for_incident(
     incident_id: str,
     capture_id: Optional[str] = Query(None, description="Specific capture UUID to inspect"),
     execution_id: Optional[str] = Query(None, description="Specific execution UUID to inspect"),
+    blind_review: bool = Query(False, description="Mask returned AI verdict for blind review"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_analyst),
 ):
@@ -1417,27 +1418,13 @@ async def get_actual_prompt_for_incident(
                     detail=f"Access denied: Incident {incident_id} belongs to customer '{incident.customer}', but user is restricted to platform default scope."
                 )
 
-    can_see_verdict = True
-    if user_role == "SOC Analyst":
-        from app.models.analyst_feedback import AnalystVerdictReview
-        user_filters = []
-        if hasattr(current_user, "id") and current_user.id:
-            user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.id))
-        if hasattr(current_user, "username") and current_user.username:
-            user_filters.append(AnalystVerdictReview.reviewer_id == str(current_user.username))
-        if user_filters:
-            rev_q = select(AnalystVerdictReview.id).where(
-                or_(
-                    AnalystVerdictReview.incident_id == str(incident.id),
-                    AnalystVerdictReview.incident_id == str(incident.incident_id)
-                ),
-                or_(*user_filters)
-            ).limit(1)
-            can_see_verdict = (await db.execute(rev_q)).scalar_one_or_none() is not None
-        else:
-            can_see_verdict = False
-    elif user_role not in ("Administrator", "SuperAdmin"):
-        can_see_verdict = False
+    from app.services.blind_review_guard import can_reveal_protected_verdict_info
+    can_see_verdict = await can_reveal_protected_verdict_info(
+        db=db,
+        current_user=current_user,
+        incident_identifiers=[incident.id, incident.incident_id],
+        blind_review=blind_review,
+    )
 
     # 2. Query captured records and execution history
     available_executions = await ActualPromptCaptureService.get_executions_for_incident(db, incident_id)
@@ -1850,6 +1837,7 @@ async def get_prompt_preview_for_rule(
 async def export_actual_prompt_for_incident(
     incident_id: str,
     capture_id: Optional[str] = Query(None),
+    blind_review: bool = Query(False, description="Mask returned AI verdict for blind review"),
     format: str = Query("json", pattern="^(json|markdown)$"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_analyst),
@@ -1862,6 +1850,7 @@ async def export_actual_prompt_for_incident(
     prompt_res = await get_actual_prompt_for_incident(
         incident_id=incident_id,
         capture_id=capture_id,
+        blind_review=blind_review,
         db=db,
         current_user=current_user,
     )
