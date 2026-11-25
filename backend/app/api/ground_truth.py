@@ -248,6 +248,7 @@ async def ais27_run_smoke_test(
 async def ais27_run_single_incident(
     cohort_key: str,
     incident_id: str,
+    mode: str = Query("ALL", pattern="^(ALL|A|B)$"),
     max_context_tokens: int = Query(8192, ge=1024, le=131072),
     max_completion_tokens: int = Query(768, ge=64, le=4096),
     target_input_budget: int = Query(6400, ge=512, le=65536),
@@ -271,6 +272,7 @@ async def ais27_run_single_incident(
             max_completion_tokens=max_completion_tokens,
             target_input_budget=target_input_budget,
             timeout_seconds=timeout_seconds,
+            mode=mode,
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))

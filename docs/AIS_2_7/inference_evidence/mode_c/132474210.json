@@ -1,0 +1,23 @@
+{
+  "input_mode_b_verdict": "REQUIRES_ATTENTION",
+  "validated_verdict": "REQUIRES_ATTENTION",
+  "is_decisive_accepted": false,
+  "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+  "validation_reason_codes": [
+    "EVIDENCE_CONTRADICTION",
+    "REASONING_CONTRADICTION"
+  ],
+  "action_directive": "Model abstained, but reasoning exhibited evidence or logical contradictions; safely escalated to analyst.",
+  "grounding_ratio": 1.0,
+  "has_hallucinations": false,
+  "grounded_claims_count": 0,
+  "unsupported_claims_count": 0,
+  "unsupported_claim_details": [],
+  "detected_contradictions": [
+    "Contradiction: Model rationale asserts 'process.command_line' is missing, but canonical incident telemetry confirms it is PRESENT_VALID (value='\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"')."
+  ],
+  "trust_score": 6,
+  "raw_trust_score": 84.0,
+  "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
+  "escalation_reason": "Verdict Trust Score (6/10, raw 84.0/100) is below the automated decision threshold (7/10). Analyst attention required."
+}

@@ -1,0 +1,61 @@
+{
+  "request_timestamp_utc": "2026-11-25T05:38:29.287726",
+  "response_timestamp_utc": "2026-11-25T05:38:29.694687",
+  "endpoint": "http://13.204.214.64:8000/v1/chat/completions",
+  "http_status": 200,
+  "latency_ms": 406.98,
+  "request_sha256": "9e23b1c7650db1f1a0fb16362dd0c6e3eaa86a8d84e45a6eab378da493d9fe4a",
+  "vllm_response_id": "chatcmpl-969d0b6172c8e3a4",
+  "model_returned": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 43,
+    "total_tokens": 57,
+    "completion_tokens": 14,
+    "prompt_tokens_details": null,
+    "completion_tokens_details": null
+  },
+  "raw_response_text": "{\"smoke_test\":\"OK\",\"engine\":\"vllm\"}",
+  "raw_response_sha256": "f1f83c121dd10f2bcad8c509410ba31c9520f4920d3862cff844be57908f5d6a",
+  "raw_vllm_envelope": {
+    "id": "chatcmpl-969d0b6172c8e3a4",
+    "object": "chat.completion",
+    "created": 1795585108,
+    "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"smoke_test\":\"OK\",\"engine\":\"vllm\"}",
+          "refusal": null,
+          "annotations": null,
+          "audio": null,
+          "function_call": null,
+          "reasoning": null
+        },
+        "logprobs": null,
+        "finish_reason": "stop",
+        "stop_reason": null,
+        "token_ids": null,
+        "routed_experts": null,
+        "weight_versions": null
+      }
+    ],
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.33.0-47ac6ddd",
+    "usage": {
+      "prompt_tokens": 43,
+      "total_tokens": 57,
+      "completion_tokens": 14,
+      "prompt_tokens_details": null,
+      "completion_tokens_details": null
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "prompt_text": null,
+    "kv_transfer_params": null,
+    "ec_transfer_params": null,
+    "metrics": null
+  }
+}

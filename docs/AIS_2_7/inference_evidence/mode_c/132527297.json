@@ -1,0 +1,29 @@
+{
+  "input_mode_b_verdict": "TRUE_POSITIVE",
+  "validated_verdict": "REQUIRES_ATTENTION",
+  "is_decisive_accepted": false,
+  "validation_status": "REJECTED",
+  "validation_reason_codes": [
+    "UNSUPPORTED_PREDICATE",
+    "UNSUPPORTED_CLAIM"
+  ],
+  "action_directive": "Model fabricated or asserted semantically unsupported evidence claims. Human Tier 2 investigation required.",
+  "grounding_ratio": 0.667,
+  "has_hallucinations": true,
+  "grounded_claims_count": 2,
+  "unsupported_claims_count": 1,
+  "unsupported_claim_details": [
+    {
+      "claim_type": "OBSERVED_FACT",
+      "field": "process.name",
+      "asserted_value": "UltraViewer_Service.exe",
+      "grounding_status": "UNSUPPORTED_PREDICATE",
+      "reason": "Claim asserts signature status ('Binary not signed.'), but cited evidence 'process.name' only provides a file/process identifier, not authentic signature telemetry."
+    }
+  ],
+  "detected_contradictions": [],
+  "trust_score": 6,
+  "raw_trust_score": 84.0,
+  "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
+  "escalation_reason": "Verdict Trust Score (6/10, raw 84.0/100) is below the automated decision threshold (7/10). Analyst attention required."
+}

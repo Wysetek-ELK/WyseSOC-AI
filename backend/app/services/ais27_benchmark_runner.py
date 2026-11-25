@@ -481,11 +481,16 @@ class AIS27BenchmarkRunner:
         timeout_seconds: float = 120.0,
         temperature: float = 0.1,
         transport_override: Optional[Any] = None,
+        mode: str = "ALL",
     ) -> Dict[str, Any]:
         """
         Executes Mode A (Neutral), Mode B (Approved Policy), and Mode C (Deterministic Validator)
         for one frozen cohort incident without accessing or mutating ground truth or operational verdicts.
+        Supports `mode` in {"ALL", "A", "B"} so callers can dispatch 1 GPU call per HTTP request.
         """
+        run_mode = str(mode or "ALL").upper().strip()
+        if run_mode not in ("ALL", "A", "B"):
+            raise ValueError(f"Unsupported mode '{mode}'. Expected ALL, A, or B.")
         cohort = (
             await db.execute(select(BenchmarkCohort).where(BenchmarkCohort.cohort_key == cohort_key))
         ).scalar_one_or_none()
@@ -647,39 +652,45 @@ class AIS27BenchmarkRunner:
                 api_key=settings.LOCAL_LLM_API_KEY,
             )
 
-        # 3. Execute Mode A & Mode B live inference
-        raw_a = await _call(sys_a)
-        parsed_a = (
-            cls._parse_raw_vllm_reply(
-                raw_reply=raw_a["raw_response_text"],
-                finish_reason=raw_a.get("finish_reason"),
-                incident_id=item.fortisiem_incident_id,
-                rule_spec=rule_spec,
-                prompt_tokens=raw_a.get("prompt_tokens", 0),
-                completion_tokens=raw_a.get("completion_tokens", 0),
-                requested_max_tokens=max_completion_tokens,
+        # 3. Execute Mode A & Mode B live inference (selective per `run_mode`)
+        raw_a: Optional[Dict[str, Any]] = None
+        parsed_a: Optional[Dict[str, Any]] = None
+        if run_mode in ("ALL", "A"):
+            raw_a = await _call(sys_a)
+            parsed_a = (
+                cls._parse_raw_vllm_reply(
+                    raw_reply=raw_a["raw_response_text"],
+                    finish_reason=raw_a.get("finish_reason"),
+                    incident_id=item.fortisiem_incident_id,
+                    rule_spec=rule_spec,
+                    prompt_tokens=raw_a.get("prompt_tokens", 0),
+                    completion_tokens=raw_a.get("completion_tokens", 0),
+                    requested_max_tokens=max_completion_tokens,
+                )
+                if raw_a.get("ok")
+                else {"parse_success": False, "validation_status": raw_a.get("error_type", "PROVIDER_FAILURE"), "parsed_verdict": None}
             )
-            if raw_a.get("ok")
-            else {"parse_success": False, "validation_status": raw_a.get("error_type", "PROVIDER_FAILURE"), "parsed_verdict": None}
-        )
 
-        raw_b = await _call(sys_b)
-        parsed_b = (
-            cls._parse_raw_vllm_reply(
-                raw_reply=raw_b["raw_response_text"],
-                finish_reason=raw_b.get("finish_reason"),
-                incident_id=item.fortisiem_incident_id,
-                rule_spec=rule_spec,
-                prompt_tokens=raw_b.get("prompt_tokens", 0),
-                completion_tokens=raw_b.get("completion_tokens", 0),
-                requested_max_tokens=max_completion_tokens,
+        raw_b: Optional[Dict[str, Any]] = None
+        parsed_b: Optional[Dict[str, Any]] = None
+        if run_mode in ("ALL", "B"):
+            raw_b = await _call(sys_b)
+            parsed_b = (
+                cls._parse_raw_vllm_reply(
+                    raw_reply=raw_b["raw_response_text"],
+                    finish_reason=raw_b.get("finish_reason"),
+                    incident_id=item.fortisiem_incident_id,
+                    rule_spec=rule_spec,
+                    prompt_tokens=raw_b.get("prompt_tokens", 0),
+                    completion_tokens=raw_b.get("completion_tokens", 0),
+                    requested_max_tokens=max_completion_tokens,
+                )
+                if raw_b.get("ok")
+                else {"parse_success": False, "validation_status": raw_b.get("error_type", "PROVIDER_FAILURE"), "parsed_verdict": None}
             )
-            if raw_b.get("ok")
-            else {"parse_success": False, "validation_status": raw_b.get("error_type", "PROVIDER_FAILURE"), "parsed_verdict": None}
-        )
 
         # 4. Execute Mode C deterministic validator on parsed Mode B (0 GPU calls)
-        if raw_b.get("ok") and parsed_b.get("parsed_verdict"):
+        if run_mode in ("ALL", "B") and raw_b and raw_b.get("ok") and parsed_b and parsed_b.get("parsed_verdict"):
             model_out_b = {
                 "verdict": parsed_b["parsed_verdict"],
                 "confidence": parsed_b.get("confidence", 0.0),
@@ -735,12 +746,12 @@ class AIS27BenchmarkRunner:
                 "effective_trust_verdict": trust_res_c.effective_verdict.value,
                 "escalation_reason": trust_res_c.escalation_reason,
             }
-        else:
+        elif run_mode in ("ALL", "B"):
             mode_c = {
-                "input_mode_b_verdict": parsed_b.get("parsed_verdict"),
+                "input_mode_b_verdict": (parsed_b or {}).get("parsed_verdict"),
                 "validated_verdict": "REQUIRES_ATTENTION",
                 "is_decisive_accepted": False,
-                "validation_status": parsed_b.get("validation_status", "MODE_B_FAILED"),
+                "validation_status": (parsed_b or {}).get("validation_status", "MODE_B_FAILED"),
                 "validation_reason_codes": ["MODEL_OUTPUT_INVALID"],
                 "action_directive": "Mode B did not produce a valid parseable verdict.",
                 "grounding_ratio": 0.0,
@@ -754,6 +765,8 @@ class AIS27BenchmarkRunner:
                 "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
                 "escalation_reason": "Mode B invalid or failed response.",
             }
+        else:
+            mode_c = None
 
         return {
             "cohort_key": cohort.cohort_key,
@@ -785,13 +798,7 @@ class AIS27BenchmarkRunner:
                 "mode_a_system_sha256": _sha256_text(sys_a),
                 "mode_b_system_sha256": _sha256_text(sys_b),
             },
-            "mode_a": {
-                "raw": raw_a,
-                "parsed": parsed_a,
-            },
-            "mode_b": {
-                "raw": raw_b,
-                "parsed": parsed_b,
-            },
+            "mode_a": {"raw": raw_a, "parsed": parsed_a} if raw_a is not None else None,
+            "mode_b": {"raw": raw_b, "parsed": parsed_b} if raw_b is not None else None,
             "mode_c": mode_c,
         }

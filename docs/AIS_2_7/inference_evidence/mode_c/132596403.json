@@ -1,0 +1,29 @@
+{
+  "input_mode_b_verdict": "FALSE_POSITIVE",
+  "validated_verdict": "REQUIRES_ATTENTION",
+  "is_decisive_accepted": false,
+  "validation_status": "REJECTED",
+  "validation_reason_codes": [
+    "EVIDENCE_VALUE_MISMATCH",
+    "UNSUPPORTED_CLAIM"
+  ],
+  "action_directive": "Model fabricated or asserted semantically unsupported evidence claims. Human Tier 2 investigation required.",
+  "grounding_ratio": 0.667,
+  "has_hallucinations": true,
+  "grounded_claims_count": 2,
+  "unsupported_claims_count": 1,
+  "unsupported_claim_details": [
+    {
+      "claim_type": "OBSERVED_FACT",
+      "field": "process.file_name",
+      "asserted_value": "review.es.system.js",
+      "grounding_status": "EVIDENCE_VALUE_MISMATCH",
+      "reason": "Evidence ID 'EV-132596403-8067495058999992391-file_name' records 'file.name' ('review.es.system.js'), not 'process.file_name' ('review.es.system.js')."
+    }
+  ],
+  "detected_contradictions": [],
+  "trust_score": 3,
+  "raw_trust_score": 84.0,
+  "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
+  "escalation_reason": "Missing mandatory telemetry fields: process.file_name. Evidence is insufficient to support an automated verdict."
+}

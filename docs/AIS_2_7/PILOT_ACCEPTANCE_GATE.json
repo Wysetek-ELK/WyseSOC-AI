@@ -1,0 +1,11 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:44:47.871322+00:00",
+  "decision": "PILOT_TECHNICALLY_VALID_CONTINUE_BASELINE",
+  "gpu_calls_executed": 11,
+  "smoke_test_ok": true,
+  "pilot_mode_a_ok": 5,
+  "pilot_mode_b_ok": 5,
+  "pilot_mode_c_ok": 5,
+  "all_tokens_within_8192": true
+}

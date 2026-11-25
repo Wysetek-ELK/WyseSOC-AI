@@ -1,0 +1,38 @@
+{
+  "input_mode_b_verdict": "REQUIRES_ATTENTION",
+  "validated_verdict": "REQUIRES_ATTENTION",
+  "is_decisive_accepted": false,
+  "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+  "validation_reason_codes": [
+    "EVIDENCE_CONTRADICTION",
+    "REASONING_CONTRADICTION"
+  ],
+  "action_directive": "Model abstained, but reasoning exhibited evidence or logical contradictions; safely escalated to analyst.",
+  "grounding_ratio": 0.0,
+  "has_hallucinations": true,
+  "grounded_claims_count": 0,
+  "unsupported_claims_count": 2,
+  "unsupported_claim_details": [
+    {
+      "claim_type": "OBSERVED_FACT",
+      "field": "process.command_line",
+      "asserted_value": "Process command line is missing.",
+      "grounding_status": "EVIDENCE_VALUE_MISMATCH",
+      "reason": "Value mismatch for 'process.command_line': claimed 'Process command line is missing.', actual is '\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"'."
+    },
+    {
+      "claim_type": "OBSERVED_FACT",
+      "field": "file.digital_signature",
+      "asserted_value": "Binary digital signature is missing.",
+      "grounding_status": "CLAIM_NOT_VERIFIABLE",
+      "reason": "Fabricated claim: Value 'Binary digital signature is missing.' for field 'file.digital_signature' was never observed in incident telemetry."
+    }
+  ],
+  "detected_contradictions": [
+    "Contradiction: Model rationale asserts 'process.command_line' is missing, but canonical incident telemetry confirms it is PRESENT_VALID (value='\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"')."
+  ],
+  "trust_score": 5,
+  "raw_trust_score": 56.5,
+  "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
+  "escalation_reason": "Verdict Trust Score (5/10, raw 56.5/100) is below the automated decision threshold (7/10). Analyst attention required."
+}

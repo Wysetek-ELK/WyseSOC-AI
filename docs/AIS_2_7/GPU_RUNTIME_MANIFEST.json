@@ -1,0 +1,44 @@
+{
+  "verified_at_utc": "2026-11-25T05:38:29.231560",
+  "endpoint": "http://13.204.214.64:8000/v1",
+  "configured_model_name": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "configured_context_budget": 16384,
+  "configured_max_tokens": 512,
+  "models_http_status": 200,
+  "models_payload": {
+    "object": "list",
+    "data": [
+      {
+        "id": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+        "object": "model",
+        "created": 1795585108,
+        "owned_by": "vllm",
+        "root": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+        "parent": null,
+        "max_model_len": 8192,
+        "permission": [
+          {
+            "id": "modelperm-840673fe1ef64205",
+            "object": "model_permission",
+            "created": 1795585108,
+            "allow_create_engine": false,
+            "allow_sampling": true,
+            "allow_logprobs": true,
+            "allow_search_indices": false,
+            "allow_view": true,
+            "allow_fine_tuning": false,
+            "organization": "*",
+            "group": null,
+            "is_blocking": false
+          }
+        ]
+      }
+    ]
+  },
+  "health_http_status": 200,
+  "version_payload": {
+    "version": "0.33.0"
+  },
+  "probe_latency_ms": 32.21,
+  "errors": []
+}
