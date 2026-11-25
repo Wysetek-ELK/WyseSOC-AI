@@ -1,0 +1,15 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "features": {
+    "blind_review_guard": "IMPLEMENTED_AND_VERIFIED",
+    "handover_note_leakage_remediation": "IMPLEMENTED_AND_VERIFIED",
+    "operational_db_wide_kpi_counts": "IMPLEMENTED_AND_VERIFIED",
+    "incident_verdict_matrix_blind_masking": "IMPLEMENTED_AND_VERIFIED",
+    "alembic_016_cohort_and_revision_schema": "IMPLEMENTED_AND_DEPLOYED",
+    "ground_truth_certification_api_and_state_machine": "IMPLEMENTED_AND_VERIFIED",
+    "ground_truth_certification_ui_tab_and_drawer": "IMPLEMENTED_AND_BUILT",
+    "learning_and_rag_cohort_isolation": "IMPLEMENTED_AND_VERIFIED",
+    "benchmark_harness_certified_gt_loader": "IMPLEMENTED_AND_VERIFIED"
+  }
+}

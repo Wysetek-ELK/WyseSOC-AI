@@ -1,0 +1,15 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "cohort_key": "AIS_2_6E_FROZEN_20",
+  "learning_records_count_for_cohort": 0,
+  "rag_precedents_returned_for_cohort": 0,
+  "protected_services": [
+    "ReviewOrchestrator.submit_verdict (investigation_service.py)",
+    "AnalystReviewService.submit_analyst_review & adjudicate_review (analyst_review_service.py)",
+    "VerifiedSemanticRetrievalService.retrieve_verified_precedents (verified_semantic_retrieval_service.py)",
+    "AgentMemoryEngine.find_similar_cases & seed_verified_cases_from_historical_incidents (learning_service.py)",
+    "GroundTruthCertificationService (never touches LearningRecord)"
+  ],
+  "status": "PASS_ZERO_CONTAMINATION"
+}

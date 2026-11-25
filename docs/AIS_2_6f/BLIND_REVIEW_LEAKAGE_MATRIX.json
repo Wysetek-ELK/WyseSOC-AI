@@ -1,0 +1,44 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "fixed_channels": [
+    {
+      "channel": "Investigation.analyst_notes handover injection",
+      "file": "backend/app/services/ai_verdict_service.py",
+      "status": "FIXED",
+      "fix": "Removed _upsert_ai_verdict_note calls in evaluate_incident; strip_ai_notes_from_handover scrubs legacy blocks on read."
+    },
+    {
+      "channel": "Operational queue & detail Admin blind bypass",
+      "file": "backend/app/services/investigation_service.py",
+      "status": "FIXED",
+      "fix": "Added blind_review query support and can_reveal_protected_verdict_info guarding queue & build_ai_assurance."
+    },
+    {
+      "channel": "Telemetry timeline, AIS history, and Prompt inspector Admin bypass",
+      "files": [
+        "backend/app/services/telemetry_timeline_service.py",
+        "backend/app/services/ais_evaluation_service.py",
+        "backend/app/api/prompts.py"
+      ],
+      "status": "FIXED",
+      "fix": "All routes accept ?blind_review=true and honor can_reveal_protected_verdict_info across all roles."
+    },
+    {
+      "channel": "Frontend form prefill, stale React state, and IncidentVerdictMatrix",
+      "files": [
+        "frontend/src/app/human-review-queue/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/components/compact/IncidentVerdictMatrix.tsx"
+      ],
+      "status": "FIXED",
+      "fix": "Removed AI verdict prefill & row display in Blind Mode; cleared aiVerdict state on toggle; masked Matrix Dimensions 1-3."
+    },
+    {
+      "channel": "Benchmark Ground Truth Certification endpoints",
+      "file": "backend/app/services/ground_truth_certification_service.py",
+      "status": "ENFORCED",
+      "fix": "Mandatory server-side blindness; AI/historical fields omitted from response schemas until GT3_CERTIFIED."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "preflight_status": "READY_FOR_AUTHORIZED_GPU_BENCHMARK",
+  "operator_authorization_recorded": {
+    "authorized": true,
+    "authorized_workload": "41 baseline GPU calls (+ up to 5 transport retries)",
+    "execution_pathway": "Isolated AIS 2.7 endpoints deployed to Server 1 via UPLA Gate 1/2",
+    "shutdown_policy": "Leave Server 2 running and notify operator immediately at closeout for manual shutdown"
+  },
+  "server1_status": "HEALTHY (PostgreSQL + Redis + Alembic 016 + git SHA dfe4e6e59aefddd29347f3103c5c59832e386e9f)",
+  "server2_discovered_state": "ALREADY_ONLINE at http://13.204.214.64:8000/v1 (Qwen/Qwen2.5-7B-Instruct-AWQ, max_model_len=8192, latency=12.4ms from Server 1; NOT directly reachable from local workstation)",
+  "gt2_reviews_verified": 20,
+  "gt3_reviews_verified": 0,
+  "exploratory_benchmark_authorized_by_spec": true,
+  "blockers_to_execution": [
+    "Explicit operator authorization required at Checkpoint A before dispatching any GPU generation requests (41 planned calls).",
+    "Execution pathway note: Server 2 (13.204.214.64:8000) is only reachable from Server 1 (172.26.41.240), and UPLA Gate 2 blocks direct SSH while Server 1 currently lacks an HTTP endpoint exposing EmpiricalBenchmarkHarness 3-mode execution with Server 1 PostgreSQL policies (b6d9df2f v3 / ed7ff3c7 v1). Operator authorization is requested to deploy/run the isolated 3-mode benchmark runner on Server 1 and execute the 41-call workload."
+  ]
+}

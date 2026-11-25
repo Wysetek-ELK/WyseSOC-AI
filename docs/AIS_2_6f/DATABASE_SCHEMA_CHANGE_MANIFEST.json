@@ -1,0 +1,30 @@
+{
+  "phase": "AIS 2.6f",
+  "alembic_revision": "016_ground_truth_certification_and_cohort_isolation",
+  "revises": "015_immutable_approval_history_protection",
+  "new_tables": [
+    "benchmark_cohorts",
+    "benchmark_cohort_items",
+    "benchmark_review_revisions"
+  ],
+  "extended_table": "analyst_verdict_reviews",
+  "added_columns_on_analyst_verdict_reviews": [
+    "benchmark_cohort_id",
+    "certification_round",
+    "review_mode",
+    "detection_correctness",
+    "authorization_context",
+    "confidence_level",
+    "evidence_sufficiency_status",
+    "evidence_snapshot_hash",
+    "rule_snapshot_hash",
+    "additional_evidence_json",
+    "attestation_flags",
+    "is_locked",
+    "is_draft",
+    "exposure_risk_flag",
+    "excluded_from_learning"
+  ],
+  "destructive_changes": false,
+  "postgres_migration_status": "APPLIED_CLEANLY"
+}

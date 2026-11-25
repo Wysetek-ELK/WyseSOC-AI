@@ -1,0 +1,19 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "critical_dependencies": [
+    {
+      "fortisiem_incident_id": "132501348",
+      "observed_entity": "MEGAsync.exe",
+      "human_gt2_verdict": "FALSE_POSITIVE",
+      "human_only_evidence": [
+        "External executable hash reputation verification ('executable hash was checked and found to be clean, with no known malicious reputation')",
+        "Verified legitimate MEGA application behavior determination outside static CrowdStrike alert telemetry"
+      ],
+      "llm_has_sha256_in_logs": true,
+      "llm_has_reputation_verdict": false,
+      "impact": "Raw CrowdStrike event describes MEGAsync.exe attempting to modify Falcon sensor COM object (MITRE T1562.001, Severity High/70, Registry Operation Blocked). Without external hash reputation or customer authorization context, an unbiased LLM cannot independently establish FP."
+    }
+  ],
+  "note": "132501348 (MEGAsync.exe, sole binary FP) relied on external hash reputation verification unavailable to the LLM."
+}

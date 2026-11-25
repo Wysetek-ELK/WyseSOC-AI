@@ -1,0 +1,7 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "context_window_expected": 8192,
+  "preflight_abstention_tests": "PASS (covered by test_ais_2_6d_empirical_integrity.py and test_ais_2_6c_three_mode_and_bias_isolation.py)",
+  "live_gpu_tokens_spent_in_2_6f": 0
+}

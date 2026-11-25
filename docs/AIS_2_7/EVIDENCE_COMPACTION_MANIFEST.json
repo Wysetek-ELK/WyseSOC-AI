@@ -1,0 +1,208 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "incidents_with_compaction": 20,
+  "mode_a_mode_b_payload_parity": "IDENTICAL across all 20 incidents",
+  "items": [
+    {
+      "incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "events_original": 13,
+      "events_retained": 1,
+      "canonical_records_original": 93,
+      "canonical_records_retained": 56,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "events_original": 1,
+      "events_retained": 1,
+      "canonical_records_original": 36,
+      "canonical_records_retained": 25,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "events_original": 2,
+      "events_retained": 1,
+      "canonical_records_original": 41,
+      "canonical_records_retained": 28,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "events_original": 25,
+      "events_retained": 1,
+      "canonical_records_original": 140,
+      "canonical_records_retained": 56,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "events_original": 3,
+      "events_retained": 1,
+      "canonical_records_original": 41,
+      "canonical_records_retained": 26,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "events_original": 8,
+      "events_retained": 1,
+      "canonical_records_original": 72,
+      "canonical_records_retained": 45,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "events_original": 16,
+      "events_retained": 1,
+      "canonical_records_original": 104,
+      "canonical_records_retained": 61,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "events_original": 34,
+      "events_retained": 1,
+      "canonical_records_original": 174,
+      "canonical_records_retained": 66,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "events_original": 19,
+      "events_retained": 1,
+      "canonical_records_original": 117,
+      "canonical_records_retained": 68,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "events_original": 30,
+      "events_retained": 1,
+      "canonical_records_original": 157,
+      "canonical_records_retained": 62,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132501348",
+      "vendor": "CrowdStrike",
+      "events_original": 2,
+      "events_retained": 1,
+      "canonical_records_original": 48,
+      "canonical_records_retained": 33,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "events_original": 24,
+      "events_retained": 1,
+      "canonical_records_original": 133,
+      "canonical_records_retained": 74,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "events_original": 2,
+      "events_retained": 1,
+      "canonical_records_original": 49,
+      "canonical_records_retained": 34,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "events_original": 1,
+      "events_retained": 1,
+      "canonical_records_original": 36,
+      "canonical_records_retained": 25,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "events_original": 1,
+      "events_retained": 1,
+      "canonical_records_original": 36,
+      "canonical_records_retained": 25,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "events_original": 1,
+      "events_retained": 1,
+      "canonical_records_original": 36,
+      "canonical_records_retained": 25,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "events_original": 1,
+      "events_retained": 1,
+      "canonical_records_original": 36,
+      "canonical_records_retained": 25,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "events_original": 1,
+      "events_retained": 1,
+      "canonical_records_original": 36,
+      "canonical_records_retained": 25,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "events_original": 11,
+      "events_retained": 1,
+      "canonical_records_original": 83,
+      "canonical_records_retained": 52,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    },
+    {
+      "incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "events_original": 2,
+      "events_retained": 1,
+      "canonical_records_original": 41,
+      "canonical_records_retained": 28,
+      "compaction_applied": true,
+      "mode_a_vs_mode_b_factual_payload_identical": true
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "discrepancies": [
+    {
+      "id": "DISC-26F-01",
+      "topic": "Frozen Cohort Incident IDs",
+      "historical_claim": "AIS 2.6e narrative docs (11_, 13_, 22_, NEXT_OPERATOR_ACTIONS.json, REMAINING_BLOCKERS.json) cited placeholder/synthetic ranges 10476-10485 and 10496-10505.",
+      "reconciled_truth": "Authoritative 20 frozen IDs present in fixtures/Incident json.zip and database are the 132xxxxxx FortiSIEM IDs (10 CrowdStrike + 10 Prisma SASE).",
+      "resolution": "FROZEN_AIS_2_6E_ITEMS anchored cleanly to the 20 verified 132xxxxxx IDs."
+    },
+    {
+      "id": "DISC-26F-02",
+      "topic": "Prisma SASE & Harness Policy Fallback IDs",
+      "historical_claim": "AIS 2.6e WIRE_PROMPT_MANIFEST.json used 08c59656... across all 20 items and empirical_benchmark_harness.py used legacy fallback UUIDs b6d9df2f... v3 and ed7ff3c7... v1.",
+      "reconciled_truth": "PH_RULE_CS_SUSPICIOUS_ACTIVITY -> Rule 271b0831-f6f5-4d86-9e0b-d53aee948cf0 / RulePrompt 08c59656-c002-4a76-b100-3c8d6d645eb2 / Approved v1 bd751fac-9bfb-4994-b150-8850bb94dd6c; PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE -> Rule b2f1f1e4-117b-4b0e-87ca-65869898630b / RulePrompt 1fe4e834-bd52-4571-95ca-ee329e40e1b2 / Approved v1 8ae7beaa-626a-4061-a0c4-8500f7e6a69d.",
+      "resolution": "Updated blind_review_guard.py and EmpiricalBenchmarkHarness._lookup_approved_prompt_version."
+    },
+    {
+      "id": "DISC-26F-03",
+      "topic": "AIS 2.6e Gate Count Prose vs JSON",
+      "historical_claim": "21_FINAL_ACCEPTANCE_GATE_EVALUATION.md reported 28 Gates passed while ACCEPTANCE_GATE_MATRIX.json recorded passed_gates=29.",
+      "reconciled_truth": "Cataloged explicitly; AIS 2.6f counts derive directly from structured ACCEPTANCE_GATE_MATRIX.json.",
+      "resolution": "Documented in 01_HISTORICAL_EVIDENCE_AND_ID_RECONCILIATION.md."
+    }
+  ]
+}

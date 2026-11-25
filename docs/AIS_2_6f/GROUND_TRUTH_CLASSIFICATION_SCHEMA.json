@@ -1,0 +1,34 @@
+{
+  "phase": "AIS 2.6f",
+  "verdict_values": [
+    "TRUE_POSITIVE",
+    "FALSE_POSITIVE",
+    "INCONCLUSIVE"
+  ],
+  "detection_correctness_values": [
+    "MATCHED",
+    "NOT_MATCHED",
+    "UNKNOWN"
+  ],
+  "authorization_context_values": [
+    "AUTHORIZED",
+    "UNAUTHORIZED",
+    "UNKNOWN",
+    "NOT_APPLICABLE"
+  ],
+  "confidence_levels": [
+    "LOW",
+    "MEDIUM",
+    "HIGH"
+  ],
+  "evidence_sufficiency_values": [
+    "SUFFICIENT",
+    "PARTIAL",
+    "INSUFFICIENT"
+  ],
+  "mandatory_attestations": [
+    "evidence_reviewed",
+    "no_ai_or_historical_influence",
+    "independent_judgment"
+  ]
+}

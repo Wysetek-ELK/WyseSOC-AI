@@ -1,0 +1,14 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "cohort_key": "AIS_2_6E_FROZEN_20",
+  "expected_count": 20,
+  "verified_count": 20,
+  "crowdstrike_count": 10,
+  "prisma_sase_count": 10,
+  "operational_distractor_excluded": [
+    "13031",
+    "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST"
+  ],
+  "status": "PASS"
+}

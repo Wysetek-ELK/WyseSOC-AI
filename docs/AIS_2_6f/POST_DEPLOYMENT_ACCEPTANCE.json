@@ -1,0 +1,35 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "evaluations": {
+    "server1_backend_health": {
+      "url": "http://172.26.41.240/api/health",
+      "status": "PASS",
+      "database_type": "postgresql",
+      "latency_ms": 2.56
+    },
+    "server1_frontend_route_human_review_queue": {
+      "url": "http://172.26.41.240/human-review-queue",
+      "http_status": 200,
+      "status": "PASS"
+    },
+    "server1_frontend_route_login": {
+      "url": "http://172.26.41.240/login",
+      "http_status": 200,
+      "status": "PASS"
+    },
+    "server1_ground_truth_api_mount": {
+      "url": "http://172.26.41.240/api/ground-truth/cohorts",
+      "http_status": 401,
+      "status": "PASS"
+    },
+    "interactive_browser_screenshots": {
+      "status": "NOT_VERIFIED",
+      "reason": "Chrome DevTools remote debugging disabled on operator workstation"
+    },
+    "server2_gpu_inference": {
+      "status": "STOPPED_COMPLIANT",
+      "calls_made": 0
+    }
+  }
+}

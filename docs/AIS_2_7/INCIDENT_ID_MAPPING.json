@@ -1,0 +1,207 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "reconciliation_note": "Server 1 PostgreSQL UUIDs and event_type strings reconciled against AIS 2.6e/2.6f local SQLite manifests.",
+  "mappings": [
+    {
+      "fortisiem_incident_id": "132474210",
+      "server1_postgres_uuid": "02b2f0a4-534b-4a9c-86b1-ded35526476f",
+      "cohort_item_id": "23714d28-d287-4e9b-8bd9-f471d8f40cfb",
+      "local_sqlite_uuid_ais_2_6e": "4a575b5f-965c-4026-8d6b-321eee34a5f9",
+      "server1_rule_uuid": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "local_sqlite_rule_uuid_ais_2_6f": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "server1_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "server1_approved_policy_version_id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49"
+    },
+    {
+      "fortisiem_incident_id": "132596403",
+      "server1_postgres_uuid": "89c25173-1ff7-4d8a-9789-383b10ffb97e",
+      "cohort_item_id": "a4326ba7-917e-438d-a117-0840e46aeaed",
+      "local_sqlite_uuid_ais_2_6e": "2387afb1-8f85-41a9-a867-15035f468ae2",
+      "server1_rule_uuid": "14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "local_sqlite_rule_uuid_ais_2_6f": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "server1_event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "server1_approved_policy_version_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece"
+    },
+    {
+      "fortisiem_incident_id": "132599145",
+      "server1_postgres_uuid": "e64f9290-9424-4663-88a3-83d3bfa7fe88",
+      "cohort_item_id": "b562cd54-6308-4e8d-9fce-81d041a65408",
+      "local_sqlite_uuid_ais_2_6e": "4cf8a5a6-1fc4-4825-9bab-187767ddfdd3",
+      "server1_rule_uuid": "14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "local_sqlite_rule_uuid_ais_2_6f": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "server1_event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "server1_approved_policy_version_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece"
+    },
+    {
+      "fortisiem_incident_id": "132438483",
+      "server1_postgres_uuid": "f382827c-1068-409d-9e4d-6baf4e2e3b86",
+      "cohort_item_id": "3578a2e9-eabd-4a13-b35f-49e8d47b7d81",
+      "local_sqlite_uuid_ais_2_6e": "0ca59fc8-6970-488e-ade9-27d287c25ec7",
+      "server1_rule_uuid": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "local_sqlite_rule_uuid_ais_2_6f": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "server1_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "server1_approved_policy_version_id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49"
+    },
+    {
+      "fortisiem_incident_id": "132591888",
+      "server1_postgres_uuid": "2a548ab0-cbab-4a7c-882f-8aa260313ea9",
+      "cohort_item_id": "7bce5d71-0f8d-4918-a1a6-0ffcc386cc2b",
+      "local_sqlite_uuid_ais_2_6e": "db2d18a1-c873-41a8-92f7-185a3e2a825f",
+      "server1_rule_uuid": "14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "local_sqlite_rule_uuid_ais_2_6f": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "server1_event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "server1_approved_policy_version_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece"
+    },
+    {
+      "fortisiem_incident_id": "132439932",
+      "server1_postgres_uuid": "f0b5381a-76da-4c53-8f6a-930a18503fbc",
+      "cohort_item_id": "49d0cb5b-3de3-4cfb-8584-a06e937008b0",
+      "local_sqlite_uuid_ais_2_6e": "5019c46c-eb3d-411a-9bcd-7652f6966023",
+      "server1_rule_uuid": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "local_sqlite_rule_uuid_ais_2_6f": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "server1_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "server1_approved_policy_version_id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49"
+    },
+    {
+      "fortisiem_incident_id": "132441815",
+      "server1_postgres_uuid": "0bff33b0-9636-4f6f-9220-f7802ab91410",
+      "cohort_item_id": "b267d730-61c8-46f0-ab92-bfe86490daf1",
+      "local_sqlite_uuid_ais_2_6e": "bc91751c-4536-41f5-beab-5aaf913eff8e",
+      "server1_rule_uuid": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "local_sqlite_rule_uuid_ais_2_6f": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "server1_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "server1_approved_policy_version_id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49"
+    },
+    {
+      "fortisiem_incident_id": "132461358",
+      "server1_postgres_uuid": "34a5f14c-2274-4a85-8ae2-7c635e132b66",
+      "cohort_item_id": "46c5d53c-3d4c-45a4-a833-df4ee7d8d093",
+      "local_sqlite_uuid_ais_2_6e": "497adb1a-cd5c-4288-af94-76b061e0c269",
+      "server1_rule_uuid": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "local_sqlite_rule_uuid_ais_2_6f": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "server1_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "server1_approved_policy_version_id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49"
+    },
+    {
+      "fortisiem_incident_id": "132461368",
+      "server1_postgres_uuid": "497b7f02-0363-47e3-8d27-9784cea25de4",
+      "cohort_item_id": "8ca49e64-1339-4ac4-8ed4-94e18829579c",
+      "local_sqlite_uuid_ais_2_6e": "e05a5d8e-f34c-424b-b338-923546d7e6f1",
+      "server1_rule_uuid": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "local_sqlite_rule_uuid_ais_2_6f": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "server1_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "server1_approved_policy_version_id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49"
+    },
+    {
+      "fortisiem_incident_id": "132472498",
+      "server1_postgres_uuid": "17da6dcc-710f-4e6b-86b4-e81ce5847d55",
+      "cohort_item_id": "112fc867-5b86-47b7-b541-6ef37649f7de",
+      "local_sqlite_uuid_ais_2_6e": "2d667197-6733-4c14-bf9b-9921737f078a",
+      "server1_rule_uuid": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "local_sqlite_rule_uuid_ais_2_6f": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "server1_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "server1_approved_policy_version_id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49"
+    },
+    {
+      "fortisiem_incident_id": "132501348",
+      "server1_postgres_uuid": "222e4af2-9b65-4477-a1ee-aa2e03a0b8ee",
+      "cohort_item_id": "39e8e52b-f431-44b5-8498-54663ebe9df6",
+      "local_sqlite_uuid_ais_2_6e": "e9b0ab37-4ce5-4056-864c-3237352e604d",
+      "server1_rule_uuid": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "local_sqlite_rule_uuid_ais_2_6f": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "server1_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "server1_approved_policy_version_id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49"
+    },
+    {
+      "fortisiem_incident_id": "132502453",
+      "server1_postgres_uuid": "ecf95afb-1057-4e3f-9d68-deadddd18c00",
+      "cohort_item_id": "69223b0c-3e3f-45c5-b875-b33d168ed2c2",
+      "local_sqlite_uuid_ais_2_6e": "2ed5d3e8-575a-4734-9bf7-23f87010a9ce",
+      "server1_rule_uuid": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "local_sqlite_rule_uuid_ais_2_6f": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "server1_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "server1_approved_policy_version_id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49"
+    },
+    {
+      "fortisiem_incident_id": "132527297",
+      "server1_postgres_uuid": "028c79e6-7397-4c49-a0ed-15b9997fdd7a",
+      "cohort_item_id": "4be31a38-bb2e-448a-833f-e4d77ea43fb2",
+      "local_sqlite_uuid_ais_2_6e": "9ccef344-d210-42bb-8455-17ba058a135e",
+      "server1_rule_uuid": "0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "local_sqlite_rule_uuid_ais_2_6f": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "server1_event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "server1_approved_policy_version_id": "b6d9df2f-aad8-4208-89de-3e94e64e1b49"
+    },
+    {
+      "fortisiem_incident_id": "132499009",
+      "server1_postgres_uuid": "2b1daa02-060a-4edb-b7f6-0ab88260244d",
+      "cohort_item_id": "27651582-b454-4715-8bed-a2b84f7f45ad",
+      "local_sqlite_uuid_ais_2_6e": "8cb05b4a-0429-4f31-a20b-bc866e80a0db",
+      "server1_rule_uuid": "14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "local_sqlite_rule_uuid_ais_2_6f": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "server1_event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "server1_approved_policy_version_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece"
+    },
+    {
+      "fortisiem_incident_id": "132499023",
+      "server1_postgres_uuid": "60b66665-d306-4819-8325-8593d0d9770e",
+      "cohort_item_id": "2dd7258c-4388-431f-b523-73fd806cd869",
+      "local_sqlite_uuid_ais_2_6e": "92d70e13-e9bb-4be0-aeb7-f031a8f7ab3b",
+      "server1_rule_uuid": "14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "local_sqlite_rule_uuid_ais_2_6f": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "server1_event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "server1_approved_policy_version_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece"
+    },
+    {
+      "fortisiem_incident_id": "132499745",
+      "server1_postgres_uuid": "a85f599d-daf2-4811-a913-3037e2f3aa44",
+      "cohort_item_id": "66188ed4-62c1-4010-baba-238a720022ba",
+      "local_sqlite_uuid_ais_2_6e": "d5560b05-ba76-4f60-87fb-980393bc838e",
+      "server1_rule_uuid": "14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "local_sqlite_rule_uuid_ais_2_6f": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "server1_event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "server1_approved_policy_version_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece"
+    },
+    {
+      "fortisiem_incident_id": "132578774",
+      "server1_postgres_uuid": "ab98cb75-40c9-4bda-b14f-4457e8f6e774",
+      "cohort_item_id": "cfe9c2f4-84da-46b5-ac35-b69bfb4f7cdc",
+      "local_sqlite_uuid_ais_2_6e": "9c8ba231-c228-4fb6-9b18-55aa455b0caf",
+      "server1_rule_uuid": "14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "local_sqlite_rule_uuid_ais_2_6f": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "server1_event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "server1_approved_policy_version_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece"
+    },
+    {
+      "fortisiem_incident_id": "132595592",
+      "server1_postgres_uuid": "d28f721f-b865-4f1e-8259-4e18db63a5e4",
+      "cohort_item_id": "e926e3a5-9e6d-4994-bae6-1be74d7e827f",
+      "local_sqlite_uuid_ais_2_6e": "306d5c0d-f17a-4123-a101-d2b6ea5b1a64",
+      "server1_rule_uuid": "14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "local_sqlite_rule_uuid_ais_2_6f": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "server1_event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "server1_approved_policy_version_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece"
+    },
+    {
+      "fortisiem_incident_id": "132599146",
+      "server1_postgres_uuid": "6d3b3a2e-3440-4d22-97c6-cbdbdef800ef",
+      "cohort_item_id": "ac76149d-2757-45dd-a727-a3616132d926",
+      "local_sqlite_uuid_ais_2_6e": "d38aabd2-ffdb-4f47-ba96-08ad40947d52",
+      "server1_rule_uuid": "14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "local_sqlite_rule_uuid_ais_2_6f": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "server1_event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "server1_approved_policy_version_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece"
+    },
+    {
+      "fortisiem_incident_id": "132599330",
+      "server1_postgres_uuid": "cd537a11-bdca-471e-8689-b510406ee744",
+      "cohort_item_id": "7d896c29-807b-4c22-be1e-f53557f14199",
+      "local_sqlite_uuid_ais_2_6e": "9b874e06-ab3e-4515-91b3-c9395d9ec1df",
+      "server1_rule_uuid": "14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "local_sqlite_rule_uuid_ais_2_6f": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "server1_event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "server1_approved_policy_version_id": "ed7ff3c7-ff30-49cb-a0f8-fa10eba79ece"
+    }
+  ]
+}

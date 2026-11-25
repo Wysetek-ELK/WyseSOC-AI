@@ -1,0 +1,24 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "server_1_production_health": {
+    "endpoint": "http://172.26.41.240/api/health",
+    "database_type": "postgresql",
+    "connected": true,
+    "latency_ms": 2.56,
+    "redis_reachable": true,
+    "live_triage_queue_depth": 0
+  },
+  "alembic_head_revision": "016_ground_truth_certification_and_cohort_isolation",
+  "local_sqlite_verification": {
+    "cohort_key": "AIS_2_6E_FROZEN_20",
+    "total": 20,
+    "priority_total": 5,
+    "exposure_risk_count": 20,
+    "gt0_unreviewed": 0,
+    "gt1_historical_only": 20,
+    "gt2_single_review": 0,
+    "gt3_certified": 0
+  },
+  "gpu_server_2_inference_count_in_2_6f": 0
+}

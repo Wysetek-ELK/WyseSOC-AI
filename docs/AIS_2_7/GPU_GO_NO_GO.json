@@ -1,0 +1,19 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "decision": "GO_AUTHORIZED_BY_OPERATOR_AT_CHECKPOINT_A",
+  "server2_current_power_state": "RUNNING / ONLINE (verified via Server 1 /api/llm/test-connection)",
+  "offline_checks_passed": true,
+  "operator_authorization": {
+    "live_benchmark_authorized": true,
+    "max_baseline_calls": 41,
+    "max_transport_retries": 5,
+    "pathway": "Deploy isolated AIS 2.7 runner endpoints to Server 1 via UPLA Gate 1/2",
+    "post_completion_gpu_action": "LEAVE_RUNNING_NOTIFY_OPERATOR_FOR_MANUAL_SHUTDOWN"
+  },
+  "authorization_questions_for_operator": [
+    "1. Server 2 is already running at 13.204.214.64:8000 \u2014 confirm authorization to execute live AIS 2.7 benchmark inference against it (and confirm whether to deploy/run the isolated 3-mode runner on Server 1 via UPLA Gate 1/2).",
+    "2. Confirm maximum allowed workload: 41 baseline GPU calls (1 smoke test + 10 pilot + 30 remaining; 0 Mode C calls) + up to 5 capped infrastructure retries.",
+    "3. Confirm whether Server 2 should remain running or be manually/explicitly stopped after benchmark completion."
+  ]
+}

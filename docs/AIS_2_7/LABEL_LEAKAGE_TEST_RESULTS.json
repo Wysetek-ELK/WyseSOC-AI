@@ -1,0 +1,14 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "tests_executed": {
+    "pytest_ais_2_6_suite": "16 passed in 4.81s (test_ais_2_6c, test_ais_2_6d, test_ais_2_6f)",
+    "wire_prompt_marker_scan": "20/20 incidents scanned across Mode A and Mode B"
+  },
+  "gt2_labels_leaked": 0,
+  "historical_fortisiem_resolutions_leaked": 0,
+  "previous_ai_verdicts_leaked": 0,
+  "rag_precedents_injected": 0,
+  "xml_tag_note": "Mode B Section 10 static security instruction contains literal tag string '<VERIFIED_HISTORICAL_PRECEDENTS>' instructing the model to treat any such block as untrusted; zero actual precedents are injected (rag_block='').",
+  "status": "PASS_ZERO_LEAKAGE"
+}

@@ -1,0 +1,7 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "neutral_baseline_sha256": "eed5c3beb4cc9d108762a43da5085b516d16958377d5c7fa2abcb602f1c7e056",
+  "factual_evidence_parity_across_modes": "IDENTICAL budgeted incident payload & rule_spec across Mode A and Mode B for all 20 incidents.",
+  "schema_parity": "Both Mode A and Mode B require TRUE_POSITIVE | FALSE_POSITIVE | REQUIRES_ATTENTION, confidence 0-100, reason, supporting_claims with EV-* citations, supporting_evidence, contradictory_evidence, missing_evidence, analyst_questions."
+}

@@ -1,0 +1,24 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "planned_calls": {
+    "connectivity_smoke_test": 1,
+    "mode_a_priority_pilot": 5,
+    "mode_b_priority_pilot": 5,
+    "mode_a_remaining_15": 15,
+    "mode_b_remaining_15": 15,
+    "mode_c_deterministic_validation": 0,
+    "total_baseline_calls": 41,
+    "max_infrastructure_retry_allowance": 5
+  },
+  "estimated_tokens": {
+    "estimated_prompt_tokens_40_calls": 175020,
+    "estimated_max_completion_tokens_41_calls": 31488
+  },
+  "estimated_cost_usd": {
+    "instance_type_assumed": "AWS EC2 g5.xlarge (ap-south-1 / Mumbai region ~ $1.006-$1.20/hr on-demand, unverified current AWS billing)",
+    "estimated_benchmark_active_runtime_minutes": "5 to 15 minutes for 41 sequential requests",
+    "attributable_compute_cost_estimate_usd": "$0.10 to $0.30 USD for active benchmark window (note: Server 2 is ALREADY running and accruing hourly EC2 charges until stopped)",
+    "billing_data_status": "ESTIMATED_ONLY (not live AWS Cost Explorer telemetry)"
+  }
+}

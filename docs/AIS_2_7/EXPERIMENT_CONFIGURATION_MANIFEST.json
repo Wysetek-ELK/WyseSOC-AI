@@ -1,0 +1,25 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "frozen_config": {
+    "model_name": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+    "quantization": "AWQ (verified via model ID; exact vLLM flags to be verified in Workstream 8)",
+    "runtime": "vLLM OpenAI-compatible API",
+    "server2_endpoint": "http://13.204.214.64:8000/v1",
+    "verified_max_model_len": 8192,
+    "reserved_completion_tokens": 768,
+    "target_input_budget": 6400,
+    "hard_input_ceiling": 7424,
+    "temperature": 0.1,
+    "top_p": 1.0,
+    "seed": "Not enforced by OpenAICompatibleProvider default payload (documented reproducibility limitation)",
+    "stop_sequences": null,
+    "rag_enabled": false,
+    "rag_block": "",
+    "allow_mock_fallback": false,
+    "retries": "0 automatic retries on semantic/parse error (infrastructure transport retries capped separately)",
+    "mode_a_prompt": "NEUTRAL_SOC_BASELINE_V1 + strict JSON schema wrapper",
+    "mode_b_prompt": "Compiled Server 1 Approved Policy (CS v3 b6d9df2f / Prisma v1 ed7ff3c7)",
+    "mode_c_validator": "IndependentVerdictValidator v2.0.0 + ModelClaimExtractor + VerdictTrustworthinessEngine (0 GPU calls)"
+  }
+}

@@ -1,0 +1,625 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "records": [
+    {
+      "fortisiem_incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_logs_count": 13,
+      "normalized_evidence_count": 109,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": true,
+        "has_file_hash": true,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Organizational policy context stating CrowdStrike rule is configured to block UltraViewer across Tosoh endpoints (implicit in Mode A, partially represented in rule_specific context)"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "ITSM change ticket / business authorization record",
+        "External VirusTotal/TI reputation feed"
+      ],
+      "evidence_sufficiency_classification": "SUFFICIENT_FOR_DETECTION_POLICY_OR_MISSING_AUTHORIZATION_CONTEXT"
+    },
+    {
+      "fortisiem_incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "observed_entity": "review.es.system.js",
+      "raw_logs_count": 1,
+      "normalized_evidence_count": 39,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": false,
+        "has_file_hash": false,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Client historical ticket context ('Previous similar alerts have also been classified as False Positives by the client')"
+      ],
+      "available_in_db_omitted_from_prompt": [],
+      "unavailable_to_both": [
+        "File SHA-256/MD5 hash",
+        "Full HTTP URL",
+        "Payload detonation/sandbox"
+      ],
+      "evidence_sufficiency_classification": "INSUFFICIENT_FOR_BINARY_CLASSIFICATION"
+    },
+    {
+      "fortisiem_incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "observed_entity": "jquery.knob.js",
+      "raw_logs_count": 2,
+      "normalized_evidence_count": 45,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": false,
+        "has_file_hash": false,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Client historical ticket context ('Previous similar alerts have also been classified as False Positives by the client')"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "File SHA-256/MD5 hash",
+        "Full HTTP URL",
+        "Payload detonation/sandbox"
+      ],
+      "evidence_sufficiency_classification": "INSUFFICIENT_FOR_BINARY_CLASSIFICATION"
+    },
+    {
+      "fortisiem_incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_logs_count": 25,
+      "normalized_evidence_count": 168,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": true,
+        "has_file_hash": true,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Organizational policy context stating CrowdStrike rule is configured to block UltraViewer across Tosoh endpoints (implicit in Mode A, partially represented in rule_specific context)"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "ITSM change ticket / business authorization record",
+        "External VirusTotal/TI reputation feed"
+      ],
+      "evidence_sufficiency_classification": "SUFFICIENT_FOR_DETECTION_POLICY_OR_MISSING_AUTHORIZATION_CONTEXT"
+    },
+    {
+      "fortisiem_incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "observed_entity": "update.exe",
+      "raw_logs_count": 3,
+      "normalized_evidence_count": 45,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": false,
+        "has_file_hash": false,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Client historical ticket context ('Previous similar alerts have also been classified as False Positives by the client')"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "File SHA-256/MD5 hash",
+        "Full HTTP URL",
+        "Payload detonation/sandbox"
+      ],
+      "evidence_sufficiency_classification": "INSUFFICIENT_FOR_BINARY_CLASSIFICATION"
+    },
+    {
+      "fortisiem_incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_logs_count": 8,
+      "normalized_evidence_count": 83,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": true,
+        "has_file_hash": true,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Organizational policy context stating CrowdStrike rule is configured to block UltraViewer across Tosoh endpoints (implicit in Mode A, partially represented in rule_specific context)"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "ITSM change ticket / business authorization record",
+        "External VirusTotal/TI reputation feed"
+      ],
+      "evidence_sufficiency_classification": "SUFFICIENT_FOR_DETECTION_POLICY_OR_MISSING_AUTHORIZATION_CONTEXT"
+    },
+    {
+      "fortisiem_incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_logs_count": 16,
+      "normalized_evidence_count": 123,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": true,
+        "has_file_hash": true,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Organizational policy context stating CrowdStrike rule is configured to block UltraViewer across Tosoh endpoints (implicit in Mode A, partially represented in rule_specific context)"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "ITSM change ticket / business authorization record",
+        "External VirusTotal/TI reputation feed"
+      ],
+      "evidence_sufficiency_classification": "SUFFICIENT_FOR_DETECTION_POLICY_OR_MISSING_AUTHORIZATION_CONTEXT"
+    },
+    {
+      "fortisiem_incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_logs_count": 34,
+      "normalized_evidence_count": 208,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": true,
+        "has_file_hash": true,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Organizational policy context stating CrowdStrike rule is configured to block UltraViewer across Tosoh endpoints (implicit in Mode A, partially represented in rule_specific context)"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "ITSM change ticket / business authorization record",
+        "External VirusTotal/TI reputation feed"
+      ],
+      "evidence_sufficiency_classification": "SUFFICIENT_FOR_DETECTION_POLICY_OR_MISSING_AUTHORIZATION_CONTEXT"
+    },
+    {
+      "fortisiem_incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_logs_count": 19,
+      "normalized_evidence_count": 139,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": true,
+        "has_file_hash": true,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Organizational policy context stating CrowdStrike rule is configured to block UltraViewer across Tosoh endpoints (implicit in Mode A, partially represented in rule_specific context)"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "ITSM change ticket / business authorization record",
+        "External VirusTotal/TI reputation feed"
+      ],
+      "evidence_sufficiency_classification": "SUFFICIENT_FOR_DETECTION_POLICY_OR_MISSING_AUTHORIZATION_CONTEXT"
+    },
+    {
+      "fortisiem_incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_logs_count": 30,
+      "normalized_evidence_count": 186,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": true,
+        "has_file_hash": true,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Organizational policy context stating CrowdStrike rule is configured to block UltraViewer across Tosoh endpoints (implicit in Mode A, partially represented in rule_specific context)"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "ITSM change ticket / business authorization record",
+        "External VirusTotal/TI reputation feed"
+      ],
+      "evidence_sufficiency_classification": "SUFFICIENT_FOR_DETECTION_POLICY_OR_MISSING_AUTHORIZATION_CONTEXT"
+    },
+    {
+      "fortisiem_incident_id": "132501348",
+      "vendor": "CrowdStrike",
+      "observed_entity": "MEGAsync.exe",
+      "raw_logs_count": 2,
+      "normalized_evidence_count": 53,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": true,
+        "has_file_hash": true,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "External executable hash reputation verification ('executable hash was checked and found to be clean, with no known malicious reputation')",
+        "Verified legitimate MEGA application behavior determination outside static CrowdStrike alert telemetry"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "ITSM change ticket / business authorization record",
+        "External VirusTotal/TI reputation feed"
+      ],
+      "evidence_sufficiency_classification": "HUMAN_ONLY_EVIDENCE_DEPENDENCY"
+    },
+    {
+      "fortisiem_incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_logs_count": 24,
+      "normalized_evidence_count": 155,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": true,
+        "has_file_hash": true,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Organizational policy context stating CrowdStrike rule is configured to block UltraViewer across Tosoh endpoints (implicit in Mode A, partially represented in rule_specific context)"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "ITSM change ticket / business authorization record",
+        "External VirusTotal/TI reputation feed"
+      ],
+      "evidence_sufficiency_classification": "SUFFICIENT_FOR_DETECTION_POLICY_OR_MISSING_AUTHORIZATION_CONTEXT"
+    },
+    {
+      "fortisiem_incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "observed_entity": "UltraViewer_Service.exe",
+      "raw_logs_count": 2,
+      "normalized_evidence_count": 54,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": true,
+        "has_file_hash": true,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Organizational policy context stating CrowdStrike rule is configured to block UltraViewer across Tosoh endpoints (implicit in Mode A, partially represented in rule_specific context)"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "ITSM change ticket / business authorization record",
+        "External VirusTotal/TI reputation feed"
+      ],
+      "evidence_sufficiency_classification": "SUFFICIENT_FOR_DETECTION_POLICY_OR_MISSING_AUTHORIZATION_CONTEXT"
+    },
+    {
+      "fortisiem_incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "observed_entity": "ss-widget.min.js",
+      "raw_logs_count": 1,
+      "normalized_evidence_count": 39,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": false,
+        "has_file_hash": false,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Client historical ticket context ('Previous similar alerts have also been classified as False Positives by the client')"
+      ],
+      "available_in_db_omitted_from_prompt": [],
+      "unavailable_to_both": [
+        "File SHA-256/MD5 hash",
+        "Full HTTP URL",
+        "Payload detonation/sandbox"
+      ],
+      "evidence_sufficiency_classification": "INSUFFICIENT_FOR_BINARY_CLASSIFICATION"
+    },
+    {
+      "fortisiem_incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "observed_entity": "clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js",
+      "raw_logs_count": 1,
+      "normalized_evidence_count": 39,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": false,
+        "has_file_hash": false,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Client historical ticket context ('Previous similar alerts have also been classified as False Positives by the client')"
+      ],
+      "available_in_db_omitted_from_prompt": [],
+      "unavailable_to_both": [
+        "File SHA-256/MD5 hash",
+        "Full HTTP URL",
+        "Payload detonation/sandbox"
+      ],
+      "evidence_sufficiency_classification": "INSUFFICIENT_FOR_BINARY_CLASSIFICATION"
+    },
+    {
+      "fortisiem_incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "observed_entity": "scripts-QBOKETIS.js",
+      "raw_logs_count": 1,
+      "normalized_evidence_count": 39,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": false,
+        "has_file_hash": false,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Client historical ticket context ('Previous similar alerts have also been classified as False Positives by the client')"
+      ],
+      "available_in_db_omitted_from_prompt": [],
+      "unavailable_to_both": [
+        "File SHA-256/MD5 hash",
+        "Full HTTP URL",
+        "Payload detonation/sandbox"
+      ],
+      "evidence_sufficiency_classification": "INSUFFICIENT_FOR_BINARY_CLASSIFICATION"
+    },
+    {
+      "fortisiem_incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "observed_entity": "adrum22603859.js",
+      "raw_logs_count": 1,
+      "normalized_evidence_count": 39,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": false,
+        "has_file_hash": false,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Client historical ticket context ('Previous similar alerts have also been classified as False Positives by the client')"
+      ],
+      "available_in_db_omitted_from_prompt": [],
+      "unavailable_to_both": [
+        "File SHA-256/MD5 hash",
+        "Full HTTP URL",
+        "Payload detonation/sandbox"
+      ],
+      "evidence_sufficiency_classification": "INSUFFICIENT_FOR_BINARY_CLASSIFICATION"
+    },
+    {
+      "fortisiem_incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "observed_entity": "2005.70cb3d6bf67c91a7.js",
+      "raw_logs_count": 1,
+      "normalized_evidence_count": 39,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": false,
+        "has_file_hash": false,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Client historical ticket context ('Previous similar alerts have also been classified as False Positives by the client')"
+      ],
+      "available_in_db_omitted_from_prompt": [],
+      "unavailable_to_both": [
+        "File SHA-256/MD5 hash",
+        "Full HTTP URL",
+        "Payload detonation/sandbox"
+      ],
+      "evidence_sufficiency_classification": "INSUFFICIENT_FOR_BINARY_CLASSIFICATION"
+    },
+    {
+      "fortisiem_incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "observed_entity": "exporting.js",
+      "raw_logs_count": 11,
+      "normalized_evidence_count": 95,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": false,
+        "has_file_hash": false,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Client historical ticket context ('Previous similar alerts have also been classified as False Positives by the client')"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "File SHA-256/MD5 hash",
+        "Full HTTP URL",
+        "Payload detonation/sandbox"
+      ],
+      "evidence_sufficiency_classification": "INSUFFICIENT_FOR_BINARY_CLASSIFICATION"
+    },
+    {
+      "fortisiem_incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "observed_entity": "select2.min.js",
+      "raw_logs_count": 2,
+      "normalized_evidence_count": 45,
+      "additional_evidence_in_db": 0,
+      "telemetry_flags": {
+        "has_command_line": false,
+        "has_file_hash": false,
+        "has_full_url": false,
+        "has_authorization_ticket": false,
+        "has_external_ti_reputation": false
+      },
+      "available_to_both_human_and_llm": [
+        "Raw FortiSIEM event logs (up to compaction budget in Mode A/B)",
+        "Triggered FortiSIEM rule definition",
+        "Normalized canonical evidence (EV-* records)"
+      ],
+      "available_only_to_human_reviewer": [
+        "Client historical ticket context ('Previous similar alerts have also been classified as False Positives by the client')"
+      ],
+      "available_in_db_omitted_from_prompt": [
+        "Secondary raw events beyond primary event when TokenBudgetService compacts multi-event CS/Prisma payloads (canonical_evidence aggregates retained)"
+      ],
+      "unavailable_to_both": [
+        "File SHA-256/MD5 hash",
+        "Full HTTP URL",
+        "Payload detonation/sandbox"
+      ],
+      "evidence_sufficiency_classification": "INSUFFICIENT_FOR_BINARY_CLASSIFICATION"
+    }
+  ]
+}

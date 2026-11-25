@@ -1,0 +1,26 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "blockers_before_ais_2_7": [
+    {
+      "id": "BLK-GT-PRIORITY-5",
+      "severity": "BLOCKING_FOR_AIS_2_7_PILOT",
+      "description": "5 Priority Pilot frozen incidents require dual independent blind human certification (Reviewer 1 + Reviewer 2 -> GT-3).",
+      "incident_ids": [
+        "132474210",
+        "132596403",
+        "132599145",
+        "132438483",
+        "132591888"
+      ]
+    },
+    {
+      "id": "BLK-GT-FULL-20",
+      "severity": "BLOCKING_FOR_AIS_2_7_FULL",
+      "description": "Remaining 15 frozen incidents require dual independent blind human certification (GT-3) prior to full empirical benchmark."
+    }
+  ],
+  "non_blocking_observations": [
+    "Interactive authenticated Chrome screenshots were not captured during AIS 2.6f closeout because Chrome remote debugging was disabled locally."
+  ]
+}

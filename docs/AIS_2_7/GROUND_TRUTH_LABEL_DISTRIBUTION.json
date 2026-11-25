@@ -1,0 +1,33 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "ground_truth_level": "GT-2",
+  "total_incidents": 20,
+  "counts": {
+    "TRUE_POSITIVE": 9,
+    "FALSE_POSITIVE": 1,
+    "INCONCLUSIVE": 10
+  },
+  "by_vendor": {
+    "CrowdStrike": {
+      "TRUE_POSITIVE": 9,
+      "FALSE_POSITIVE": 1,
+      "INCONCLUSIVE": 0
+    },
+    "Prisma SASE": {
+      "TRUE_POSITIVE": 0,
+      "FALSE_POSITIVE": 0,
+      "INCONCLUSIVE": 10
+    }
+  },
+  "eligible_binary_reference_count": 10,
+  "inconclusive_reference_count": 10,
+  "gt3_certified_count": 0,
+  "conflicts_count": 0,
+  "unresolved_or_invalid_records": 0,
+  "critical_dataset_limitations": [
+    "All 10 Prisma SASE incidents are labeled INCONCLUSIVE (0 binary TP or FP labels for Prisma SASE).",
+    "All 10 binary labels belong to CrowdStrike: 9 TRUE_POSITIVE (all UltraViewer_Service.exe across 4 Tosoh hosts) and 1 FALSE_POSITIVE (132501348 MEGAsync.exe).",
+    "Severe class imbalance (9 TP vs 1 FP) and heavy clustering (9 near-duplicate UltraViewer alerts)."
+  ]
+}

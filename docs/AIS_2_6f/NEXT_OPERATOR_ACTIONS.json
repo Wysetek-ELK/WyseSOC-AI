@@ -1,0 +1,10 @@
+{
+  "phase": "AIS 2.6f -> AIS 2.7",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "steps": [
+    "1. Reviewer 1 signs into http://172.26.41.240/human-review-queue -> clicks tab 'Ground Truth Certification (AIS 2.6e)' -> reviews Priority 5 Batch (132474210, 132596403, 132599145, 132438483, 132591888) and Remaining 15 -> Submit & Lock.",
+    "2. Distinct Reviewer 2 signs into http://172.26.41.240/human-review-queue with a different account -> certifies the same cohort blindly.",
+    "3. Senior Analyst / Administrator resolves any items marked CONFLICT_PENDING_ADJUDICATION.",
+    "4. Once Priority Pilot reaches 5/5 GT-3 Certified (and full cohort reaches 20/20 GT-3/Inconclusive), begin AIS 2.7 live GPU evaluation."
+  ]
+}

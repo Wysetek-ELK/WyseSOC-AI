@@ -1,0 +1,11 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "command": "pytest tests/test_ais_2_6f_certification_and_blind_review.py tests/test_investigations.py tests/test_ais_2_6d_empirical_integrity.py tests/test_ais_2_6c_three_mode_and_bias_isolation.py tests/test_ground_truth_isolation.py tests/test_ais_heavy_tcp_e2e.py tests/test_rule_learning_platform.py tests/test_api_422_remediation.py -q",
+  "total_passed": 47,
+  "total_failed": 0,
+  "duration_seconds": 33.15,
+  "frontend_build_status": "PASS (32 routes compiled, 0 TypeScript errors)",
+  "server1_deploy_pytest_gate": "PASS",
+  "status": "PASS"
+}

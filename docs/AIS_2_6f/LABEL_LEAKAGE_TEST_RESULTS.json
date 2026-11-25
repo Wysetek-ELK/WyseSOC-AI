@@ -1,0 +1,9 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "test_suite": "tests/test_ais_2_6f_certification_and_blind_review.py + tests/test_ground_truth_isolation.py",
+  "learning_record_leakage_count": 0,
+  "rag_leakage_count": 0,
+  "ui_prefill_leakage": false,
+  "status": "PASS"
+}

@@ -1,0 +1,13 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "verified_by": "backend/tests/test_ais_2_6f_certification_and_blind_review.py::test_blind_review_masking_across_admin_and_analyst_endpoints",
+  "assertions_passed": [
+    "GET /api/investigations/queue?blind_review=true masks AI verdicts for Admin and Analyst",
+    "GET /api/investigations/{id}?blind_review=true masks ai_assurance and strips [AI Verdict ...] from analyst_notes while preserving human notes",
+    "GET /api/incidents/{id}/timeline?blind_review=true masks Milestone 6 AI verdict and Milestone 7 SIEM resolution",
+    "GET /api/ground-truth/cohorts/AIS_2_6E_FROZEN_20/incidents/132474210 omits AI & historical labels for Admin and Analyst",
+    "GET /api/ground-truth/.../post-certification-comparison returns 403 Forbidden prior to GT-3 certification"
+  ],
+  "status": "PASS"
+}

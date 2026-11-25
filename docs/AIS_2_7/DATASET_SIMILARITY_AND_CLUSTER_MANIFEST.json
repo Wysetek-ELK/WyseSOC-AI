@@ -1,0 +1,143 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "total_incidents": 20,
+  "distinct_behavioral_clusters": 4,
+  "summary": {
+    "cs_ultraviewer_tosoh": 9,
+    "cs_megasync_wstpl": 1,
+    "prisma_js_forbes_marshall": 9,
+    "prisma_exe_forbes_marshall": 1
+  },
+  "clusters": {
+    "CS_ULTRAVIEWER_Tosoh": [
+      {
+        "fortisiem_incident_id": "132474210",
+        "observed_entity": "UltraViewer_Service.exe",
+        "target_host": "PC-TSI-DC",
+        "event_count": 13
+      },
+      {
+        "fortisiem_incident_id": "132438483",
+        "observed_entity": "UltraViewer_Service.exe",
+        "target_host": "DESKTOP-E0G2R49",
+        "event_count": 25
+      },
+      {
+        "fortisiem_incident_id": "132439932",
+        "observed_entity": "UltraViewer_Service.exe",
+        "target_host": "TSI-IT-002-200",
+        "event_count": 8
+      },
+      {
+        "fortisiem_incident_id": "132441815",
+        "observed_entity": "UltraViewer_Service.exe",
+        "target_host": "DESKTOP-E0G2R49",
+        "event_count": 16
+      },
+      {
+        "fortisiem_incident_id": "132461358",
+        "observed_entity": "UltraViewer_Service.exe",
+        "target_host": "TSI-IT-002-200",
+        "event_count": 34
+      },
+      {
+        "fortisiem_incident_id": "132461368",
+        "observed_entity": "UltraViewer_Service.exe",
+        "target_host": "DESKTOP-E0G2R49",
+        "event_count": 19
+      },
+      {
+        "fortisiem_incident_id": "132472498",
+        "observed_entity": "UltraViewer_Service.exe",
+        "target_host": "PC-TSI-DC",
+        "event_count": 30
+      },
+      {
+        "fortisiem_incident_id": "132502453",
+        "observed_entity": "UltraViewer_Service.exe",
+        "target_host": "DESKTOP-KHU6454",
+        "event_count": 24
+      },
+      {
+        "fortisiem_incident_id": "132527297",
+        "observed_entity": "UltraViewer_Service.exe",
+        "target_host": "TSI-IT-002-95",
+        "event_count": 2
+      }
+    ],
+    "PRISMA_JS_Forbes_Marshall": [
+      {
+        "fortisiem_incident_id": "132596403",
+        "observed_entity": "review.es.system.js",
+        "target_host": "172.25.6.101",
+        "event_count": 1
+      },
+      {
+        "fortisiem_incident_id": "132599145",
+        "observed_entity": "jquery.knob.js",
+        "target_host": "172.25.14.157",
+        "event_count": 2
+      },
+      {
+        "fortisiem_incident_id": "132499009",
+        "observed_entity": "ss-widget.min.js",
+        "target_host": "172.25.14.80",
+        "event_count": 1
+      },
+      {
+        "fortisiem_incident_id": "132499023",
+        "observed_entity": "clientlib-site.min.434edaea5200f31ba33eec0dd0b0cf19.js",
+        "target_host": "172.25.14.67",
+        "event_count": 1
+      },
+      {
+        "fortisiem_incident_id": "132499745",
+        "observed_entity": "scripts-QBOKETIS.js",
+        "target_host": "172.25.14.80",
+        "event_count": 1
+      },
+      {
+        "fortisiem_incident_id": "132578774",
+        "observed_entity": "adrum22603859.js",
+        "target_host": "172.25.2.3",
+        "event_count": 1
+      },
+      {
+        "fortisiem_incident_id": "132595592",
+        "observed_entity": "2005.70cb3d6bf67c91a7.js",
+        "target_host": "172.25.6.95",
+        "event_count": 1
+      },
+      {
+        "fortisiem_incident_id": "132599146",
+        "observed_entity": "exporting.js",
+        "target_host": "172.25.14.157",
+        "event_count": 11
+      },
+      {
+        "fortisiem_incident_id": "132599330",
+        "observed_entity": "select2.min.js",
+        "target_host": "172.25.14.157",
+        "event_count": 2
+      }
+    ],
+    "PRISMA_EXE_Forbes_Marshall": [
+      {
+        "fortisiem_incident_id": "132591888",
+        "observed_entity": "update.exe",
+        "target_host": "172.25.6.208",
+        "event_count": 3
+      }
+    ],
+    "CS_MEGASYNC_WSTPL": [
+      {
+        "fortisiem_incident_id": "132501348",
+        "observed_entity": "MEGAsync.exe",
+        "target_host": "DESKTOP-CQ4A60U",
+        "event_count": 2
+      }
+    ]
+  },
+  "statistical_independence_warning": "20 incidents collapse into 4 behavioral/vendor patterns (and 9 of 10 binary-labeled incidents are repeated UltraViewer_Service.exe alerts across 4 Tosoh hosts). Do NOT treat as 20 independent i.i.d. samples."
+}

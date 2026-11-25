@@ -1,0 +1,278 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T05:28:33.231107+00:00",
+  "summary": {
+    "total": 20,
+    "three_class_exploratory_eligible": 20,
+    "binary_tp_fp_eligible": 10,
+    "inconclusive_abstention_eval_eligible": 10,
+    "gt3_production_certified": 0,
+    "records_with_quality_flags": 20
+  },
+  "records": [
+    {
+      "fortisiem_incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "TRUE_POSITIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": true,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "METADATA_INCONSISTENCY: authorization_context=AUTHORIZED conflicts with verdict=TRUE_POSITIVE and rationale stating CrowdStrike blocked/killed UltraViewer.",
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "INCONCLUSIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": false,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "METADATA_INCONSISTENCY: evidence_sufficiency_status=SUFFICIENT conflicts with verdict=INCONCLUSIVE and rationale stating raw logs lack file hash and complete URL.",
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "INCONCLUSIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": false,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "METADATA_INCONSISTENCY: evidence_sufficiency_status=SUFFICIENT conflicts with verdict=INCONCLUSIVE and rationale stating raw logs lack file hash and complete URL.",
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "TRUE_POSITIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": true,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "INCONCLUSIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": false,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "TRUE_POSITIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": true,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "TRUE_POSITIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": true,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "TRUE_POSITIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": true,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "TRUE_POSITIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": true,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "TRUE_POSITIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": true,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132501348",
+      "vendor": "CrowdStrike",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "FALSE_POSITIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": true,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references.",
+        "EXTERNAL_EVIDENCE_DEPENDENCY: Rationale cites external hash reputation check ('executable hash was checked and found to be clean') and quotes 'Closure Reason: False Positive (FP)'."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "TRUE_POSITIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": true,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "TRUE_POSITIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": true,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "INCONCLUSIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": false,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "INCONCLUSIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": false,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "INCONCLUSIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": false,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "INCONCLUSIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": false,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "INCONCLUSIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": false,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "INCONCLUSIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": false,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    },
+    {
+      "fortisiem_incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "gt_level": "GT-2",
+      "locked_reviewers_count": 1,
+      "gt2_verdict_category": "INCONCLUSIVE",
+      "eligible_for_three_class_exploratory": true,
+      "eligible_for_binary_tp_fp_accuracy": false,
+      "excluded_from_gt3_production_certification": true,
+      "quality_flags": [
+        "NO_STRUCTURED_EVIDENCE_REFS: Reviewer did not populate structured EV-* evidence_references."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "route": "/human-review-queue",
+  "build_compilation": "PASS (Next.js 16.4.5 Turbopack, 32 routes)",
+  "server_1_ssr_http_check": "PASS (HTTP 200 OK, Content-Length 49000)",
+  "backend_api_route_mount_check": "PASS (/api/ground-truth/cohorts & /api/investigations/queue return 401 auth required rather than 404)",
+  "interactive_chrome_screenshots": "NOT_VERIFIED (Chrome DevTools remote debugging DevToolsActivePort unavailable; operator chose direct closeout)",
+  "status": "PASS_WITH_UNVERIFIED_INTERACTIVE_SCREENSHOTS"
+}

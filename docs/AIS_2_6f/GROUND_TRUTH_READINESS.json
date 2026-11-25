@@ -1,0 +1,12 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "cohort_key": "AIS_2_6E_FROZEN_20",
+  "cohort_registered": true,
+  "total_items": 20,
+  "priority_items": 5,
+  "certified_gt3_count": 0,
+  "ready_for_human_review_workflow": true,
+  "ready_for_live_gpu_benchmark": false,
+  "reason": "Human Ground Truth Review Operator Checkpoint reached cleanly with 0 fabricated reviews."
+}

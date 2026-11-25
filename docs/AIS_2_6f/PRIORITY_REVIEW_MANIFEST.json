@@ -1,0 +1,77 @@
+{
+  "phase": "AIS 2.6f",
+  "cohort_key": "AIS_2_6E_FROZEN_20",
+  "priority_tier": "PRIORITY_5",
+  "items": [
+    {
+      "fortisiem_incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "customer": "Tosoh",
+      "observed_entity": "UltraViewer_Service.exe",
+      "target_host": "PC-TSI-DC",
+      "priority_tier": "PRIORITY_5",
+      "sequence_order": 1,
+      "approved_rule_uuid": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "approved_rule_prompt_id": "08c59656-c002-4a76-b100-3c8d6d645eb2",
+      "approved_prompt_version_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c"
+    },
+    {
+      "fortisiem_incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "customer": "Forbes_Marshall",
+      "observed_entity": "review.es.system.js",
+      "target_host": "172.25.6.101",
+      "priority_tier": "PRIORITY_5",
+      "sequence_order": 2,
+      "approved_rule_uuid": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "approved_rule_prompt_id": "1fe4e834-bd52-4571-95ca-ee329e40e1b2",
+      "approved_prompt_version_id": "8ae7beaa-626a-4061-a0c4-8500f7e6a69d"
+    },
+    {
+      "fortisiem_incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "customer": "Forbes_Marshall",
+      "observed_entity": "jquery.knob.js",
+      "target_host": "172.25.14.157",
+      "priority_tier": "PRIORITY_5",
+      "sequence_order": 3,
+      "approved_rule_uuid": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "approved_rule_prompt_id": "1fe4e834-bd52-4571-95ca-ee329e40e1b2",
+      "approved_prompt_version_id": "8ae7beaa-626a-4061-a0c4-8500f7e6a69d"
+    },
+    {
+      "fortisiem_incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "event_type": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "customer": "Tosoh",
+      "observed_entity": "UltraViewer_Service.exe",
+      "target_host": "DESKTOP-E0G2R49",
+      "priority_tier": "PRIORITY_5",
+      "sequence_order": 4,
+      "approved_rule_uuid": "271b0831-f6f5-4d86-9e0b-d53aee948cf0",
+      "approved_rule_prompt_id": "08c59656-c002-4a76-b100-3c8d6d645eb2",
+      "approved_prompt_version_id": "bd751fac-9bfb-4994-b150-8850bb94dd6c"
+    },
+    {
+      "fortisiem_incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "event_type": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "customer": "Forbes_Marshall",
+      "observed_entity": "update.exe",
+      "target_host": "172.25.6.208",
+      "priority_tier": "PRIORITY_5",
+      "sequence_order": 5,
+      "approved_rule_uuid": "b2f1f1e4-117b-4b0e-87ca-65869898630b",
+      "approved_rule_prompt_id": "1fe4e834-bd52-4571-95ca-ee329e40e1b2",
+      "approved_prompt_version_id": "8ae7beaa-626a-4061-a0c4-8500f7e6a69d"
+    }
+  ]
+}

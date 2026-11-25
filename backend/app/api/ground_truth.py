@@ -222,3 +222,55 @@ async def get_ground_truth_audit(
         )
     except ValueError as ve:
         raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.get("/ais27/runtime-verify", response_model=Dict[str, Any])
+async def ais27_verify_gpu_runtime(
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: probes Server 2 vLLM metadata endpoints (zero inference)."""
+    from app.services.ais27_benchmark_runner import AIS27BenchmarkRunner
+
+    return await AIS27BenchmarkRunner.verify_gpu_runtime()
+
+
+@router.post("/ais27/smoke-test", response_model=Dict[str, Any])
+async def ais27_run_smoke_test(
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: dispatches 1 controlled non-benchmark connectivity smoke test."""
+    from app.services.ais27_benchmark_runner import AIS27BenchmarkRunner
+
+    return await AIS27BenchmarkRunner.run_smoke_test()
+
+
+@router.post("/ais27/cohorts/{cohort_key}/incidents/{incident_id}/run", response_model=Dict[str, Any])
+async def ais27_run_single_incident(
+    cohort_key: str,
+    incident_id: str,
+    max_context_tokens: int = Query(8192, ge=1024, le=131072),
+    max_completion_tokens: int = Query(768, ge=64, le=4096),
+    target_input_budget: int = Query(6400, ge=512, le=65536),
+    timeout_seconds: float = Query(120.0, ge=5.0, le=300.0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Administrator-only: executes isolated Mode A + Mode B live GPU inference and Mode C
+    deterministic validation for a single frozen cohort incident without mutating DB state
+    or accessing ground truth labels.
+    """
+    from app.services.ais27_benchmark_runner import AIS27BenchmarkRunner
+
+    try:
+        return await AIS27BenchmarkRunner.run_single_incident_three_mode(
+            db=db,
+            cohort_key=cohort_key,
+            fortisiem_incident_id=incident_id,
+            max_context_tokens=max_context_tokens,
+            max_completion_tokens=max_completion_tokens,
+            target_input_budget=target_input_budget,
+            timeout_seconds=timeout_seconds,
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))

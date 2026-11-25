@@ -1,0 +1,61 @@
+{
+  "phase": "AIS 2.6f",
+  "generated_at_utc": "2026-11-25T02:55:14.379338+00:00",
+  "gates": [
+    {
+      "gate": "Queue population reconciliation (Operational vs AIS 2.6e Frozen 20)",
+      "status": "PASS"
+    },
+    {
+      "gate": "AI verdict & handover note blind-review leakage fixed at source + UI",
+      "status": "PASS"
+    },
+    {
+      "gate": "Admin & Analyst blind enforcement across investigations/timeline/AIS/prompts",
+      "status": "PASS"
+    },
+    {
+      "gate": "IncidentVerdictMatrix blind masking & Workbench state reset",
+      "status": "PASS"
+    },
+    {
+      "gate": "LearningRecord & RAG strict cohort exclusion verified",
+      "status": "PASS"
+    },
+    {
+      "gate": "Alembic 016 additive schema migration applied locally & on Server 1 PostgreSQL",
+      "status": "PASS"
+    },
+    {
+      "gate": "GT-0/1/2/3, Conflict Adjudication, and Immutable Revision state machine",
+      "status": "PASS"
+    },
+    {
+      "gate": "Harness reconciled policy IDs & certified GT DB loader",
+      "status": "PASS"
+    },
+    {
+      "gate": "Regression + security test suites (47 passed) + Next.js build (32 routes)",
+      "status": "PASS"
+    },
+    {
+      "gate": "UPLA Gate 1 GitHub sync & Gate 2 Server 1 deployment verified",
+      "status": "PASS"
+    },
+    {
+      "gate": "GPU Server 2 zero live inference restriction honored",
+      "status": "PASS"
+    },
+    {
+      "gate": "Live authenticated Chrome GUI screenshot capture",
+      "status": "NOT_VERIFIED"
+    },
+    {
+      "gate": "Human Ground Truth reviews (0/5 Priority, 0/20 Cohort submitted yet)",
+      "status": "AWAITING_HUMAN_OPERATORS"
+    }
+  ],
+  "passed_gates": 11,
+  "not_verified_gates": 1,
+  "awaiting_operator_gates": 1
+}

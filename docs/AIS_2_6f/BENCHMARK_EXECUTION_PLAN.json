@@ -1,0 +1,13 @@
+{
+  "phase": "AIS 2.6f -> AIS 2.7",
+  "next_phase": "AIS 2.7 (Live GPU LLM Benchmarking)",
+  "gpu_server_2_status_now": "STOPPED_ZERO_CALLS_DISPATCHED",
+  "priority_gate": "Certify 5 Priority Pilot items to GT-3 first",
+  "full_cohort_gate": "Certify all 20 AIS_2_6E_FROZEN_20 items to GT-3",
+  "experimental_modes": [
+    "Mode A (Neutral Baseline)",
+    "Mode B (Approved Rule Policy)",
+    "Mode C (Validated Pipeline - 0 extra LLM calls)"
+  ],
+  "harness_loader": "EmpiricalBenchmarkHarness.load_certified_ground_truth_cohort(db, 'AIS_2_6E_FROZEN_20', include_gt2_exploratory=False)"
+}

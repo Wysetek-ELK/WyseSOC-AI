@@ -1,0 +1,17 @@
+{
+  "phase": "AIS 2.6f",
+  "tiers": {
+    "GT0_UNREVIEWED": "No historical label and no independent human review; excluded from metrics.",
+    "GT1_HISTORICAL_ONLY": "Historical FortiSIEM/ML label only; masked during blind review and excluded from benchmark accuracy.",
+    "IN_PROGRESS": "Draft saved by reviewer; does not advance GT state or unlock post-cert comparison.",
+    "GT2_SINGLE_REVIEW": "1 independent reviewer locked; exploratory only when explicitly enabled.",
+    "CONFLICT_PENDING_ADJUDICATION": "Reviewer 1 and Reviewer 2 locked conflicting verdicts; requires independent Senior/Admin adjudication.",
+    "GT3_CERTIFIED": "2 distinct reviewers locked agreeing TP/FP verdicts OR conflict adjudicated by independent Senior/Admin.",
+    "CERTIFIED_INCONCLUSIVE": "Dual reviewers or Senior Adjudicator certified INCONCLUSIVE; excluded from binary TP/FP accuracy."
+  },
+  "invariants": [
+    "Self-approval blocked (HTTP 409 DUPLICATE_OR_LOCKED_REVIEW)",
+    "Reviewer who participated in conflict cannot adjudicate (HTTP 403)",
+    "Locked reviews never overwrite historical labels and never write LearningRecord"
+  ]
+}
