@@ -1,0 +1,20 @@
+{
+  "cohort_key": "AIS_2_6E_FROZEN_20",
+  "labels_modified": false,
+  "human_review_locks_preserved": true,
+  "locked_reviews_count": 20,
+  "gt2_count": 20,
+  "gt3_certified_count": 0,
+  "exposure_risk_count": 20,
+  "benchmark_learning_pollution_count": 0,
+  "postflight_verified": true,
+  "reconciliation_flagged_ids": [
+    "132474210",
+    "132596403",
+    "132599145",
+    "132501348"
+  ],
+  "human_only_external_evidence_ids": [
+    "132501348"
+  ]
+}

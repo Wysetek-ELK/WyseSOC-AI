@@ -32,6 +32,7 @@ from app.models.analyst_feedback import (
 from app.models.audit import AuditLog
 from app.models.incident import HistoricalGroundTruth, Incident, IncidentEvent
 from app.models.investigation import Investigation, InvestigationEvidence
+from app.models.learning import LearningRecord
 from app.models.prompt import PromptVersion, RulePrompt
 from app.models.rule import Rule
 from app.schemas.ground_truth import (
@@ -49,6 +50,8 @@ from app.schemas.ground_truth import (
     RuleDefinitionView,
 )
 from app.services.blind_review_guard import (
+    AIS_3_0_HOLDOUT_COHORT_ID,
+    AIS_3_0_HOLDOUT_COHORT_NAME,
     FROZEN_AIS_2_6E_COHORT_ID,
     FROZEN_AIS_2_6E_COHORT_NAME,
     FROZEN_AIS_2_6E_ITEMS,
@@ -1427,4 +1430,261 @@ class GroundTruthCertificationService:
             "is_frozen": cohort.is_frozen,
             "excluded_from_learning": cohort.excluded_from_learning,
             "progress": progress.model_dump(),
+        }
+
+    @classmethod
+    async def ensure_ais_3_0_holdout_cohort(
+        cls,
+        db: AsyncSession,
+        target_size: int = 100,
+        per_rule_cap: int = 12,
+    ) -> BenchmarkCohort:
+        """
+        Prepares `AIS_3_0_INDEPENDENT_HOLDOUT_100` for future AIS 3.0 blind certification.
+        Strictly excludes `AIS_2_6E_FROZEN_20` incidents, CrowdStrike/Prisma development rule
+        families, LearningRecord/RAG precedents, and prior human-reviewed incidents, while
+        deduplicating repeated campaign floods and leaving all items `GT0_UNREVIEWED`.
+        """
+        await cls.ensure_ais_2_6e_cohort_registered(db, load_from_zip_if_missing=False)
+
+        c_res = await db.execute(
+            select(BenchmarkCohort).where(BenchmarkCohort.cohort_key == AIS_3_0_HOLDOUT_COHORT_ID)
+        )
+        cohort = c_res.scalar_one_or_none()
+        if not cohort:
+            cohort = BenchmarkCohort(
+                cohort_key=AIS_3_0_HOLDOUT_COHORT_ID,
+                name=AIS_3_0_HOLDOUT_COHORT_NAME,
+                description=(
+                    "Unseen multi-rule holdout benchmark cohort prepared in AIS 2.9 across >=5 "
+                    "non-development detection families for independent GT-3 human certification."
+                ),
+                version="3.0",
+                is_frozen=True,
+                required_reviewers=2,
+                excluded_from_learning=True,
+            )
+            db.add(cohort)
+            await db.flush()
+
+        existing_holdout_res = await db.execute(
+            select(BenchmarkCohortItem).where(BenchmarkCohortItem.cohort_id == cohort.id)
+        )
+        existing_holdout = existing_holdout_res.scalars().all()
+        if len(existing_holdout) >= target_size:
+            return cohort
+
+        existing_fids = {it.fortisiem_incident_id for it in existing_holdout}
+
+        # Collect contamination exclusion sets
+        other_items = (
+            await db.execute(
+                select(BenchmarkCohortItem).where(BenchmarkCohortItem.cohort_id != cohort.id)
+            )
+        ).scalars().all()
+        excluded_fids = {it.fortisiem_incident_id for it in other_items}
+        excluded_db_ids = {it.incident_db_id for it in other_items if it.incident_db_id}
+
+        learned_ids = {row[0] for row in (await db.execute(select(LearningRecord.incident_id))).all()}
+        reviewed_ids = {row[0] for row in (await db.execute(select(AnalystVerdictReview.incident_id))).all()}
+        excluded_db_ids |= learned_ids | reviewed_ids
+
+        # Fetch candidate incidents evenly across ALL non-CS / non-Prisma rules so
+        # high-volume rules (e.g. Web Policy Violation) do not starve diverse rule families.
+        all_rules = (await db.execute(select(Rule))).scalars().all()
+        candidates: List[Incident] = []
+        seen_inc_pks = set()
+        for r_obj in all_rules:
+            r_up = str(r_obj.rule_id or r_obj.event_type or "").upper()
+            if "CS_SUSPICIOUS" in r_up or "CROWDSTRIKE" in r_up or "PRISMA" in r_up:
+                continue
+            r_cands = (
+                await db.execute(
+                    select(Incident)
+                    .where(or_(Incident.rule_id == r_obj.id, Incident.event_type == r_obj.rule_id))
+                    .options(selectinload(Incident.events), selectinload(Incident.ground_truth), selectinload(Incident.rule))
+                    .order_by(Incident.created_at.desc())
+                    .limit(40)
+                )
+            ).scalars().all()
+            for inc in r_cands:
+                if inc.id not in seen_inc_pks:
+                    seen_inc_pks.add(inc.id)
+                    candidates.append(inc)
+        # Include any non-CS/Prisma incidents not linked via Rule FK
+        if len(candidates) < target_size * 2:
+            fallback_res = (
+                await db.execute(
+                    select(Incident)
+                    .options(selectinload(Incident.events), selectinload(Incident.ground_truth), selectinload(Incident.rule))
+                    .order_by(Incident.created_at.desc())
+                    .limit(400)
+                )
+            ).scalars().all()
+            for inc in fallback_res:
+                if inc.id not in seen_inc_pks:
+                    seen_inc_pks.add(inc.id)
+                    candidates.append(inc)
+
+        by_rule: Dict[str, List[Incident]] = {}
+        seen_signatures = set()
+        for inc in candidates:
+            fid = str(inc.incident_id or "").strip()
+            if not fid or fid in excluded_fids or fid in existing_fids or inc.id in excluded_db_ids:
+                continue
+            r_id = str((inc.rule.rule_id if inc.rule else None) or inc.event_type or "").strip()
+            r_upper = r_id.upper()
+            # Isolate holdout from development rule families (CrowdStrike / Prisma SASE)
+            if "CS_SUSPICIOUS" in r_upper or "CROWDSTRIKE" in r_upper or "PRISMA" in r_upper:
+                continue
+            if not inc.events and not inc.raw_payload:
+                continue
+            # Deduplicate repeated campaign floods within same rule + source_ip + normalized title
+            sig = (r_upper, str(inc.source_ip or ""), str(inc.title or "").strip().lower()[:80])
+            if sig in seen_signatures:
+                continue
+            seen_signatures.add(sig)
+            by_rule.setdefault(r_id or "UNKNOWN_RULE", []).append(inc)
+
+        # Prioritize unexposed (no prior ai_verdict) within each rule bucket
+        for r_id, lst in by_rule.items():
+            lst.sort(key=lambda x: (0 if not x.ai_verdict else 1, -(len(x.events or [])), str(x.incident_id)))
+
+        selected: List[Incident] = []
+        rule_keys = sorted(by_rule.keys(), key=lambda k: len(by_rule[k]), reverse=True)
+        per_rule_counts: Dict[str, int] = {k: 0 for k in rule_keys}
+        idx_map: Dict[str, int] = {k: 0 for k in rule_keys}
+
+        # Pass 1: Round-robin across distinct rules up to per_rule_cap
+        needed = max(0, target_size - len(existing_holdout))
+        while len(selected) < needed:
+            progressed = False
+            for rk in rule_keys:
+                if len(selected) >= needed:
+                    break
+                if per_rule_counts[rk] >= per_rule_cap:
+                    continue
+                pos = idx_map[rk]
+                if pos < len(by_rule[rk]):
+                    selected.append(by_rule[rk][pos])
+                    idx_map[rk] = pos + 1
+                    per_rule_counts[rk] += 1
+                    progressed = True
+            if not progressed:
+                break
+
+        # Pass 2: If fewer than target_size filled under strict cap, fill remaining unique deduplicated candidates
+        if len(selected) < needed:
+            for rk in rule_keys:
+                while len(selected) < needed and idx_map[rk] < len(by_rule[rk]):
+                    selected.append(by_rule[rk][idx_map[rk]])
+                    idx_map[rk] += 1
+
+        seq_start = len(existing_holdout) + 1
+        for offset, inc in enumerate(selected):
+            seq = seq_start + offset
+            rule_obj = inc.rule
+            norm_res = EvidenceNormalizationService.normalize_incident_evidence(
+                incident=inc, events=inc.events
+            )
+            raw_hash = _sha256_canonical(
+                [
+                    {
+                        "event_id": ev.event_id,
+                        "event_type": ev.event_type,
+                        "raw_log": ev.raw_log,
+                        "attributes": ev.attributes,
+                    }
+                    for ev in (inc.events or [])
+                ]
+                or inc.raw_payload
+                or {"incident_id": inc.incident_id}
+            )
+            can_hash = _sha256_canonical([r.model_dump() for r in norm_res.records])
+            rule_hash = (
+                _sha256_canonical(
+                    {
+                        "rule_id": rule_obj.rule_id,
+                        "raw_rule_text": rule_obj.raw_rule_text,
+                        "pattern_logic": rule_obj.pattern_logic,
+                        "parsed_metadata": rule_obj.parsed_metadata,
+                    }
+                )
+                if rule_obj
+                else None
+            )
+            exposure_reasons: List[str] = []
+            if inc.ai_verdict:
+                exposure_reasons.append("Prior operational ai_verdict masked during blind review")
+            if inc.ground_truth is not None:
+                exposure_reasons.append("Historical SIEM ground truth masked during blind review")
+
+            r_id = (rule_obj.rule_id if rule_obj else None) or inc.event_type or "UNKNOWN_RULE"
+            item = BenchmarkCohortItem(
+                cohort_id=cohort.id,
+                incident_db_id=inc.id,
+                fortisiem_incident_id=str(inc.incident_id),
+                rule_id=r_id,
+                rule_name=(rule_obj.name if rule_obj else None) or inc.title or r_id,
+                customer=inc.customer or "DEFAULT",
+                is_priority=False,
+                priority_rank=seq,
+                eligibility_status="ELIGIBLE",
+                certification_status="GT0_UNREVIEWED",
+                raw_evidence_sha256=raw_hash,
+                canonical_evidence_sha256=can_hash,
+                rule_definition_sha256=rule_hash,
+                exposure_risk_flag=bool(exposure_reasons),
+                exposure_risk_reason="; ".join(exposure_reasons),
+            )
+            db.add(item)
+
+        await db.commit()
+        await db.refresh(cohort)
+        return cohort
+
+    @classmethod
+    async def get_holdout_eligibility_summary(
+        cls, db: AsyncSession, current_user: Any
+    ) -> Dict[str, Any]:
+        """Reports frozen GT-3 readiness + AIS 3.0 holdout eligibility, diversity, and contamination isolation."""
+        frozen_cohort = await cls.ensure_ais_2_6e_cohort_registered(db, load_from_zip_if_missing=False)
+        holdout_cohort = await cls.ensure_ais_3_0_holdout_cohort(db)
+
+        frozen_prog = await cls._build_progress_counters(db, frozen_cohort, current_user)
+        holdout_prog = await cls._build_progress_counters(db, holdout_cohort, current_user)
+
+        frozen_items = (
+            await db.execute(select(BenchmarkCohortItem).where(BenchmarkCohortItem.cohort_id == frozen_cohort.id))
+        ).scalars().all()
+        holdout_items = (
+            await db.execute(select(BenchmarkCohortItem).where(BenchmarkCohortItem.cohort_id == holdout_cohort.id))
+        ).scalars().all()
+
+        frozen_fids = {i.fortisiem_incident_id for i in frozen_items}
+        holdout_fids = {i.fortisiem_incident_id for i in holdout_items}
+        rule_counts: Dict[str, int] = {}
+        unexposed_count = 0
+        for hi in holdout_items:
+            rule_counts[hi.rule_id] = rule_counts.get(hi.rule_id, 0) + 1
+            if not hi.exposure_risk_flag:
+                unexposed_count += 1
+
+        return {
+            "frozen_cohort": {
+                "cohort_key": frozen_cohort.cohort_key,
+                "progress": frozen_prog.model_dump(),
+            },
+            "holdout_cohort": {
+                "cohort_key": holdout_cohort.cohort_key,
+                "target_size": 100,
+                "actual_count": len(holdout_items),
+                "shortfall": max(0, 100 - len(holdout_items)),
+                "distinct_rule_families": len(rule_counts),
+                "rules_breakdown": rule_counts,
+                "zero_overlap_with_frozen": len(frozen_fids & holdout_fids) == 0,
+                "overlap_count": len(frozen_fids & holdout_fids),
+                "unexposed_count": unexposed_count,
+                "progress": holdout_prog.model_dump(),
+            },
         }

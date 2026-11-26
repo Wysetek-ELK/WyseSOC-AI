@@ -1,0 +1,9 @@
+{
+  "neutral_prompt_versions": {
+    "V1": "Used in Experiment R (matched AIS 2.7 historical replay; 15 stratified incidents)",
+    "V2": "Used in Experiments A, B, C (neutral unbiased prompt; zero anti-REQUIRES_ATTENTION or auto-FP bias)"
+  },
+  "no_label_leakage_verified": true,
+  "no_ai_or_human_verdict_in_prompts": true,
+  "experiment_a_vs_b_only_adds_evidence_intelligence": true
+}

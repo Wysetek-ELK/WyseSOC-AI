@@ -1,0 +1,29 @@
+{
+  "phase": "AIS_2_8_FINAL_LIVE_EXECUTION",
+  "generated_at_utc": "2026-11-26T08:14:45.552004+00:00",
+  "operator_single_model_scope": "Qwen/Qwen3-14B-AWQ exclusive; no model switching or Qwen2.5 live inference",
+  "server_1": {
+    "address": "172.26.41.240",
+    "logical_hostname": "verdictum-core-01",
+    "deployed_commit_sha": "215f744c9e699aac97512505a1afb5fdca888732",
+    "upla_execution_id": "upla-20261126-051201-6e3bf9",
+    "deployment_status": "DEPLOYED_AND_VERIFIED",
+    "scheduler_running": false,
+    "automatic_closure_enabled": false
+  },
+  "server_2": {
+    "logical_hostname": "verdictum-cortex-01",
+    "endpoint_active_uat": "http://13.204.214.64:8000/v1",
+    "private_ip_probe": "172.29.164.10:8000 (timed out from Server 1)",
+    "transport_security_status": "PLAINTEXT_HTTP_UAT_AUTHORIZED_NOT_FOR_PROD",
+    "vllm_version": "0.33.0",
+    "active_model": "Qwen/Qwen3-14B-AWQ",
+    "model_revision": "31c69efc29464b6bb0aee1398b5a7b50a99340c3",
+    "max_model_len": 8192,
+    "configured_context_budget": 8192,
+    "configured_max_tokens": 768,
+    "smoke_test_ok": true,
+    "smoke_test_response_id": "chatcmpl-b6de0ebd1e1f8817",
+    "smoke_test_latency_ms": 822.09
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "actions": [
+    "1. Account for Mode B sys_b prompt size inside TokenBudgetService / ais27_benchmark_runner wire reserve so 132474210 and heavy CrowdStrike payloads leave >= 768 completion tokens.",
+    "2. Fix deterministic validator / citation alias matching between process.command_line and NT-device normalized process.file_path (\\Device\\HarddiskVolume*) and normalize quoted Windows paths.",
+    "3. Complete independent second-reviewer GT-3 certification on AIS_2_6E_FROZEN_20 and build an unseen holdout benchmark across >= 3-5 detection rule families for AIS 2.9.",
+    "4. Establish private AWS VPC routing or TLS termination between Server 1 (172.26.41.240) and Server 2 (verdictum-cortex-01) before processing regulated production telemetry.",
+    "5. Optional: deploy a minimal read-only NVML exporter on Server 2 if physical GPU VRAM/utilization telemetry is required on dashboards; otherwise keep Scheduler/Inference safe for operator review (operator may stop GPU instance after reviewing results)."
+  ]
+}

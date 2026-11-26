@@ -1,0 +1,7 @@
+# 19 — Security, Regression & UI Verification
+
+- **Backend Regression Suite**: `81 passed in 56.79s` across 13 suites (`test_ais_2_8_intelligence.py`, `test_ais_2_7_benchmark_runner.py`, `test_ais_2_6f_certification_and_blind_review.py`, `test_context_window_8k_16k.py`, `test_token_budgeting.py`, `test_llm_config.py`, `test_ais_2_4a_tp_grounding.py`, `test_ais_2_4_regression.py`, `test_ais_2_3b_1_regression.py`, `test_ais_2_3a_integrity.py`, `test_ais_heavy_tcp_e2e.py`, `test_rule_learning_platform.py`, `test_api_422_remediation.py`).
+- **Frontend Unit Tests & Build**: `npm.cmd --prefix frontend test` (`16` suites passed, exit `0`) and `npm.cmd --prefix frontend run build` (`32` static/dynamic Next.js routes, exit `0`).
+- **Lint Status (Reconciled Honestly)**: `ruff` not installed (`NOT VERIFIED`); `npm.cmd --prefix frontend run lint` exited `1` (`622` pre-existing warnings/errors).
+- **Live HTTP UI Route Checks**: All `14` UI routes on `http://172.26.41.240` (`/login`, `/`, `/incidents`, `/ai-triage-workbench`, `/analyst-attention`, `/human-review-queue`, `/agent-intelligence-studio`, `/detection-intelligence`, `/verdict-intelligence`, `/inference-control`, `/infrastructure`, `/telemetry-hub`, `/evaluation-reports`, `/admin-guide`) returned HTTP `200` with zero SSR error markers. Live headless Chrome DevTools inspection was skipped/unavailable (`DevToolsActivePort` missing).
+- **RBAC & Isolation**: `6/6` protected API endpoints failed closed (`HTTP 401`) unauthenticated; blind-review locks and learning tables untouched (`0` mutations).

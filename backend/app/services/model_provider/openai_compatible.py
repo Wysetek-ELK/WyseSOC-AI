@@ -277,6 +277,40 @@ class OpenAICompatibleProvider(BaseModelProvider):
             pass
         return [self.model_name]
 
+    @staticmethod
+    def build_system_instruction(prompt_text: str) -> str:
+        """Constructs the exact wire system instruction matching analyze_incident."""
+        if "SECTION 11:" in prompt_text:
+            return (
+                f"{prompt_text}\n\n"
+                "Note: Populate supporting_claims[].cited_evidence_ids (or evidence_ids) strictly from incident.canonical_evidence[].evidence_id.\n"
+                "IMPORTANT: Output ONLY compact JSON. Keep 'reason' concise (< 120 words). Limit 'supporting_claims' to max 3 factual items. Do NOT dump raw logs."
+            )
+        return (
+            f"{prompt_text}\n\n"
+            "CRITICAL: Output must be a strictly valid JSON object matching this schema:\n"
+            "{\n"
+            '  "verdict": "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ATTENTION",\n'
+            '  "confidence": <float 0-100>,\n'
+            '  "reason": "<concise analytical summary under 120 words>",\n'
+            '  "supporting_claims": [\n'
+            '    {\n'
+            '      "claim_type": "OBSERVED_FACT" | "TELEMETRY_OBSERVATION" | "PROCESS_EXECUTION" | "NETWORK_CONNECTION" | "FILE_HASH" | "USER_CONTEXT",\n'
+            '      "field": "<canonical source_field>",\n'
+            '      "asserted_value": "<exact observed value>",\n'
+            '      "claim_text": "<concise grounded observation>",\n'
+            '      "cited_evidence_ids": ["<canonical evidence_id from incident.canonical_evidence>"],\n'
+            '      "evidence_ids": ["<canonical evidence_id from incident.canonical_evidence>"]\n'
+            "    }\n"
+            "  ],\n"
+            '  "supporting_evidence": ["<concise string>"],\n'
+            '  "contradictory_evidence": ["<concise string>"],\n'
+            '  "missing_evidence": ["<concise string>"],\n'
+            '  "analyst_questions": ["<concise string>"]\n'
+            "}\n"
+            "IMPORTANT: Output ONLY the compact JSON object. Keep 'reason' strictly under 120 words. Limit 'supporting_claims' to at most 3 factual items. Do NOT echo raw event logs or prompt text."
+        )
+
     async def analyze_incident(
         self,
         incident_payload: Dict[str, Any],
@@ -288,56 +322,10 @@ class OpenAICompatibleProvider(BaseModelProvider):
         start_time = time.time()
         incident_id = str(incident_payload.get("incident_id", ""))
         rule_id = str(rule_spec.get("id", rule_spec.get("rule_id", "")))
-
-        if "SECTION 11:" in prompt_text:
-            system_instruction = (
-                f"{prompt_text}\n\n"
-                "Note: Populate supporting_claims[].cited_evidence_ids (or evidence_ids) strictly from incident.canonical_evidence[].evidence_id.\n"
-                "IMPORTANT: Output ONLY compact JSON. Keep 'reason' concise (< 120 words). Limit 'supporting_claims' to max 3 factual items. Do NOT dump raw logs."
-            )
-        else:
-            system_instruction = (
-                f"{prompt_text}\n\n"
-                "CRITICAL: Output must be a strictly valid JSON object matching this schema:\n"
-                "{\n"
-                '  "verdict": "TRUE_POSITIVE" | "FALSE_POSITIVE" | "REQUIRES_ATTENTION",\n'
-                '  "confidence": <float 0-100>,\n'
-                '  "reason": "<concise analytical summary under 120 words>",\n'
-                '  "supporting_claims": [\n'
-                '    {\n'
-                '      "claim_type": "OBSERVED_FACT" | "TELEMETRY_OBSERVATION" | "PROCESS_EXECUTION" | "NETWORK_CONNECTION" | "FILE_HASH" | "USER_CONTEXT",\n'
-                '      "field": "<canonical source_field>",\n'
-                '      "asserted_value": "<exact observed value>",\n'
-                '      "claim_text": "<concise grounded observation>",\n'
-                '      "cited_evidence_ids": ["<canonical evidence_id from incident.canonical_evidence>"],\n'
-                '      "evidence_ids": ["<canonical evidence_id from incident.canonical_evidence>"]\n'
-                "    }\n"
-                "  ],\n"
-                '  "supporting_evidence": ["<concise string>"],\n'
-                '  "contradictory_evidence": ["<concise string>"],\n'
-                '  "missing_evidence": ["<concise string>"],\n'
-                '  "analyst_questions": ["<concise string>"]\n'
-                "}\n"
-                "IMPORTANT: Output ONLY the compact JSON object. Keep 'reason' strictly under 120 words. Limit 'supporting_claims' to at most 3 factual items. Do NOT echo raw event logs or prompt text."
-            )
+        system_instruction = self.build_system_instruction(prompt_text)
 
         # Construct compact valid JSON prompt for local LLM (avoids indent bloat inside finite context window)
-        compact_json = json.dumps({
-            "incident": incident_payload,
-            "rule": rule_spec,
-        }, separators=(",", ":"))
-
-        # Neutralize prompt-injection attempts trying to close untrusted delimiter tags inside raw logs
-        compact_json = (
-            compact_json
-            .replace("</UNTRUSTED_INCIDENT_DATA>", "&lt;/UNTRUSTED_INCIDENT_DATA&gt;")
-            .replace("</untrusted_incident_data>", "&lt;/untrusted_incident_data&gt;")
-            .replace("</VERIFIED_HISTORICAL_PRECEDENTS>", "&lt;/VERIFIED_HISTORICAL_PRECEDENTS&gt;")
-            .replace("</verified_historical_precedents>", "&lt;/verified_historical_precedents&gt;")
-        )
-
-        # Enforce Section 10 instruction boundary delimiters around untrusted telemetry
-        user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
+        user_content = ModelTokenizerService.render_wire_user_message(incident_payload, rule_spec)
 
         # Pre-dispatch Wire Token Verification & Capacity Headroom Enforcement (AIS 2.4 Context Expansion)
         wire_prompt_tokens = ModelTokenizerService.count_wire_prompt_tokens(

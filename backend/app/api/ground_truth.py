@@ -22,7 +22,7 @@ from app.schemas.ground_truth import (
     GroundTruthReopenRequest,
     GroundTruthReviewSubmitRequest,
 )
-from app.services.blind_review_guard import FROZEN_AIS_2_6E_COHORT_ID
+from app.services.blind_review_guard import AIS_3_0_HOLDOUT_COHORT_ID, FROZEN_AIS_2_6E_COHORT_ID
 from app.services.ground_truth_certification_service import GroundTruthCertificationService
 
 router = APIRouter(prefix="/ground-truth", tags=["Ground Truth Certification"])
@@ -42,14 +42,26 @@ async def ensure_benchmark_cohort(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    if cohort_key != FROZEN_AIS_2_6E_COHORT_ID:
+    if cohort_key == FROZEN_AIS_2_6E_COHORT_ID:
+        await GroundTruthCertificationService.ensure_ais_2_6e_cohort_registered(db)
+    elif cohort_key == AIS_3_0_HOLDOUT_COHORT_ID:
+        await GroundTruthCertificationService.ensure_ais_3_0_holdout_cohort(db)
+    else:
         raise HTTPException(status_code=404, detail=f"Cohort {cohort_key} is not configured for auto-seeding.")
-    await GroundTruthCertificationService.ensure_ais_2_6e_cohort_registered(db)
     cohorts = await GroundTruthCertificationService.list_cohorts(db, current_user)
     for c in cohorts:
         if c.cohort_key == cohort_key:
             return c
     raise HTTPException(status_code=404, detail=f"Cohort {cohort_key} not found.")
+
+
+@router.get("/holdout-readiness", response_model=Dict[str, Any])
+async def get_holdout_readiness(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Returns GT-2/GT-3 certification progress and AIS 3.0 multi-rule holdout preparation summary."""
+    return await GroundTruthCertificationService.get_holdout_eligibility_summary(db, current_user)
 
 
 @router.get("/cohorts/{cohort_key}/queue", response_model=GroundTruthQueueResponse)

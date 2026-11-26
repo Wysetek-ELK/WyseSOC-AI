@@ -1168,6 +1168,7 @@ class IndependentVerdictValidator:
             unsupported_claims_count=claim_grounding.unsupported_claims,
             missing_evidence_fields=preflight.missing_evidence_fields,
             unsupported_claims=unsupported_claims,
+            validation_audit_trail=list(getattr(claim_grounding, "validation_audit_trail", []) or []),
             detected_contradictions=contradictions,
             field_validation_status=getattr(preflight, "field_validation_status", {}),
             analyst_action_directive=action_directive,

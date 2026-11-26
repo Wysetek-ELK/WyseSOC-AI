@@ -1,0 +1,53 @@
+{
+  "phase": "AIS_2_8_FINAL_LIVE_EXECUTION",
+  "resolved_since_previous_ais_2_8": [
+    {
+      "id": "BLK-28-01",
+      "resolution": "Resolved via Server 1 admin bearer authentication and verified live runs."
+    },
+    {
+      "id": "BLK-28-02",
+      "resolution": "Superseded by explicit operator instruction to run Qwen/Qwen3-14B-AWQ exclusively (NOT_APPLICABLE_OPERATOR_SINGLE_MODEL_SCOPE)."
+    },
+    {
+      "id": "COHORT_EMPTY",
+      "resolution": "Recovered all 20 unique locked GT-2 incidents from Server 1 PostgreSQL."
+    },
+    {
+      "id": "SCHEDULER_CONTENTION",
+      "resolution": "Resolved in SHA 215f744c via persistent explicit stop + single-item backlog lease."
+    }
+  ],
+  "open_blockers_and_gaps": [
+    {
+      "id": "BLK-28-03",
+      "severity": "LOW",
+      "status": "OPEN",
+      "detail": "Physical GPU NVML/DCGM exporter not deployed on Server 2 (gpu_telemetry_verified=false)."
+    },
+    {
+      "id": "BLK-28-04",
+      "severity": "HIGH_FOR_PROD",
+      "status": "OPEN_FOR_PROD_WAIVED_FOR_UAT",
+      "detail": "Server 1 -> Server 2 uses plaintext http://13.204.214.64:8000/v1 (authorized for UAT; requires private VPC peering or TLS proxy before production customer telemetry)."
+    },
+    {
+      "id": "MODE_B_WIRE_RESERVE",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "detail": "Mode B sys_b prompt overhead pushed 132474210 to 8088 prompt tokens (8088+104=8192 length truncation)."
+    },
+    {
+      "id": "VALIDATOR_PATH_NORMALIZATION",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "detail": "Deterministic validator falsely rejected 2 CrowdStrike TPs (132439932, 132502453) due to process.command_line vs NT device process.file_path mismatch."
+    },
+    {
+      "id": "GT3_AND_LINT",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "detail": "Dataset remains 20 GT-2 single-reviewer records (0 GT-3); ruff not installed; frontend ESLint has pre-existing exit 1 errors."
+    }
+  ]
+}

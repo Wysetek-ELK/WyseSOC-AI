@@ -12,6 +12,12 @@ from app.schemas.verdict_intelligence import (
     ClaimVerificationItem,
     ClaimVerificationResult,
 )
+from app.services.evidence_path_normalizer import (
+    compare_paths_strict,
+    is_path_field,
+    looks_like_path_value,
+    normalize_executable_path,
+)
 
 logger = logging.getLogger("ai_verdict.claim_validator")
 
@@ -284,6 +290,30 @@ class VerdictClaimValidator:
                             found = True
                             item.actual_observed_values[ce_f] = ce_rec["value"]
                             seen_evidence_keys.add(ce_f)
+                        elif is_path_field(ce_f) or looks_like_path_value(obs_v):
+                            # Check direct typed path match or same-event DOS/NT corroboration
+                            m_path = re.search(r'(?:"?[A-Za-z]:[\\/][^"\']+?(?:\.(?:exe|dll|ps1|bat|cmd))"?|\\Device\\HarddiskVolume\d+\\[^\s"\']+)', item.claim_text, re.IGNORECASE)
+                            cand_assert = m_path.group(0) if m_path else item.claim_text
+                            ok_p, _, na, no = compare_paths_strict(cand_assert, obs_v, obs_field=ce_f)
+                            if ok_p:
+                                found = True
+                            elif na and no and "\\" in no.relative_path and na.relative_path == no.relative_path:
+                                # Same-event sibling check via canonical_items
+                                src_evt = next((ci.get("source_event_id") for ci in canonical_items if isinstance(ci, dict) and str(ci.get("evidence_id")) == eid), None)
+                                if src_evt:
+                                    for sib in canonical_items:
+                                        if not isinstance(sib, dict) or sib.get("source_event_id") != src_evt or str(sib.get("evidence_id")) == eid:
+                                            continue
+                                        sf = str(sib.get("source_field") or sib.get("field") or "")
+                                        sv = sib.get("observed_value") if sib.get("observed_value") is not None else sib.get("value")
+                                        if is_path_field(sf) and sv:
+                                            ns = normalize_executable_path(sv, from_cmdline="command_line" in sf.lower())
+                                            if ns and ns.namespace == na.namespace and ns.normalized == na.normalized and ns.relative_path == no.relative_path:
+                                                found = True
+                                                break
+                            if found:
+                                item.actual_observed_values[ce_f] = ce_rec["value"]
+                                seen_evidence_keys.add(ce_f)
                     if not found:
                         for tk, tv in telemetry.items():
                             if eid.lower() in tk.lower() or (str(tv).strip() and str(tv).lower() in eid.lower()):

@@ -85,6 +85,22 @@ class ModelTokenizerService:
         # For Qwen2.5 and local models: use calibrated Qwen BPE subword counter
         return cls._count_tokens_pure_python(text)
 
+    @staticmethod
+    def render_wire_user_message(incident_payload: Dict[str, Any], rule_spec: Dict[str, Any]) -> str:
+        """Canonical compact wire serialization shared identically across budgeting, tokenize, and inference."""
+        compact_json = json.dumps(
+            {"incident": incident_payload, "rule": rule_spec},
+            separators=(",", ":"),
+        )
+        compact_json = (
+            compact_json
+            .replace("</UNTRUSTED_INCIDENT_DATA>", "&lt;/UNTRUSTED_INCIDENT_DATA&gt;")
+            .replace("</untrusted_incident_data>", "&lt;/untrusted_incident_data&gt;")
+            .replace("</VERIFIED_HISTORICAL_PRECEDENTS>", "&lt;/VERIFIED_HISTORICAL_PRECEDENTS&gt;")
+            .replace("</verified_historical_precedents>", "&lt;/verified_historical_precedents&gt;")
+        )
+        return f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
+
     @classmethod
     def count_wire_prompt_tokens(
         cls,
@@ -96,7 +112,7 @@ class ModelTokenizerService:
         Calculates the exact total prompt tokens that will appear on the wire at the model provider.
         Includes complete system prompt, complete user message, all XML delimiters,
         and full vLLM chat-template special tokens (<|im_start|>, <|im_end|>, role tags).
-        Applies calibrated Qwen2.5 subword accounting to guarantee wire token admission invariant.
+        Applies calibrated Qwen2.5/Qwen3 subword accounting to guarantee wire token admission invariant.
         """
         target_model = str(model_name or "").lower()
         overhead = (
@@ -119,10 +135,12 @@ class ModelTokenizerService:
         system_prompt: str,
         user_message: str,
         timeout_seconds: float = 5.0,
+        enable_thinking: bool = False,
     ) -> Dict[str, Any]:
         """
-        Queries Server 2 vLLM /tokenize endpoint for exact token validation,
-        falling back safely to calibrated local counting if /tokenize is unavailable.
+        Queries Server 2 vLLM /tokenize endpoint using the exact OpenAI chat messages +
+        chat_template_kwargs configuration first (matching /v1/chat/completions), falling
+        back to rendered ChatML prompt string, and safely to local calibrated counting.
         """
         local_estimate = cls.count_wire_prompt_tokens(
             system_prompt=system_prompt,
@@ -131,22 +149,51 @@ class ModelTokenizerService:
         )
         root_url = re.sub(r"/v1/?$", "", base_url.rstrip("/"))
         tokenize_url = f"{root_url}/tokenize"
+        messages_payload: Dict[str, Any] = {
+            "model": model_name,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            "add_generation_prompt": True,
+        }
+        if "qwen3" in str(model_name or "").lower():
+            messages_payload["chat_template_kwargs"] = {"enable_thinking": bool(enable_thinking)}
+
         formatted_messages = (
             f"<|im_start|>system\n{system_prompt}<|im_end|>\n"
             f"<|im_start|>user\n{user_message}<|im_end|>\n"
             "<|im_start|>assistant\n"
         )
-        if "qwen3" in str(model_name or "").lower():
+        if "qwen3" in str(model_name or "").lower() and not enable_thinking:
             formatted_messages += "<think>\n\n</think>\n\n"
         try:
             async with httpx.AsyncClient(timeout=timeout_seconds) as client:
+                # 1. Exact OpenAI messages + chat_template_kwargs check
                 res = await client.post(
+                    tokenize_url,
+                    headers={"Authorization": f"Bearer {api_key or 'EMPTY'}"},
+                    json=messages_payload,
+                )
+                if res.status_code == 200:
+                    payload = res.json()
+                    remote_count = int(payload.get("count") or len(payload.get("tokens") or []))
+                    if remote_count > 0:
+                        return {
+                            "token_count": remote_count,
+                            "local_estimate": local_estimate,
+                            "drift_tokens": remote_count - local_estimate,
+                            "source": "vllm_tokenize_api",
+                            "tokenize_mode": "messages_chat_template",
+                        }
+                # 2. Rendered ChatML fallback if server expects prompt field only
+                res2 = await client.post(
                     tokenize_url,
                     headers={"Authorization": f"Bearer {api_key or 'EMPTY'}"},
                     json={"model": model_name, "prompt": formatted_messages},
                 )
-            if res.status_code == 200:
-                payload = res.json()
+            if res2.status_code == 200:
+                payload = res2.json()
                 remote_count = int(payload.get("count") or len(payload.get("tokens") or []))
                 if remote_count > 0:
                     return {
@@ -154,6 +201,7 @@ class ModelTokenizerService:
                         "local_estimate": local_estimate,
                         "drift_tokens": remote_count - local_estimate,
                         "source": "vllm_tokenize_api",
+                        "tokenize_mode": "rendered_prompt_fallback",
                     }
         except Exception:
             pass
@@ -162,6 +210,7 @@ class ModelTokenizerService:
             "local_estimate": local_estimate,
             "drift_tokens": 0,
             "source": "local_bpe_calibrated",
+            "tokenize_mode": "offline_fallback",
         }
 
     @classmethod

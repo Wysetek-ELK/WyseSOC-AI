@@ -23,6 +23,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 FROZEN_AIS_2_6E_COHORT_ID = "AIS_2_6E_FROZEN_20"
 FROZEN_AIS_2_6E_COHORT_NAME = "AIS 2.6e Frozen Benchmark Cohort (CrowdStrike + Prisma SASE)"
+AIS_3_0_HOLDOUT_COHORT_ID = "AIS_3_0_INDEPENDENT_HOLDOUT_100"
+AIS_3_0_HOLDOUT_COHORT_NAME = "AIS 3.0 Independent Multi-Rule Holdout Cohort"
 
 PRIORITY_5_INCIDENT_IDS: List[str] = [
     "132474210",

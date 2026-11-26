@@ -23,6 +23,7 @@ class VerdictValidationResult(BaseModel):
     unsupported_claims_count: int = 0
     missing_evidence_fields: List[str] = Field(default_factory=list)
     unsupported_claims: List[Dict[str, Any]] = Field(default_factory=list)
+    validation_audit_trail: List[Dict[str, Any]] = Field(default_factory=list)
     detected_contradictions: List[str] = Field(default_factory=list)
     field_validation_status: Dict[str, str] = Field(default_factory=dict, description="Detailed per-field status: PRESENT_VALID, NOT_IN_SOURCE, NOT_MAPPED, DROPPED_FROM_CONTEXT")
     analyst_action_directive: str = Field("", description="Guidance for human SOC analyst review")

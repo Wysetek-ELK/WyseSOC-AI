@@ -224,12 +224,17 @@ class TokenBudgetService:
         reserved_overhead_tokens: int = 0,
         model_name: Optional[str] = None,
         target_input_budget: Optional[int] = None,
+        wire_system_prompt: Optional[str] = None,
+        wire_rule_spec: Optional[Dict[str, Any]] = None,
+        safety_margin_tokens: int = 0,
     ) -> BudgetedPromptResult:
         available_budget = cls.calculate_available_input_tokens(
             max_context_tokens=max_context_tokens,
             reserved_output_tokens=max_completion_tokens,
             target_input_budget=target_input_budget,
         )
+        if safety_margin_tokens and int(safety_margin_tokens) > 0:
+            available_budget = max(512, available_budget - int(safety_margin_tokens))
 
         # Deepcopy payload so original is unmutated
         payload_work = copy.deepcopy(incident_payload)
@@ -288,26 +293,27 @@ class TokenBudgetService:
         # Measure Priority 7: Historical RAG precedents
         p7_rag_tokens = cls.estimate_tokens(rag_work)
 
-        rule_spec_for_wire = {
-            "id": str(payload_work.get("rule_id", "")),
-            "rule_id": str(payload_work.get("rule_id", "")),
-            "name": str(payload_work.get("rule_name", payload_work.get("title", ""))),
-            "severity": str(payload_work.get("severity", "")),
-            "description": str(payload_work.get("rule_description", "")),
-        }
+        rule_spec_for_wire = (
+            wire_rule_spec
+            if wire_rule_spec is not None
+            else {
+                "id": str(payload_work.get("rule_id", "")),
+                "rule_id": str(payload_work.get("rule_id", "")),
+                "name": str(payload_work.get("rule_name", payload_work.get("title", ""))),
+                "severity": str(payload_work.get("severity", "")),
+                "description": str(payload_work.get("rule_description", "")),
+            }
+        )
+        base_wire_sys_prompt = (
+            wire_system_prompt
+            if wire_system_prompt is not None
+            else compiled_policy.compiled_system_prompt
+        )
 
         def _calc_wire_tokens() -> int:
-            c_json = json.dumps({"incident": payload_work, "rule": rule_spec_for_wire}, separators=(",", ":"))
-            c_json = (
-                c_json
-                .replace("</UNTRUSTED_INCIDENT_DATA>", "&lt;/UNTRUSTED_INCIDENT_DATA&gt;")
-                .replace("</untrusted_incident_data>", "&lt;/untrusted_incident_data&gt;")
-                .replace("</VERIFIED_HISTORICAL_PRECEDENTS>", "&lt;/VERIFIED_HISTORICAL_PRECEDENTS&gt;")
-                .replace("</verified_historical_precedents>", "&lt;/verified_historical_precedents&gt;")
-            )
-            u_msg = f"<UNTRUSTED_INCIDENT_DATA>\n{c_json}\n</UNTRUSTED_INCIDENT_DATA>"
-            sys_p = compiled_policy.compiled_system_prompt
-            if rag_work:
+            u_msg = ModelTokenizerService.render_wire_user_message(payload_work, rule_spec_for_wire)
+            sys_p = base_wire_sys_prompt
+            if rag_work and rag_work not in sys_p:
                 sys_p = f"{sys_p}\n\n{rag_work}"
             return ModelTokenizerService.count_wire_prompt_tokens(
                 system_prompt=sys_p,
@@ -410,11 +416,25 @@ class TokenBudgetService:
                 + _orig_conditional_fields
             ))
             payload_no_ev = {k: v for k, v in payload_work.items() if k != "canonical_evidence"}
+            rule_overhead_val = (
+                cls.estimate_tokens(rule_spec_for_wire, model_name=model_name)
+                if wire_rule_spec is not None
+                else max(0, int(reserved_overhead_tokens))
+            )
+            sys_wire_tokens = cls.estimate_tokens(
+                f"{base_wire_sys_prompt}\n\n{rag_work}" if (rag_work and rag_work not in base_wire_sys_prompt) else base_wire_sys_prompt,
+                model_name=model_name,
+            )
+            tmpl_margin = (
+                ModelTokenizerService.QWEN3_CHAT_TEMPLATE_OVERHEAD_TOKENS
+                if "qwen3" in str(model_name or "").lower()
+                else ModelTokenizerService.CHAT_TEMPLATE_OVERHEAD_TOKENS
+            )
             overhead = (
-                cls.estimate_tokens(compiled_policy.compiled_system_prompt)
-                + cls.estimate_tokens(payload_no_ev)
-                + max(0, int(reserved_overhead_tokens))
-                + 65  # wire margin for Qwen chat template tags and JSON delimiters
+                sys_wire_tokens
+                + cls.estimate_tokens(payload_no_ev, model_name=model_name)
+                + rule_overhead_val
+                + tmpl_margin
             )
             avail_ev_budget = max(680 if has_scan_aggs else 150, available_budget - overhead)
 

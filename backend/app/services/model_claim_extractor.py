@@ -4,6 +4,13 @@ from typing import List, Dict, Any, Optional, Tuple
 
 from app.schemas.canonical_evidence import CanonicalEvidenceRecord, EvidenceNormalizationResult
 from app.schemas.evidence_claim import ModelSupportingClaim, ClaimGroundingResult
+from app.services.evidence_path_normalizer import (
+    compare_paths_strict,
+    find_same_event_corroboration,
+    is_path_field,
+    looks_like_path_value,
+    normalize_executable_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +95,16 @@ def compare_evidence_values(field: str, asserted: Any, observed: Any) -> bool:
                 return True
         except Exception:
             pass
+
+    # 6b. Windows / POSIX Path Strict Comparison (prevents unsafe substring/suffix matches)
+    if is_path_field(clean_field) or looks_like_path_value(raw_assert) or looks_like_path_value(raw_obs):
+        ok_path, _, _, _ = compare_paths_strict(
+            raw_assert,
+            raw_obs,
+            claim_field=clean_field,
+            obs_field=clean_field,
+        )
+        return ok_path
 
     # 7. Substring / Case-Insensitive String Match
     assert_lower = raw_assert.lower()
@@ -390,13 +407,16 @@ class ModelClaimExtractor:
         grounded_count = 0
         unsupported_count = 0
         unsupported_details: List[Dict[str, Any]] = []
+        validation_audit_trail: List[Dict[str, Any]] = []
 
-        for claim in claims:
+        for idx, claim in enumerate(claims, start=1):
+            claim_ref_id = f"CLM-{idx:02d}-{claim.field}"
             is_grounded = False
             status = "CLAIM_NOT_VERIFIABLE"
             reason_diag = ""
             matched_id = None
             actual_val = None
+            audit_entry: Optional[Dict[str, Any]] = None
 
             # Case A: Model explicitly cited evidence ID(s)
             if claim.evidence_ids:
@@ -440,11 +460,61 @@ class ModelClaimExtractor:
                         or clean_rec_f == clean_claim_f
                         or (clean_rec_f in ("process_name", "process_file_name", "process") and clean_claim_f in ("process_name", "process_file_name", "process"))
                         or (clean_rec_f in ("file_name", "filename", "file_path", "target_filename") and clean_claim_f in ("file_name", "filename", "file_path", "target_filename"))
+                        or (clean_rec_f in ("process_file_path", "process_image_path", "process_executable_path", "process_command_line") and clean_claim_f in ("process_file_path", "process_image_path", "process_executable_path", "process_command_line"))
                         or (clean_rec_f in ("process_parent_name", "parent_name", "parent_file_name", "parent_process") and clean_claim_f in ("process_parent_name", "parent_name", "parent_file_name", "parent_process"))
                         or (clean_rec_f in ("file_hash_sha256", "file_sha256", "sha256") and clean_claim_f in ("file_hash_sha256", "file_sha256", "sha256"))
                     )
 
-                    if compare_evidence_values(claim.field, claim.asserted_value, actual_val) and fields_compatible:
+                    path_check_needed = is_path_field(claim.field) or is_path_field(rec.source_field) or looks_like_path_value(claim.asserted_value)
+                    if fields_compatible and path_check_needed:
+                        ok_direct, method, na, no = compare_paths_strict(
+                            claim.asserted_value,
+                            actual_val,
+                            claim_field=claim.field,
+                            obs_field=rec.source_field,
+                        )
+                        if ok_direct:
+                            audit_entry = {
+                                "claim_id": claim_ref_id,
+                                "source_event_id": rec.source_event_id,
+                                "source_field": rec.source_field,
+                                "original_value": actual_val,
+                                "normalized_value": no.normalized if no else actual_val,
+                                "comparison_method": method,
+                                "alias_provenance": None,
+                                "validation_status": "GROUNDED",
+                                "validation_reason": "Typed path normalization matched cited telemetry.",
+                            }
+                        else:
+                            corrob = find_same_event_corroboration(
+                                claim_id=claim_ref_id,
+                                asserted_raw=claim.asserted_value,
+                                claim_field=claim.field,
+                                cited_rec=rec,
+                                all_records=normalization_result.records,
+                            )
+                            if corrob:
+                                audit_entry = corrob
+                            else:
+                                all_ids_valid = False
+                                status = "EVIDENCE_VALUE_MISMATCH"
+                                reason_diag = (
+                                    f"Path mismatch ({method}) for '{claim.field}': claimed '{claim.asserted_value}', "
+                                    f"actual is '{actual_val}'."
+                                )
+                                audit_entry = {
+                                    "claim_id": claim_ref_id,
+                                    "source_event_id": rec.source_event_id,
+                                    "source_field": rec.source_field,
+                                    "original_value": actual_val,
+                                    "normalized_value": no.normalized if no else actual_val,
+                                    "comparison_method": method,
+                                    "alias_provenance": None,
+                                    "validation_status": "EVIDENCE_VALUE_MISMATCH",
+                                    "validation_reason": reason_diag,
+                                }
+                                break
+                    elif compare_evidence_values(claim.field, claim.asserted_value, actual_val) and fields_compatible:
                         pass
                     else:
                         all_ids_valid = False
@@ -458,7 +528,11 @@ class ModelClaimExtractor:
                 if all_ids_valid and matched_id:
                     is_grounded = True
                     status = "GROUNDED"
-                    reason_diag = f"Grounded via cited evidence ID '{matched_id}'."
+                    reason_diag = (
+                        audit_entry["validation_reason"]
+                        if audit_entry
+                        else f"Grounded via cited evidence ID '{matched_id}'."
+                    )
 
             # Case B: Model did not cite evidence ID (unstructured / legacy claim)
             else:
@@ -473,7 +547,39 @@ class ModelClaimExtractor:
                         matched_id = cand.evidence_id
                         actual_val = str(cand.observed_value)
                         reason_diag = f"Grounded against source field '{target_field}' ({cand.evidence_id})."
+                        if is_path_field(target_field):
+                            no = normalize_executable_path(actual_val, from_cmdline="command_line" in target_field.lower())
+                            audit_entry = {
+                                "claim_id": claim_ref_id,
+                                "source_event_id": cand.source_event_id,
+                                "source_field": cand.source_field,
+                                "original_value": actual_val,
+                                "normalized_value": no.normalized if no else actual_val,
+                                "comparison_method": "TYPED_FIELD_NORMALIZED",
+                                "alias_provenance": None,
+                                "validation_status": "GROUNDED",
+                                "validation_reason": reason_diag,
+                            }
                         break
+
+                # Same-event NT-device / DOS corroboration for uncited path claims on matching field
+                if not is_grounded and is_path_field(target_field):
+                    for cand in candidates:
+                        corrob = find_same_event_corroboration(
+                            claim_id=claim_ref_id,
+                            asserted_raw=claim.asserted_value,
+                            claim_field=target_field,
+                            cited_rec=cand,
+                            all_records=normalization_result.records,
+                        )
+                        if corrob:
+                            is_grounded = True
+                            status = "GROUNDED"
+                            matched_id = cand.evidence_id
+                            actual_val = str(cand.observed_value)
+                            reason_diag = corrob["validation_reason"]
+                            audit_entry = corrob
+                            break
 
                 # If not found in target field, check if it was present anywhere in incident telemetry
                 if not is_grounded:
@@ -490,6 +596,9 @@ class ModelClaimExtractor:
                     if not found_anywhere:
                         status = "CLAIM_NOT_VERIFIABLE"
                         reason_diag = f"Fabricated claim: Value '{claim.asserted_value}' for field '{target_field}' was never observed in incident telemetry."
+
+            if audit_entry is not None:
+                validation_audit_trail.append(audit_entry)
 
             # Semantic Predicate Validation (Complete Factual Claim Grounding)
             if is_grounded and matched_id:
@@ -534,6 +643,7 @@ class ModelClaimExtractor:
             grounding_ratio=round(ratio, 3),
             claims=claims,
             unsupported_claim_details=unsupported_details,
+            validation_audit_trail=validation_audit_trail,
             has_hallucinations=(unsupported_count > 0),
         )
 

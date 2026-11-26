@@ -1,0 +1,15 @@
+{
+  "synthetic_vram_removed": true,
+  "physical_vram_separated_from_kv_cache": true,
+  "health_latency_separated_from_generation_latency": true,
+  "hardware_exporter_deployed_on_server2": false,
+  "hardware_telemetry_status": "UNAVAILABLE_EXPORTER_NOT_DEPLOYED",
+  "server_2_vllm_metrics_live_observed": true,
+  "latency_stats_ms": {
+    "smoke_test_ms": 822.09,
+    "exp_a_avg_ms": 62912.49,
+    "exp_b_avg_ms": 66131.95,
+    "exp_c_avg_ms": 69084.74,
+    "exp_r_avg_ms": 56153.18
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "complete_rule_spec_implemented": true,
+  "rule_definition_completeness": "COMPLETE",
+  "deterministic_evidence_intelligence": true,
+  "experimental_candidates_isolated": true,
+  "experimental_candidate_ids": [
+    "ais28-exp-candidate-cs-v1",
+    "ais28-exp-candidate-prisma-v1"
+  ],
+  "approved_production_policies_modified": false,
+  "prompt_parity_b_vs_c": {
+    "identical_user_content_count": 10,
+    "differing_user_content_count": 10,
+    "note": "Minor user_content delta occurs when mode=B uses experimental candidate rule_definition/budgeting trim against longer sys_b prompt."
+  }
+}

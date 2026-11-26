@@ -1,0 +1,125 @@
+{
+  "intervention": "Exp C Raw Model Predictions -> Deterministic Validator & Trust Engine (Exp D)",
+  "exp_c_raw_metrics": {
+    "total_incidents": 20,
+    "three_class_exact_count": 20,
+    "three_class_agreement_pct": 100.0,
+    "definitive_ground_truth_count": 10,
+    "decisive_predicted_on_definitive_count": 10,
+    "binary_end_to_end_correct_count": 10,
+    "binary_end_to_end_correctness_pct": 100.0,
+    "conditional_binary_correct_count": 10,
+    "conditional_binary_accuracy_pct": 100.0,
+    "binary_decision_coverage_pct": 100.0,
+    "tp_total": 9,
+    "tp_recall_count": 9,
+    "tp_recall_pct": 100.0,
+    "fp_total": 1,
+    "fp_recall_count": 1,
+    "fp_identification_recall_pct": 100.0,
+    "inconclusive_total": 10,
+    "inconclusive_agreement_count": 10,
+    "inconclusive_agreement_pct": 100.0,
+    "safety_breakdown": {
+      "tp_misclassified_as_fp": 0,
+      "tp_escalated_or_abstained": 0,
+      "fp_misclassified_as_tp": 0,
+      "fp_escalated_or_abstained": 0,
+      "inconclusive_misclassified_as_tp": 0,
+      "inconclusive_misclassified_as_fp": 0,
+      "inconclusive_binary_leakage_total": 0
+    },
+    "confusion_matrix": {
+      "FALSE_POSITIVE->FALSE_POSITIVE": 1,
+      "INCONCLUSIVE->REQUIRES_ATTENTION": 10,
+      "TRUE_POSITIVE->TRUE_POSITIVE": 9
+    }
+  },
+  "exp_d_validated_metrics": {
+    "total_incidents": 20,
+    "three_class_exact_count": 16,
+    "three_class_agreement_pct": 80.0,
+    "definitive_ground_truth_count": 10,
+    "decisive_predicted_on_definitive_count": 6,
+    "binary_end_to_end_correct_count": 6,
+    "binary_end_to_end_correctness_pct": 60.0,
+    "conditional_binary_correct_count": 6,
+    "conditional_binary_accuracy_pct": 100.0,
+    "binary_decision_coverage_pct": 60.0,
+    "tp_total": 9,
+    "tp_recall_count": 6,
+    "tp_recall_pct": 66.67,
+    "fp_total": 1,
+    "fp_recall_count": 0,
+    "fp_identification_recall_pct": 0.0,
+    "inconclusive_total": 10,
+    "inconclusive_agreement_count": 10,
+    "inconclusive_agreement_pct": 100.0,
+    "safety_breakdown": {
+      "tp_misclassified_as_fp": 0,
+      "tp_escalated_or_abstained": 3,
+      "fp_misclassified_as_tp": 0,
+      "fp_escalated_or_abstained": 1,
+      "inconclusive_misclassified_as_tp": 0,
+      "inconclusive_misclassified_as_fp": 0,
+      "inconclusive_binary_leakage_total": 0
+    },
+    "confusion_matrix": {
+      "FALSE_POSITIVE->REQUIRES_ATTENTION": 1,
+      "INCONCLUSIVE->REQUIRES_ATTENTION": 10,
+      "TRUE_POSITIVE->REQUIRES_ATTENTION": 3,
+      "TRUE_POSITIVE->TRUE_POSITIVE": 6
+    }
+  },
+  "cd_transitions": {
+    "FALSE_POSITIVE->REQUIRES_ATTENTION": 1,
+    "REQUIRES_ATTENTION->REQUIRES_ATTENTION": 10,
+    "TRUE_POSITIVE->REQUIRES_ATTENTION": 3,
+    "TRUE_POSITIVE->TRUE_POSITIVE": 6
+  },
+  "false_acceptances": 0,
+  "false_rejections_or_holds_of_correct_raw": [
+    {
+      "fortisiem_incident_id": "132474210",
+      "raw": "TRUE_POSITIVE",
+      "validated": "REQUIRES_ATTENTION",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "reasons": [
+        "TP_CRITERIA_UNSATISFIED"
+      ],
+      "root_cause": "CONTEXT_LIMITATION"
+    },
+    {
+      "fortisiem_incident_id": "132439932",
+      "raw": "TRUE_POSITIVE",
+      "validated": "REQUIRES_ATTENTION",
+      "status": "REJECTED",
+      "reasons": [
+        "EVIDENCE_VALUE_MISMATCH",
+        "UNSUPPORTED_CLAIM"
+      ],
+      "root_cause": "VALIDATOR_FALSE_REJECTION"
+    },
+    {
+      "fortisiem_incident_id": "132501348",
+      "raw": "FALSE_POSITIVE",
+      "validated": "REQUIRES_ATTENTION",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "reasons": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "root_cause": "HUMAN_ONLY_EVIDENCE"
+    },
+    {
+      "fortisiem_incident_id": "132502453",
+      "raw": "TRUE_POSITIVE",
+      "validated": "REQUIRES_ATTENTION",
+      "status": "REJECTED",
+      "reasons": [
+        "EVIDENCE_VALUE_MISMATCH",
+        "UNSUPPORTED_CLAIM"
+      ],
+      "root_cause": "VALIDATOR_FALSE_REJECTION"
+    }
+  ]
+}

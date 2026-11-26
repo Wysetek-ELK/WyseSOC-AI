@@ -152,15 +152,35 @@ class AIS27BenchmarkRunner:
 
     @classmethod
     async def verify_tokenize(cls, timeout_seconds: float = 10.0) -> Dict[str, Any]:
-        """Verifies live Server 2 /tokenize endpoint across small, medium, and near-limit synthetic prompts."""
+        """Verifies live Server 2 /tokenize endpoint across neutral, Mode B policy, Windows path, and near-limit prompts."""
         base_url = str(getattr(settings, "LOCAL_LLM_BASE_URL", "") or "").rstrip("/")
         model_name = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))
         api_key = str(getattr(settings, "LOCAL_LLM_API_KEY", "EMPTY") or "EMPTY")
+        cs_cand = get_experimental_candidate_policy("PH_RULE_CS_SUSPICIOUS_ACTIVITY")
+        mode_b_sys = (
+            f"{cs_cand.common_prompt or ''}\n\n"
+            f"{cs_cand.rule_specific_prompt or ''}\n\n"
+            f"{cs_cand.tp_indicators or ''}\n\n"
+            f"{cs_cand.fp_indicators or ''}\n\n"
+            "Note: Populate supporting_claims[].cited_evidence_ids (or evidence_ids) strictly from incident.canonical_evidence[].evidence_id."
+        )
         cases = {
             "small": ("You are a SOC analyst.", '{"incident_id":"SYNTH-1","action":"ping"}'),
             "medium": (
                 EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V2 + _MODE_A_SCHEMA_SUFFIX,
                 "<UNTRUSTED_INCIDENT_DATA>\n" + ("{\"event\":\"auth_check\",\"src\":\"192.0.2.10\"}," * 40) + "\n</UNTRUSTED_INCIDENT_DATA>",
+            ),
+            "mode_a_neutral": (
+                EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V2 + _MODE_A_SCHEMA_SUFFIX,
+                "<UNTRUSTED_INCIDENT_DATA>\n" + ("{\"source_field\":\"process.name\",\"observed_value\":\"tool.exe\"}," * 60) + "\n</UNTRUSTED_INCIDENT_DATA>",
+            ),
+            "mode_b_policy": (
+                mode_b_sys,
+                "<UNTRUSTED_INCIDENT_DATA>\n" + ("{\"source_field\":\"process.pid\",\"observed_value\":\"1234567890\"}," * 80) + "\n</UNTRUSTED_INCIDENT_DATA>",
+            ),
+            "escaped_windows_paths": (
+                mode_b_sys,
+                '<UNTRUSTED_INCIDENT_DATA>\n{"incident":{"canonical_evidence":[{"source_field":"process.command_line","observed_value":"\\"C:\\\\Program Files (x86)\\\\App\\\\svc.exe\\""},{"source_field":"process.file_path","observed_value":"\\\\Device\\\\HarddiskVolume3\\\\Program Files (x86)\\\\App\\\\svc.exe"}]}}\n</UNTRUSTED_INCIDENT_DATA>',
             ),
             "near_limit": (
                 EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V2 + _MODE_A_SCHEMA_SUFFIX,
@@ -176,6 +196,7 @@ class AIS27BenchmarkRunner:
                 system_prompt=sys_p,
                 user_message=user_p,
                 timeout_seconds=timeout_seconds,
+                enable_thinking=False,
             )
         return {
             "verified_at_utc": utc_now().isoformat(),
@@ -697,47 +718,97 @@ class AIS27BenchmarkRunner:
             else EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V2
         )
         sys_a = neutral_base + _MODE_A_SCHEMA_SUFFIX
-        model_name_cfg = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))
-        sys_a_tokens = ModelTokenizerService.count_tokens(sys_a, model_name=model_name_cfg)
-        sys_compiled_tokens = ModelTokenizerService.count_tokens(compiled_policy.compiled_system_prompt, model_name=model_name_cfg)
-        sys_delta = max(0, sys_a_tokens - sys_compiled_tokens) if run_mode in ("ALL", "A") else 0
-        rule_overhead = TokenBudgetService.estimate_tokens(rule_spec, model_name=model_name_cfg)
-        # Subtract rule_spec & system prompt delta beyond TokenBudgetService's built-in rule stub (~90t)
-        extra_wire_overhead = max(0, rule_overhead - 90) + sys_delta + 32
-        effective_target_input = max(512, int(target_input_budget) - extra_wire_overhead)
-        budgeted = TokenBudgetService.budget_prompt(
-            compiled_policy=compiled_policy,
-            incident_payload=payload_dict,
-            rag_block="",
-            max_context_tokens=max_context_tokens,
-            max_completion_tokens=max_completion_tokens,
-            reserved_overhead_tokens=rule_overhead,
-            model_name=model_name_cfg,
-            target_input_budget=effective_target_input,
-        )
-        if not budgeted.can_proceed_to_inference:
-            raise ValueError(f"Budget overflow for {fortisiem_incident_id}: {budgeted.abstention_reason}")
-
-        compact_json = json.dumps(
-            {"incident": budgeted.budgeted_incident_payload, "rule": rule_spec},
-            separators=(",", ":"),
-        )
-        compact_json = (
-            compact_json.replace("</UNTRUSTED_INCIDENT_DATA>", "&lt;/UNTRUSTED_INCIDENT_DATA&gt;")
-            .replace("</untrusted_incident_data>", "&lt;/untrusted_incident_data&gt;")
-            .replace("</VERIFIED_HISTORICAL_PRECEDENTS>", "&lt;/VERIFIED_HISTORICAL_PRECEDENTS&gt;")
-            .replace("</verified_historical_precedents>", "&lt;/verified_historical_precedents&gt;")
-        )
-        user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
-
         sys_b = (
-            f"{budgeted.budgeted_system_prompt}\n\n"
+            f"{compiled_policy.compiled_system_prompt}\n\n"
             "Note: Populate supporting_claims[].cited_evidence_ids (or evidence_ids) strictly from incident.canonical_evidence[].evidence_id.\n"
             "IMPORTANT: Output ONLY compact JSON. Keep 'reason' concise (< 120 words). Limit 'supporting_claims' to max 3 factual items. Do NOT dump raw logs."
         )
-
+        model_name_cfg = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))
         base_url = str(getattr(settings, "LOCAL_LLM_BASE_URL", "") or "").rstrip("/")
-        model_name = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))
+        model_name = model_name_cfg
+
+        if run_mode == "A":
+            wire_sys_for_budget = sys_a
+        elif run_mode == "B":
+            wire_sys_for_budget = sys_b
+        else:
+            sys_a_tok = ModelTokenizerService.count_tokens(sys_a, model_name=model_name_cfg)
+            sys_b_tok = ModelTokenizerService.count_tokens(sys_b, model_name=model_name_cfg)
+            wire_sys_for_budget = sys_b if sys_b_tok >= sys_a_tok else sys_a
+
+        max_input_allowed = min(
+            max(512, int(max_context_tokens) - int(max_completion_tokens)),
+            int(target_input_budget),
+        )
+        rule_overhead = TokenBudgetService.estimate_tokens(rule_spec, model_name=model_name_cfg)
+        safety_margin = 0
+        rebudget_iterations = 0
+        wire_token_audit: Dict[str, Any] = {}
+
+        while True:
+            budgeted = TokenBudgetService.budget_prompt(
+                compiled_policy=compiled_policy,
+                incident_payload=payload_dict,
+                rag_block="",
+                max_context_tokens=max_context_tokens,
+                max_completion_tokens=max_completion_tokens,
+                reserved_overhead_tokens=rule_overhead,
+                model_name=model_name_cfg,
+                target_input_budget=target_input_budget,
+                wire_system_prompt=wire_sys_for_budget,
+                wire_rule_spec=rule_spec,
+                safety_margin_tokens=safety_margin,
+            )
+            if not budgeted.can_proceed_to_inference:
+                raise ValueError(f"Budget overflow for {fortisiem_incident_id}: {budgeted.abstention_reason}")
+
+            user_content = ModelTokenizerService.render_wire_user_message(
+                budgeted.budgeted_incident_payload, rule_spec
+            )
+
+            if transport_override is None and base_url:
+                remote_chk = await ModelTokenizerService.count_wire_prompt_tokens_remote(
+                    base_url=base_url,
+                    api_key=settings.LOCAL_LLM_API_KEY,
+                    model_name=model_name,
+                    system_prompt=wire_sys_for_budget,
+                    user_message=user_content,
+                    timeout_seconds=min(10.0, float(timeout_seconds)),
+                    enable_thinking=enable_thinking,
+                )
+                wire_token_audit = {
+                    **remote_chk,
+                    "max_input_allowed": max_input_allowed,
+                    "rebudget_iterations": rebudget_iterations,
+                    "safety_margin_applied": safety_margin,
+                }
+                if remote_chk["token_count"] > max_input_allowed:
+                    if rebudget_iterations < 2:
+                        rebudget_iterations += 1
+                        drift = max(0, int(remote_chk.get("drift_tokens") or 0))
+                        excess = remote_chk["token_count"] - max_input_allowed
+                        safety_margin += excess + max(64, drift // 2)
+                        continue
+                    raise ValueError(
+                        f"CONTEXT_WINDOW_EXCEEDED: Rendered wire prompt ({remote_chk['token_count']} tokens via "
+                        f"{remote_chk.get('source')}) exceeds safe input ceiling ({max_input_allowed}) preserving "
+                        f"{max_completion_tokens} completion tokens for {max_context_tokens}-token limit."
+                    )
+            else:
+                local_tok = ModelTokenizerService.count_wire_prompt_tokens(
+                    wire_sys_for_budget, user_content, model_name
+                )
+                wire_token_audit = {
+                    "token_count": local_tok,
+                    "local_estimate": local_tok,
+                    "drift_tokens": 0,
+                    "source": "local_bpe_calibrated",
+                    "tokenize_mode": "transport_override_or_no_base_url",
+                    "max_input_allowed": max_input_allowed,
+                    "rebudget_iterations": rebudget_iterations,
+                    "safety_margin_applied": safety_margin,
+                }
+            break
 
         async def _call(sys_p: str) -> Dict[str, Any]:
             if transport_override is not None:
@@ -813,11 +884,37 @@ class AIS27BenchmarkRunner:
                     "grounded_claims_count": 0,
                     "unsupported_claims_count": 0,
                     "unsupported_claim_details": [],
+                    "validation_audit_trail": [],
                     "detected_contradictions": [],
                     "trust_score": 0,
                     "raw_trust_score": 0.0,
                     "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
                     "escalation_reason": f"{mode_label} invalid or failed response.",
+                }
+            if parsed_mode.get("truncated_output") or not parsed_mode.get("schema_valid"):
+                trunc = bool(parsed_mode.get("truncated_output"))
+                return {
+                    f"input_{mode_label}_verdict": parsed_mode.get("parsed_verdict"),
+                    "validated_verdict": "REQUIRES_ATTENTION",
+                    "is_decisive_accepted": False,
+                    "validation_status": "TRUNCATED_OUTPUT" if trunc else (parsed_mode.get("validation_status") or "INVALID_SCHEMA"),
+                    "validation_reason_codes": ["OUTPUT_TRUNCATED" if trunc else "MODEL_OUTPUT_INVALID"],
+                    "action_directive": (
+                        "Model response hit completion limit (`finish_reason=length`) and was rejected safely to REQUIRES_ATTENTION."
+                        if trunc
+                        else "Model response failed structured schema validation."
+                    ),
+                    "grounding_ratio": 0.0,
+                    "has_hallucinations": False,
+                    "grounded_claims_count": 0,
+                    "unsupported_claims_count": 0,
+                    "unsupported_claim_details": [],
+                    "validation_audit_trail": [],
+                    "detected_contradictions": [],
+                    "trust_score": 0,
+                    "raw_trust_score": 0.0,
+                    "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
+                    "escalation_reason": "Truncated or schema-invalid response rejected from decisive operational acceptance.",
                 }
             model_out = {
                 "verdict": parsed_mode["parsed_verdict"],
@@ -868,6 +965,7 @@ class AIS27BenchmarkRunner:
                 "grounded_claims_count": grounding.grounded_claims,
                 "unsupported_claims_count": grounding.unsupported_claims,
                 "unsupported_claim_details": grounding.unsupported_claim_details,
+                "validation_audit_trail": list(getattr(val_res, "validation_audit_trail", []) or []),
                 "detected_contradictions": list(val_res.detected_contradictions),
                 "trust_score": trust_res.trust_score,
                 "raw_trust_score": trust_res.raw_trust_score,
@@ -914,6 +1012,7 @@ class AIS27BenchmarkRunner:
                 "budgeted_events_count": len(budgeted.budgeted_incident_payload.get("events") or []),
                 "offline_estimated_mode_a_tokens": ModelTokenizerService.count_wire_prompt_tokens(sys_a, user_content, model_name),
                 "offline_estimated_mode_b_tokens": ModelTokenizerService.count_wire_prompt_tokens(sys_b, user_content, model_name),
+                "wire_token_audit": wire_token_audit,
                 "user_content_sha256": _sha256_text(user_content),
                 "mode_a_system_sha256": _sha256_text(sys_a),
                 "mode_b_system_sha256": _sha256_text(sys_b),

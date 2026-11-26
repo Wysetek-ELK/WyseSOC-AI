@@ -1,0 +1,46 @@
+{
+  "phase": "AIS_2_8_FINAL_LIVE_EXECUTION",
+  "generated_at_utc": "2026-11-26T08:14:45.552004+00:00",
+  "deployed_commit_sha": "215f744c9e699aac97512505a1afb5fdca888732",
+  "upla_deployment_execution_id": "upla-20261126-051201-6e3bf9",
+  "exclusive_model": "Qwen/Qwen3-14B-AWQ",
+  "decisions": {
+    "technical_execution": "AIS_2_8_COMPLETED_WITH_LIMITATIONS",
+    "qwen3_intelligence_decision": "QWEN3_PROMISING_BUT_TARGETS_PARTIALLY_MET",
+    "historical_comparison": "OBSERVED_IMPROVEMENT_OVER_HISTORICAL_BASELINE",
+    "production_readiness": "NOT_YET_PRODUCTION_CERTIFIED",
+    "deployment_status": "NO_ADDITIONAL_DEPLOYMENT_REQUIRED",
+    "ais_2_9_recommended": true,
+    "target_check_summary": {
+      "raw_exp_c_passes": {
+        "binary_e2e >= 80%": "100.0% (10/10) PASS",
+        "cond_binary >= 85%": "100.0% (10/10) PASS",
+        "decision_cov >= 80%": "100.0% (10/10) PASS",
+        "tp_recall >= 90%": "100.0% (9/9) PASS",
+        "schema_valid >= 95%": "95.0% (19/20) PASS"
+      },
+      "validated_exp_d_gaps": {
+        "binary_e2e >= 80%": "60.0% (6/10) BELOW_TARGET",
+        "decision_cov >= 80%": "60.0% (6/10) BELOW_TARGET",
+        "tp_recall >= 90%": "66.67% (6/9) BELOW_TARGET",
+        "context_overflow == 0": "1 overflow (132474210 at 8088+104=8192)"
+      }
+    }
+  },
+  "budget": {
+    "authorized_ceiling": 82,
+    "total_attempted": 82,
+    "total_succeeded": 76,
+    "total_failed": 6
+  },
+  "headline_metrics": {
+    "AIS_2_7_Qwen25_Mode_A_3class_pct": 5.0,
+    "AIS_2_7_Qwen25_Mode_B_3class_pct": 10.0,
+    "AIS_2_7_Qwen25_Mode_C_Val_3class_pct": 45.0,
+    "ExpA_Qwen3_Neutral_V2_Raw_3class_pct": 55.0,
+    "ExpB_Qwen3_Enriched_Raw_3class_pct": 55.0,
+    "ExpC_Qwen3_Policy_Raw_3class_pct": 100.0,
+    "ExpD_Qwen3_Policy_Validated_3class_pct": 80.0,
+    "ExpR_Qwen3_Replay_V1_Raw_15_3class_pct": 33.33
+  }
+}

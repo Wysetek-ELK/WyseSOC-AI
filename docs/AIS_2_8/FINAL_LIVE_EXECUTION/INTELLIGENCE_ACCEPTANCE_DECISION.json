@@ -1,0 +1,31 @@
+{
+  "technical_execution": "AIS_2_8_COMPLETED_WITH_LIMITATIONS",
+  "qwen3_intelligence_decision": "QWEN3_PROMISING_BUT_TARGETS_PARTIALLY_MET",
+  "historical_comparison": "OBSERVED_IMPROVEMENT_OVER_HISTORICAL_BASELINE",
+  "production_readiness": "NOT_YET_PRODUCTION_CERTIFIED",
+  "deployment_status": "NO_ADDITIONAL_DEPLOYMENT_REQUIRED",
+  "ais_2_9_recommended": true,
+  "target_check_summary": {
+    "raw_exp_c_passes": {
+      "binary_e2e >= 80%": "100.0% (10/10) PASS",
+      "cond_binary >= 85%": "100.0% (10/10) PASS",
+      "decision_cov >= 80%": "100.0% (10/10) PASS",
+      "tp_recall >= 90%": "100.0% (9/9) PASS",
+      "schema_valid >= 95%": "95.0% (19/20) PASS"
+    },
+    "validated_exp_d_gaps": {
+      "binary_e2e >= 80%": "60.0% (6/10) BELOW_TARGET",
+      "decision_cov >= 80%": "60.0% (6/10) BELOW_TARGET",
+      "tp_recall >= 90%": "66.67% (6/9) BELOW_TARGET",
+      "context_overflow == 0": "1 overflow (132474210 at 8088+104=8192)"
+    }
+  },
+  "taxonomy_summary": {
+    "CONTEXT_LIMITATION": 1,
+    "PROMPT_BIAS": 6,
+    "VALIDATOR_FALSE_REJECTION": 2,
+    "HUMAN_ONLY_EVIDENCE": 1,
+    "MISSING_AUTHORIZATION_CONTEXT": 8,
+    "MISSING_TELEMETRY": 2
+  }
+}

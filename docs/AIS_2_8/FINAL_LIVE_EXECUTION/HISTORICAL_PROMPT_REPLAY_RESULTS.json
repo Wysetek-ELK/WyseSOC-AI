@@ -1,0 +1,82 @@
+{
+  "experiment_id": "R_QWEN3_HISTORICAL_PROMPT_REPLAY",
+  "status": "COMPLETED_STRATIFIED_SUBSET",
+  "subset_size": 15,
+  "subset_composition": "10 CrowdStrike (9 TP, 1 FP) + 5 Prisma SASE Inconclusive (strictly capped to stay <= 82 total requests)",
+  "methodological_differences_vs_ais27": [
+    "Subset is 15/20 stratified incidents due to remaining budget ceiling (82 total - 67 prior = 15).",
+    "Neutral prompt version V1 + no complete rule def + no evidence intelligence + temperature 0.1 matched AIS 2.7 Mode A.",
+    "Server 1 Prisma policy revision vs historical state documented."
+  ],
+  "qwen3_replay_metrics": {
+    "total_incidents": 15,
+    "three_class_exact_count": 5,
+    "three_class_agreement_pct": 33.33,
+    "definitive_ground_truth_count": 10,
+    "decisive_predicted_on_definitive_count": 3,
+    "binary_end_to_end_correct_count": 0,
+    "binary_end_to_end_correctness_pct": 0.0,
+    "conditional_binary_correct_count": 0,
+    "conditional_binary_accuracy_pct": 0.0,
+    "binary_decision_coverage_pct": 30.0,
+    "tp_total": 9,
+    "tp_recall_count": 0,
+    "tp_recall_pct": 0.0,
+    "fp_total": 1,
+    "fp_recall_count": 0,
+    "fp_identification_recall_pct": 0.0,
+    "inconclusive_total": 5,
+    "inconclusive_agreement_count": 5,
+    "inconclusive_agreement_pct": 100.0,
+    "safety_breakdown": {
+      "tp_misclassified_as_fp": 3,
+      "tp_escalated_or_abstained": 6,
+      "fp_misclassified_as_tp": 0,
+      "fp_escalated_or_abstained": 1,
+      "inconclusive_misclassified_as_tp": 0,
+      "inconclusive_misclassified_as_fp": 0,
+      "inconclusive_binary_leakage_total": 0
+    },
+    "confusion_matrix": {
+      "FALSE_POSITIVE->REQUIRES_ATTENTION": 1,
+      "INCONCLUSIVE->REQUIRES_ATTENTION": 5,
+      "TRUE_POSITIVE->FALSE_POSITIVE": 3,
+      "TRUE_POSITIVE->REQUIRES_ATTENTION": 6
+    }
+  },
+  "qwen25_ais27_mode_a_same_15": {
+    "total_incidents": 15,
+    "three_class_exact_count": 1,
+    "three_class_agreement_pct": 6.67,
+    "definitive_ground_truth_count": 10,
+    "decisive_predicted_on_definitive_count": 10,
+    "binary_end_to_end_correct_count": 1,
+    "binary_end_to_end_correctness_pct": 10.0,
+    "conditional_binary_correct_count": 1,
+    "conditional_binary_accuracy_pct": 10.0,
+    "binary_decision_coverage_pct": 100.0,
+    "tp_total": 9,
+    "tp_recall_count": 0,
+    "tp_recall_pct": 0.0,
+    "fp_total": 1,
+    "fp_recall_count": 1,
+    "fp_identification_recall_pct": 100.0,
+    "inconclusive_total": 5,
+    "inconclusive_agreement_count": 0,
+    "inconclusive_agreement_pct": 0.0,
+    "safety_breakdown": {
+      "tp_misclassified_as_fp": 9,
+      "tp_escalated_or_abstained": 0,
+      "fp_misclassified_as_tp": 0,
+      "fp_escalated_or_abstained": 0,
+      "inconclusive_misclassified_as_tp": 0,
+      "inconclusive_misclassified_as_fp": 5,
+      "inconclusive_binary_leakage_total": 5
+    },
+    "confusion_matrix": {
+      "FALSE_POSITIVE->FALSE_POSITIVE": 1,
+      "INCONCLUSIVE->FALSE_POSITIVE": 5,
+      "TRUE_POSITIVE->FALSE_POSITIVE": 9
+    }
+  }
+}

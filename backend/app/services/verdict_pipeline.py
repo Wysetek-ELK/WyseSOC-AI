@@ -856,7 +856,14 @@ async def run_shared_verdict_pipeline(
         canonical_records=norm_result.records,
         incident_payload=payload_dict,
     )
-    rule_overhead_tokens = TokenBudgetService.estimate_tokens(rule_spec)
+    from app.services.model_provider.openai_compatible import OpenAICompatibleProvider
+
+    op_prompt_base = compiled_policy.compiled_system_prompt
+    if rag_result.formatted_rag_block:
+        op_prompt_base = f"{op_prompt_base}\n\n{rag_result.formatted_rag_block}"
+    op_wire_sys = OpenAICompatibleProvider.build_system_instruction(op_prompt_base)
+
+    rule_overhead_tokens = TokenBudgetService.estimate_tokens(rule_spec, model_name=active_model)
     budgeted = TokenBudgetService.budget_prompt(
         compiled_policy=compiled_policy,
         incident_payload=payload_dict,
@@ -866,6 +873,8 @@ async def run_shared_verdict_pipeline(
         reserved_overhead_tokens=rule_overhead_tokens,
         model_name=active_model,
         target_input_budget=target_input,
+        wire_system_prompt=op_wire_sys,
+        wire_rule_spec=rule_spec,
     )
 
     if not budgeted.can_proceed_to_inference:

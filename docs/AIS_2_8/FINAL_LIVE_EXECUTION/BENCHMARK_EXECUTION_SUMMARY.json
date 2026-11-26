@@ -1,0 +1,19 @@
+{
+  "status": "COMPLETED_WITH_LIMITATIONS",
+  "authorized_budget": 82,
+  "total_requests_attempted": 82,
+  "total_requests_succeeded": 76,
+  "total_requests_failed": 6,
+  "remaining_authorized_budget": 0,
+  "budget_respected": true,
+  "breakdown_by_phase": {
+    "pre_fix_failed_attempts": 5,
+    "post_fix_smoke_test_ok": 1,
+    "exp_a_neutral_v2_ok": 20,
+    "exp_b_enriched_ok": 20,
+    "exp_b_socket_reset_failed": 1,
+    "exp_c_rule_aware_ok": 20,
+    "exp_r_historical_replay_ok": 15
+  },
+  "exclusive_model": "Qwen/Qwen3-14B-AWQ"
+}

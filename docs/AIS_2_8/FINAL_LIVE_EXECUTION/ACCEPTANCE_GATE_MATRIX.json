@@ -1,0 +1,505 @@
+{
+  "phase": "AIS_2_8_FINAL_LIVE_EXECUTION",
+  "generated_at_utc": "2026-11-26T08:14:45.552004+00:00",
+  "summary": {
+    "total_gates": 70,
+    "status_counts": {
+      "NOT_RUN": 2,
+      "BLOCKED": 2,
+      "PASS": 64,
+      "NOT_APPLICABLE": 2
+    }
+  },
+  "gates": [
+    {
+      "gate": "G01",
+      "group": "Runtime integrity",
+      "title": "Server 2 hardware verified",
+      "status": "NOT_RUN",
+      "evidence": "Operator baseline (g4dn.2xlarge Tesla T4 15,360 MiB, driver 580.178.04) preserved; no Server 2 SSH/NVML exporter over HTTP."
+    },
+    {
+      "gate": "G02",
+      "group": "Runtime integrity",
+      "title": "Actual GPU model and capacity verified",
+      "status": "BLOCKED",
+      "evidence": "Dedicated NVML/DCGM exporter not deployed on Server 2 (gpu_telemetry_verified=false); synthetic VRAM formulas remain removed."
+    },
+    {
+      "gate": "G03",
+      "group": "Runtime integrity",
+      "title": "Qwen3 runtime identity verified",
+      "status": "PASS",
+      "evidence": "Verified live Qwen/Qwen3-14B-AWQ across /api/health, /v1/models, smoke test (chatcmpl-b6de0ebd1e1f8817), and all 76 successful generation calls."
+    },
+    {
+      "gate": "G04",
+      "group": "Runtime integrity",
+      "title": "Qwen2.5 baseline available",
+      "status": "PASS",
+      "evidence": "AIS 2.7 archive (41 Qwen/Qwen2.5-7B-Instruct-AWQ calls) preserved and independently recalculated."
+    },
+    {
+      "gate": "G05",
+      "group": "Runtime integrity",
+      "title": "Both model snapshots preserved",
+      "status": "NOT_RUN",
+      "evidence": "Direct Server 2 filesystem SSH inspection omitted by single-model non-modification mandate."
+    },
+    {
+      "gate": "G06",
+      "group": "Runtime integrity",
+      "title": "Runtime model switching controlled",
+      "status": "NOT_APPLICABLE",
+      "evidence": "NOT_APPLICABLE_OPERATOR_SINGLE_MODEL_SCOPE: Operator instructed Qwen/Qwen3-14B-AWQ exclusively; no model switching."
+    },
+    {
+      "gate": "G07",
+      "group": "Runtime integrity",
+      "title": "Model revisions recorded",
+      "status": "PASS",
+      "evidence": "Qwen/Qwen3-14B-AWQ revision 31c69efc29464b6bb0aee1398b5a7b50a99340c3 recorded from baseline."
+    },
+    {
+      "gate": "G08",
+      "group": "Runtime integrity",
+      "title": "vLLM version verified",
+      "status": "PASS",
+      "evidence": "vLLM 0.33.0 verified in AIS 2.7 GPU_USAGE_AND_COST_MANIFEST.json and operator baseline."
+    },
+    {
+      "gate": "G09",
+      "group": "Runtime integrity",
+      "title": "Actual remote inference connectivity verified",
+      "status": "PASS",
+      "evidence": "Verified live HTTP generation end-to-end: smoke test (822.09ms) + 75 benchmark completions via http://13.204.214.64:8000/v1."
+    },
+    {
+      "gate": "G10",
+      "group": "Runtime integrity",
+      "title": "Secure customer-data transport verified",
+      "status": "BLOCKED",
+      "evidence": "UAT benchmark authorized over http://13.204.214.64:8000/v1 (private VPC 172.29.164.10:8000 timed out; TLS :443/:8000 absent). Production requires private VPC peering or TLS proxy."
+    },
+    {
+      "gate": "G11",
+      "group": "Evidence integrity",
+      "title": "Frozen cohort contains authoritative 20 incidents",
+      "status": "PASS",
+      "evidence": "Recovered all 20 unique incidents in AIS_2_6E_FROZEN_20 from Server 1 PostgreSQL (9 TP, 1 FP, 10 INCONCLUSIVE)."
+    },
+    {
+      "gate": "G12",
+      "group": "Evidence integrity",
+      "title": "Original incident identity mapping verified",
+      "status": "PASS",
+      "evidence": "Reconciled AIS 2.7 GROUND_TRUTH_REFERENCE_MANIFEST.json & local SQLite incident IDs cleanly."
+    },
+    {
+      "gate": "G13",
+      "group": "Evidence integrity",
+      "title": "Original raw logs preserved",
+      "status": "PASS",
+      "evidence": "Preserved untouched; fixtures/Incident json.zip and DB incident events verified intact."
+    },
+    {
+      "gate": "G14",
+      "group": "Evidence integrity",
+      "title": "Triggered rule identity verified",
+      "status": "PASS",
+      "evidence": "CrowdStrike & Prisma SASE rule IDs reconciled across local SQLite and Server 1 PostgreSQL UUIDs (0974a66e... & 14481ebd...)."
+    },
+    {
+      "gate": "G15",
+      "group": "Evidence integrity",
+      "title": "Complete rule definition supplied cleanly",
+      "status": "PASS",
+      "evidence": "Implemented RuleDefinitionBuilder supplying pattern_logic, raw_rule_text, clauses, group_by, window, threshold, exclusions, and predicate_evaluations equally in Mode A & B."
+    },
+    {
+      "gate": "G16",
+      "group": "Evidence integrity",
+      "title": "Historical rule version limitations disclosed",
+      "status": "PASS",
+      "evidence": "Documented Server 1 PostgreSQL rule/policy divergence vs local SQLite and ed7ff3c7 v1 contamination."
+    },
+    {
+      "gate": "G17",
+      "group": "Evidence integrity",
+      "title": "Evidence hashes recorded",
+      "status": "PASS",
+      "evidence": "Recorded SHA-256 hashes for raw evidence, canonical evidence, rule definitions, outbound payloads, and raw model responses."
+    },
+    {
+      "gate": "G18",
+      "group": "Evidence integrity",
+      "title": "Human reference locks preserved",
+      "status": "PASS",
+      "evidence": "Zero modifications made to BenchmarkCohort, HistoricalGroundTruth, or locked AnalystVerdictReview rows."
+    },
+    {
+      "gate": "G19",
+      "group": "Evidence integrity",
+      "title": "Human-only evidence identified",
+      "status": "PASS",
+      "evidence": "132501348 external MEGAsync hash lookup and SASE closure metadata audited cleanly."
+    },
+    {
+      "gate": "G20",
+      "group": "Evidence integrity",
+      "title": "Benchmark learning exclusion verified",
+      "status": "PASS",
+      "evidence": "AIS27BenchmarkRunner strictly excludes RAG and never writes RuleLearningProfile counters."
+    },
+    {
+      "gate": "G21",
+      "group": "Prompt and token integrity",
+      "title": "Correct tokenizer used for each model",
+      "status": "PASS",
+      "evidence": "ModelTokenizerService updated with Qwen3 template accounting & /tokenize endpoint client; verified in test_ais_2_8_intelligence.py."
+    },
+    {
+      "gate": "G22",
+      "group": "Prompt and token integrity",
+      "title": "Exact model chat template verified",
+      "status": "PASS",
+      "evidence": "Verified live /tokenize drift (+40 tokens at near_limit) and enable_thinking=false across all live calls."
+    },
+    {
+      "gate": "G23",
+      "group": "Prompt and token integrity",
+      "title": "Runtime context limit enforced",
+      "status": "PASS",
+      "evidence": "8192 context window enforced in config.py, llm_config_service.py, verdict_pipeline.py, test_context_window_8k_16k.py."
+    },
+    {
+      "gate": "G24",
+      "group": "Prompt and token integrity",
+      "title": "Output reserve enforced",
+      "status": "PASS",
+      "evidence": "768 completion tokens / 7424 input budget enforced cleanly."
+    },
+    {
+      "gate": "G25",
+      "group": "Prompt and token integrity",
+      "title": "Mandatory evidence not silently truncated",
+      "status": "PASS",
+      "evidence": "Zero silent truncation of mandatory fields, though Mode B sys_b excess on 132474210 consumed completion headroom (8088+104=8192 length)."
+    },
+    {
+      "gate": "G26",
+      "group": "Prompt and token integrity",
+      "title": "Wire prompt token accounting verified",
+      "status": "PASS",
+      "evidence": "Live wire token counts verified across 75 benchmark calls; Mode B sys_b headroom gap identified on 132474210."
+    },
+    {
+      "gate": "G27",
+      "group": "Prompt and token integrity",
+      "title": "Neutral factual evidence parity verified",
+      "status": "PASS",
+      "evidence": "Exp A vs B isolated ONLY evidence_intelligence (20/20 verified); Exp B vs C user prompt parity tracked with exact budget diff audit."
+    },
+    {
+      "gate": "G28",
+      "group": "Prompt and token integrity",
+      "title": "No label leakage",
+      "status": "PASS",
+      "evidence": "Verified in test_ais_2_7_benchmark_runner.py and test_ais_2_8_intelligence.py."
+    },
+    {
+      "gate": "G29",
+      "group": "Prompt and token integrity",
+      "title": "Equivalent inference settings verified",
+      "status": "PASS",
+      "evidence": "temperature=0.0, top_p=1.0, max_tokens=768, enable_thinking=false standardized across runner modes."
+    },
+    {
+      "gate": "G30",
+      "group": "Prompt and token integrity",
+      "title": "Structured schema applied consistently",
+      "status": "PASS",
+      "evidence": "Strict 0-100 confidence scale enforced across ConfidenceNormalizer, OpenAICompatibleProvider, and AIS27BenchmarkRunner."
+    },
+    {
+      "gate": "G31",
+      "group": "Live benchmark integrity",
+      "title": "GPU execution authorized",
+      "status": "PASS",
+      "evidence": "Operator authorized full head-to-head benchmark (up to 82 requests) via native approval gate."
+    },
+    {
+      "gate": "G32",
+      "group": "Live benchmark integrity",
+      "title": "Request budget respected",
+      "status": "PASS",
+      "evidence": "Total GPU requests attempted = 82 <= 82 authorized ceiling (0 over budget)."
+    },
+    {
+      "gate": "G33",
+      "group": "Live benchmark integrity",
+      "title": "Qwen2.5 live baseline executed",
+      "status": "NOT_APPLICABLE",
+      "evidence": "NOT_APPLICABLE_OPERATOR_SINGLE_MODEL_SCOPE: Fresh Qwen2.5 execution explicitly superseded; AIS 2.7 Qwen2.5 used strictly as historical comparison."
+    },
+    {
+      "gate": "G34",
+      "group": "Live benchmark integrity",
+      "title": "Qwen3 live benchmark executed",
+      "status": "PASS",
+      "evidence": "Executed live Qwen3-14B-AWQ benchmarks: Smoke (1) + Exp A (20) + Exp B (20) + Exp C (20) + Exp R (15)."
+    },
+    {
+      "gate": "G35",
+      "group": "Live benchmark integrity",
+      "title": "Five-incident pilot technically validated",
+      "status": "PASS",
+      "evidence": "First 5 priority incidents completed cleanly in Exp A, B, C, and R."
+    },
+    {
+      "gate": "G36",
+      "group": "Live benchmark integrity",
+      "title": "Actual raw model responses preserved",
+      "status": "PASS",
+      "evidence": "Full raw model responses and OpenAI/vLLM envelopes archived in scratch/qwen3_exp_* and restricted bundle."
+    },
+    {
+      "gate": "G37",
+      "group": "Live benchmark integrity",
+      "title": "Request and response hashes verified",
+      "status": "PASS",
+      "evidence": "HTTP body and raw response SHA-256 hashes captured on every live response."
+    },
+    {
+      "gate": "G38",
+      "group": "Live benchmark integrity",
+      "title": "Inference provenance verified",
+      "status": "PASS",
+      "evidence": "Every call returned model_returned='Qwen/Qwen3-14B-AWQ' with unique chatcmpl-* ID."
+    },
+    {
+      "gate": "G39",
+      "group": "Live benchmark integrity",
+      "title": "Failed requests retained in accounting",
+      "status": "PASS",
+      "evidence": "All 6 failed attempts (5 pre-fix contention failures + 1 transient WinError 10054 reset) honestly retained in ledger."
+    },
+    {
+      "gate": "G40",
+      "group": "Live benchmark integrity",
+      "title": "No synthetic or cached verdict substitution",
+      "status": "PASS",
+      "evidence": "Zero cached or synthetic verdicts substituted."
+    },
+    {
+      "gate": "G41",
+      "group": "Intelligence integrity",
+      "title": "Three-class confusion matrices generated",
+      "status": "PASS",
+      "evidence": "Exact 3x3 confusion matrices generated across H, A, B, C, D, and R."
+    },
+    {
+      "gate": "G42",
+      "group": "Intelligence integrity",
+      "title": "Binary end-to-end correctness calculated",
+      "status": "PASS",
+      "evidence": "Binary E2E: Exp C raw 100.0% (10/10); Exp D validated 60.0% (6/10)."
+    },
+    {
+      "gate": "G43",
+      "group": "Intelligence integrity",
+      "title": "Conditional binary accuracy calculated",
+      "status": "PASS",
+      "evidence": "Conditional binary accuracy: Exp C raw 100.0% (10/10); Exp D validated 100.0% (6/6)."
+    },
+    {
+      "gate": "G44",
+      "group": "Intelligence integrity",
+      "title": "Decision coverage calculated",
+      "status": "PASS",
+      "evidence": "Binary decision coverage: Exp C raw 100.0% (10/10); Exp D validated 60.0% (6/10)."
+    },
+    {
+      "gate": "G45",
+      "group": "Intelligence integrity",
+      "title": "TP recall calculated",
+      "status": "PASS",
+      "evidence": "TP recall: Exp C raw 100.0% (9/9); Exp D validated 66.67% (6/9 = 66.67%, not rounded)."
+    },
+    {
+      "gate": "G46",
+      "group": "Intelligence integrity",
+      "title": "FP identification recall calculated",
+      "status": "PASS",
+      "evidence": "FP identification recall: Exp C raw 100.0% (1/1); Exp D validated 0.0% (0/1, held conservatively)."
+    },
+    {
+      "gate": "G47",
+      "group": "Intelligence integrity",
+      "title": "Inconclusive handling assessed",
+      "status": "PASS",
+      "evidence": "Inconclusive handling: Exp C & D both achieved 10/10 (100.0%) REQUIRES_ATTENTION with 0 false binary closures."
+    },
+    {
+      "gate": "G48",
+      "group": "Intelligence integrity",
+      "title": "Hallucinations assessed",
+      "status": "PASS",
+      "evidence": "Validator detected 0 critical false acceptances; surfaced 2 process.file_path vs process.command_line string mismatches."
+    },
+    {
+      "gate": "G49",
+      "group": "Intelligence integrity",
+      "title": "Evidence comprehension assessed",
+      "status": "PASS",
+      "evidence": "Assessed evidence comprehension and human-only evidence gap (132501348 external MEGAsync hash lookup)."
+    },
+    {
+      "gate": "G50",
+      "group": "Intelligence integrity",
+      "title": "Model comparison completed",
+      "status": "PASS",
+      "evidence": "Completed historical comparison (H vs A/B/C/D) plus stratified 15-incident matched-prompt V1 replay (Exp R)."
+    },
+    {
+      "gate": "G51",
+      "group": "Intelligence integrity",
+      "title": "Enrichment effect isolated or evaluated",
+      "status": "PASS",
+      "evidence": "Evidence enrichment ablation (A->B) isolated and measured across all 20 incidents."
+    },
+    {
+      "gate": "G52",
+      "group": "Intelligence integrity",
+      "title": "Policy effect isolated or evaluated",
+      "status": "PASS",
+      "evidence": "Rule policy ablation (B->C) isolated and measured across all 20 incidents (0/9 -> 9/9 CrowdStrike TP raw recall)."
+    },
+    {
+      "gate": "G53",
+      "group": "Intelligence integrity",
+      "title": "Validator effect measured separately",
+      "status": "PASS",
+      "evidence": "Deterministic validator impact (C->D) measured separately (100% -> 80% 3-class, 0 false acceptances)."
+    },
+    {
+      "gate": "G54",
+      "group": "Intelligence integrity",
+      "title": "All incident failure causes documented",
+      "status": "PASS",
+      "evidence": "All 20 incidents classified with explicit taxonomy root causes and evidence notes."
+    },
+    {
+      "gate": "G55",
+      "group": "Intelligence integrity",
+      "title": "Dataset limitations disclosed",
+      "status": "PASS",
+      "evidence": "Disclosed GT-2 status (0 GT-3), 9 TP / 1 FP / 10 INCONCLUSIVE cluster skew, and missing external threat intel."
+    },
+    {
+      "gate": "G56",
+      "group": "Application and deployment",
+      "title": "GPU telemetry mapping corrected",
+      "status": "PASS",
+      "evidence": "Synthetic 24.0 GB & 57% formulas removed; verified in test_ws2_prometheus_parser_no_synthetic_vram_and_reads_real_dcgm."
+    },
+    {
+      "gate": "G57",
+      "group": "Application and deployment",
+      "title": "Physical VRAM and KV cache separated",
+      "status": "PASS",
+      "evidence": "Verified distinct Physical GPU VRAM vs vLLM KV Cache Occupancy cards in ServerInfrastructureMonitor.tsx."
+    },
+    {
+      "gate": "G58",
+      "group": "Application and deployment",
+      "title": "Health latency and generation latency separated",
+      "status": "PASS",
+      "evidence": "health_check_latency_ms separated from inference_latency_ms in system_monitor_service.py & UI."
+    },
+    {
+      "gate": "G59",
+      "group": "Application and deployment",
+      "title": "Context configuration UI corrected",
+      "status": "PASS",
+      "evidence": "Hardcoded 16,384/1,024/8,192 strings & private IP public-label corrected in agent-configuration/page.tsx."
+    },
+    {
+      "gate": "G60",
+      "group": "Application and deployment",
+      "title": "Confidence schema consistency corrected",
+      "status": "PASS",
+      "evidence": "Strict 0-100 scale validated across backend schema, parser, and ConfidenceNormalizer."
+    },
+    {
+      "gate": "G61",
+      "group": "Application and deployment",
+      "title": "Existing UI design preserved",
+      "status": "PASS",
+      "evidence": "Compact Obsidian theme preserved; passed all frontend UI regression suites + Next.js build."
+    },
+    {
+      "gate": "G62",
+      "group": "Application and deployment",
+      "title": "Blind review integrity preserved",
+      "status": "PASS",
+      "evidence": "Postflight audit verified zero GT label modifications, 20/20 locks intact, and 0 learning pollution."
+    },
+    {
+      "gate": "G63",
+      "group": "Application and deployment",
+      "title": "Backend regression tests executed",
+      "status": "PASS",
+      "evidence": "Backend targeted suites passed: 81 passed in 56.79s after unblocking code fixes (SHA 215f744c)."
+    },
+    {
+      "gate": "G64",
+      "group": "Application and deployment",
+      "title": "Frontend regression tests executed",
+      "status": "PASS",
+      "evidence": "Frontend unit tests (16 .mjs suites) and Next.js build (32 routes) exited 0; live HTTP 200 on all 14 UI routes; ESLint exit 1 (622 pre-existing warnings/errors) documented honestly."
+    },
+    {
+      "gate": "G65",
+      "group": "Application and deployment",
+      "title": "Authorized deployment verified",
+      "status": "PASS",
+      "evidence": "Server 1 deployed & verified at commit 215f744c9e699aac97512505a1afb5fdca888732 via upla-20261126-051201-6e3bf9; no post-benchmark edits required (NO_ADDITIONAL_DEPLOYMENT_REQUIRED)."
+    },
+    {
+      "gate": "G66",
+      "group": "Application and deployment",
+      "title": "Production automation remains disabled",
+      "status": "PASS",
+      "evidence": "Experimental candidate policies remain isolated; autonomous incident closure remains disabled."
+    },
+    {
+      "gate": "G67",
+      "group": "Application and deployment",
+      "title": "Model rollback configuration preserved",
+      "status": "PASS",
+      "evidence": "Rollback script configured on Server 1 (/var/backups/ai-verdict prev SHA saved); original Server 2 vllm-server.service retained."
+    },
+    {
+      "gate": "G68",
+      "group": "Application and deployment",
+      "title": "Final GPU instance state reported",
+      "status": "PASS",
+      "evidence": "Server 1 /api/health confirms Server 2 Verdictum Cortex ONLINE with Qwen/Qwen3-14B-AWQ."
+    },
+    {
+      "gate": "G69",
+      "group": "Application and deployment",
+      "title": "Evidence archive generated",
+      "status": "PASS",
+      "evidence": "Generated all 20 closeout markdown reports, 23 JSON manifests, ARTIFACT_MANIFEST.json, and sanitized AIS_2_8_FINAL.zip."
+    },
+    {
+      "gate": "G70",
+      "group": "Application and deployment",
+      "title": "Final model and production readiness decision supported",
+      "status": "PASS",
+      "evidence": "Technical=AIS_2_8_COMPLETED_WITH_LIMITATIONS; Intelligence=QWEN3_PROMISING_BUT_TARGETS_PARTIALLY_MET; Historical=OBSERVED_IMPROVEMENT_OVER_HISTORICAL_BASELINE; Production=NOT_YET_PRODUCTION_CERTIFIED."
+    }
+  ]
+}

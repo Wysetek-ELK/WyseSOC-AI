@@ -327,7 +327,7 @@ export function GroundTruthCertificationPanel() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold text-slate-100">
-                AIS 2.6e Frozen Benchmark Cohort Certification
+                {activeCohort?.name || "AIS 2.6e Frozen Benchmark Cohort Certification"}
               </span>
               <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-amber-950/70 text-amber-300 border border-amber-800/60 flex items-center gap-1">
                 <EyeOff className="w-3 h-3" /> Blind Enforced

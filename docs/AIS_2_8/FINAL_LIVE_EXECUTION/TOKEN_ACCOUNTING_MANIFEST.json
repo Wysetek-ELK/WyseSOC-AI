@@ -1,0 +1,124 @@
+{
+  "max_context_tokens": 8192,
+  "reserved_output_tokens": 768,
+  "target_input_budget": 7424,
+  "remote_tokenize_verification": {
+    "verified_at_utc": "2026-11-26T05:17:18.013581",
+    "endpoint": "http://13.204.214.64:8000/v1",
+    "model_name": "Qwen/Qwen3-14B-AWQ",
+    "cases": {
+      "small": {
+        "token_count": 37,
+        "local_estimate": 91,
+        "drift_tokens": -54,
+        "source": "vllm_tokenize_api"
+      },
+      "medium": {
+        "token_count": 1630,
+        "local_estimate": 1850,
+        "drift_tokens": -220,
+        "source": "vllm_tokenize_api"
+      },
+      "near_limit": {
+        "token_count": 6410,
+        "local_estimate": 6370,
+        "drift_tokens": 40,
+        "source": "vllm_tokenize_api"
+      }
+    }
+  },
+  "per_experiment_token_stats": {
+    "EXP_A": {
+      "count": 20,
+      "prompt_tokens_min": 3754,
+      "prompt_tokens_max": 7261,
+      "prompt_tokens_avg": 5334.3,
+      "completion_tokens_min": 534,
+      "completion_tokens_max": 741,
+      "completion_tokens_avg": 654.8,
+      "total_tokens_max": 7901,
+      "latency_ms_min": 48934.03,
+      "latency_ms_max": 85021.03,
+      "latency_ms_avg": 62912.49,
+      "total_latency_s": 1258.25,
+      "finish_reasons": {
+        "stop": 20
+      },
+      "context_overflow_or_length_truncation_count": 0,
+      "schema_valid_count": 20,
+      "schema_valid_pct": 100.0
+    },
+    "EXP_B": {
+      "count": 20,
+      "prompt_tokens_min": 5398,
+      "prompt_tokens_max": 6859,
+      "prompt_tokens_avg": 5771.8,
+      "completion_tokens_min": 609,
+      "completion_tokens_max": 738,
+      "completion_tokens_avg": 657.2,
+      "total_tokens_max": 7579,
+      "latency_ms_min": 43879.29,
+      "latency_ms_max": 84183.75,
+      "latency_ms_avg": 66131.95,
+      "total_latency_s": 1322.64,
+      "finish_reasons": {
+        "stop": 20
+      },
+      "context_overflow_or_length_truncation_count": 0,
+      "schema_valid_count": 20,
+      "schema_valid_pct": 100.0
+    },
+    "EXP_C": {
+      "count": 20,
+      "prompt_tokens_min": 5423,
+      "prompt_tokens_max": 8088,
+      "prompt_tokens_avg": 6106.6,
+      "completion_tokens_min": 104,
+      "completion_tokens_max": 680,
+      "completion_tokens_avg": 623.2,
+      "total_tokens_max": 8192,
+      "latency_ms_min": 56183.33,
+      "latency_ms_max": 80285.09,
+      "latency_ms_avg": 69084.74,
+      "total_latency_s": 1381.69,
+      "finish_reasons": {
+        "stop": 19,
+        "length": 1
+      },
+      "context_overflow_or_length_truncation_count": 1,
+      "schema_valid_count": 19,
+      "schema_valid_pct": 95.0
+    },
+    "EXP_R": {
+      "count": 15,
+      "prompt_tokens_min": 2918,
+      "prompt_tokens_max": 6884,
+      "prompt_tokens_avg": 4465.5,
+      "completion_tokens_min": 601,
+      "completion_tokens_max": 715,
+      "completion_tokens_avg": 665.3,
+      "total_tokens_max": 7561,
+      "latency_ms_min": 38788.35,
+      "latency_ms_max": 82028.06,
+      "latency_ms_avg": 56153.18,
+      "total_latency_s": 842.3,
+      "finish_reasons": {
+        "stop": 15
+      },
+      "context_overflow_or_length_truncation_count": 0,
+      "schema_valid_count": 15,
+      "schema_valid_pct": 100.0
+    }
+  },
+  "overflow_findings": [
+    {
+      "experiment": "EXP_C",
+      "fortisiem_incident_id": "132474210",
+      "prompt_tokens": 8088,
+      "completion_tokens": 104,
+      "total_tokens": 8192,
+      "finish_reason": "length",
+      "root_cause": "Mode B sys_b (~800 tokens longer than sys_a) was not included in mode_a-calibrated extra_wire_overhead, hitting 8088+104=8192 length cap."
+    }
+  ]
+}

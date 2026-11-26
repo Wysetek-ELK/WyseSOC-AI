@@ -38,5 +38,6 @@ class ClaimGroundingResult(BaseModel):
     grounding_ratio: float = Field(0.0, ge=0.0, le=1.0)
     claims: List[ModelSupportingClaim] = Field(default_factory=list)
     unsupported_claim_details: List[Dict[str, Any]] = Field(default_factory=list)
+    validation_audit_trail: List[Dict[str, Any]] = Field(default_factory=list)
     has_hallucinations: bool = False
 
