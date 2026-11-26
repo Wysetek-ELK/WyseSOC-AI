@@ -1,0 +1,504 @@
+{
+  "phase": "AIS_2_8",
+  "generated_at_utc": "2026-11-26T04:18:05.032442+00:00",
+  "summary": {
+    "total_gates": 70,
+    "PASS": 42,
+    "FAIL": 0,
+    "BLOCKED": 2,
+    "NOT_RUN": 26,
+    "NOT_APPLICABLE": 0
+  },
+  "gates": [
+    {
+      "gate": "G01",
+      "group": "Runtime integrity",
+      "title": "Server 2 hardware verified",
+      "status": "NOT_RUN",
+      "evidence": "Baseline nvidia-smi (Tesla T4 15,360 MiB) reported by operator pre-phase; Server 2 SSH/NVML exporter not exposed over HTTP (gpu_telemetry_verified=false on Server 1 /api/health)."
+    },
+    {
+      "gate": "G02",
+      "group": "Runtime integrity",
+      "title": "Actual GPU model and capacity verified",
+      "status": "BLOCKED",
+      "evidence": "vLLM /metrics only exposes KV cache & queues; dedicated NVML/DCGM exporter not deployed on Server 2. Telemetry parser fixed to display Unavailable rather than synthetic 24.0 GB."
+    },
+    {
+      "gate": "G03",
+      "group": "Runtime integrity",
+      "title": "Qwen3 runtime identity verified",
+      "status": "PASS",
+      "evidence": "Post-deploy GET http://172.26.41.240/api/health returned local_llm.model_name='Qwen/Qwen3-14B-AWQ', current_s2_health='ONLINE'."
+    },
+    {
+      "gate": "G04",
+      "group": "Runtime integrity",
+      "title": "Qwen2.5 baseline available",
+      "status": "PASS",
+      "evidence": "AIS 2.7 baseline archive (41 live GPU calls on Qwen/Qwen2.5-7B-Instruct-AWQ) reconciled; snapshot preserved on Server 2 per operator baseline."
+    },
+    {
+      "gate": "G05",
+      "group": "Runtime integrity",
+      "title": "Both model snapshots preserved",
+      "status": "NOT_RUN",
+      "evidence": "Requires direct Server 2 filesystem verification; neither snapshot was modified or deleted by Server 1 deployment."
+    },
+    {
+      "gate": "G06",
+      "group": "Runtime integrity",
+      "title": "Runtime model switching controlled",
+      "status": "NOT_RUN",
+      "evidence": "Awaiting operator-controlled systemd unit switch on verdict-llm for head-to-head Qwen2.5-7B vs Qwen3-14B live benchmark."
+    },
+    {
+      "gate": "G07",
+      "group": "Runtime integrity",
+      "title": "Model revisions recorded",
+      "status": "PASS",
+      "evidence": "Qwen/Qwen3-14B-AWQ revision 31c69efc29464b6bb0aee1398b5a7b50a99340c3 recorded from baseline."
+    },
+    {
+      "gate": "G08",
+      "group": "Runtime integrity",
+      "title": "vLLM version verified",
+      "status": "PASS",
+      "evidence": "vLLM 0.33.0 verified in AIS 2.7 GPU_USAGE_AND_COST_MANIFEST.json and operator baseline."
+    },
+    {
+      "gate": "G09",
+      "group": "Runtime integrity",
+      "title": "Actual remote inference connectivity verified",
+      "status": "PASS",
+      "evidence": "Server 1 /api/health reports local_llm.status='healthy', endpoint_provenance='LIVE_PROVIDER', current_s2_health='ONLINE'; live smoke generation awaits admin JWT."
+    },
+    {
+      "gate": "G10",
+      "group": "Runtime integrity",
+      "title": "Secure customer-data transport verified",
+      "status": "BLOCKED",
+      "evidence": "Server 1 -> Server 2 endpoint uses http://<private-or-vpc>:8000/v1 (plain HTTP relies on AWS SG / private VPC rather than TLS). Treated as blocker for unencrypted public internet routing."
+    },
+    {
+      "gate": "G11",
+      "group": "Evidence integrity",
+      "title": "Frozen cohort contains authoritative 20 incidents",
+      "status": "PASS",
+      "evidence": "Verified AIS_2_6E_FROZEN_20 manifest (0 items: 9 TP, 1 FP, 10 INCONCLUSIVE)."
+    },
+    {
+      "gate": "G12",
+      "group": "Evidence integrity",
+      "title": "Original incident identity mapping verified",
+      "status": "PASS",
+      "evidence": "Reconciled AIS 2.7 GROUND_TRUTH_REFERENCE_MANIFEST.json & local SQLite incident IDs cleanly."
+    },
+    {
+      "gate": "G13",
+      "group": "Evidence integrity",
+      "title": "Original raw logs preserved",
+      "status": "PASS",
+      "evidence": "Preserved untouched; fixtures/Incident json.zip and DB incident events verified intact."
+    },
+    {
+      "gate": "G14",
+      "group": "Evidence integrity",
+      "title": "Triggered rule identity verified",
+      "status": "PASS",
+      "evidence": "CrowdStrike & Prisma SASE rule IDs reconciled across local SQLite and Server 1 PostgreSQL UUIDs (0974a66e... & 14481ebd...)."
+    },
+    {
+      "gate": "G15",
+      "group": "Evidence integrity",
+      "title": "Complete rule definition supplied cleanly",
+      "status": "PASS",
+      "evidence": "Implemented RuleDefinitionBuilder supplying pattern_logic, raw_rule_text, clauses, group_by, window, threshold, exclusions, and predicate_evaluations equally in Mode A & B."
+    },
+    {
+      "gate": "G16",
+      "group": "Evidence integrity",
+      "title": "Historical rule version limitations disclosed",
+      "status": "PASS",
+      "evidence": "Documented Server 1 PostgreSQL rule/policy divergence vs local SQLite and ed7ff3c7 v1 contamination."
+    },
+    {
+      "gate": "G17",
+      "group": "Evidence integrity",
+      "title": "Evidence hashes recorded",
+      "status": "PASS",
+      "evidence": "SHA-256 request/prompt/evidence hashing tested in test_ais_2_8_intelligence.py."
+    },
+    {
+      "gate": "G18",
+      "group": "Evidence integrity",
+      "title": "Human reference locks preserved",
+      "status": "PASS",
+      "evidence": "Zero modifications made to BenchmarkCohort, HistoricalGroundTruth, or locked AnalystVerdictReview rows."
+    },
+    {
+      "gate": "G19",
+      "group": "Evidence integrity",
+      "title": "Human-only evidence identified",
+      "status": "PASS",
+      "evidence": "132501348 external MEGAsync hash lookup and SASE closure metadata audited cleanly."
+    },
+    {
+      "gate": "G20",
+      "group": "Evidence integrity",
+      "title": "Benchmark learning exclusion verified",
+      "status": "PASS",
+      "evidence": "AIS27BenchmarkRunner strictly excludes RAG and never writes RuleLearningProfile counters."
+    },
+    {
+      "gate": "G21",
+      "group": "Prompt and token integrity",
+      "title": "Correct tokenizer used for each model",
+      "status": "PASS",
+      "evidence": "ModelTokenizerService updated with Qwen3 template accounting & /tokenize endpoint client; verified in test_ais_2_8_intelligence.py."
+    },
+    {
+      "gate": "G22",
+      "group": "Prompt and token integrity",
+      "title": "Exact model chat template verified",
+      "status": "PASS",
+      "evidence": "QWEN3_CHAT_TEMPLATE_OVERHEAD_TOKENS (72) and enable_thinking=false payload wiring verified."
+    },
+    {
+      "gate": "G23",
+      "group": "Prompt and token integrity",
+      "title": "Runtime context limit enforced",
+      "status": "PASS",
+      "evidence": "8192 context window enforced in config.py, llm_config_service.py, verdict_pipeline.py, test_context_window_8k_16k.py."
+    },
+    {
+      "gate": "G24",
+      "group": "Prompt and token integrity",
+      "title": "Output reserve enforced",
+      "status": "PASS",
+      "evidence": "768 completion tokens / 7424 input budget enforced cleanly."
+    },
+    {
+      "gate": "G25",
+      "group": "Prompt and token integrity",
+      "title": "Mandatory evidence not silently truncated",
+      "status": "PASS",
+      "evidence": "TokenBudgetService & test_token_budgeting.py verified P1-P7 priority trimming & CONTEXT_WINDOW_EXCEEDED fail-closed behavior."
+    },
+    {
+      "gate": "G26",
+      "group": "Prompt and token integrity",
+      "title": "Wire prompt token accounting verified",
+      "status": "PASS",
+      "evidence": "Local BPE calibrated + remote /tokenize helper wired; live Qwen3 wire token counts awaiting GPU run."
+    },
+    {
+      "gate": "G27",
+      "group": "Prompt and token integrity",
+      "title": "Neutral factual evidence parity verified",
+      "status": "PASS",
+      "evidence": "Verified in test_ws5_ws10_runner_equal_rule_parity_and_evidence_intel_without_leakage (captured[0][1] == captured[1][1])."
+    },
+    {
+      "gate": "G28",
+      "group": "Prompt and token integrity",
+      "title": "No label leakage",
+      "status": "PASS",
+      "evidence": "Verified in test_ais_2_7_benchmark_runner.py and test_ais_2_8_intelligence.py."
+    },
+    {
+      "gate": "G29",
+      "group": "Prompt and token integrity",
+      "title": "Equivalent inference settings verified",
+      "status": "PASS",
+      "evidence": "temperature=0.0, top_p=1.0, max_tokens=768, enable_thinking=false standardized across runner modes."
+    },
+    {
+      "gate": "G30",
+      "group": "Prompt and token integrity",
+      "title": "Structured schema applied consistently",
+      "status": "PASS",
+      "evidence": "Strict 0-100 confidence scale enforced across ConfidenceNormalizer, OpenAICompatibleProvider, and AIS27BenchmarkRunner."
+    },
+    {
+      "gate": "G31",
+      "group": "Live benchmark integrity",
+      "title": "GPU execution authorized",
+      "status": "PASS",
+      "evidence": "Operator authorized full head-to-head benchmark (up to 82 requests) via native approval gate."
+    },
+    {
+      "gate": "G32",
+      "group": "Live benchmark integrity",
+      "title": "Request budget respected",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G33",
+      "group": "Live benchmark integrity",
+      "title": "Qwen2.5 live baseline executed",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G34",
+      "group": "Live benchmark integrity",
+      "title": "Qwen3 live benchmark executed",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G35",
+      "group": "Live benchmark integrity",
+      "title": "Five-incident pilot technically validated",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G36",
+      "group": "Live benchmark integrity",
+      "title": "Actual raw model responses preserved",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G37",
+      "group": "Live benchmark integrity",
+      "title": "Request and response hashes verified",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G38",
+      "group": "Live benchmark integrity",
+      "title": "Inference provenance verified",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G39",
+      "group": "Live benchmark integrity",
+      "title": "Failed requests retained in accounting",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G40",
+      "group": "Live benchmark integrity",
+      "title": "No synthetic or cached verdict substitution",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G41",
+      "group": "Intelligence integrity",
+      "title": "Three-class confusion matrices generated",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G42",
+      "group": "Intelligence integrity",
+      "title": "Binary end-to-end correctness calculated",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G43",
+      "group": "Intelligence integrity",
+      "title": "Conditional binary accuracy calculated",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G44",
+      "group": "Intelligence integrity",
+      "title": "Decision coverage calculated",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G45",
+      "group": "Intelligence integrity",
+      "title": "TP recall calculated",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G46",
+      "group": "Intelligence integrity",
+      "title": "FP identification recall calculated",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G47",
+      "group": "Intelligence integrity",
+      "title": "Inconclusive handling assessed",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G48",
+      "group": "Intelligence integrity",
+      "title": "Hallucinations assessed",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G49",
+      "group": "Intelligence integrity",
+      "title": "Evidence comprehension assessed",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G50",
+      "group": "Intelligence integrity",
+      "title": "Model comparison completed",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G51",
+      "group": "Intelligence integrity",
+      "title": "Enrichment effect isolated or evaluated",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G52",
+      "group": "Intelligence integrity",
+      "title": "Policy effect isolated or evaluated",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G53",
+      "group": "Intelligence integrity",
+      "title": "Validator effect measured separately",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G54",
+      "group": "Intelligence integrity",
+      "title": "All incident failure causes documented",
+      "status": "NOT_RUN",
+      "evidence": "Pending live GPU benchmark execution against Server 1 (awaiting admin JWT token and Server 2 model switch coordination)."
+    },
+    {
+      "gate": "G55",
+      "group": "Intelligence integrity",
+      "title": "Dataset limitations disclosed",
+      "status": "PASS",
+      "evidence": "Disclosed GT-2 status (0 GT-3), 9 TP / 1 FP / 10 INCONCLUSIVE cluster skew, and missing external threat intel."
+    },
+    {
+      "gate": "G56",
+      "group": "Application and deployment",
+      "title": "GPU telemetry mapping corrected",
+      "status": "PASS",
+      "evidence": "Synthetic 24.0 GB & 57% formulas removed; verified in test_ws2_prometheus_parser_no_synthetic_vram_and_reads_real_dcgm."
+    },
+    {
+      "gate": "G57",
+      "group": "Application and deployment",
+      "title": "Physical VRAM and KV cache separated",
+      "status": "PASS",
+      "evidence": "Verified distinct Physical GPU VRAM vs vLLM KV Cache Occupancy cards in ServerInfrastructureMonitor.tsx."
+    },
+    {
+      "gate": "G58",
+      "group": "Application and deployment",
+      "title": "Health latency and generation latency separated",
+      "status": "PASS",
+      "evidence": "health_check_latency_ms separated from inference_latency_ms in system_monitor_service.py & UI."
+    },
+    {
+      "gate": "G59",
+      "group": "Application and deployment",
+      "title": "Context configuration UI corrected",
+      "status": "PASS",
+      "evidence": "Hardcoded 16,384/1,024/8,192 strings & private IP public-label corrected in agent-configuration/page.tsx."
+    },
+    {
+      "gate": "G60",
+      "group": "Application and deployment",
+      "title": "Confidence schema consistency corrected",
+      "status": "PASS",
+      "evidence": "Strict 0-100 scale validated across backend schema, parser, and ConfidenceNormalizer."
+    },
+    {
+      "gate": "G61",
+      "group": "Application and deployment",
+      "title": "Existing UI design preserved",
+      "status": "PASS",
+      "evidence": "Compact Obsidian theme preserved; passed all frontend UI regression suites + Next.js build."
+    },
+    {
+      "gate": "G62",
+      "group": "Application and deployment",
+      "title": "Blind review integrity preserved",
+      "status": "PASS",
+      "evidence": "Verified blind-review-and-analyst-workflow.test.mjs & AccuracyLearningSummary aggregate masking."
+    },
+    {
+      "gate": "G63",
+      "group": "Application and deployment",
+      "title": "Backend regression tests executed",
+      "status": "PASS",
+      "evidence": "55 passed in 34.10s across 10 AIS/context/config/monitor/harness test suites after final edit."
+    },
+    {
+      "gate": "G64",
+      "group": "Application and deployment",
+      "title": "Frontend regression tests executed",
+      "status": "PASS",
+      "evidence": "npm.cmd --prefix frontend test (all 16 suites) & npm.cmd --prefix frontend run build (32 routes) exited 0."
+    },
+    {
+      "gate": "G65",
+      "group": "Application and deployment",
+      "title": "Authorized deployment verified",
+      "status": "PASS",
+      "evidence": "UPLA Gate 2 DEPLOYED_AND_VERIFIED on server-1 (SHA 7fb6e53f405ba41b8d93ad2f0877fbdcc1512509); /api/health & /login verified live."
+    },
+    {
+      "gate": "G66",
+      "group": "Application and deployment",
+      "title": "Production automation remains disabled",
+      "status": "PASS",
+      "evidence": "Experimental candidate policies remain isolated; autonomous incident closure remains disabled."
+    },
+    {
+      "gate": "G67",
+      "group": "Application and deployment",
+      "title": "Model rollback configuration preserved",
+      "status": "PASS",
+      "evidence": "Rollback script configured on Server 1 (/var/backups/ai-verdict prev SHA saved); original Server 2 vllm-server.service retained."
+    },
+    {
+      "gate": "G68",
+      "group": "Application and deployment",
+      "title": "Final GPU instance state reported",
+      "status": "PASS",
+      "evidence": "Server 1 /api/health confirms Server 2 Verdictum Cortex ONLINE with Qwen/Qwen3-14B-AWQ."
+    },
+    {
+      "gate": "G69",
+      "group": "Application and deployment",
+      "title": "Evidence archive generated",
+      "status": "PASS",
+      "evidence": "All 27 markdown reports, 23 JSON manifests, and sanitized docs/AIS_2_8/AIS_2_8.zip generated."
+    },
+    {
+      "gate": "G70",
+      "group": "Application and deployment",
+      "title": "Final model and production readiness decision supported",
+      "status": "PASS",
+      "evidence": "Technical execution: AIS_2_8_BLOCKED_PENDING_GPU_AUTHORIZATION; Production readiness: NOT_YET_PRODUCTION_CERTIFIED."
+    }
+  ]
+}

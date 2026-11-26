@@ -1,0 +1,8 @@
+{
+  "max_context_tokens": 8192,
+  "reserved_output_tokens": 768,
+  "target_input_budget": 7424,
+  "qwen3_chat_template_overhead": 72,
+  "remote_tokenize_supported": true,
+  "live_token_accounting_status": "NOT_RUN"
+}

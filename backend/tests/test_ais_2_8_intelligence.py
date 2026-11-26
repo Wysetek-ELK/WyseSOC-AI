@@ -362,3 +362,74 @@ async def test_ws5_ws10_runner_equal_rule_parity_and_evidence_intel_without_leak
         assert res["mode_a"]["validated"]["validated_verdict"] == "REQUIRES_ATTENTION"
         assert res["mode_c"]["validated_verdict"] == "REQUIRES_ATTENTION"
     await engine.dispose()
+
+
+def test_ais28_token_budget_enforces_reserved_overhead_and_prisma_dl_only():
+    from app.services.policy_compiler_service import PolicyCompilerService
+    from app.services.token_budget_service import TokenBudgetService
+    from app.schemas.compiled_policy import CompilationExecutionMode
+
+    rule = Rule(id="r-p1", rule_id="Prisma_SASE_Suspicious_File_Threat_Detection_", name="Prisma SASE", event_type="Prisma_SASE_Suspicious_File_Threat_Detection_", severity="MEDIUM")
+    pv = get_experimental_candidate_policy(rule.rule_id)
+    compiled = PolicyCompilerService.compile_policy(rule=rule, prompt_version=pv, execution_mode=CompilationExecutionMode.SIMULATION, raise_on_unapproved=False)
+
+    payload = {
+        "incident_id": "132596403",
+        "events": [{"event_id": "e1", "attributes": {"File Name": "review.es.system.js", "Application Name": "trackjs-base", "srcIpAddr": "172.25.6.101", "destIpAddr": "198.51.100.10"}}],
+        "canonical_evidence": [
+            {"evidence_id": "EV-1", "source_field": "file.name", "observed_value": "review.es.system.js", "evidence_type": "SECURITY_EVENT"},
+            {"evidence_id": "EV-2", "source_field": "application.name", "observed_value": "trackjs-base", "evidence_type": "NETWORK_CONNECTION"},
+            {"evidence_id": "EV-3", "source_field": "network.source_ip", "observed_value": "172.25.6.101", "evidence_type": "NETWORK_CONNECTION"},
+            {"evidence_id": "EV-4", "source_field": "network.destination_ip", "observed_value": "198.51.100.10", "evidence_type": "NETWORK_CONNECTION"},
+            {"evidence_id": "EV-5", "source_field": "telemetry.host ip", "observed_value": "172.20.10.4", "evidence_type": "ENDPOINT_TELEMETRY"},
+        ],
+    }
+    intel = EvidenceIntelligenceEngine.enrich_incident_evidence(payload, payload["canonical_evidence"])
+    assert intel["endpoint_process_classification"]["download_only_evidence_present"] is True
+    assert intel["network_classification"]["endpoint_ip"]["classification"] == "RFC1918_PRIVATE"
+
+    # When effective available budget is below mandatory core + overhead, overflow must trigger
+    overflow = TokenBudgetService.budget_prompt(
+        compiled_policy=compiled,
+        incident_payload=payload,
+        max_context_tokens=8192,
+        max_completion_tokens=768,
+        reserved_overhead_tokens=1000,
+        model_name="Qwen/Qwen3-14B-AWQ",
+        target_input_budget=600,
+    )
+    assert overflow.can_proceed_to_inference is False
+    assert overflow.breakdown.context_overflow_detected is True
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_ais28_verify_tokenize_and_smoke_timeout(monkeypatch):
+    monkeypatch.setattr(settings, "LOCAL_LLM_BASE_URL", "http://192.0.2.99:8000/v1")
+    monkeypatch.setattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ")
+    respx.post("http://192.0.2.99:8000/tokenize").mock(return_value=respx.MockResponse(200, json={"count": 123}))
+    tok_res = await AIS27BenchmarkRunner.verify_tokenize(timeout_seconds=2.0)
+    assert tok_res["cases"]["small"]["token_count"] == 123
+    assert tok_res["cases"]["small"]["source"] == "vllm_tokenize_api"
+
+    import httpx
+    respx.post("http://192.0.2.99:8000/v1/chat/completions").mock(side_effect=httpx.ReadTimeout("timed out"))
+    smoke_res = await AIS27BenchmarkRunner.run_smoke_test(timeout_seconds=1.0)
+    assert smoke_res["ok"] is False
+    assert smoke_res["error_type"] == "ReadTimeout"
+
+
+@pytest.mark.asyncio
+async def test_ais28_scheduler_stop_persists_explicit_stop(tmp_path):
+    from app.services.fortisiem_scheduler import SentinelIngestWorker
+    state_file = tmp_path / "sched_state.json"
+    w = SentinelIngestWorker(state_file_path=str(state_file))
+    w.start(interval_seconds=180, auto_ai_verdict=True)
+    assert w.is_running is True
+    w.stop()
+    assert w.is_running is False
+    saved = json.loads(state_file.read_text(encoding="utf-8"))
+    assert saved["explicitly_stopped"] is True
+    assert saved["auto_ai_verdict"] is False
+    w.shutdown_worker()
+

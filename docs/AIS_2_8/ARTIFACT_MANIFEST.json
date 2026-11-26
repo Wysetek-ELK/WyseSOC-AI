@@ -1,0 +1,399 @@
+{
+  "phase": "AIS_2_8",
+  "generated_at_utc": "2026-11-26T04:18:05.032442+00:00",
+  "artifact_count": 49,
+  "artifacts": [
+    {
+      "relative_path": "docs/AIS_2_8/01_EXISTING_ARCHITECTURE_AND_PHASE_RECONCILIATION.md",
+      "size_bytes": 1899,
+      "sha256": "c8c537be3b0f85e6c84107b3c61661c6303830fd33845319d48d501bd673a212",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/02_QWEN3_RUNTIME_AND_MODEL_INTEGRATION.md",
+      "size_bytes": 1572,
+      "sha256": "47c0621e332f42dfc3c8454820f89eeb8d0ff55ce12790aa997b2a87c7833222",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/03_GPU_TELEMETRY_ROOT_CAUSE_AND_CORRECTION.md",
+      "size_bytes": 1490,
+      "sha256": "b722e3ad86a6d2e1bdc5fd280529c3ad41fb873b426e99ff16d3035a8258b35a",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/04_CONTEXT_TOKENIZER_AND_WIRE_TOKEN_INTEGRITY.md",
+      "size_bytes": 1097,
+      "sha256": "7d47ab589b6b3bfdf4512252b1b3b690ea1f031e4f4e28d4b96a3b186fbcdc19",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/05_FROZEN_DATASET_AND_GROUND_TRUTH_INTEGRITY.md",
+      "size_bytes": 906,
+      "sha256": "b950ec48b6d0a9caf9cb23d24a01cee6516f5f97226c4b119af9c6d2ddf4cdc4",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/06_COMPLETE_FORTISIEM_RULE_DEFINITION_VALIDATION.md",
+      "size_bytes": 1133,
+      "sha256": "2aaab4f438af69314fdefa1f30837739efcb326486019e2688f0c8eab0b6cf76",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/07_DETERMINISTIC_EVIDENCE_INTELLIGENCE.md",
+      "size_bytes": 1323,
+      "sha256": "5796d902774f8e49a4804f73fd6065edb13220d390c966c81c8cfe1c5f9eae61",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/08_NEUTRAL_PROMPT_BIAS_CORRECTION.md",
+      "size_bytes": 794,
+      "sha256": "088e9e17f7d0d989495a6f5dc8b710048bbd685ee9914ae3a900a469c6349b9e",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/09_STRUCTURED_OUTPUT_AND_CONFIDENCE_SCHEMA.md",
+      "size_bytes": 664,
+      "sha256": "87fcedc3ed8618d51c6aae7389d61fbc6f86e0ade882d1b4e45008896274b30a",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/10_RULE_POLICY_CONTAMINATION_AND_CORRECTIONS.md",
+      "size_bytes": 1146,
+      "sha256": "e2331c2aaa718acb210e4b1c91d74850e82e9c3a172df5de2af537e0ff9ed262",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/11_CONTROLLED_MODEL_COMPARISON_PROTOCOL.md",
+      "size_bytes": 776,
+      "sha256": "47b7787d842d2d322cd1216ddf690ed000437bb6540de512eeed6cf9cfda6320",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/12_GPU_EXECUTION_AUTHORIZATION_AND_PREFLIGHT.md",
+      "size_bytes": 698,
+      "sha256": "e0e540af181b89f7b04bbe414a3514f675d3df34443ab0b4ff9589d46c36f85a",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/13_QWEN2_5_REAL_GPU_BASELINE_RESULTS.md",
+      "size_bytes": 1020,
+      "sha256": "65c38371794c7e29a98729dec0fc9a1cf3058a7461fa1fb50d3dfbc354031f90",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/14_QWEN3_REAL_GPU_BENCHMARK_RESULTS.md",
+      "size_bytes": 921,
+      "sha256": "8628d4a2a914c2a670f6829f4afe5694a8ce9d6a26d39718d3fe1d4f0877d532",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/15_EVIDENCE_ENRICHMENT_ABLATION_RESULTS.md",
+      "size_bytes": 979,
+      "sha256": "aa9416f46c881c16144e93804ab27282f73f88e70fe366f1065ebc0e8a20a91b",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/16_RULE_POLICY_ABLATION_RESULTS.md",
+      "size_bytes": 941,
+      "sha256": "ae2618e086c849cace495b4e9e5e0c788ab2ef92c14e7f558b3964ea9d0d02d9",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/17_DETERMINISTIC_VALIDATOR_IMPACT.md",
+      "size_bytes": 1027,
+      "sha256": "8ea7caa53a53a9417b1b5aba92c17ab041620df19033fdf67224809032b13ccf",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/18_EMPIRICAL_ACCURACY_AND_CONFUSION_MATRICES.md",
+      "size_bytes": 982,
+      "sha256": "aa3217a46c44db5e20c538f7c306b64e66c6a9050e39b942c43882bc6c23fed4",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/19_MODEL_INTELLIGENCE_COMPARISON.md",
+      "size_bytes": 902,
+      "sha256": "9e24914bec91efd580f10216da3c45fa2440322668bd4a7d6f1e584785d4b89b",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/20_INDIVIDUAL_INCIDENT_FAILURE_ANALYSIS.md",
+      "size_bytes": 1020,
+      "sha256": "a88dee4bae3fcec7838cd557f78a7d2ce9e646fe17d10fcc8ea0c3c1a23b7f70",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/21_GPU_PERFORMANCE_LATENCY_AND_COST.md",
+      "size_bytes": 1017,
+      "sha256": "88a10d2e421536236695a974f7732e47bf471f641bd685d4c985aba148f03598",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/22_AGENT_INTELLIGENCE_STUDIO_UI_VERIFICATION.md",
+      "size_bytes": 618,
+      "sha256": "7b6e48440afef75877c7aa59ecd9bf1f68302c1edf064e35ab07caf44fa45b90",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/23_SECURITY_RBAC_AND_BENCHMARK_ISOLATION.md",
+      "size_bytes": 671,
+      "sha256": "048c2cd3f1ed8523d33d06ccaab00a832b0f18449134ac83c5c195c9eb6762f3",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/24_BACKEND_FRONTEND_REGRESSION_RESULTS.md",
+      "size_bytes": 745,
+      "sha256": "c05b415e8903305958c6ac6b8da0d203e3ec96bdadf3b32d9f3baf733c559ffc",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/25_REMOTE_DEPLOYMENT_AND_RUNTIME_VERIFICATION.md",
+      "size_bytes": 909,
+      "sha256": "34163b13af29fcaf1289b732bd8271668f64a0963780b776589ee8d681e34085",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/26_FINAL_ACCEPTANCE_AND_MODEL_SELECTION.md",
+      "size_bytes": 560,
+      "sha256": "b0e04eaa504b8a6dc6eae4bb50bd2ff9c823dc6973bcb7bef1c9c337e6e21577",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/27_AIS_2_9_READINESS_AND_REMAINING_BLOCKERS.md",
+      "size_bytes": 1020,
+      "sha256": "92cd8a04934e7b92d6c16c247101c37ca55e858e839587b2c300de8f76eb7dc6",
+      "artifact_type": "MARKDOWN_REPORT",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/ACCEPTANCE_GATE_MATRIX.json",
+      "size_bytes": 20872,
+      "sha256": "0b8b46c7d1871545936148ea368d682e9957933bcc6f0308a3428431ba80cfb9",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/BENCHMARK_EXECUTION_SUMMARY.json",
+      "size_bytes": 160,
+      "sha256": "5b5948a2651c35b4eb2dd28295c902307e60664c3730dc14bbc4b84993eacb5f",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/BENCHMARK_REQUEST_INDEX.json",
+      "size_bytes": 46,
+      "sha256": "3d0760b70f481e9001388353aec7a430fa8939028f3d94141b5142b8556b4c12",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/CONFUSION_MATRICES.json",
+      "size_bytes": 39,
+      "sha256": "fa148e90268339db5c3857847e652f1a3e12b1b61f62e5cbfd9fd0afa9d3c279",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/EMPIRICAL_METRICS.json",
+      "size_bytes": 14679,
+      "sha256": "f52b14030a6007984084520b06c5d8ca87a4a167ad1f01c2ca5536f939c1c922",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/ENRICHMENT_ABLATION_RESULTS.json",
+      "size_bytes": 58,
+      "sha256": "19fe423be841a8b72d360548d3410aece88a4bfa49ce5349ec12bec7627a7a9a",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/FINAL_EVIDENCE.json",
+      "size_bytes": 699,
+      "sha256": "9f655b9b04df2b0e45fd5f0fc82abf76f1d29fc40f794e75ac3b25473e206ce6",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/FROZEN_COHORT_MANIFEST.json",
+      "size_bytes": 220,
+      "sha256": "fadd4805c20b4869db26ed67ff5bf4eae5197ca5eba7d22b081b2de574f76679",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/GPU_TELEMETRY_VERIFICATION.json",
+      "size_bytes": 1583,
+      "sha256": "4b52c9ad1b39bd37f32ff185a566656542d3a5a15178addbc4043d980d31a6eb",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/GROUND_TRUTH_INTEGRITY_MANIFEST.json",
+      "size_bytes": 272,
+      "sha256": "35d1003a42ff8c760a57995ff1bbbc24b78ba5f394d25eb56feaad859edb48ad",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/INCIDENT_COMPARISON_RESULTS.json",
+      "size_bytes": 71,
+      "sha256": "e2ce06e9739bf7b681456e24d63f4f2d4d2638e5e4b6ba4abd628a2b74704ebc",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/INTELLIGENCE_FAILURE_TAXONOMY.json",
+      "size_bytes": 22801,
+      "sha256": "cd9ae371af693992190760b2af8105095de2725c21acbc2aa4754fde3b4d8ff5",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/MODEL_COMPARISON_MANIFEST.json",
+      "size_bytes": 14984,
+      "sha256": "5e599ffa44e0ae96fa67255007d3e4c91cc8ff348743a34684b8d00b6b064375",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/MODEL_SELECTION_DECISION.json",
+      "size_bytes": 122,
+      "sha256": "45cad33452a57d2a8676921fead210f98b98d3ad7d2d07ce5f53d0778fede1e8",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/NEXT_OPERATOR_ACTIONS.json",
+      "size_bytes": 485,
+      "sha256": "3f2f6ea427155e28c23fb1a9857e93a9970c8c3804d64261bd7e20d6f21eea0c",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/POLICY_ABLATION_RESULTS.json",
+      "size_bytes": 78,
+      "sha256": "97c7af6954cbdb0587dcd17f0935b8220db436bd498a28ad9e644fe5d20a59c7",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/PROMPT_PARITY_MANIFEST.json",
+      "size_bytes": 184,
+      "sha256": "4d1ac93a442554c6c73600fe1bf6dde8f89aed26b9e49e76be6e9b1165fd8630",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/REMAINING_BLOCKERS.json",
+      "size_bytes": 2325,
+      "sha256": "8d4d909f4eccd3f7a4567443c28596190ceeffb29185cd2eef8c331f58c63d76",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/RULE_EVIDENCE_MANIFEST.json",
+      "size_bytes": 392,
+      "sha256": "97e5d559e200fdc3142504547a687e274567d79dc0423047eac8563af7bd1eeb",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/RUNTIME_MANIFEST.json",
+      "size_bytes": 560,
+      "sha256": "e09863b89aac128a3b87c032156b2e4ee2519b11d394294deb99381841bfc626",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/TOKEN_ACCOUNTING_MANIFEST.json",
+      "size_bytes": 223,
+      "sha256": "124ddb037ad27ed84c506f264f2bfe22ed9f04877019ae8fe3236561c4458027",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    },
+    {
+      "relative_path": "docs/AIS_2_8/VALIDATOR_TRANSITION_RESULTS.json",
+      "size_bytes": 249,
+      "sha256": "b907b1ce345d6c6750706974d3fd7856e03ac7e2ffe8c418dc10c96bdb5449e4",
+      "artifact_type": "JSON_MANIFEST",
+      "evidence_classification": "SANITIZED_SHAREABLE",
+      "generated_at_utc": "2026-11-26T04:18:05.032442+00:00"
+    }
+  ]
+}

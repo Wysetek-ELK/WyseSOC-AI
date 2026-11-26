@@ -1,0 +1,6 @@
+{
+  "status": "NOT_RUN",
+  "authorized_budget": 82,
+  "executed_requests": 0,
+  "reason": "Pending Server 1 admin bearer token and Server 2 model switch"
+}

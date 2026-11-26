@@ -1,0 +1,656 @@
+{
+  "status": "AIS_2_7_BASELINE_ONLY_AIS_2_8_NOT_RUN",
+  "ais_2_7_error_matrix_summary": {
+    "phase": "AIS 2.7",
+    "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+    "primary_error_counts_by_mode": {
+      "mode_a": {
+        "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE": 19
+      },
+      "mode_b": {
+        "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM": 7,
+        "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA": 10,
+        "RC-07_HUMAN_ONLY_HASH_REPUTATION_DEPENDENCY": 1
+      },
+      "mode_c": {
+        "RC-10_UPSTREAM_MODE_B_ABSTENTION_PRESERVED_BY_VALIDATOR": 7,
+        "RC-12_VALIDATOR_MISSED_NARRATIVE_IP_OR_BENIGNITY_HALLUCINATION": 2,
+        "RC-11_VALIDATOR_SAFE_ESCALATION_PREVENTING_FP_AS_TP": 1,
+        "RC-09_VALIDATOR_SAFETY_REJECTION_OF_HALLUCINATED_SIGNATURE_CLAIM": 1
+      }
+    },
+    "records": [
+      {
+        "incident_id": "132474210",
+        "vendor": "CrowdStrike",
+        "gt2_verdict": "TRUE_POSITIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT"
+          ]
+        },
+        "mode_b": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-10_UPSTREAM_MODE_B_ABSTENTION_PRESERVED_BY_VALIDATOR",
+          "secondary_rcs": [
+            "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM"
+          ]
+        }
+      },
+      {
+        "incident_id": "132596403",
+        "vendor": "Prisma SASE",
+        "gt2_verdict": "INCONCLUSIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT",
+            "RC-13_GT_ONLY_HUMAN_CONTEXT_OR_HISTORICAL_ASSUMPTION"
+          ]
+        },
+        "mode_b": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-01_MODEL_REASONING_FAILURE"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        }
+      },
+      {
+        "incident_id": "132599145",
+        "vendor": "Prisma SASE",
+        "gt2_verdict": "INCONCLUSIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT",
+            "RC-13_GT_ONLY_HUMAN_CONTEXT_OR_HISTORICAL_ASSUMPTION"
+          ]
+        },
+        "mode_b": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-01_MODEL_REASONING_FAILURE"
+          ]
+        },
+        "mode_c": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-12_VALIDATOR_MISSED_NARRATIVE_IP_OR_BENIGNITY_HALLUCINATION",
+          "secondary_rcs": [
+            "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE"
+          ]
+        }
+      },
+      {
+        "incident_id": "132438483",
+        "vendor": "CrowdStrike",
+        "gt2_verdict": "TRUE_POSITIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT"
+          ]
+        },
+        "mode_b": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-10_UPSTREAM_MODE_B_ABSTENTION_PRESERVED_BY_VALIDATOR",
+          "secondary_rcs": [
+            "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM"
+          ]
+        }
+      },
+      {
+        "incident_id": "132591888",
+        "vendor": "Prisma SASE",
+        "gt2_verdict": "INCONCLUSIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT",
+            "RC-13_GT_ONLY_HUMAN_CONTEXT_OR_HISTORICAL_ASSUMPTION"
+          ]
+        },
+        "mode_b": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-01_MODEL_REASONING_FAILURE"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        }
+      },
+      {
+        "incident_id": "132439932",
+        "vendor": "CrowdStrike",
+        "gt2_verdict": "TRUE_POSITIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT"
+          ]
+        },
+        "mode_b": {
+          "verdict": "TRUE_POSITIVE",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        },
+        "mode_c": {
+          "verdict": "TRUE_POSITIVE",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        }
+      },
+      {
+        "incident_id": "132441815",
+        "vendor": "CrowdStrike",
+        "gt2_verdict": "TRUE_POSITIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT"
+          ]
+        },
+        "mode_b": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-10_UPSTREAM_MODE_B_ABSTENTION_PRESERVED_BY_VALIDATOR",
+          "secondary_rcs": [
+            "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM"
+          ]
+        }
+      },
+      {
+        "incident_id": "132461358",
+        "vendor": "CrowdStrike",
+        "gt2_verdict": "TRUE_POSITIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT"
+          ]
+        },
+        "mode_b": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-10_UPSTREAM_MODE_B_ABSTENTION_PRESERVED_BY_VALIDATOR",
+          "secondary_rcs": [
+            "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM"
+          ]
+        }
+      },
+      {
+        "incident_id": "132461368",
+        "vendor": "CrowdStrike",
+        "gt2_verdict": "TRUE_POSITIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT"
+          ]
+        },
+        "mode_b": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-10_UPSTREAM_MODE_B_ABSTENTION_PRESERVED_BY_VALIDATOR",
+          "secondary_rcs": [
+            "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM"
+          ]
+        }
+      },
+      {
+        "incident_id": "132472498",
+        "vendor": "CrowdStrike",
+        "gt2_verdict": "TRUE_POSITIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT"
+          ]
+        },
+        "mode_b": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-10_UPSTREAM_MODE_B_ABSTENTION_PRESERVED_BY_VALIDATOR",
+          "secondary_rcs": [
+            "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM"
+          ]
+        }
+      },
+      {
+        "incident_id": "132501348",
+        "vendor": "CrowdStrike",
+        "gt2_verdict": "FALSE_POSITIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        },
+        "mode_b": {
+          "verdict": "TRUE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-07_HUMAN_ONLY_HASH_REPUTATION_DEPENDENCY",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-08_SENSOR_TAMPER_DESCRIPTION_OVERWEIGHTED"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-11_VALIDATOR_SAFE_ESCALATION_PREVENTING_FP_AS_TP",
+          "secondary_rcs": [
+            "RC-07_HUMAN_ONLY_HASH_REPUTATION_DEPENDENCY"
+          ]
+        }
+      },
+      {
+        "incident_id": "132502453",
+        "vendor": "CrowdStrike",
+        "gt2_verdict": "TRUE_POSITIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT"
+          ]
+        },
+        "mode_b": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-10_UPSTREAM_MODE_B_ABSTENTION_PRESERVED_BY_VALIDATOR",
+          "secondary_rcs": [
+            "RC-06_CONTRADICTORY_MISSING_EVIDENCE_CLAIM"
+          ]
+        }
+      },
+      {
+        "incident_id": "132527297",
+        "vendor": "CrowdStrike",
+        "gt2_verdict": "TRUE_POSITIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-01_MODEL_REASONING_FAILURE",
+            "RC-04_POLICY_INSTRUCTION_IGNORED",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT"
+          ]
+        },
+        "mode_b": {
+          "verdict": "TRUE_POSITIVE",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": false,
+          "primary_rc": "RC-09_VALIDATOR_SAFETY_REJECTION_OF_HALLUCINATED_SIGNATURE_CLAIM",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION"
+          ]
+        }
+      },
+      {
+        "incident_id": "132499009",
+        "vendor": "Prisma SASE",
+        "gt2_verdict": "INCONCLUSIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT",
+            "RC-13_GT_ONLY_HUMAN_CONTEXT_OR_HISTORICAL_ASSUMPTION"
+          ]
+        },
+        "mode_b": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-01_MODEL_REASONING_FAILURE"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        }
+      },
+      {
+        "incident_id": "132499023",
+        "vendor": "Prisma SASE",
+        "gt2_verdict": "INCONCLUSIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT",
+            "RC-13_GT_ONLY_HUMAN_CONTEXT_OR_HISTORICAL_ASSUMPTION"
+          ]
+        },
+        "mode_b": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-01_MODEL_REASONING_FAILURE"
+          ]
+        },
+        "mode_c": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-12_VALIDATOR_MISSED_NARRATIVE_IP_OR_BENIGNITY_HALLUCINATION",
+          "secondary_rcs": [
+            "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE"
+          ]
+        }
+      },
+      {
+        "incident_id": "132499745",
+        "vendor": "Prisma SASE",
+        "gt2_verdict": "INCONCLUSIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT",
+            "RC-13_GT_ONLY_HUMAN_CONTEXT_OR_HISTORICAL_ASSUMPTION"
+          ]
+        },
+        "mode_b": {
+          "verdict": "TRUE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-01_MODEL_REASONING_FAILURE"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        }
+      },
+      {
+        "incident_id": "132578774",
+        "vendor": "Prisma SASE",
+        "gt2_verdict": "INCONCLUSIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT",
+            "RC-13_GT_ONLY_HUMAN_CONTEXT_OR_HISTORICAL_ASSUMPTION"
+          ]
+        },
+        "mode_b": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-01_MODEL_REASONING_FAILURE"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        }
+      },
+      {
+        "incident_id": "132595592",
+        "vendor": "Prisma SASE",
+        "gt2_verdict": "INCONCLUSIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT",
+            "RC-13_GT_ONLY_HUMAN_CONTEXT_OR_HISTORICAL_ASSUMPTION"
+          ]
+        },
+        "mode_b": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-01_MODEL_REASONING_FAILURE"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        }
+      },
+      {
+        "incident_id": "132599146",
+        "vendor": "Prisma SASE",
+        "gt2_verdict": "INCONCLUSIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT",
+            "RC-13_GT_ONLY_HUMAN_CONTEXT_OR_HISTORICAL_ASSUMPTION"
+          ]
+        },
+        "mode_b": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-01_MODEL_REASONING_FAILURE"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        }
+      },
+      {
+        "incident_id": "132599330",
+        "vendor": "Prisma SASE",
+        "gt2_verdict": "INCONCLUSIVE",
+        "mode_a": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-02_MODEL_BIAS_FALSE_POSITIVE_COLLAPSE",
+          "secondary_rcs": [
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-07_ABSENT_EXTERNAL_REPUTATION_CONTEXT",
+            "RC-13_GT_ONLY_HUMAN_CONTEXT_OR_HISTORICAL_ASSUMPTION"
+          ]
+        },
+        "mode_b": {
+          "verdict": "FALSE_POSITIVE",
+          "correct": false,
+          "primary_rc": "RC-04_POLICY_TEMPLATE_DOMAIN_MISMATCH_PRISMA",
+          "secondary_rcs": [
+            "RC-05_GROUNDING_OR_EVIDENCE_FABRICATION",
+            "RC-03_OVERCONFIDENCE_DESPITE_MISSING_EVIDENCE",
+            "RC-01_MODEL_REASONING_FAILURE"
+          ]
+        },
+        "mode_c": {
+          "verdict": "REQUIRES_ATTENTION",
+          "correct": true,
+          "primary_rc": null,
+          "secondary_rcs": []
+        }
+      }
+    ]
+  }
+}

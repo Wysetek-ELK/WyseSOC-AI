@@ -1,0 +1,10 @@
+{
+  "complete_rule_spec_implemented": true,
+  "builder": "app.services.evidence_intelligence_service.RuleDefinitionBuilder",
+  "prisma_contract_remediated": "EC-PRISMA-SASE-V2 (file.name required instead of process.file_name)",
+  "experimental_candidates_created": [
+    "AIS28-CS-CANDIDATE-V1",
+    "AIS28-PRISMA-CANDIDATE-V1"
+  ],
+  "approved_production_policies_modified": false
+}

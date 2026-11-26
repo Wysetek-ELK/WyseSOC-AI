@@ -220,6 +220,7 @@ class SentinelIngestWorker:
         now_utc = datetime.now(timezone.utc)
         state = self._read_state()
         state["is_enabled"] = True
+        state["explicitly_stopped"] = False
         state["interval_seconds"] = self.interval_seconds
         state["auto_ai_verdict"] = self.auto_ai_verdict
         state["leader_id"] = self._worker_id
@@ -228,6 +229,10 @@ class SentinelIngestWorker:
             state["last_status"] = "IDLE"
         state["last_error"] = None
         self._write_state(state)
+        try:
+            FortiSIEMService._persist_runtime_state()
+        except Exception:
+            pass
 
         self._is_local_leader = True
         self._stop_event.clear()
@@ -246,21 +251,33 @@ class SentinelIngestWorker:
     def stop(self) -> Dict[str, Any]:
         """
         Explicitly halts continuous FortiSIEM background polling.
-        Persists disabled state so polling remains halted until explicitly re-enabled.
+        Persists disabled state so polling remains halted across all workers until explicitly re-enabled.
         """
         settings.FORTISIEM_AUTO_POLL_ENABLED = False
+        settings.FORTISIEM_AUTO_AI_VERDICT = False
         self._stop_event.set()
 
         if self._task and not self._task.done():
             self._task.cancel()
+        backlog_task = getattr(self, "_backlog_task", None)
+        if backlog_task and not backlog_task.done():
+            backlog_task.cancel()
 
         state = self._read_state()
         state["is_enabled"] = False
+        state["explicitly_stopped"] = True
+        state["auto_ai_verdict"] = False
         state["last_status"] = "STOPPED"
         state["next_sync_time"] = None
         state["leader_id"] = None
         state["heartbeat_at"] = None
+        state["backlog_worker_id"] = None
+        state["backlog_heartbeat_at"] = None
         self._write_state(state)
+        try:
+            FortiSIEMService._persist_runtime_state()
+        except Exception:
+            pass
         self._is_local_leader = False
 
         self._sync_from_persisted_state()
@@ -375,13 +392,14 @@ class SentinelIngestWorker:
 
     async def run_pending_reconciliation_until_drained(
         self,
-        max_batch: int = 25,
-        max_batches: int = 60,
+        max_batch: int = 1,
+        max_batches: int = 1500,
         username: str = "llm_backlog_worker",
     ) -> Dict[str, Any]:
         """
         Sequentially drains pending incidents (ai_verdict IS NULL) once Local LLM Server 2 is online.
-        Runs without short asyncio.wait_for cancellation timers so real GPU inference completes cleanly.
+        Processes 1 incident per iteration and renews the distributed lease each step so multiple
+        Uvicorn workers never collide on Server 2 and explicit pause/stop halts cleanly after at most 1 item.
         """
         from app.services.llm_config_service import LLMConfigService
         lock = self._get_backlog_lock()
@@ -402,11 +420,16 @@ class SentinelIngestWorker:
             is_llm_online = False
 
             for _ in range(max_batches):
-                if getattr(self, "_shutdown_requested", False):
+                if getattr(self, "_shutdown_requested", False) or self._stop_event.is_set():
                     break
 
                 LLMConfigService.sync_runtime_settings()
-                self._claim_or_renew_backlog_lease()
+                FortiSIEMService.sync_runtime_settings()
+                st_cur = self._read_state()
+                if st_cur.get("explicitly_stopped") or not getattr(settings, "FORTISIEM_AUTO_AI_VERDICT", True):
+                    break
+                if not self._claim_or_renew_backlog_lease():
+                    break
 
                 try:
                     async with AsyncSessionLocal() as session:
@@ -491,9 +514,19 @@ class SentinelIngestWorker:
         while not self._shutdown_requested:
             try:
                 LLMConfigService.sync_runtime_settings()
+                FortiSIEMService.sync_runtime_settings()
                 state = self._read_state()
-                is_enabled = bool(state.get("is_enabled", False)) or getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False)
-                auto_ai_verdict = bool(state.get("auto_ai_verdict", True))
+                explicitly_stopped = bool(state.get("explicitly_stopped", False))
+                is_enabled = (
+                    False
+                    if explicitly_stopped
+                    else (bool(state.get("is_enabled", False)) or getattr(settings, "FORTISIEM_AUTO_POLL_ENABLED", False))
+                )
+                auto_ai_verdict = (
+                    False
+                    if explicitly_stopped
+                    else (bool(state.get("auto_ai_verdict", True)) and bool(getattr(settings, "FORTISIEM_AUTO_AI_VERDICT", True)))
+                )
 
                 if is_enabled:
                     if not state.get("is_enabled", False):
@@ -508,6 +541,9 @@ class SentinelIngestWorker:
                     if self._task and not self._task.done():
                         self._stop_event.set()
                         self._task.cancel()
+                    backlog_task = getattr(self, "_backlog_task", None)
+                    if explicitly_stopped and backlog_task and not backlog_task.done():
+                        backlog_task.cancel()
                     self._is_local_leader = False
 
                 # Even when FortiSIEM polling is off, check every ~30s if pending verdicts await an online Server 2

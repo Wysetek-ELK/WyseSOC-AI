@@ -1,0 +1,13 @@
+{
+  "cohort_key": "AIS_2_6E_FROZEN_20",
+  "labels_modified": false,
+  "human_review_locks_preserved": true,
+  "gt3_certified_count": 0,
+  "gt2_count": 0,
+  "reconciliation_flagged_ids": [
+    "132474210",
+    "132596403",
+    "132599145",
+    "132501348"
+  ]
+}

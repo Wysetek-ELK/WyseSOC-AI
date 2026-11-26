@@ -1,0 +1,7 @@
+{
+  "actions": [
+    "1. Provide Server 1 admin bearer token or temporary credentials so the agent can execute live Qwen/Qwen3-14B-AWQ benchmarks via /api/ground-truth/ais27/*.",
+    "2. Switch Server 2 vllm-server.service temporarily back to Qwen/Qwen2.5-7B-Instruct-AWQ after Qwen3 runs complete (for head-to-head parity comparison), then restore Qwen3-14B-AWQ.",
+    "3. Review/promote AIS28 experimental candidate policies only after inspecting live benchmark results."
+  ]
+}

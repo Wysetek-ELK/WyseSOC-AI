@@ -1,0 +1,19 @@
+{
+  "phase": "AIS_2_8",
+  "generated_at_utc": "2026-11-26T04:18:05.032442+00:00",
+  "server_1": {
+    "host": "172.26.41.240",
+    "deployed_sha": "7fb6e53f405ba41b8d93ad2f0877fbdcc1512509",
+    "health_verified": true,
+    "database": "postgresql",
+    "redis_celery": "healthy"
+  },
+  "server_2": {
+    "logical_hostname": "verdictum-cortex-01",
+    "active_model": "Qwen/Qwen3-14B-AWQ",
+    "revision": "31c69efc29464b6bb0aee1398b5a7b50a99340c3",
+    "max_model_len": 8192,
+    "health": "ONLINE",
+    "gpu_telemetry_verified": false
+  }
+}

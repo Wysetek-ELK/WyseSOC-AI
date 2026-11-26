@@ -441,7 +441,7 @@ class EvidenceIntelligenceEngine:
 
         src_ip = _first("network.source_ip", "source_ip", "srcIpAddr", "Source IP")
         dst_ip = _first("network.destination_ip", "destIpAddr", "Destination IP")
-        ep_ip = _first("endpoint.ip", "reporting_ip", "hostIpAddr")
+        ep_ip = _first("endpoint.ip", "reporting_ip", "hostIpAddr", "telemetry.host ip")
         nat_ip = _first("network.nat_ip", "postNATSrcIpAddr", "natIp")
 
         src_cls = cls.classify_ip_address(src_ip)
@@ -495,7 +495,9 @@ class EvidenceIntelligenceEngine:
 
         path_info = cls.classify_path(proc_path)
         has_process_execution = bool(cmdline or proc_name or _first("process.id", "pid", "ppid", "Process ID"))
-        has_network_file_transfer = bool(http_url or (file_name and web_cat)) and not has_process_execution
+        has_network_file_transfer = bool(
+            http_url or (file_name and (web_cat or app_name or _first("network.application_category", "network.direction")))
+        ) and not has_process_execution
 
         present_canonical_fields = sorted(
             {

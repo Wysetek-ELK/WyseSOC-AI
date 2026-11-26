@@ -1,0 +1,11 @@
+{
+  "cohort_key": "AIS_2_6E_FROZEN_20",
+  "incident_count": 0,
+  "ground_truth_tier": "GT-2",
+  "distribution": {
+    "TRUE_POSITIVE": 9,
+    "FALSE_POSITIVE": 1,
+    "INCONCLUSIVE": 10
+  },
+  "incidents": []
+}

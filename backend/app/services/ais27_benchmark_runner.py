@@ -151,11 +151,45 @@ class AIS27BenchmarkRunner:
         }
 
     @classmethod
-    async def run_smoke_test(cls, timeout_seconds: float = 60.0) -> Dict[str, Any]:
+    async def verify_tokenize(cls, timeout_seconds: float = 10.0) -> Dict[str, Any]:
+        """Verifies live Server 2 /tokenize endpoint across small, medium, and near-limit synthetic prompts."""
+        base_url = str(getattr(settings, "LOCAL_LLM_BASE_URL", "") or "").rstrip("/")
+        model_name = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))
+        api_key = str(getattr(settings, "LOCAL_LLM_API_KEY", "EMPTY") or "EMPTY")
+        cases = {
+            "small": ("You are a SOC analyst.", '{"incident_id":"SYNTH-1","action":"ping"}'),
+            "medium": (
+                EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V2 + _MODE_A_SCHEMA_SUFFIX,
+                "<UNTRUSTED_INCIDENT_DATA>\n" + ("{\"event\":\"auth_check\",\"src\":\"192.0.2.10\"}," * 40) + "\n</UNTRUSTED_INCIDENT_DATA>",
+            ),
+            "near_limit": (
+                EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V2 + _MODE_A_SCHEMA_SUFFIX,
+                "<UNTRUSTED_INCIDENT_DATA>\n" + ("{\"event\":\"telemetry_entry\",\"host\":\"SYNTH-HOST-01\",\"detail\":\"synthetic_padding_token_test\"}," * 220) + "\n</UNTRUSTED_INCIDENT_DATA>",
+            ),
+        }
+        results: Dict[str, Any] = {}
+        for label, (sys_p, user_p) in cases.items():
+            results[label] = await ModelTokenizerService.count_wire_prompt_tokens_remote(
+                base_url=base_url,
+                api_key=api_key,
+                model_name=model_name,
+                system_prompt=sys_p,
+                user_message=user_p,
+                timeout_seconds=timeout_seconds,
+            )
+        return {
+            "verified_at_utc": utc_now().isoformat(),
+            "endpoint": _redact_url(base_url),
+            "model_name": model_name,
+            "cases": results,
+        }
+
+    @classmethod
+    async def run_smoke_test(cls, timeout_seconds: float = 90.0) -> Dict[str, Any]:
         """Executes exactly ONE small controlled non-benchmark smoke-test generation on Server 2."""
         base_url = str(getattr(settings, "LOCAL_LLM_BASE_URL", "") or "").rstrip("/")
         model_name = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))
-        payload = {
+        payload: Dict[str, Any] = {
             "model": model_name,
             "messages": [
                 {
@@ -168,21 +202,47 @@ class AIS27BenchmarkRunner:
                 },
             ],
             "max_tokens": 64,
-            "temperature": 0.1,
+            "temperature": 0.0,
+            "top_p": 1.0,
         }
+        if "qwen3" in model_name.lower():
+            payload["chat_template_kwargs"] = {"enable_thinking": False}
         req_body_str = json.dumps(payload, separators=(",", ":"))
         req_ts = utc_now().isoformat()
         t0 = time.perf_counter()
 
-        async with httpx.AsyncClient(timeout=timeout_seconds) as client:
-            res = await client.post(
-                f"{base_url}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {settings.LOCAL_LLM_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                content=req_body_str.encode("utf-8"),
-            )
+        try:
+            async with httpx.AsyncClient(timeout=timeout_seconds) as client:
+                res = await client.post(
+                    f"{base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.LOCAL_LLM_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    content=req_body_str.encode("utf-8"),
+                )
+        except Exception as exc:
+            resp_ts = utc_now().isoformat()
+            latency_ms = round((time.perf_counter() - t0) * 1000.0, 2)
+            return {
+                "ok": False,
+                "error_type": type(exc).__name__,
+                "error_message": str(exc),
+                "request_timestamp_utc": req_ts,
+                "response_timestamp_utc": resp_ts,
+                "endpoint": _redact_url(f"{base_url}/chat/completions"),
+                "http_status": None,
+                "latency_ms": latency_ms,
+                "request_sha256": _sha256_text(req_body_str),
+                "vllm_response_id": None,
+                "model_returned": None,
+                "finish_reason": None,
+                "usage": {},
+                "raw_response_text": "",
+                "raw_response_sha256": _sha256_text(""),
+                "raw_vllm_envelope": {},
+            }
+
         resp_ts = utc_now().isoformat()
         latency_ms = round((time.perf_counter() - t0) * 1000.0, 2)
         resp_json = res.json() if res.status_code == 200 else {"raw_text": res.text[:1000]}
@@ -197,6 +257,7 @@ class AIS27BenchmarkRunner:
             usage = resp_json.get("usage") or {}
 
         return {
+            "ok": res.status_code == 200,
             "request_timestamp_utc": req_ts,
             "response_timestamp_utc": resp_ts,
             "endpoint": _redact_url(f"{base_url}/chat/completions"),
@@ -630,7 +691,20 @@ class AIS27BenchmarkRunner:
                 "severity": rule_obj.severity,
                 "description": rule_obj.description or "",
             }
-        rule_overhead = TokenBudgetService.estimate_tokens(rule_spec)
+        neutral_base = (
+            EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V1
+            if str(neutral_prompt_version or "").upper() == "V1"
+            else EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V2
+        )
+        sys_a = neutral_base + _MODE_A_SCHEMA_SUFFIX
+        model_name_cfg = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))
+        sys_a_tokens = ModelTokenizerService.count_tokens(sys_a, model_name=model_name_cfg)
+        sys_compiled_tokens = ModelTokenizerService.count_tokens(compiled_policy.compiled_system_prompt, model_name=model_name_cfg)
+        sys_delta = max(0, sys_a_tokens - sys_compiled_tokens) if run_mode in ("ALL", "A") else 0
+        rule_overhead = TokenBudgetService.estimate_tokens(rule_spec, model_name=model_name_cfg)
+        # Subtract rule_spec & system prompt delta beyond TokenBudgetService's built-in rule stub (~90t)
+        extra_wire_overhead = max(0, rule_overhead - 90) + sys_delta + 32
+        effective_target_input = max(512, int(target_input_budget) - extra_wire_overhead)
         budgeted = TokenBudgetService.budget_prompt(
             compiled_policy=compiled_policy,
             incident_payload=payload_dict,
@@ -638,8 +712,8 @@ class AIS27BenchmarkRunner:
             max_context_tokens=max_context_tokens,
             max_completion_tokens=max_completion_tokens,
             reserved_overhead_tokens=rule_overhead,
-            model_name=str(settings.LOCAL_LLM_MODEL_NAME),
-            target_input_budget=target_input_budget,
+            model_name=model_name_cfg,
+            target_input_budget=effective_target_input,
         )
         if not budgeted.can_proceed_to_inference:
             raise ValueError(f"Budget overflow for {fortisiem_incident_id}: {budgeted.abstention_reason}")
@@ -656,12 +730,6 @@ class AIS27BenchmarkRunner:
         )
         user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
 
-        neutral_base = (
-            EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V1
-            if str(neutral_prompt_version or "").upper() == "V1"
-            else EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V2
-        )
-        sys_a = neutral_base + _MODE_A_SCHEMA_SUFFIX
         sys_b = (
             f"{budgeted.budgeted_system_prompt}\n\n"
             "Note: Populate supporting_claims[].cited_evidence_ids (or evidence_ids) strictly from incident.canonical_evidence[].evidence_id.\n"

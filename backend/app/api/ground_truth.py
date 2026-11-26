@@ -234,14 +234,26 @@ async def ais27_verify_gpu_runtime(
     return await AIS27BenchmarkRunner.verify_gpu_runtime()
 
 
+@router.post("/ais27/tokenize-verify", response_model=Dict[str, Any])
+async def ais27_verify_tokenize(
+    timeout_seconds: float = Query(10.0, ge=2.0, le=60.0),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: verifies Server 2 /tokenize endpoint across small, medium, and near-limit payloads."""
+    from app.services.ais27_benchmark_runner import AIS27BenchmarkRunner
+
+    return await AIS27BenchmarkRunner.verify_tokenize(timeout_seconds=timeout_seconds)
+
+
 @router.post("/ais27/smoke-test", response_model=Dict[str, Any])
 async def ais27_run_smoke_test(
+    timeout_seconds: float = Query(90.0, ge=5.0, le=120.0),
     current_user: User = Depends(require_admin),
 ):
     """Administrator-only: dispatches 1 controlled non-benchmark connectivity smoke test."""
     from app.services.ais27_benchmark_runner import AIS27BenchmarkRunner
 
-    return await AIS27BenchmarkRunner.run_smoke_test()
+    return await AIS27BenchmarkRunner.run_smoke_test(timeout_seconds=timeout_seconds)
 
 
 @router.post("/ais27/cohorts/{cohort_key}/incidents/{incident_id}/run", response_model=Dict[str, Any])
