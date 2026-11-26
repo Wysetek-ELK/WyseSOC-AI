@@ -1,0 +1,13 @@
+{
+  "server_2_running": true,
+  "server_2_restarted": false,
+  "gpu_telemetry_verified_nvml": false,
+  "telemetry_source": "vLLM HTTP API & /metrics observed via Server 1 UI",
+  "kv_cache_occupancy_observed_during_live_run_pct": 27.5,
+  "health_ping_ms": 44.63,
+  "frozen20_latency_ms": {
+    "min": 61223.53,
+    "avg": 70097.0,
+    "max": 83934.62
+  }
+}

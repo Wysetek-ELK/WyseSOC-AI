@@ -1,0 +1,78 @@
+{
+  "phase": "AIS_2_9",
+  "generated_at_utc": "2026-11-26T10:24:30.733278+00:00",
+  "gates": [
+    {
+      "gate": "GATE-01",
+      "name": "Wire Token Accounting & 0 Overflows",
+      "status": "PASS",
+      "evidence": "0/20 context overflows; 132474210 compacted 8088->6106; 132461358 auto-rebudgeted cleanly (rebud=2)"
+    },
+    {
+      "gate": "GATE-02",
+      "name": "Live /tokenize Parity",
+      "status": "PASS",
+      "evidence": "6/6 scenarios verified via vllm_tokenize_api (messages_chat_template)"
+    },
+    {
+      "gate": "GATE-03",
+      "name": "Same-Event NT/DOS Path Corroboration",
+      "status": "PASS",
+      "evidence": "132439932 & 132502453 validated TRUE_POSITIVE via SAME_EVENT_CMDLINE_NT_VOLUME_CORROBORATED; strict negative cases tested"
+    },
+    {
+      "gate": "GATE-04",
+      "name": "FP Safety Preservation (132501348)",
+      "status": "PASS",
+      "evidence": "132501348 safely abstained to REQUIRES_ATTENTION (FP_CRITERIA_UNSATISFIED) without weak-validator false acceptance"
+    },
+    {
+      "gate": "GATE-05",
+      "name": "Frozen 20-Incident Live Regression",
+      "status": "PASS",
+      "evidence": "20/20 HTTP 200; 95.0% validated exact (19/20), 100% TP recall (9/9), 90.0% binary correctness, 100% inconclusive hold"
+    },
+    {
+      "gate": "GATE-06",
+      "name": "Stability & Determinism",
+      "status": "PASS",
+      "evidence": "4/4 repeated runs + 3-way targeted/frozen/stability runs identical bit-for-bit on tokens & verdicts"
+    },
+    {
+      "gate": "GATE-07",
+      "name": "GPU Budget & Non-Interference",
+      "status": "PASS",
+      "evidence": "33/50 requests used (0 failed); Server 2 Qwen/Qwen3-14B-AWQ unmodified & never restarted; scheduler stopped"
+    },
+    {
+      "gate": "GATE-08",
+      "name": "Offline Backend/Frontend Tests & Build",
+      "status": "PASS",
+      "evidence": "pytest 17 suites 113 passed; frontend 16 .mjs suites passed; frontend build passed; lint fails on pre-existing errors"
+    },
+    {
+      "gate": "GATE-09",
+      "name": "Server 1 Deployment & Security",
+      "status": "PASS",
+      "evidence": "Commit 2dc8d15a4517626bcae375e5754f4431693053f3 deployed via UPLA; 9/9 RBAC endpoints return 401 unauth/bad token"
+    },
+    {
+      "gate": "GATE-10",
+      "name": "Browser GUI Acceptance",
+      "status": "PASS",
+      "evidence": "14/14 authenticated routes passed Headless Chrome CDP (0 console errors, 0 net errors)"
+    },
+    {
+      "gate": "GATE-11",
+      "name": "AIS 3.0 Holdout Prep & GT Integrity",
+      "status": "PASS",
+      "evidence": "100 unseen holdout incidents across 30 rules ensured; 0 overlap with frozen 20; 0 holdout verdicts run; 0 GT mutations"
+    },
+    {
+      "gate": "GATE-12",
+      "name": "Production Certification (GT-3 & TLS)",
+      "status": "PENDING_OPERATOR",
+      "evidence": "0/20 GT-3 & 0/100 holdout GT-3; production TLS/VPC peering & NVML exporter remain operator tasks"
+    }
+  ]
+}

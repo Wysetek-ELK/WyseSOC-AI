@@ -1,0 +1,10 @@
+{
+  "blockers": [
+    "Second independent human reviewer GT-3 certification pending on AIS_2_6E_FROZEN_20 (0/20 GT-3, 20/20 GT-2 single-review)",
+    "Fresh holdout AIS_3_0_INDEPENDENT_HOLDOUT_100 prepared (100 incidents across 30 rule families, 0/100 GT-3 certified)",
+    "132501348 (MEGAsync.exe) legitimate FP requires verified IT allowlist/authorization evidence in telemetry for decisive FP validation",
+    "Server 1 -> Server 2 production transport requires private VPC peering or TLS proxy (UAT executed over authorized HTTP :8000)",
+    "Server 2 physical NVML/DCGM hardware exporter not deployed (gpu_telemetry_verified=false; vLLM /metrics verified live)",
+    "Pre-existing frontend ESLint warnings/errors (364 errors, 258 warnings) and ruff not installed on build host"
+  ]
+}

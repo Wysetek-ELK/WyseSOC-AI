@@ -1,0 +1,18 @@
+{
+  "ais_2_9_mode_b_raw_confusion_matrix": {
+    "FALSE_POSITIVE->FALSE_POSITIVE": 1,
+    "INCONCLUSIVE->REQUIRES_ATTENTION": 10,
+    "TRUE_POSITIVE->TRUE_POSITIVE": 9
+  },
+  "ais_2_9_mode_b_validated_confusion_matrix": {
+    "FALSE_POSITIVE->REQUIRES_ATTENTION": 1,
+    "INCONCLUSIVE->REQUIRES_ATTENTION": 10,
+    "TRUE_POSITIVE->TRUE_POSITIVE": 9
+  },
+  "ais_2_8_exp_d_validated_confusion_matrix": {
+    "FALSE_POSITIVE->REQUIRES_ATTENTION": 1,
+    "INCONCLUSIVE->REQUIRES_ATTENTION": 10,
+    "TRUE_POSITIVE->REQUIRES_ATTENTION": 3,
+    "TRUE_POSITIVE->TRUE_POSITIVE": 6
+  }
+}

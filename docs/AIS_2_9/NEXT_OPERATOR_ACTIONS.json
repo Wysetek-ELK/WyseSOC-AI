@@ -1,0 +1,9 @@
+{
+  "immediate_actions": [
+    "Assign second independent SOC reviewer to complete GT-3 certification for AIS_2_6E_FROZEN_20 on /human-review-queue -> Ground Truth Certification tab",
+    "Assign two independent blinded reviewers to certify AIS_3_0_INDEPENDENT_HOLDOUT_100 (100 unseen incidents across 30 rules) for AIS 3.0",
+    "Confirm IT allowlist / authorization source policy for benign tools such as MEGAsync.exe (132501348)",
+    "Before production cutover: establish TLS/private VPC transport between Server 1 and Server 2 and optionally deploy NVML exporter on Server 2"
+  ],
+  "recommended_next_phase": "AIS 3.0 \u2014 Independent Verdict Intelligence Certification, Fresh Multi-Rule Holdout Evaluation & Final Production Readiness Acceptance"
+}

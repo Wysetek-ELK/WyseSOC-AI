@@ -1,0 +1,21 @@
+{
+  "deployed_commit": "2dc8d15a4517626bcae375e5754f4431693053f3",
+  "modified_or_added_files": [
+    "backend/app/services/tokenizer_service.py",
+    "backend/app/services/token_budget_service.py",
+    "backend/app/services/ais27_benchmark_runner.py",
+    "backend/app/services/model_provider/openai_compatible.py",
+    "backend/app/services/verdict_pipeline.py",
+    "backend/app/services/evidence_path_normalizer.py",
+    "backend/app/services/model_claim_extractor.py",
+    "backend/app/services/verdict_claim_validator.py",
+    "backend/app/services/independent_verdict_validator.py",
+    "backend/app/schemas/evidence_claim.py",
+    "backend/app/schemas/verdict_validation.py",
+    "backend/app/services/blind_review_guard.py",
+    "backend/app/services/ground_truth_certification_service.py",
+    "backend/app/api/ground_truth.py",
+    "backend/tests/test_ais_2_9_remediation.py",
+    "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+  ]
+}

@@ -1,0 +1,265 @@
+{
+  "frontend_unit_tests": "16 suites PASS",
+  "frontend_production_build": "PASS",
+  "frontend_eslint": "FAIL (364 pre-existing errors, 258 pre-existing warnings; 0 new errors)",
+  "static_http_routes_200": 27,
+  "browser_gui_verification": {
+    "browser": "Google Chrome Headless CDP",
+    "login_click": {
+      "ok": true
+    },
+    "post_login_url": "http://172.26.41.240/agent-mission-control",
+    "routes_checked": 14,
+    "routes_passed_no_errors": 14,
+    "results": [
+      {
+        "route": "/agent-intelligence-studio",
+        "final_url": "http://172.26.41.240/agent-intelligence-studio",
+        "headings": [
+          "Verdictum AI \u2014 Agent Intelligence Studio 2.1"
+        ],
+        "text_len": 4599,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": {
+          "mentions_ais26e": false,
+          "mentions_holdout": false,
+          "controls_sample": []
+        },
+        "screenshot": "docs\\AIS_2_9\\screenshots\\02_agent_intelligence_studio.png"
+      },
+      {
+        "route": "/human-review-queue",
+        "final_url": "http://172.26.41.240/human-review-queue",
+        "headings": [
+          "Human Review Queue"
+        ],
+        "text_len": 6481,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": "docs\\AIS_2_9\\screenshots\\03_human_review_queue.png"
+      },
+      {
+        "route": "/incidents",
+        "final_url": "http://172.26.41.240/ai-triage-workbench",
+        "headings": [
+          "AI Triage Workbench"
+        ],
+        "text_len": 5390,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": "docs\\AIS_2_9\\screenshots\\04_incidents.png"
+      },
+      {
+        "route": "/rules",
+        "final_url": "http://172.26.41.240/detection-intelligence",
+        "headings": [
+          "Detection Intelligence Registry"
+        ],
+        "text_len": 5055,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": "docs\\AIS_2_9\\screenshots\\05_rules.png"
+      },
+      {
+        "route": "/ai-triage-workbench",
+        "final_url": "http://172.26.41.240/ai-triage-workbench",
+        "headings": [
+          "AI Triage Workbench"
+        ],
+        "text_len": 5390,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": "docs\\AIS_2_9\\screenshots\\06_ai_triage_workbench.png"
+      },
+      {
+        "route": "/evaluation-reports",
+        "final_url": "http://172.26.41.240/verdict-intelligence",
+        "headings": [
+          "Verdict Intelligence & Dry-Run Validation\nAIS 2.1",
+          "Trust Score Distribution (1\u201310 Ordinal Scale)",
+          "Safety Gating Breakdown"
+        ],
+        "text_len": 2008,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": "docs\\AIS_2_9\\screenshots\\07_evaluation_reports.png"
+      },
+      {
+        "route": "/inference-control",
+        "final_url": "http://172.26.41.240/inference-control",
+        "headings": [
+          "Inference Control",
+          "Dual-Server Infrastructure & Telemetry Monitor\nLIVE CLUSTER",
+          "Token Consumption & Bifurcation Analysis",
+          "BIFURCATION BY PROCESS TYPE",
+          "BIFURCATION BY MODEL IDENTIFIER",
+          "RECENT TOKEN LEDGER TRANSACTIONS (VERDICTUM CORE)"
+        ],
+        "text_len": 6817,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": "docs\\AIS_2_9\\screenshots\\08_inference_control.png"
+      },
+      {
+        "route": "/infrastructure",
+        "final_url": "http://172.26.41.240/inference-control",
+        "headings": [
+          "Inference Control",
+          "Dual-Server Infrastructure & Telemetry Monitor\nLIVE CLUSTER",
+          "Token Consumption & Bifurcation Analysis",
+          "BIFURCATION BY PROCESS TYPE",
+          "BIFURCATION BY MODEL IDENTIFIER",
+          "RECENT TOKEN LEDGER TRANSACTIONS (VERDICTUM CORE)"
+        ],
+        "text_len": 6818,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": "docs\\AIS_2_9\\screenshots\\09_infrastructure.png"
+      },
+      {
+        "route": "/analyst-attention",
+        "final_url": "http://172.26.41.240/human-review-queue",
+        "headings": [
+          "Human Review Queue"
+        ],
+        "text_len": 6481,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": null
+      },
+      {
+        "route": "/detection-intelligence",
+        "final_url": "http://172.26.41.240/detection-intelligence",
+        "headings": [
+          "Detection Intelligence Registry"
+        ],
+        "text_len": 5055,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": null
+      },
+      {
+        "route": "/learning-history",
+        "final_url": "http://172.26.41.240/agent-memory",
+        "headings": [
+          "Agent Memory",
+          "Deterministic Similar Case Matcher",
+          "Verified Case Knowledge Catalog"
+        ],
+        "text_len": 9085,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": null
+      },
+      {
+        "route": "/prompt-studio",
+        "final_url": "http://172.26.41.240/agent-intelligence-studio",
+        "headings": [
+          "Verdictum AI \u2014 Agent Intelligence Studio 2.1"
+        ],
+        "text_len": 4599,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": null
+      },
+      {
+        "route": "/governance-access",
+        "final_url": "http://172.26.41.240/governance-access",
+        "headings": [
+          "Governance & Access",
+          "PROVISIONED ACCOUNTS",
+          "CREATE NEW USER"
+        ],
+        "text_len": 1872,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": null
+      },
+      {
+        "route": "/settings",
+        "final_url": "http://172.26.41.240/agent-configuration",
+        "headings": [
+          "Agent Configuration",
+          "FortiSIEM Supervisor Integration & Credentials",
+          "Verdictum Cortex Inference Engine Integration",
+          "ANALYST INVESTIGATION SAFEGUARDS",
+          "INFRASTRUCTURE TOPOLOGY & DEPLOYMENT PROFILE",
+          "INCIDENT DATABASE MAINTENANCE & CLEAN STATE\nADMIN ONLY"
+        ],
+        "text_len": 3424,
+        "has_next_error": false,
+        "console_error_count": 0,
+        "console_errors": [],
+        "network_error_count": 0,
+        "network_errors": [],
+        "studio_extra": null,
+        "screenshot": null
+      }
+    ]
+  },
+  "screenshots_captured": [
+    "01_login.png",
+    "02_agent_intelligence_studio.png",
+    "03_human_review_queue.png",
+    "04_incidents.png",
+    "05_rules.png",
+    "06_ai_triage_workbench.png",
+    "07_evaluation_reports.png",
+    "08_inference_control.png",
+    "09_infrastructure.png",
+    "10_ground_truth_certification.png",
+    "11_holdout_cohort_ui.png"
+  ]
+}

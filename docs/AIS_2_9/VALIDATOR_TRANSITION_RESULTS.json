@@ -1,0 +1,287 @@
+{
+  "summary": {
+    "total": 20,
+    "improved_over_ais28": [
+      "132438483",
+      "132439932",
+      "132441815",
+      "132461358",
+      "132461368",
+      "132472498",
+      "132474210",
+      "132499009",
+      "132499023",
+      "132499745",
+      "132502453",
+      "132527297",
+      "132578774",
+      "132591888",
+      "132595592",
+      "132596403",
+      "132599145",
+      "132599146",
+      "132599330"
+    ],
+    "preserved_tp": 9,
+    "preserved_inconclusive_abstention": 10,
+    "legitimate_fp_abstention": 1
+  },
+  "transitions": [
+    {
+      "fortisiem_incident_id": "132438483",
+      "gt_human": "TRUE_POSITIVE",
+      "ais28_validated": null,
+      "ais29_raw": "TRUE_POSITIVE",
+      "ais29_validated": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132439932",
+      "gt_human": "TRUE_POSITIVE",
+      "ais28_validated": null,
+      "ais29_raw": "TRUE_POSITIVE",
+      "ais29_validated": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132441815",
+      "gt_human": "TRUE_POSITIVE",
+      "ais28_validated": null,
+      "ais29_raw": "TRUE_POSITIVE",
+      "ais29_validated": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132461358",
+      "gt_human": "TRUE_POSITIVE",
+      "ais28_validated": null,
+      "ais29_raw": "TRUE_POSITIVE",
+      "ais29_validated": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132461368",
+      "gt_human": "TRUE_POSITIVE",
+      "ais28_validated": null,
+      "ais29_raw": "TRUE_POSITIVE",
+      "ais29_validated": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132472498",
+      "gt_human": "TRUE_POSITIVE",
+      "ais28_validated": null,
+      "ais29_raw": "TRUE_POSITIVE",
+      "ais29_validated": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132474210",
+      "gt_human": "TRUE_POSITIVE",
+      "ais28_validated": null,
+      "ais29_raw": "TRUE_POSITIVE",
+      "ais29_validated": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132499009",
+      "gt_human": "INCONCLUSIVE",
+      "ais28_validated": null,
+      "ais29_raw": "REQUIRES_ATTENTION",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132499023",
+      "gt_human": "INCONCLUSIVE",
+      "ais28_validated": null,
+      "ais29_raw": "REQUIRES_ATTENTION",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "ABSTENTION_WITH_UNSUPPORTED_CLAIMS",
+      "reason_codes": [],
+      "grounding_ratio": 0.333,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132499745",
+      "gt_human": "INCONCLUSIVE",
+      "ais28_validated": null,
+      "ais29_raw": "REQUIRES_ATTENTION",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132501348",
+      "gt_human": "FALSE_POSITIVE",
+      "ais28_validated": null,
+      "ais29_raw": "FALSE_POSITIVE",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": false
+    },
+    {
+      "fortisiem_incident_id": "132502453",
+      "gt_human": "TRUE_POSITIVE",
+      "ais28_validated": null,
+      "ais29_raw": "TRUE_POSITIVE",
+      "ais29_validated": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132527297",
+      "gt_human": "TRUE_POSITIVE",
+      "ais28_validated": null,
+      "ais29_raw": "TRUE_POSITIVE",
+      "ais29_validated": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132578774",
+      "gt_human": "INCONCLUSIVE",
+      "ais28_validated": null,
+      "ais29_raw": "REQUIRES_ATTENTION",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132591888",
+      "gt_human": "INCONCLUSIVE",
+      "ais28_validated": null,
+      "ais29_raw": "REQUIRES_ATTENTION",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132595592",
+      "gt_human": "INCONCLUSIVE",
+      "ais28_validated": null,
+      "ais29_raw": "REQUIRES_ATTENTION",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "ABSTENTION_WITH_UNSUPPORTED_CLAIMS",
+      "reason_codes": [],
+      "grounding_ratio": 0.333,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132596403",
+      "gt_human": "INCONCLUSIVE",
+      "ais28_validated": null,
+      "ais29_raw": "REQUIRES_ATTENTION",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132599145",
+      "gt_human": "INCONCLUSIVE",
+      "ais28_validated": null,
+      "ais29_raw": "REQUIRES_ATTENTION",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132599146",
+      "gt_human": "INCONCLUSIVE",
+      "ais28_validated": null,
+      "ais29_raw": "REQUIRES_ATTENTION",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    },
+    {
+      "fortisiem_incident_id": "132599330",
+      "gt_human": "INCONCLUSIVE",
+      "ais28_validated": null,
+      "ais29_raw": "REQUIRES_ATTENTION",
+      "ais29_validated": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "improved_from_ais28": true
+    }
+  ]
+}

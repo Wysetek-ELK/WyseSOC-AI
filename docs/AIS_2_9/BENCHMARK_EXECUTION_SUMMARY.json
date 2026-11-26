@@ -1,0 +1,121 @@
+{
+  "budget_cap": 50,
+  "total_requests_attempted": 33,
+  "total_requests_succeeded": 33,
+  "total_requests_failed": 0,
+  "remaining_unused_budget": 17,
+  "breakdown_by_phase": {
+    "smoke": 1,
+    "targeted4_mode_b": 4,
+    "frozen20_mode_b": 20,
+    "targeted4_mode_a": 4,
+    "stability4_mode_b": 4
+  },
+  "smoke_test": {
+    "ok": true,
+    "latency_ms": 811.49,
+    "model": "Qwen/Qwen3-14B-AWQ"
+  },
+  "stability_repeatability": [
+    {
+      "fortisiem_incident_id": "132439932",
+      "run_count": 3,
+      "prompt_tokens_series": [
+        6908,
+        6908,
+        6908
+      ],
+      "completion_tokens_series": [
+        636,
+        636,
+        636
+      ],
+      "raw_verdict_series": [
+        "TRUE_POSITIVE",
+        "TRUE_POSITIVE",
+        "TRUE_POSITIVE"
+      ],
+      "validated_verdict_series": [
+        "TRUE_POSITIVE",
+        "TRUE_POSITIVE",
+        "TRUE_POSITIVE"
+      ],
+      "deterministic_token_match": true,
+      "deterministic_verdict_match": true
+    },
+    {
+      "fortisiem_incident_id": "132474210",
+      "run_count": 3,
+      "prompt_tokens_series": [
+        6106,
+        6106,
+        6106
+      ],
+      "completion_tokens_series": [
+        658,
+        658,
+        658
+      ],
+      "raw_verdict_series": [
+        "TRUE_POSITIVE",
+        "TRUE_POSITIVE",
+        "TRUE_POSITIVE"
+      ],
+      "validated_verdict_series": [
+        "TRUE_POSITIVE",
+        "TRUE_POSITIVE",
+        "TRUE_POSITIVE"
+      ],
+      "deterministic_token_match": true,
+      "deterministic_verdict_match": true
+    },
+    {
+      "fortisiem_incident_id": "132501348",
+      "run_count": 3,
+      "prompt_tokens_series": [
+        5595,
+        5595,
+        5595
+      ],
+      "completion_tokens_series": [
+        615,
+        615,
+        615
+      ],
+      "raw_verdict_series": [
+        "FALSE_POSITIVE",
+        "FALSE_POSITIVE",
+        "FALSE_POSITIVE"
+      ],
+      "validated_verdict_series": [
+        "REQUIRES_ATTENTION",
+        "REQUIRES_ATTENTION",
+        "REQUIRES_ATTENTION"
+      ],
+      "deterministic_token_match": true,
+      "deterministic_verdict_match": true
+    },
+    {
+      "fortisiem_incident_id": "132596403",
+      "run_count": 2,
+      "prompt_tokens_series": [
+        5423,
+        5423
+      ],
+      "completion_tokens_series": [
+        658,
+        658
+      ],
+      "raw_verdict_series": [
+        "REQUIRES_ATTENTION",
+        "REQUIRES_ATTENTION"
+      ],
+      "validated_verdict_series": [
+        "REQUIRES_ATTENTION",
+        "REQUIRES_ATTENTION"
+      ],
+      "deterministic_token_match": true,
+      "deterministic_verdict_match": true
+    }
+  ]
+}

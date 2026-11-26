@@ -1,0 +1,131 @@
+{
+  "production_rule_cs_status": "INACTIVE",
+  "active_production_cs_version_number": 3,
+  "candidate_policy_status": "EXPERIMENTAL_CANDIDATE",
+  "candidate_policy_promoted": false,
+  "automatic_incident_closure_enabled": false,
+  "mode_a_neutral_without_candidate_policy_summary": [
+    {
+      "fortisiem_incident_id": "132439932",
+      "gt_human": "TRUE_POSITIVE",
+      "prompt_tokens": 6859,
+      "completion_tokens": 720,
+      "total_tokens": 7579,
+      "finish_reason": "stop",
+      "latency_ms": 84166.53,
+      "vllm_response_id": "chatcmpl-a9a62caaff71e79e",
+      "raw_verdict": "FALSE_POSITIVE",
+      "validated_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "validation_reason_codes": [
+        "EVIDENCE_CONTRADICTION",
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "audit_methods": [
+        "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED"
+      ],
+      "wire_token_audit": {
+        "token_count": 6859,
+        "local_estimate": 6547,
+        "drift_tokens": 312,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    },
+    {
+      "fortisiem_incident_id": "132474210",
+      "gt_human": "TRUE_POSITIVE",
+      "prompt_tokens": 6057,
+      "completion_tokens": 640,
+      "total_tokens": 6697,
+      "finish_reason": "stop",
+      "latency_ms": 70684.62,
+      "vllm_response_id": "chatcmpl-b16f31177aaf0697",
+      "raw_verdict": "REQUIRES_ATTENTION",
+      "validated_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "audit_methods": [
+        "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED"
+      ],
+      "wire_token_audit": {
+        "token_count": 6057,
+        "local_estimate": 5842,
+        "drift_tokens": 215,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    },
+    {
+      "fortisiem_incident_id": "132501348",
+      "gt_human": "FALSE_POSITIVE",
+      "prompt_tokens": 5546,
+      "completion_tokens": 639,
+      "total_tokens": 6185,
+      "finish_reason": "stop",
+      "latency_ms": 63745.61,
+      "vllm_response_id": "chatcmpl-9cacedb3e4a1002a",
+      "raw_verdict": "FALSE_POSITIVE",
+      "validated_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "validation_reason_codes": [
+        "UNSUPPORTED_PREDICATE",
+        "UNSUPPORTED_CLAIM",
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 0.667,
+      "audit_methods": [],
+      "wire_token_audit": {
+        "token_count": 5546,
+        "local_estimate": 5449,
+        "drift_tokens": 97,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    },
+    {
+      "fortisiem_incident_id": "132502453",
+      "gt_human": "TRUE_POSITIVE",
+      "prompt_tokens": 6908,
+      "completion_tokens": 676,
+      "total_tokens": 7584,
+      "finish_reason": "stop",
+      "latency_ms": 81591.63,
+      "vllm_response_id": "chatcmpl-b9c2e015b7edf9ae",
+      "raw_verdict": "FALSE_POSITIVE",
+      "validated_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "validation_reason_codes": [
+        "EVIDENCE_CONTRADICTION",
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "audit_methods": [
+        "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED"
+      ],
+      "wire_token_audit": {
+        "token_count": 6908,
+        "local_estimate": 6478,
+        "drift_tokens": 430,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    }
+  ]
+}

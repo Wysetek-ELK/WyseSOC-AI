@@ -1,0 +1,15 @@
+{
+  "upla_execution_id": "upla-20261126-090716-010d42",
+  "github_commit_sha": "2dc8d15a4517626bcae375e5754f4431693053f3",
+  "branch": "feature/phase3-compact-ui",
+  "server_1_host": "172.26.41.240",
+  "deployment_status": "DEPLOYED_AND_VERIFIED",
+  "alembic_upgrade_head": "PASS",
+  "remote_pytest": "PASS",
+  "remote_npm_build": "PASS",
+  "services_restarted": [
+    "ai-verdict-backend.service",
+    "ai-verdict-frontend.service"
+  ],
+  "post_deploy_health_http": 200
+}

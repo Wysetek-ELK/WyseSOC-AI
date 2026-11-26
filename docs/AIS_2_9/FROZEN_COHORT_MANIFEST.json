@@ -1,0 +1,174 @@
+{
+  "cohort_key": "AIS_2_6E_FROZEN_20",
+  "total": 20,
+  "distribution": {
+    "TRUE_POSITIVE": 9,
+    "FALSE_POSITIVE": 1,
+    "INCONCLUSIVE": 10
+  },
+  "progress_postflight": {
+    "cohort_key": "AIS_2_6E_FROZEN_20",
+    "total": 20,
+    "priority_total": 5,
+    "priority_certified": 0,
+    "priority_single_reviewed": 5,
+    "remaining_total": 15,
+    "remaining_certified": 0,
+    "gt0_unreviewed": 0,
+    "gt1_historical_only": 0,
+    "in_progress": 0,
+    "gt2_single_review": 20,
+    "conflict_pending_adjudication": 0,
+    "gt3_certified": 0,
+    "certified_inconclusive": 0,
+    "exposure_risk_count": 20,
+    "my_locked_reviews": 20,
+    "my_draft_reviews": 0,
+    "blind_review_enforced": true,
+    "excluded_from_learning": true,
+    "ready_for_priority_benchmark": false,
+    "ready_for_full_benchmark": false
+  },
+  "incidents_redacted": [
+    {
+      "fortisiem_incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "priority_tier": "PRIORITY_5",
+      "gt_human": "TRUE_POSITIVE"
+    },
+    {
+      "fortisiem_incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "priority_tier": "PRIORITY_5",
+      "gt_human": "INCONCLUSIVE"
+    },
+    {
+      "fortisiem_incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "priority_tier": "PRIORITY_5",
+      "gt_human": "INCONCLUSIVE"
+    },
+    {
+      "fortisiem_incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "priority_tier": "PRIORITY_5",
+      "gt_human": "TRUE_POSITIVE"
+    },
+    {
+      "fortisiem_incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "priority_tier": "PRIORITY_5",
+      "gt_human": "INCONCLUSIVE"
+    },
+    {
+      "fortisiem_incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "TRUE_POSITIVE"
+    },
+    {
+      "fortisiem_incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "TRUE_POSITIVE"
+    },
+    {
+      "fortisiem_incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "TRUE_POSITIVE"
+    },
+    {
+      "fortisiem_incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "TRUE_POSITIVE"
+    },
+    {
+      "fortisiem_incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "TRUE_POSITIVE"
+    },
+    {
+      "fortisiem_incident_id": "132501348",
+      "vendor": "CrowdStrike",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "FALSE_POSITIVE"
+    },
+    {
+      "fortisiem_incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "TRUE_POSITIVE"
+    },
+    {
+      "fortisiem_incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "TRUE_POSITIVE"
+    },
+    {
+      "fortisiem_incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "INCONCLUSIVE"
+    },
+    {
+      "fortisiem_incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "INCONCLUSIVE"
+    },
+    {
+      "fortisiem_incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "INCONCLUSIVE"
+    },
+    {
+      "fortisiem_incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "INCONCLUSIVE"
+    },
+    {
+      "fortisiem_incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "INCONCLUSIVE"
+    },
+    {
+      "fortisiem_incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "INCONCLUSIVE"
+    },
+    {
+      "fortisiem_incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "rule_id": "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE",
+      "priority_tier": "REMAINING_15",
+      "gt_human": "INCONCLUSIVE"
+    }
+  ]
+}

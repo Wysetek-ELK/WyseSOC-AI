@@ -1,0 +1,423 @@
+{
+  "phase": "AIS_2_9",
+  "generated_at_utc": "2026-11-26T10:24:30.733278+00:00",
+  "artifact_count": 84,
+  "restricted_raw_archive": "C:\\Users\\amits\\OneDrive\\Documents\\SOC-AI-Agent\\scratch\\ais_2_9_restricted_evidence",
+  "artifacts": [
+    {
+      "path": "00_EXECUTIVE_SUMMARY.md",
+      "size_bytes": 1140,
+      "sha256": "c94d564b6af612f9a6cfe0191f2454c25dfc4779a8e34eb171a38b2413bef765"
+    },
+    {
+      "path": "01_AIS_2_8_BASELINE_RECONCILIATION.md",
+      "size_bytes": 835,
+      "sha256": "774e3da919a2a1d220a29ceef20c143adaaa214ba2e8bb133a374a11d22ff6a5"
+    },
+    {
+      "path": "02_ARCHITECTURE_AND_RUNTIME_AUDIT.md",
+      "size_bytes": 507,
+      "sha256": "99c7e80cc0a65d36d4c81ed192b96300d20ca35d3411cae15b4a4815fdbe397c"
+    },
+    {
+      "path": "03_MODE_B_TOKEN_ROOT_CAUSE.md",
+      "size_bytes": 492,
+      "sha256": "7c305a5d7cf4b7fbe86477495df699037b4b891c9ce2b5cf4bb64814631a78d0"
+    },
+    {
+      "path": "04_EXACT_WIRE_TOKEN_IMPLEMENTATION.md",
+      "size_bytes": 811,
+      "sha256": "cbea6387cb941b615abc07efe6c9755db6aa56777d6ac57f791346bf22ee1c3f"
+    },
+    {
+      "path": "05_VALIDATOR_PATH_NORMALIZATION.md",
+      "size_bytes": 788,
+      "sha256": "afc0a32b24377dedc368cffe3b15dd1e22f510873ff291d9d7b278a32a350a79"
+    },
+    {
+      "path": "06_VALIDATOR_NEGATIVE_REGRESSION.md",
+      "size_bytes": 909,
+      "sha256": "35c673e2f979fa6bf34c4473e047786c9e25129514ec1a223e0d5ac3c555111b"
+    },
+    {
+      "path": "07_FP_EVIDENCE_AVAILABILITY.md",
+      "size_bytes": 572,
+      "sha256": "106b89ae63f38d57016531a4d4a0b21bf4f848c742daed12d878540d47dfd618"
+    },
+    {
+      "path": "08_RULE_AWARE_POLICY_INTEGRITY.md",
+      "size_bytes": 509,
+      "sha256": "fac42eadf52c891a6748aa52489192c1178d6d375f538e2e76424704efadfaba"
+    },
+    {
+      "path": "09_FROZEN_COHORT_INTEGRITY.md",
+      "size_bytes": 323,
+      "sha256": "e93bdc23b3473947798185b579ec82b08daf16606957d08d41ef9e8daa184cc3"
+    },
+    {
+      "path": "10_GT3_INDEPENDENT_REVIEW_READINESS.md",
+      "size_bytes": 379,
+      "sha256": "8ccd6acc337c571bf441d129582929b759ead6e3f47248a67c8ac08c46906140"
+    },
+    {
+      "path": "11_FRESH_HOLDOUT_PREPARATION.md",
+      "size_bytes": 572,
+      "sha256": "e7ee9bf30c14de810194da2f23f43f96ef265b2989b8d998fc57952d3442f520"
+    },
+    {
+      "path": "12_LIVE_GPU_RUNTIME_VERIFICATION.md",
+      "size_bytes": 302,
+      "sha256": "94974bd897d3ea69e75725a349f9cacce1bdc403f9893585c675684cd543f5dc"
+    },
+    {
+      "path": "13_TARGETED_FOUR_INCIDENT_RETEST.md",
+      "size_bytes": 740,
+      "sha256": "f5896fda6e26335429a5e387503a0c394b0419c13e66ea9914ac1439449ba895"
+    },
+    {
+      "path": "14_FULL_FROZEN_COHORT_LIVE_RESULTS.md",
+      "size_bytes": 2812,
+      "sha256": "0105061ac5892579f855828fbbe100fda4a4b33b315a3ef6d2915cc7ee077ce7"
+    },
+    {
+      "path": "15_EMPIRICAL_METRICS_AND_CONFUSION_MATRICES.md",
+      "size_bytes": 724,
+      "sha256": "ba692fb6d99f21850c63c4c44c7b9b0ee07bf59eaf30c012f04154c5f5a8cf74"
+    },
+    {
+      "path": "16_STABILITY_AND_REPEATABILITY.md",
+      "size_bytes": 702,
+      "sha256": "3089ecdc6b9fb93b86bfc2a73d2badd635521ad1eb0917bca13ef79f03fc6538"
+    },
+    {
+      "path": "17_BACKEND_FRONTEND_REGRESSION.md",
+      "size_bytes": 689,
+      "sha256": "cae865d8df7d721571bcbc72b841aa0c62228663b5d47f57f33e85890808dfde"
+    },
+    {
+      "path": "18_SECURITY_AND_TRANSPORT_VERIFICATION.md",
+      "size_bytes": 489,
+      "sha256": "1a823bc107b6200c269d43ccb3781cd442a75b257661e133890e49ac06fae4fc"
+    },
+    {
+      "path": "19_AGENT_INTELLIGENCE_STUDIO_UI.md",
+      "size_bytes": 535,
+      "sha256": "c839e651a20827356e3ec537f5bc7d27d707659ab83dbebd3a254db7586f23da"
+    },
+    {
+      "path": "20_SERVER1_DEPLOYMENT_VERIFICATION.md",
+      "size_bytes": 482,
+      "sha256": "49ec14555bec3ded6a67b16b5ce4468c4a5c6298719537b339cae76f4dde8e7b"
+    },
+    {
+      "path": "21_BROWSER_GUI_ACCEPTANCE.md",
+      "size_bytes": 614,
+      "sha256": "928d1582e7f5181b4754fd3e9b240563644f7455c9d31ce538d673f0cadec43e"
+    },
+    {
+      "path": "22_GPU_PERFORMANCE_AND_TELEMETRY.md",
+      "size_bytes": 536,
+      "sha256": "547504d411a55b3d5c76ca050e05672795b4ad3de3202dd5d37a0f87c2e2350a"
+    },
+    {
+      "path": "23_MANUAL_ANALYST_REVIEW_GUIDE.md",
+      "size_bytes": 1485,
+      "sha256": "b265b77d1d642832437383f387ddec76530eb006ba0da9c8730b22f3510c32c5"
+    },
+    {
+      "path": "24_FINAL_ACCEPTANCE_AND_AIS_3_0_READINESS.md",
+      "size_bytes": 690,
+      "sha256": "b39608b332bebff6080a41c56680e475615e78cb07ac7309709992a432e4e48b"
+    },
+    {
+      "path": "ACCEPTANCE_GATE_MATRIX.json",
+      "size_bytes": 3030,
+      "sha256": "0a12910782a8db851f602ad2719ebcaa8d89f1e3ec3f121b423092ddc66429bb"
+    },
+    {
+      "path": "BENCHMARK_EXECUTION_SUMMARY.json",
+      "size_bytes": 2759,
+      "sha256": "bcd5d63741592b8135e05b89a1257c78e02677bbb8bb660f26873a1d21416009"
+    },
+    {
+      "path": "BENCHMARK_REQUEST_INDEX.json",
+      "size_bytes": 17882,
+      "sha256": "9642a2664a39639198952dfff7b08e3e8271f8030e7f1e0244604baaede35fe9"
+    },
+    {
+      "path": "CONFUSION_MATRICES.json",
+      "size_bytes": 595,
+      "sha256": "d640c542c7a779fa227d861a7fcfd18028d8218a55a68d660275f9a281042760"
+    },
+    {
+      "path": "DEPLOYMENT_VERIFICATION.json",
+      "size_bytes": 486,
+      "sha256": "5dcb428676a4b0c380499a480675daf90f3c8a9d8aac5366af14946b23d95b80"
+    },
+    {
+      "path": "EMPIRICAL_METRICS.json",
+      "size_bytes": 8481,
+      "sha256": "c95f11b7a213d639f3e2c81059a074de5e88f96f80ae4649d700664b5b413394"
+    },
+    {
+      "path": "FINAL_EVIDENCE.json",
+      "size_bytes": 2794,
+      "sha256": "91e4202721531921a5c5b2a32edf06d279a4bf510975a4d3a4814f5df65d3d48"
+    },
+    {
+      "path": "FRESH_HOLDOUT_ELIGIBILITY_MANIFEST.json",
+      "size_bytes": 2256,
+      "sha256": "fd75675dea3f7bd018ed6b46572c53339a8310ffcdf68c2341334653c5397bb1"
+    },
+    {
+      "path": "FROZEN_COHORT_MANIFEST.json",
+      "size_bytes": 5303,
+      "sha256": "37e86531c1aa2ed5b3143bca5cfdb397c1f0c30f81c21bc988ca8d77ab6e0ef3"
+    },
+    {
+      "path": "GPU_REQUEST_BUDGET.json",
+      "size_bytes": 178,
+      "sha256": "dafd2397bf1b69677651069be62666ce83d24c35a4bc03a1e52ea4e5cc2bd28a"
+    },
+    {
+      "path": "GPU_TELEMETRY_VERIFICATION.json",
+      "size_bytes": 367,
+      "sha256": "0dbd9d63ee70e9f94240cc6ffd45ae4d9270e0e37161dc9351ebf1f9d76bafd4"
+    },
+    {
+      "path": "GROUND_TRUTH_INTEGRITY_MANIFEST.json",
+      "size_bytes": 1538,
+      "sha256": "b79a883f5b03e38e88caf200a14ff37fb373f128c62f10ce36535d9b7c8251fc"
+    },
+    {
+      "path": "GT3_CERTIFICATION_READINESS.json",
+      "size_bytes": 886,
+      "sha256": "b27d8d2b6325b8bbd91537d583c4bbd05b692656a8af55085f2fe0ff33f4e32c"
+    },
+    {
+      "path": "IMPLEMENTATION_CHANGE_MANIFEST.json",
+      "size_bytes": 984,
+      "sha256": "6f7dbeab2f678ff2bb1087753bbf3e7519c12de5aebece53e3d5b406524f35df"
+    },
+    {
+      "path": "INCIDENT_COMPARISON_RESULTS.json",
+      "size_bytes": 35852,
+      "sha256": "e69f35256ed9ba2222ee749d9cebf139885ccdbf36cdc6cd32d2b39759057d49"
+    },
+    {
+      "path": "NEXT_OPERATOR_ACTIONS.json",
+      "size_bytes": 764,
+      "sha256": "78a5eaf362920c5fb94e34d06efffd9bec7cf8ffae1a4930d7bcf399c56e3b3e"
+    },
+    {
+      "path": "POLICY_INTEGRITY_MANIFEST.json",
+      "size_bytes": 4234,
+      "sha256": "43617dee61efccfe5111880d0756c92dda0bedaacf8eab8f014f24fb2e0d1597"
+    },
+    {
+      "path": "REMAINING_BLOCKERS.json",
+      "size_bytes": 798,
+      "sha256": "e0b687271d040df0cd66e9d4375537783c5e92ffd217b1814ef41783ae473d5c"
+    },
+    {
+      "path": "RUNTIME_MANIFEST.json",
+      "size_bytes": 4645,
+      "sha256": "942f09d5afc651fd321fd6025e3752809cbc2afa060de81069eff3a5106a7b2b"
+    },
+    {
+      "path": "sanitized_evidence/incident_132438483.json",
+      "size_bytes": 1739,
+      "sha256": "009f738327ba94ad86b7426ba239819ca39b324631163a980ec4e6e26f25ec2f"
+    },
+    {
+      "path": "sanitized_evidence/incident_132439932.json",
+      "size_bytes": 1794,
+      "sha256": "6b8e3821d30324019e9499914a38ef39ae06b11be54688c71189d5a6edfcfb46"
+    },
+    {
+      "path": "sanitized_evidence/incident_132441815.json",
+      "size_bytes": 1741,
+      "sha256": "ab3eef0833b8154fa2dedd612525445bf8891f9d3d7bcb6cbf83703a4aa1da60"
+    },
+    {
+      "path": "sanitized_evidence/incident_132461358.json",
+      "size_bytes": 1741,
+      "sha256": "b086ab45b880eeb404961fafa12561672c962d62960329d9d2d895367f7adb64"
+    },
+    {
+      "path": "sanitized_evidence/incident_132461368.json",
+      "size_bytes": 1741,
+      "sha256": "ec9381a501fda3abc45f37c70cf47c80e3e5b1c14d7f7df2d472ce207a7fabd3"
+    },
+    {
+      "path": "sanitized_evidence/incident_132472498.json",
+      "size_bytes": 1742,
+      "sha256": "c81b9a671dfc4e91ea6869220ec8b241776ceb6bc88d1b082fd101c2e90d2ab5"
+    },
+    {
+      "path": "sanitized_evidence/incident_132474210.json",
+      "size_bytes": 1739,
+      "sha256": "9d6726b2af0faa4ecf9920f08f22e452a6401974bb84efa49662d36b47e6e998"
+    },
+    {
+      "path": "sanitized_evidence/incident_132499009.json",
+      "size_bytes": 1460,
+      "sha256": "49f3dcea30a68729605277fb03f20c95705dac3ab44b3388f274e15485beaef9"
+    },
+    {
+      "path": "sanitized_evidence/incident_132499023.json",
+      "size_bytes": 1457,
+      "sha256": "0de7fa5af29d1cf173489fc2ed7603f459bed10106bf02b2a2c2fd3a557ad761"
+    },
+    {
+      "path": "sanitized_evidence/incident_132499745.json",
+      "size_bytes": 1460,
+      "sha256": "8ed93ff477a505c713c90a21e3652380c3d4697a626e411988e0aa608acbf54b"
+    },
+    {
+      "path": "sanitized_evidence/incident_132501348.json",
+      "size_bytes": 1466,
+      "sha256": "5921c56e541c23535c001d545a82d8f410cc4543b431255003aad31748119e67"
+    },
+    {
+      "path": "sanitized_evidence/incident_132502453.json",
+      "size_bytes": 1796,
+      "sha256": "429d04c50087add22ad03ddebc590397e3329cf35730537d8a98aaf14745fb13"
+    },
+    {
+      "path": "sanitized_evidence/incident_132527297.json",
+      "size_bytes": 1741,
+      "sha256": "d40fe4a0ea15896e9b76071bc6d3a9caba155ce4d287f9de564c616180bbc7a4"
+    },
+    {
+      "path": "sanitized_evidence/incident_132578774.json",
+      "size_bytes": 1460,
+      "sha256": "a3f6e67fd366a7f8837a43b01d146e1abf334424c373e1530573347eda3cb3cf"
+    },
+    {
+      "path": "sanitized_evidence/incident_132591888.json",
+      "size_bytes": 1457,
+      "sha256": "a528bb094e951dff2b6e861862eb2d721c7266f8adebb1fba26648dc5bf8cf0e"
+    },
+    {
+      "path": "sanitized_evidence/incident_132595592.json",
+      "size_bytes": 1457,
+      "sha256": "ff86cc2f84e7a74fab78af169d117ea882ea90ff9845513d51eb829fef1c21a4"
+    },
+    {
+      "path": "sanitized_evidence/incident_132596403.json",
+      "size_bytes": 1457,
+      "sha256": "f8a2d9d355dfc78d4b18254b8ad96dc1bdb30431288d68c71970bb5c0651eab5"
+    },
+    {
+      "path": "sanitized_evidence/incident_132599145.json",
+      "size_bytes": 1456,
+      "sha256": "95d87fddc7988baece71f24ac779046a867892f922860d25ccc10b15316b8b32"
+    },
+    {
+      "path": "sanitized_evidence/incident_132599146.json",
+      "size_bytes": 1460,
+      "sha256": "f8aa0f7903024525a479e60fe6b8fb7578b76a61dc1aa44f94644b1b5017721a"
+    },
+    {
+      "path": "sanitized_evidence/incident_132599330.json",
+      "size_bytes": 1459,
+      "sha256": "67f421a5add487dd9c3d439ac6514af8c22b9e73416ac866e62590bbe9342c13"
+    },
+    {
+      "path": "screenshots/01_login.png",
+      "size_bytes": 719184,
+      "sha256": "30592a4af8c88d47d3d9e846f5adc6598ed89b1d673f2e104059e8188f9de840"
+    },
+    {
+      "path": "screenshots/02_agent_intelligence_studio.png",
+      "size_bytes": 470353,
+      "sha256": "3c16bae190ee026b1dac108daefffd8e7d2a216a68675293f517931bc5d56cdd"
+    },
+    {
+      "path": "screenshots/03_human_review_queue.png",
+      "size_bytes": 471576,
+      "sha256": "a7b790d71c08910b5f5cb17ae968ac55abd4612d7328cc73a5f3e228a46af626"
+    },
+    {
+      "path": "screenshots/04_incidents.png",
+      "size_bytes": 591197,
+      "sha256": "e1bd15c4ad14da197f2a744d4ee39b04cbe1b011a28e3e62c54590abe17d08b0"
+    },
+    {
+      "path": "screenshots/05_rules.png",
+      "size_bytes": 365666,
+      "sha256": "92fb2115e9c0216c9d32c15d7d6344b780e6454bd10d60e40846182d4355459a"
+    },
+    {
+      "path": "screenshots/06_ai_triage_workbench.png",
+      "size_bytes": 591198,
+      "sha256": "fb684b2e2c3e2db2e006e4bb73bf73278340540f92b93d5f217915d7c1cdc699"
+    },
+    {
+      "path": "screenshots/07_evaluation_reports.png",
+      "size_bytes": 598273,
+      "sha256": "42c62262774327cc6ead68ad083a96d8c19963094c14b6188c8a8d25f836ba58"
+    },
+    {
+      "path": "screenshots/08_inference_control.png",
+      "size_bytes": 337884,
+      "sha256": "d95a81b9deafeb3814b6fdb3aed5bbee7c02f7014780a478f1e1da132e87415a"
+    },
+    {
+      "path": "screenshots/09_infrastructure.png",
+      "size_bytes": 337902,
+      "sha256": "3d6ead7e280f69fcc0d5ab25783c195164045f2671bd87613c035067faa840e7"
+    },
+    {
+      "path": "screenshots/10_ground_truth_certification.png",
+      "size_bytes": 463416,
+      "sha256": "a77c78f33aab53549fe5af938766fda515e2a4b23894f58a2887ebafa6081889"
+    },
+    {
+      "path": "screenshots/11_holdout_cohort_ui.png",
+      "size_bytes": 563977,
+      "sha256": "641eddef41bfbe1a99f9a0ad2e4c7be19b1c5d62c5fbc6e68f0f31167934fa88"
+    },
+    {
+      "path": "SECURITY_VERIFICATION.json",
+      "size_bytes": 2708,
+      "sha256": "80529d6d6bd67140b0b70387183e648bf2acdab10f88ff8c5ef03e099a803932"
+    },
+    {
+      "path": "test_results/backend_pytest_17suites.txt",
+      "size_bytes": 390,
+      "sha256": "75c65ac02ce2bcc20af4ece2d5b4a5ecbb04a521a9c3ec287554a6e3b9de3294"
+    },
+    {
+      "path": "test_results/frontend_lint.txt",
+      "size_bytes": 1171412,
+      "sha256": "f3c3bfd828f4a43d13547d7a166e8b806f6c10ff154189164161a0cde22b6879"
+    },
+    {
+      "path": "test_results/frontend_tests.txt",
+      "size_bytes": 27946,
+      "sha256": "086a99f4d65b06187b6a431fa0c9f90e854cf2e5ed42f54358ec4982165cd31a"
+    },
+    {
+      "path": "TOKEN_ACCOUNTING_MANIFEST.json",
+      "size_bytes": 12415,
+      "sha256": "5179896113fdf7e4088d8705758df02f3f1c6332c3916d723b0d76c1f60655fb"
+    },
+    {
+      "path": "UI_VERIFICATION.json",
+      "size_bytes": 8834,
+      "sha256": "decdc2acb35000a3bdcd777939add205239fba563c7c0244ae7093ff9b3d7301"
+    },
+    {
+      "path": "VALIDATOR_NORMALIZATION_RESULTS.json",
+      "size_bytes": 11153,
+      "sha256": "09c14d1e6813b6ccf280aa6d7b0fa5e1150a98c1437fa6b6d6c0a894d20658ef"
+    },
+    {
+      "path": "VALIDATOR_TRANSITION_RESULTS.json",
+      "size_bytes": 8283,
+      "sha256": "01fc6680001f3e07dc868851f01045a8ce14c32d09502f8bafccb7cd973c335f"
+    }
+  ]
+}

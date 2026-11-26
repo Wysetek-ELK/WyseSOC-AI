@@ -1,0 +1,9 @@
+{
+  "authorized_max_requests": 50,
+  "attempted": 33,
+  "succeeded": 33,
+  "failed": 0,
+  "remaining": 17,
+  "exclusive_model": "Qwen/Qwen3-14B-AWQ",
+  "concurrency": 1
+}

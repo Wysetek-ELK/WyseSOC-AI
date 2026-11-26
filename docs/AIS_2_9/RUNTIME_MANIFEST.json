@@ -1,0 +1,155 @@
+{
+  "server_1": {
+    "server_name": "Verdictum Core",
+    "logical_hostname": "verdictum-core-01",
+    "cpu_percent": 4.0,
+    "memory_percent": 49.7,
+    "memory_used_gb": 7.64,
+    "memory_total_gb": 15.36,
+    "disk_percent": 9.7
+  },
+  "deployed_commit": "2dc8d15a4517626bcae375e5754f4431693053f3",
+  "server_2_runtime_verify": {
+    "verified_at_utc": "2026-11-26T09:36:04.208921",
+    "endpoint": "http://13.204.214.64:8000/v1",
+    "configured_model_name": "Qwen/Qwen3-14B-AWQ",
+    "configured_context_budget": 8192,
+    "configured_max_tokens": 768,
+    "models_http_status": 200,
+    "models_payload": {
+      "object": "list",
+      "data": [
+        {
+          "id": "Qwen/Qwen3-14B-AWQ",
+          "object": "model",
+          "created": 1795685762,
+          "owned_by": "vllm",
+          "root": "Qwen/Qwen3-14B-AWQ",
+          "parent": null,
+          "max_model_len": 8192,
+          "permission": [
+            {
+              "id": "modelperm-a2170dd050214dac",
+              "object": "model_permission",
+              "created": 1795685762,
+              "allow_create_engine": false,
+              "allow_sampling": true,
+              "allow_logprobs": true,
+              "allow_search_indices": false,
+              "allow_view": true,
+              "allow_fine_tuning": false,
+              "organization": "*",
+              "group": null,
+              "is_blocking": false
+            }
+          ]
+        }
+      ]
+    },
+    "health_http_status": 200,
+    "version_payload": {
+      "version": "0.33.0"
+    },
+    "probe_latency_ms": 44.63,
+    "errors": []
+  },
+  "postflight_runtime_verify": {
+    "verified_at_utc": "2026-11-26T10:20:42.815276",
+    "endpoint": "http://13.204.214.64:8000/v1",
+    "configured_model_name": "Qwen/Qwen3-14B-AWQ",
+    "configured_context_budget": 8192,
+    "configured_max_tokens": 768,
+    "models_http_status": 200,
+    "models_payload": {
+      "object": "list",
+      "data": [
+        {
+          "id": "Qwen/Qwen3-14B-AWQ",
+          "object": "model",
+          "created": 1795688440,
+          "owned_by": "vllm",
+          "root": "Qwen/Qwen3-14B-AWQ",
+          "parent": null,
+          "max_model_len": 8192,
+          "permission": [
+            {
+              "id": "modelperm-8581946c9565804c",
+              "object": "model_permission",
+              "created": 1795688440,
+              "allow_create_engine": false,
+              "allow_sampling": true,
+              "allow_logprobs": true,
+              "allow_search_indices": false,
+              "allow_view": true,
+              "allow_fine_tuning": false,
+              "organization": "*",
+              "group": null,
+              "is_blocking": false
+            }
+          ]
+        }
+      ]
+    },
+    "health_http_status": 200,
+    "version_payload": {
+      "version": "0.33.0"
+    },
+    "probe_latency_ms": 19.62,
+    "errors": []
+  },
+  "tokenize_verify": {
+    "verified_at_utc": "2026-11-26T09:36:04.690955",
+    "endpoint": "http://13.204.214.64:8000/v1",
+    "model_name": "Qwen/Qwen3-14B-AWQ",
+    "cases": {
+      "small": {
+        "token_count": 37,
+        "local_estimate": 91,
+        "drift_tokens": -54,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template"
+      },
+      "medium": {
+        "token_count": 1630,
+        "local_estimate": 1850,
+        "drift_tokens": -220,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template"
+      },
+      "mode_a_neutral": {
+        "token_count": 1690,
+        "local_estimate": 2050,
+        "drift_tokens": -360,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template"
+      },
+      "mode_b_policy": {
+        "token_count": 1914,
+        "local_estimate": 1784,
+        "drift_tokens": 130,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template"
+      },
+      "escaped_windows_paths": {
+        "token_count": 302,
+        "local_estimate": 418,
+        "drift_tokens": -116,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template"
+      },
+      "near_limit": {
+        "token_count": 6410,
+        "local_estimate": 6370,
+        "drift_tokens": 40,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template"
+      }
+    }
+  },
+  "server_2_restarted": false,
+  "scheduler_state": {
+    "is_running": false,
+    "last_status": "STOPPED",
+    "auto_ai_verdict": false
+  }
+}

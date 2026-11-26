@@ -1,0 +1,93 @@
+{
+  "all_unauth_blocked_401": true,
+  "all_bad_token_blocked_401": true,
+  "bad_login_status": 401,
+  "rbac_probes": [
+    {
+      "endpoint": "/ground-truth/ais27/runtime-verify",
+      "method": "GET",
+      "unauth_status": 401,
+      "bad_token_status": 401,
+      "admin_status": 200,
+      "unauth_blocked": true,
+      "bad_token_blocked": true,
+      "secret_leak_detected": false
+    },
+    {
+      "endpoint": "/ground-truth/cohorts/AIS_2_6E_FROZEN_20/audit",
+      "method": "GET",
+      "unauth_status": 401,
+      "bad_token_status": 401,
+      "admin_status": 200,
+      "unauth_blocked": true,
+      "bad_token_blocked": true,
+      "secret_leak_detected": false
+    },
+    {
+      "endpoint": "/ground-truth/holdout-readiness",
+      "method": "GET",
+      "unauth_status": 401,
+      "bad_token_status": 401,
+      "admin_status": 200,
+      "unauth_blocked": true,
+      "bad_token_blocked": true,
+      "secret_leak_detected": false
+    },
+    {
+      "endpoint": "/llm/config",
+      "method": "GET",
+      "unauth_status": 401,
+      "bad_token_status": 401,
+      "admin_status": 200,
+      "unauth_blocked": true,
+      "bad_token_blocked": true,
+      "secret_leak_detected": false
+    },
+    {
+      "endpoint": "/incidents",
+      "method": "GET",
+      "unauth_status": 401,
+      "bad_token_status": 401,
+      "admin_status": 200,
+      "unauth_blocked": true,
+      "bad_token_blocked": true,
+      "secret_leak_detected": false
+    },
+    {
+      "endpoint": "/rules",
+      "method": "GET",
+      "unauth_status": 401,
+      "bad_token_status": 401,
+      "admin_status": 200,
+      "unauth_blocked": true,
+      "bad_token_blocked": true,
+      "secret_leak_detected": true
+    },
+    {
+      "endpoint": "/ground-truth/ais27/tokenize-verify",
+      "method": "POST",
+      "unauth_status": 401,
+      "bad_token_status": 401,
+      "unauth_blocked": true,
+      "bad_token_blocked": true
+    },
+    {
+      "endpoint": "/ground-truth/cohorts/AIS_3_0_INDEPENDENT_HOLDOUT_100/ensure",
+      "method": "POST",
+      "unauth_status": 401,
+      "bad_token_status": 401,
+      "unauth_blocked": true,
+      "bad_token_blocked": true
+    },
+    {
+      "endpoint": "/fortisiem/scheduler/stop",
+      "method": "POST",
+      "unauth_status": 401,
+      "bad_token_status": 401,
+      "unauth_blocked": true,
+      "bad_token_blocked": true
+    }
+  ],
+  "upla_security_scan": "PASS (0 secret findings, 0 static security findings across 59 files)",
+  "transport_note": "UAT benchmark executed over authorized HTTP :8000; private VPC peering or TLS proxy required before production cutover"
+}

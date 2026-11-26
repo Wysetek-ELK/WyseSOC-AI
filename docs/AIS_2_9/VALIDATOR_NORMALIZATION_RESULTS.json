@@ -1,0 +1,330 @@
+{
+  "targeted4_mode_b_summary": [
+    {
+      "fortisiem_incident_id": "132439932",
+      "gt_human": "TRUE_POSITIVE",
+      "prompt_tokens": 6908,
+      "completion_tokens": 636,
+      "total_tokens": 7544,
+      "finish_reason": "stop",
+      "latency_ms": 78478.96,
+      "vllm_response_id": "chatcmpl-b98d4fc829d9de05",
+      "raw_verdict": "TRUE_POSITIVE",
+      "validated_verdict": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "audit_methods": [
+        "SAME_EVENT_CMDLINE_NT_VOLUME_CORROBORATED"
+      ],
+      "wire_token_audit": {
+        "token_count": 6908,
+        "local_estimate": 6537,
+        "drift_tokens": 371,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    },
+    {
+      "fortisiem_incident_id": "132474210",
+      "gt_human": "TRUE_POSITIVE",
+      "prompt_tokens": 6106,
+      "completion_tokens": 658,
+      "total_tokens": 6764,
+      "finish_reason": "stop",
+      "latency_ms": 71868.63,
+      "vllm_response_id": "chatcmpl-bd547d7f56536556",
+      "raw_verdict": "TRUE_POSITIVE",
+      "validated_verdict": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "audit_methods": [
+        "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED"
+      ],
+      "wire_token_audit": {
+        "token_count": 6106,
+        "local_estimate": 5832,
+        "drift_tokens": 274,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    },
+    {
+      "fortisiem_incident_id": "132501348",
+      "gt_human": "FALSE_POSITIVE",
+      "prompt_tokens": 5595,
+      "completion_tokens": 615,
+      "total_tokens": 6210,
+      "finish_reason": "stop",
+      "latency_ms": 62432.18,
+      "vllm_response_id": "chatcmpl-babd21e2c16385bd",
+      "raw_verdict": "FALSE_POSITIVE",
+      "validated_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "validation_reason_codes": [
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "audit_methods": [],
+      "wire_token_audit": {
+        "token_count": 5595,
+        "local_estimate": 5439,
+        "drift_tokens": 156,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    },
+    {
+      "fortisiem_incident_id": "132502453",
+      "gt_human": "TRUE_POSITIVE",
+      "prompt_tokens": 6957,
+      "completion_tokens": 638,
+      "total_tokens": 7595,
+      "finish_reason": "stop",
+      "latency_ms": 79407.69,
+      "vllm_response_id": "chatcmpl-bc75677e7a3a6f18",
+      "raw_verdict": "TRUE_POSITIVE",
+      "validated_verdict": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "audit_methods": [
+        "SAME_EVENT_CMDLINE_NT_VOLUME_CORROBORATED"
+      ],
+      "wire_token_audit": {
+        "token_count": 6957,
+        "local_estimate": 6468,
+        "drift_tokens": 489,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    }
+  ],
+  "targeted4_mode_a_negative_and_guardrail_summary": [
+    {
+      "fortisiem_incident_id": "132439932",
+      "gt_human": "TRUE_POSITIVE",
+      "prompt_tokens": 6859,
+      "completion_tokens": 720,
+      "total_tokens": 7579,
+      "finish_reason": "stop",
+      "latency_ms": 84166.53,
+      "vllm_response_id": "chatcmpl-a9a62caaff71e79e",
+      "raw_verdict": "FALSE_POSITIVE",
+      "validated_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "validation_reason_codes": [
+        "EVIDENCE_CONTRADICTION",
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "audit_methods": [
+        "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED"
+      ],
+      "wire_token_audit": {
+        "token_count": 6859,
+        "local_estimate": 6547,
+        "drift_tokens": 312,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    },
+    {
+      "fortisiem_incident_id": "132474210",
+      "gt_human": "TRUE_POSITIVE",
+      "prompt_tokens": 6057,
+      "completion_tokens": 640,
+      "total_tokens": 6697,
+      "finish_reason": "stop",
+      "latency_ms": 70684.62,
+      "vllm_response_id": "chatcmpl-b16f31177aaf0697",
+      "raw_verdict": "REQUIRES_ATTENTION",
+      "validated_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "VALIDATED",
+      "validation_reason_codes": [
+        "EVIDENCE_VALIDATED"
+      ],
+      "grounding_ratio": 1.0,
+      "audit_methods": [
+        "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED"
+      ],
+      "wire_token_audit": {
+        "token_count": 6057,
+        "local_estimate": 5842,
+        "drift_tokens": 215,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    },
+    {
+      "fortisiem_incident_id": "132501348",
+      "gt_human": "FALSE_POSITIVE",
+      "prompt_tokens": 5546,
+      "completion_tokens": 639,
+      "total_tokens": 6185,
+      "finish_reason": "stop",
+      "latency_ms": 63745.61,
+      "vllm_response_id": "chatcmpl-9cacedb3e4a1002a",
+      "raw_verdict": "FALSE_POSITIVE",
+      "validated_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "validation_reason_codes": [
+        "UNSUPPORTED_PREDICATE",
+        "UNSUPPORTED_CLAIM",
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 0.667,
+      "audit_methods": [],
+      "wire_token_audit": {
+        "token_count": 5546,
+        "local_estimate": 5449,
+        "drift_tokens": 97,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    },
+    {
+      "fortisiem_incident_id": "132502453",
+      "gt_human": "TRUE_POSITIVE",
+      "prompt_tokens": 6908,
+      "completion_tokens": 676,
+      "total_tokens": 7584,
+      "finish_reason": "stop",
+      "latency_ms": 81591.63,
+      "vllm_response_id": "chatcmpl-b9c2e015b7edf9ae",
+      "raw_verdict": "FALSE_POSITIVE",
+      "validated_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "validation_reason_codes": [
+        "EVIDENCE_CONTRADICTION",
+        "FP_CRITERIA_UNSATISFIED"
+      ],
+      "grounding_ratio": 1.0,
+      "audit_methods": [
+        "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED"
+      ],
+      "wire_token_audit": {
+        "token_count": 6908,
+        "local_estimate": 6478,
+        "drift_tokens": 430,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      }
+    }
+  ],
+  "frozen20_normalization_audit_entries": [
+    {
+      "fortisiem_incident_id": "132438483",
+      "claim_id": "CLM-01-process.file_path",
+      "source_event_id": "6887129733007838820",
+      "source_field": "process.file_path",
+      "comparison_method": "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED",
+      "alias_provenance": null,
+      "validation_status": "GROUNDED"
+    },
+    {
+      "fortisiem_incident_id": "132439932",
+      "claim_id": "CLM-01-process.file_path",
+      "source_event_id": "6887129733007797685",
+      "source_field": "process.file_path",
+      "comparison_method": "SAME_EVENT_CMDLINE_NT_VOLUME_CORROBORATED",
+      "alias_provenance": "EV-132439932-6887129733007797685-process_command_line",
+      "validation_status": "GROUNDED"
+    },
+    {
+      "fortisiem_incident_id": "132441815",
+      "claim_id": "CLM-01-process.file_path",
+      "source_event_id": "6887129733007558865",
+      "source_field": "process.file_path",
+      "comparison_method": "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED",
+      "alias_provenance": null,
+      "validation_status": "GROUNDED"
+    },
+    {
+      "fortisiem_incident_id": "132461358",
+      "claim_id": "CLM-01-process.file_path",
+      "source_event_id": "6887129733009265449",
+      "source_field": "process.file_path",
+      "comparison_method": "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED",
+      "alias_provenance": null,
+      "validation_status": "GROUNDED"
+    },
+    {
+      "fortisiem_incident_id": "132461368",
+      "claim_id": "CLM-01-process.file_path",
+      "source_event_id": "6887129733009440196",
+      "source_field": "process.file_path",
+      "comparison_method": "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED",
+      "alias_provenance": null,
+      "validation_status": "GROUNDED"
+    },
+    {
+      "fortisiem_incident_id": "132472498",
+      "claim_id": "CLM-01-process.file_path",
+      "source_event_id": "6887129733009637739",
+      "source_field": "process.file_path",
+      "comparison_method": "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED",
+      "alias_provenance": null,
+      "validation_status": "GROUNDED"
+    },
+    {
+      "fortisiem_incident_id": "132474210",
+      "claim_id": "CLM-01-process.file_path",
+      "source_event_id": "6887129733009796747",
+      "source_field": "process.file_path",
+      "comparison_method": "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED",
+      "alias_provenance": null,
+      "validation_status": "GROUNDED"
+    },
+    {
+      "fortisiem_incident_id": "132502453",
+      "claim_id": "CLM-01-process.file_path",
+      "source_event_id": "6887129733010640492",
+      "source_field": "process.file_path",
+      "comparison_method": "SAME_EVENT_CMDLINE_NT_VOLUME_CORROBORATED",
+      "alias_provenance": "EV-132502453-6887129733010640492-process_command_line",
+      "validation_status": "GROUNDED"
+    },
+    {
+      "fortisiem_incident_id": "132527297",
+      "claim_id": "CLM-01-process.file_path",
+      "source_event_id": "6887129733011033546",
+      "source_field": "process.file_path",
+      "comparison_method": "TYPED_NT_DEVICE_VOLUME_PATH_NORMALIZED",
+      "alias_provenance": null,
+      "validation_status": "GROUNDED"
+    }
+  ],
+  "offline_negative_regression_suite": "backend/tests/test_ais_2_9_remediation.py"
+}
