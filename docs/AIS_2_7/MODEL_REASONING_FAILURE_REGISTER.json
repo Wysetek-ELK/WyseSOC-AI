@@ -1,0 +1,30 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "key_reasoning_failure_patterns": [
+    {
+      "pattern_id": "MRF-01",
+      "mode": "MODE_A",
+      "frequency": "20/20 incidents (100%)",
+      "description": "Catastrophic FALSE_POSITIVE class collapse: Model labeled every CrowdStrike UltraViewer_Service.exe alert, MEGAsync.exe alert, and all 10 Prisma SASE alerts as FALSE_POSITIVE at 85% confidence despite explicit prompt warning not to treat filenames/CDN IPs as benign."
+    },
+    {
+      "pattern_id": "MRF-02",
+      "mode": "MODE_B",
+      "frequency": "6/10 CrowdStrike incidents",
+      "description": "Instruction-induced missing-field hallucination: Triggered by Approved Policy criteria citing process.command_line checks, model claimed process.command_line is missing and abstained even though process.command_line ('\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"') was explicitly supplied."
+    },
+    {
+      "pattern_id": "MRF-03",
+      "mode": "MODE_B",
+      "frequency": "10/10 Prisma SASE incidents",
+      "description": "Inability to abstain on insufficient Prisma SASE logs + network topology confusion: Model never emitted REQUIRES_ATTENTION on Prisma SASE (9 FP, 1 TP), mislabeled public AWS/CloudFront IPs (3.109.76.166, 13.35.36.32) as internal, mislabeled RFC1918 IP 172.25.14.67 as non-internal, and invented absent process telemetry."
+    },
+    {
+      "pattern_id": "MRF-04",
+      "mode": "MODE_B",
+      "frequency": "4/10 CrowdStrike incidents (132439932, 132461358, 132461368, 132502453, 132527297 \u2014 5 incidents total)",
+      "description": "Path/signature fabrication: Called Program Files (x86) a 'writable temporary path' (132439932) and asserted digital signature absence despite zero signature fields in CrowdStrike telemetry."
+    }
+  ]
+}

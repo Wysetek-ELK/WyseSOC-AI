@@ -1,0 +1,555 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "ground_truth_tier": "GT-2_EXPLORATORY_SINGLE_REVIEW",
+  "mode_a": {
+    "mode": "MODE_A_NEUTRAL_BASELINE",
+    "cohort_n": 20,
+    "confusion_matrix_3x3": {
+      "TRUE_POSITIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 9,
+        "REQUIRES_ATTENTION": 0
+      },
+      "FALSE_POSITIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 1,
+        "REQUIRES_ATTENTION": 0
+      },
+      "INCONCLUSIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 10,
+        "REQUIRES_ATTENTION": 0
+      }
+    },
+    "full_3class_accuracy_mapped_gt2": {
+      "numerator": 1,
+      "denominator": 20,
+      "rate": 0.05,
+      "percent": 5.0,
+      "status": "COMPUTED"
+    },
+    "binary_eligible_n": 10,
+    "binary_accuracy": {
+      "numerator": 1,
+      "denominator": 10,
+      "rate": 0.1,
+      "percent": 10.0,
+      "status": "COMPUTED"
+    },
+    "binary_conditional_decisive_accuracy": {
+      "numerator": 1,
+      "denominator": 10,
+      "rate": 0.1,
+      "percent": 10.0,
+      "status": "COMPUTED"
+    },
+    "binary_decision_coverage": {
+      "numerator": 10,
+      "denominator": 10,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "binary_abstention_rate": {
+      "numerator": 0,
+      "denominator": 10,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "tp_recall_binary": {
+      "numerator": 0,
+      "denominator": 9,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "tp_precision_binary_eligible": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "percent": null,
+      "status": "NOT_APPLICABLE_ZERO_DENOMINATOR"
+    },
+    "tp_precision_full_cohort": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "percent": null,
+      "status": "NOT_APPLICABLE_ZERO_DENOMINATOR"
+    },
+    "fp_recall_binary": {
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "fp_precision_binary_eligible": {
+      "numerator": 1,
+      "denominator": 10,
+      "rate": 0.1,
+      "percent": 10.0,
+      "status": "COMPUTED"
+    },
+    "fp_precision_full_cohort": {
+      "numerator": 1,
+      "denominator": 20,
+      "rate": 0.05,
+      "percent": 5.0,
+      "status": "COMPUTED"
+    },
+    "missed_tp_as_fp_rate": {
+      "numerator": 9,
+      "denominator": 9,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "fp_as_tp_rate": {
+      "numerator": 0,
+      "denominator": 1,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "inconclusive_subset_n": 10,
+    "inconclusive_abstention_accuracy": {
+      "numerator": 0,
+      "denominator": 10,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "inconclusive_premature_decisive_rate": {
+      "numerator": 10,
+      "denominator": 10,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "overall_prediction_counts": {
+      "TRUE_POSITIVE": 0,
+      "FALSE_POSITIVE": 20,
+      "REQUIRES_ATTENTION": 0
+    }
+  },
+  "mode_b": {
+    "mode": "MODE_B_POLICY_ASSISTED_RAW",
+    "cohort_n": 20,
+    "confusion_matrix_3x3": {
+      "TRUE_POSITIVE": {
+        "TRUE_POSITIVE": 2,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 7
+      },
+      "FALSE_POSITIVE": {
+        "TRUE_POSITIVE": 1,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 0
+      },
+      "INCONCLUSIVE": {
+        "TRUE_POSITIVE": 1,
+        "FALSE_POSITIVE": 9,
+        "REQUIRES_ATTENTION": 0
+      }
+    },
+    "full_3class_accuracy_mapped_gt2": {
+      "numerator": 2,
+      "denominator": 20,
+      "rate": 0.1,
+      "percent": 10.0,
+      "status": "COMPUTED"
+    },
+    "binary_eligible_n": 10,
+    "binary_accuracy": {
+      "numerator": 2,
+      "denominator": 10,
+      "rate": 0.2,
+      "percent": 20.0,
+      "status": "COMPUTED"
+    },
+    "binary_conditional_decisive_accuracy": {
+      "numerator": 2,
+      "denominator": 3,
+      "rate": 0.6667,
+      "percent": 66.67,
+      "status": "COMPUTED"
+    },
+    "binary_decision_coverage": {
+      "numerator": 3,
+      "denominator": 10,
+      "rate": 0.3,
+      "percent": 30.0,
+      "status": "COMPUTED"
+    },
+    "binary_abstention_rate": {
+      "numerator": 7,
+      "denominator": 10,
+      "rate": 0.7,
+      "percent": 70.0,
+      "status": "COMPUTED"
+    },
+    "tp_recall_binary": {
+      "numerator": 2,
+      "denominator": 9,
+      "rate": 0.2222,
+      "percent": 22.22,
+      "status": "COMPUTED"
+    },
+    "tp_precision_binary_eligible": {
+      "numerator": 2,
+      "denominator": 3,
+      "rate": 0.6667,
+      "percent": 66.67,
+      "status": "COMPUTED"
+    },
+    "tp_precision_full_cohort": {
+      "numerator": 2,
+      "denominator": 4,
+      "rate": 0.5,
+      "percent": 50.0,
+      "status": "COMPUTED"
+    },
+    "fp_recall_binary": {
+      "numerator": 0,
+      "denominator": 1,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "fp_precision_binary_eligible": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "percent": null,
+      "status": "NOT_APPLICABLE_ZERO_DENOMINATOR"
+    },
+    "fp_precision_full_cohort": {
+      "numerator": 0,
+      "denominator": 9,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "missed_tp_as_fp_rate": {
+      "numerator": 0,
+      "denominator": 9,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "fp_as_tp_rate": {
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "inconclusive_subset_n": 10,
+    "inconclusive_abstention_accuracy": {
+      "numerator": 0,
+      "denominator": 10,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "inconclusive_premature_decisive_rate": {
+      "numerator": 10,
+      "denominator": 10,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "overall_prediction_counts": {
+      "TRUE_POSITIVE": 4,
+      "FALSE_POSITIVE": 9,
+      "REQUIRES_ATTENTION": 7
+    }
+  },
+  "mode_c_validated": {
+    "mode": "MODE_C_VALIDATOR_VALIDATED_VERDICT",
+    "cohort_n": 20,
+    "confusion_matrix_3x3": {
+      "TRUE_POSITIVE": {
+        "TRUE_POSITIVE": 1,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 8
+      },
+      "FALSE_POSITIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 1
+      },
+      "INCONCLUSIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 2,
+        "REQUIRES_ATTENTION": 8
+      }
+    },
+    "full_3class_accuracy_mapped_gt2": {
+      "numerator": 9,
+      "denominator": 20,
+      "rate": 0.45,
+      "percent": 45.0,
+      "status": "COMPUTED"
+    },
+    "binary_eligible_n": 10,
+    "binary_accuracy": {
+      "numerator": 1,
+      "denominator": 10,
+      "rate": 0.1,
+      "percent": 10.0,
+      "status": "COMPUTED"
+    },
+    "binary_conditional_decisive_accuracy": {
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "binary_decision_coverage": {
+      "numerator": 1,
+      "denominator": 10,
+      "rate": 0.1,
+      "percent": 10.0,
+      "status": "COMPUTED"
+    },
+    "binary_abstention_rate": {
+      "numerator": 9,
+      "denominator": 10,
+      "rate": 0.9,
+      "percent": 90.0,
+      "status": "COMPUTED"
+    },
+    "tp_recall_binary": {
+      "numerator": 1,
+      "denominator": 9,
+      "rate": 0.1111,
+      "percent": 11.11,
+      "status": "COMPUTED"
+    },
+    "tp_precision_binary_eligible": {
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "tp_precision_full_cohort": {
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "fp_recall_binary": {
+      "numerator": 0,
+      "denominator": 1,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "fp_precision_binary_eligible": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "percent": null,
+      "status": "NOT_APPLICABLE_ZERO_DENOMINATOR"
+    },
+    "fp_precision_full_cohort": {
+      "numerator": 0,
+      "denominator": 2,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "missed_tp_as_fp_rate": {
+      "numerator": 0,
+      "denominator": 9,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "fp_as_tp_rate": {
+      "numerator": 0,
+      "denominator": 1,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "inconclusive_subset_n": 10,
+    "inconclusive_abstention_accuracy": {
+      "numerator": 8,
+      "denominator": 10,
+      "rate": 0.8,
+      "percent": 80.0,
+      "status": "COMPUTED"
+    },
+    "inconclusive_premature_decisive_rate": {
+      "numerator": 2,
+      "denominator": 10,
+      "rate": 0.2,
+      "percent": 20.0,
+      "status": "COMPUTED"
+    },
+    "overall_prediction_counts": {
+      "TRUE_POSITIVE": 1,
+      "FALSE_POSITIVE": 2,
+      "REQUIRES_ATTENTION": 17
+    }
+  },
+  "mode_c_effective_trust_gate": {
+    "mode": "MODE_C_EFFECTIVE_TRUST_GATE_VERDICT",
+    "cohort_n": 20,
+    "confusion_matrix_3x3": {
+      "TRUE_POSITIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 9
+      },
+      "FALSE_POSITIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 1
+      },
+      "INCONCLUSIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 10
+      }
+    },
+    "full_3class_accuracy_mapped_gt2": {
+      "numerator": 10,
+      "denominator": 20,
+      "rate": 0.5,
+      "percent": 50.0,
+      "status": "COMPUTED"
+    },
+    "binary_eligible_n": 10,
+    "binary_accuracy": {
+      "numerator": 0,
+      "denominator": 10,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "binary_conditional_decisive_accuracy": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "percent": null,
+      "status": "NOT_APPLICABLE_ZERO_DENOMINATOR"
+    },
+    "binary_decision_coverage": {
+      "numerator": 0,
+      "denominator": 10,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "binary_abstention_rate": {
+      "numerator": 10,
+      "denominator": 10,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "tp_recall_binary": {
+      "numerator": 0,
+      "denominator": 9,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "tp_precision_binary_eligible": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "percent": null,
+      "status": "NOT_APPLICABLE_ZERO_DENOMINATOR"
+    },
+    "tp_precision_full_cohort": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "percent": null,
+      "status": "NOT_APPLICABLE_ZERO_DENOMINATOR"
+    },
+    "fp_recall_binary": {
+      "numerator": 0,
+      "denominator": 1,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "fp_precision_binary_eligible": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "percent": null,
+      "status": "NOT_APPLICABLE_ZERO_DENOMINATOR"
+    },
+    "fp_precision_full_cohort": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "percent": null,
+      "status": "NOT_APPLICABLE_ZERO_DENOMINATOR"
+    },
+    "missed_tp_as_fp_rate": {
+      "numerator": 0,
+      "denominator": 9,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "fp_as_tp_rate": {
+      "numerator": 0,
+      "denominator": 1,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "inconclusive_subset_n": 10,
+    "inconclusive_abstention_accuracy": {
+      "numerator": 10,
+      "denominator": 10,
+      "rate": 1.0,
+      "percent": 100.0,
+      "status": "COMPUTED"
+    },
+    "inconclusive_premature_decisive_rate": {
+      "numerator": 0,
+      "denominator": 10,
+      "rate": 0.0,
+      "percent": 0.0,
+      "status": "COMPUTED"
+    },
+    "overall_prediction_counts": {
+      "TRUE_POSITIVE": 0,
+      "FALSE_POSITIVE": 0,
+      "REQUIRES_ATTENTION": 20
+    }
+  },
+  "confidence_analysis": {
+    "mode_a": {
+      "all_n": 20,
+      "mean_all": 85.0,
+      "mean_incorrect": 85.0,
+      "mean_correct": 85.0,
+      "wrong_overconfident_ge_80_count": 19,
+      "wrong_count": 19
+    },
+    "mode_b": {
+      "all_n": 20,
+      "mean_all": 73.25,
+      "mean_incorrect": 71.94,
+      "mean_correct": 85.0,
+      "wrong_overconfident_ge_80_count": 11,
+      "wrong_count": 18
+    }
+  }
+}

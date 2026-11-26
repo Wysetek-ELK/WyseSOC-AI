@@ -1,0 +1,167 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "ci_method": "Wilson score interval (z=1.959964, 95%)",
+  "paired_test_method": "Exact two-sided binomial McNemar test on 3-class mapped GT-2 exact agreement",
+  "wilson_confidence_intervals_percent": {
+    "mode_a_3class_accuracy": {
+      "k": 1,
+      "n": 20,
+      "proportion": 0.05,
+      "percent": 5.0,
+      "ci95_low": 0.89,
+      "ci95_high": 23.61
+    },
+    "mode_a_binary_accuracy": {
+      "k": 1,
+      "n": 10,
+      "proportion": 0.1,
+      "percent": 10.0,
+      "ci95_low": 1.79,
+      "ci95_high": 40.42
+    },
+    "mode_a_tp_recall": {
+      "k": 0,
+      "n": 9,
+      "proportion": 0.0,
+      "percent": 0.0,
+      "ci95_low": 0.0,
+      "ci95_high": 29.91
+    },
+    "mode_a_fp_recall": {
+      "k": 1,
+      "n": 1,
+      "proportion": 1.0,
+      "percent": 100.0,
+      "ci95_low": 20.65,
+      "ci95_high": 100.0
+    },
+    "mode_a_missed_tp_as_fp_rate": {
+      "k": 9,
+      "n": 9,
+      "proportion": 1.0,
+      "percent": 100.0,
+      "ci95_low": 70.09,
+      "ci95_high": 100.0
+    },
+    "mode_a_inconclusive_abstention_accuracy": {
+      "k": 0,
+      "n": 10,
+      "proportion": 0.0,
+      "percent": 0.0,
+      "ci95_low": 0.0,
+      "ci95_high": 27.75
+    },
+    "mode_b_3class_accuracy": {
+      "k": 2,
+      "n": 20,
+      "proportion": 0.1,
+      "percent": 10.0,
+      "ci95_low": 2.79,
+      "ci95_high": 30.1
+    },
+    "mode_b_binary_accuracy": {
+      "k": 2,
+      "n": 10,
+      "proportion": 0.2,
+      "percent": 20.0,
+      "ci95_low": 5.67,
+      "ci95_high": 50.98
+    },
+    "mode_b_tp_recall": {
+      "k": 2,
+      "n": 9,
+      "proportion": 0.2222,
+      "percent": 22.22,
+      "ci95_low": 6.32,
+      "ci95_high": 54.74
+    },
+    "mode_b_fp_recall": {
+      "k": 0,
+      "n": 1,
+      "proportion": 0.0,
+      "percent": 0.0,
+      "ci95_low": 0.0,
+      "ci95_high": 79.35
+    },
+    "mode_b_inconclusive_abstention_accuracy": {
+      "k": 0,
+      "n": 10,
+      "proportion": 0.0,
+      "percent": 0.0,
+      "ci95_low": 0.0,
+      "ci95_high": 27.75
+    },
+    "mode_c_validated_3class_accuracy": {
+      "k": 9,
+      "n": 20,
+      "proportion": 0.45,
+      "percent": 45.0,
+      "ci95_low": 25.82,
+      "ci95_high": 65.79
+    },
+    "mode_c_validated_binary_accuracy": {
+      "k": 1,
+      "n": 10,
+      "proportion": 0.1,
+      "percent": 10.0,
+      "ci95_low": 1.79,
+      "ci95_high": 40.42
+    },
+    "mode_c_validated_tp_recall": {
+      "k": 1,
+      "n": 9,
+      "proportion": 0.1111,
+      "percent": 11.11,
+      "ci95_low": 1.99,
+      "ci95_high": 43.5
+    },
+    "mode_c_validated_missed_tp_as_fp_rate": {
+      "k": 0,
+      "n": 9,
+      "proportion": 0.0,
+      "percent": 0.0,
+      "ci95_low": 0.0,
+      "ci95_high": 29.91
+    },
+    "mode_c_validated_inconclusive_abstention_accuracy": {
+      "k": 8,
+      "n": 10,
+      "proportion": 0.8,
+      "percent": 80.0,
+      "ci95_low": 49.02,
+      "ci95_high": 94.33
+    }
+  },
+  "paired_mcnemar_tests_full_n20": {
+    "mode_a_vs_mode_b": {
+      "b_only_first_correct": 1,
+      "c_only_second_correct": 2,
+      "discordant_n": 3,
+      "p_value_two_sided": 1.0,
+      "statistically_significant_alpha_0_05": false
+    },
+    "mode_b_vs_mode_c_validated": {
+      "b_only_first_correct": 1,
+      "c_only_second_correct": 8,
+      "discordant_n": 9,
+      "p_value_two_sided": 0.039062,
+      "statistically_significant_alpha_0_05": true
+    },
+    "mode_a_vs_mode_c_validated": {
+      "b_only_first_correct": 1,
+      "c_only_second_correct": 9,
+      "discordant_n": 10,
+      "p_value_two_sided": 0.021484,
+      "statistically_significant_alpha_0_05": true
+    }
+  },
+  "clustering_and_power_limitations": {
+    "cohort_n": 20,
+    "distinct_detection_rules": 2,
+    "distinct_customers": 2,
+    "binary_fp_n": 1,
+    "cluster_note": "9/10 CrowdStrike incidents share the same UltraViewer_Service.exe detection pattern on host accounts of customer Tosoh; all 10 Prisma SASE incidents share the same Suspicious File rule for customer Forbes Marshall. Effective independent scenario count is materially smaller than N=20, widening true uncertainty beyond naive i.i.d. CIs.",
+    "interpretation": "Confidence intervals are wide due to N=20 (and N=10 binary eligible, N=1 binary FP). Mode C improvement over Mode A (45% vs 5%, McNemar exact two-sided p=0.0215) and Mode B (45% vs 10%, McNemar exact two-sided p=0.0391) is statistically significant at alpha=0.05 solely because validator rescue eliminated 8/10 ungrounded Prisma decisive verdicts, while raw LLM Modes A and B show no statistically distinguishable accuracy difference (5% vs 10%, p=1.0) and catastrophic failure on both rule families."
+  }
+}

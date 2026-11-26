@@ -484,7 +484,7 @@ export default function SocChatbotPage() {
         <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400">
           <span className="flex items-center gap-1">
             <Cpu className="w-3.5 h-3.5 text-indigo-400" />
-            Model: <strong className="text-slate-200">{serverStatus?.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ"}</strong>
+            Model: <strong className="text-slate-200">{serverStatus?.model_name || "Qwen/Qwen3-14B-AWQ"}</strong>
           </span>
         </div>
       </div>

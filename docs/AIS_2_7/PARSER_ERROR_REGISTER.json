@@ -1,0 +1,8 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "total_calls_evaluated": 40,
+  "total_parser_errors": 0,
+  "errors": [],
+  "note": "All 40 benchmark LLM calls returned parseable raw JSON with finish_reason='stop' and schema_valid=True."
+}

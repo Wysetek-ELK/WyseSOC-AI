@@ -10,6 +10,7 @@ Accurately accounts for JSON syntax overhead, Base64 strings, hexadecimal digest
 command lines, and nested incident telemetry structures.
 """
 
+import httpx
 import json
 import re
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -33,12 +34,13 @@ class ModelTokenizerService:
     _encoder = None
     _encoder_initialized = False
 
-    # Special token & wire wrapper overhead in vLLM Qwen2.5 chat template:
+    # Special token & wire wrapper overhead in vLLM Qwen2.5 / Qwen3 chat template:
     # <|im_start|>system\n ... <|im_end|>\n
     # <|im_start|>user\n ... <|im_end|>\n
-    # <|im_start|>assistant\n
+    # <|im_start|>assistant\n (+ <think>\n\n</think>\n\n on Qwen3 when thinking disabled)
     # Plus XML wrapper tags (<UNTRUSTED_INCIDENT_DATA>) and message boundaries.
     CHAT_TEMPLATE_OVERHEAD_TOKENS = 61
+    QWEN3_CHAT_TEMPLATE_OVERHEAD_TOKENS = 72
 
     # Regex for pure-Python subword BPE pre-tokenization
     # Splits contractions, words, numbers, punctuation runs, and whitespace
@@ -68,7 +70,7 @@ class ModelTokenizerService:
         if not text:
             return 0
 
-        target_model = str(model_name or "Qwen/Qwen2.5-7B-Instruct-AWQ").lower()
+        target_model = str(model_name or "Qwen/Qwen3-14B-AWQ").lower()
 
         # If explicitly targeting OpenAI GPT models, use tiktoken cl100k_base if available
         is_openai_model = any(k in target_model for k in ("gpt-4", "gpt-3.5", "text-embedding", "cl100k"))
@@ -96,10 +98,71 @@ class ModelTokenizerService:
         and full vLLM chat-template special tokens (<|im_start|>, <|im_end|>, role tags).
         Applies calibrated Qwen2.5 subword accounting to guarantee wire token admission invariant.
         """
+        target_model = str(model_name or "").lower()
+        overhead = (
+            cls.QWEN3_CHAT_TEMPLATE_OVERHEAD_TOKENS
+            if "qwen3" in target_model
+            else cls.CHAT_TEMPLATE_OVERHEAD_TOKENS
+        )
         sys_tokens = cls.count_tokens(system_prompt, model_name=model_name)
         user_tokens = cls.count_tokens(user_message, model_name=model_name)
-        raw_sum = sys_tokens + user_tokens + cls.CHAT_TEMPLATE_OVERHEAD_TOKENS
+        raw_sum = sys_tokens + user_tokens + overhead
         return raw_sum
+
+    @classmethod
+    async def count_wire_prompt_tokens_remote(
+        cls,
+        *,
+        base_url: str,
+        api_key: str,
+        model_name: str,
+        system_prompt: str,
+        user_message: str,
+        timeout_seconds: float = 5.0,
+    ) -> Dict[str, Any]:
+        """
+        Queries Server 2 vLLM /tokenize endpoint for exact token validation,
+        falling back safely to calibrated local counting if /tokenize is unavailable.
+        """
+        local_estimate = cls.count_wire_prompt_tokens(
+            system_prompt=system_prompt,
+            user_message=user_message,
+            model_name=model_name,
+        )
+        root_url = re.sub(r"/v1/?$", "", base_url.rstrip("/"))
+        tokenize_url = f"{root_url}/tokenize"
+        formatted_messages = (
+            f"<|im_start|>system\n{system_prompt}<|im_end|>\n"
+            f"<|im_start|>user\n{user_message}<|im_end|>\n"
+            "<|im_start|>assistant\n"
+        )
+        if "qwen3" in str(model_name or "").lower():
+            formatted_messages += "<think>\n\n</think>\n\n"
+        try:
+            async with httpx.AsyncClient(timeout=timeout_seconds) as client:
+                res = await client.post(
+                    tokenize_url,
+                    headers={"Authorization": f"Bearer {api_key or 'EMPTY'}"},
+                    json={"model": model_name, "prompt": formatted_messages},
+                )
+            if res.status_code == 200:
+                payload = res.json()
+                remote_count = int(payload.get("count") or len(payload.get("tokens") or []))
+                if remote_count > 0:
+                    return {
+                        "token_count": remote_count,
+                        "local_estimate": local_estimate,
+                        "drift_tokens": remote_count - local_estimate,
+                        "source": "vllm_tokenize_api",
+                    }
+        except Exception:
+            pass
+        return {
+            "token_count": local_estimate,
+            "local_estimate": local_estimate,
+            "drift_tokens": 0,
+            "source": "local_bpe_calibrated",
+        }
 
     @classmethod
     def _count_tokens_pure_python(cls, text: str) -> int:

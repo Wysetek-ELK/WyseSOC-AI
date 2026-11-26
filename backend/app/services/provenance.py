@@ -80,6 +80,7 @@ def classify_endpoint_status(
     raw_status: Optional[str] = None,
     base_url: Optional[str] = None,
     metrics_available: bool = False,
+    hardware_telemetry_available: Optional[bool] = None,
     configured_provider: str = "OPENAI_COMPATIBLE",
     explicit_mode: Optional[str] = None,
     app_env: Optional[str] = None,
@@ -111,7 +112,11 @@ def classify_endpoint_status(
         else:
             current_health = "ONLINE"
             endpoint_provenance = "LIVE_PROVIDER"
-            gpu_verified = bool(metrics_available)
+            gpu_verified = (
+                bool(hardware_telemetry_available)
+                if hardware_telemetry_available is not None
+                else bool(metrics_available)
+            )
     else:
         current_health = "OFFLINE"
         endpoint_provenance = "OFFLINE"

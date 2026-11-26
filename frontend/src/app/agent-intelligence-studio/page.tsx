@@ -4650,7 +4650,7 @@ function AgentIntelligenceStudioContent() {
                       <div className="text-slate-400 font-semibold uppercase text-[10px] tracking-wider">Compiled Prompt Target</div>
                       <div>Rule: <span className="text-cyan-300">{selectedRule?.name || selectedRuleId}</span></div>
                       <div>Policy Version: <span className="text-emerald-300">v{selectedVersion?.version_number || 1} ({selectedVersion?.status || "DRAFT"})</span></div>
-                      <div>Model Target: <span className="text-amber-300">Qwen/Qwen2.5-7B-Instruct-AWQ (Local GPU)</span></div>
+                      <div>Model Target: <span className="text-amber-300">Qwen/Qwen3-14B-AWQ (Local GPU)</span></div>
                       <div>Evidence Contract Fields: <span className="text-slate-400">{intelligenceData?.semantics?.relevant_fields?.join(", ") || "None"}</span></div>
                     </div>
                   </div>
@@ -4669,18 +4669,20 @@ function AgentIntelligenceStudioContent() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="p-3.5 rounded-lg bg-slate-950/80 border border-slate-800">
                         <div className="text-[10px] font-bold uppercase text-slate-400">Inference Model</div>
-                        <div className="text-sm font-bold text-slate-100 mt-1 font-mono">Qwen2.5-7B-AWQ</div>
-                        <div className="text-[10px] text-emerald-400 mt-0.5">Online • Local GPU</div>
+                        <div className="text-sm font-bold text-slate-100 mt-1 font-mono">Qwen/Qwen3-14B-AWQ</div>
+                        <div className="text-[10px] text-emerald-400 mt-0.5">
+                          {llmOnline === true ? "Online • Local GPU" : llmOnline === false ? "Offline" : "Status Checking"}
+                        </div>
                       </div>
                       <div className="p-3.5 rounded-lg bg-slate-950/80 border border-slate-800">
                         <div className="text-[10px] font-bold uppercase text-slate-400">Temperature</div>
-                        <div className="text-sm font-bold text-slate-100 mt-1 font-mono">0.01</div>
+                        <div className="text-sm font-bold text-slate-100 mt-1 font-mono">0.0</div>
                         <div className="text-[10px] text-slate-400 mt-0.5">Deterministic Guard Active</div>
                       </div>
                       <div className="p-3.5 rounded-lg bg-slate-950/80 border border-slate-800">
-                        <div className="text-[10px] font-bold uppercase text-slate-400">Max New Tokens</div>
-                        <div className="text-sm font-bold text-slate-100 mt-1 font-mono">1024</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">Strict Structured Output</div>
+                        <div className="text-[10px] font-bold uppercase text-slate-400">Context / Output Reserve</div>
+                        <div className="text-sm font-bold text-slate-100 mt-1 font-mono">8,192 / 768</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">7,424 Input Budget • Strict JSON</div>
                       </div>
                     </div>
                   </div>

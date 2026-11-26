@@ -35,7 +35,7 @@ test("Phase 2: Simplified UI 3 Primary Tabs and Workbenches", () => {
   // Verify Tab 2: AiTestWorkbench integration
   assert.ok(content.includes("<AiTestWorkbench"), "Must render AiTestWorkbench in Tab 2");
   const testFile = fs.readFileSync(path.join(FRONTEND_SRC, "components/compact/AiTestWorkbench.tsx"), "utf-8");
-  assert.ok(testFile.includes("Qwen/Qwen2.5-7B-Instruct-AWQ"), "Must display active Local AWQ model");
+  assert.ok(testFile.includes("Qwen/Qwen3-14B-AWQ"), "Must display active Local AWQ model");
   assert.ok(testFile.includes("Run Real AI Test"), "Must provide Run Real AI Test action");
   assert.ok(testFile.includes("Effective Verdict"), "Must display Effective Verdict");
   assert.ok(testFile.includes("Evidence Grounding"), "Must display Evidence Grounding percentage");

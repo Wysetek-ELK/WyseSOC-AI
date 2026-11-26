@@ -1,0 +1,2632 @@
+[
+  {
+    "candidate_id": "CCA-0001",
+    "file_or_module": "frontend/src/app/admin/page.tsx (LegacyRoute(/admin))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0002",
+    "file_or_module": "frontend/src/app/analyst-attention/page.tsx (LegacyRoute(/analyst-attention))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0003",
+    "file_or_module": "frontend/src/app/dry-run/page.tsx (LegacyRoute(/dry-run))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0004",
+    "file_or_module": "frontend/src/app/evaluation-reports/page.tsx (LegacyRoute(/evaluation-reports))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0005",
+    "file_or_module": "frontend/src/app/imports/page.tsx (LegacyRoute(/imports))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0006",
+    "file_or_module": "frontend/src/app/incidents/[id]/page.tsx (LegacyRoute(/incidents/[id]))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0007",
+    "file_or_module": "frontend/src/app/incidents/page.tsx (LegacyRoute(/incidents))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0008",
+    "file_or_module": "frontend/src/app/infrastructure/page.tsx (LegacyRoute(/infrastructure))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0009",
+    "file_or_module": "frontend/src/app/learning-history/page.tsx (LegacyRoute(/learning-history))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0010",
+    "file_or_module": "frontend/src/app/prompt-studio/page.tsx (LegacyRoute(/prompt-studio))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0011",
+    "file_or_module": "frontend/src/app/rules/[id]/page.tsx (LegacyRoute(/rules/[id]))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0012",
+    "file_or_module": "frontend/src/app/rules/page.tsx (LegacyRoute(/rules))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0013",
+    "file_or_module": "frontend/src/app/settings/page.tsx (LegacyRoute(/settings))",
+    "reason": "Next.js redirects() intercepts route before App Router renders page.tsx; 0 imports and 0 test references.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0014",
+    "file_or_module": "frontend/src/components/common/PhasePlaceholder.tsx (PhasePlaceholder)",
+    "reason": "Zero imports in frontend/src and zero references in frontend/tests or scripts.",
+    "risk": "LOW",
+    "estimated_reduction": "105 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0015",
+    "file_or_module": "frontend/src/components/compact/CompactGovernancePanels.tsx (ProductionEligibilityChecklist, ReviewDecisionPanel, ConfirmationDialog)",
+    "reason": "Zero imports in frontend/src and zero references in frontend/tests.",
+    "risk": "LOW",
+    "estimated_reduction": "361 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0016",
+    "file_or_module": "frontend/src/components/compact/CompactDesignSystem.tsx (RuleStatusSummaryProps / RuleStatusSummary)",
+    "reason": "Zero references inside CompactDesignSystem.tsx, zero imports across frontend/src and frontend/tests.",
+    "risk": "LOW",
+    "estimated_reduction": "92 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0017",
+    "file_or_module": "frontend/src/components/compact/CompactDesignSystem.tsx (EmptyState)",
+    "reason": "Zero references inside CompactDesignSystem.tsx, zero imports across frontend/src and frontend/tests.",
+    "risk": "LOW",
+    "estimated_reduction": "29 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0018",
+    "file_or_module": "frontend/src/components/compact/CompactDesignSystem.tsx (ErrorState)",
+    "reason": "Zero references inside CompactDesignSystem.tsx, zero imports across frontend/src and frontend/tests.",
+    "risk": "LOW",
+    "estimated_reduction": "34 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0019",
+    "file_or_module": "frontend/public/file.svg (file.svg)",
+    "reason": "No references in frontend/src, CSS, metadata, or tests.",
+    "risk": "LOW",
+    "estimated_reduction": "0 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0020",
+    "file_or_module": "frontend/public/globe.svg (globe.svg)",
+    "reason": "No references in frontend/src, CSS, metadata, or tests.",
+    "risk": "LOW",
+    "estimated_reduction": "0 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0021",
+    "file_or_module": "frontend/public/next.svg (next.svg)",
+    "reason": "No references in frontend/src, CSS, metadata, or tests.",
+    "risk": "LOW",
+    "estimated_reduction": "0 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0022",
+    "file_or_module": "frontend/public/vercel.svg (vercel.svg)",
+    "reason": "No references in frontend/src, CSS, metadata, or tests.",
+    "risk": "LOW",
+    "estimated_reduction": "0 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0023",
+    "file_or_module": "frontend/public/window.svg (window.svg)",
+    "reason": "No references in frontend/src, CSS, metadata, or tests.",
+    "risk": "LOW",
+    "estimated_reduction": "0 lines / 1 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0024",
+    "file_or_module": "frontend/src/app/agent-configuration/page.tsx (ExternalLink, FortiSIEMConfigResponse, Globe, LLMConfigResponse, Radio, Shield, llmVerifiedModelLen)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "7 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0025",
+    "file_or_module": "frontend/src/app/agent-intelligence-studio/page.tsx (Archive, Plus, Trash2, TrendingUp, handleOpenRevoke, loadingDrift, loadingIntelligence, missingBaselineCount ...)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "12 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0026",
+    "file_or_module": "frontend/src/app/agent-memory/page.tsx (ArrowRight, Check, CheckCircle2, ChevronRight, Eye, Filter, Info, Layers ...)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "13 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0027",
+    "file_or_module": "frontend/src/app/agent-simulation-lab/page.tsx (CheckCircle, ExternalLink, Eye, Layers, RotateCcw, ShieldAlert, XCircle, err ...)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "9 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0028",
+    "file_or_module": "frontend/src/app/ai-triage-workbench/[id]/page.tsx (FileSearch, Layers, Network, Server, Tag)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0029",
+    "file_or_module": "frontend/src/app/ai-triage-workbench/page.tsx (ArrowUpDown, Filter, Layers, Shield, combinesMultipleRules, router, setBlindReviewMode, setPageSize)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0030",
+    "file_or_module": "frontend/src/app/detection-intelligence/[id]/page.tsx (Clock, ExternalLink, FileCode2, Layers, Shield)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0031",
+    "file_or_module": "frontend/src/app/detection-intelligence/page.tsx (Layers, Shield, setPageSize)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0032",
+    "file_or_module": "frontend/src/app/governance-access/page.tsx (AlertCircle, CheckCircle2, Lock, currentUser)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0033",
+    "file_or_module": "frontend/src/app/human-review-queue/page.tsx (Check, Clock, FileText, Filter, Plus, Send, Tag, loadingDetail)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0034",
+    "file_or_module": "frontend/src/app/page.tsx (Bot, Clock, FileCheck2, FileCode2, Layers, XCircle)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "6 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0035",
+    "file_or_module": "frontend/src/app/soc-chatbot/page.tsx (Activity, Clock, Server, ShieldAlert)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0036",
+    "file_or_module": "frontend/src/app/telemetry-hub/page.tsx (FileArchive, Server, setBatchMaxCount)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0037",
+    "file_or_module": "frontend/src/app/verdict-intelligence/page.tsx (Activity, ArrowRight, Check, ChevronDown, ChevronRight, Download, ExternalLink, Filter ...)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "15 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0038",
+    "file_or_module": "frontend/src/components/compact/AccuracyLearningSummary.tsx (Activity, Award, CheckCircle2, FileCheck2, HelpCircle, Shield, ShieldAlert, TrendingUp ...)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "12 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0039",
+    "file_or_module": "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx (Activity, ChevronRight, ExternalLink, HelpCircle, Info, QualityGateResult, RotateCcw, StatusBadge ...)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "14 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0040",
+    "file_or_module": "frontend/src/components/compact/AiTestWorkbench.tsx (AlertCircle, Info, Layers, RotateCcw, Sliders, onNavigateToAdvanced, onViewPrompt, ruleName)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0041",
+    "file_or_module": "frontend/src/components/compact/CompactDesignSystem.tsx (Clock, Database, ExternalLink, Layers, Link, OperationalSummaryStatus, ShieldAlert, ShieldCheck ...)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "11 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0042",
+    "file_or_module": "frontend/src/components/compact/IncidentVerdictMatrix.tsx (AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock, Cpu, Network, Server ...)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "10 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0043",
+    "file_or_module": "frontend/src/components/compact/ManageVersionHistory.tsx (Clock, FileCode, Info, Shield, activeVersionId, err, ruleName)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "7 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0044",
+    "file_or_module": "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx (AisEvaluationItem, AisEvaluationSummary, AlertTriangle, Clock, Cpu, ExternalLink, Eye, FileCheck2 ...)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "21 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0045",
+    "file_or_module": "frontend/src/components/layout/Shell.tsx (useApp)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0046",
+    "file_or_module": "frontend/src/components/learning/RuleLearningDashboard.tsx (Activity, Cpu, Radio, XCircle, loadingReviews)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0047",
+    "file_or_module": "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx (Download, ShieldCheck)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0048",
+    "file_or_module": "frontend/src/components/pilot/PilotControlAndDashboard.tsx (AlertTriangle)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0049",
+    "file_or_module": "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx (ChevronDown, ExternalLink, Eye, FileCode, Layers, loadingRuleCaptures, ruleName)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "7 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0050",
+    "file_or_module": "frontend/src/components/system/ServerInfrastructureMonitor.tsx (CheckCircle2, ServerHistoryDataPoint, Sliders, compact)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0051",
+    "file_or_module": "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx (Cpu, Layers, ShieldCheck, Tag, Zap)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0052",
+    "file_or_module": "frontend/src/components/telemetry/TokenBifurcationWidget.tsx (Activity, ArrowRight, TrendingUp, setSelectedProcess)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0053",
+    "file_or_module": "frontend/src/lib/api.ts (_)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0054",
+    "file_or_module": "frontend/src/lib/diagnostics.ts (empiricalAccuracy)",
+    "reason": "ESLint static AST dataflow confirms symbols/imports are declared but never read.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0055",
+    "file_or_module": "frontend/src/lib/api.ts (api.pullFortiSiemRule)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "10 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0056",
+    "file_or_module": "frontend/src/lib/api.ts (api.batchEvaluateAIVerdicts)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "10 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0057",
+    "file_or_module": "frontend/src/lib/api.ts (api.getInvestigationByIncident)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0058",
+    "file_or_module": "frontend/src/lib/api.ts (api.generateTemplateDraft)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "7 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0059",
+    "file_or_module": "frontend/src/lib/api.ts (api.activateApprovedPolicyVersion)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0060",
+    "file_or_module": "frontend/src/lib/api.ts (api.getIncidentActualPromptExecutions)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "6 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0061",
+    "file_or_module": "frontend/src/lib/api.ts (api.getLearningRecord)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0062",
+    "file_or_module": "frontend/src/lib/api.ts (api.getDryRunConfig)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0063",
+    "file_or_module": "frontend/src/lib/api.ts (api.getDryRunJob)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0064",
+    "file_or_module": "frontend/src/lib/api.ts (api.getIncidentTrust)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0065",
+    "file_or_module": "frontend/src/lib/api.ts (api.getRuleLearningProfiles)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0066",
+    "file_or_module": "frontend/src/lib/api.ts (api.initializeAllRuleLearningProfiles)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0067",
+    "file_or_module": "frontend/src/lib/api.ts (api.getRuleLearningHistory)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "7 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0068",
+    "file_or_module": "frontend/src/lib/api.ts (api.getAutomationPolicy)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0069",
+    "file_or_module": "frontend/src/lib/api.ts (api.resumeRuleAiExecution)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0070",
+    "file_or_module": "frontend/src/lib/api.ts (api.ensureCohort)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "7 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0071",
+    "file_or_module": "frontend/src/lib/api.ts (api.reopenReview)",
+    "reason": "No UI component or test calls this method; backend endpoint may still exist for admin/future use.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0072",
+    "file_or_module": "frontend/src/app/agent-intelligence-studio/page.tsx (compactUi === false (Legacy 7-Tab View))",
+    "reason": "Compact UI is default; Legacy View duplicates Overview, Learning, and Editor workflows. However, phase3-compact-ui.test.mjs asserts VERDICTUM_COMPACT_UI_ENABLED.",
+    "risk": "HIGH",
+    "estimated_reduction": "1800 lines / 0 files",
+    "recommendation": "REFACTOR",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0073",
+    "file_or_module": "frontend/src/app/page.tsx (+4 pages) (getSeverityBadge, getVerdictBadge, formatEpoch)",
+    "reason": "Consolidating into frontend/src/lib/formatters.ts eliminates drift.",
+    "risk": "LOW",
+    "estimated_reduction": "120 lines / 0 files",
+    "recommendation": "CONSOLIDATE",
+    "approval": "PENDING",
+    "batch": "Batch 3 \u2014 Duplicate code consolidation"
+  },
+  {
+    "candidate_id": "CCA-0074",
+    "file_or_module": "backend/app/api/ais_evaluation.py (AsyncSessionLocal, require_analyst)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0075",
+    "file_or_module": "backend/app/api/audit.py (List, or_)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0076",
+    "file_or_module": "backend/app/api/dry_run.py (HistoricalGroundTruth, Optional, desc, require_admin)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0077",
+    "file_or_module": "backend/app/api/evaluations.py (DryRunJob, Optional, PlainTextResponse, Query, require_analyst, status)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0078",
+    "file_or_module": "backend/app/api/fortisiem.py (List, Optional, Query)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0079",
+    "file_or_module": "backend/app/api/health.py (DryRunResult, func, is_postgres)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0080",
+    "file_or_module": "backend/app/api/imports.py (Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0081",
+    "file_or_module": "backend/app/api/incidents.py (COMMON_SOC_BASELINE, LearningRecord, PromptStudioService, Rule, RulePrompt, datetime, desc, get_model_provider ...)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "7 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0082",
+    "file_or_module": "backend/app/api/investigations.py (InvestigationListItem, List, require_admin)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0083",
+    "file_or_module": "backend/app/api/learning.py (require_analyst)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0084",
+    "file_or_module": "backend/app/api/prompts.py (ArchetypeClassificationResult, DetectionSemantics, EvidenceRequirementMapper, PolicyLifecycleMonitor, PolicySimulationService, PromptRollbackRequest, VersionDeleteRequest, assess_policy_runtime_certification ...)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "7 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0085",
+    "file_or_module": "backend/app/api/rule_learning.py (AnalystVerdictReview, RulePromotionRequest, and_, or_)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0086",
+    "file_or_module": "backend/app/api/rules.py (Any, PromptVersion, RuleParser)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0087",
+    "file_or_module": "backend/app/api/system_monitor.py (Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0088",
+    "file_or_module": "backend/app/api/verdict_intelligence.py (CalibrationReport, EmpiricalAccuracyMetrics, EvidenceSufficiencyAssessmentResult, EvidenceSufficiencyEngine, GroundTruthValidationRecord, HistoricalGroundTruth, PlainTextResponse, and_ ...)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0089",
+    "file_or_module": "backend/app/cli.py (Incident, Rule, sys)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0090",
+    "file_or_module": "backend/app/database.py (NullPool, QueuePool)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0091",
+    "file_or_module": "backend/app/main.py (BASE_DIR, JSONResponse, Request, os)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0092",
+    "file_or_module": "backend/app/models/analyst_feedback.py (Float)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0093",
+    "file_or_module": "backend/app/models/audit.py (Text)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0094",
+    "file_or_module": "backend/app/models/bulk_audit.py (relationship)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0095",
+    "file_or_module": "backend/app/models/import_job.py (ForeignKey)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0096",
+    "file_or_module": "backend/app/models/investigation.py (Any, Dict, Integer)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0097",
+    "file_or_module": "backend/app/models/learning.py (Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0098",
+    "file_or_module": "backend/app/models/maturity.py (Any, Dict)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0099",
+    "file_or_module": "backend/app/models/policy_quality.py (Text, uuid)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0100",
+    "file_or_module": "backend/app/models/production_governance.py (UniqueConstraint)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0101",
+    "file_or_module": "backend/app/models/prompt.py (Any, Dict)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0102",
+    "file_or_module": "backend/app/models/rule.py (Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0103",
+    "file_or_module": "backend/app/models/rule_intelligence.py (Integer, Text)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0104",
+    "file_or_module": "backend/app/models/rule_learning.py (Boolean, List)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0105",
+    "file_or_module": "backend/app/schemas/calibration.py (Any, List)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0106",
+    "file_or_module": "backend/app/schemas/chat.py (Any, Dict)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0107",
+    "file_or_module": "backend/app/schemas/evidence_preflight.py (Any, Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0108",
+    "file_or_module": "backend/app/schemas/investigation.py (Any)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0109",
+    "file_or_module": "backend/app/schemas/llm_config.py (Any)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0110",
+    "file_or_module": "backend/app/schemas/policy_quality.py (Any)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0111",
+    "file_or_module": "backend/app/schemas/production_readiness.py (utc_now)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0112",
+    "file_or_module": "backend/app/schemas/semantic_rag.py (Any, Dict)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0113",
+    "file_or_module": "backend/app/schemas/token_budget.py (Field, List)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0114",
+    "file_or_module": "backend/app/scripts/backup.py (datetime, shutil, sys)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0115",
+    "file_or_module": "backend/app/scripts/migrate_sqlite_to_postgres.py (List, Optional, datetime, sys)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0116",
+    "file_or_module": "backend/app/scripts/restore.py (sys)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0117",
+    "file_or_module": "backend/app/scripts/run_empirical_benchmark.py (datetime, timezone)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0118",
+    "file_or_module": "backend/app/services/actual_prompt_capture_service.py (CompilationExecutionMode, Incident, datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0119",
+    "file_or_module": "backend/app/services/ai_verdict_service.py (COMMON_SOC_BASELINE, LearningRecord, build_model_facing_payload, classify_execution_provenance, datetime, desc, or_)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "6 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0120",
+    "file_or_module": "backend/app/services/ais_evaluation_service.py (HistoricalGroundTruthValidator, Tuple, and_, datetime, exists, not_, uuid)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0121",
+    "file_or_module": "backend/app/services/analyst_review_service.py (utc_now)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0122",
+    "file_or_module": "backend/app/services/audit_service.py (Tuple)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0123",
+    "file_or_module": "backend/app/services/automation_governor.py (desc)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0124",
+    "file_or_module": "backend/app/services/blind_review_guard.py (Tuple)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0125",
+    "file_or_module": "backend/app/services/bulk_quality_audit_service.py (Any, Dict, GateStatus, List, PolicyQualityAssessmentRecord, PromptVersion, datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0126",
+    "file_or_module": "backend/app/services/calibration_evaluation_service.py (HistoricalGroundTruth, Tuple, math)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0127",
+    "file_or_module": "backend/app/services/calibration_evaluator.py (Optional, math)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0128",
+    "file_or_module": "backend/app/services/confidence_normalizer.py (Dict)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0129",
+    "file_or_module": "backend/app/services/dashboard_service.py (Any, Dict, List)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0130",
+    "file_or_module": "backend/app/services/detection_archetype_registry.py (Any, Tuple)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0131",
+    "file_or_module": "backend/app/services/distributed_lock.py (Connection, datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0132",
+    "file_or_module": "backend/app/services/dry_run_service.py (HistoricalGroundTruth, Rule, Tuple, asyncio, datetime, func)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "6 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0133",
+    "file_or_module": "backend/app/services/empirical_accuracy_evaluator.py (Tuple)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0134",
+    "file_or_module": "backend/app/services/empirical_benchmark_harness.py (Callable, CanonicalEvidenceRecord, ClaimGroundingResult, EmpiricalAccuracyEvaluator, GroundTruthLabel, PreflightValidationResult, VerdictGuardrailsEngine, VerdictValidationResult ...)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "9 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0135",
+    "file_or_module": "backend/app/services/evaluation_service.py (HistoricalGroundTruth, Optional, RulePerformanceSummary, Tuple, datetime, desc)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0136",
+    "file_or_module": "backend/app/services/evidence_compaction_service.py (hashlib, json)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0137",
+    "file_or_module": "backend/app/services/evidence_contract_service.py (ArchetypeId, Dict, List)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0138",
+    "file_or_module": "backend/app/services/evidence_normalization_service.py (Tuple)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0139",
+    "file_or_module": "backend/app/services/evidence_preflight_validator.py (Any, CanonicalEvidenceRecord, Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0140",
+    "file_or_module": "backend/app/services/evidence_requirement_mapper.py (Any, DetectionArchetypeRegistry, Dict)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0141",
+    "file_or_module": "backend/app/services/evidence_sufficiency_engine.py (EvidenceFieldAudit, Tuple, datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0142",
+    "file_or_module": "backend/app/services/fortisiem_service.py (datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0143",
+    "file_or_module": "backend/app/services/gpu_manager.py (Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0144",
+    "file_or_module": "backend/app/services/ground_truth_certification_service.py (HistoricalGroundTruth, IncidentEvent, RulePrompt, and_)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0145",
+    "file_or_module": "backend/app/services/historical_eligibility_service.py (datetime, json)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0146",
+    "file_or_module": "backend/app/services/historical_ground_truth_validator.py (GroundTruthItem, GroundTruthProvenance, List)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0147",
+    "file_or_module": "backend/app/services/incident_service.py (ModelFacingEvent, ModelFacingIncidentPayload)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0148",
+    "file_or_module": "backend/app/services/independent_verdict_validator.py (Tuple)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0149",
+    "file_or_module": "backend/app/services/investigation_service.py (InvestigationDetailResponse, InvestigationEvidenceResponse, InvestigationQuestionResponse, User, datetime, strip_ai_notes_from_handover)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0150",
+    "file_or_module": "backend/app/services/learning_service.py (Any, Dict, HistoricalGroundTruth, IncidentEvent, datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0151",
+    "file_or_module": "backend/app/services/maturity_service.py (Any, DryRunJob, HistoricalGroundTruth, HistoricalGroundTruthValidator, datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0152",
+    "file_or_module": "backend/app/services/migration_service.py (sys)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0153",
+    "file_or_module": "backend/app/services/model_claim_extractor.py (Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0154",
+    "file_or_module": "backend/app/services/model_payload_allowlist.py (ModelFacingEvent, ModelFacingIncidentPayload)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0155",
+    "file_or_module": "backend/app/services/model_provider/disabled.py (Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0156",
+    "file_or_module": "backend/app/services/model_provider/simulated.py (Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0157",
+    "file_or_module": "backend/app/services/pilot_service.py (Investigation, PromptVersion, asyncio, datetime, or_, time)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "6 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0158",
+    "file_or_module": "backend/app/services/policy_compiler_service.py (datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0159",
+    "file_or_module": "backend/app/services/policy_eligibility_service.py (List, datetime, re, utc_now)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0160",
+    "file_or_module": "backend/app/services/policy_generation_service.py (SourceProvenance, Tuple, datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0161",
+    "file_or_module": "backend/app/services/policy_lifecycle_monitor.py (DetectionSemantics, RuleIntelligenceAnalyzer, Tuple, and_, datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0162",
+    "file_or_module": "backend/app/services/policy_quality_validator.py (CANONICAL_FIELD_CATALOG, datetime, json)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0163",
+    "file_or_module": "backend/app/services/policy_simulation_service.py (EmpiricalAccuracyMetrics, EvidenceContractService, EvidenceSufficiencyAssessmentRecord, EvidenceSufficiencyEngine, Rule, RulePrompt, VerdictClaimValidator, VerdictGuardrailsEngine ...)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "13 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0164",
+    "file_or_module": "backend/app/services/policy_version_governance_service.py (Optional, Tuple, and_, or_)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0165",
+    "file_or_module": "backend/app/services/production_readiness_service.py (RuleLearningProfile, SimulationStatus, SourceProvenance, and_, or_, utc_now)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0166",
+    "file_or_module": "backend/app/services/promotion_service.py (Tuple)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0167",
+    "file_or_module": "backend/app/services/prompt_studio_service.py (PromptVersionResponse, RulePromptResponse, User, datetime, or_)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0168",
+    "file_or_module": "backend/app/services/reasoning_integrity_engine.py (CanonicalEvidenceRecord)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0169",
+    "file_or_module": "backend/app/services/system_monitor_service.py (app, delete)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0170",
+    "file_or_module": "backend/app/services/telemetry_timeline_service.py (HistoricalGroundTruth, IncidentEvent, Investigation)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0171",
+    "file_or_module": "backend/app/services/token_analytics_service.py (List, datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0172",
+    "file_or_module": "backend/app/services/tokenizer_service.py (Tuple, Union)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0173",
+    "file_or_module": "backend/app/services/verdict_guardrails_engine.py (ClaimType, Tuple)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0174",
+    "file_or_module": "backend/app/services/verdict_pipeline.py (select)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0175",
+    "file_or_module": "backend/app/services/verdict_trustworthiness_engine.py (ClaimVerificationResult, EvidenceSufficiencyAssessmentResult, List, datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0176",
+    "file_or_module": "backend/app/services/verified_semantic_retrieval_service.py (datetime)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0177",
+    "file_or_module": "backend/app/services/wilson_evaluator.py (Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0178",
+    "file_or_module": "backend/app/utils/zip_guard.py (io)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0179",
+    "file_or_module": "backend/app/workers/celery_app.py (Any, Dict, Optional)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0180",
+    "file_or_module": "backend/app/workers/tasks.py (Investigation, datetime, time, update)",
+    "reason": "AST Name/Constant usage scan found 0 references to imported symbol(s) in module.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0181",
+    "file_or_module": "backend/app/services/ais_evaluation_service.py (AisEvaluationService.get_missing_inference_candidates)",
+    "reason": "Regex word-boundary scan across entire repo found only the definition.",
+    "risk": "LOW",
+    "estimated_reduction": "22 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0182",
+    "file_or_module": "backend/app/services/audit_service.py (AuditService.verify_audit_integrity)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "31 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0183",
+    "file_or_module": "backend/app/services/calibration_evaluation_service.py (CalibrationEvaluationService.assign_dataset_partition)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "21 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0184",
+    "file_or_module": "backend/app/services/detection_archetype_registry.py (DetectionArchetypeRegistry.list_archetypes)",
+    "reason": "Regex word-boundary scan across entire repo found only the definition.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0185",
+    "file_or_module": "backend/app/services/empirical_benchmark_harness.py (EmpiricalBenchmarkHarness.load_certified_ground_truth_cohort)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "132 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0186",
+    "file_or_module": "backend/app/services/empirical_benchmark_harness.py (EmpiricalBenchmarkHarness.run_three_mode_benchmark)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "100 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0187",
+    "file_or_module": "backend/app/services/evidence_compaction_service.py (EvidenceCompactionService.chunk_oversized_evidence)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "18 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0188",
+    "file_or_module": "backend/app/services/evidence_sufficiency_engine.py (EvidenceSufficiencyEngine.evaluate_sufficiency)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "17 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0189",
+    "file_or_module": "backend/app/services/fortisiem_service.py (FortiSIEMService.pull_incidents_for_rule)",
+    "reason": "Regex word-boundary scan across entire repo found only the definition.",
+    "risk": "LOW",
+    "estimated_reduction": "70 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0190",
+    "file_or_module": "backend/app/services/gpu_manager.py (GPUWorkloadManager.check_backpressure)",
+    "reason": "Regex word-boundary scan across entire repo found only the definition.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0191",
+    "file_or_module": "backend/app/services/incident_service.py (IncidentService.get_model_facing_payload)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "11 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0192",
+    "file_or_module": "backend/app/services/independent_verdict_validator.py (IndependentVerdictValidator.replay_validation)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "48 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0193",
+    "file_or_module": "backend/app/services/policy_governance.py (PolicyRuntimeCertification.to_dict)",
+    "reason": "Regex word-boundary scan across entire repo found only the definition.",
+    "risk": "LOW",
+    "estimated_reduction": "18 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0194",
+    "file_or_module": "backend/app/services/policy_lifecycle_monitor.py (PolicyLifecycleMonitor.acknowledge_drift)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "20 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0195",
+    "file_or_module": "backend/app/services/rule_intelligence_analyzer.py (RuleIntelligenceAnalyzer._extract_window_from_conditions)",
+    "reason": "Regex word-boundary scan across entire repo found only the definition.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0196",
+    "file_or_module": "backend/app/services/runtime_config_service.py (RuntimeConfigValidator.enforce_fail_closed)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "10 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0197",
+    "file_or_module": "backend/app/services/token_analytics_service.py (TokenAnalyticsService.record_token_usage)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "36 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0198",
+    "file_or_module": "backend/app/services/token_budget_service.py (TokenBudgetService.get_token_accounting)",
+    "reason": "Regex word-boundary scan across entire repo found only the definition.",
+    "risk": "LOW",
+    "estimated_reduction": "24 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0199",
+    "file_or_module": "backend/app/services/verdict_claim_validator.py (VerdictClaimValidator.validate_claims)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "16 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0200",
+    "file_or_module": "backend/app/services/verdict_guardrails_engine.py (VerdictGuardrailsEngine.evaluate_guardrails)",
+    "reason": "Used exclusively in unit/regression tests; not called by production API or pipeline.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "23 lines / 0 files",
+    "recommendation": "RETAIN",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0201",
+    "file_or_module": "backend/app/schemas/canonical_evidence.py (EvidenceLifecycleStage)",
+    "reason": "Zero occurrences in backend/app, backend/tests, or scripts.",
+    "risk": "LOW",
+    "estimated_reduction": "13 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0202",
+    "file_or_module": "backend/app/schemas/dashboard.py (StatusCount)",
+    "reason": "Zero occurrences in backend/app, backend/tests, or scripts.",
+    "risk": "LOW",
+    "estimated_reduction": "3 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0203",
+    "file_or_module": "backend/app/services/blind_review_guard.py (get_blind_mask_response_marker)",
+    "reason": "Zero occurrences in backend/app, backend/tests, or scripts.",
+    "risk": "LOW",
+    "estimated_reduction": "2 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0204",
+    "file_or_module": "backend/app/schemas/auth.py (TokenPayload)",
+    "reason": "Defined and optionally re-exported in schemas/__init__.py but never used by any endpoint or service.",
+    "risk": "LOW",
+    "estimated_reduction": "10 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0205",
+    "file_or_module": "backend/app/schemas/learning.py (LearningRecordCreate)",
+    "reason": "Defined and optionally re-exported in schemas/__init__.py but never used by any endpoint or service.",
+    "risk": "LOW",
+    "estimated_reduction": "10 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0206",
+    "file_or_module": "backend/app/schemas/prompt.py (PromptDraftGenerateRequest)",
+    "reason": "Defined and optionally re-exported in schemas/__init__.py but never used by any endpoint or service.",
+    "risk": "LOW",
+    "estimated_reduction": "10 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0207",
+    "file_or_module": "backend/app/schemas/rule.py (RuleCreate)",
+    "reason": "Defined and optionally re-exported in schemas/__init__.py but never used by any endpoint or service.",
+    "risk": "LOW",
+    "estimated_reduction": "10 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0208",
+    "file_or_module": "backend/app/services/agent_memory_engine.py (agent_memory_engine)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "11 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0209",
+    "file_or_module": "backend/app/services/agent_policy_engine.py (agent_policy_engine)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "12 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0210",
+    "file_or_module": "backend/app/services/detection_context_engine.py (detection_context_engine)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "11 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0211",
+    "file_or_module": "backend/app/services/evidence_integrity_guardrail.py (evidence_integrity_guardrail)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "18 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0212",
+    "file_or_module": "backend/app/services/inference_health_monitor.py (inference_health_monitor)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "11 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0213",
+    "file_or_module": "backend/app/services/review_orchestrator.py (review_orchestrator)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "11 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0214",
+    "file_or_module": "backend/app/services/sentinel_ingest_worker.py (sentinel_ingest_worker)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "18 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0215",
+    "file_or_module": "backend/app/services/validation_engine.py (validation_engine)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "11 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0216",
+    "file_or_module": "backend/app/services/verdict_evaluation_engine.py (verdict_evaluation_engine)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "11 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0217",
+    "file_or_module": "backend/app/services/verdict_triage_agent.py (verdict_triage_agent)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "12 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0218",
+    "file_or_module": "backend/app/utils/payload_sanitization_guard.py (payload_sanitization_guard)",
+    "reason": "Imported exclusively by backend/tests/test_agentic_nomenclature.py to alias legacy service names.",
+    "risk": "LOW",
+    "estimated_reduction": "18 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0219",
+    "file_or_module": "backend/app/services/wilson_evaluator.py (WilsonScoreEvaluator)",
+    "reason": "Identical binomial proportion CI math implemented in both wilson_evaluator.py and empirical_accuracy_evaluator.py:34-57.",
+    "risk": "LOW",
+    "estimated_reduction": "48 lines / 1 files",
+    "recommendation": "CONSOLIDATE",
+    "approval": "PENDING",
+    "batch": "Batch 3 \u2014 Duplicate code consolidation"
+  },
+  {
+    "candidate_id": "CCA-0220",
+    "file_or_module": "backend/app/services/calibration_evaluation_service.py (CalibrationEvaluationService)",
+    "reason": "Only invoked by GET /api/rules/{identifier}/calibration-report (0 frontend consumers) and 1 test; assign_dataset_partition is unused.",
+    "risk": "MEDIUM",
+    "estimated_reduction": "260 lines / 1 files",
+    "recommendation": "CONSOLIDATE",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0221",
+    "file_or_module": "backend/app/services/dry_run_service.py + evaluation_service.py (DryRunService / VerdictEvaluationEngine)",
+    "reason": "Currently ACTIVE because Agent Simulation Lab UI (/agent-simulation-lab) calls /api/dry-run/*, while Verdict Intelligence calls /api/verdict-intelligence/*. DryRunService writes dual DryRunResult + HistoricalEvaluationResultRecord.",
+    "risk": "HIGH",
+    "estimated_reduction": "951 lines / 2 files",
+    "recommendation": "REFACTOR",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0222",
+    "file_or_module": "backend/app/api/health.py & backend/app/main.py (health_check / get_prometheus_metrics duplicate mounts)",
+    "reason": "Redundant route registration causing duplicate OpenAPI operations.",
+    "risk": "LOW",
+    "estimated_reduction": "4 lines / 0 files",
+    "recommendation": "CONSOLIDATE",
+    "approval": "PENDING",
+    "batch": "Batch 3 \u2014 Duplicate code consolidation"
+  },
+  {
+    "candidate_id": "CCA-0223",
+    "file_or_module": "backend/app/main.py (Dual /api and /api/v1 router mounts (5 routers))",
+    "reason": "Frontend uses /api exclusively; /api/v1 is used by 4 backend test files (test_actual_prompt_inspector, test_audit_remediations, test_policy_version_governance, test_verdict_intelligence_validation).",
+    "risk": "MEDIUM",
+    "estimated_reduction": "5 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0224",
+    "file_or_module": "backend/app/config.py (Settings.APP_NAME)",
+    "reason": "Zero references in backend/app, backend/tests, frontend, or scripts (install_ubuntu.sh uses NEXT_PUBLIC_APP_NAME).",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0225",
+    "file_or_module": "backend/app/config.py (Settings.PROMPT_CAPTURE_AUTO_CLEANUP_ENABLED)",
+    "reason": "Zero references in backend/app, backend/tests, frontend, or scripts (install_ubuntu.sh uses NEXT_PUBLIC_APP_NAME).",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "REMOVE",
+    "approval": "PENDING",
+    "batch": "Batch 2 \u2014 Orphaned implementation cleanup"
+  },
+  {
+    "candidate_id": "CCA-0226",
+    "file_or_module": "backend/app/models/token_usage.py (TokenUsageRecord.estimated_cost_usd)",
+    "reason": "Defined in SQLAlchemy model and Alembic migration, never queried or populated by services.",
+    "risk": "CRITICAL",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 6 \u2014 Restricted database and infrastructure cleanup"
+  },
+  {
+    "candidate_id": "CCA-0227",
+    "file_or_module": "backend/app/models/verdict_intelligence.py (GroundTruthValidationRecord.is_eligible_for_evaluation)",
+    "reason": "Defined in SQLAlchemy model and Alembic migration, never queried or populated by services.",
+    "risk": "CRITICAL",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 6 \u2014 Restricted database and infrastructure cleanup"
+  },
+  {
+    "candidate_id": "CCA-0228",
+    "file_or_module": "backend/app/workers/celery_app.py & deployment/systemd/ai-verdict-scheduler.service (ai-verdict-scheduler.service (Celery Beat) & maintenance queue)",
+    "reason": "Architectural mismatch between systemd Beat unit and in-process asyncio FortiSIEM poller.",
+    "risk": "HIGH",
+    "estimated_reduction": "32 lines / 1 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 6 \u2014 Restricted database and infrastructure cleanup"
+  },
+  {
+    "candidate_id": "CCA-0229",
+    "file_or_module": "deployment/scripts/install_ollama_llm.sh (install_ollama_llm.sh)",
+    "reason": "Active Server 2 stack is vLLM AWQ (`Qwen/Qwen2.5-7B-Instruct-AWQ` on port 8000); Ollama script has 0 callers.",
+    "risk": "LOW",
+    "estimated_reduction": "58 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0230",
+    "file_or_module": "scratch/analyze_dataset_details.py (analyze_dataset_details.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "70 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0231",
+    "file_or_module": "scratch/capture_132438483.json (capture_132438483.json)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "536 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0232",
+    "file_or_module": "scratch/capture_132499009.json (capture_132499009.json)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "397 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0233",
+    "file_or_module": "scratch/check_all_cs_incidents.py (check_all_cs_incidents.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "29 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0234",
+    "file_or_module": "scratch/check_contract_levels.py (check_contract_levels.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "15 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0235",
+    "file_or_module": "scratch/check_imported_db.py (check_imported_db.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "29 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0236",
+    "file_or_module": "scratch/check_server1_prisma_incident.py (check_server1_prisma_incident.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "28 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0237",
+    "file_or_module": "scratch/check_server1_rule_prompt.py (check_server1_rule_prompt.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "30 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0238",
+    "file_or_module": "scratch/classify_ground_truth.py (classify_ground_truth.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "51 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0239",
+    "file_or_module": "scratch/compute_verdict_accuracy.py (compute_verdict_accuracy.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "210 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0240",
+    "file_or_module": "scratch/execute_gpu_pilot.py (execute_gpu_pilot.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "175 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0241",
+    "file_or_module": "scratch/execute_gpu_regression_ais_2_3a.py (execute_gpu_regression_ais_2_3a.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "105 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0242",
+    "file_or_module": "scratch/execute_gpu_smoke.py (execute_gpu_smoke.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "127 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0243",
+    "file_or_module": "scratch/fetch_server1_actual_prompt.py (fetch_server1_actual_prompt.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "36 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0244",
+    "file_or_module": "scratch/generate_ais_2_3_manifest.py (generate_ais_2_3_manifest.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "231 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0245",
+    "file_or_module": "scratch/generate_corrected_manifest.py (generate_corrected_manifest.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "299 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0246",
+    "file_or_module": "scratch/gpu_regression_results_ais_2_3a.json (gpu_regression_results_ais_2_3a.json)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "192 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0247",
+    "file_or_module": "scratch/inspect_pilot_results.py (inspect_pilot_results.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "27 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0248",
+    "file_or_module": "scratch/inspect_prisma_capture.py (inspect_prisma_capture.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "13 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0249",
+    "file_or_module": "scratch/inspect_prompt_capture_db.py (inspect_prompt_capture_db.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "33 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0250",
+    "file_or_module": "scratch/inspect_prompt_payload.py (inspect_prompt_payload.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "42 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0251",
+    "file_or_module": "scratch/print_reasons.py (print_reasons.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "8 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0252",
+    "file_or_module": "scratch/reproduce_budget.py (reproduce_budget.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "49 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0253",
+    "file_or_module": "scratch/reproduce_prisma_budget.py (reproduce_prisma_budget.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "47 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0254",
+    "file_or_module": "scratch/test_compaction_fields.py (test_compaction_fields.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "62 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0255",
+    "file_or_module": "scratch/test_compile_prompt.py (test_compile_prompt.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "28 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0256",
+    "file_or_module": "scratch/test_fix.py (test_fix.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "41 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0257",
+    "file_or_module": "scratch/test_norm.py (test_norm.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "25 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0258",
+    "file_or_module": "scratch/test_prisma_norm.py (test_prisma_norm.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "24 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0259",
+    "file_or_module": "scratch/trace_compaction.py (trace_compaction.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "55 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0260",
+    "file_or_module": "scratch/upload_fixtures_to_server1.py (upload_fixtures_to_server1.py)",
+    "reason": "scratch/ is gitignored in .gitignore yet 31 historical files remain git-tracked.",
+    "risk": "LOW",
+    "estimated_reduction": "48 lines / 1 files",
+    "recommendation": "ARCHIVE",
+    "approval": "PENDING",
+    "batch": "Batch 1 \u2014 Low-risk source cleanup"
+  },
+  {
+    "candidate_id": "CCA-0261",
+    "file_or_module": "frontend/package.json (@tailwindcss/turbopack)",
+    "reason": "postcss.config.mjs only loads `@tailwindcss/postcss`.",
+    "risk": "LOW",
+    "estimated_reduction": "1 lines / 0 files",
+    "recommendation": "VERIFY_FIRST",
+    "approval": "PENDING",
+    "batch": "Batch 5 \u2014 Dependency optimization"
+  },
+  {
+    "candidate_id": "CCA-0262",
+    "file_or_module": "backend/tests/test_database_migrations.py (test_get_head_revision_matches_current)",
+    "reason": "Migration 009..016 added after Phase 9 without updating test assertion.",
+    "risk": "LOW",
+    "estimated_reduction": "0 lines / 0 files",
+    "recommendation": "REFACTOR",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  },
+  {
+    "candidate_id": "CCA-0263",
+    "file_or_module": "backend/tests/test_phase1_security_controls.py (test_req03_unapproved_prompt_draft_abstained_in_live_triage)",
+    "reason": "PolicyEligibilityService refined status codes in AIS 2.0.",
+    "risk": "LOW",
+    "estimated_reduction": "0 lines / 0 files",
+    "recommendation": "REFACTOR",
+    "approval": "PENDING",
+    "batch": "Batch 4 \u2014 Legacy architecture cleanup"
+  }
+]

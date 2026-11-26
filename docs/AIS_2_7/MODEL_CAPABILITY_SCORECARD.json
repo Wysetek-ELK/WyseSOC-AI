@@ -1,0 +1,38 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "deployed_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "ground_truth_basis": "GT-2 Single Independent Locked Review (N=20, Exploratory)",
+  "criteria": [
+    {
+      "dimension": "Format & JSON Schema Compliance",
+      "measured": "40/40 (100.0%)",
+      "status": "PASS",
+      "note": "Valid compact JSON matching schema with finish_reason='stop' and 0 overflows."
+    },
+    {
+      "dimension": "Raw Neutral LLM SOC Reasoning (Mode A)",
+      "measured": "1/20 (5.0%) 3-class; 0/9 (0.0%) TP recall",
+      "status": "FAIL",
+      "note": "100% FALSE_POSITIVE class collapse (20/20 predicted FP at 85% conf)."
+    },
+    {
+      "dimension": "Policy-Assisted Raw LLM Reasoning (Mode B)",
+      "measured": "2/20 (10.0%) 3-class; 2/9 TP recall; 0/1 FP recall; 0/10 Prisma abstentions",
+      "status": "FAIL",
+      "note": "6/9 CS TPs collapsed to false missing-field abstentions; 10/10 Prisma SASE failed to abstain; IP/path/signature hallucinations."
+    },
+    {
+      "dimension": "Evidence Grounding & Factual Fidelity",
+      "measured": "Repeated claim/prose hallucinations across Mode A and B",
+      "status": "FAIL",
+      "note": "Misclassified RFC1918 vs public IPs, called Program Files 'writable temporary path', claimed present command_line missing, invented absent signatures."
+    },
+    {
+      "dimension": "Deterministic Validator Safety Recovery (Mode C)",
+      "measured": "9/20 (45.0%) validated; 0/9 missed-TP-as-FP; 8/10 Prisma rescued; 1/1 FP-as-TP blocked",
+      "status": "PARTIAL_SAFETY_LAYER_WORKS_MODEL_FAILS",
+      "note": "Validator successfully prevented dangerous decisive errors, but cannot create genuine TP reasoning intelligence that the 7B-AWQ model lacks (only 1/9 CS TP survived validation)."
+    }
+  ]
+}

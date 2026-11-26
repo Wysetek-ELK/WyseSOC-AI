@@ -34,6 +34,11 @@ class LLMConfigService:
     _cached_verified_max_model_len: Optional[int] = None
 
     DEFAULT_MODEL_PROFILES: Dict[str, Dict[str, int]] = {
+        "Qwen/Qwen3-14B-AWQ": {
+            "max_context_tokens": 8192,
+            "reserved_output_tokens": 768,
+            "target_input_budget": 7424,
+        },
         "Qwen/Qwen2.5-7B-Instruct-AWQ": {
             "max_context_tokens": 8192,
             "reserved_output_tokens": 768,
@@ -73,9 +78,9 @@ class LLMConfigService:
 
         def_prof = cls._model_profiles.get("default") or {}
         return {
-            "max_context_tokens": int(def_prof.get("max_context_tokens") or getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384),
-            "reserved_output_tokens": int(def_prof.get("reserved_output_tokens") or getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024),
-            "target_input_budget": int(def_prof.get("target_input_budget") or getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192),
+            "max_context_tokens": int(def_prof.get("max_context_tokens") or getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 8192) or 8192),
+            "reserved_output_tokens": int(def_prof.get("reserved_output_tokens") or getattr(settings, "LOCAL_LLM_MAX_TOKENS", 768) or 768),
+            "target_input_budget": int(def_prof.get("target_input_budget") or getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 7424) or 7424),
         }
 
     @classmethod
@@ -84,9 +89,9 @@ class LLMConfigService:
 
     @classmethod
     def set_model_profile(cls, model_name: str, profile: Dict[str, int]) -> Dict[str, int]:
-        max_ctx = int(profile.get("max_context_tokens", 16384))
-        res_out = int(profile.get("reserved_output_tokens", 1024))
-        target_in = int(profile.get("target_input_budget", 8192))
+        max_ctx = int(profile.get("max_context_tokens", 8192))
+        res_out = int(profile.get("reserved_output_tokens", 768))
+        target_in = int(profile.get("target_input_budget", 7424))
         if max_ctx < 1024:
             raise ValueError(f"max_context_tokens={max_ctx} cannot be less than 1024")
         if res_out < 64:
@@ -198,19 +203,19 @@ class LLMConfigService:
 
             if data.get("context_budget") is not None:
                 new_ctx = int(data["context_budget"])
-                if 1024 <= new_ctx <= 131072 and new_ctx != int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384)):
+                if 1024 <= new_ctx <= 131072 and new_ctx != int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 8192)):
                     settings.LOCAL_LLM_CONTEXT_BUDGET = new_ctx
                     changed = True
 
             if data.get("max_tokens") is not None:
                 new_max_tok = int(data["max_tokens"])
-                if 64 <= new_max_tok <= 16384 and new_max_tok != int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024)):
+                if 64 <= new_max_tok <= 16384 and new_max_tok != int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 768)):
                     settings.LOCAL_LLM_MAX_TOKENS = new_max_tok
                     changed = True
 
             if data.get("target_input_budget") is not None:
                 new_in_tok = int(data["target_input_budget"])
-                if 512 <= new_in_tok <= 131072 and new_in_tok != int(getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192)):
+                if 512 <= new_in_tok <= 131072 and new_in_tok != int(getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 7424)):
                     settings.LOCAL_LLM_TARGET_INPUT_BUDGET = new_in_tok
                     changed = True
 
@@ -218,9 +223,9 @@ class LLMConfigService:
                 for m_k, m_v in data["model_profiles"].items():
                     if isinstance(m_v, dict):
                         cls._model_profiles[m_k] = {
-                            "max_context_tokens": int(m_v.get("max_context_tokens", 16384)),
-                            "reserved_output_tokens": int(m_v.get("reserved_output_tokens", 1024)),
-                            "target_input_budget": int(m_v.get("target_input_budget", 8192)),
+                            "max_context_tokens": int(m_v.get("max_context_tokens", 8192)),
+                            "reserved_output_tokens": int(m_v.get("reserved_output_tokens", 768)),
+                            "target_input_budget": int(m_v.get("target_input_budget", 7424)),
                         }
 
             if "verified_max_model_len" in data:
@@ -472,6 +477,11 @@ class LLMConfigService:
             operating_mode=ctx_info["operating_mode"],
             allow_mock_fallback=settings.LOCAL_LLM_ALLOW_MOCK_FALLBACK,
             is_online=is_online,
+            endpoint_reachable=is_online,
+            runtime_healthy=is_online,
+            configured_model_available=bool(ctx_info["verified_max_model_len"] is not None) if is_online else None,
+            model_mismatch=False if (is_online and ctx_info["verified_max_model_len"] is not None) else None,
+            runtime_status_detail="ONLINE" if is_online else "OFFLINE_OR_UNVERIFIED",
             server1_outbound_ip=server1_ip,
             core_outbound_ip=server1_ip,
             logical_hostname="verdictum-cortex-01",
@@ -507,8 +517,8 @@ class LLMConfigService:
         if data.timeout is not None:
             settings.LOCAL_LLM_TIMEOUT = float(data.timeout)
 
-        new_ctx = int(data.context_budget) if data.context_budget is not None else int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384))
-        new_max_tok = int(data.max_tokens) if data.max_tokens is not None else int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024))
+        new_ctx = int(data.context_budget) if data.context_budget is not None else int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 8192))
+        new_max_tok = int(data.max_tokens) if data.max_tokens is not None else int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 768))
         if (new_ctx - new_max_tok) < 512:
             raise ValueError(
                 f"Invalid context budget ({new_ctx}) and max_tokens ({new_max_tok}): must leave at least 512 prompt tokens."
@@ -669,9 +679,11 @@ class LLMConfigService:
                     models = [m.get("id", "") for m in data.get("data", []) if isinstance(m, dict) and m.get("id")]
                     model_str = ", ".join(models) if models else settings.LOCAL_LLM_MODEL_NAME
                     server_max_len = cls._extract_max_model_len(data, settings.LOCAL_LLM_MODEL_NAME)
-                    configured_budget = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384)
-                    target_input = int(getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192)
-                    res_tokens = int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
+                    configured_budget = int(getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 8192) or 8192)
+                    target_input = int(getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 7424) or 7424)
+                    res_tokens = int(getattr(settings, "LOCAL_LLM_MAX_TOKENS", 768) or 768)
+                    configured_model_available = (settings.LOCAL_LLM_MODEL_NAME in models) if models else False
+                    model_mismatch = bool(models) and not configured_model_available
                     supported: Optional[bool] = (
                         (server_max_len >= configured_budget) if server_max_len is not None else None
                     )
@@ -698,18 +710,29 @@ class LLMConfigService:
                         if server_max_len is not None
                         else " | max_model_len not exposed by server (capacity unverified)"
                     )
+                    mismatch_note = (
+                        f" | MODEL_MISMATCH: configured '{settings.LOCAL_LLM_MODEL_NAME}' != active [{model_str}]"
+                        if model_mismatch
+                        else ""
+                    )
 
                     return LLMTestConnectionResponse(
                         success=True,
                         status_code=200,
                         latency_ms=latency_ms,
-                        message=f"Connection successful! Models loaded on Verdictum Cortex (Server 2): {model_str}{capacity_note}",
+                        message=f"Connection successful! Models loaded on Verdictum Cortex (Server 2): {model_str}{capacity_note}{mismatch_note}",
                         models=models,
                         tested_url=models_url,
                         server_max_model_len=server_max_len,
                         context_budget_supported=supported,
                         available_input_tokens=avail_input,
                         target_input_budget=target_input,
+                        endpoint_reachable=True,
+                        runtime_healthy=True,
+                        configured_model_available=configured_model_available,
+                        model_mismatch=model_mismatch,
+                        inference_verified=None,
+                        runtime_status_detail="MODEL_MISMATCH" if model_mismatch else "READY_METADATA_VERIFIED",
                     )
                 else:
                     return LLMTestConnectionResponse(
@@ -719,6 +742,12 @@ class LLMConfigService:
                         message=f"Server returned HTTP {res.status_code}: {res.text[:200]}",
                         models=[],
                         tested_url=models_url,
+                        endpoint_reachable=True,
+                        runtime_healthy=False,
+                        configured_model_available=False,
+                        model_mismatch=False,
+                        inference_verified=False,
+                        runtime_status_detail=f"UNHEALTHY_HTTP_{res.status_code}",
                     )
         except httpx.ConnectTimeout:
             latency_ms = round((time.perf_counter() - t0) * 1000, 1)
@@ -727,6 +756,12 @@ class LLMConfigService:
                 latency_ms=latency_ms,
                 message=f"Connection timed out after {timeout_sec}s. Verify that port {parsed['port']} is open in Verdictum Cortex (Server 2) firewall/AWS Security Group and that Verdictum Core's (Server 1) IP is whitelisted.",
                 tested_url=models_url,
+                endpoint_reachable=False,
+                runtime_healthy=False,
+                configured_model_available=False,
+                model_mismatch=False,
+                inference_verified=False,
+                runtime_status_detail="UNREACHABLE_TIMEOUT",
             )
         except httpx.ConnectError as ce:
             latency_ms = round((time.perf_counter() - t0) * 1000, 1)
@@ -735,6 +770,12 @@ class LLMConfigService:
                 latency_ms=latency_ms,
                 message=f"Connection refused ({ce}). Verify that the vLLM / model server is running on Verdictum Cortex (Server 2) and listening on 0.0.0.0:{parsed['port']}.",
                 tested_url=models_url,
+                endpoint_reachable=False,
+                runtime_healthy=False,
+                configured_model_available=False,
+                model_mismatch=False,
+                inference_verified=False,
+                runtime_status_detail="UNREACHABLE_CONNECTION_REFUSED",
             )
         except Exception as e:
             latency_ms = round((time.perf_counter() - t0) * 1000, 1)
@@ -743,4 +784,10 @@ class LLMConfigService:
                 latency_ms=latency_ms,
                 message=f"Error connecting to Verdictum Cortex LLM server: {str(e)}",
                 tested_url=models_url,
+                endpoint_reachable=False,
+                runtime_healthy=False,
+                configured_model_available=False,
+                model_mismatch=False,
+                inference_verified=False,
+                runtime_status_detail=f"CONNECTION_ERROR:{type(e).__name__}",
             )

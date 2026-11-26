@@ -1,0 +1,112 @@
+{
+  "metrics": {
+    "total_application_source_files": 272,
+    "total_application_lines_of_code": 104272,
+    "total_application_code_lines_excluding_blanks_comments": 93853,
+    "frontend_source_files": 82,
+    "backend_source_files": 190,
+    "confirmed_unused_files": 15,
+    "confirmed_unused_public_assets": 5,
+    "possibly_unused_files": 1,
+    "confirmed_unused_functions_and_methods": 13,
+    "unused_frontend_components": 5,
+    "potentially_unused_api_endpoints": 12,
+    "duplicate_implementations": 5,
+    "legacy_ais_implementations": 4,
+    "potentially_unused_dependencies": 1,
+    "confirmed_removable_lines_app_source": 1336,
+    "confirmed_removable_lines_including_tracked_scratch": 4398,
+    "conditional_removable_lines": 3487,
+    "estimated_safe_code_reduction_percentage": 1.28,
+    "low_risk_cleanup_candidates": 243,
+    "medium_risk_cleanup_candidates": 15,
+    "high_risk_cleanup_candidates": 3,
+    "critical_risk_cleanup_candidates": 2,
+    "total_cleanup_candidates": 263,
+    "candidates_requiring_manual_verification": 240,
+    "actual_application_files_deleted": 0,
+    "actual_production_changes": 0
+  },
+  "acceptance_gates": [
+    {
+      "gate": "G1",
+      "name": "Complete repository discovery",
+      "status": "PASS",
+      "evidence": "CODEBASE_INVENTORY.json (2,229 tracked files; 272 app source files; 104,272 lines)"
+    },
+    {
+      "gate": "G2",
+      "name": "Frontend audit completeness",
+      "status": "PASS",
+      "evidence": "evidence/frontend_analysis.json + tsc --noEmit (0 errors) + eslint_report.json + npm test (16 suites passed)"
+    },
+    {
+      "gate": "G3",
+      "name": "Backend audit completeness",
+      "status": "PASS",
+      "evidence": "evidence/backend_analysis.json + evidence/deep_audit.json (190 backend app files parsed via AST)"
+    },
+    {
+      "gate": "G4",
+      "name": "API usage verification",
+      "status": "PARTIAL",
+      "evidence": "API_USAGE_MATRIX.json (187 endpoints mapped statically; live Server 1 nginx access logs unavailable locally)"
+    },
+    {
+      "gate": "G5",
+      "name": "AIS and LLM execution path verification",
+      "status": "PASS",
+      "evidence": "Traced AIVerdictService -> run_shared_verdict_pipeline -> validators/budget/model_provider + 124/125 core pytest passing"
+    },
+    {
+      "gate": "G6",
+      "name": "Database dependency verification",
+      "status": "PARTIAL",
+      "evidence": "38 ORM models & 16 Alembic migrations mapped statically; live Server 1 PostgreSQL metadata/row counts not queried locally"
+    },
+    {
+      "gate": "G7",
+      "name": "Background task verification",
+      "status": "PASS",
+      "evidence": "Inspected celery_app.py, tasks.py, fortisiem_scheduler.py, and systemd units; identified Beat/maintenance queue mismatch"
+    },
+    {
+      "gate": "G8",
+      "name": "Dependency audit completeness",
+      "status": "PASS",
+      "evidence": "evidence/ais_api_deps_audit.json (22 Python reqs + 15 Node deps verified against imports)"
+    },
+    {
+      "gate": "G9",
+      "name": "Deployment and configuration audit",
+      "status": "PARTIAL",
+      "evidence": "All 18 deployment/* files & config.py audited; live Server 1/2 runtime parity unverified due to no remote SSH"
+    },
+    {
+      "gate": "G10",
+      "name": "Dead code evidence integrity",
+      "status": "PASS",
+      "evidence": "DEAD_CODE_REGISTRY.json with exact file paths, line ranges, AST/regex references, and non-overlapping LOC"
+    },
+    {
+      "gate": "G11",
+      "name": "Protected functionality preservation",
+      "status": "PASS",
+      "evidence": "PROTECTED_COMPONENTS.json covering all 12 critical groups / 23 subsystems with regression test plans"
+    },
+    {
+      "gate": "G12",
+      "name": "Cleanup plan and rollback readiness",
+      "status": "PASS",
+      "evidence": "6-batch roadmap (17_PROPOSED_CLEANUP_IMPLEMENTATION_PLAN.md) + rollback procedures (18_REGRESSION_AND_ROLLBACK_PLAN.md)"
+    },
+    {
+      "gate": "G13",
+      "name": "No unauthorized application modifications",
+      "status": "PASS",
+      "evidence": "Git working tree check confirms 0 modified tracked files; non-audit untracked files unchanged (0 unexpected modifications)."
+    }
+  ],
+  "git_integrity_verified": true,
+  "unexpected_git_changes": []
+}

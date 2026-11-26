@@ -1,0 +1,22 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:28:00+00:00",
+  "command": "backend\\venv\\Scripts\\python.exe -m pytest backend/tests/test_ais_2_7_benchmark_runner.py backend/tests/test_ais_2_6f_certification_and_blind_review.py backend/tests/test_ais_2_4a_tp_grounding.py backend/tests/test_ais_2_4_regression.py backend/tests/test_ais_2_3b_1_regression.py backend/tests/test_ais_2_3a_integrity.py backend/tests/test_ais_heavy_tcp_e2e.py backend/tests/test_rule_learning_platform.py backend/tests/test_api_422_remediation.py -q",
+  "total_tests_run": 61,
+  "passed": 61,
+  "failed": 0,
+  "skipped": 0,
+  "duration_seconds": 22.95,
+  "overall_status": "PASS",
+  "suites_covered": [
+    "backend/tests/test_ais_2_7_benchmark_runner.py",
+    "backend/tests/test_ais_2_6f_certification_and_blind_review.py",
+    "backend/tests/test_ais_2_4a_tp_grounding.py",
+    "backend/tests/test_ais_2_4_regression.py",
+    "backend/tests/test_ais_2_3b_1_regression.py",
+    "backend/tests/test_ais_2_3a_integrity.py",
+    "backend/tests/test_ais_heavy_tcp_e2e.py",
+    "backend/tests/test_rule_learning_platform.py",
+    "backend/tests/test_api_422_remediation.py"
+  ]
+}

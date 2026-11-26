@@ -620,6 +620,12 @@ export interface LLMConfigResponse {
   is_online: boolean;
   server1_outbound_ip?: string;
   model_profiles?: Record<string, Record<string, number>>;
+  endpoint_reachable?: boolean | null;
+  runtime_healthy?: boolean | null;
+  configured_model_available?: boolean | null;
+  model_mismatch?: boolean | null;
+  active_models_reported?: string[];
+  runtime_status_detail?: string | null;
 }
 
 export interface LLMConfigUpdate {
@@ -653,6 +659,12 @@ export interface LLMTestConnectionResponse {
   context_budget_supported?: boolean | null;
   available_input_tokens?: number | null;
   target_input_budget?: number | null;
+  endpoint_reachable?: boolean | null;
+  runtime_healthy?: boolean | null;
+  configured_model_available?: boolean | null;
+  model_mismatch?: boolean | null;
+  inference_verified?: boolean | null;
+  runtime_status_detail?: string | null;
 }
 
 export interface FortiSIEMRuleSyncResponse {

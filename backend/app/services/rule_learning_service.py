@@ -3,6 +3,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models.rule import Rule
 from app.models.incident import Incident
 from app.models.rule_learning import RuleLearningProfile, RuleLearningStateHistory
@@ -322,7 +323,7 @@ class RuleLearningService:
             customer=clean_customer,
             primary_archetype=primary_archetype,
             lifecycle_stage=cls.STAGE_LEARNING,
-            active_model_identifier="Qwen/Qwen2.5-7B-Instruct-AWQ",
+            active_model_identifier=str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ")),
             total_incidents_processed=inc_cnt,
             total_analyst_reviews=0,
             verified_tp_count=0,

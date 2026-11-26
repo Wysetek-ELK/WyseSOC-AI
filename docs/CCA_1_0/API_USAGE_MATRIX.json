@@ -1,0 +1,6060 @@
+{
+  "router_mounts": {
+    "auth": [
+      "/api"
+    ],
+    "incidents": [
+      "/api"
+    ],
+    "rules": [
+      "/api"
+    ],
+    "imports": [
+      "/api"
+    ],
+    "dashboard": [
+      "/api"
+    ],
+    "users": [
+      "/api"
+    ],
+    "audit": [
+      "/api"
+    ],
+    "investigations": [
+      "/api"
+    ],
+    "prompts": [
+      "/api",
+      "/api/v1"
+    ],
+    "learning": [
+      "/api"
+    ],
+    "dry_run": [
+      "/api"
+    ],
+    "evaluations": [
+      "/api"
+    ],
+    "fortisiem": [
+      "/api"
+    ],
+    "system_monitor": [
+      "/api"
+    ],
+    "tokens": [
+      "/api"
+    ],
+    "telemetry": [
+      "/api"
+    ],
+    "llm_config": [
+      "/api"
+    ],
+    "chat": [
+      "/api"
+    ],
+    "verdict_intelligence": [
+      "/api",
+      "/api/v1"
+    ],
+    "pilot": [
+      "/api"
+    ],
+    "rule_learning": [
+      "/api",
+      "/api/v1"
+    ],
+    "ais_evaluation": [
+      "/api",
+      "/api/v1"
+    ],
+    "ground_truth": [
+      "/api",
+      "/api/v1"
+    ],
+    "health": [
+      "",
+      "/api"
+    ],
+    "dev": [
+      "/api"
+    ]
+  },
+  "endpoints": [
+    {
+      "module": "ais_evaluation",
+      "file": "backend/app/api/ais_evaluation.py",
+      "function": "get_rule_evaluation_status",
+      "lineno": 36,
+      "end_lineno": 91,
+      "method": "GET",
+      "router_prefix": "/ais",
+      "subpath": "/rules/{rule_uuid}/evaluation-status",
+      "full_paths": [
+        "/api/ais/rules/{rule_uuid}/evaluation-status",
+        "/api/v1/ais/rules/{rule_uuid}/evaluation-status"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_evaluation_tracking.py"
+      ],
+      "script_refs": [
+        "scripts/test_tracking_endpoint_remote.py"
+      ],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ais_evaluation",
+      "file": "backend/app/api/ais_evaluation.py",
+      "function": "get_incident_evaluation_history",
+      "lineno": 95,
+      "end_lineno": 125,
+      "method": "GET",
+      "router_prefix": "/ais",
+      "subpath": "/incidents/{incident_id}/evaluation-history",
+      "full_paths": [
+        "/api/ais/incidents/{incident_id}/evaluation-history",
+        "/api/v1/ais/incidents/{incident_id}/evaluation-history"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py",
+        "backend/tests/test_ais_evaluation_tracking.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ais_evaluation",
+      "file": "backend/app/api/ais_evaluation.py",
+      "function": "evaluate_missing_incidents_batch",
+      "lineno": 129,
+      "end_lineno": 170,
+      "method": "POST",
+      "router_prefix": "/ais",
+      "subpath": "/rules/{rule_uuid}/evaluate-missing-batch",
+      "full_paths": [
+        "/api/ais/rules/{rule_uuid}/evaluate-missing-batch",
+        "/api/v1/ais/rules/{rule_uuid}/evaluate-missing-batch"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_evaluation_tracking.py"
+      ],
+      "script_refs": [
+        "scripts/execute_single_inference_test.py",
+        "scratch/generate_all_markdown_reports.py"
+      ],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "audit",
+      "file": "backend/app/api/audit.py",
+      "function": "list_audit_logs",
+      "lineno": 16,
+      "end_lineno": 59,
+      "method": "GET",
+      "router_prefix": "/audit",
+      "subpath": "",
+      "full_paths": [
+        "/api/audit"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_phase8_integration.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [
+        "deployment/scripts/rollback_server1.sh"
+      ],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "auth",
+      "file": "backend/app/api/auth.py",
+      "function": "login",
+      "lineno": 17,
+      "end_lineno": 89,
+      "method": "POST",
+      "router_prefix": "/auth",
+      "subpath": "/login",
+      "full_paths": [
+        "/api/auth/login"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_auth.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
+      ],
+      "script_refs": [
+        "scripts/remote_test_server1.py",
+        "scripts/run_ais_2_1a_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_1_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_gui_acceptance.mjs",
+        "scripts/run_populated_validation.mjs",
+        "scripts/run_v1_2_1_validation.mjs",
+        "scripts/run_v1_2_2a_validation.mjs",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_2_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs",
+        "scripts/run_v1_2_validation.mjs",
+        "scratch/audit_all_historical_data.py",
+        "scratch/check_db_reviews.py",
+        "scratch/check_server1_prisma_incident.py",
+        "scratch/check_server1_rule_prompt.py",
+        "scratch/execute_gpu_pilot.py",
+        "scratch/execute_gpu_regression_ais_2_3a.py",
+        "scratch/execute_gpu_smoke.py",
+        "scratch/execute_live_5_pilot.py",
+        "scratch/fetch_server1_actual_prompt.py",
+        "scratch/probe_server1.py",
+        "scratch/query_db_rule_stats.py",
+        "scratch/reproduce_server1_prisma.py",
+        "scratch/run_full_ais_2_5a_live_benchmark.py",
+        "scratch/run_stage2_finish7.py",
+        "scratch/run_stage2_pilot.py",
+        "scratch/run_stage2_remaining15.py",
+        "scratch/test_one_incident.py",
+        "scratch/test_prisma_sample.py",
+        "scratch/test_resolution_query.py",
+        "scratch/trace_compaction_exact.py",
+        "scratch/upload_fixtures_to_server1.py"
+      ],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "auth",
+      "file": "backend/app/api/auth.py",
+      "function": "logout",
+      "lineno": 93,
+      "end_lineno": 118,
+      "method": "POST",
+      "router_prefix": "/auth",
+      "subpath": "/logout",
+      "full_paths": [
+        "/api/auth/logout"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "auth",
+      "file": "backend/app/api/auth.py",
+      "function": "get_me",
+      "lineno": 122,
+      "end_lineno": 123,
+      "method": "GET",
+      "router_prefix": "/auth",
+      "subpath": "/me",
+      "full_paths": [
+        "/api/auth/me"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_auth.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "chat",
+      "file": "backend/app/api/chat.py",
+      "function": "get_chat_llm_status",
+      "lineno": 54,
+      "end_lineno": 116,
+      "method": "GET",
+      "router_prefix": "/chat",
+      "subpath": "/status",
+      "full_paths": [
+        "/api/chat/status"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_soc_chatbot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "chat",
+      "file": "backend/app/api/chat.py",
+      "function": "send_chat_message",
+      "lineno": 257,
+      "end_lineno": 358,
+      "method": "POST",
+      "router_prefix": "/chat",
+      "subpath": "/message",
+      "full_paths": [
+        "/api/chat/message"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_soc_chatbot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "chat",
+      "file": "backend/app/api/chat.py",
+      "function": "stream_chat_message",
+      "lineno": 366,
+      "end_lineno": 534,
+      "method": "POST",
+      "router_prefix": "/chat",
+      "subpath": "/stream",
+      "full_paths": [
+        "/api/chat/stream"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_soc_chatbot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "dashboard",
+      "file": "backend/app/api/dashboard.py",
+      "function": "get_dashboard_metrics",
+      "lineno": 17,
+      "end_lineno": 22,
+      "method": "GET",
+      "router_prefix": "/dashboard",
+      "subpath": "/metrics",
+      "full_paths": [
+        "/api/dashboard/metrics"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_endpoints.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "dashboard",
+      "file": "backend/app/api/dashboard.py",
+      "function": "get_llm_status",
+      "lineno": 26,
+      "end_lineno": 50,
+      "method": "GET",
+      "router_prefix": "/dashboard",
+      "subpath": "/llm-status",
+      "full_paths": [
+        "/api/dashboard/llm-status"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_1_hardening.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "dev",
+      "file": "backend/app/api/dev.py",
+      "function": "dev_diagnostics",
+      "lineno": 12,
+      "end_lineno": 19,
+      "method": "GET",
+      "router_prefix": "/dev",
+      "subpath": "/status",
+      "full_paths": [
+        "/api/dev/status"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [],
+      "fe_refs": [],
+      "test_refs": [
+        "backend/tests/test_phase1_security_controls.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "Public / Unauthenticated",
+      "status": "DEVELOPMENT_ONLY",
+      "recommended_action": "RETAIN (dev-guarded)"
+    },
+    {
+      "module": "dry_run",
+      "file": "backend/app/api/dry_run.py",
+      "function": "create_dry_run_config",
+      "lineno": 28,
+      "end_lineno": 64,
+      "method": "POST",
+      "router_prefix": "/dry-run",
+      "subpath": "/configs",
+      "full_paths": [
+        "/api/dry-run/configs"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_dry_run_replay.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "dry_run",
+      "file": "backend/app/api/dry_run.py",
+      "function": "list_dry_run_configs",
+      "lineno": 68,
+      "end_lineno": 91,
+      "method": "GET",
+      "router_prefix": "/dry-run",
+      "subpath": "/configs",
+      "full_paths": [
+        "/api/dry-run/configs"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_dry_run_replay.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "dry_run",
+      "file": "backend/app/api/dry_run.py",
+      "function": "get_dry_run_config",
+      "lineno": 95,
+      "end_lineno": 117,
+      "method": "GET",
+      "router_prefix": "/dry-run",
+      "subpath": "/configs/{config_id}",
+      "full_paths": [
+        "/api/dry-run/configs/{config_id}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "dry_run",
+      "file": "backend/app/api/dry_run.py",
+      "function": "trigger_dry_run_job",
+      "lineno": 121,
+      "end_lineno": 173,
+      "method": "POST",
+      "router_prefix": "/dry-run",
+      "subpath": "/trigger",
+      "full_paths": [
+        "/api/dry-run/trigger"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_dry_run_replay.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "dry_run",
+      "file": "backend/app/api/dry_run.py",
+      "function": "list_dry_run_jobs",
+      "lineno": 177,
+      "end_lineno": 199,
+      "method": "GET",
+      "router_prefix": "/dry-run",
+      "subpath": "/jobs",
+      "full_paths": [
+        "/api/dry-run/jobs"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_dry_run_replay.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "dry_run",
+      "file": "backend/app/api/dry_run.py",
+      "function": "get_dry_run_job",
+      "lineno": 203,
+      "end_lineno": 225,
+      "method": "GET",
+      "router_prefix": "/dry-run",
+      "subpath": "/jobs/{job_id}",
+      "full_paths": [
+        "/api/dry-run/jobs/{job_id}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_dry_run_replay.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "dry_run",
+      "file": "backend/app/api/dry_run.py",
+      "function": "get_dry_run_job_results",
+      "lineno": 229,
+      "end_lineno": 298,
+      "method": "GET",
+      "router_prefix": "/dry-run",
+      "subpath": "/jobs/{job_id}/results",
+      "full_paths": [
+        "/api/dry-run/jobs/{job_id}/results"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_dry_run_replay.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "dry_run",
+      "file": "backend/app/api/dry_run.py",
+      "function": "cancel_dry_run_job",
+      "lineno": 302,
+      "end_lineno": 334,
+      "method": "POST",
+      "router_prefix": "/dry-run",
+      "subpath": "/jobs/{job_id}/cancel",
+      "full_paths": [
+        "/api/dry-run/jobs/{job_id}/cancel"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "dry_run",
+      "file": "backend/app/api/dry_run.py",
+      "function": "get_dry_run_job_progress",
+      "lineno": 338,
+      "end_lineno": 348,
+      "method": "GET",
+      "router_prefix": "/dry-run",
+      "subpath": "/jobs/{job_id}/progress",
+      "full_paths": [
+        "/api/dry-run/jobs/{job_id}/progress"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "evaluations",
+      "file": "backend/app/api/evaluations.py",
+      "function": "get_job_metrics",
+      "lineno": 28,
+      "end_lineno": 42,
+      "method": "GET",
+      "router_prefix": "/evaluations",
+      "subpath": "/job/{job_id}/metrics",
+      "full_paths": [
+        "/api/evaluations/job/{job_id}/metrics"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_evaluation_metrics.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "evaluations",
+      "file": "backend/app/api/evaluations.py",
+      "function": "compare_prompts_for_rule",
+      "lineno": 46,
+      "end_lineno": 60,
+      "method": "GET",
+      "router_prefix": "/evaluations",
+      "subpath": "/prompt-comparison/{rule_id}",
+      "full_paths": [
+        "/api/evaluations/prompt-comparison/{rule_id}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "evaluations",
+      "file": "backend/app/api/evaluations.py",
+      "function": "list_rule_maturity_status",
+      "lineno": 64,
+      "end_lineno": 70,
+      "method": "GET",
+      "router_prefix": "/evaluations",
+      "subpath": "/rule-maturity",
+      "full_paths": [
+        "/api/evaluations/rule-maturity"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_rule_maturity.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "evaluations",
+      "file": "backend/app/api/evaluations.py",
+      "function": "approve_rule_for_automation",
+      "lineno": 74,
+      "end_lineno": 131,
+      "method": "POST",
+      "router_prefix": "/evaluations",
+      "subpath": "/rule-maturity/{rule_id}/approve",
+      "full_paths": [
+        "/api/evaluations/rule-maturity/{rule_id}/approve"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_rule_maturity.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "evaluations",
+      "file": "backend/app/api/evaluations.py",
+      "function": "export_job_csv",
+      "lineno": 135,
+      "end_lineno": 153,
+      "method": "GET",
+      "router_prefix": "/evaluations",
+      "subpath": "/job/{job_id}/export/csv",
+      "full_paths": [
+        "/api/evaluations/job/{job_id}/export/csv"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/app/agent-simulation-lab/page.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_evaluation_metrics.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "evaluations",
+      "file": "backend/app/api/evaluations.py",
+      "function": "export_job_json",
+      "lineno": 157,
+      "end_lineno": 213,
+      "method": "GET",
+      "router_prefix": "/evaluations",
+      "subpath": "/job/{job_id}/export/json",
+      "full_paths": [
+        "/api/evaluations/job/{job_id}/export/json"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/app/agent-simulation-lab/page.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_evaluation_metrics.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "get_fortisiem_status",
+      "lineno": 37,
+      "end_lineno": 59,
+      "method": "GET",
+      "router_prefix": "/fortisiem",
+      "subpath": "/status",
+      "full_paths": [
+        "/api/fortisiem/status"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_pull.py"
+      ],
+      "script_refs": [
+        "scratch/audit_all_historical_data.py"
+      ],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "get_fortisiem_config",
+      "lineno": 63,
+      "end_lineno": 70,
+      "method": "GET",
+      "router_prefix": "/fortisiem",
+      "subpath": "/config",
+      "full_paths": [
+        "/api/fortisiem/config"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_pull.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "Public / Unauthenticated",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "update_fortisiem_config",
+      "lineno": 74,
+      "end_lineno": 93,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/config",
+      "full_paths": [
+        "/api/fortisiem/config"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_pull.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "Public / Unauthenticated",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "test_fortisiem_connection",
+      "lineno": 97,
+      "end_lineno": 112,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/test-connection",
+      "full_paths": [
+        "/api/fortisiem/test-connection"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_pull.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "Public / Unauthenticated",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "fetch_incident",
+      "lineno": 116,
+      "end_lineno": 139,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/fetch",
+      "full_paths": [
+        "/api/fortisiem/fetch"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_pull.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "pull_all_incidents",
+      "lineno": 143,
+      "end_lineno": 170,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/pull-all",
+      "full_paths": [
+        "/api/fortisiem/pull-all"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_continuous_sync.py",
+        "backend/tests/test_phase8_1_validation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "get_scheduler_status",
+      "lineno": 174,
+      "end_lineno": 189,
+      "method": "GET",
+      "router_prefix": "/fortisiem",
+      "subpath": "/scheduler/status",
+      "full_paths": [
+        "/api/fortisiem/scheduler/status"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_continuous_sync.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "process_pending_verdicts",
+      "lineno": 193,
+      "end_lineno": 259,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/process-pending-verdicts",
+      "full_paths": [
+        "/api/fortisiem/process-pending-verdicts"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_llm_multiworker_sync.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "start_scheduler",
+      "lineno": 263,
+      "end_lineno": 281,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/scheduler/start",
+      "full_paths": [
+        "/api/fortisiem/scheduler/start"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_continuous_sync.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "stop_scheduler",
+      "lineno": 285,
+      "end_lineno": 297,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/scheduler/stop",
+      "full_paths": [
+        "/api/fortisiem/scheduler/stop"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_continuous_sync.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "trigger_scheduler_now",
+      "lineno": 301,
+      "end_lineno": 308,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/scheduler/trigger",
+      "full_paths": [
+        "/api/fortisiem/scheduler/trigger"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_continuous_sync.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "Public / Unauthenticated",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "evaluate_batch_ai_verdicts",
+      "lineno": 312,
+      "end_lineno": 327,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/batch-ai-verdict",
+      "full_paths": [
+        "/api/fortisiem/batch-ai-verdict"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_continuous_sync.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "sync_fortisiem_rules",
+      "lineno": 331,
+      "end_lineno": 341,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/sync-rules",
+      "full_paths": [
+        "/api/fortisiem/sync-rules"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_pull.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "pull_fortisiem_rule",
+      "lineno": 345,
+      "end_lineno": 360,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/pull-rule",
+      "full_paths": [
+        "/api/fortisiem/pull-rule"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_pull.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "sync_fortisiem_resolutions",
+      "lineno": 364,
+      "end_lineno": 374,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/sync-resolutions",
+      "full_paths": [
+        "/api/fortisiem/sync-resolutions"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_pull.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "fortisiem",
+      "file": "backend/app/api/fortisiem.py",
+      "function": "sync_single_incident_resolution",
+      "lineno": 378,
+      "end_lineno": 389,
+      "method": "POST",
+      "router_prefix": "/fortisiem",
+      "subpath": "/incident/{incident_id}/sync-resolution",
+      "full_paths": [
+        "/api/fortisiem/incident/{incident_id}/sync-resolution"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_fortisiem_pull.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "list_benchmark_cohorts",
+      "lineno": 32,
+      "end_lineno": 36,
+      "method": "GET",
+      "router_prefix": "/ground-truth",
+      "subpath": "/cohorts",
+      "full_paths": [
+        "/api/ground-truth/cohorts",
+        "/api/v1/ground-truth/cohorts"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py"
+      ],
+      "script_refs": [
+        "scratch/build_stage1_manifests.py"
+      ],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "ensure_benchmark_cohort",
+      "lineno": 40,
+      "end_lineno": 52,
+      "method": "POST",
+      "router_prefix": "/ground-truth",
+      "subpath": "/cohorts/{cohort_key}/ensure",
+      "full_paths": [
+        "/api/ground-truth/cohorts/{cohort_key}/ensure",
+        "/api/v1/ground-truth/cohorts/{cohort_key}/ensure"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "get_ground_truth_cohort_queue",
+      "lineno": 56,
+      "end_lineno": 82,
+      "method": "GET",
+      "router_prefix": "/ground-truth",
+      "subpath": "/cohorts/{cohort_key}/queue",
+      "full_paths": [
+        "/api/ground-truth/cohorts/{cohort_key}/queue",
+        "/api/v1/ground-truth/cohorts/{cohort_key}/queue"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "get_ground_truth_incident_detail",
+      "lineno": 89,
+      "end_lineno": 103,
+      "method": "GET",
+      "router_prefix": "/ground-truth",
+      "subpath": "/cohorts/{cohort_key}/incidents/{incident_id}",
+      "full_paths": [
+        "/api/ground-truth/cohorts/{cohort_key}/incidents/{incident_id}",
+        "/api/v1/ground-truth/cohorts/{cohort_key}/incidents/{incident_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "attach_ground_truth_evidence",
+      "lineno": 107,
+      "end_lineno": 123,
+      "method": "POST",
+      "router_prefix": "/ground-truth",
+      "subpath": "/cohorts/{cohort_key}/incidents/{incident_id}/evidence",
+      "full_paths": [
+        "/api/ground-truth/cohorts/{cohort_key}/incidents/{incident_id}/evidence",
+        "/api/v1/ground-truth/cohorts/{cohort_key}/incidents/{incident_id}/evidence"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "submit_ground_truth_review",
+      "lineno": 127,
+      "end_lineno": 145,
+      "method": "POST",
+      "router_prefix": "/ground-truth",
+      "subpath": "/cohorts/{cohort_key}/incidents/{incident_id}/review",
+      "full_paths": [
+        "/api/ground-truth/cohorts/{cohort_key}/incidents/{incident_id}/review",
+        "/api/v1/ground-truth/cohorts/{cohort_key}/incidents/{incident_id}/review"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "adjudicate_ground_truth_conflict",
+      "lineno": 149,
+      "end_lineno": 167,
+      "method": "POST",
+      "router_prefix": "/ground-truth",
+      "subpath": "/cohorts/{cohort_key}/incidents/{incident_id}/adjudicate",
+      "full_paths": [
+        "/api/ground-truth/cohorts/{cohort_key}/incidents/{incident_id}/adjudicate",
+        "/api/v1/ground-truth/cohorts/{cohort_key}/incidents/{incident_id}/adjudicate"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "reopen_ground_truth_review",
+      "lineno": 171,
+      "end_lineno": 187,
+      "method": "POST",
+      "router_prefix": "/ground-truth",
+      "subpath": "/cohorts/{cohort_key}/reviews/reopen",
+      "full_paths": [
+        "/api/ground-truth/cohorts/{cohort_key}/reviews/reopen",
+        "/api/v1/ground-truth/cohorts/{cohort_key}/reviews/reopen"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "get_post_certification_comparison",
+      "lineno": 194,
+      "end_lineno": 210,
+      "method": "GET",
+      "router_prefix": "/ground-truth",
+      "subpath": "/cohorts/{cohort_key}/incidents/{incident_id}/post-certification-comparison",
+      "full_paths": [
+        "/api/ground-truth/cohorts/{cohort_key}/incidents/{incident_id}/post-certification-comparison",
+        "/api/v1/ground-truth/cohorts/{cohort_key}/incidents/{incident_id}/post-certification-comparison"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "get_ground_truth_audit",
+      "lineno": 214,
+      "end_lineno": 224,
+      "method": "GET",
+      "router_prefix": "/ground-truth",
+      "subpath": "/cohorts/{cohort_key}/audit",
+      "full_paths": [
+        "/api/ground-truth/cohorts/{cohort_key}/audit",
+        "/api/v1/ground-truth/cohorts/{cohort_key}/audit"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "ais27_verify_gpu_runtime",
+      "lineno": 228,
+      "end_lineno": 234,
+      "method": "GET",
+      "router_prefix": "/ground-truth",
+      "subpath": "/ais27/runtime-verify",
+      "full_paths": [
+        "/api/ground-truth/ais27/runtime-verify",
+        "/api/v1/ground-truth/ais27/runtime-verify"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "require_admin"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [
+        "scratch/run_stage2_pilot.py"
+      ],
+      "auth_summary": "require_admin",
+      "status": "ADMINISTRATIVE",
+      "recommended_action": "RETAIN (AIS 2.7 CLI/Benchmark)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "ais27_run_smoke_test",
+      "lineno": 238,
+      "end_lineno": 244,
+      "method": "POST",
+      "router_prefix": "/ground-truth",
+      "subpath": "/ais27/smoke-test",
+      "full_paths": [
+        "/api/ground-truth/ais27/smoke-test",
+        "/api/v1/ground-truth/ais27/smoke-test"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "require_admin"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [
+        "scratch/run_stage2_pilot.py"
+      ],
+      "auth_summary": "require_admin",
+      "status": "ADMINISTRATIVE",
+      "recommended_action": "RETAIN (AIS 2.7 CLI/Benchmark)"
+    },
+    {
+      "module": "ground_truth",
+      "file": "backend/app/api/ground_truth.py",
+      "function": "ais27_run_single_incident",
+      "lineno": 248,
+      "end_lineno": 278,
+      "method": "POST",
+      "router_prefix": "/ground-truth",
+      "subpath": "/ais27/cohorts/{cohort_key}/incidents/{incident_id}/run",
+      "full_paths": [
+        "/api/ground-truth/ais27/cohorts/{cohort_key}/incidents/{incident_id}/run",
+        "/api/v1/ground-truth/ais27/cohorts/{cohort_key}/incidents/{incident_id}/run"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [
+        "scratch/run_stage2_finish7.py",
+        "scratch/run_stage2_pilot.py",
+        "scratch/run_stage2_remaining15.py"
+      ],
+      "auth_summary": "get_db, require_admin",
+      "status": "ADMINISTRATIVE",
+      "recommended_action": "RETAIN (AIS 2.7 CLI/Benchmark)"
+    },
+    {
+      "module": "health",
+      "file": "backend/app/api/health.py",
+      "function": "health_check",
+      "lineno": 23,
+      "end_lineno": 124,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/health",
+      "full_paths": [
+        "/health",
+        "/api/health"
+      ],
+      "mounts": [
+        "",
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_1_remediation.py",
+        "backend/tests/test_llm_multiworker_sync.py",
+        "backend/tests/test_phase4_integration.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase8_integration.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_system_health_observability.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "script_refs": [
+        "scripts/remote_test_server1.py",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scratch/generate_all_markdown_reports.py",
+        "scratch/probe_server1.py",
+        "scratch/run_stage2_pilot.py",
+        "deployment/nginx/ai-verdict.conf",
+        "deployment/scripts/smoke_test_server2.py",
+        "deployment/scripts/verify_server1.sh"
+      ],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "FIX_DUPLICATE_ROUTE_REGISTRATION"
+    },
+    {
+      "module": "health",
+      "file": "backend/app/api/health.py",
+      "function": "health_check",
+      "lineno": 23,
+      "end_lineno": 124,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/api/health",
+      "full_paths": [
+        "/api/health",
+        "/api/api/health"
+      ],
+      "mounts": [
+        "",
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_system_health_observability.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "script_refs": [
+        "scripts/remote_test_server1.py",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scratch/generate_all_markdown_reports.py",
+        "scratch/probe_server1.py",
+        "deployment/scripts/verify_server1.sh"
+      ],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "FIX_DUPLICATE_ROUTE_REGISTRATION"
+    },
+    {
+      "module": "health",
+      "file": "backend/app/api/health.py",
+      "function": "get_prometheus_metrics",
+      "lineno": 129,
+      "end_lineno": 221,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/metrics",
+      "full_paths": [
+        "/metrics",
+        "/api/metrics"
+      ],
+      "mounts": [
+        "",
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_evaluation_metrics.py",
+        "backend/tests/test_llm_multiworker_sync.py",
+        "backend/tests/test_phase1_security_controls.py",
+        "backend/tests/test_phase4_integration.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase8_integration.py",
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_system_health_observability.py",
+        "backend/tests/test_verdict_intelligence_validation.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "script_refs": [
+        "scripts/run_phase8_empirical_validation.py",
+        "deployment/nginx/ai-verdict.conf",
+        "deployment/scripts/smoke_test_server2.py"
+      ],
+      "auth_summary": "get_db",
+      "status": "EXTERNALLY_USED",
+      "recommended_action": "FIX_DUPLICATE_ROUTE_REGISTRATION"
+    },
+    {
+      "module": "health",
+      "file": "backend/app/api/health.py",
+      "function": "get_prometheus_metrics",
+      "lineno": 129,
+      "end_lineno": 221,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/api/metrics",
+      "full_paths": [
+        "/api/metrics",
+        "/api/api/metrics"
+      ],
+      "mounts": [
+        "",
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "EXTERNALLY_USED",
+      "recommended_action": "FIX_DUPLICATE_ROUTE_REGISTRATION"
+    },
+    {
+      "module": "imports",
+      "file": "backend/app/api/imports.py",
+      "function": "upload_file",
+      "lineno": 19,
+      "end_lineno": 74,
+      "method": "POST",
+      "router_prefix": "/imports",
+      "subpath": "/upload",
+      "full_paths": [
+        "/api/imports/upload"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [
+        "scratch/upload_fixtures_to_server1.py"
+      ],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "imports",
+      "file": "backend/app/api/imports.py",
+      "function": "list_import_jobs",
+      "lineno": 78,
+      "end_lineno": 86,
+      "method": "GET",
+      "router_prefix": "/imports",
+      "subpath": "/jobs",
+      "full_paths": [
+        "/api/imports/jobs"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "imports",
+      "file": "backend/app/api/imports.py",
+      "function": "get_import_job",
+      "lineno": 90,
+      "end_lineno": 100,
+      "method": "GET",
+      "router_prefix": "/imports",
+      "subpath": "/jobs/{job_id}",
+      "full_paths": [
+        "/api/imports/jobs/{job_id}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "incidents",
+      "file": "backend/app/api/incidents.py",
+      "function": "list_incidents",
+      "lineno": 31,
+      "end_lineno": 66,
+      "method": "GET",
+      "router_prefix": "/incidents",
+      "subpath": "",
+      "full_paths": [
+        "/api/incidents"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/app/telemetry-hub/page.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py",
+        "backend/tests/test_ais_evaluation_tracking.py",
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_llm_offline_backlog.py",
+        "backend/tests/test_phase1_security_controls.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_telemetry_timeline_and_tokens.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_2_readiness_blind_review.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py",
+        "backend/tests/test_v1_2_targeted_verification.py"
+      ],
+      "script_refs": [
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_2_audit.py",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scripts/run_v1_2_2a_validation.mjs",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs",
+        "scratch/audit_all_historical_data.py",
+        "scratch/check_db_reviews.py",
+        "scratch/check_server1_prisma_incident.py",
+        "scratch/execute_gpu_pilot.py",
+        "scratch/execute_gpu_regression_ais_2_3a.py",
+        "scratch/execute_gpu_smoke.py",
+        "scratch/execute_live_5_pilot.py",
+        "scratch/generate_all_markdown_reports.py",
+        "scratch/probe_server1.py",
+        "scratch/run_full_ais_2_5a_live_benchmark.py",
+        "scratch/run_stage2_finish7.py",
+        "scratch/run_stage2_pilot.py",
+        "scratch/run_stage2_remaining15.py",
+        "scratch/test_one_incident.py",
+        "scratch/test_prisma_sample.py",
+        "scratch/test_resolution_query.py",
+        "scratch/trace_compaction_exact.py"
+      ],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "incidents",
+      "file": "backend/app/api/incidents.py",
+      "function": "get_incident_detail",
+      "lineno": 70,
+      "end_lineno": 113,
+      "method": "GET",
+      "router_prefix": "/incidents",
+      "subpath": "/{identifier}",
+      "full_paths": [
+        "/api/incidents/{identifier}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/app/telemetry-hub/page.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py",
+        "backend/tests/test_ais_evaluation_tracking.py",
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_llm_offline_backlog.py",
+        "backend/tests/test_phase1_security_controls.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_telemetry_timeline_and_tokens.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_2_readiness_blind_review.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py"
+      ],
+      "script_refs": [
+        "scripts/run_phase8_2_audit.py",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scripts/run_v1_2_2a_validation.mjs",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs",
+        "scratch/check_server1_prisma_incident.py",
+        "scratch/execute_gpu_pilot.py",
+        "scratch/execute_gpu_regression_ais_2_3a.py",
+        "scratch/execute_gpu_smoke.py",
+        "scratch/execute_live_5_pilot.py",
+        "scratch/generate_all_markdown_reports.py",
+        "scratch/probe_server1.py",
+        "scratch/run_full_ais_2_5a_live_benchmark.py",
+        "scratch/run_stage2_finish7.py",
+        "scratch/run_stage2_pilot.py",
+        "scratch/run_stage2_remaining15.py",
+        "scratch/test_one_incident.py",
+        "scratch/test_prisma_sample.py",
+        "scratch/trace_compaction_exact.py"
+      ],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "incidents",
+      "file": "backend/app/api/incidents.py",
+      "function": "get_incident_model_payload",
+      "lineno": 117,
+      "end_lineno": 152,
+      "method": "GET",
+      "router_prefix": "/incidents",
+      "subpath": "/{identifier}/model-payload",
+      "full_paths": [
+        "/api/incidents/{identifier}/model-payload"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_audit_remediations.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "incidents",
+      "file": "backend/app/api/incidents.py",
+      "function": "request_incident_ai_verdict",
+      "lineno": 156,
+      "end_lineno": 210,
+      "method": "POST",
+      "router_prefix": "/incidents",
+      "subpath": "/{identifier}/ai-verdict",
+      "full_paths": [
+        "/api/incidents/{identifier}/ai-verdict"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "require_analyst",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_llm_offline_backlog.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py"
+      ],
+      "script_refs": [
+        "scripts/run_phase8_2_audit.py",
+        "scratch/execute_gpu_pilot.py",
+        "scratch/execute_gpu_regression_ais_2_3a.py",
+        "scratch/execute_gpu_smoke.py",
+        "scratch/execute_live_5_pilot.py",
+        "scratch/generate_all_markdown_reports.py",
+        "scratch/run_full_ais_2_5a_live_benchmark.py",
+        "scratch/test_one_incident.py",
+        "scratch/test_prisma_sample.py"
+      ],
+      "auth_summary": "require_analyst, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "incidents",
+      "file": "backend/app/api/incidents.py",
+      "function": "get_incident_historical_timeline",
+      "lineno": 214,
+      "end_lineno": 235,
+      "method": "GET",
+      "router_prefix": "/incidents",
+      "subpath": "/{identifier}/timeline",
+      "full_paths": [
+        "/api/incidents/{identifier}/timeline"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py",
+        "backend/tests/test_telemetry_timeline_and_tokens.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "incidents",
+      "file": "backend/app/api/incidents.py",
+      "function": "purge_all_incidents_endpoint",
+      "lineno": 239,
+      "end_lineno": 254,
+      "method": "DELETE",
+      "router_prefix": "/incidents",
+      "subpath": "/purge-all",
+      "full_paths": [
+        "/api/incidents/purge-all"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "require_admin",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "require_admin, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "investigations",
+      "file": "backend/app/api/investigations.py",
+      "function": "list_investigations_queue",
+      "lineno": 29,
+      "end_lineno": 66,
+      "method": "GET",
+      "router_prefix": "/investigations",
+      "subpath": "/queue",
+      "full_paths": [
+        "/api/investigations/queue"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py",
+        "backend/tests/test_investigations.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "investigations",
+      "file": "backend/app/api/investigations.py",
+      "function": "get_investigation",
+      "lineno": 70,
+      "end_lineno": 120,
+      "method": "GET",
+      "router_prefix": "/investigations",
+      "subpath": "/{id}",
+      "full_paths": [
+        "/api/investigations/{id}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py",
+        "backend/tests/test_investigations.py",
+        "backend/tests/test_phase1_security_controls.py",
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "investigations",
+      "file": "backend/app/api/investigations.py",
+      "function": "get_investigation_by_incident",
+      "lineno": 124,
+      "end_lineno": 174,
+      "method": "GET",
+      "router_prefix": "/investigations",
+      "subpath": "/by-incident/{incident_id}",
+      "full_paths": [
+        "/api/investigations/by-incident/{incident_id}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_investigations.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "investigations",
+      "file": "backend/app/api/investigations.py",
+      "function": "assign_investigation",
+      "lineno": 178,
+      "end_lineno": 199,
+      "method": "POST",
+      "router_prefix": "/investigations",
+      "subpath": "/{id}/assign",
+      "full_paths": [
+        "/api/investigations/{id}/assign"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_investigations.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "investigations",
+      "file": "backend/app/api/investigations.py",
+      "function": "update_investigation_status",
+      "lineno": 203,
+      "end_lineno": 228,
+      "method": "POST",
+      "router_prefix": "/investigations",
+      "subpath": "/{id}/status",
+      "full_paths": [
+        "/api/investigations/{id}/status"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "investigations",
+      "file": "backend/app/api/investigations.py",
+      "function": "add_investigation_question",
+      "lineno": 232,
+      "end_lineno": 244,
+      "method": "POST",
+      "router_prefix": "/investigations",
+      "subpath": "/{id}/questions",
+      "full_paths": [
+        "/api/investigations/{id}/questions"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_investigations.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "investigations",
+      "file": "backend/app/api/investigations.py",
+      "function": "answer_investigation_question",
+      "lineno": 248,
+      "end_lineno": 259,
+      "method": "POST",
+      "router_prefix": "/investigations",
+      "subpath": "/questions/{question_id}/answer",
+      "full_paths": [
+        "/api/investigations/questions/{question_id}/answer"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_investigations.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "investigations",
+      "file": "backend/app/api/investigations.py",
+      "function": "attach_investigation_evidence",
+      "lineno": 263,
+      "end_lineno": 281,
+      "method": "POST",
+      "router_prefix": "/investigations",
+      "subpath": "/{id}/evidence",
+      "full_paths": [
+        "/api/investigations/{id}/evidence"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_investigations.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "investigations",
+      "file": "backend/app/api/investigations.py",
+      "function": "submit_investigation_verdict",
+      "lineno": 285,
+      "end_lineno": 318,
+      "method": "POST",
+      "router_prefix": "/investigations",
+      "subpath": "/{id}/verdict",
+      "full_paths": [
+        "/api/investigations/{id}/verdict"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_investigations.py",
+        "backend/tests/test_phase1_security_controls.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "learning",
+      "file": "backend/app/api/learning.py",
+      "function": "list_learning_records",
+      "lineno": 23,
+      "end_lineno": 51,
+      "method": "GET",
+      "router_prefix": "/learning",
+      "subpath": "/records",
+      "full_paths": [
+        "/api/learning/records"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_learning.py",
+        "backend/tests/test_phase1_security_controls.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "learning",
+      "file": "backend/app/api/learning.py",
+      "function": "get_learning_record",
+      "lineno": 55,
+      "end_lineno": 64,
+      "method": "GET",
+      "router_prefix": "/learning",
+      "subpath": "/records/{id}",
+      "full_paths": [
+        "/api/learning/records/{id}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase1_security_controls.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "learning",
+      "file": "backend/app/api/learning.py",
+      "function": "verify_learning_record",
+      "lineno": 68,
+      "end_lineno": 105,
+      "method": "PUT",
+      "router_prefix": "/learning",
+      "subpath": "/records/{id}/verify",
+      "full_paths": [
+        "/api/learning/records/{id}/verify"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [],
+      "test_refs": [
+        "backend/tests/test_phase1_security_controls.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "learning",
+      "file": "backend/app/api/learning.py",
+      "function": "find_similar_cases",
+      "lineno": 109,
+      "end_lineno": 116,
+      "method": "POST",
+      "router_prefix": "/learning",
+      "subpath": "/similar-cases",
+      "full_paths": [
+        "/api/learning/similar-cases"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_learning.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "learning",
+      "file": "backend/app/api/learning.py",
+      "function": "seed_historical_learning_records",
+      "lineno": 120,
+      "end_lineno": 143,
+      "method": "POST",
+      "router_prefix": "/learning",
+      "subpath": "/seed-historical",
+      "full_paths": [
+        "/api/learning/seed-historical"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_learning.py",
+        "backend/tests/test_phase1_security_controls.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "llm_config",
+      "file": "backend/app/api/llm_config.py",
+      "function": "get_llm_config",
+      "lineno": 16,
+      "end_lineno": 23,
+      "method": "GET",
+      "router_prefix": "/llm",
+      "subpath": "/config",
+      "full_paths": [
+        "/api/llm/config"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_llm_config.py"
+      ],
+      "script_refs": [
+        "scratch/probe_server1.py"
+      ],
+      "auth_summary": "get_current_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "llm_config",
+      "file": "backend/app/api/llm_config.py",
+      "function": "update_llm_config",
+      "lineno": 27,
+      "end_lineno": 45,
+      "method": "POST",
+      "router_prefix": "/llm",
+      "subpath": "/config",
+      "full_paths": [
+        "/api/llm/config"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_llm_config.py"
+      ],
+      "script_refs": [
+        "scratch/probe_server1.py"
+      ],
+      "auth_summary": "Public / Unauthenticated",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "llm_config",
+      "file": "backend/app/api/llm_config.py",
+      "function": "test_llm_connection",
+      "lineno": 49,
+      "end_lineno": 72,
+      "method": "POST",
+      "router_prefix": "/llm",
+      "subpath": "/test-connection",
+      "full_paths": [
+        "/api/llm/test-connection"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_llm_config.py"
+      ],
+      "script_refs": [
+        "scratch/build_stage1_manifests.py",
+        "scratch/generate_all_markdown_reports.py",
+        "scratch/probe_server1.py"
+      ],
+      "auth_summary": "Public / Unauthenticated",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "get_pilot_config",
+      "lineno": 33,
+      "end_lineno": 40,
+      "method": "GET",
+      "router_prefix": "/pilot",
+      "subpath": "/config",
+      "full_paths": [
+        "/api/pilot/config"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "update_pilot_config",
+      "lineno": 44,
+      "end_lineno": 52,
+      "method": "PUT",
+      "router_prefix": "/pilot",
+      "subpath": "/config",
+      "full_paths": [
+        "/api/pilot/config"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "activate_pilot",
+      "lineno": 56,
+      "end_lineno": 64,
+      "method": "POST",
+      "router_prefix": "/pilot",
+      "subpath": "/activate",
+      "full_paths": [
+        "/api/pilot/activate"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "pause_pilot",
+      "lineno": 68,
+      "end_lineno": 76,
+      "method": "POST",
+      "router_prefix": "/pilot",
+      "subpath": "/pause",
+      "full_paths": [
+        "/api/pilot/pause"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "resume_pilot",
+      "lineno": 80,
+      "end_lineno": 91,
+      "method": "POST",
+      "router_prefix": "/pilot",
+      "subpath": "/resume",
+      "full_paths": [
+        "/api/pilot/resume"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "disable_pilot",
+      "lineno": 95,
+      "end_lineno": 103,
+      "method": "POST",
+      "router_prefix": "/pilot",
+      "subpath": "/disable",
+      "full_paths": [
+        "/api/pilot/disable"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "rollback_pilot",
+      "lineno": 107,
+      "end_lineno": 118,
+      "method": "POST",
+      "router_prefix": "/pilot",
+      "subpath": "/rollback",
+      "full_paths": [
+        "/api/pilot/rollback"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "get_pilot_history",
+      "lineno": 122,
+      "end_lineno": 144,
+      "method": "GET",
+      "router_prefix": "/pilot",
+      "subpath": "/history",
+      "full_paths": [
+        "/api/pilot/history"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "get_pilot_audit_logs",
+      "lineno": 148,
+      "end_lineno": 174,
+      "method": "GET",
+      "router_prefix": "/pilot",
+      "subpath": "/audit",
+      "full_paths": [
+        "/api/pilot/audit"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "run_pilot_single_incident",
+      "lineno": 178,
+      "end_lineno": 195,
+      "method": "POST",
+      "router_prefix": "/pilot",
+      "subpath": "/evaluate/{incident_id}",
+      "full_paths": [
+        "/api/pilot/evaluate/{incident_id}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [],
+      "test_refs": [
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "run_pilot_batch",
+      "lineno": 199,
+      "end_lineno": 206,
+      "method": "POST",
+      "router_prefix": "/pilot",
+      "subpath": "/run-batch",
+      "full_paths": [
+        "/api/pilot/run-batch"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "list_pilot_evaluations",
+      "lineno": 281,
+      "end_lineno": 310,
+      "method": "GET",
+      "router_prefix": "/pilot",
+      "subpath": "/evaluations",
+      "full_paths": [
+        "/api/pilot/evaluations"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "submit_pilot_analyst_feedback",
+      "lineno": 328,
+      "end_lineno": 340,
+      "method": "POST",
+      "router_prefix": "/pilot",
+      "subpath": "/evaluations/{evaluation_id}/feedback",
+      "full_paths": [
+        "/api/pilot/evaluations/{evaluation_id}/feedback"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "supervisor_verify_pilot_feedback",
+      "lineno": 344,
+      "end_lineno": 356,
+      "method": "POST",
+      "router_prefix": "/pilot",
+      "subpath": "/evaluations/{evaluation_id}/supervisor-verify",
+      "full_paths": [
+        "/api/pilot/evaluations/{evaluation_id}/supervisor-verify"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "get_pilot_metrics",
+      "lineno": 360,
+      "end_lineno": 366,
+      "method": "GET",
+      "router_prefix": "/pilot",
+      "subpath": "/metrics",
+      "full_paths": [
+        "/api/pilot/metrics"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "pilot",
+      "file": "backend/app/api/pilot.py",
+      "function": "get_pilot_eligibility_report",
+      "lineno": 370,
+      "end_lineno": 385,
+      "method": "GET",
+      "router_prefix": "/pilot",
+      "subpath": "/eligibility-report",
+      "full_paths": [
+        "/api/pilot/eligibility-report"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [],
+      "test_refs": [
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_rule_prompts_summary",
+      "lineno": 92,
+      "end_lineno": 274,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/summary",
+      "full_paths": [
+        "/api/prompts/summary",
+        "/api/v1/prompts/summary"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_production_readiness_engine.py",
+        "backend/tests/test_v1_2_targeted_verification.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_rule_production_readiness",
+      "lineno": 278,
+      "end_lineno": 305,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/readiness",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/readiness",
+        "/api/v1/prompts/rule/{rule_id}/readiness"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_production_readiness_engine.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_3a_reconciliation.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py"
+      ],
+      "script_refs": [
+        "scripts/remote_test_server1.py",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs"
+      ],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "export_all_rule_prompts",
+      "lineno": 309,
+      "end_lineno": 324,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/export",
+      "full_paths": [
+        "/api/prompts/export",
+        "/api/v1/prompts/export"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_prompt_studio.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_policy_quality_summary",
+      "lineno": 328,
+      "end_lineno": 337,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/quality/summary",
+      "full_paths": [
+        "/api/prompts/quality/summary",
+        "/api/v1/prompts/quality/summary"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "start_bulk_quality_audit",
+      "lineno": 341,
+      "end_lineno": 361,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/quality/bulk-assess",
+      "full_paths": [
+        "/api/prompts/quality/bulk-assess",
+        "/api/v1/prompts/quality/bulk-assess"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_bulk_quality_audit_status",
+      "lineno": 365,
+      "end_lineno": 393,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/quality/bulk-assess/{job_id}",
+      "full_paths": [
+        "/api/prompts/quality/bulk-assess/{job_id}",
+        "/api/v1/prompts/quality/bulk-assess/{job_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_rule_prompt",
+      "lineno": 397,
+      "end_lineno": 434,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}",
+        "/api/v1/prompts/rule/{rule_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_agent_intelligence_studio_v2.py",
+        "backend/tests/test_ais_2_1_remediation.py",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_policy_version_governance.py",
+        "backend/tests/test_production_readiness_engine.py",
+        "backend/tests/test_prompt_studio.py",
+        "backend/tests/test_v1_2_1_readiness_integrity.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_3a_reconciliation.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py",
+        "backend/tests/test_v1_2_targeted_verification.py",
+        "backend/tests/test_verdict_intelligence_validation.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
+      ],
+      "script_refs": [
+        "scripts/remote_test_server1.py",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs",
+        "scripts/test_tracking_endpoint_remote.py",
+        "scratch/build_stage1_manifests.py",
+        "scratch/check_server1_rule_prompt.py",
+        "scratch/reproduce_server1_prisma.py",
+        "scratch/trace_compaction_exact.py"
+      ],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_rule_intelligence",
+      "lineno": 447,
+      "end_lineno": 469,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/intelligence",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/intelligence",
+        "/api/v1/prompts/rule/{rule_id}/intelligence"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_2_remediation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "analyze_rule_intelligence",
+      "lineno": 473,
+      "end_lineno": 499,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/analyze",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/analyze",
+        "/api/v1/prompts/rule/{rule_id}/analyze"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_agent_intelligence_studio_v2.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "generate_intelligent_draft",
+      "lineno": 503,
+      "end_lineno": 534,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/generate-intelligent-draft",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/generate-intelligent-draft",
+        "/api/v1/prompts/rule/{rule_id}/generate-intelligent-draft"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_agent_intelligence_studio_v2.py",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_v1_2_1_readiness_integrity.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "list_stored_policy_assessments",
+      "lineno": 681,
+      "end_lineno": 732,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/assessments",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/assessments",
+        "/api/v1/prompts/rule/{rule_id}/assessments"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [],
+      "test_refs": [
+        "backend/tests/test_ais_2_2_remediation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "preview_policy_quality",
+      "lineno": 736,
+      "end_lineno": 744,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/quality-preview",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/quality-preview",
+        "/api/v1/prompts/rule/{rule_id}/quality-preview"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_1_remediation.py",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py"
+      ],
+      "script_refs": [
+        "scripts/run_remote_acceptance_15_scenarios.py"
+      ],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "validate_policy_quality",
+      "lineno": 748,
+      "end_lineno": 783,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/validate-quality",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/validate-quality",
+        "/api/v1/prompts/rule/{rule_id}/validate-quality"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_agent_intelligence_studio_v2.py",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "evaluate_policy_simulation",
+      "lineno": 787,
+      "end_lineno": 846,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/evaluate-simulation",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/evaluate-simulation",
+        "/api/v1/prompts/rule/{rule_id}/evaluate-simulation"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_1_remediation.py",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_verdict_intelligence_validation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_rule_drift_events",
+      "lineno": 850,
+      "end_lineno": 872,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/drift",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/drift",
+        "/api/v1/prompts/rule/{rule_id}/drift"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "acknowledge_drift_events",
+      "lineno": 876,
+      "end_lineno": 891,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/acknowledge-drift",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/acknowledge-drift",
+        "/api/v1/prompts/rule/{rule_id}/acknowledge-drift"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "export_single_rule_prompt",
+      "lineno": 895,
+      "end_lineno": 913,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/export",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/export",
+        "/api/v1/prompts/rule/{rule_id}/export"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_prompt_studio.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "generate_template_draft",
+      "lineno": 917,
+      "end_lineno": 938,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/generate-draft",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/generate-draft",
+        "/api/v1/prompts/rule/{rule_id}/generate-draft"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "create_manual_draft",
+      "lineno": 942,
+      "end_lineno": 964,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/draft",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/draft",
+        "/api/v1/prompts/rule/{rule_id}/draft"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_prompt_studio.py",
+        "backend/tests/test_v1_2_targeted_verification.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "approve_prompt_version",
+      "lineno": 988,
+      "end_lineno": 1014,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/approve/{version_id}",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/approve/{version_id}",
+        "/api/v1/prompts/rule/{rule_id}/approve/{version_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_agent_intelligence_studio_v2.py",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_production_readiness_engine.py",
+        "backend/tests/test_prompt_studio.py",
+        "backend/tests/test_v1_2_1_readiness_integrity.py",
+        "backend/tests/test_v1_2_targeted_verification.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
+      ],
+      "script_refs": [
+        "scripts/run_v1_2_3_validation.mjs"
+      ],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "rollback_prompt_version",
+      "lineno": 1018,
+      "end_lineno": 1040,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/rollback/{version_id}",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/rollback/{version_id}",
+        "/api/v1/prompts/rule/{rule_id}/rollback/{version_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_prompt_studio.py",
+        "backend/tests/test_v1_2_targeted_verification.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "activate_approved_prompt_version",
+      "lineno": 1044,
+      "end_lineno": 1088,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/activate-approved/{version_id}",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/activate-approved/{version_id}",
+        "/api/v1/prompts/rule/{rule_id}/activate-approved/{version_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "revoke_prompt_version",
+      "lineno": 1092,
+      "end_lineno": 1139,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/version/{version_id}/revoke",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/version/{version_id}/revoke",
+        "/api/v1/prompts/rule/{rule_id}/version/{version_id}/revoke"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_policy_version_governance.py",
+        "backend/tests/test_v1_2_targeted_verification.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_rule_version_history",
+      "lineno": 1143,
+      "end_lineno": 1152,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/version-history",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/version-history",
+        "/api/v1/prompts/rule/{rule_id}/version-history"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_version_deletion_preview",
+      "lineno": 1156,
+      "end_lineno": 1165,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/version/{version_id}/deletion-preview",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/version/{version_id}/deletion-preview",
+        "/api/v1/prompts/rule/{rule_id}/version/{version_id}/deletion-preview"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "delete_policy_version",
+      "lineno": 1169,
+      "end_lineno": 1186,
+      "method": "DELETE",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/version/{version_id}",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/version/{version_id}",
+        "/api/v1/prompts/rule/{rule_id}/version/{version_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_policy_version_governance.py",
+        "backend/tests/test_v1_2_targeted_verification.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "archive_policy_version",
+      "lineno": 1190,
+      "end_lineno": 1208,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/version/{version_id}/archive",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/version/{version_id}/archive",
+        "/api/v1/prompts/rule/{rule_id}/version/{version_id}/archive"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "restore_policy_version",
+      "lineno": 1212,
+      "end_lineno": 1227,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/version/{version_id}/restore",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/version/{version_id}/restore",
+        "/api/v1/prompts/rule/{rule_id}/version/{version_id}/restore"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "bulk_delete_policy_versions",
+      "lineno": 1231,
+      "end_lineno": 1247,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/versions/bulk-delete",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/versions/bulk-delete",
+        "/api/v1/prompts/rule/{rule_id}/versions/bulk-delete"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "resume_rule_ai_execution",
+      "lineno": 1251,
+      "end_lineno": 1273,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/resume-ai",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/resume-ai",
+        "/api/v1/prompts/rule/{rule_id}/resume-ai"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "suspend_rule_ai_execution",
+      "lineno": 1277,
+      "end_lineno": 1300,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/suspend-ai",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/suspend-ai",
+        "/api/v1/prompts/rule/{rule_id}/suspend-ai"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_rule_policy_eligibility",
+      "lineno": 1304,
+      "end_lineno": 1376,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/rule/{rule_id}/eligibility",
+      "full_paths": [
+        "/api/prompts/rule/{rule_id}/eligibility",
+        "/api/v1/prompts/rule/{rule_id}/eligibility"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_actual_prompt_for_incident",
+      "lineno": 1384,
+      "end_lineno": 1647,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/actual-prompt/incident/{incident_id}",
+      "full_paths": [
+        "/api/prompts/actual-prompt/incident/{incident_id}",
+        "/api/v1/prompts/actual-prompt/incident/{incident_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_actual_prompt_inspector.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py"
+      ],
+      "script_refs": [
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scratch/fetch_server1_actual_prompt.py"
+      ],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_incident_actual_prompt_executions",
+      "lineno": 1651,
+      "end_lineno": 1680,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/actual-prompt/incident/{incident_id}/executions",
+      "full_paths": [
+        "/api/prompts/actual-prompt/incident/{incident_id}/executions",
+        "/api/v1/prompts/actual-prompt/incident/{incident_id}/executions"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_actual_prompt_inspector.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_rule_prompt_captures",
+      "lineno": 1684,
+      "end_lineno": 1698,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/actual-prompt/rule/{rule_id}/captures",
+      "full_paths": [
+        "/api/prompts/actual-prompt/rule/{rule_id}/captures",
+        "/api/v1/prompts/actual-prompt/rule/{rule_id}/captures"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_actual_prompt_inspector.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "get_prompt_preview_for_rule",
+      "lineno": 1702,
+      "end_lineno": 1833,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/actual-prompt/rule/{rule_id}/preview",
+      "full_paths": [
+        "/api/prompts/actual-prompt/rule/{rule_id}/preview",
+        "/api/v1/prompts/actual-prompt/rule/{rule_id}/preview"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_actual_prompt_inspector.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "export_actual_prompt_for_incident",
+      "lineno": 1837,
+      "end_lineno": 1927,
+      "method": "GET",
+      "router_prefix": "/prompts",
+      "subpath": "/actual-prompt/incident/{incident_id}/export",
+      "full_paths": [
+        "/api/prompts/actual-prompt/incident/{incident_id}/export",
+        "/api/v1/prompts/actual-prompt/incident/{incident_id}/export"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_actual_prompt_inspector.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py"
+      ],
+      "script_refs": [
+        "scripts/run_v1_2_2b_validation.mjs"
+      ],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "prompts",
+      "file": "backend/app/api/prompts.py",
+      "function": "cleanup_prompt_captures",
+      "lineno": 1931,
+      "end_lineno": 1946,
+      "method": "POST",
+      "router_prefix": "/prompts",
+      "subpath": "/actual-prompt/retention/cleanup",
+      "full_paths": [
+        "/api/prompts/actual-prompt/retention/cleanup",
+        "/api/v1/prompts/actual-prompt/retention/cleanup"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [],
+      "test_refs": [
+        "backend/tests/test_actual_prompt_inspector.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ADMINISTRATIVE",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "list_rule_learning_profiles",
+      "lineno": 201,
+      "end_lineno": 253,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/learning/rules",
+      "full_paths": [
+        "/api/learning/rules",
+        "/api/v1/learning/rules"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_422_remediation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "get_rule_learning_profile",
+      "lineno": 257,
+      "end_lineno": 278,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/learning/rules/{rule_id}",
+      "full_paths": [
+        "/api/learning/rules/{rule_id}",
+        "/api/v1/learning/rules/{rule_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_422_remediation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "evaluate_rule_accuracy",
+      "lineno": 282,
+      "end_lineno": 300,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/learning/rules/{rule_id}/evaluate-accuracy",
+      "full_paths": [
+        "/api/learning/rules/{rule_id}/evaluate-accuracy",
+        "/api/v1/learning/rules/{rule_id}/evaluate-accuracy"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "get_rule_learning_history",
+      "lineno": 304,
+      "end_lineno": 339,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/learning/rules/{rule_id}/history",
+      "full_paths": [
+        "/api/learning/rules/{rule_id}/history",
+        "/api/v1/learning/rules/{rule_id}/history"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "initialize_rule_learning_profile",
+      "lineno": 343,
+      "end_lineno": 358,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/learning/rules/{rule_id}/initialize",
+      "full_paths": [
+        "/api/learning/rules/{rule_id}/initialize",
+        "/api/v1/learning/rules/{rule_id}/initialize"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "initialize_all_rule_profiles",
+      "lineno": 362,
+      "end_lineno": 375,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/learning/rules/initialize-all",
+      "full_paths": [
+        "/api/learning/rules/initialize-all",
+        "/api/v1/learning/rules/initialize-all"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_admin"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_admin",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "suggest_prompt_improvement",
+      "lineno": 379,
+      "end_lineno": 399,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/learning/rules/{rule_id}/suggest-prompt-improvement",
+      "full_paths": [
+        "/api/learning/rules/{rule_id}/suggest-prompt-improvement",
+        "/api/v1/learning/rules/{rule_id}/suggest-prompt-improvement"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "transition_rule_stage",
+      "lineno": 403,
+      "end_lineno": 447,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/learning/rules/{rule_id}/transition",
+      "full_paths": [
+        "/api/learning/rules/{rule_id}/transition",
+        "/api/v1/learning/rules/{rule_id}/transition"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_422_remediation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "get_pending_analyst_reviews",
+      "lineno": 451,
+      "end_lineno": 479,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/reviews/pending",
+      "full_paths": [
+        "/api/reviews/pending",
+        "/api/v1/reviews/pending"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_422_remediation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "submit_analyst_review",
+      "lineno": 483,
+      "end_lineno": 515,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/reviews/{incident_id}/submit",
+      "full_paths": [
+        "/api/reviews/{incident_id}/submit",
+        "/api/v1/reviews/{incident_id}/submit"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_422_remediation.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_2_readiness_blind_review.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py",
+        "backend/tests/test_v1_2_targeted_verification.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "adjudicate_review",
+      "lineno": 519,
+      "end_lineno": 546,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/reviews/{review_id}/adjudicate",
+      "full_paths": [
+        "/api/reviews/{review_id}/adjudicate",
+        "/api/v1/reviews/{review_id}/adjudicate"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "list_promotion_requests",
+      "lineno": 550,
+      "end_lineno": 566,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/governance/promotion/requests",
+      "full_paths": [
+        "/api/governance/promotion/requests",
+        "/api/v1/governance/promotion/requests"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "request_rule_promotion",
+      "lineno": 570,
+      "end_lineno": 619,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/governance/promotion/request",
+      "full_paths": [
+        "/api/governance/promotion/request",
+        "/api/v1/governance/promotion/request"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_422_remediation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "decide_rule_promotion",
+      "lineno": 623,
+      "end_lineno": 659,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/governance/promotion/decide",
+      "full_paths": [
+        "/api/governance/promotion/decide",
+        "/api/v1/governance/promotion/decide"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "get_automation_policy",
+      "lineno": 663,
+      "end_lineno": 704,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/governance/automation/policy/{rule_id}",
+      "full_paths": [
+        "/api/governance/automation/policy/{rule_id}",
+        "/api/v1/governance/automation/policy/{rule_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "update_automation_policy",
+      "lineno": 708,
+      "end_lineno": 738,
+      "method": "PUT",
+      "router_prefix": "",
+      "subpath": "/governance/automation/policy/{rule_id}",
+      "full_paths": [
+        "/api/governance/automation/policy/{rule_id}",
+        "/api/v1/governance/automation/policy/{rule_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "execute_governed_automation_decision",
+      "lineno": 742,
+      "end_lineno": 770,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/governance/automation/decide/{incident_id}",
+      "full_paths": [
+        "/api/governance/automation/decide/{incident_id}",
+        "/api/v1/governance/automation/decide/{incident_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "list_automation_audits",
+      "lineno": 774,
+      "end_lineno": 810,
+      "method": "GET",
+      "router_prefix": "",
+      "subpath": "/governance/automation/audits",
+      "full_paths": [
+        "/api/governance/automation/audits",
+        "/api/v1/governance/automation/audits"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rule_learning",
+      "file": "backend/app/api/rule_learning.py",
+      "function": "emergency_disable_all_automation",
+      "lineno": 814,
+      "end_lineno": 842,
+      "method": "POST",
+      "router_prefix": "",
+      "subpath": "/governance/automation/emergency-disable",
+      "full_paths": [
+        "/api/governance/automation/emergency-disable",
+        "/api/v1/governance/automation/emergency-disable"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "rules",
+      "file": "backend/app/api/rules.py",
+      "function": "list_rules",
+      "lineno": 25,
+      "end_lineno": 230,
+      "method": "GET",
+      "router_prefix": "/rules",
+      "subpath": "",
+      "full_paths": [
+        "/api/rules"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts",
+        "frontend/src/data/admin-guide/studioGuideData.ts",
+        "frontend/src/app/telemetry-hub/page.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_evaluation_tracking.py",
+        "backend/tests/test_api_422_remediation.py",
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_calibration_and_evaluation.py",
+        "backend/tests/test_phase1_security_controls.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_production_readiness_engine.py",
+        "backend/tests/test_v1_2_targeted_verification.py"
+      ],
+      "script_refs": [
+        "scripts/execute_single_inference_test.py",
+        "scripts/remote_test_server1.py",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scripts/test_tracking_endpoint_remote.py",
+        "scratch/generate_all_markdown_reports.py",
+        "scratch/query_db_rule_stats.py",
+        "scratch/trace_compaction_exact.py"
+      ],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "rules",
+      "file": "backend/app/api/rules.py",
+      "function": "get_rule_stats",
+      "lineno": 234,
+      "end_lineno": 292,
+      "method": "GET",
+      "router_prefix": "/rules",
+      "subpath": "/stats",
+      "full_paths": [
+        "/api/rules/stats"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_api_endpoints.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "rules",
+      "file": "backend/app/api/rules.py",
+      "function": "sync_rules_from_fortisiem",
+      "lineno": 296,
+      "end_lineno": 307,
+      "method": "POST",
+      "router_prefix": "/rules",
+      "subpath": "/sync/fortisiem",
+      "full_paths": [
+        "/api/rules/sync/fortisiem"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [],
+      "test_refs": [
+        "backend/tests/test_phase1_security_controls.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ADMINISTRATIVE",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "rules",
+      "file": "backend/app/api/rules.py",
+      "function": "get_rule_detail",
+      "lineno": 311,
+      "end_lineno": 348,
+      "method": "GET",
+      "router_prefix": "/rules",
+      "subpath": "/{identifier}",
+      "full_paths": [
+        "/api/rules/{identifier}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts",
+        "frontend/src/data/admin-guide/studioGuideData.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_evaluation_tracking.py",
+        "backend/tests/test_api_422_remediation.py",
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_calibration_and_evaluation.py",
+        "backend/tests/test_phase1_security_controls.py"
+      ],
+      "script_refs": [
+        "scripts/execute_single_inference_test.py",
+        "scripts/test_tracking_endpoint_remote.py",
+        "scratch/generate_all_markdown_reports.py",
+        "scratch/trace_compaction_exact.py"
+      ],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "rules",
+      "file": "backend/app/api/rules.py",
+      "function": "get_rule_compiled_policy",
+      "lineno": 352,
+      "end_lineno": 372,
+      "method": "GET",
+      "router_prefix": "/rules",
+      "subpath": "/{identifier}/compiled-policy",
+      "full_paths": [
+        "/api/rules/{identifier}/compiled-policy"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "rules",
+      "file": "backend/app/api/rules.py",
+      "function": "get_rule_calibration_report",
+      "lineno": 376,
+      "end_lineno": 394,
+      "method": "GET",
+      "router_prefix": "/rules",
+      "subpath": "/{identifier}/calibration-report",
+      "full_paths": [
+        "/api/rules/{identifier}/calibration-report"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [],
+      "test_refs": [
+        "backend/tests/test_calibration_and_evaluation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "rules",
+      "file": "backend/app/api/rules.py",
+      "function": "import_rule_definition",
+      "lineno": 403,
+      "end_lineno": 422,
+      "method": "POST",
+      "router_prefix": "/rules",
+      "subpath": "/{identifier}/import-definition",
+      "full_paths": [
+        "/api/rules/{identifier}/import-definition"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/data/admin-guide/requirementsData.ts",
+        "frontend/src/data/admin-guide/studioGuideData.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "system_monitor",
+      "file": "backend/app/api/system_monitor.py",
+      "function": "get_live_server_metrics",
+      "lineno": 14,
+      "end_lineno": 20,
+      "method": "GET",
+      "router_prefix": "/system/servers",
+      "subpath": "/live",
+      "full_paths": [
+        "/api/system/servers/live"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_system_monitor.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "system_monitor",
+      "file": "backend/app/api/system_monitor.py",
+      "function": "get_historical_server_metrics",
+      "lineno": 24,
+      "end_lineno": 33,
+      "method": "GET",
+      "router_prefix": "/system/servers",
+      "subpath": "/history",
+      "full_paths": [
+        "/api/system/servers/history"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_system_monitor.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "telemetry",
+      "file": "backend/app/api/telemetry.py",
+      "function": "get_global_telemetry_timeline",
+      "lineno": 14,
+      "end_lineno": 24,
+      "method": "GET",
+      "router_prefix": "/telemetry",
+      "subpath": "/timeline",
+      "full_paths": [
+        "/api/telemetry/timeline"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_telemetry_timeline_and_tokens.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "tokens",
+      "file": "backend/app/api/tokens.py",
+      "function": "get_token_analytics",
+      "lineno": 14,
+      "end_lineno": 33,
+      "method": "GET",
+      "router_prefix": "/tokens",
+      "subpath": "/analytics",
+      "full_paths": [
+        "/api/tokens/analytics"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_current_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_telemetry_timeline_and_tokens.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_current_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "users",
+      "file": "backend/app/api/users.py",
+      "function": "list_users",
+      "lineno": 17,
+      "end_lineno": 23,
+      "method": "GET",
+      "router_prefix": "/users",
+      "subpath": "",
+      "full_paths": [
+        "/api/users"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_admin_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_auth.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_admin_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "users",
+      "file": "backend/app/api/users.py",
+      "function": "create_user",
+      "lineno": 27,
+      "end_lineno": 67,
+      "method": "POST",
+      "router_prefix": "/users",
+      "subpath": "",
+      "full_paths": [
+        "/api/users"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_admin_user",
+        "get_db"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_auth.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_admin_user, get_db",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "RETAIN"
+    },
+    {
+      "module": "users",
+      "file": "backend/app/api/users.py",
+      "function": "update_user",
+      "lineno": 71,
+      "end_lineno": 105,
+      "method": "PATCH",
+      "router_prefix": "/users",
+      "subpath": "/{user_id}",
+      "full_paths": [
+        "/api/users/{user_id}"
+      ],
+      "mounts": [
+        "/api"
+      ],
+      "auth_deps": [
+        "get_admin_user",
+        "get_db"
+      ],
+      "fe_refs": [],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_admin_user, get_db",
+      "status": "POTENTIALLY_UNUSED",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "evaluate_incident_trust",
+      "lineno": 63,
+      "end_lineno": 193,
+      "method": "POST",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/evaluate-incident-trust",
+      "full_paths": [
+        "/api/verdict-intelligence/evaluate-incident-trust",
+        "/api/v1/verdict-intelligence/evaluate-incident-trust"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_audit_remediations.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "evaluate_incident_trust",
+      "lineno": 63,
+      "end_lineno": 193,
+      "method": "POST",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/evaluate-incident",
+      "full_paths": [
+        "/api/verdict-intelligence/evaluate-incident",
+        "/api/v1/verdict-intelligence/evaluate-incident"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_verdict_intelligence_validation.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "get_incident_trust",
+      "lineno": 197,
+      "end_lineno": 259,
+      "method": "GET",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/incident/{incident_id}/trust",
+      "full_paths": [
+        "/api/verdict-intelligence/incident/{incident_id}/trust",
+        "/api/v1/verdict-intelligence/incident/{incident_id}/trust"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "start_historical_evaluation",
+      "lineno": 267,
+      "end_lineno": 324,
+      "method": "POST",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/dry-run/evaluate",
+      "full_paths": [
+        "/api/verdict-intelligence/dry-run/evaluate",
+        "/api/v1/verdict-intelligence/dry-run/evaluate"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "list_evaluation_runs",
+      "lineno": 391,
+      "end_lineno": 421,
+      "method": "GET",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/dry-run/runs",
+      "full_paths": [
+        "/api/verdict-intelligence/dry-run/runs",
+        "/api/v1/verdict-intelligence/dry-run/runs"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "get_evaluation_run_details",
+      "lineno": 425,
+      "end_lineno": 488,
+      "method": "GET",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/dry-run/runs/{run_id}",
+      "full_paths": [
+        "/api/verdict-intelligence/dry-run/runs/{run_id}",
+        "/api/v1/verdict-intelligence/dry-run/runs/{run_id}"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "compare_evaluation_runs",
+      "lineno": 496,
+      "end_lineno": 507,
+      "method": "GET",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/dry-run/compare",
+      "full_paths": [
+        "/api/verdict-intelligence/dry-run/compare",
+        "/api/v1/verdict-intelligence/dry-run/compare"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "get_verdict_trust_overview",
+      "lineno": 516,
+      "end_lineno": 562,
+      "method": "GET",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/metrics/summary",
+      "full_paths": [
+        "/api/verdict-intelligence/metrics/summary",
+        "/api/v1/verdict-intelligence/metrics/summary"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "get_verdict_trust_overview",
+      "lineno": 516,
+      "end_lineno": 562,
+      "method": "GET",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/metrics",
+      "full_paths": [
+        "/api/verdict-intelligence/metrics",
+        "/api/v1/verdict-intelligence/metrics"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_verdict_intelligence_validation.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "get_rule_wise_trustworthiness",
+      "lineno": 566,
+      "end_lineno": 643,
+      "method": "GET",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/metrics/rule-wise",
+      "full_paths": [
+        "/api/verdict-intelligence/metrics/rule-wise",
+        "/api/v1/verdict-intelligence/metrics/rule-wise"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "get_historical_eligibility_report",
+      "lineno": 647,
+      "end_lineno": 667,
+      "method": "GET",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/eligibility-report",
+      "full_paths": [
+        "/api/verdict-intelligence/eligibility-report",
+        "/api/v1/verdict-intelligence/eligibility-report"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "get_current_active_user"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts",
+        "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx"
+      ],
+      "test_refs": [
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, get_current_active_user",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "get_integration_diagnostics",
+      "lineno": 671,
+      "end_lineno": 691,
+      "method": "GET",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/integration-diagnostics",
+      "full_paths": [
+        "/api/verdict-intelligence/integration-diagnostics",
+        "/api/v1/verdict-intelligence/integration-diagnostics"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [],
+      "test_refs": [
+        "backend/tests/test_ais_2_3_remediation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ADMINISTRATIVE",
+      "recommended_action": "VERIFY_FIRST"
+    },
+    {
+      "module": "verdict_intelligence",
+      "file": "backend/app/api/verdict_intelligence.py",
+      "function": "export_evaluation_report",
+      "lineno": 699,
+      "end_lineno": 778,
+      "method": "GET",
+      "router_prefix": "/verdict-intelligence",
+      "subpath": "/export",
+      "full_paths": [
+        "/api/verdict-intelligence/export",
+        "/api/v1/verdict-intelligence/export"
+      ],
+      "mounts": [
+        "/api",
+        "/api/v1"
+      ],
+      "auth_deps": [
+        "get_db",
+        "require_analyst"
+      ],
+      "fe_refs": [
+        "frontend/src/lib/api.ts"
+      ],
+      "test_refs": [
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_verdict_intelligence_validation.py"
+      ],
+      "script_refs": [],
+      "auth_summary": "get_db, require_analyst",
+      "status": "ACTIVELY_USED",
+      "recommended_action": "VERIFY_DUAL_PREFIX_REMOVAL (/api/v1)"
+    }
+  ],
+  "fe_api_ts_paths": [
+    "/api",
+    "/login"
+  ]
+}

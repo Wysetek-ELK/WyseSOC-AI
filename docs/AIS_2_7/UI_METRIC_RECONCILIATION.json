@@ -1,0 +1,52 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:27:21.735719+00:00",
+  "authoritative_endpoints_queried": [
+    "GET /api/verdict-intelligence/metrics",
+    "GET /api/verdict-intelligence/metrics/rule-wise",
+    "GET /api/verdict-intelligence/integration-diagnostics",
+    "GET /api/ground-truth/cohorts/AIS_2_6E_FROZEN_20/audit",
+    "GET /api/ais/rules/0974a66e-ede2-4a6a-821b-6283a99c8aa4/evaluation-status",
+    "GET /api/ais/rules/14481ebd-4e8c-421e-8579-b6ee7995b746/evaluation-status"
+  ],
+  "verdict_intelligence_operational_ui": {
+    "total_evaluated_incidents": 200,
+    "true_positive_recommendations": 0,
+    "false_positive_recommendations": 0,
+    "analyst_attention_decisions": 200,
+    "low_trust_verdicts_count": 200,
+    "average_trust_score": 5.3,
+    "average_sufficiency_score": 90.3,
+    "crowdstrike_rule_ui": {
+      "rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "archetype": "MALWARE_EXECUTION",
+      "incident_count": 44,
+      "average_trust_score": 4.8,
+      "evidence_sufficiency": 89.5,
+      "measured_accuracy": null,
+      "tp_recall": null,
+      "fp_specificity": null,
+      "abstention_rate": 100.0,
+      "validation_status": "UNCALIBRATED"
+    },
+    "prisma_rule_ui": {
+      "rule_id": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "archetype": "UNKNOWN",
+      "incident_count": 23,
+      "average_trust_score": 3.1,
+      "evidence_sufficiency": 89.5,
+      "measured_accuracy": null,
+      "tp_recall": null,
+      "fp_specificity": null,
+      "abstention_rate": 100.0,
+      "validation_status": "UNCALIBRATED"
+    }
+  },
+  "reconciliation_findings": [
+    "Operational Verdict Intelligence reports 0 TP / 0 FP and 200 REQUIRES_ANALYST_ATTENTION because ALL 200 historical incidents have trust_score in [3..6] (strictly below automated threshold 7), matching AIS 2.7 Mode C where effective_trust_verdict=REQUIRES_ANALYST_ATTENTION for 20/20 cohort incidents (CS trust 5-6, Prisma trust 3).",
+    "Verdict Intelligence reports measured_accuracy=null and validation_status='UNCALIBRATED' for both rules, confirming Server 1 does NOT conflate uncalibrated operational scores with GT-2 benchmark accuracy and that AIS 2.7 remained strictly isolated from operational DB state.",
+    "AIS Rule Evaluation Tracking endpoints (/api/ais/rules/.../evaluation-status) track legacy triage history separately from isolated GT-2 benchmark runs."
+  ]
+}

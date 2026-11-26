@@ -1,0 +1,2946 @@
+{
+  "redirects": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://127.0.0.1:8000/api/:path*"
+    },
+    {
+      "source": "/incidents",
+      "destination": "/ai-triage-workbench"
+    },
+    {
+      "source": "/incidents/:id",
+      "destination": "/ai-triage-workbench/:id"
+    },
+    {
+      "source": "/imports",
+      "destination": "/telemetry-hub"
+    },
+    {
+      "source": "/rules",
+      "destination": "/detection-intelligence"
+    },
+    {
+      "source": "/rules/:id",
+      "destination": "/detection-intelligence/:id"
+    },
+    {
+      "source": "/analyst-attention",
+      "destination": "/human-review-queue"
+    },
+    {
+      "source": "/prompt-studio",
+      "destination": "/agent-intelligence-studio"
+    },
+    {
+      "source": "/agent-studio/ground-truth",
+      "destination": "/agent-intelligence-studio"
+    },
+    {
+      "source": "/agent-studio",
+      "destination": "/agent-intelligence-studio"
+    },
+    {
+      "source": "/learning-history",
+      "destination": "/agent-memory"
+    },
+    {
+      "source": "/dry-run",
+      "destination": "/agent-simulation-lab"
+    },
+    {
+      "source": "/evaluation-reports",
+      "destination": "/verdict-intelligence"
+    },
+    {
+      "source": "/infrastructure",
+      "destination": "/inference-control"
+    },
+    {
+      "source": "/settings",
+      "destination": "/agent-configuration"
+    },
+    {
+      "source": "/admin",
+      "destination": "/governance-access"
+    }
+  ],
+  "sidebar_hrefs": [
+    "/agent-mission-control",
+    "/ai-triage-workbench",
+    "/telemetry-hub",
+    "/human-review-queue",
+    "/soc-chatbot",
+    "/agent-intelligence-studio",
+    "/detection-intelligence",
+    "/agent-memory",
+    "/agent-simulation-lab",
+    "/verdict-intelligence",
+    "/inference-control",
+    "/agent-configuration",
+    "/governance-access",
+    "/admin-guide"
+  ],
+  "pages": [
+    {
+      "file": "frontend/src/app/admin/page.tsx",
+      "route": "/admin",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/governance-access",
+      "src_string_refs": [],
+      "test_script_refs": [
+        "frontend/tests/admin-guide.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "backend/tests/test_evidence_integrity_audit.py"
+      ],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/admin-guide/page.tsx",
+      "route": "/admin-guide",
+      "lines": 468,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/admin-guide.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "imports_count": 16
+    },
+    {
+      "file": "frontend/src/app/agent-configuration/page.tsx",
+      "route": "/agent-configuration",
+      "lines": 1059,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/app/soc-chatbot/page.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "imports_count": 2
+    },
+    {
+      "file": "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "route": "/agent-intelligence-studio",
+      "lines": 5162,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/admin-guide/StudioGuideSection.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/decisionFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/blind-review-and-analyst-workflow.test.mjs",
+        "frontend/tests/compact-redesign-v1.test.mjs",
+        "frontend/tests/evaluate-accuracy-and-empirical-readiness.test.mjs",
+        "frontend/tests/phase3-compact-ui.test.mjs",
+        "frontend/tests/production-readiness.test.mjs",
+        "frontend/tests/quality-export.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "frontend/tests/v1_2_1_ui_safety.test.mjs",
+        "frontend/tests/v1_2_2b_security_integrity.test.mjs",
+        "frontend/tests/v1_2_3a_failsafe.test.mjs",
+        "frontend/tests/v1_2_targeted_ui.test.mjs",
+        "frontend/tests/version-governance-and-simplified-ui.test.mjs",
+        "scripts/check_remote_frontend.py",
+        "scripts/run_ais_2_1a_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_1_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_gui_acceptance.mjs",
+        "scripts/run_populated_validation.mjs",
+        "scripts/run_v1_2_1_validation.mjs",
+        "scripts/run_v1_2_2a_validation.mjs",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_2_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs",
+        "scripts/run_v1_2_validation.mjs",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py"
+      ],
+      "imports_count": 12
+    },
+    {
+      "file": "frontend/src/app/agent-memory/page.tsx",
+      "route": "/agent-memory",
+      "lines": 546,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/agent-mission-control/page.tsx",
+      "route": "/agent-mission-control",
+      "lines": 4,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/app/login/page.tsx",
+        "frontend/src/components/layout/HeaderBranding.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/branding.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "scripts/run_populated_validation.mjs",
+        "scripts/run_v1_2_validation.mjs",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/agent-simulation-lab/page.tsx",
+      "route": "/agent-simulation-lab",
+      "lines": 679,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/admin-guide/StudioGuideSection.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/phase3-compact-ui.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "imports_count": 2
+    },
+    {
+      "file": "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+      "route": "/ai-triage-workbench/[id]",
+      "lines": 1510,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/app/human-review-queue/page.tsx",
+        "frontend/src/app/incidents/[id]/page.tsx",
+        "frontend/src/app/incidents/page.tsx",
+        "frontend/src/app/page.tsx",
+        "frontend/src/components/telemetry/TokenBifurcationWidget.tsx"
+      ],
+      "test_script_refs": [
+        "frontend/tests/phase3-compact-ui.test.mjs"
+      ],
+      "imports_count": 8
+    },
+    {
+      "file": "frontend/src/app/ai-triage-workbench/page.tsx",
+      "route": "/ai-triage-workbench",
+      "lines": 955,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/page.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/decisionFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/compact-redesign-v1.test.mjs",
+        "frontend/tests/phase3-compact-ui.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "frontend/tests/v1_2_2_readiness_integrity.test.mjs",
+        "frontend/tests/v1_2_targeted_ui.test.mjs",
+        "scripts/run_populated_validation.mjs",
+        "scripts/run_v1_2_1_validation.mjs",
+        "scripts/run_v1_2_2a_validation.mjs",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_2_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs",
+        "scripts/run_v1_2_validation.mjs",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "imports_count": 4
+    },
+    {
+      "file": "frontend/src/app/analyst-attention/page.tsx",
+      "route": "/analyst-attention",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/human-review-queue",
+      "src_string_refs": [],
+      "test_script_refs": [],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/detection-intelligence/[id]/page.tsx",
+      "route": "/detection-intelligence/[id]",
+      "lines": 234,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/detection-intelligence/page.tsx",
+        "frontend/src/app/rules/[id]/page.tsx",
+        "frontend/src/app/rules/page.tsx"
+      ],
+      "test_script_refs": [],
+      "imports_count": 2
+    },
+    {
+      "file": "frontend/src/app/detection-intelligence/page.tsx",
+      "route": "/detection-intelligence",
+      "lines": 470,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/app/detection-intelligence/[id]/page.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/decisionFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/compact-redesign-v1.test.mjs",
+        "frontend/tests/production-readiness.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "frontend/tests/v1_2_2b_security_integrity.test.mjs",
+        "scripts/run_populated_validation.mjs",
+        "scripts/run_v1_2_1_validation.mjs",
+        "scripts/run_v1_2_2_validation.mjs",
+        "scripts/run_v1_2_validation.mjs"
+      ],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/dry-run/page.tsx",
+      "route": "/dry-run",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/agent-simulation-lab",
+      "src_string_refs": [],
+      "test_script_refs": [
+        "backend/tests/test_dry_run_replay.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py"
+      ],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/evaluation-reports/page.tsx",
+      "route": "/evaluation-reports",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/verdict-intelligence",
+      "src_string_refs": [],
+      "test_script_refs": [],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/governance-access/page.tsx",
+      "route": "/governance-access",
+      "lines": 343,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "imports_count": 2
+    },
+    {
+      "file": "frontend/src/app/human-review-queue/page.tsx",
+      "route": "/human-review-queue",
+      "lines": 1217,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/decisionFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/compact-redesign-v1.test.mjs",
+        "frontend/tests/phase3-compact-ui.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "scripts/run_populated_validation.mjs",
+        "scripts/run_v1_2_validation.mjs",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "imports_count": 4
+    },
+    {
+      "file": "frontend/src/app/imports/page.tsx",
+      "route": "/imports",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/telemetry-hub",
+      "src_string_refs": [],
+      "test_script_refs": [],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/incidents/[id]/page.tsx",
+      "route": "/incidents/[id]",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/ai-triage-workbench/:id",
+      "src_string_refs": [
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/app/telemetry-hub/page.tsx",
+        "frontend/src/lib/api.ts"
+      ],
+      "test_script_refs": [],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/incidents/page.tsx",
+      "route": "/incidents",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/ai-triage-workbench",
+      "src_string_refs": [],
+      "test_script_refs": [
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_2_audit.py",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scripts/run_v1_2_2a_validation.mjs",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py",
+        "backend/tests/test_ais_evaluation_tracking.py",
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_llm_offline_backlog.py",
+        "backend/tests/test_phase1_security_controls.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_telemetry_timeline_and_tokens.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_2_readiness_blind_review.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py",
+        "backend/tests/test_v1_2_targeted_verification.py"
+      ],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/inference-control/page.tsx",
+      "route": "/inference-control",
+      "lines": 98,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/decisionFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py"
+      ],
+      "imports_count": 3
+    },
+    {
+      "file": "frontend/src/app/infrastructure/page.tsx",
+      "route": "/infrastructure",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/inference-control",
+      "src_string_refs": [],
+      "test_script_refs": [],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/learning-history/page.tsx",
+      "route": "/learning-history",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/agent-memory",
+      "src_string_refs": [],
+      "test_script_refs": [],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/login/page.tsx",
+      "route": "/login",
+      "lines": 127,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/layout/Shell.tsx",
+        "frontend/src/context/AppContext.tsx",
+        "frontend/src/lib/api.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/branding.test.mjs",
+        "scripts/check_remote_frontend.py",
+        "scripts/remote_test_server1.py",
+        "scripts/run_ais_2_1a_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_1_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_gui_acceptance.mjs",
+        "scripts/run_populated_validation.mjs",
+        "scripts/run_v1_2_1_validation.mjs",
+        "scripts/run_v1_2_2a_validation.mjs",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_2_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs",
+        "scripts/run_v1_2_validation.mjs",
+        "backend/tests/test_auth.py",
+        "backend/tests/test_evidence_integrity_audit.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "imports_count": 3
+    },
+    {
+      "file": "frontend/src/app/page.tsx",
+      "route": "/",
+      "lines": 627,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/admin-guide.test.mjs",
+        "frontend/tests/blind-review-and-analyst-workflow.test.mjs",
+        "frontend/tests/branding.test.mjs",
+        "frontend/tests/compact-redesign-v1.test.mjs",
+        "frontend/tests/evaluate-accuracy-and-empirical-readiness.test.mjs",
+        "frontend/tests/phase3-compact-ui.test.mjs",
+        "frontend/tests/production-readiness.test.mjs",
+        "frontend/tests/quality-export.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "frontend/tests/v1_2_1_ui_safety.test.mjs",
+        "frontend/tests/v1_2_2b_security_integrity.test.mjs",
+        "frontend/tests/v1_2_2_readiness_integrity.test.mjs",
+        "frontend/tests/v1_2_3a_failsafe.test.mjs",
+        "frontend/tests/v1_2_3_ui_integrity.test.mjs",
+        "frontend/tests/v1_2_targeted_ui.test.mjs",
+        "frontend/tests/version-governance-and-simplified-ui.test.mjs",
+        "scripts/build_remote_frontend.py",
+        "scripts/check_remote_frontend.py",
+        "scripts/check_remote_path.py",
+        "scripts/execute_single_inference_test.py",
+        "scripts/inspect_335.py",
+        "scripts/query_all_reviews.py",
+        "scripts/query_db_users.py",
+        "scripts/query_incidents_detail.py",
+        "scripts/query_lps_detail.py",
+        "scripts/query_remote_state.py",
+        "scripts/query_reviews_detail.py",
+        "scripts/query_target_lp.py",
+        "scripts/recover_v7_live.py",
+        "scripts/remote_test_server1.py",
+        "scripts/run_ais_2_1a_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_1_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_gui_acceptance.mjs",
+        "scripts/run_integration_suite.py",
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_2_audit.py",
+        "scripts/run_phase8_empirical_validation.py",
+        "scripts/run_phase9_load_benchmark.py",
+        "scripts/run_populated_validation.mjs",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scripts/run_v1_2_1_validation.mjs",
+        "scripts/run_v1_2_2a_validation.mjs",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_2_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs",
+        "scripts/run_v1_2_validation.mjs",
+        "scripts/seed_validation_dataset.py",
+        "scripts/test_tracking_endpoint_remote.py",
+        "scripts/validate_feature_registry.py",
+        "backend/tests/conftest.py",
+        "backend/tests/test_actual_prompt_inspector.py",
+        "backend/tests/test_agentic_nomenclature.py",
+        "backend/tests/test_agent_intelligence_studio_v2.py",
+        "backend/tests/test_ais_2_1_remediation.py",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_ais_2_3a_integrity.py",
+        "backend/tests/test_ais_2_3b_1_regression.py",
+        "backend/tests/test_ais_2_3_remediation.py",
+        "backend/tests/test_ais_2_4a_tp_grounding.py",
+        "backend/tests/test_ais_2_4b_validator_integrity.py",
+        "backend/tests/test_ais_2_4_regression.py",
+        "backend/tests/test_ais_2_5a_validator_regression.py",
+        "backend/tests/test_ais_2_6a_empirical_validation.py",
+        "backend/tests/test_ais_2_6b_counterfactual_validation.py",
+        "backend/tests/test_ais_2_6c_three_mode_and_bias_isolation.py",
+        "backend/tests/test_ais_2_6d_empirical_integrity.py",
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py",
+        "backend/tests/test_ais_2_6_boundary_and_provenance.py",
+        "backend/tests/test_ais_2_7_benchmark_runner.py",
+        "backend/tests/test_ais_evaluation_tracking.py",
+        "backend/tests/test_ais_heavy_tcp_e2e.py",
+        "backend/tests/test_ais_unified_population_contract.py",
+        "backend/tests/test_api_422_remediation.py",
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_auth.py",
+        "backend/tests/test_backup_restore.py",
+        "backend/tests/test_calibration_and_evaluation.py",
+        "backend/tests/test_context_window_8k_16k.py",
+        "backend/tests/test_database_isolation.py",
+        "backend/tests/test_database_migrations.py",
+        "backend/tests/test_dry_run_replay.py",
+        "backend/tests/test_empirical_benchmark_harness.py",
+        "backend/tests/test_empirical_safety_verification.py",
+        "backend/tests/test_evaluate_accuracy_endpoint.py",
+        "backend/tests/test_evaluation_metrics.py",
+        "backend/tests/test_evidence_compaction_and_chunking.py",
+        "backend/tests/test_evidence_contracts.py",
+        "backend/tests/test_evidence_grounding.py",
+        "backend/tests/test_evidence_integrity_audit.py",
+        "backend/tests/test_evidence_normalization.py",
+        "backend/tests/test_evidence_preflight.py",
+        "backend/tests/test_feature_registry.py",
+        "backend/tests/test_final_gap_remediation.py",
+        "backend/tests/test_fortisiem_continuous_sync.py",
+        "backend/tests/test_fortisiem_multiworker_sync.py",
+        "backend/tests/test_fortisiem_pull.py",
+        "backend/tests/test_independent_verdict_validator.py",
+        "backend/tests/test_investigations.py",
+        "backend/tests/test_learning.py",
+        "backend/tests/test_llm_config.py",
+        "backend/tests/test_llm_multiworker_sync.py",
+        "backend/tests/test_llm_offline_backlog.py",
+        "backend/tests/test_phase1_security_controls.py",
+        "backend/tests/test_phase4_integration.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase8_integration.py",
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_policy_remediation_and_ground_truth.py",
+        "backend/tests/test_policy_version_governance.py",
+        "backend/tests/test_production_readiness_engine.py",
+        "backend/tests/test_prompt_studio.py",
+        "backend/tests/test_rule_learning_initialization.py",
+        "backend/tests/test_rule_learning_platform.py",
+        "backend/tests/test_rule_maturity.py",
+        "backend/tests/test_soc_chatbot.py",
+        "backend/tests/test_system_health_observability.py",
+        "backend/tests/test_system_monitor.py",
+        "backend/tests/test_telemetry_timeline_and_tokens.py",
+        "backend/tests/test_token_budgeting.py",
+        "backend/tests/test_v1_2_1_readiness_integrity.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_2_readiness_blind_review.py",
+        "backend/tests/test_v1_2_3a_reconciliation.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py",
+        "backend/tests/test_v1_2_targeted_verification.py",
+        "backend/tests/test_verdict_intelligence_enhancements_v2.py",
+        "backend/tests/test_verdict_intelligence_validation.py",
+        "backend/tests/test_verdict_reliability_1_1.py",
+        "backend/tests/test_verdict_reliability_1_2.py",
+        "backend/tests/test_verdict_reliability_1_3.py",
+        "backend/tests/test_verified_semantic_rag.py",
+        "backend/tests/test_zip_guard.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "imports_count": 3
+    },
+    {
+      "file": "frontend/src/app/prompt-studio/page.tsx",
+      "route": "/prompt-studio",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/agent-intelligence-studio",
+      "src_string_refs": [],
+      "test_script_refs": [],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/rules/[id]/page.tsx",
+      "route": "/rules/[id]",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/detection-intelligence/:id",
+      "src_string_refs": [
+        "frontend/src/data/admin-guide/requirementsData.ts",
+        "frontend/src/data/admin-guide/studioGuideData.ts",
+        "frontend/src/lib/api.ts"
+      ],
+      "test_script_refs": [],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/rules/page.tsx",
+      "route": "/rules",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/detection-intelligence",
+      "src_string_refs": [
+        "frontend/src/app/telemetry-hub/page.tsx"
+      ],
+      "test_script_refs": [
+        "frontend/tests/evaluate-accuracy-and-empirical-readiness.test.mjs",
+        "scripts/execute_single_inference_test.py",
+        "scripts/remote_test_server1.py",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scripts/test_tracking_endpoint_remote.py",
+        "backend/tests/test_ais_evaluation_tracking.py",
+        "backend/tests/test_api_422_remediation.py",
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_calibration_and_evaluation.py",
+        "backend/tests/test_phase1_security_controls.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_production_readiness_engine.py",
+        "backend/tests/test_v1_2_targeted_verification.py"
+      ],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/settings/page.tsx",
+      "route": "/settings",
+      "lines": 3,
+      "in_sidebar": false,
+      "shadowed_by_redirect_to": "/agent-configuration",
+      "src_string_refs": [],
+      "test_script_refs": [],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/soc-chatbot/page.tsx",
+      "route": "/soc-chatbot",
+      "lines": 740,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "imports_count": 3
+    },
+    {
+      "file": "frontend/src/app/telemetry-hub/page.tsx",
+      "route": "/telemetry-hub",
+      "lines": 945,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/app/page.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/components/navigation/NavigationIcon.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/compact-redesign-v1.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "scripts/run_populated_validation.mjs",
+        "scripts/run_v1_2_validation.mjs"
+      ],
+      "imports_count": 1
+    },
+    {
+      "file": "frontend/src/app/verdict-intelligence/page.tsx",
+      "route": "/verdict-intelligence",
+      "lines": 1359,
+      "in_sidebar": true,
+      "shadowed_by_redirect_to": null,
+      "src_string_refs": [
+        "frontend/src/components/admin-guide/DecisionEngineSection.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/config/navigationIcons.ts",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/decisionFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/pagesGuideData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts"
+      ],
+      "test_script_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_ais_2_3_remediation.py",
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_verdict_intelligence_validation.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "imports_count": 5
+    }
+  ],
+  "modules": [
+    {
+      "file": "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx",
+      "lines": 534,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/admin-guide/DecisionEngineSection.tsx",
+      "lines": 261,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/admin-guide/GlossaryTerm.tsx",
+      "lines": 119,
+      "imported_by": [
+        "frontend/src/components/admin-guide/DecisionEngineSection.tsx",
+        "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx",
+        "frontend/src/components/admin-guide/StudioGuideSection.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/components/admin-guide/DecisionEngineSection.tsx",
+        "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx",
+        "frontend/src/components/admin-guide/StudioGuideSection.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/admin-guide/GlossaryTroubleshootingSection.tsx",
+      "lines": 349,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/admin-guide/GuidedTourSection.tsx",
+      "lines": 245,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx",
+      "lines": 391,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/admin-guide/RequirementsSection.tsx",
+      "lines": 367,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/admin-guide/StudioGuideSection.tsx",
+      "lines": 613,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/admin-guide/usePrefersReducedMotion.ts",
+      "lines": 30,
+      "imported_by": [
+        "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx",
+        "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx",
+        "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx",
+      "lines": 1310,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/DecisionEngineSection.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/DecisionEngineSection.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/admin-guide.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/common/BrandLogo.tsx",
+      "lines": 36,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/app/login/page.tsx",
+        "frontend/src/app/page.tsx",
+        "frontend/src/app/soc-chatbot/page.tsx",
+        "frontend/src/app/verdict-intelligence/page.tsx",
+        "frontend/src/components/common/PhasePlaceholder.tsx",
+        "frontend/src/components/layout/HeaderBranding.tsx",
+        "frontend/src/components/layout/Sidebar.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/app/login/page.tsx",
+        "frontend/src/app/page.tsx",
+        "frontend/src/app/soc-chatbot/page.tsx",
+        "frontend/src/app/verdict-intelligence/page.tsx",
+        "frontend/src/components/common/PhasePlaceholder.tsx",
+        "frontend/src/components/layout/HeaderBranding.tsx",
+        "frontend/src/components/layout/Sidebar.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/branding.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/common/PhasePlaceholder.tsx",
+      "lines": 105,
+      "imported_by": [],
+      "active_importers": [],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": [
+        {
+          "kind": "function",
+          "name": "PhasePlaceholder",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/components/compact/AccuracyLearningSummary.tsx",
+      "lines": 684,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/evaluate-accuracy-and-empirical-readiness.test.mjs",
+        "frontend/tests/version-governance-and-simplified-ui.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+      "lines": 1310,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/compact-redesign-v1.test.mjs",
+        "frontend/tests/production-readiness.test.mjs",
+        "frontend/tests/v1_2_1_ui_safety.test.mjs",
+        "frontend/tests/v1_2_2b_security_integrity.test.mjs",
+        "frontend/tests/v1_2_2_readiness_integrity.test.mjs",
+        "frontend/tests/v1_2_3a_failsafe.test.mjs",
+        "frontend/tests/v1_2_3_ui_integrity.test.mjs",
+        "frontend/tests/v1_2_targeted_ui.test.mjs"
+      ],
+      "export_count": 2,
+      "unused_exports": [
+        {
+          "kind": "interface",
+          "name": "AgentIntelligenceStudioOverviewProps",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/components/compact/AiTestWorkbench.tsx",
+      "lines": 1283,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/version-governance-and-simplified-ui.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/compact/CompactDesignSystem.tsx",
+      "lines": 1024,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx",
+        "frontend/src/app/agent-simulation-lab/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+        "frontend/src/components/compact/CompactGovernancePanels.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx",
+        "frontend/src/app/agent-simulation-lab/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+        "frontend/src/components/compact/CompactGovernancePanels.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/compact-redesign-v1.test.mjs",
+        "frontend/tests/production-readiness.test.mjs",
+        "frontend/tests/v1_2_3a_failsafe.test.mjs"
+      ],
+      "export_count": 25,
+      "unused_exports": [
+        {
+          "kind": "interface",
+          "name": "MetricSummaryCardProps",
+          "line": 160
+        },
+        {
+          "kind": "interface",
+          "name": "RuleStatusSummaryProps",
+          "line": 220
+        },
+        {
+          "kind": "function",
+          "name": "RuleStatusSummary",
+          "line": 234
+        },
+        {
+          "kind": "interface",
+          "name": "IssueSummaryProps",
+          "line": 313
+        },
+        {
+          "kind": "interface",
+          "name": "DiagnosticIssueCardProps",
+          "line": 359
+        },
+        {
+          "kind": "function",
+          "name": "DiagnosticIssueCard",
+          "line": 364
+        },
+        {
+          "kind": "interface",
+          "name": "NextActionCardProps",
+          "line": 441
+        },
+        {
+          "kind": "interface",
+          "name": "CompactVersionSelectorProps",
+          "line": 488
+        },
+        {
+          "kind": "interface",
+          "name": "AdvancedDetailsPanelProps",
+          "line": 656
+        },
+        {
+          "kind": "interface",
+          "name": "StatusBadgeProps",
+          "line": 707
+        },
+        {
+          "kind": "interface",
+          "name": "EvidenceCompletenessIndicatorProps",
+          "line": 748
+        },
+        {
+          "kind": "function",
+          "name": "EmptyState",
+          "line": 807
+        },
+        {
+          "kind": "function",
+          "name": "ErrorState",
+          "line": 837
+        },
+        {
+          "kind": "interface",
+          "name": "MatchedRuleItem",
+          "line": 872
+        },
+        {
+          "kind": "interface",
+          "name": "CompactRuleScopeBarProps",
+          "line": 878
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/components/compact/CompactGovernancePanels.tsx",
+      "lines": 361,
+      "imported_by": [],
+      "active_importers": [],
+      "test_refs": [],
+      "export_count": 5,
+      "unused_exports": [
+        {
+          "kind": "interface",
+          "name": "ProductionEligibilityChecklistProps",
+          "line": 23
+        },
+        {
+          "kind": "function",
+          "name": "ProductionEligibilityChecklist",
+          "line": 33
+        },
+        {
+          "kind": "interface",
+          "name": "ReviewDecisionPanelProps",
+          "line": 123
+        },
+        {
+          "kind": "function",
+          "name": "ReviewDecisionPanel",
+          "line": 134
+        },
+        {
+          "kind": "function",
+          "name": "ConfirmationDialog",
+          "line": 308
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/components/compact/IncidentVerdictMatrix.tsx",
+      "lines": 184,
+      "imported_by": [
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/phase3-compact-ui.test.mjs"
+      ],
+      "export_count": 2,
+      "unused_exports": [
+        {
+          "kind": "interface",
+          "name": "IncidentVerdictMatrixProps",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/components/compact/ManageVersionHistory.tsx",
+      "lines": 887,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/version-governance-and-simplified-ui.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+      "lines": 759,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/blind-review-and-analyst-workflow.test.mjs",
+        "frontend/tests/evaluate-accuracy-and-empirical-readiness.test.mjs",
+        "frontend/tests/version-governance-and-simplified-ui.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/layout/Header.tsx",
+      "lines": 155,
+      "imported_by": [
+        "frontend/src/components/layout/Shell.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/components/layout/Shell.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/branding.test.mjs",
+        "frontend/tests/compact-redesign-v1.test.mjs",
+        "frontend/tests/v1_2_1_ui_safety.test.mjs",
+        "frontend/tests/v1_2_3a_failsafe.test.mjs",
+        "frontend/tests/v1_2_targeted_ui.test.mjs",
+        "frontend/tests/version-governance-and-simplified-ui.test.mjs",
+        "scripts/run_ais_2_1a_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_1_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_gui_acceptance.mjs",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scripts/run_v1_2_2a_validation.mjs",
+        "scripts/run_v1_2_2_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_validation.mjs",
+        "scripts/test_tracking_endpoint_remote.py",
+        "backend/tests/test_ais_heavy_tcp_e2e.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/layout/HeaderBranding.tsx",
+      "lines": 79,
+      "imported_by": [
+        "frontend/src/components/layout/Header.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/components/layout/Header.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/branding.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/layout/Shell.tsx",
+      "lines": 35,
+      "imported_by": [
+        "frontend/src/app/layout.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/layout.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/branding.test.mjs",
+        "scripts/seed_validation_dataset.py",
+        "backend/tests/test_ais_2_3_remediation.py",
+        "backend/tests/test_ais_2_4a_tp_grounding.py",
+        "backend/tests/test_ais_2_6b_counterfactual_validation.py",
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_context_window_8k_16k.py",
+        "backend/tests/test_evidence_contracts.py",
+        "backend/tests/test_phase2_integration.py",
+        "backend/tests/test_phase3_integration.py",
+        "backend/tests/test_policy_remediation_and_ground_truth.py",
+        "backend/tests/test_prompt_studio.py",
+        "backend/tests/test_rule_learning_initialization.py",
+        "backend/tests/test_token_budgeting.py",
+        "backend/tests/test_verdict_intelligence_validation.py",
+        "backend/tests/test_verified_semantic_rag.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/layout/Sidebar.tsx",
+      "lines": 397,
+      "imported_by": [
+        "frontend/src/components/layout/Shell.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/components/layout/Shell.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/admin-guide.test.mjs",
+        "frontend/tests/branding.test.mjs",
+        "frontend/tests/sidebar-multicolor-icons.test.mjs",
+        "backend/tests/test_llm_multiworker_sync.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/learning/RuleLearningDashboard.tsx",
+      "lines": 1531,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/production-readiness.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/navigation/NavigationIcon.tsx",
+      "lines": 150,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx",
+        "frontend/src/components/admin-guide/GlossaryTroubleshootingSection.tsx",
+        "frontend/src/components/admin-guide/GuidedTourSection.tsx",
+        "frontend/src/components/layout/Sidebar.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx",
+        "frontend/src/components/admin-guide/GlossaryTroubleshootingSection.tsx",
+        "frontend/src/components/admin-guide/GuidedTourSection.tsx",
+        "frontend/src/components/layout/Sidebar.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "export_count": 4,
+      "unused_exports": [
+        {
+          "kind": "const",
+          "name": "NAVIGATION_ICON_COMPONENTS",
+          "line": 34
+        },
+        {
+          "kind": "type",
+          "name": "NavigationIconSize",
+          "line": 50
+        },
+        {
+          "kind": "interface",
+          "name": "NavigationIconProps",
+          "line": 80
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx",
+      "lines": 283,
+      "imported_by": [
+        "frontend/src/app/verdict-intelligence/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/verdict-intelligence/page.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
+      "lines": 1159,
+      "imported_by": [
+        "frontend/src/app/verdict-intelligence/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/verdict-intelligence/page.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx",
+      "lines": 1329,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/components/learning/RuleLearningDashboard.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/components/learning/RuleLearningDashboard.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/review/GroundTruthCertificationPanel.tsx",
+      "lines": 1261,
+      "imported_by": [
+        "frontend/src/app/human-review-queue/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/human-review-queue/page.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/system/ServerInfrastructureMonitor.tsx",
+      "lines": 759,
+      "imported_by": [
+        "frontend/src/app/inference-control/page.tsx",
+        "frontend/src/app/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/inference-control/page.tsx",
+        "frontend/src/app/page.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx",
+      "lines": 285,
+      "imported_by": [
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/components/telemetry/TokenBifurcationWidget.tsx",
+      "lines": 355,
+      "imported_by": [
+        "frontend/src/app/inference-control/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/inference-control/page.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/config/branding.ts",
+      "lines": 50,
+      "imported_by": [
+        "frontend/src/app/layout.tsx",
+        "frontend/src/app/login/page.tsx",
+        "frontend/src/components/layout/HeaderBranding.tsx",
+        "frontend/src/components/layout/Sidebar.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/layout.tsx",
+        "frontend/src/app/login/page.tsx",
+        "frontend/src/components/layout/HeaderBranding.tsx",
+        "frontend/src/components/layout/Sidebar.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/branding.test.mjs"
+      ],
+      "export_count": 6,
+      "unused_exports": [
+        {
+          "kind": "interface",
+          "name": "CompanyBrandingConfig",
+          "line": 8
+        },
+        {
+          "kind": "const",
+          "name": "HEADER_ATTRIBUTION",
+          "line": 49
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/config/navigationIcons.ts",
+      "lines": 356,
+      "imported_by": [
+        "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/components/navigation/NavigationIcon.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/components/navigation/NavigationIcon.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/sidebar-multicolor-icons.test.mjs"
+      ],
+      "export_count": 11,
+      "unused_exports": [
+        {
+          "kind": "type",
+          "name": "NavigationGroupTitle",
+          "line": 12
+        },
+        {
+          "kind": "interface",
+          "name": "NavigationIconMetadata",
+          "line": 34
+        },
+        {
+          "kind": "interface",
+          "name": "SemanticIconCssVars",
+          "line": 321
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/context/AppContext.tsx",
+      "lines": 141,
+      "imported_by": [
+        "frontend/src/app/agent-configuration/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/app/governance-access/page.tsx",
+        "frontend/src/app/human-review-queue/page.tsx",
+        "frontend/src/app/layout.tsx",
+        "frontend/src/app/login/page.tsx",
+        "frontend/src/app/verdict-intelligence/page.tsx",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx",
+        "frontend/src/components/layout/Header.tsx",
+        "frontend/src/components/layout/Shell.tsx",
+        "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
+        "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-configuration/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/app/governance-access/page.tsx",
+        "frontend/src/app/human-review-queue/page.tsx",
+        "frontend/src/app/layout.tsx",
+        "frontend/src/app/login/page.tsx",
+        "frontend/src/app/verdict-intelligence/page.tsx",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx",
+        "frontend/src/components/layout/Header.tsx",
+        "frontend/src/components/layout/Shell.tsx",
+        "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
+        "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/v1_2_2_readiness_integrity.test.mjs"
+      ],
+      "export_count": 3,
+      "unused_exports": [
+        {
+          "kind": "type",
+          "name": "AppTheme",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/data/admin-guide/architectureFlowData.ts",
+      "lines": 732,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/admin-guide.test.mjs"
+      ],
+      "export_count": 3,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/data/admin-guide/decisionFlowData.ts",
+      "lines": 464,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/DecisionEngineSection.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/DecisionEngineSection.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/admin-guide.test.mjs"
+      ],
+      "export_count": 3,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+      "lines": 434,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/GlossaryTerm.tsx",
+        "frontend/src/components/admin-guide/GlossaryTroubleshootingSection.tsx",
+        "frontend/src/components/admin-guide/GuidedTourSection.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/GlossaryTerm.tsx",
+        "frontend/src/components/admin-guide/GlossaryTroubleshootingSection.tsx",
+        "frontend/src/components/admin-guide/GuidedTourSection.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/admin-guide.test.mjs"
+      ],
+      "export_count": 4,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/data/admin-guide/incidentExampleData.ts",
+      "lines": 152,
+      "imported_by": [
+        "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/admin-guide.test.mjs"
+      ],
+      "export_count": 2,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/data/admin-guide/pagesGuideData.ts",
+      "lines": 596,
+      "imported_by": [
+        "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 4,
+      "unused_exports": [
+        {
+          "kind": "interface",
+          "name": "WorkflowStageDetail",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/data/admin-guide/requirementsData.ts",
+      "lines": 419,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/admin-guide.test.mjs"
+      ],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/data/admin-guide/studioGuideData.ts",
+      "lines": 703,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/DecisionEngineSection.tsx",
+        "frontend/src/components/admin-guide/StudioGuideSection.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/DecisionEngineSection.tsx",
+        "frontend/src/components/admin-guide/StudioGuideSection.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/admin-guide.test.mjs"
+      ],
+      "export_count": 10,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/data/admin-guide/types.ts",
+      "lines": 169,
+      "imported_by": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/GuidedTourSection.tsx",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx",
+        "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/decisionFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/incidentExampleData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts",
+        "frontend/src/data/admin-guide/studioGuideData.ts"
+      ],
+      "active_importers": [
+        "frontend/src/app/admin-guide/page.tsx",
+        "frontend/src/components/admin-guide/GuidedTourSection.tsx",
+        "frontend/src/components/admin-guide/RequirementsSection.tsx",
+        "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx",
+        "frontend/src/data/admin-guide/architectureFlowData.ts",
+        "frontend/src/data/admin-guide/decisionFlowData.ts",
+        "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+        "frontend/src/data/admin-guide/incidentExampleData.ts",
+        "frontend/src/data/admin-guide/requirementsData.ts",
+        "frontend/src/data/admin-guide/studioGuideData.ts"
+      ],
+      "test_refs": [
+        "frontend/tests/admin-guide.test.mjs",
+        "frontend/tests/v1_2_3_ui_integrity.test.mjs",
+        "scripts/seed_validation_dataset.py",
+        "backend/tests/test_agent_intelligence_studio_v2.py",
+        "backend/tests/test_ais_2_1_remediation.py",
+        "backend/tests/test_ais_2_3_remediation.py",
+        "backend/tests/test_ais_2_4a_tp_grounding.py",
+        "backend/tests/test_evidence_compaction_and_chunking.py",
+        "backend/tests/test_evidence_contracts.py",
+        "backend/tests/test_ingestion.py",
+        "backend/tests/test_telemetry_timeline_and_tokens.py",
+        "backend/tests/test_verdict_reliability_1_1.py"
+      ],
+      "export_count": 16,
+      "unused_exports": [
+        {
+          "kind": "type",
+          "name": "FlowLane",
+          "line": 10
+        },
+        {
+          "kind": "interface",
+          "name": "RequirementCheckItem",
+          "line": 112
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/lib/api.ts",
+      "lines": 4287,
+      "imported_by": [
+        "frontend/src/app/agent-configuration/page.tsx",
+        "frontend/src/app/agent-intelligence-studio/page.tsx",
+        "frontend/src/app/agent-memory/page.tsx",
+        "frontend/src/app/agent-simulation-lab/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/app/detection-intelligence/[id]/page.tsx",
+        "frontend/src/app/detection-intelligence/page.tsx",
+        "frontend/src/app/governance-access/page.tsx",
+        "frontend/src/app/human-review-queue/page.tsx",
+        "frontend/src/app/inference-control/page.tsx",
+        "frontend/src/app/page.tsx",
+        "frontend/src/app/soc-chatbot/page.tsx",
+        "frontend/src/app/telemetry-hub/page.tsx",
+        "frontend/src/app/verdict-intelligence/page.tsx",
+        "frontend/src/components/compact/AccuracyLearningSummary.tsx",
+        "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+        "frontend/src/components/compact/AiTestWorkbench.tsx",
+        "frontend/src/components/compact/ManageVersionHistory.tsx",
+        "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/components/learning/RuleLearningDashboard.tsx",
+        "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx",
+        "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
+        "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx",
+        "frontend/src/components/review/GroundTruthCertificationPanel.tsx",
+        "frontend/src/components/system/ServerInfrastructureMonitor.tsx",
+        "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx",
+        "frontend/src/components/telemetry/TokenBifurcationWidget.tsx",
+        "frontend/src/context/AppContext.tsx",
+        "frontend/src/lib/qualityExport.ts"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-configuration/page.tsx",
+        "frontend/src/app/agent-intelligence-studio/page.tsx",
+        "frontend/src/app/agent-memory/page.tsx",
+        "frontend/src/app/agent-simulation-lab/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/app/detection-intelligence/[id]/page.tsx",
+        "frontend/src/app/detection-intelligence/page.tsx",
+        "frontend/src/app/governance-access/page.tsx",
+        "frontend/src/app/human-review-queue/page.tsx",
+        "frontend/src/app/inference-control/page.tsx",
+        "frontend/src/app/page.tsx",
+        "frontend/src/app/soc-chatbot/page.tsx",
+        "frontend/src/app/telemetry-hub/page.tsx",
+        "frontend/src/app/verdict-intelligence/page.tsx",
+        "frontend/src/components/compact/AccuracyLearningSummary.tsx",
+        "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+        "frontend/src/components/compact/AiTestWorkbench.tsx",
+        "frontend/src/components/compact/ManageVersionHistory.tsx",
+        "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/components/learning/RuleLearningDashboard.tsx",
+        "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx",
+        "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
+        "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx",
+        "frontend/src/components/review/GroundTruthCertificationPanel.tsx",
+        "frontend/src/components/system/ServerInfrastructureMonitor.tsx",
+        "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx",
+        "frontend/src/components/telemetry/TokenBifurcationWidget.tsx",
+        "frontend/src/context/AppContext.tsx",
+        "frontend/src/lib/qualityExport.ts"
+      ],
+      "test_refs": [
+        "frontend/tests/blind-review-and-analyst-workflow.test.mjs",
+        "frontend/tests/evaluate-accuracy-and-empirical-readiness.test.mjs",
+        "frontend/tests/v1_2_3_ui_integrity.test.mjs",
+        "frontend/tests/version-governance-and-simplified-ui.test.mjs",
+        "scripts/execute_single_inference_test.py",
+        "scripts/remote_test_server1.py",
+        "scripts/run_ais_2_1a_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_1_gui_acceptance.mjs",
+        "scripts/run_ais_2_1b_gui_acceptance.mjs",
+        "scripts/run_integration_suite.py",
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_2_audit.py",
+        "scripts/run_phase9_load_benchmark.py",
+        "scripts/run_populated_validation.mjs",
+        "scripts/run_remote_acceptance_15_scenarios.py",
+        "scripts/run_v1_2_1_validation.mjs",
+        "scripts/run_v1_2_2a_validation.mjs",
+        "scripts/run_v1_2_2b_validation.mjs",
+        "scripts/run_v1_2_2_validation.mjs",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/run_v1_2_3_validation.mjs",
+        "scripts/run_v1_2_validation.mjs",
+        "scripts/seed_validation_dataset.py",
+        "scripts/setup_ready_for_approval_fixture.py",
+        "scripts/test_tracking_endpoint_remote.py",
+        "backend/tests/test_actual_prompt_inspector.py",
+        "backend/tests/test_agent_intelligence_studio_v2.py",
+        "backend/tests/test_ais_2_1_remediation.py",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_ais_2_3_remediation.py",
+        "backend/tests/test_ais_2_6d_empirical_integrity.py",
+        "backend/tests/test_ais_2_6f_certification_and_blind_review.py",
+        "backend/tests/test_ais_evaluation_tracking.py",
+        "backend/tests/test_ais_heavy_tcp_e2e.py",
+        "backend/tests/test_api_422_remediation.py",
+        "backend/tests/test_api_endpoints.py",
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_auth.py",
+        "backend/tests/test_calibration_and_evaluation.py",
+        "backend/tests/test_dry_run_replay.py",
+        "backend/tests/test_evaluation_metrics.py",
+        "backend/tests/test_evidence_integrity_audit.py",
+        "backend/tests/test_fortisiem_continuous_sync.py",
+        "backend/tests/test_fortisiem_pull.py",
+        "backend/tests/test_investigations.py",
+        "backend/tests/test_learning.py",
+        "backend/tests/test_llm_config.py",
+        "backend/tests/test_llm_multiworker_sync.py",
+        "backend/tests/test_llm_offline_backlog.py",
+        "backend/tests/test_phase1_security_controls.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase8_integration.py",
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_policy_remediation_and_ground_truth.py",
+        "backend/tests/test_policy_version_governance.py",
+        "backend/tests/test_postgresql_version_deletion_integrity.py",
+        "backend/tests/test_production_readiness_engine.py",
+        "backend/tests/test_prompt_studio.py",
+        "backend/tests/test_rule_maturity.py",
+        "backend/tests/test_soc_chatbot.py",
+        "backend/tests/test_system_health_observability.py",
+        "backend/tests/test_system_monitor.py",
+        "backend/tests/test_telemetry_timeline_and_tokens.py",
+        "backend/tests/test_v1_2_1_readiness_integrity.py",
+        "backend/tests/test_v1_2_2a_security_readiness.py",
+        "backend/tests/test_v1_2_2b_security_readiness.py",
+        "backend/tests/test_v1_2_2_readiness_blind_review.py",
+        "backend/tests/test_v1_2_3a_reconciliation.py",
+        "backend/tests/test_v1_2_3_integrity_closure.py",
+        "backend/tests/test_v1_2_targeted_verification.py",
+        "backend/tests/test_verdict_intelligence_validation.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "export_count": 111,
+      "unused_exports": [
+        {
+          "kind": "type",
+          "name": "CanonicalEvaluationStatus",
+          "line": 99
+        },
+        {
+          "kind": "interface",
+          "name": "AisEvaluationStatusResponse",
+          "line": 239
+        },
+        {
+          "kind": "interface",
+          "name": "UnmappedField",
+          "line": 310
+        },
+        {
+          "kind": "interface",
+          "name": "IncidentListResponse",
+          "line": 352
+        },
+        {
+          "kind": "interface",
+          "name": "InvestigationQuestion",
+          "line": 419
+        },
+        {
+          "kind": "interface",
+          "name": "InvestigationEvidence",
+          "line": 430
+        },
+        {
+          "kind": "interface",
+          "name": "FortiSIEMBatchPullRequest",
+          "line": 459
+        },
+        {
+          "kind": "interface",
+          "name": "FortiSIEMSyncResolutionsResponse",
+          "line": 487
+        },
+        {
+          "kind": "interface",
+          "name": "FortiSIEMSingleSyncResponse",
+          "line": 495
+        },
+        {
+          "kind": "interface",
+          "name": "FortiSIEMSchedulerControlRequest",
+          "line": 538
+        },
+        {
+          "kind": "interface",
+          "name": "FortiSIEMBatchVerdictRequest",
+          "line": 543
+        },
+        {
+          "kind": "interface",
+          "name": "FortiSIEMBatchVerdictResponse",
+          "line": 548
+        },
+        {
+          "kind": "interface",
+          "name": "FortiSIEMConfigUpdate",
+          "line": 578
+        },
+        {
+          "kind": "interface",
+          "name": "FortiSIEMTestConnectionRequest",
+          "line": 587
+        },
+        {
+          "kind": "interface",
+          "name": "LLMConfigUpdate",
+          "line": 624
+        },
+        {
+          "kind": "interface",
+          "name": "LLMTestConnectionRequest",
+          "line": 637
+        },
+        {
+          "kind": "interface",
+          "name": "FortiSIEMRuleSyncResponse",
+          "line": 657
+        },
+        {
+          "kind": "interface",
+          "name": "FortiSIEMRulePullResponse",
+          "line": 673
+        },
+        {
+          "kind": "interface",
+          "name": "AIAssuranceSummary",
+          "line": 684
+        },
+        {
+          "kind": "interface",
+          "name": "BulkVersionDeleteResponse",
+          "line": 838
+        },
+        {
+          "kind": "interface",
+          "name": "ActionButton",
+          "line": 920
+        },
+        {
+          "kind": "interface",
+          "name": "ActualPromptExecutionSummary",
+          "line": 957
+        },
+        {
+          "kind": "interface",
+          "name": "ActualPromptTechnicalDetails",
+          "line": 978
+        },
+        {
+          "kind": "interface",
+          "name": "ActualPromptL1Explanation",
+          "line": 991
+        },
+        {
+          "kind": "interface",
+          "name": "SmartNextAction",
+          "line": 1035
+        },
+        {
+          "kind": "interface",
+          "name": "ConfusionMatrixData",
+          "line": 3393
+        },
+        {
+          "kind": "interface",
+          "name": "EvaluationMetrics",
+          "line": 3402
+        },
+        {
+          "kind": "interface",
+          "name": "PromptComparisonItem",
+          "line": 3435
+        },
+        {
+          "kind": "interface",
+          "name": "RuleMaturity",
+          "line": 3448
+        },
+        {
+          "kind": "interface",
+          "name": "ServerMetricItem",
+          "line": 3468
+        },
+        {
+          "kind": "interface",
+          "name": "GlobalTelemetryTimelineResponse",
+          "line": 3623
+        },
+        {
+          "kind": "interface",
+          "name": "TrustScoreDimensionBreakdown",
+          "line": 3644
+        },
+        {
+          "kind": "interface",
+          "name": "CaseRegressionDetail",
+          "line": 3710
+        },
+        {
+          "kind": "interface",
+          "name": "ChatRequest",
+          "line": 3754
+        },
+        {
+          "kind": "interface",
+          "name": "ChatResponse",
+          "line": 3762
+        },
+        {
+          "kind": "interface",
+          "name": "CohortProgressCounters",
+          "line": 3991
+        },
+        {
+          "kind": "interface",
+          "name": "GroundTruthQueueResponse",
+          "line": 4054
+        },
+        {
+          "kind": "interface",
+          "name": "GroundTruthRawLogEntry",
+          "line": 4060
+        },
+        {
+          "kind": "interface",
+          "name": "GroundTruthReviewerSubmission",
+          "line": 4075
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/lib/clipboard.ts",
+      "lines": 118,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/detection-intelligence/[id]/page.tsx",
+        "frontend/src/app/soc-chatbot/page.tsx",
+        "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx",
+        "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx",
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/detection-intelligence/[id]/page.tsx",
+        "frontend/src/app/soc-chatbot/page.tsx",
+        "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx",
+        "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx"
+      ],
+      "test_refs": [],
+      "export_count": 1,
+      "unused_exports": []
+    },
+    {
+      "file": "frontend/src/lib/diagnostics.ts",
+      "lines": 496,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx",
+        "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+        "frontend/src/components/compact/CompactDesignSystem.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx",
+        "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+        "frontend/src/components/compact/CompactDesignSystem.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/evaluate-accuracy-and-empirical-readiness.test.mjs",
+        "frontend/tests/phase3-compact-ui.test.mjs",
+        "frontend/tests/v1_2_3a_failsafe.test.mjs",
+        "frontend/tests/v1_2_3_ui_integrity.test.mjs",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_ais_2_3_remediation.py"
+      ],
+      "export_count": 7,
+      "unused_exports": [
+        {
+          "kind": "interface",
+          "name": "RuleDiagnosticInput",
+          "line": 23
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/lib/provenance.ts",
+      "lines": 168,
+      "imported_by": [
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/app/human-review-queue/page.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+        "frontend/src/app/ai-triage-workbench/page.tsx",
+        "frontend/src/app/human-review-queue/page.tsx",
+        "frontend/src/components/layout/Sidebar.tsx",
+        "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/quality-export.test.mjs",
+        "scripts/run_integration_suite.py",
+        "scripts/run_phase8_empirical_validation.py",
+        "scripts/run_v1_2_3a_validation.mjs",
+        "scripts/setup_ready_for_approval_fixture.py",
+        "backend/tests/test_agent_intelligence_studio_v2.py",
+        "backend/tests/test_ais_2_1_remediation.py",
+        "backend/tests/test_ais_2_2_remediation.py",
+        "backend/tests/test_ais_2_4a_tp_grounding.py",
+        "backend/tests/test_ais_2_4b_validator_integrity.py",
+        "backend/tests/test_ais_2_6c_three_mode_and_bias_isolation.py",
+        "backend/tests/test_ais_2_6_boundary_and_provenance.py",
+        "backend/tests/test_ais_heavy_tcp_e2e.py",
+        "backend/tests/test_audit_remediations.py",
+        "backend/tests/test_empirical_benchmark_harness.py",
+        "backend/tests/test_empirical_safety_verification.py",
+        "backend/tests/test_evidence_compaction_and_chunking.py",
+        "backend/tests/test_evidence_integrity_audit.py",
+        "backend/tests/test_phase8_1_validation.py",
+        "backend/tests/test_phase8_2_validation.py",
+        "backend/tests/test_phase8_integration.py",
+        "backend/tests/test_phase9_1_hardening.py",
+        "backend/tests/test_phase9_audit_and_pilot.py",
+        "backend/tests/test_policy_remediation_and_ground_truth.py",
+        "backend/tests/test_postgresql_version_deletion_integrity.py",
+        "backend/tests/e2e_browser/test_phase8_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_2_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase8_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_1_ui_e2e.py",
+        "backend/tests/e2e_browser/test_phase9_ui_e2e.py"
+      ],
+      "export_count": 3,
+      "unused_exports": [
+        {
+          "kind": "interface",
+          "name": "ProvenanceBadgeInfo",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "file": "frontend/src/lib/qualityExport.ts",
+      "lines": 565,
+      "imported_by": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "active_importers": [
+        "frontend/src/app/agent-intelligence-studio/page.tsx"
+      ],
+      "test_refs": [
+        "frontend/tests/quality-export.test.mjs"
+      ],
+      "export_count": 12,
+      "unused_exports": [
+        {
+          "kind": "interface",
+          "name": "QualityExportContext",
+          "line": 7
+        },
+        {
+          "kind": "interface",
+          "name": "BuiltQualityExportFile",
+          "line": 17
+        }
+      ]
+    }
+  ],
+  "public_assets": [
+    {
+      "file": "frontend/public/file.svg",
+      "size_bytes": 391,
+      "refs": []
+    },
+    {
+      "file": "frontend/public/globe.svg",
+      "size_bytes": 1035,
+      "refs": []
+    },
+    {
+      "file": "frontend/public/next.svg",
+      "size_bytes": 1375,
+      "refs": []
+    },
+    {
+      "file": "frontend/public/vercel.svg",
+      "size_bytes": 128,
+      "refs": []
+    },
+    {
+      "file": "frontend/public/verdictum-logo-sm.png",
+      "size_bytes": 31252,
+      "refs": [
+        "frontend/src/components/common/BrandLogo.tsx"
+      ]
+    },
+    {
+      "file": "frontend/public/verdictum-logo.png",
+      "size_bytes": 330132,
+      "refs": [
+        "frontend/src/components/common/BrandLogo.tsx"
+      ]
+    },
+    {
+      "file": "frontend/public/window.svg",
+      "size_bytes": 385,
+      "refs": []
+    }
+  ],
+  "npm_deps_imported": [
+    "lucide-react",
+    "next",
+    "react"
+  ],
+  "imports_out": {
+    "frontend/src/app/admin/page.tsx": [
+      "frontend/src/app/governance-access/page.tsx"
+    ],
+    "frontend/src/app/admin-guide/page.tsx": [
+      "frontend/src/data/admin-guide/types.ts",
+      "frontend/src/data/admin-guide/architectureFlowData.ts",
+      "frontend/src/data/admin-guide/decisionFlowData.ts",
+      "frontend/src/data/admin-guide/studioGuideData.ts",
+      "frontend/src/data/admin-guide/requirementsData.ts",
+      "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+      "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx",
+      "frontend/src/components/admin-guide/GuidedTourSection.tsx",
+      "frontend/src/components/admin-guide/StudioGuideSection.tsx",
+      "frontend/src/components/admin-guide/DecisionEngineSection.tsx",
+      "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx",
+      "frontend/src/components/admin-guide/RequirementsSection.tsx",
+      "frontend/src/components/admin-guide/GlossaryTroubleshootingSection.tsx",
+      "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx",
+      "frontend/src/components/common/BrandLogo.tsx",
+      "frontend/src/components/navigation/NavigationIcon.tsx"
+    ],
+    "frontend/src/app/agent-configuration/page.tsx": [
+      "frontend/src/context/AppContext.tsx",
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/app/agent-intelligence-studio/page.tsx": [
+      "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx",
+      "frontend/src/lib/api.ts",
+      "frontend/src/lib/qualityExport.ts",
+      "frontend/src/components/learning/RuleLearningDashboard.tsx",
+      "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+      "frontend/src/components/compact/CompactDesignSystem.tsx",
+      "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+      "frontend/src/components/compact/AiTestWorkbench.tsx",
+      "frontend/src/components/compact/AccuracyLearningSummary.tsx",
+      "frontend/src/components/compact/ManageVersionHistory.tsx",
+      "frontend/src/lib/diagnostics.ts",
+      "frontend/src/lib/clipboard.ts"
+    ],
+    "frontend/src/app/agent-memory/page.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/app/agent-mission-control/page.tsx": [
+      "frontend/src/app/page.tsx"
+    ],
+    "frontend/src/app/agent-simulation-lab/page.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/components/compact/CompactDesignSystem.tsx"
+    ],
+    "frontend/src/app/ai-triage-workbench/[id]/page.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/lib/clipboard.ts",
+      "frontend/src/context/AppContext.tsx",
+      "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx",
+      "frontend/src/lib/provenance.ts",
+      "frontend/src/components/compact/IncidentVerdictMatrix.tsx",
+      "frontend/src/components/compact/CompactDesignSystem.tsx",
+      "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx"
+    ],
+    "frontend/src/app/ai-triage-workbench/page.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/context/AppContext.tsx",
+      "frontend/src/lib/provenance.ts",
+      "frontend/src/components/compact/CompactDesignSystem.tsx"
+    ],
+    "frontend/src/app/analyst-attention/page.tsx": [
+      "frontend/src/app/human-review-queue/page.tsx"
+    ],
+    "frontend/src/app/detection-intelligence/[id]/page.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/lib/clipboard.ts"
+    ],
+    "frontend/src/app/detection-intelligence/page.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/app/dry-run/page.tsx": [
+      "frontend/src/app/agent-simulation-lab/page.tsx"
+    ],
+    "frontend/src/app/evaluation-reports/page.tsx": [
+      "frontend/src/app/verdict-intelligence/page.tsx"
+    ],
+    "frontend/src/app/governance-access/page.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/context/AppContext.tsx"
+    ],
+    "frontend/src/app/human-review-queue/page.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/context/AppContext.tsx",
+      "frontend/src/lib/provenance.ts",
+      "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+    ],
+    "frontend/src/app/imports/page.tsx": [
+      "frontend/src/app/telemetry-hub/page.tsx"
+    ],
+    "frontend/src/app/incidents/[id]/page.tsx": [
+      "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+    ],
+    "frontend/src/app/incidents/page.tsx": [
+      "frontend/src/app/ai-triage-workbench/page.tsx"
+    ],
+    "frontend/src/app/inference-control/page.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/components/system/ServerInfrastructureMonitor.tsx",
+      "frontend/src/components/telemetry/TokenBifurcationWidget.tsx"
+    ],
+    "frontend/src/app/infrastructure/page.tsx": [
+      "frontend/src/app/inference-control/page.tsx"
+    ],
+    "frontend/src/app/layout.tsx": [
+      "frontend/src/context/AppContext.tsx",
+      "frontend/src/components/layout/Shell.tsx",
+      "frontend/src/config/branding.ts"
+    ],
+    "frontend/src/app/learning-history/page.tsx": [
+      "frontend/src/app/agent-memory/page.tsx"
+    ],
+    "frontend/src/app/login/page.tsx": [
+      "frontend/src/context/AppContext.tsx",
+      "frontend/src/components/common/BrandLogo.tsx",
+      "frontend/src/config/branding.ts"
+    ],
+    "frontend/src/app/page.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/components/system/ServerInfrastructureMonitor.tsx",
+      "frontend/src/components/common/BrandLogo.tsx"
+    ],
+    "frontend/src/app/prompt-studio/page.tsx": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx"
+    ],
+    "frontend/src/app/rules/[id]/page.tsx": [
+      "frontend/src/app/detection-intelligence/[id]/page.tsx"
+    ],
+    "frontend/src/app/rules/page.tsx": [
+      "frontend/src/app/detection-intelligence/page.tsx"
+    ],
+    "frontend/src/app/settings/page.tsx": [
+      "frontend/src/app/agent-configuration/page.tsx"
+    ],
+    "frontend/src/app/soc-chatbot/page.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/lib/clipboard.ts",
+      "frontend/src/components/common/BrandLogo.tsx"
+    ],
+    "frontend/src/app/telemetry-hub/page.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/app/verdict-intelligence/page.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
+      "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx",
+      "frontend/src/context/AppContext.tsx",
+      "frontend/src/components/common/BrandLogo.tsx"
+    ],
+    "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx": [
+      "frontend/src/data/admin-guide/pagesGuideData.ts",
+      "frontend/src/components/navigation/NavigationIcon.tsx",
+      "frontend/src/config/navigationIcons.ts"
+    ],
+    "frontend/src/components/admin-guide/DecisionEngineSection.tsx": [
+      "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx",
+      "frontend/src/data/admin-guide/decisionFlowData.ts",
+      "frontend/src/data/admin-guide/studioGuideData.ts",
+      "frontend/src/components/admin-guide/GlossaryTerm.tsx"
+    ],
+    "frontend/src/components/admin-guide/GlossaryTerm.tsx": [
+      "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts"
+    ],
+    "frontend/src/components/admin-guide/GlossaryTroubleshootingSection.tsx": [
+      "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+      "frontend/src/components/navigation/NavigationIcon.tsx"
+    ],
+    "frontend/src/components/admin-guide/GuidedTourSection.tsx": [
+      "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+      "frontend/src/data/admin-guide/types.ts",
+      "frontend/src/components/navigation/NavigationIcon.tsx"
+    ],
+    "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx": [
+      "frontend/src/data/admin-guide/incidentExampleData.ts",
+      "frontend/src/components/admin-guide/GlossaryTerm.tsx",
+      "frontend/src/components/admin-guide/usePrefersReducedMotion.ts"
+    ],
+    "frontend/src/components/admin-guide/RequirementsSection.tsx": [
+      "frontend/src/data/admin-guide/requirementsData.ts",
+      "frontend/src/data/admin-guide/types.ts",
+      "frontend/src/context/AppContext.tsx"
+    ],
+    "frontend/src/components/admin-guide/StudioGuideSection.tsx": [
+      "frontend/src/data/admin-guide/studioGuideData.ts",
+      "frontend/src/components/admin-guide/GlossaryTerm.tsx"
+    ],
+    "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx": [
+      "frontend/src/data/admin-guide/types.ts",
+      "frontend/src/components/admin-guide/usePrefersReducedMotion.ts"
+    ],
+    "frontend/src/components/common/PhasePlaceholder.tsx": [
+      "frontend/src/components/common/BrandLogo.tsx"
+    ],
+    "frontend/src/components/compact/AccuracyLearningSummary.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx": [
+      "frontend/src/lib/diagnostics.ts",
+      "frontend/src/components/compact/CompactDesignSystem.tsx",
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/components/compact/AiTestWorkbench.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/components/compact/CompactDesignSystem.tsx": [
+      "frontend/src/lib/diagnostics.ts"
+    ],
+    "frontend/src/components/compact/CompactGovernancePanels.tsx": [
+      "frontend/src/components/compact/CompactDesignSystem.tsx"
+    ],
+    "frontend/src/components/compact/ManageVersionHistory.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/components/layout/Header.tsx": [
+      "frontend/src/context/AppContext.tsx",
+      "frontend/src/components/layout/HeaderBranding.tsx"
+    ],
+    "frontend/src/components/layout/HeaderBranding.tsx": [
+      "frontend/src/components/common/BrandLogo.tsx",
+      "frontend/src/config/branding.ts"
+    ],
+    "frontend/src/components/layout/Shell.tsx": [
+      "frontend/src/components/layout/Sidebar.tsx",
+      "frontend/src/components/layout/Header.tsx",
+      "frontend/src/context/AppContext.tsx"
+    ],
+    "frontend/src/components/layout/Sidebar.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/lib/provenance.ts",
+      "frontend/src/components/common/BrandLogo.tsx",
+      "frontend/src/components/navigation/NavigationIcon.tsx",
+      "frontend/src/config/navigationIcons.ts",
+      "frontend/src/config/branding.ts"
+    ],
+    "frontend/src/components/learning/RuleLearningDashboard.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx"
+    ],
+    "frontend/src/components/navigation/NavigationIcon.tsx": [
+      "frontend/src/config/navigationIcons.ts"
+    ],
+    "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/components/pilot/PilotControlAndDashboard.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/context/AppContext.tsx",
+      "frontend/src/lib/provenance.ts"
+    ],
+    "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/lib/clipboard.ts"
+    ],
+    "frontend/src/components/review/GroundTruthCertificationPanel.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/context/AppContext.tsx"
+    ],
+    "frontend/src/components/system/ServerInfrastructureMonitor.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx": [
+      "frontend/src/lib/api.ts",
+      "frontend/src/lib/clipboard.ts"
+    ],
+    "frontend/src/components/telemetry/TokenBifurcationWidget.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/context/AppContext.tsx": [
+      "frontend/src/lib/api.ts"
+    ],
+    "frontend/src/data/admin-guide/architectureFlowData.ts": [
+      "frontend/src/data/admin-guide/types.ts"
+    ],
+    "frontend/src/data/admin-guide/decisionFlowData.ts": [
+      "frontend/src/data/admin-guide/types.ts"
+    ],
+    "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts": [
+      "frontend/src/data/admin-guide/types.ts"
+    ],
+    "frontend/src/data/admin-guide/incidentExampleData.ts": [
+      "frontend/src/data/admin-guide/types.ts"
+    ],
+    "frontend/src/data/admin-guide/requirementsData.ts": [
+      "frontend/src/data/admin-guide/types.ts"
+    ],
+    "frontend/src/data/admin-guide/studioGuideData.ts": [
+      "frontend/src/data/admin-guide/types.ts"
+    ],
+    "frontend/src/lib/qualityExport.ts": [
+      "frontend/src/lib/api.ts"
+    ]
+  },
+  "imported_by": {
+    "frontend/src/app/governance-access/page.tsx": [
+      "frontend/src/app/admin/page.tsx"
+    ],
+    "frontend/src/data/admin-guide/types.ts": [
+      "frontend/src/app/admin-guide/page.tsx",
+      "frontend/src/components/admin-guide/GuidedTourSection.tsx",
+      "frontend/src/components/admin-guide/RequirementsSection.tsx",
+      "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx",
+      "frontend/src/data/admin-guide/architectureFlowData.ts",
+      "frontend/src/data/admin-guide/decisionFlowData.ts",
+      "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+      "frontend/src/data/admin-guide/incidentExampleData.ts",
+      "frontend/src/data/admin-guide/requirementsData.ts",
+      "frontend/src/data/admin-guide/studioGuideData.ts"
+    ],
+    "frontend/src/data/admin-guide/architectureFlowData.ts": [
+      "frontend/src/app/admin-guide/page.tsx"
+    ],
+    "frontend/src/data/admin-guide/decisionFlowData.ts": [
+      "frontend/src/app/admin-guide/page.tsx",
+      "frontend/src/components/admin-guide/DecisionEngineSection.tsx"
+    ],
+    "frontend/src/data/admin-guide/studioGuideData.ts": [
+      "frontend/src/app/admin-guide/page.tsx",
+      "frontend/src/components/admin-guide/DecisionEngineSection.tsx",
+      "frontend/src/components/admin-guide/StudioGuideSection.tsx"
+    ],
+    "frontend/src/data/admin-guide/requirementsData.ts": [
+      "frontend/src/app/admin-guide/page.tsx",
+      "frontend/src/components/admin-guide/RequirementsSection.tsx"
+    ],
+    "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts": [
+      "frontend/src/app/admin-guide/page.tsx",
+      "frontend/src/components/admin-guide/GlossaryTerm.tsx",
+      "frontend/src/components/admin-guide/GlossaryTroubleshootingSection.tsx",
+      "frontend/src/components/admin-guide/GuidedTourSection.tsx"
+    ],
+    "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx": [
+      "frontend/src/app/admin-guide/page.tsx",
+      "frontend/src/components/admin-guide/DecisionEngineSection.tsx"
+    ],
+    "frontend/src/components/admin-guide/GuidedTourSection.tsx": [
+      "frontend/src/app/admin-guide/page.tsx"
+    ],
+    "frontend/src/components/admin-guide/StudioGuideSection.tsx": [
+      "frontend/src/app/admin-guide/page.tsx"
+    ],
+    "frontend/src/components/admin-guide/DecisionEngineSection.tsx": [
+      "frontend/src/app/admin-guide/page.tsx"
+    ],
+    "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx": [
+      "frontend/src/app/admin-guide/page.tsx"
+    ],
+    "frontend/src/components/admin-guide/RequirementsSection.tsx": [
+      "frontend/src/app/admin-guide/page.tsx"
+    ],
+    "frontend/src/components/admin-guide/GlossaryTroubleshootingSection.tsx": [
+      "frontend/src/app/admin-guide/page.tsx"
+    ],
+    "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx": [
+      "frontend/src/app/admin-guide/page.tsx"
+    ],
+    "frontend/src/components/common/BrandLogo.tsx": [
+      "frontend/src/app/admin-guide/page.tsx",
+      "frontend/src/app/login/page.tsx",
+      "frontend/src/app/page.tsx",
+      "frontend/src/app/soc-chatbot/page.tsx",
+      "frontend/src/app/verdict-intelligence/page.tsx",
+      "frontend/src/components/common/PhasePlaceholder.tsx",
+      "frontend/src/components/layout/HeaderBranding.tsx",
+      "frontend/src/components/layout/Sidebar.tsx"
+    ],
+    "frontend/src/components/navigation/NavigationIcon.tsx": [
+      "frontend/src/app/admin-guide/page.tsx",
+      "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx",
+      "frontend/src/components/admin-guide/GlossaryTroubleshootingSection.tsx",
+      "frontend/src/components/admin-guide/GuidedTourSection.tsx",
+      "frontend/src/components/layout/Sidebar.tsx"
+    ],
+    "frontend/src/context/AppContext.tsx": [
+      "frontend/src/app/agent-configuration/page.tsx",
+      "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+      "frontend/src/app/ai-triage-workbench/page.tsx",
+      "frontend/src/app/governance-access/page.tsx",
+      "frontend/src/app/human-review-queue/page.tsx",
+      "frontend/src/app/layout.tsx",
+      "frontend/src/app/login/page.tsx",
+      "frontend/src/app/verdict-intelligence/page.tsx",
+      "frontend/src/components/admin-guide/RequirementsSection.tsx",
+      "frontend/src/components/layout/Header.tsx",
+      "frontend/src/components/layout/Shell.tsx",
+      "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
+      "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+    ],
+    "frontend/src/lib/api.ts": [
+      "frontend/src/app/agent-configuration/page.tsx",
+      "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "frontend/src/app/agent-memory/page.tsx",
+      "frontend/src/app/agent-simulation-lab/page.tsx",
+      "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+      "frontend/src/app/ai-triage-workbench/page.tsx",
+      "frontend/src/app/detection-intelligence/[id]/page.tsx",
+      "frontend/src/app/detection-intelligence/page.tsx",
+      "frontend/src/app/governance-access/page.tsx",
+      "frontend/src/app/human-review-queue/page.tsx",
+      "frontend/src/app/inference-control/page.tsx",
+      "frontend/src/app/page.tsx",
+      "frontend/src/app/soc-chatbot/page.tsx",
+      "frontend/src/app/telemetry-hub/page.tsx",
+      "frontend/src/app/verdict-intelligence/page.tsx",
+      "frontend/src/components/compact/AccuracyLearningSummary.tsx",
+      "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+      "frontend/src/components/compact/AiTestWorkbench.tsx",
+      "frontend/src/components/compact/ManageVersionHistory.tsx",
+      "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+      "frontend/src/components/layout/Sidebar.tsx",
+      "frontend/src/components/learning/RuleLearningDashboard.tsx",
+      "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx",
+      "frontend/src/components/pilot/PilotControlAndDashboard.tsx",
+      "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx",
+      "frontend/src/components/review/GroundTruthCertificationPanel.tsx",
+      "frontend/src/components/system/ServerInfrastructureMonitor.tsx",
+      "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx",
+      "frontend/src/components/telemetry/TokenBifurcationWidget.tsx",
+      "frontend/src/context/AppContext.tsx",
+      "frontend/src/lib/qualityExport.ts"
+    ],
+    "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+      "frontend/src/components/learning/RuleLearningDashboard.tsx"
+    ],
+    "frontend/src/lib/qualityExport.ts": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx"
+    ],
+    "frontend/src/components/learning/RuleLearningDashboard.tsx": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx"
+    ],
+    "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx"
+    ],
+    "frontend/src/components/compact/CompactDesignSystem.tsx": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "frontend/src/app/agent-simulation-lab/page.tsx",
+      "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+      "frontend/src/app/ai-triage-workbench/page.tsx",
+      "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+      "frontend/src/components/compact/CompactGovernancePanels.tsx"
+    ],
+    "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx"
+    ],
+    "frontend/src/components/compact/AiTestWorkbench.tsx": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx"
+    ],
+    "frontend/src/components/compact/AccuracyLearningSummary.tsx": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx"
+    ],
+    "frontend/src/components/compact/ManageVersionHistory.tsx": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx"
+    ],
+    "frontend/src/lib/diagnostics.ts": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx",
+      "frontend/src/components/compact/CompactDesignSystem.tsx"
+    ],
+    "frontend/src/lib/clipboard.ts": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+      "frontend/src/app/detection-intelligence/[id]/page.tsx",
+      "frontend/src/app/soc-chatbot/page.tsx",
+      "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx",
+      "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx"
+    ],
+    "frontend/src/app/page.tsx": [
+      "frontend/src/app/agent-mission-control/page.tsx"
+    ],
+    "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx": [
+      "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+    ],
+    "frontend/src/lib/provenance.ts": [
+      "frontend/src/app/ai-triage-workbench/[id]/page.tsx",
+      "frontend/src/app/ai-triage-workbench/page.tsx",
+      "frontend/src/app/human-review-queue/page.tsx",
+      "frontend/src/components/layout/Sidebar.tsx",
+      "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+    ],
+    "frontend/src/components/compact/IncidentVerdictMatrix.tsx": [
+      "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+    ],
+    "frontend/src/app/human-review-queue/page.tsx": [
+      "frontend/src/app/analyst-attention/page.tsx"
+    ],
+    "frontend/src/app/agent-simulation-lab/page.tsx": [
+      "frontend/src/app/dry-run/page.tsx"
+    ],
+    "frontend/src/app/verdict-intelligence/page.tsx": [
+      "frontend/src/app/evaluation-reports/page.tsx"
+    ],
+    "frontend/src/components/review/GroundTruthCertificationPanel.tsx": [
+      "frontend/src/app/human-review-queue/page.tsx"
+    ],
+    "frontend/src/app/telemetry-hub/page.tsx": [
+      "frontend/src/app/imports/page.tsx"
+    ],
+    "frontend/src/app/ai-triage-workbench/[id]/page.tsx": [
+      "frontend/src/app/incidents/[id]/page.tsx"
+    ],
+    "frontend/src/app/ai-triage-workbench/page.tsx": [
+      "frontend/src/app/incidents/page.tsx"
+    ],
+    "frontend/src/components/system/ServerInfrastructureMonitor.tsx": [
+      "frontend/src/app/inference-control/page.tsx",
+      "frontend/src/app/page.tsx"
+    ],
+    "frontend/src/components/telemetry/TokenBifurcationWidget.tsx": [
+      "frontend/src/app/inference-control/page.tsx"
+    ],
+    "frontend/src/app/inference-control/page.tsx": [
+      "frontend/src/app/infrastructure/page.tsx"
+    ],
+    "frontend/src/components/layout/Shell.tsx": [
+      "frontend/src/app/layout.tsx"
+    ],
+    "frontend/src/config/branding.ts": [
+      "frontend/src/app/layout.tsx",
+      "frontend/src/app/login/page.tsx",
+      "frontend/src/components/layout/HeaderBranding.tsx",
+      "frontend/src/components/layout/Sidebar.tsx"
+    ],
+    "frontend/src/app/agent-memory/page.tsx": [
+      "frontend/src/app/learning-history/page.tsx"
+    ],
+    "frontend/src/app/agent-intelligence-studio/page.tsx": [
+      "frontend/src/app/prompt-studio/page.tsx"
+    ],
+    "frontend/src/app/detection-intelligence/[id]/page.tsx": [
+      "frontend/src/app/rules/[id]/page.tsx"
+    ],
+    "frontend/src/app/detection-intelligence/page.tsx": [
+      "frontend/src/app/rules/page.tsx"
+    ],
+    "frontend/src/app/agent-configuration/page.tsx": [
+      "frontend/src/app/settings/page.tsx"
+    ],
+    "frontend/src/components/pilot/PilotControlAndDashboard.tsx": [
+      "frontend/src/app/verdict-intelligence/page.tsx"
+    ],
+    "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx": [
+      "frontend/src/app/verdict-intelligence/page.tsx"
+    ],
+    "frontend/src/data/admin-guide/pagesGuideData.ts": [
+      "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx"
+    ],
+    "frontend/src/config/navigationIcons.ts": [
+      "frontend/src/components/admin-guide/AdminGuideInteractiveReader.tsx",
+      "frontend/src/components/layout/Sidebar.tsx",
+      "frontend/src/components/navigation/NavigationIcon.tsx"
+    ],
+    "frontend/src/components/admin-guide/GlossaryTerm.tsx": [
+      "frontend/src/components/admin-guide/DecisionEngineSection.tsx",
+      "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx",
+      "frontend/src/components/admin-guide/StudioGuideSection.tsx"
+    ],
+    "frontend/src/data/admin-guide/incidentExampleData.ts": [
+      "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx"
+    ],
+    "frontend/src/components/admin-guide/usePrefersReducedMotion.ts": [
+      "frontend/src/components/admin-guide/IncidentWalkthroughSection.tsx",
+      "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx"
+    ],
+    "frontend/src/components/layout/HeaderBranding.tsx": [
+      "frontend/src/components/layout/Header.tsx"
+    ],
+    "frontend/src/components/layout/Sidebar.tsx": [
+      "frontend/src/components/layout/Shell.tsx"
+    ],
+    "frontend/src/components/layout/Header.tsx": [
+      "frontend/src/components/layout/Shell.tsx"
+    ]
+  }
+}

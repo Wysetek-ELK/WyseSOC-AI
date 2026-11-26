@@ -1,0 +1,50 @@
+{
+  "capturedAtUtc": "2026-11-25T06:28:47.741Z",
+  "baseUrl": "http://172.26.41.240:3000",
+  "screenshots": [
+    {
+      "file": "02_human_review_queue_gt2.png",
+      "route": "/human-review-queue",
+      "sizeBytes": 508600,
+      "pageInfo": {
+        "url": "http://172.26.41.240:3000/human-review-queue",
+        "title": "Verdictum AI — Agentic SOC Intelligence Platform",
+        "textLen": 6439,
+        "snippet": "VERDICTUM AI\nAgentic SOC Intelligence\nBY WYSETEK\nSOC OPERATIONS\nAgent Mission Control\nAI Triage Workbench\nTelemetry Hub\nHuman Review Queue\nVerdictum Sentinel\nCOPILOT\nAGENT INTELLIGENCE\nAgent Intelligence Studio\nDetection Intelligence\nAgent Memory\nVALIDATION & TRUST\nAgent Simulation Lab\nVerdict Intel"
+      }
+    },
+    {
+      "file": "03_verdict_intelligence.png",
+      "route": "/verdict-intelligence",
+      "sizeBytes": 667857,
+      "pageInfo": {
+        "url": "http://172.26.41.240:3000/verdict-intelligence",
+        "title": "Verdictum AI — Agentic SOC Intelligence Platform",
+        "textLen": 2009,
+        "snippet": "VERDICTUM AI\nAgentic SOC Intelligence\nBY WYSETEK\nSOC OPERATIONS\nAgent Mission Control\nAI Triage Workbench\nTelemetry Hub\nHuman Review Queue\nVerdictum Sentinel\nCOPILOT\nAGENT INTELLIGENCE\nAgent Intelligence Studio\nDetection Intelligence\nAgent Memory\nVALIDATION & TRUST\nAgent Simulation Lab\nVerdict Intel"
+      }
+    },
+    {
+      "file": "04_agent_intelligence_studio_cs.png",
+      "route": "/agent-intelligence-studio?rule_id=0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+      "sizeBytes": 665455,
+      "pageInfo": {
+        "url": "http://172.26.41.240:3000/agent-intelligence-studio?rule_id=0974a66e-ede2-4a6a-821b-6283a99c8aa4",
+        "title": "Verdictum AI — Agentic SOC Intelligence Platform",
+        "textLen": 3757,
+        "snippet": "VERDICTUM AI\nAgentic SOC Intelligence\nBY WYSETEK\nSOC OPERATIONS\nAgent Mission Control\nAI Triage Workbench\nTelemetry Hub\nHuman Review Queue\nVerdictum Sentinel\nCOPILOT\nAGENT INTELLIGENCE\nAgent Intelligence Studio\nDetection Intelligence\nAgent Memory\nVALIDATION & TRUST\nAgent Simulation Lab\nVerdict Intel"
+      }
+    },
+    {
+      "file": "05_agent_intelligence_studio_prisma.png",
+      "route": "/agent-intelligence-studio?rule_id=14481ebd-4e8c-421e-8579-b6ee7995b746",
+      "sizeBytes": 681859,
+      "pageInfo": {
+        "url": "http://172.26.41.240:3000/agent-intelligence-studio?rule_id=14481ebd-4e8c-421e-8579-b6ee7995b746",
+        "title": "Verdictum AI — Agentic SOC Intelligence Platform",
+        "textLen": 3768,
+        "snippet": "VERDICTUM AI\nAgentic SOC Intelligence\nBY WYSETEK\nSOC OPERATIONS\nAgent Mission Control\nAI Triage Workbench\nTelemetry Hub\nHuman Review Queue\nVerdictum Sentinel\nCOPILOT\nAGENT INTELLIGENCE\nAgent Intelligence Studio\nDetection Intelligence\nAgent Memory\nVALIDATION & TRUST\nAgent Simulation Lab\nVerdict Intel"
+      }
+    }
+  ]
+}

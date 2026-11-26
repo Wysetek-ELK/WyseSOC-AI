@@ -1,0 +1,18 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:27:21.735719+00:00",
+  "cohort_key": "AIS_2_6E_FROZEN_20",
+  "cohort_size": 20,
+  "ground_truth_level": "GT-2_SINGLE_INDEPENDENT_REVIEW_EXPLORATORY",
+  "server1_endpoint": "http://172.26.41.240",
+  "server1_commit_sha": "1e099d5b5954f6921e154ce124d04e604f466d9e",
+  "server2_endpoint": "http://13.204.214.64:8000/v1",
+  "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "vllm_version": "0.33.0",
+  "max_model_len": 8192,
+  "execution_modes": [
+    "MODE_A_NEUTRAL_BASELINE",
+    "MODE_B_POLICY_ASSISTED_RAW",
+    "MODE_C_DETERMINISTIC_VALIDATOR"
+  ]
+}

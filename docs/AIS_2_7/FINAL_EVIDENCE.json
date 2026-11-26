@@ -1,0 +1,33 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:31:38.558775+00:00",
+  "three_distinct_status_verdicts": {
+    "benchmark_execution_status": "PASS_COMPLETE_EMPIRICAL_EVALUATION",
+    "model_capability_status": "FAIL_UNSUITABLE_QWEN25_7B_INSTRUCT_AWQ",
+    "production_readiness_status": "NOT_READY_BLOCKED"
+  },
+  "verified_key_figures": {
+    "cohort_n": 20,
+    "gt2_distribution": {
+      "TRUE_POSITIVE": 9,
+      "FALSE_POSITIVE": 1,
+      "INCONCLUSIVE": 10
+    },
+    "gt3_certified": 0,
+    "live_gpu_calls_successful": 41,
+    "gateway_504_retries": 1,
+    "schema_valid_calls": "40/40",
+    "max_total_tokens_observed": 7197,
+    "mode_a_3class_accuracy": "1/20 (5.0%, 95% CI 0.89%-23.61%)",
+    "mode_b_3class_accuracy": "2/20 (10.0%, 95% CI 2.79%-30.10%)",
+    "mode_c_validated_3class_accuracy": "9/20 (45.0%, 95% CI 25.82%-65.79%)",
+    "mode_c_effective_trust_3class_accuracy": "10/20 (50.0% via 20/20 REQUIRES_ANALYST_ATTENTION)",
+    "mode_a_missed_tp_as_fp": "9/9 (100.0%)",
+    "mode_b_missed_tp_as_fp": "0/9 (0.0%)",
+    "mode_c_missed_tp_as_fp": "0/9 (0.0%)",
+    "mode_b_fp_as_tp": "1/1 (100.0%)",
+    "mode_c_fp_as_tp": "0/1 (0.0%)",
+    "regression_pytest": "61 passed in 22.95s",
+    "operational_db_mutations": 0
+  }
+}

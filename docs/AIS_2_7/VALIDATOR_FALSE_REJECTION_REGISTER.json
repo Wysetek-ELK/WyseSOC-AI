@@ -1,0 +1,26 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "total_validator_rejections_of_gt_matching_mode_b": 1,
+  "substantive_false_rejections_count": 0,
+  "records": [
+    {
+      "incident_id": "132527297",
+      "gt2_verdict": "TRUE_POSITIVE",
+      "mode_b_verdict": "TRUE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "rejection_reason": [
+        {
+          "claim_type": "OBSERVED_FACT",
+          "field": "process.name",
+          "asserted_value": "UltraViewer_Service.exe",
+          "grounding_status": "UNSUPPORTED_PREDICATE",
+          "reason": "Claim asserts signature status ('Binary not signed.'), but cited evidence 'process.name' only provides a file/process identifier, not authentic signature telemetry."
+        }
+      ],
+      "is_substantively_false_rejection": false,
+      "audit_assessment": "GT2 verdict was TRUE_POSITIVE, so rejecting Mode B downgraded a lucky correct label. However, Mode B fabricated 'Binary not signed' citing process.name without any signature telemetry; therefore the Evidence Contract Validator behaved strictly as designed and this was a justified hallucination rejection rather than a validator bug."
+    }
+  ]
+}

@@ -260,10 +260,18 @@ class IndependentVerdictValidator:
             reason_lower = model_reason.lower()
             field_name_map = {
                 "file.hash_sha256": ("file.hash_sha256", "hash_sha256", "sha256", "file hash"),
+                "file.hash": ("file.hash", "md5", "sha1"),
                 "process.parent_command_line": ("process.parent_command_line", "parent_command_line", "parent command line"),
                 "process.command_line": ("process.command_line", "command_line", "command line"),
                 "process.parent_name": ("process.parent_name", "parent_name", "parent process name"),
                 "process.name": ("process.name", "process name", "binary name"),
+                "process.file_name": ("process.file_name", "process file name"),
+                "file.name": ("file.name", "filename", "file name"),
+                "http.url": ("http.url", "request url", "url"),
+                "endpoint.hostname": ("endpoint.hostname", "hostname", "host name"),
+                "user.name": ("user.name", "username", "user name"),
+                "network.source_ip": ("network.source_ip", "source ip", "src ip"),
+                "network.destination_ip": ("network.destination_ip", "destination ip", "dest ip"),
             }
             records_by_field = {r.source_field: r for r in normalization_result.records}
             for canon_field, aliases in field_name_map.items():
@@ -291,6 +299,119 @@ class IndependentVerdictValidator:
                                         final_verdict = "REQUIRES_ATTENTION"
                                         validation_status = "REASONING_CONTRADICTION"
                                         action_directive = "Model reasoning contradicts observed canonical telemetry by asserting present fields are missing."
+
+            # Check 4f (AIS 2.8): Narrative path, signature, IP-scope, and download-vs-execution checks
+            from app.services.evidence_intelligence_service import EvidenceIntelligenceEngine
+
+            all_path_strings = [
+                str(r.observed_value)
+                for r in normalization_result.records
+                if r.source_field in ("process.command_line", "process.image_path", "process.file_name", "process.name", "file.name")
+                and r.observed_value
+            ]
+            has_program_files = any("program files" in p.lower() for p in all_path_strings)
+            has_actual_temp = any(
+                t in p.lower()
+                for p in all_path_strings
+                for t in ("\\temp\\", "\\tmp\\", "/tmp/", "/var/tmp/", "\\appdata\\local\\temp\\")
+            )
+            if has_program_files and not has_actual_temp and re.search(
+                r"\b(?:temp(?:orary)?\s+(?:folder|dir(?:ectory)?|path)|unusual\s+temp|writable\s+temp)\b",
+                reason_lower,
+            ):
+                contra_msg = (
+                    "Contradiction: Model rationale characterizes binary path as a temporary directory, "
+                    "but observed path is under Program Files."
+                )
+                if contra_msg not in contradictions:
+                    contradictions.append(contra_msg)
+                if "PATH_MISCLASSIFICATION" not in reason_codes:
+                    reason_codes.append("PATH_MISCLASSIFICATION")
+                if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                    final_verdict = "REQUIRES_ATTENTION"
+                    validation_status = "REASONING_CONTRADICTION"
+                    action_directive = "Model reasoning misclassified a Program Files path as a temporary directory."
+
+            has_sig_telemetry = any(
+                k in records_by_field
+                for k in ("process.signature", "file.signature", "signature", "signer")
+            )
+            if not has_sig_telemetry and re.search(
+                r"\b(?:digitally\s+signed|valid\s+digital\s+signature|unsigned\s+(?:binary|executable|file)|self-signed\s+certificate)\b",
+                reason_lower,
+            ):
+                contra_msg = (
+                    "Unsupported Claim: Model rationale asserts digital signature status, "
+                    "but no signature telemetry is present in incident logs."
+                )
+                if contra_msg not in contradictions:
+                    contradictions.append(contra_msg)
+                if "UNSUPPORTED_SIGNATURE_CLAIM" not in reason_codes:
+                    reason_codes.append("UNSUPPORTED_SIGNATURE_CLAIM")
+                if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                    final_verdict = "REQUIRES_ATTENTION"
+                    validation_status = "REASONING_CONTRADICTION"
+                    action_directive = "Model asserted unverified digital signature claims absent from telemetry."
+
+            ip_records = [
+                str(r.observed_value).strip()
+                for r in normalization_result.records
+                if r.source_field in ("network.source_ip", "network.destination_ip", "endpoint.ip", "source_ip", "reporting_ip")
+                and r.observed_value
+            ]
+            for obs_ip in set(ip_records):
+                ip_meta = EvidenceIntelligenceEngine.classify_ip_address(obs_ip)
+                if obs_ip in model_reason:
+                    esc_ip = re.escape(obs_ip)
+                    ip_pattern_ext = (
+                        rf"(?:{esc_ip}[^.\n]{{0,50}}\b(?:external|public\s+internet)\b"
+                        rf"|\b(?:external|public)\s+(?:ip|address|host)?[^.\n]{{0,30}}{esc_ip})"
+                    )
+                    ip_pattern_int = (
+                        rf"(?:{esc_ip}[^.\n]{{0,50}}\b(?:internal|rfc1918|private\s+lan)\b"
+                        rf"|\b(?:internal|rfc1918|private)\s+(?:ip|address|host)?[^.\n]{{0,30}}{esc_ip})"
+                    )
+                    if ip_meta.get("is_rfc1918") and re.search(ip_pattern_ext, model_reason, re.IGNORECASE):
+                        contra_msg = f"Contradiction: Model described RFC1918 private IP {obs_ip} as external/public."
+                        if contra_msg not in contradictions:
+                            contradictions.append(contra_msg)
+                        if "IP_CLASSIFICATION_CONTRADICTION" not in reason_codes:
+                            reason_codes.append("IP_CLASSIFICATION_CONTRADICTION")
+                        if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                            final_verdict = "REQUIRES_ATTENTION"
+                            validation_status = "REASONING_CONTRADICTION"
+                            action_directive = "Model misclassified an RFC1918 internal IP as external/public."
+                    elif ip_meta.get("is_public") and re.search(ip_pattern_int, model_reason, re.IGNORECASE):
+                        contra_msg = f"Contradiction: Model described public routable IP {obs_ip} as internal/RFC1918."
+                        if contra_msg not in contradictions:
+                            contradictions.append(contra_msg)
+                        if "IP_CLASSIFICATION_CONTRADICTION" not in reason_codes:
+                            reason_codes.append("IP_CLASSIFICATION_CONTRADICTION")
+                        if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                            final_verdict = "REQUIRES_ATTENTION"
+                            validation_status = "REASONING_CONTRADICTION"
+                            action_directive = "Model misclassified a public IP as internal/private."
+
+            has_proc_exec = any(
+                k in records_by_field
+                for k in ("process.command_line", "process.id", "process.parent_name", "endpoint.process_blocked")
+            )
+            has_network_file = any(k in records_by_field for k in ("file.name", "http.url", "web.category"))
+            if has_network_file and not has_proc_exec and re.search(
+                r"\b(?:confirmed\s+process\s+execution|executed\s+on\s+the\s+endpoint|ransomware\s+executed)\b",
+                reason_lower,
+            ):
+                contra_msg = (
+                    "Unsupported Claim: Model claimed endpoint process execution from network/SASE file telemetry without process execution logs."
+                )
+                if contra_msg not in contradictions:
+                    contradictions.append(contra_msg)
+                if "DOWNLOAD_CLAIMED_AS_EXECUTION" not in reason_codes:
+                    reason_codes.append("DOWNLOAD_CLAIMED_AS_EXECUTION")
+                if clean_prop_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE"):
+                    final_verdict = "REQUIRES_ATTENTION"
+                    validation_status = "REASONING_CONTRADICTION"
+                    action_directive = "Model claimed confirmed endpoint execution without process telemetry."
 
         # Check 5: Verdict-Specific Decision Criteria
         # Rule archetype and rule identity

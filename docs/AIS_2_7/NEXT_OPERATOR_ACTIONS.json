@@ -1,0 +1,10 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:27:21.735719+00:00",
+  "immediate_actions": [
+    "1. MANUALLY SHUT DOWN OR STOP GPU SERVER 2 (http://13.204.214.64:8000/v1) if no further inference testing is planned immediately, to avoid ongoing EC2 GPU charges (left running per explicit Checkpoint A authorization).",
+    "2. Review AIS 2.7 final findings in docs/AIS_2_7/24_FINAL_ACCEPTANCE_AND_EXECUTIVE_SUMMARY.md (and EMPIRICAL_METRICS.json) before deciding candidate replacement model for GPU Server 2.",
+    "3. Assign independent Reviewer #2 in Server 1 Ground Truth Certification UI to upgrade frozen 20 cohort items from GT-2 to GT-3.",
+    "4. Fix Prisma SASE Approved Policy (ed7ff3c7) on Server 1 before any replacement-model benchmark re-run."
+  ]
+}

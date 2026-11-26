@@ -26,6 +26,10 @@ def robust_parse_model_verdict_json(raw_text: str) -> Tuple[Optional[Dict[str, A
 
     text = raw_text.strip()
 
+    # 0. Strip Qwen3 reasoning <think>...</think> blocks if emitted (raw text remains preserved separately)
+    if "<think>" in text.lower():
+        text = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE).strip()
+
     # 1. Strip markdown fences if present
     if "```" in text:
         match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text, re.IGNORECASE)
@@ -188,18 +192,20 @@ class OpenAICompatibleProvider(BaseModelProvider):
 
     def __init__(
         self,
-        base_url: str = "http://127.0.0.1:8001/v1",
+        base_url: Optional[str] = None,
         api_key: Optional[str] = None,
-        model_name: str = "Qwen/Qwen2.5-7B-Instruct-AWQ",
-        timeout_seconds: float = 60.0,
-        max_tokens: int = 1024,
-        temperature: float = 0.1,
+        model_name: Optional[str] = None,
+        timeout_seconds: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.0,
     ):
-        self.base_url = base_url.rstrip("/")
-        self.api_key = api_key or "EMPTY"
-        self.model_name = model_name
-        self.timeout_seconds = max(0.1, float(timeout_seconds))
-        self.max_tokens = max(64, min(int(max_tokens), 16384)) if max_tokens else 1024
+        self.base_url = (base_url or getattr(settings, "LOCAL_LLM_BASE_URL", "http://127.0.0.1:8000/v1")).rstrip("/")
+        self.api_key = api_key or getattr(settings, "LOCAL_LLM_API_KEY", "EMPTY") or "EMPTY"
+        self.model_name = (model_name or getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ") or "Qwen/Qwen3-14B-AWQ").strip()
+        raw_timeout = timeout_seconds if timeout_seconds is not None else getattr(settings, "LOCAL_LLM_TIMEOUT", 180.0)
+        self.timeout_seconds = max(0.1, float(raw_timeout))
+        raw_max_tok = max_tokens if max_tokens is not None else getattr(settings, "LOCAL_LLM_MAX_TOKENS", 768)
+        self.max_tokens = max(64, min(int(raw_max_tok), 16384)) if raw_max_tok else 768
         self.temperature = temperature
 
     async def get_health(self) -> ProviderHealthResponse:
@@ -395,15 +401,30 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 raw_model_response="",
             )
 
-        payload = {
+        payload: Dict[str, Any] = {
             "model": self.model_name,
             "messages": [
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_content},
             ],
             "max_tokens": effective_max_tokens,
-            "temperature": self.temperature,
+            "temperature": kwargs.get("temperature", self.temperature),
         }
+        if kwargs.get("top_p") is not None:
+            payload["top_p"] = float(kwargs["top_p"])
+        if kwargs.get("seed") is not None:
+            payload["seed"] = int(kwargs["seed"])
+        if kwargs.get("response_format") is not None:
+            payload["response_format"] = kwargs["response_format"]
+        if kwargs.get("guided_json") is not None:
+            payload["guided_json"] = kwargs["guided_json"]
+        if "qwen3" in self.model_name.lower() or kwargs.get("enable_thinking") is not None:
+            enable_thinking = (
+                bool(kwargs["enable_thinking"])
+                if kwargs.get("enable_thinking") is not None
+                else bool(getattr(settings, "LOCAL_LLM_ENABLE_THINKING", False))
+            )
+            payload["chat_template_kwargs"] = {"enable_thinking": enable_thinking}
 
         # Authoritative Provider-Boundary Prompt Capture Hook (immediately prior to dispatch)
         capture_cb = kwargs.get("capture_callback")

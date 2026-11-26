@@ -1,0 +1,13 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "evaluated_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "decision": "NOT_SUITABLE_FOR_PRODUCTION_OR_CONTINUED_TUNING_REPLACE_OR_UPGRADE_MODEL",
+  "verdict": "UNSUITABLE",
+  "summary_rationale": [
+    "1. Mode A neutral baseline exhibited complete 20/20 FALSE_POSITIVE class collapse (5.0% 3-class accuracy, 0.0% TP recall), violating explicit anti-benign-assumption rules.",
+    "2. Mode B policy guidance raised raw 3-class accuracy from 5% to only 10% (2/20, McNemar p=1.0), triggered 6/9 false missing-command-line hallucinations on CrowdStrike, misclassified the sole FP as TP, and achieved 0/10 abstentions on inconclusive Prisma SASE alerts.",
+    "3. Prompt engineering or minor rule tuning cannot reliably overcome a quantized 7B model that fails basic instruction adherence (claims present JSON fields are missing), basic network topology (calls 3.109.76.166 internal and 172.25.14.67 external), and path reading (calls Program Files a writable temp path).",
+    "4. Deterministic validator architecture (Mode C) proved highly valuable as a safety firewall\u2014raising 3-class agreement to 45% (McNemar p=0.0156 vs Mode B), blocking 8/10 ungrounded Prisma decisive calls and 1/1 FP-as-TP misclassification, and reducing missed-TP-as-FP from 9/9 (Mode A) to 0/9\u2014justifying retention of Verdictum AI's pipeline while upgrading the underlying LLM (e.g., 14B/32B+ non-AWQ or unquantized/stronger model) AND fixing the mismatched Prisma SASE policy template."
+  ]
+}

@@ -1,0 +1,1349 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "summary": {
+    "mode_a_total_claims": 59,
+    "mode_a_mechanically_grounded": 56,
+    "mode_a_semantically_grounded": 34,
+    "mode_b_total_claims": 45,
+    "mode_b_mechanically_grounded": 32,
+    "mode_b_semantically_grounded": 24,
+    "mode_b_incidents_with_validator_flagged_hallucinations": 10,
+    "mode_b_incidents_with_validator_flagged_contradictions": 7,
+    "mode_b_incidents_clean_from_all_mechanical_or_semantic_hallucinations": 0
+  },
+  "records": [
+    {
+      "incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "gt2_verdict": "TRUE_POSITIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 3,
+        "prose_issues_count": 2,
+        "prose_issue_codes": [
+          "FALSE_MISSING_FIELD_ASSERTION",
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 0,
+        "mechanically_grounded_claims": 0,
+        "strictly_semantically_grounded_claims": 0,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "FALSE_MISSING_FIELD_ASSERTION"
+        ],
+        "claim_details": []
+      },
+      "mode_c_validator": {
+        "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+        "grounding_ratio": 1.0,
+        "has_hallucinations": false,
+        "unsupported_claim_details": [],
+        "detected_contradictions": [
+          "Contradiction: Model rationale asserts 'process.command_line' is missing, but canonical incident telemetry confirms it is PRESENT_VALID (value='\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"')."
+        ],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "gt2_verdict": "INCONCLUSIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 0,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The destination IP is a public CDN, suggesting legitimate access.') using only raw identifier/network field 'network.destination_ip'."
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The application category is web-browsing, indicating normal user activity.') using only raw identifier/network field 'network.application'."
+          },
+          {
+            "index": 3,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The user context shows a legitimate user accessing the file.') using only raw identifier/network field 'user.name'."
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 2,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 2,
+        "prose_issue_codes": [
+          "PUBLIC_IP_CALLED_INTERNAL",
+          "UNSUPPORTED_DOWNLOAD_CONFIRMATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_HALLUCINATION_PUBLIC_AS_INTERNAL_IP",
+            "detail": "Describes public IP '13.35.36.32' as internal: \"File 'review.es.system.js' was downloaded from an internal host.\"."
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "EVIDENCE_FIELD_MISMATCH",
+            "detail": "Asserted field 'process.file_name' differs from cited record fields ['file.name']."
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "REJECTED",
+        "grounding_ratio": 0.667,
+        "has_hallucinations": true,
+        "unsupported_claim_details": [
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "process.file_name",
+            "asserted_value": "review.es.system.js",
+            "grounding_status": "EVIDENCE_VALUE_MISMATCH",
+            "reason": "Evidence ID 'EV-132596403-8067495058999992391-file_name' records 'file.name' ('review.es.system.js'), not 'process.file_name' ('review.es.system.js')."
+          }
+        ],
+        "detected_contradictions": [],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "gt2_verdict": "INCONCLUSIVE",
+      "mode_a_claims": {
+        "total_claims": 2,
+        "mechanically_grounded_claims": 2,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation (\"The destination IP is '3.109.76.166', which is a legitimate domain.\") using only raw identifier/network field 'network.destination_ip'."
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "UNSUPPORTED_DOWNLOAD_CONFIRMATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_HALLUCINATION_PUBLIC_AS_INTERNAL_IP",
+            "detail": "Describes public IP '3.109.76.166' as internal: \"File 'jquery.knob.js' was downloaded from an internal IP address.\"."
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "VALIDATED",
+        "grounding_ratio": 1.0,
+        "has_hallucinations": false,
+        "unsupported_claim_details": [],
+        "detected_contradictions": [],
+        "validator_blindspot_note": "Validator accepted superficial field match while Mode B prose misclassified RFC1918/public IP or assumed benignity."
+      }
+    },
+    {
+      "incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "gt2_verdict": "TRUE_POSITIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 2,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The process command line points to a legitimate application.') using only raw identifier/network field 'process.command_line'."
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_HALLUCINATION_NO_SIGNATURE_TELEMETRY",
+            "detail": "Asserts digital signature state from 'file.hash_md5' without signature telemetry."
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 0,
+        "mechanically_grounded_claims": 0,
+        "strictly_semantically_grounded_claims": 0,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "FALSE_MISSING_FIELD_ASSERTION"
+        ],
+        "claim_details": []
+      },
+      "mode_c_validator": {
+        "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+        "grounding_ratio": 1.0,
+        "has_hallucinations": false,
+        "unsupported_claim_details": [],
+        "detected_contradictions": [
+          "Contradiction: Model rationale asserts 'process.command_line' is missing, but canonical incident telemetry confirms it is PRESENT_VALID (value='\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"')."
+        ],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "gt2_verdict": "INCONCLUSIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 2,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "EVIDENCE_FIELD_MISMATCH",
+            "detail": "Asserted field 'network.application' differs from cited record fields ['application.name']."
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The user context shows a legitimate user account.') using only raw identifier/network field 'user.name'."
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 3,
+        "prose_issues_count": 2,
+        "prose_issue_codes": [
+          "RFC1918_MISINTERPRETED_AS_REMOTE_SERVER",
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "INSUFFICIENT_EVIDENCE",
+        "grounding_ratio": 1.0,
+        "has_hallucinations": false,
+        "unsupported_claim_details": [],
+        "detected_contradictions": [],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "gt2_verdict": "TRUE_POSITIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The process execution is for a known legitimate application.') using only raw identifier/network field 'process.file_name'."
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "PATH_MISCHARACTERIZATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_HALLUCINATION_PATH_CONTRADICTION",
+            "detail": "Describes Program Files path as 'writable temporary path': 'The binary was executed from a writable temporary path.'."
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "VALIDATED",
+        "grounding_ratio": 1.0,
+        "has_hallucinations": false,
+        "unsupported_claim_details": [],
+        "detected_contradictions": [],
+        "validator_blindspot_note": "Validator missed prose path contradiction ('writable temporary path' vs Program Files (x86)) in claim_text."
+      }
+    },
+    {
+      "incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "gt2_verdict": "TRUE_POSITIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The process command line points to a legitimate UltraViewer service executable.') using only raw identifier/network field 'process.command_line'."
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The process file name matches a known legitimate application.') using only raw identifier/network field 'process.file_name'."
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 0,
+        "mechanically_grounded_claims": 0,
+        "strictly_semantically_grounded_claims": 0,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "FALSE_MISSING_FIELD_ASSERTION"
+        ],
+        "claim_details": []
+      },
+      "mode_c_validator": {
+        "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+        "grounding_ratio": 1.0,
+        "has_hallucinations": false,
+        "unsupported_claim_details": [],
+        "detected_contradictions": [
+          "Contradiction: Model rationale asserts 'process.command_line' is missing, but canonical incident telemetry confirms it is PRESENT_VALID (value='\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"')."
+        ],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "gt2_verdict": "TRUE_POSITIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The process command line points to a legitimate application.') using only raw identifier/network field 'process.command_line'."
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The process file name matches a known legitimate application.') using only raw identifier/network field 'process.file_name'."
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 2,
+        "mechanically_grounded_claims": 0,
+        "strictly_semantically_grounded_claims": 0,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "FALSE_MISSING_FIELD_ASSERTION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "EVIDENCE_VALUE_MISMATCH",
+            "detail": "Asserted value '' differs from cited record values ['\"C:\\\\Program Files (x86)\\\\UltraViewer\\\\UltraViewer_Service.exe\"']."
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_HALLUCINATION_NO_SIGNATURE_TELEMETRY",
+            "detail": "Asserts digital signature state from 'file.hash_sha256' without signature telemetry."
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+        "grounding_ratio": 0.0,
+        "has_hallucinations": true,
+        "unsupported_claim_details": [
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "process.command_line",
+            "asserted_value": "Process command line is missing.",
+            "grounding_status": "EVIDENCE_VALUE_MISMATCH",
+            "reason": "Value mismatch for 'process.command_line': claimed 'Process command line is missing.', actual is '\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"'."
+          },
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "file.hash_sha256",
+            "asserted_value": "10ff43f2d4a991c83caefce1c4442fa95258d0d93f168dde339f52322aa371e9",
+            "grounding_status": "UNSUPPORTED_PREDICATE",
+            "reason": "Claim asserts signature status ('Binary digital signature is missing.'), but cited evidence 'file.hash_sha256' only provides a file/process identifier, not authentic signature telemetry."
+          }
+        ],
+        "detected_contradictions": [
+          "Contradiction: Model rationale asserts 'process.command_line' is missing, but canonical incident telemetry confirms it is PRESENT_VALID (value='\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"')."
+        ],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "gt2_verdict": "TRUE_POSITIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The process executed is a legitimate application file.') using only raw identifier/network field 'process.file_name'."
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 2,
+        "mechanically_grounded_claims": 1,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "FALSE_MISSING_FIELD_ASSERTION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "NO_EVIDENCE_ID_CITED",
+            "detail": "Claim cites no canonical evidence ID."
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+        "grounding_ratio": 0.5,
+        "has_hallucinations": true,
+        "unsupported_claim_details": [
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "file.digital_signature",
+            "asserted_value": "N/A",
+            "grounding_status": "CLAIM_NOT_VERIFIABLE",
+            "reason": "Fabricated claim: Value 'N/A' for field 'file.digital_signature' was never observed in incident telemetry."
+          }
+        ],
+        "detected_contradictions": [
+          "Contradiction: Model rationale asserts 'process.command_line' is missing, but canonical incident telemetry confirms it is PRESENT_VALID (value='\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"')."
+        ],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "gt2_verdict": "TRUE_POSITIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The process command line matches a legitimate software installation path.') using only raw identifier/network field 'process.command_line'."
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The process file name is consistent with a legitimate application.') using only raw identifier/network field 'process.file_name'."
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 0,
+        "mechanically_grounded_claims": 0,
+        "strictly_semantically_grounded_claims": 0,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "FALSE_MISSING_FIELD_ASSERTION"
+        ],
+        "claim_details": []
+      },
+      "mode_c_validator": {
+        "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+        "grounding_ratio": 1.0,
+        "has_hallucinations": false,
+        "unsupported_claim_details": [],
+        "detected_contradictions": [
+          "Contradiction: Model rationale asserts 'process.command_line' is missing, but canonical incident telemetry confirms it is PRESENT_VALID (value='\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"')."
+        ],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132501348",
+      "vendor": "CrowdStrike",
+      "gt2_verdict": "FALSE_POSITIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 3,
+        "prose_issues_count": 0,
+        "prose_issue_codes": [],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 2,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 0,
+        "prose_issue_codes": [],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "EVIDENCE_VALUE_MISMATCH",
+            "detail": "Asserted value 'A process attempted to modify the configuration of a COM object registered by Falcon sensor. This is indicative of an attempt to tamper with Falcon sensor.' differs from cited record values ['A process attempted to modify the configuration of a COM object registered by Falcon sensor. This is indicative of an attempt to tamper with Falcon sensor. Investigate the registry operation and process tree.']."
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "INSUFFICIENT_EVIDENCE",
+        "grounding_ratio": 1.0,
+        "has_hallucinations": false,
+        "unsupported_claim_details": [],
+        "detected_contradictions": [],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "gt2_verdict": "TRUE_POSITIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The process command line points to a legitimate UltraViewer service executable.') using only raw identifier/network field 'process.command_line'."
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 2,
+        "mechanically_grounded_claims": 0,
+        "strictly_semantically_grounded_claims": 0,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "FALSE_MISSING_FIELD_ASSERTION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "EVIDENCE_VALUE_MISMATCH",
+            "detail": "Asserted value '' differs from cited record values ['\"C:\\\\Program Files (x86)\\\\UltraViewer\\\\UltraViewer_Service.exe\"']."
+          },
+          {
+            "index": 2,
+            "status": "NO_EVIDENCE_ID_CITED",
+            "detail": "Claim cites no canonical evidence ID."
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+        "grounding_ratio": 0.0,
+        "has_hallucinations": true,
+        "unsupported_claim_details": [
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "process.command_line",
+            "asserted_value": "Process command line is missing.",
+            "grounding_status": "EVIDENCE_VALUE_MISMATCH",
+            "reason": "Value mismatch for 'process.command_line': claimed 'Process command line is missing.', actual is '\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"'."
+          },
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "file.digital_signature",
+            "asserted_value": "Binary digital signature is missing.",
+            "grounding_status": "CLAIM_NOT_VERIFIABLE",
+            "reason": "Fabricated claim: Value 'Binary digital signature is missing.' for field 'file.digital_signature' was never observed in incident telemetry."
+          }
+        ],
+        "detected_contradictions": [
+          "Contradiction: Model rationale asserts 'process.command_line' is missing, but canonical incident telemetry confirms it is PRESENT_VALID (value='\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"')."
+        ],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "gt2_verdict": "TRUE_POSITIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 3,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 2,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 2,
+        "prose_issue_codes": [
+          "FABRICATED_SIGNATURE_ABSENCE",
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_HALLUCINATION_NO_SIGNATURE_TELEMETRY",
+            "detail": "Asserts digital signature state from 'process.name' without signature telemetry."
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "REJECTED",
+        "grounding_ratio": 0.667,
+        "has_hallucinations": true,
+        "unsupported_claim_details": [
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "process.name",
+            "asserted_value": "UltraViewer_Service.exe",
+            "grounding_status": "UNSUPPORTED_PREDICATE",
+            "reason": "Claim asserts signature status ('Binary not signed.'), but cited evidence 'process.name' only provides a file/process identifier, not authentic signature telemetry."
+          }
+        ],
+        "detected_contradictions": [],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "gt2_verdict": "INCONCLUSIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 3,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 2,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 2,
+        "prose_issue_codes": [
+          "UNSUPPORTED_DOWNLOAD_CONFIRMATION",
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "NO_EVIDENCE_ID_CITED",
+            "detail": "Claim cites no canonical evidence ID."
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "REJECTED",
+        "grounding_ratio": 0.667,
+        "has_hallucinations": true,
+        "unsupported_claim_details": [
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "process.file_name",
+            "asserted_value": "No suspicious process execution detected.",
+            "grounding_status": "CLAIM_NOT_VERIFIABLE",
+            "reason": "Fabricated claim: Value 'No suspicious process execution detected.' for field 'process.file_name' was never observed in incident telemetry."
+          }
+        ],
+        "detected_contradictions": [],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "gt2_verdict": "INCONCLUSIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 3,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 3,
+        "prose_issues_count": 2,
+        "prose_issue_codes": [
+          "PRIVATE_IP_CALLED_EXTERNAL",
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "VALIDATED",
+        "grounding_ratio": 1.0,
+        "has_hallucinations": false,
+        "unsupported_claim_details": [],
+        "detected_contradictions": [],
+        "validator_blindspot_note": "Validator accepted superficial field match while Mode B prose misclassified RFC1918/public IP or assumed benignity."
+      }
+    },
+    {
+      "incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "gt2_verdict": "INCONCLUSIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 2,
+        "strictly_semantically_grounded_claims": 0,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "NONEXISTENT_EVIDENCE_ID",
+            "detail": "Cited IDs ['EV-132499745-TOP-network_application_category'] not found in canonical_evidence."
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation (\"The file name 'scripts-QBOKETIS.js' suggests it's a legitimate script rather than malicious code.\") using only raw identifier/network field 'file.name'."
+          },
+          {
+            "index": 3,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The user context shows a legitimate user account, suggesting the activity is authorized.') using only raw identifier/network field 'user.name'."
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 0,
+        "prose_issue_codes": [],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation (\"Network destination IP '13.227.249.2' is not a known safe domain.\") using only raw identifier/network field 'network.destination_ip'."
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "INSUFFICIENT_EVIDENCE",
+        "grounding_ratio": 1.0,
+        "has_hallucinations": false,
+        "unsupported_claim_details": [],
+        "detected_contradictions": [],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "gt2_verdict": "INCONCLUSIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The destination domain is a legitimate host.') using only raw identifier/network field 'network.destination_domain'."
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 1,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 2,
+        "prose_issue_codes": [
+          "UNSUPPORTED_DOWNLOAD_CONFIRMATION",
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "NO_EVIDENCE_ID_CITED",
+            "detail": "Claim cites no canonical evidence ID."
+          },
+          {
+            "index": 3,
+            "status": "NO_EVIDENCE_ID_CITED",
+            "detail": "Claim cites no canonical evidence ID."
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "REJECTED",
+        "grounding_ratio": 0.333,
+        "has_hallucinations": true,
+        "unsupported_claim_details": [
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "process.file_name",
+            "asserted_value": "No suspicious process execution detected.",
+            "grounding_status": "CLAIM_NOT_VERIFIABLE",
+            "reason": "Fabricated claim: Value 'No suspicious process execution detected.' for field 'process.file_name' was never observed in incident telemetry."
+          },
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "process.command_line",
+            "asserted_value": "No encoded PowerShell commands or obfuscation.",
+            "grounding_status": "CLAIM_NOT_VERIFIABLE",
+            "reason": "Fabricated claim: Value 'No encoded PowerShell commands or obfuscation.' for field 'process.command_line' was never observed in incident telemetry."
+          }
+        ],
+        "detected_contradictions": [],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "gt2_verdict": "INCONCLUSIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The destination domain is a legitimate host.') using only raw identifier/network field 'network.destination_domain'."
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The user context shows a legitimate user account.') using only raw identifier/network field 'user.name'."
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 2,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation (\"The application category is business-and-economy, indicating it's a legitimate business application.\") using only raw identifier/network field 'network.application_category'."
+          },
+          {
+            "index": 3,
+            "status": "EVIDENCE_FIELD_MISMATCH",
+            "detail": "Asserted field 'network.source_ip, network.destination_ip' differs from cited record fields ['network.source_ip', 'network.destination_ip']."
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "REJECTED",
+        "grounding_ratio": 0.667,
+        "has_hallucinations": true,
+        "unsupported_claim_details": [
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "network.source_ip, network.destination_ip",
+            "asserted_value": "172.25.6.95, 23.55.44.112",
+            "grounding_status": "EVIDENCE_VALUE_MISMATCH",
+            "reason": "Evidence ID 'EV-132595592-8067495059000077972-network_source_ip' records 'network.source_ip' ('172.25.6.95'), not 'network.source_ip, network.destination_ip' ('172.25.6.95, 23.55.44.112')."
+          }
+        ],
+        "detected_contradictions": [],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "gt2_verdict": "INCONCLUSIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation ('The user context shows a legitimate user account name, suggesting authorized access.') using only raw identifier/network field 'user.name'."
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 1,
+        "prose_issue_codes": [
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation (\"File name 'exporting.js' matches known benign patterns.\") using only raw identifier/network field 'file.name'."
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation (\"Network destination IP '3.109.76.166' is likely a legitimate external server.\") using only raw identifier/network field 'network.destination_ip'."
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "REJECTED",
+        "grounding_ratio": 0.667,
+        "has_hallucinations": true,
+        "unsupported_claim_details": [
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "file.name",
+            "asserted_value": "exporting.js",
+            "grounding_status": "UNSUPPORTED_PREDICATE",
+            "reason": "Claim asserts trusted/benign reputation ('File name 'exporting.js' matches known benign patterns.'), but cited evidence is only a file/process name ('file.name'). Filename alone does not prove trusted reputation."
+          }
+        ],
+        "detected_contradictions": [],
+        "validator_blindspot_note": null
+      }
+    },
+    {
+      "incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "gt2_verdict": "INCONCLUSIVE",
+      "mode_a_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 3,
+        "strictly_semantically_grounded_claims": 2,
+        "prose_issues_count": 0,
+        "prose_issue_codes": [],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 2,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          },
+          {
+            "index": 3,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation (\"The application category is 'business-and-economy', suggesting normal business activity.\") using only raw identifier/network field 'network.application_category'."
+          }
+        ]
+      },
+      "mode_b_claims": {
+        "total_claims": 3,
+        "mechanically_grounded_claims": 2,
+        "strictly_semantically_grounded_claims": 1,
+        "prose_issues_count": 3,
+        "prose_issue_codes": [
+          "PUBLIC_IP_CALLED_INTERNAL",
+          "UNSUPPORTED_DOWNLOAD_CONFIRMATION",
+          "ASSUMED_BENIGNITY_VIOLATION"
+        ],
+        "claim_details": [
+          {
+            "index": 1,
+            "status": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+            "detail": "Asserts benignity/authorization/reputation (\"File 'select2.min.js' is downloaded from a trusted internal IP.\") using only raw identifier/network field 'network.destination_ip'."
+          },
+          {
+            "index": 2,
+            "status": "NO_EVIDENCE_ID_CITED",
+            "detail": "Claim cites no canonical evidence ID."
+          },
+          {
+            "index": 3,
+            "status": "GROUNDED_FACT",
+            "detail": null
+          }
+        ]
+      },
+      "mode_c_validator": {
+        "validation_status": "REJECTED",
+        "grounding_ratio": 0.667,
+        "has_hallucinations": true,
+        "unsupported_claim_details": [
+          {
+            "claim_type": "OBSERVED_FACT",
+            "field": "process.file_name",
+            "asserted_value": "No suspicious process execution detected.",
+            "grounding_status": "CLAIM_NOT_VERIFIABLE",
+            "reason": "Fabricated claim: Value 'No suspicious process execution detected.' for field 'process.file_name' was never observed in incident telemetry."
+          }
+        ],
+        "detected_contradictions": [],
+        "validator_blindspot_note": null
+      }
+    }
+  ]
+}

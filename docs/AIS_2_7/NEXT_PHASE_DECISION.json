@@ -1,0 +1,12 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:27:21.735719+00:00",
+  "recommended_next_phase": "MODEL_UPGRADE_AND_POLICY_REMEDIATION_BEFORE_AIS_2_8",
+  "current_model_status": "UNSUITABLE_DO_NOT_PROMOTE_OR_CONTINUE_TUNING_QWEN25_7B_AWQ",
+  "autonomous_action_taken": "NONE_AIS_2_8_NOT_STARTED_PER_DIRECTIVE",
+  "decision_basis": [
+    "Qwen/Qwen2.5-7B-Instruct-AWQ achieves only 5.0% (Mode A) and 10.0% (Mode B) 3-class accuracy against locked GT-2 verdicts (McNemar p=1.0), with zero reliable SOC reasoning.",
+    "Model cannot read present JSON fields (claimed process.command_line missing on 7/9 UltraViewer alerts), misclassifies RFC1918 vs public AWS IPs, calls Program Files a writable temp path, and shows 100% FALSE_POSITIVE class collapse in Mode A.",
+    "Do NOT replace Verdictum AI architecture or abandon the Deterministic Validator (which lifted 3-class accuracy to 45% via p=0.0391 and eliminated all 9/9 missed-TP-as-FP failures and 1/1 FP-as-TP failure); DO replace the 7B-AWQ model with a stronger reasoning model (14B-32B+ non-AWQ or higher-capability endpoint), fix Server 1's mismatched Prisma SASE policy template (ed7ff3c7), integrate external hash/threat-intel enrichment, and obtain Reviewer #2 GT-3 certification."
+  ]
+}

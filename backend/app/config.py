@@ -92,12 +92,14 @@ class Settings(BaseSettings):
 
     # Local LLM Server 2 Integration (vLLM / OpenAI-Compatible)
     LOCAL_LLM_BASE_URL: str = os.getenv("LOCAL_LLM_BASE_URL", "http://127.0.0.1:8000/v1")
-    LOCAL_LLM_MODEL_NAME: str = os.getenv("LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ")
+    LOCAL_LLM_MODEL_NAME: str = os.getenv("LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ")
     LOCAL_LLM_API_KEY: str = os.getenv("LOCAL_LLM_API_KEY", "EMPTY")
-    LOCAL_LLM_TIMEOUT: float = float(os.getenv("LOCAL_LLM_TIMEOUT", "60.0"))
+    LOCAL_LLM_TIMEOUT: float = float(os.getenv("LOCAL_LLM_TIMEOUT", "180.0"))
     LOCAL_LLM_CONTEXT_BUDGET: int = int(os.getenv("LOCAL_LLM_CONTEXT_BUDGET", "8192"))
     LOCAL_LLM_MAX_TOKENS: int = int(os.getenv("LOCAL_LLM_MAX_TOKENS", "768"))
     LOCAL_LLM_TARGET_INPUT_BUDGET: int = int(os.getenv("LOCAL_LLM_TARGET_INPUT_BUDGET", "7424"))
+    LOCAL_LLM_ENABLE_THINKING: bool = os.getenv("LOCAL_LLM_ENABLE_THINKING", "false").lower() == "true"
+    LOCAL_LLM_GPU_TELEMETRY_URL: str = os.getenv("LOCAL_LLM_GPU_TELEMETRY_URL", "")
     LOCAL_LLM_VERIFIED_MAX_MODEL_LEN: Optional[int] = None
     LOCAL_LLM_DISCOVERED_AT_UTC: Optional[str] = None
     LOCAL_LLM_ALLOW_MOCK_FALLBACK: bool = False

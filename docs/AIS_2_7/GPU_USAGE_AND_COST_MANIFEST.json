@@ -1,0 +1,26 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "gpu_server_endpoint": "http://13.204.214.64:8000/v1",
+  "observed_vllm_version": "0.33.0",
+  "observed_model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "observed_max_model_len": 8192,
+  "hardware_provenance_note": "EC2 instance type (reported historically as g5.xlarge / A10G 24GB) could not be directly verified from Server 1 HTTP telemetry (`gpu_telemetry_verified=false`); billing dollar cost is therefore UNVERIFIED from telemetry alone while wall-clock GPU generation time and exact vLLM token counts ARE verified.",
+  "call_accounting": {
+    "authorized_baseline_budget": 41,
+    "authorized_retry_allowance": 5,
+    "actual_successful_gpu_calls": 41,
+    "actual_failed_gateway_attempts": 1,
+    "total_tokens_consumed_all_41_calls": 208474,
+    "prompt_tokens_all_41_calls": 186831,
+    "completion_tokens_all_41_calls": 21643,
+    "cumulative_successful_inference_latency_seconds": 1716.83,
+    "mode_a_mean_latency_ms": 41450.15,
+    "mode_a_p50_latency_ms": 37007.52,
+    "mode_a_max_latency_ms": 66613.55,
+    "mode_b_mean_latency_ms": 44370.97,
+    "mode_b_p50_latency_ms": 45436.87,
+    "mode_b_max_latency_ms": 65041.92
+  },
+  "gpu_shutdown_status": "LEFT_RUNNING_PER_OPERATOR_AUTHORIZATION_AWAITING_MANUAL_SHUTDOWN"
+}

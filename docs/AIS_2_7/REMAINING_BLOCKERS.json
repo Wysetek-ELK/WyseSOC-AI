@@ -1,0 +1,36 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:27:21.735719+00:00",
+  "blockers": [
+    {
+      "id": "BLK-01",
+      "severity": "CRITICAL",
+      "title": "Deployed LLM Intelligence Failure",
+      "detail": "Qwen/Qwen2.5-7B-Instruct-AWQ scored 5.0% (Mode A) / 10.0% (Mode B) 3-class accuracy and hallucinated facts across both CrowdStrike and Prisma SASE."
+    },
+    {
+      "id": "BLK-02",
+      "severity": "HIGH",
+      "title": "GT-3 Certification Not Yet Complete",
+      "detail": "Current cohort has 20/20 locked GT-2 single-reviewer labels (0 GT-3 dual-certified), with historical exposure risk on all 20 items."
+    },
+    {
+      "id": "BLK-03",
+      "severity": "HIGH",
+      "title": "Prisma SASE Policy Template Mismatch (ed7ff3c7 v1)",
+      "detail": "Server 1 approved Prisma SASE policy references EDR/loopback criteria and instructs against REQUIRES_ATTENTION, contributing to 0/10 Prisma abstentions in Mode B."
+    },
+    {
+      "id": "BLK-04",
+      "severity": "MEDIUM",
+      "title": "External Hash & IP Enrichment Missing",
+      "detail": "Human analyst had external hash reputation (MEGAsync clean on 132501348) unavailable to LLM prompts."
+    },
+    {
+      "id": "BLK-05",
+      "severity": "LOW",
+      "title": "EC2 Hardware / Billing Telemetry Unverified via Server 1 HTTP",
+      "detail": "gpu_telemetry_verified=false on Server 1 /api/health; GPU model/VRAM (historically AWS EC2 g5.xlarge A10G) could not be directly polled from Server 1 HTTP telemetry."
+    }
+  ]
+}

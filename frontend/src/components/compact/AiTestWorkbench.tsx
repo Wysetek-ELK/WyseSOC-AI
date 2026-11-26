@@ -201,7 +201,7 @@ export function AiTestWorkbench({
         grounding_ratio: currentItem.confidence ?? 0.85,
         trust_score: 8,
         reasoning: currentItem.reason || `Stored real inference for policy v${currentItem.policy_version_number ?? targetVer?.version_number}.`,
-        model_name: currentItem.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ",
+        model_name: currentItem.model_name || "Qwen/Qwen3-14B-AWQ",
         latency_ms: currentItem.latency_ms ?? 450,
         policy_version_number: currentItem.policy_version_number,
         is_stored_result: true,
@@ -226,7 +226,7 @@ export function AiTestWorkbench({
       setTestResult(res);
       setFeedback({
         type: "success",
-        text: `Real AI test completed on Server 2 (Qwen2.5-7B-Instruct-AWQ). Effective Verdict: ${(res as any).effective_verdict || (res as any).verdict || "EVALUATED"}`,
+        text: `Real AI test completed on Server 2 (${(res as any).model_name || (res as any).model_identifier || "Qwen/Qwen3-14B-AWQ"}). Effective Verdict: ${(res as any).effective_verdict || (res as any).verdict || "EVALUATED"}`,
       });
       // Refresh status & summary
       await fetchRuleSummary();
@@ -372,7 +372,7 @@ export function AiTestWorkbench({
             <Cpu className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-slate-400 font-medium">Model:</span>
             <span className="font-mono text-cyan-300 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-800/60 text-[11px] font-semibold">
-              Qwen/Qwen2.5-7B-Instruct-AWQ
+              {testResult?.model_name || currentItem?.model_name || "Qwen/Qwen3-14B-AWQ"}
             </span>
           </div>
 
@@ -728,7 +728,7 @@ export function AiTestWorkbench({
           </div>
 
           <span className="text-[11px] text-slate-500">
-            Executes real vLLM inference against Server 2 (Qwen2.5-7B-Instruct-AWQ)
+            Executes real vLLM inference against Server 2 ({testResult?.model_name || currentItem?.model_name || "Qwen/Qwen3-14B-AWQ"})
           </span>
         </div>
 
@@ -859,7 +859,7 @@ export function AiTestWorkbench({
                   {testResult.is_stored_result ? "Stored AI Evaluation Result" : "Real AI Test Outcome"}
                 </h3>
                 <span className="text-[11px] text-slate-400">
-                  Evaluated under Policy v{testResult.policy_version_number ?? targetVer?.version_number} ({targetVer?.status || "APPROVED"}) via {testResult.model_name || "Qwen2.5-7B-Instruct-AWQ"}
+                  Evaluated under Policy v{testResult.policy_version_number ?? targetVer?.version_number} ({targetVer?.status || "APPROVED"}) via {testResult.model_name || "Qwen/Qwen3-14B-AWQ"}
                 </span>
               </div>
             </div>

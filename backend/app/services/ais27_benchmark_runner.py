@@ -41,6 +41,8 @@ from app.services.confidence_normalizer import ConfidenceNormalizer
 from app.services.empirical_benchmark_harness import EmpiricalBenchmarkHarness, IncidentAdapter
 from app.services.evidence_normalization_service import EvidenceNormalizationService
 from app.services.evidence_preflight_validator import EvidencePreflightValidator
+from app.services.evidence_intelligence_service import EvidenceIntelligenceEngine, RuleDefinitionBuilder
+from app.services.ais28_policy_candidates import get_experimental_candidate_policy
 from app.services.historical_ground_truth_validator import HistoricalGroundTruthValidator
 from app.services.independent_verdict_validator import IndependentVerdictValidator
 from app.services.model_claim_extractor import ModelClaimExtractor
@@ -152,7 +154,7 @@ class AIS27BenchmarkRunner:
     async def run_smoke_test(cls, timeout_seconds: float = 60.0) -> Dict[str, Any]:
         """Executes exactly ONE small controlled non-benchmark smoke-test generation on Server 2."""
         base_url = str(getattr(settings, "LOCAL_LLM_BASE_URL", "") or "").rstrip("/")
-        model_name = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ"))
+        model_name = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))
         payload = {
             "model": model_name,
             "messages": [
@@ -393,8 +395,11 @@ class AIS27BenchmarkRunner:
         timeout_seconds: float,
         base_url: str,
         api_key: str,
+        top_p: float = 1.0,
+        enable_thinking: bool = False,
+        response_format: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        payload = {
+        payload: Dict[str, Any] = {
             "model": model_name,
             "messages": [
                 {"role": "system", "content": system_instruction},
@@ -402,7 +407,12 @@ class AIS27BenchmarkRunner:
             ],
             "max_tokens": max_tokens,
             "temperature": temperature,
+            "top_p": top_p,
         }
+        if "qwen3" in str(model_name or "").lower():
+            payload["chat_template_kwargs"] = {"enable_thinking": bool(enable_thinking)}
+        if response_format is not None:
+            payload["response_format"] = response_format
         http_body_str = json.dumps(payload, separators=(",", ":"))
         req_ts = utc_now().isoformat()
         t0 = time.perf_counter()
@@ -477,11 +487,18 @@ class AIS27BenchmarkRunner:
         fortisiem_incident_id: str,
         max_context_tokens: int = 8192,
         max_completion_tokens: int = 768,
-        target_input_budget: int = 6400,
-        timeout_seconds: float = 120.0,
-        temperature: float = 0.1,
+        target_input_budget: int = 7424,
+        timeout_seconds: float = 180.0,
+        temperature: float = 0.0,
         transport_override: Optional[Any] = None,
         mode: str = "ALL",
+        neutral_prompt_version: str = "V2",
+        include_complete_rule_def: bool = True,
+        include_evidence_intelligence: bool = True,
+        use_candidate_policy: bool = False,
+        enable_thinking: bool = False,
+        top_p: float = 1.0,
+        use_structured_json: bool = False,
     ) -> Dict[str, Any]:
         """
         Executes Mode A (Neutral), Mode B (Approved Policy), and Mode C (Deterministic Validator)
@@ -571,12 +588,17 @@ class AIS27BenchmarkRunner:
             normalization_result=norm_result,
         )
 
-        # 2. Compile Server 1 approved policy & budget identical factual payload for Mode A & Mode B
+        # 2. Compile policy (Approved DB policy OR isolated Experimental Candidate) & budget identical factual payload
+        active_pv = get_experimental_candidate_policy(rule_obj.rule_id) if use_candidate_policy else pv
         compiled_policy = PolicyCompilerService.compile_policy(
             rule=rule_obj,
-            prompt_version=pv,
-            execution_mode=CompilationExecutionMode.LIVE,
-            raise_on_unapproved=True,
+            prompt_version=active_pv,
+            execution_mode=(
+                CompilationExecutionMode.SIMULATION
+                if use_candidate_policy
+                else CompilationExecutionMode.LIVE
+            ),
+            raise_on_unapproved=(not use_candidate_policy),
             modular_optimization=False,
         )
         payload_dict = build_model_facing_payload(
@@ -588,14 +610,26 @@ class AIS27BenchmarkRunner:
             "version": contract.version_number,
             "required_fields": [r.field for r in contract.required_evidence],
         }
-        rule_spec = {
-            "id": rule_obj.id,
-            "rule_id": rule_obj.rule_id,
-            "name": rule_obj.name,
-            "event_type": rule_obj.event_type,
-            "severity": rule_obj.severity,
-            "description": rule_obj.description or "",
-        }
+        if include_evidence_intelligence:
+            payload_dict["evidence_intelligence"] = EvidenceIntelligenceEngine.enrich_incident_evidence(
+                payload_dict, norm_result.records
+            )
+
+        if include_complete_rule_def:
+            rule_spec = RuleDefinitionBuilder.build_complete_rule_spec(
+                rule_obj=rule_obj,
+                canonical_records=norm_result.records,
+                incident_payload=payload_dict,
+            )
+        else:
+            rule_spec = {
+                "id": rule_obj.id,
+                "rule_id": rule_obj.rule_id,
+                "name": rule_obj.name,
+                "event_type": rule_obj.event_type,
+                "severity": rule_obj.severity,
+                "description": rule_obj.description or "",
+            }
         rule_overhead = TokenBudgetService.estimate_tokens(rule_spec)
         budgeted = TokenBudgetService.budget_prompt(
             compiled_policy=compiled_policy,
@@ -622,7 +656,12 @@ class AIS27BenchmarkRunner:
         )
         user_content = f"<UNTRUSTED_INCIDENT_DATA>\n{compact_json}\n</UNTRUSTED_INCIDENT_DATA>"
 
-        sys_a = EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V1 + _MODE_A_SCHEMA_SUFFIX
+        neutral_base = (
+            EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V1
+            if str(neutral_prompt_version or "").upper() == "V1"
+            else EmpiricalBenchmarkHarness.NEUTRAL_SOC_BASELINE_V2
+        )
+        sys_a = neutral_base + _MODE_A_SCHEMA_SUFFIX
         sys_b = (
             f"{budgeted.budgeted_system_prompt}\n\n"
             "Note: Populate supporting_claims[].cited_evidence_ids (or evidence_ids) strictly from incident.canonical_evidence[].evidence_id.\n"
@@ -630,7 +669,7 @@ class AIS27BenchmarkRunner:
         )
 
         base_url = str(getattr(settings, "LOCAL_LLM_BASE_URL", "") or "").rstrip("/")
-        model_name = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ"))
+        model_name = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))
 
         async def _call(sys_p: str) -> Dict[str, Any]:
             if transport_override is not None:
@@ -650,6 +689,9 @@ class AIS27BenchmarkRunner:
                 timeout_seconds=timeout_seconds,
                 base_url=base_url,
                 api_key=settings.LOCAL_LLM_API_KEY,
+                top_p=top_p,
+                enable_thinking=enable_thinking,
+                response_format={"type": "json_object"} if use_structured_json else None,
             )
 
         # 3. Execute Mode A & Mode B live inference (selective per `run_mode`)
@@ -689,82 +731,92 @@ class AIS27BenchmarkRunner:
                 else {"parse_success": False, "validation_status": raw_b.get("error_type", "PROVIDER_FAILURE"), "parsed_verdict": None}
             )
 
-        # 4. Execute Mode C deterministic validator on parsed Mode B (0 GPU calls)
-        if run_mode in ("ALL", "B") and raw_b and raw_b.get("ok") and parsed_b and parsed_b.get("parsed_verdict"):
-            model_out_b = {
-                "verdict": parsed_b["parsed_verdict"],
-                "confidence": parsed_b.get("confidence", 0.0),
-                "confidence_scale": parsed_b.get("confidence_scale"),
-                "reason": parsed_b.get("reason", ""),
-                "supporting_claims": parsed_b.get("supporting_claims", []),
-                "supporting_evidence": parsed_b.get("supporting_evidence", []),
-                "contradictory_evidence": parsed_b.get("contradictory_evidence", []),
-                "missing_evidence": parsed_b.get("missing_evidence", []),
-                "analyst_questions": parsed_b.get("analyst_questions", []),
+        def _validate_parsed_mode(parsed_mode: Optional[Dict[str, Any]], mode_label: str) -> Optional[Dict[str, Any]]:
+            if not parsed_mode or not parsed_mode.get("parsed_verdict"):
+                return {
+                    f"input_{mode_label}_verdict": (parsed_mode or {}).get("parsed_verdict"),
+                    "validated_verdict": "REQUIRES_ATTENTION",
+                    "is_decisive_accepted": False,
+                    "validation_status": (parsed_mode or {}).get("validation_status", f"{mode_label.upper()}_FAILED"),
+                    "validation_reason_codes": ["MODEL_OUTPUT_INVALID"],
+                    "action_directive": f"{mode_label} did not produce a valid parseable verdict.",
+                    "grounding_ratio": 0.0,
+                    "has_hallucinations": False,
+                    "grounded_claims_count": 0,
+                    "unsupported_claims_count": 0,
+                    "unsupported_claim_details": [],
+                    "detected_contradictions": [],
+                    "trust_score": 0,
+                    "raw_trust_score": 0.0,
+                    "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
+                    "escalation_reason": f"{mode_label} invalid or failed response.",
+                }
+            model_out = {
+                "verdict": parsed_mode["parsed_verdict"],
+                "confidence": parsed_mode.get("confidence", 0.0),
+                "confidence_scale": parsed_mode.get("confidence_scale"),
+                "reason": parsed_mode.get("reason", ""),
+                "supporting_claims": parsed_mode.get("supporting_claims", []),
+                "supporting_evidence": parsed_mode.get("supporting_evidence", []),
+                "contradictory_evidence": parsed_mode.get("contradictory_evidence", []),
+                "missing_evidence": parsed_mode.get("missing_evidence", []),
+                "analyst_questions": parsed_mode.get("analyst_questions", []),
             }
-            grounding_b = ModelClaimExtractor.extract_and_ground_claims(
+            grounding = ModelClaimExtractor.extract_and_ground_claims(
                 incident_id=item.fortisiem_incident_id,
-                raw_verdict_output=model_out_b,
+                raw_verdict_output=model_out,
                 normalization_result=norm_result,
             )
-            val_res_c = IndependentVerdictValidator.validate_verdict(
+            val_res = IndependentVerdictValidator.validate_verdict(
                 incident_id=item.fortisiem_incident_id,
-                proposed_verdict=parsed_b["parsed_verdict"],
-                raw_model_confidence=float(parsed_b.get("confidence", 0.0)),
+                proposed_verdict=parsed_mode["parsed_verdict"],
+                raw_model_confidence=float(parsed_mode.get("confidence", 0.0)),
                 preflight=preflight,
-                claim_grounding=grounding_b,
+                claim_grounding=grounding,
                 normalization_result=norm_result,
                 contract=contract,
-                model_reason=str(parsed_b.get("reason", "")),
-                contradictory_evidence=parsed_b.get("contradictory_evidence") or None,
-                confidence_scale=parsed_b.get("confidence_scale"),
+                model_reason=str(parsed_mode.get("reason", "")),
+                contradictory_evidence=parsed_mode.get("contradictory_evidence") or None,
+                confidence_scale=parsed_mode.get("confidence_scale"),
             )
             trust_payload = dict(sanitized_payload)
             trust_payload["incident_id"] = item.fortisiem_incident_id
             trust_payload["rule_id"] = rule_obj.rule_id
             trust_payload["canonical_evidence"] = [r.model_dump() for r in norm_result.records]
-            trust_res_c = VerdictTrustworthinessEngine.evaluate_verdict_trust(
+            trust_res = VerdictTrustworthinessEngine.evaluate_verdict_trust(
                 incident_payload=trust_payload,
-                model_output=model_out_b,
+                model_output=model_out,
                 contract=contract,
             )
-            mode_c = {
-                "input_mode_b_verdict": parsed_b["parsed_verdict"],
-                "validated_verdict": val_res_c.final_verdict,
-                "is_decisive_accepted": bool(val_res_c.is_decisive_accepted),
-                "validation_status": val_res_c.validation_status,
-                "validation_reason_codes": list(val_res_c.validation_reason_codes),
-                "action_directive": val_res_c.analyst_action_directive,
-                "grounding_ratio": val_res_c.grounding_ratio,
-                "has_hallucinations": grounding_b.has_hallucinations,
-                "grounded_claims_count": grounding_b.grounded_claims,
-                "unsupported_claims_count": grounding_b.unsupported_claims,
-                "unsupported_claim_details": grounding_b.unsupported_claim_details,
-                "detected_contradictions": list(val_res_c.detected_contradictions),
-                "trust_score": trust_res_c.trust_score,
-                "raw_trust_score": trust_res_c.raw_trust_score,
-                "effective_trust_verdict": trust_res_c.effective_verdict.value,
-                "escalation_reason": trust_res_c.escalation_reason,
+            return {
+                f"input_{mode_label}_verdict": parsed_mode["parsed_verdict"],
+                "validated_verdict": val_res.final_verdict,
+                "is_decisive_accepted": bool(val_res.is_decisive_accepted),
+                "validation_status": val_res.validation_status,
+                "validation_reason_codes": list(val_res.validation_reason_codes),
+                "action_directive": val_res.analyst_action_directive,
+                "grounding_ratio": val_res.grounding_ratio,
+                "has_hallucinations": grounding.has_hallucinations,
+                "grounded_claims_count": grounding.grounded_claims,
+                "unsupported_claims_count": grounding.unsupported_claims,
+                "unsupported_claim_details": grounding.unsupported_claim_details,
+                "detected_contradictions": list(val_res.detected_contradictions),
+                "trust_score": trust_res.trust_score,
+                "raw_trust_score": trust_res.raw_trust_score,
+                "effective_trust_verdict": trust_res.effective_verdict.value,
+                "escalation_reason": trust_res.escalation_reason,
             }
+
+        # 4. Execute Mode C deterministic validator on BOTH Mode A and Mode B (0 extra GPU calls)
+        mode_a_validated = (
+            _validate_parsed_mode(parsed_a, "mode_a")
+            if (run_mode in ("ALL", "A") and raw_a and raw_a.get("ok"))
+            else None
+        )
+        if run_mode in ("ALL", "B") and raw_b and raw_b.get("ok"):
+            mode_c = _validate_parsed_mode(parsed_b, "mode_b")
         elif run_mode in ("ALL", "B"):
-            mode_c = {
-                "input_mode_b_verdict": (parsed_b or {}).get("parsed_verdict"),
-                "validated_verdict": "REQUIRES_ATTENTION",
-                "is_decisive_accepted": False,
-                "validation_status": (parsed_b or {}).get("validation_status", "MODE_B_FAILED"),
-                "validation_reason_codes": ["MODEL_OUTPUT_INVALID"],
-                "action_directive": "Mode B did not produce a valid parseable verdict.",
-                "grounding_ratio": 0.0,
-                "has_hallucinations": False,
-                "grounded_claims_count": 0,
-                "unsupported_claims_count": 0,
-                "unsupported_claim_details": [],
-                "detected_contradictions": [],
-                "trust_score": 0,
-                "raw_trust_score": 0.0,
-                "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
-                "escalation_reason": "Mode B invalid or failed response.",
-            }
+            mode_c = _validate_parsed_mode(None, "mode_b")
         else:
             mode_c = None
 
@@ -798,7 +850,20 @@ class AIS27BenchmarkRunner:
                 "mode_a_system_sha256": _sha256_text(sys_a),
                 "mode_b_system_sha256": _sha256_text(sys_b),
             },
-            "mode_a": {"raw": raw_a, "parsed": parsed_a} if raw_a is not None else None,
+            "experiment_config": {
+                "neutral_prompt_version": neutral_prompt_version,
+                "include_complete_rule_def": include_complete_rule_def,
+                "include_evidence_intelligence": include_evidence_intelligence,
+                "use_candidate_policy": use_candidate_policy,
+                "policy_source_status": active_pv.status,
+                "policy_version_id": active_pv.id,
+                "policy_version_number": active_pv.version_number,
+                "model_name": model_name,
+                "temperature": temperature,
+                "top_p": top_p,
+                "enable_thinking": enable_thinking,
+            },
+            "mode_a": {"raw": raw_a, "parsed": parsed_a, "validated": mode_a_validated} if raw_a is not None else None,
             "mode_b": {"raw": raw_b, "parsed": parsed_b} if raw_b is not None else None,
             "mode_c": mode_c,
         }

@@ -1,0 +1,239 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "summary": {
+    "verdict_changed_count": 11,
+    "policy_helped_count": 2,
+    "policy_hurt_count": 1,
+    "policy_shifted_fp_to_abstention_on_cs_tp": 7,
+    "impact_breakdown": {
+      "POLICY_CAUSED_REGRESSION_FP_TO_TP": 1,
+      "POLICY_RESCUED_TP": 2,
+      "POLICY_SHIFTED_FP_TO_ABSTENTION_VIA_FALSE_MISSING_FIELD": 7,
+      "POLICY_SHIFTED_TO_FALSE_TP_ON_INCONCLUSIVE": 1,
+      "UNCHANGED_WRONG_FP": 9
+    }
+  },
+  "records": [
+    {
+      "incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "verdict_changed": true,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "POLICY_SHIFTED_FP_TO_ABSTENTION_VIA_FALSE_MISSING_FIELD"
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "verdict_changed": false,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "UNCHANGED_WRONG_FP"
+    },
+    {
+      "incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "verdict_changed": false,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "UNCHANGED_WRONG_FP"
+    },
+    {
+      "incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "verdict_changed": true,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "POLICY_SHIFTED_FP_TO_ABSTENTION_VIA_FALSE_MISSING_FIELD"
+    },
+    {
+      "incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "verdict_changed": false,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "UNCHANGED_WRONG_FP"
+    },
+    {
+      "incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "TRUE_POSITIVE",
+      "verdict_changed": true,
+      "mode_a_correct": false,
+      "mode_b_correct": true,
+      "impact": "POLICY_RESCUED_TP"
+    },
+    {
+      "incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "verdict_changed": true,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "POLICY_SHIFTED_FP_TO_ABSTENTION_VIA_FALSE_MISSING_FIELD"
+    },
+    {
+      "incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "verdict_changed": true,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "POLICY_SHIFTED_FP_TO_ABSTENTION_VIA_FALSE_MISSING_FIELD"
+    },
+    {
+      "incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "verdict_changed": true,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "POLICY_SHIFTED_FP_TO_ABSTENTION_VIA_FALSE_MISSING_FIELD"
+    },
+    {
+      "incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "verdict_changed": true,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "POLICY_SHIFTED_FP_TO_ABSTENTION_VIA_FALSE_MISSING_FIELD"
+    },
+    {
+      "incident_id": "132501348",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "FALSE_POSITIVE",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "TRUE_POSITIVE",
+      "verdict_changed": true,
+      "mode_a_correct": true,
+      "mode_b_correct": false,
+      "impact": "POLICY_CAUSED_REGRESSION_FP_TO_TP"
+    },
+    {
+      "incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "verdict_changed": true,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "POLICY_SHIFTED_FP_TO_ABSTENTION_VIA_FALSE_MISSING_FIELD"
+    },
+    {
+      "incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "TRUE_POSITIVE",
+      "verdict_changed": true,
+      "mode_a_correct": false,
+      "mode_b_correct": true,
+      "impact": "POLICY_RESCUED_TP"
+    },
+    {
+      "incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "verdict_changed": false,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "UNCHANGED_WRONG_FP"
+    },
+    {
+      "incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "verdict_changed": false,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "UNCHANGED_WRONG_FP"
+    },
+    {
+      "incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "TRUE_POSITIVE",
+      "verdict_changed": true,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "POLICY_SHIFTED_TO_FALSE_TP_ON_INCONCLUSIVE"
+    },
+    {
+      "incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "verdict_changed": false,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "UNCHANGED_WRONG_FP"
+    },
+    {
+      "incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "verdict_changed": false,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "UNCHANGED_WRONG_FP"
+    },
+    {
+      "incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "verdict_changed": false,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "UNCHANGED_WRONG_FP"
+    },
+    {
+      "incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_a_verdict": "FALSE_POSITIVE",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "verdict_changed": false,
+      "mode_a_correct": false,
+      "mode_b_correct": false,
+      "impact": "UNCHANGED_WRONG_FP"
+    }
+  ]
+}

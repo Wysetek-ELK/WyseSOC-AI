@@ -811,9 +811,13 @@ async def run_shared_verdict_pipeline(
         ],
     }
     # Resolve per-model profile and capacity limits
-    active_model = getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct-AWQ")
+    active_model = str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ") or "Qwen/Qwen3-14B-AWQ")
     model_profile = LLMConfigService.get_model_profile(active_model)
-    configured_ctx = int(model_profile.get("max_context_tokens") or getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384)
+    configured_ctx = int(
+        getattr(settings, "LOCAL_LLM_CONTEXT_BUDGET", None)
+        or model_profile.get("max_context_tokens")
+        or 8192
+    )
     verified_model_len = getattr(settings, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None)
     if verified_model_len is None:
         try:
@@ -826,21 +830,32 @@ async def run_shared_verdict_pipeline(
         if verified_model_len is not None and int(verified_model_len) > 0
         else configured_ctx
     )
-    reserved_comp_tokens = int(model_profile.get("reserved_output_tokens") or getattr(settings, "LOCAL_LLM_MAX_TOKENS", 768) or 768)
-    if effective_max_ctx <= 8192:
+    reserved_comp_tokens = int(
+        getattr(settings, "LOCAL_LLM_MAX_TOKENS", None)
+        or model_profile.get("reserved_output_tokens")
+        or 768
+    )
+    if effective_max_ctx <= 8192 and reserved_comp_tokens > 768:
         reserved_comp_tokens = 768
     target_input = min(
         max(512, effective_max_ctx - reserved_comp_tokens),
-        int(model_profile.get("target_input_budget") or getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", 7424) or 7424)
+        int(
+            getattr(settings, "LOCAL_LLM_TARGET_INPUT_BUDGET", None)
+            or model_profile.get("target_input_budget")
+            or 7424
+        ),
     )
 
-    rule_spec = {
-        "id": rule.id if rule else (incident.rule_id or "UNKNOWN"),
-        "rule_id": getattr(rule, "rule_id", None) if rule else None,
-        "name": rule.name if rule else incident.title,
-        "severity": rule.severity if rule else incident.severity,
-        "description": rule.description if rule else "",
-    }
+    from app.services.evidence_intelligence_service import EvidenceIntelligenceEngine, RuleDefinitionBuilder
+
+    payload_dict["evidence_intelligence"] = EvidenceIntelligenceEngine.enrich_incident_evidence(
+        payload_dict, norm_result.records
+    )
+    rule_spec = RuleDefinitionBuilder.build_complete_rule_spec(
+        rule_obj=rule,
+        canonical_records=norm_result.records,
+        incident_payload=payload_dict,
+    )
     rule_overhead_tokens = TokenBudgetService.estimate_tokens(rule_spec)
     budgeted = TokenBudgetService.budget_prompt(
         compiled_policy=compiled_policy,

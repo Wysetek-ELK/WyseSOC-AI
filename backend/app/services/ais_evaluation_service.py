@@ -375,7 +375,7 @@ class AisEvaluationService:
                 "latency_ms": latency_ms,
                 "token_usage": tokens,
                 "captured_at": latest_cap.captured_at.isoformat() if latest_cap and latest_cap.captured_at else None,
-                "model_name": latest_cap.model_name if latest_cap else (inc_verdict_data.get("model_identifier") if inc_verdict_data else "Qwen/Qwen2.5-7B-Instruct-AWQ"),
+                "model_name": latest_cap.model_name if latest_cap else (inc_verdict_data.get("model_identifier") if inc_verdict_data else str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))),
             }
 
         # 7. Check for Evaluated — Decisive
@@ -399,7 +399,7 @@ class AisEvaluationService:
                 "latency_ms": latency_ms,
                 "token_usage": tokens,
                 "captured_at": latest_cap.captured_at.isoformat() if latest_cap and latest_cap.captured_at else None,
-                "model_name": latest_cap.model_name if latest_cap else (inc_verdict_data.get("model_identifier") if inc_verdict_data else "Qwen/Qwen2.5-7B-Instruct-AWQ"),
+                "model_name": latest_cap.model_name if latest_cap else (inc_verdict_data.get("model_identifier") if inc_verdict_data else str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))),
             }
 
         # 8. Check for Abstention
@@ -424,7 +424,7 @@ class AisEvaluationService:
                 "latency_ms": latency_ms,
                 "token_usage": tokens,
                 "captured_at": latest_cap.captured_at.isoformat() if latest_cap and latest_cap.captured_at else None,
-                "model_name": latest_cap.model_name if latest_cap else (inc_verdict_data.get("model_identifier") if inc_verdict_data else "Qwen/Qwen2.5-7B-Instruct-AWQ"),
+                "model_name": latest_cap.model_name if latest_cap else (inc_verdict_data.get("model_identifier") if inc_verdict_data else str(getattr(settings, "LOCAL_LLM_MODEL_NAME", "Qwen/Qwen3-14B-AWQ"))),
             }
 
         # Fallback if unclassified

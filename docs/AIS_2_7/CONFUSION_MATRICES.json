@@ -1,0 +1,74 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "gt_rows_vs_predicted_columns": {
+    "mode_a": {
+      "TRUE_POSITIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 9,
+        "REQUIRES_ATTENTION": 0
+      },
+      "FALSE_POSITIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 1,
+        "REQUIRES_ATTENTION": 0
+      },
+      "INCONCLUSIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 10,
+        "REQUIRES_ATTENTION": 0
+      }
+    },
+    "mode_b": {
+      "TRUE_POSITIVE": {
+        "TRUE_POSITIVE": 2,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 7
+      },
+      "FALSE_POSITIVE": {
+        "TRUE_POSITIVE": 1,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 0
+      },
+      "INCONCLUSIVE": {
+        "TRUE_POSITIVE": 1,
+        "FALSE_POSITIVE": 9,
+        "REQUIRES_ATTENTION": 0
+      }
+    },
+    "mode_c_validated": {
+      "TRUE_POSITIVE": {
+        "TRUE_POSITIVE": 1,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 8
+      },
+      "FALSE_POSITIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 1
+      },
+      "INCONCLUSIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 2,
+        "REQUIRES_ATTENTION": 8
+      }
+    },
+    "mode_c_effective_trust_gate": {
+      "TRUE_POSITIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 9
+      },
+      "FALSE_POSITIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 1
+      },
+      "INCONCLUSIVE": {
+        "TRUE_POSITIVE": 0,
+        "FALSE_POSITIVE": 0,
+        "REQUIRES_ATTENTION": 10
+      }
+    }
+  }
+}

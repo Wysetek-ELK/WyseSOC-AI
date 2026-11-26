@@ -1,0 +1,19 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:27:21.735719+00:00",
+  "execution_quality": "HIGH_VALID_EMPIRICAL_BENCHMARK",
+  "model_intelligence_rating": "CRITICAL_FAIL_UNSUITABLE",
+  "overall_scores": {
+    "benchmark_execution_integrity": "PASS (41/41 GPU calls, 40/40 schema valid, 0 overflows, 0 DB contamination)",
+    "mode_a_neutral_llm_3class_accuracy": "5.0% (1/20)",
+    "mode_b_policy_assisted_raw_3class_accuracy": "10.0% (2/20)",
+    "mode_c_validator_3class_agreement": "45.0% (9/20; effective trust gate 50.0% via 20/20 abstention)",
+    "mode_b_binary_eligible_accuracy_n10": "20.0% (2/10)",
+    "mode_c_binary_eligible_accuracy_n10": "10.0% (1/10)",
+    "mode_a_missed_tp_as_fp": "100.0% (9/9)",
+    "mode_b_missed_tp_as_fp": "0.0% (0/9; shifted to 7 false missing-field abstentions)",
+    "mode_c_missed_tp_as_fp": "0.0% (0/9)",
+    "mode_b_fp_as_tp_rate": "100.0% (1/1)",
+    "mode_c_fp_as_tp_rate": "0.0% (0/1)"
+  }
+}

@@ -3,10 +3,10 @@ from pydantic import BaseModel, Field
 
 
 class TokenAllocationBreakdown(BaseModel):
-    max_context_tokens: int = 16384
-    max_completion_tokens: int = 1024
-    available_prompt_budget: int = 8192
-    target_input_budget: Optional[int] = 8192
+    max_context_tokens: int = 8192
+    max_completion_tokens: int = 768
+    available_prompt_budget: int = 7424
+    target_input_budget: Optional[int] = 7424
     model_name: Optional[str] = None
 
     # Measured tokens per priority tier

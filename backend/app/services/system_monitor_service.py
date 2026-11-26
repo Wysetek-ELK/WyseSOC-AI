@@ -142,19 +142,30 @@ class InferenceHealthMonitor:
 
         status = "OFFLINE"
         latency_ms: Optional[float] = None
+        inference_latency_ms: Optional[float] = None
         gpu_percent: Optional[float] = None
         gpu_memory_percent: Optional[float] = None
         gpu_memory_used_gb: Optional[float] = None
         gpu_memory_total_gb: Optional[float] = None
         gpu_temp_c: Optional[float] = None
         active_requests = 0
+        waiting_requests = 0
         metrics_available = False
+        hardware_telemetry_available = False
+        telemetry_source = "health_probe_only"
+        kv_cache_usage_percent: Optional[float] = None
         mock_endpoint = is_mock_http_endpoint(base_url=base_url)
         details: Dict[str, Any] = {
             "role": "HTTP Test/Mock Endpoint (Non-GPU)" if mock_endpoint else "Local LLM Inference Engine (vLLM)",
             "model_name": settings.LOCAL_LLM_MODEL_NAME,
             "engine": "Mock OpenAI-Compatible HTTP" if mock_endpoint else "vLLM / PyTorch CUDA",
             "metrics_available": False,
+            "hardware_telemetry_available": False,
+            "telemetry_source": "health_probe_only",
+            "kv_cache_usage_percent": None,
+            "waiting_requests": 0,
+            "health_check_latency_ms": None,
+            "inference_latency_ms": None,
             "configured_provider": "OPENAI_COMPATIBLE",
         }
 
@@ -184,26 +195,66 @@ class InferenceHealthMonitor:
                         status = "DEGRADED"
                         details["error"] = f"HTTP {code}"
 
+                details["health_check_latency_ms"] = latency_ms
+
                 if status == "ONLINE":
-                    # Probe Prometheus /metrics text format; physical GPU inference telemetry is only
-                    # verified for non-mock Server 2 nodes (HTTP_MOCK keeps GPU hardware telemetry unset).
+                    # Probe Prometheus /metrics text format; never synthesize fake VRAM/GPU % from KV cache.
                     try:
                         metrics_res = await client.get(f"{root_url}/metrics", headers=auth_headers, timeout=2.5)
                         if metrics_res.status_code == 200:
                             parsed_metrics = self._parse_vllm_metrics(metrics_res.text)
                             if parsed_metrics:
                                 metrics_available = True
+                                telemetry_source = "vllm_prometheus"
                                 active_requests = parsed_metrics.get("active_requests", 0)
+                                waiting_requests = parsed_metrics.get("waiting_requests", 0)
+                                kv_cache_usage_percent = parsed_metrics.get("kv_cache_usage_percent")
                                 details["vllm_metrics"] = parsed_metrics
-                                if not mock_endpoint:
-                                    gpu_memory_total_gb = 24.0
-                                    cache_factor = parsed_metrics.get("gpu_cache_usage", 0.0)
-                                    total_used_gb = round(5.5 + (cache_factor * 12.0), 2)
-                                    gpu_memory_used_gb = total_used_gb
-                                    gpu_memory_percent = round((total_used_gb / gpu_memory_total_gb) * 100, 1)
-                                    gpu_percent = min(100.0, round(12.0 + (active_requests * 45.0), 1))
+                                details["kv_cache_usage_percent"] = kv_cache_usage_percent
+                                details["waiting_requests"] = waiting_requests
+                                if not mock_endpoint and parsed_metrics.get("hardware_telemetry_present"):
+                                    hardware_telemetry_available = True
+                                    telemetry_source = parsed_metrics.get("hardware_source", "dcgm_nvml_prometheus")
+                                    gpu_percent = parsed_metrics.get("hw_gpu_percent")
+                                    gpu_memory_used_gb = parsed_metrics.get("hw_vram_used_gb")
+                                    gpu_memory_total_gb = parsed_metrics.get("hw_vram_total_gb")
+                                    gpu_memory_percent = parsed_metrics.get("hw_vram_percent")
+                                    gpu_temp_c = parsed_metrics.get("hw_temp_c")
                     except Exception:
                         pass
+
+                    # Optional dedicated GPU exporter (NVML / nvidia-smi / DCGM endpoint) if explicitly configured
+                    hw_url = str(getattr(settings, "LOCAL_LLM_GPU_TELEMETRY_URL", "") or "").strip()
+                    if hw_url and not mock_endpoint and not hardware_telemetry_available:
+                        try:
+                            hw_res = await client.get(hw_url, headers=auth_headers, timeout=2.5)
+                            if hw_res.status_code == 200:
+                                parsed_hw = self._parse_vllm_metrics(hw_res.text)
+                                if not parsed_hw.get("hardware_telemetry_present"):
+                                    try:
+                                        hw_json = hw_res.json()
+                                        if isinstance(hw_json, dict) and hw_json.get("memory_total_gb"):
+                                            parsed_hw = {
+                                                "hardware_telemetry_present": True,
+                                                "hardware_source": hw_json.get("source", "nvidia_smi_json"),
+                                                "hw_gpu_percent": hw_json.get("gpu_utilization_percent"),
+                                                "hw_vram_used_gb": hw_json.get("memory_used_gb"),
+                                                "hw_vram_total_gb": hw_json.get("memory_total_gb"),
+                                                "hw_vram_percent": hw_json.get("memory_percent"),
+                                                "hw_temp_c": hw_json.get("temperature_c"),
+                                            }
+                                    except Exception:
+                                        pass
+                                if parsed_hw.get("hardware_telemetry_present"):
+                                    hardware_telemetry_available = True
+                                    telemetry_source = parsed_hw.get("hardware_source", "gpu_exporter")
+                                    gpu_percent = parsed_hw.get("hw_gpu_percent")
+                                    gpu_memory_used_gb = parsed_hw.get("hw_vram_used_gb")
+                                    gpu_memory_total_gb = parsed_hw.get("hw_vram_total_gb")
+                                    gpu_memory_percent = parsed_hw.get("hw_vram_percent")
+                                    gpu_temp_c = parsed_hw.get("hw_temp_c")
+                        except Exception:
+                            pass
         except Exception as e:
             status = "OFFLINE"
             latency_ms = None
@@ -214,15 +265,19 @@ class InferenceHealthMonitor:
             raw_status=status,
             base_url=base_url,
             metrics_available=metrics_available,
+            hardware_telemetry_available=hardware_telemetry_available,
             configured_provider="OPENAI_COMPATIBLE",
         )
         details["metrics_available"] = metrics_available
+        details["hardware_telemetry_available"] = hardware_telemetry_available
+        details["telemetry_source"] = telemetry_source
         details["endpoint_provenance"] = prov["endpoint_provenance"]
         details["current_s2_health"] = prov["current_s2_health"]
         details["gpu_telemetry_verified"] = prov["gpu_telemetry_verified"]
         details["test_environment"] = prov["test_environment"]
         details["logical_hostname"] = "verdictum-cortex-01"
         details["component"] = "Verdictum Cortex"
+        details["inference_latency_ms"] = inference_latency_ms
 
         return {
             "server_id": "server-2",
@@ -248,30 +303,69 @@ class InferenceHealthMonitor:
         }
 
     def _parse_vllm_metrics(self, raw_text: str) -> Dict[str, Any]:
-        """Extract key metrics from vLLM Prometheus output."""
+        """Extract authentic vLLM queue/KV metrics and optional real DCGM/NVML hardware gauges."""
         res: Dict[str, Any] = {}
+        dcgm_used_mb: Optional[float] = None
+        dcgm_free_mb: Optional[float] = None
+        nvml_used_bytes: Optional[float] = None
+        nvml_total_bytes: Optional[float] = None
+
         for line in raw_text.splitlines():
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
-            if "vllm:gpu_cache_usage_factor" in line:
-                try:
-                    val = float(line.split()[-1])
-                    res["gpu_cache_usage"] = val
-                except Exception:
-                    pass
-            elif "vllm:num_requests_running" in line:
-                try:
-                    val = int(float(line.split()[-1]))
-                    res["active_requests"] = val
-                except Exception:
-                    pass
-            elif "vllm:avg_generation_throughput_tok_per_s" in line:
-                try:
-                    val = float(line.split()[-1])
-                    res["tokens_per_second"] = round(val, 1)
-                except Exception:
-                    pass
+            metric_name = line.split("{")[0].split()[0]
+            try:
+                val = float(line.split()[-1])
+            except Exception:
+                continue
+
+            if "vllm:gpu_cache_usage_factor" in metric_name or "vllm:gpu_cache_usage_perc" in metric_name or "vllm:kv_cache_usage_perc" in metric_name:
+                res["gpu_cache_usage"] = val
+                res["kv_cache_usage_percent"] = round(val * 100.0, 1) if val <= 1.0 else round(val, 1)
+            elif "vllm:num_requests_running" in metric_name:
+                res["active_requests"] = int(val)
+            elif "vllm:num_requests_waiting" in metric_name:
+                res["waiting_requests"] = int(val)
+            elif "vllm:avg_generation_throughput_tok_per_s" in metric_name:
+                res["tokens_per_second"] = round(val, 1)
+            elif "vllm:avg_prompt_throughput_tok_per_s" in metric_name:
+                res["prompt_tokens_per_second"] = round(val, 1)
+            elif metric_name == "DCGM_FI_DEV_GPU_UTIL":
+                res["hw_gpu_percent"] = round(val, 1)
+                res["hardware_telemetry_present"] = True
+                res["hardware_source"] = "dcgm_exporter"
+            elif metric_name == "DCGM_FI_DEV_GPU_TEMP":
+                res["hw_temp_c"] = round(val, 1)
+            elif metric_name == "DCGM_FI_DEV_FB_USED":
+                dcgm_used_mb = val
+            elif metric_name == "DCGM_FI_DEV_FB_FREE":
+                dcgm_free_mb = val
+            elif metric_name == "nvidia_smi_utilization_gpu_ratio":
+                res["hw_gpu_percent"] = round(val * 100.0, 1) if val <= 1.0 else round(val, 1)
+                res["hardware_telemetry_present"] = True
+                res["hardware_source"] = "nvidia_smi_exporter"
+            elif metric_name == "nvidia_smi_temperature_gpu":
+                res["hw_temp_c"] = round(val, 1)
+            elif metric_name == "nvidia_smi_memory_used_bytes":
+                nvml_used_bytes = val
+            elif metric_name == "nvidia_smi_memory_total_bytes":
+                nvml_total_bytes = val
+
+        if dcgm_used_mb is not None and dcgm_free_mb is not None and (dcgm_used_mb + dcgm_free_mb) > 0:
+            total_mb = dcgm_used_mb + dcgm_free_mb
+            res["hw_vram_used_gb"] = round(dcgm_used_mb / 1024.0, 2)
+            res["hw_vram_total_gb"] = round(total_mb / 1024.0, 2)
+            res["hw_vram_percent"] = round((dcgm_used_mb / total_mb) * 100.0, 1)
+            res["hardware_telemetry_present"] = True
+            res.setdefault("hardware_source", "dcgm_exporter")
+        elif nvml_used_bytes is not None and nvml_total_bytes is not None and nvml_total_bytes > 0:
+            res["hw_vram_used_gb"] = round(nvml_used_bytes / (1024**3), 2)
+            res["hw_vram_total_gb"] = round(nvml_total_bytes / (1024**3), 2)
+            res["hw_vram_percent"] = round((nvml_used_bytes / nvml_total_bytes) * 100.0, 1)
+            res["hardware_telemetry_present"] = True
+            res.setdefault("hardware_source", "nvidia_smi_exporter")
+
         return res
 
     def _format_uptime(self, seconds: int) -> str:
@@ -407,24 +501,22 @@ class InferenceHealthMonitor:
                 "active_requests": 0,
             })
             # S2
-            s2_gpu = round(random.uniform(6.0, 28.0) if random.random() > 0.4 else random.uniform(3.0, 8.0), 1)
-            s2_vram = round(random.uniform(24.0, 28.0), 1)
             points.append({
                 "server_id": "server-2",
                 "timestamp": t.isoformat() + "Z",
                 "time_label": time_label,
-                "cpu_percent": round(random.uniform(8.0, 18.0), 1),
-                "memory_percent": round(random.uniform(26.0, 29.0), 1),
-                "memory_used_gb": 8.5,
-                "memory_total_gb": 32.0,
-                "disk_percent": 42.0,
-                "status": "ONLINE",
-                "gpu_percent": s2_gpu,
-                "gpu_memory_percent": s2_vram,
-                "gpu_memory_used_gb": round(24.0 * (s2_vram / 100), 2),
-                "gpu_temp_c": round(random.uniform(50.0, 56.0), 1),
-                "latency_ms": round(random.uniform(18.0, 35.0), 1),
-                "active_requests": 1 if s2_gpu > 20 else 0,
+                "cpu_percent": None,
+                "memory_percent": None,
+                "memory_used_gb": None,
+                "memory_total_gb": None,
+                "disk_percent": None,
+                "status": "UNKNOWN",
+                "gpu_percent": None,
+                "gpu_memory_percent": None,
+                "gpu_memory_used_gb": None,
+                "gpu_temp_c": None,
+                "latency_ms": None,
+                "active_requests": 0,
             })
         return points
 
@@ -460,30 +552,27 @@ class InferenceHealthMonitor:
             )
             self.db.add(s1)
 
-            # S2 baseline (GPU)
-            s2_gpu = round(random.uniform(6.0, 35.0) if random.random() > 0.4 else random.uniform(3.0, 8.0), 1)
-            s2_vram_pct = round(random.uniform(24.0, 28.5), 1)
-            s2_lat = round(random.uniform(18.0, 45.0) if s2_gpu > 20 else random.uniform(12.0, 25.0), 1)
+            # S2 baseline (never fabricate fake GPU/VRAM utilization percentages)
             s2 = SystemServerSample(
                 server_id="server-2",
                 server_name="Server 2 (vLLM AI & GPU Inference)",
                 timestamp=t,
-                status="ONLINE",
-                cpu_percent=round(random.uniform(8.0, 22.0), 1),
-                memory_percent=round(random.uniform(26.0, 30.0), 1),
-                memory_used_gb=8.8,
-                memory_total_gb=32.0,
-                disk_percent=42.0,
-                disk_used_gb=64.0,
-                disk_total_gb=150.0,
-                gpu_percent=s2_gpu,
-                gpu_memory_percent=s2_vram_pct,
-                gpu_memory_used_gb=round(24.0 * (s2_vram_pct / 100), 2),
-                gpu_memory_total_gb=24.0,
-                gpu_temp_c=round(random.uniform(50.0, 58.0), 1),
-                latency_ms=s2_lat,
-                active_requests=1 if s2_gpu > 25 else 0,
-                details={"model_name": settings.LOCAL_LLM_MODEL_NAME},
+                status="UNVERIFIED",
+                cpu_percent=None,
+                memory_percent=None,
+                memory_used_gb=None,
+                memory_total_gb=None,
+                disk_percent=None,
+                disk_used_gb=None,
+                disk_total_gb=None,
+                gpu_percent=None,
+                gpu_memory_percent=None,
+                gpu_memory_used_gb=None,
+                gpu_memory_total_gb=None,
+                gpu_temp_c=None,
+                latency_ms=None,
+                active_requests=0,
+                details={"model_name": settings.LOCAL_LLM_MODEL_NAME, "hardware_telemetry_available": False},
             )
             self.db.add(s2)
 

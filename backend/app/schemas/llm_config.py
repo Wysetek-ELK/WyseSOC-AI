@@ -8,11 +8,11 @@ class LLMConfigResponse(BaseModel):
     protocol: str = Field("http", description="Protocol (http or https)")
     base_url: str = Field(..., description="Full base URL for OpenAI-compatible endpoint")
     model_name: str = Field(..., description="Active model identifier")
-    timeout: float = Field(30.0, description="Inference timeout in seconds")
-    context_budget: int = Field(16384, description="Configured total context window budget in tokens")
-    max_tokens: int = Field(1024, description="Reserved completion tokens per inference call")
-    target_input_budget: int = Field(8192, description="Target effective input token budget in tokens")
-    available_input_tokens: int = Field(8192, description="Dynamically calculated available input tokens based on model capacity and reserved output tokens")
+    timeout: float = Field(180.0, description="Inference timeout in seconds")
+    context_budget: int = Field(8192, description="Configured total context window budget in tokens")
+    max_tokens: int = Field(768, description="Reserved completion tokens per inference call")
+    target_input_budget: int = Field(7424, description="Target effective input token budget in tokens")
+    available_input_tokens: int = Field(7424, description="Dynamically calculated available input tokens based on model capacity and reserved output tokens")
     verified_max_model_len: Optional[int] = Field(
         None,
         description="Model-server max_model_len last observed from Server 2 /models probe (None until verified)",
@@ -33,6 +33,12 @@ class LLMConfigResponse(BaseModel):
     server1_outbound_ip: Optional[str] = Field(None, description="Outbound public IP of Server 1 (for security group whitelisting)")
     core_outbound_ip: Optional[str] = Field(None, description="Outbound public IP of Verdictum Core")
     model_profiles: Dict[str, Dict[str, int]] = Field(default_factory=dict, description="Configurable per-model context window, completion, and input budget limits")
+    endpoint_reachable: Optional[bool] = Field(None, description="Whether Server 2 endpoint was reachable on last check")
+    runtime_healthy: Optional[bool] = Field(None, description="Whether vLLM runtime reported HTTP 200 healthy")
+    configured_model_available: Optional[bool] = Field(None, description="Whether configured model_name is served by Server 2")
+    model_mismatch: Optional[bool] = Field(None, description="True when Server 2 serves different models than configured model_name")
+    active_models_reported: List[str] = Field(default_factory=list, description="Models currently reported by Server 2 /v1/models")
+    runtime_status_detail: Optional[str] = Field(None, description="Human-readable runtime verification status summary")
 
 
 class LLMConfigUpdate(BaseModel):
@@ -77,4 +83,28 @@ class LLMTestConnectionResponse(BaseModel):
     target_input_budget: Optional[int] = Field(
         None,
         description="Configured target effective input token budget in tokens",
+    )
+    endpoint_reachable: Optional[bool] = Field(
+        None,
+        description="Whether the inference host and port accepted an HTTP connection",
+    )
+    runtime_healthy: Optional[bool] = Field(
+        None,
+        description="Whether the vLLM inference engine reported HTTP 200 healthy status",
+    )
+    configured_model_available: Optional[bool] = Field(
+        None,
+        description="Whether the configured LOCAL_LLM_MODEL_NAME is actively served by Server 2",
+    )
+    model_mismatch: Optional[bool] = Field(
+        None,
+        description="True when Server 2 is serving a different model than configured LOCAL_LLM_MODEL_NAME",
+    )
+    inference_verified: Optional[bool] = Field(
+        None,
+        description="Whether a live chat completion probe succeeded",
+    )
+    runtime_status_detail: Optional[str] = Field(
+        None,
+        description="Detailed status summary distinguishing reachability, health, model match, and inference state",
     )

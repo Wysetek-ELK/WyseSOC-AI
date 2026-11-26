@@ -326,11 +326,16 @@ def test_configurable_per_model_limits_and_dynamic_calculation():
     )
     assert avail_4k == 3072
 
-    # 5. Model profile registry lookup
-    prof_qwen = LLMConfigService.get_model_profile("Qwen/Qwen2.5-7B-Instruct-AWQ")
-    assert prof_qwen["max_context_tokens"] == 16384
-    assert prof_qwen["reserved_output_tokens"] == 1024
-    assert prof_qwen["target_input_budget"] == 8192
+    # 5. Model profile registry lookup (aligned with Tesla T4 8192 verified capacity)
+    prof_qwen3 = LLMConfigService.get_model_profile("Qwen/Qwen3-14B-AWQ")
+    assert prof_qwen3["max_context_tokens"] == 8192
+    assert prof_qwen3["reserved_output_tokens"] == 768
+    assert prof_qwen3["target_input_budget"] == 7424
+
+    prof_qwen25 = LLMConfigService.get_model_profile("Qwen/Qwen2.5-7B-Instruct-AWQ")
+    assert prof_qwen25["max_context_tokens"] == 8192
+    assert prof_qwen25["reserved_output_tokens"] == 768
+    assert prof_qwen25["target_input_budget"] == 7424
 
     # 6. Custom model profile registration
     custom_prof = LLMConfigService.set_model_profile(

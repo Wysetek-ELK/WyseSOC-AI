@@ -1,0 +1,193 @@
+[
+  {
+    "domain": "FortiSIEM incident ingestion",
+    "files": [
+      "backend/app/services/fortisiem_service.py",
+      "backend/app/services/fortisiem_scheduler.py",
+      "backend/app/services/ingestion_service.py",
+      "backend/app/api/fortisiem.py",
+      "backend/app/api/imports.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_fortisiem_pull.py",
+      "test_fortisiem_continuous_sync.py",
+      "test_fortisiem_multiworker_sync.py",
+      "test_ingestion.py"
+    ]
+  },
+  {
+    "domain": "Raw event collection",
+    "files": [
+      "backend/app/models/incident.py",
+      "backend/app/services/ingestion_service.py",
+      "backend/app/services/evidence_normalization_service.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_ingestion.py",
+      "test_evidence_normalization.py"
+    ]
+  },
+  {
+    "domain": "Incident-to-rule mapping",
+    "files": [
+      "backend/app/services/policy_governance.py",
+      "backend/app/services/rule_parser.py",
+      "backend/app/services/rule_intelligence_analyzer.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_rule_parser.py",
+      "test_ais_2_1_remediation.py"
+    ]
+  },
+  {
+    "domain": "Analyst TP/FP resolutions & Human ground truth",
+    "files": [
+      "backend/app/models/incident.py",
+      "backend/app/models/investigation.py",
+      "backend/app/models/analyst_feedback.py",
+      "backend/app/services/analyst_review_service.py",
+      "backend/app/services/ground_truth_certification_service.py",
+      "backend/app/services/blind_review_guard.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_ais_2_6f_certification_and_blind_review.py",
+      "test_ground_truth_isolation.py",
+      "test_investigations.py"
+    ]
+  },
+  {
+    "domain": "Active approved LLM policy & version history",
+    "files": [
+      "backend/app/models/prompt.py",
+      "backend/app/services/prompt_studio_service.py",
+      "backend/app/services/policy_eligibility_service.py",
+      "backend/app/services/policy_version_governance_service.py",
+      "backend/app/services/policy_compiler_service.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_policy_version_governance.py",
+      "test_policy_compiler.py",
+      "test_prompt_studio.py"
+    ]
+  },
+  {
+    "domain": "AI verdict generation & LLM response validation",
+    "files": [
+      "backend/app/services/ai_verdict_service.py",
+      "backend/app/services/verdict_pipeline.py",
+      "backend/app/services/independent_verdict_validator.py",
+      "backend/app/services/reasoning_integrity_engine.py",
+      "backend/app/services/model_claim_extractor.py",
+      "backend/app/services/verdict_claim_validator.py",
+      "backend/app/services/verdict_guardrails_engine.py",
+      "backend/app/services/verdict_trustworthiness_engine.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_independent_verdict_validator.py",
+      "test_ais_2_4b_validator_integrity.py",
+      "test_ais_2_5a_validator_regression.py"
+    ]
+  },
+  {
+    "domain": "Evidence integrity & leakage protection",
+    "files": [
+      "backend/app/services/model_payload_allowlist.py",
+      "backend/app/services/historical_ground_truth_validator.py",
+      "backend/app/services/actual_prompt_capture_service.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_evidence_integrity_audit.py",
+      "test_actual_prompt_inspector.py",
+      "test_phase1_security_controls.py"
+    ]
+  },
+  {
+    "domain": "Token budget protection",
+    "files": [
+      "backend/app/services/token_budget_service.py",
+      "backend/app/services/tokenizer_service.py",
+      "backend/app/services/evidence_compaction_service.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_token_budgeting.py",
+      "test_context_window_8k_16k.py",
+      "test_evidence_compaction_and_chunking.py"
+    ]
+  },
+  {
+    "domain": "Benchmark integrity & accuracy calculations",
+    "files": [
+      "backend/app/services/empirical_benchmark_harness.py",
+      "backend/app/services/ais27_benchmark_runner.py",
+      "backend/app/services/empirical_accuracy_evaluator.py",
+      "backend/app/services/calibration_evaluator.py",
+      "backend/app/services/policy_simulation_service.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_ais_2_7_benchmark_runner.py",
+      "test_ais_2_6a_empirical_validation.py",
+      "test_ais_2_6c_three_mode_and_bias_isolation.py"
+    ]
+  },
+  {
+    "domain": "Agent Intelligence Studio & Chatbot",
+    "files": [
+      "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "backend/app/api/prompts.py",
+      "backend/app/api/rule_learning.py",
+      "backend/app/api/ais_evaluation.py",
+      "backend/app/api/chat.py",
+      "frontend/src/app/soc-chatbot/page.tsx"
+    ],
+    "protection_level": "HIGH",
+    "tests": [
+      "test_soc_chatbot.py",
+      "test_ais_evaluation_tracking.py",
+      "frontend/tests/phase3-compact-ui.test.mjs"
+    ]
+  },
+  {
+    "domain": "Authentication, Authorization, RBAC & Audit Logging",
+    "files": [
+      "backend/app/api/auth.py",
+      "backend/app/api/deps.py",
+      "backend/app/api/users.py",
+      "backend/app/utils/security.py",
+      "backend/app/services/audit_service.py",
+      "backend/app/models/audit.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_auth.py",
+      "test_phase1_security_controls.py",
+      "test_audit_remediations.py"
+    ]
+  },
+  {
+    "domain": "Database migrations, workers, deployment & recovery",
+    "files": [
+      "backend/alembic/versions/*",
+      "backend/app/core/db_guard.py",
+      "backend/app/workers/celery_app.py",
+      "backend/app/workers/tasks.py",
+      "deployment/*",
+      "backend/app/scripts/backup.py",
+      "backend/app/scripts/restore.py"
+    ],
+    "protection_level": "CRITICAL",
+    "tests": [
+      "test_database_isolation.py",
+      "test_backup_restore.py",
+      "test_celery_queues.py"
+    ]
+  }
+]

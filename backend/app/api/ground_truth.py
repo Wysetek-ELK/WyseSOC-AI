@@ -251,8 +251,13 @@ async def ais27_run_single_incident(
     mode: str = Query("ALL", pattern="^(ALL|A|B)$"),
     max_context_tokens: int = Query(8192, ge=1024, le=131072),
     max_completion_tokens: int = Query(768, ge=64, le=4096),
-    target_input_budget: int = Query(6400, ge=512, le=65536),
-    timeout_seconds: float = Query(120.0, ge=5.0, le=300.0),
+    target_input_budget: int = Query(7424, ge=512, le=65536),
+    timeout_seconds: float = Query(180.0, ge=5.0, le=300.0),
+    temperature: float = Query(0.0, ge=0.0, le=1.0),
+    neutral_prompt_version: str = Query("V2", pattern="^(V1|V2)$"),
+    include_complete_rule_def: bool = Query(True),
+    include_evidence_intelligence: bool = Query(True),
+    use_candidate_policy: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -272,7 +277,12 @@ async def ais27_run_single_incident(
             max_completion_tokens=max_completion_tokens,
             target_input_budget=target_input_budget,
             timeout_seconds=timeout_seconds,
+            temperature=temperature,
             mode=mode,
+            neutral_prompt_version=neutral_prompt_version,
+            include_complete_rule_def=include_complete_rule_def,
+            include_evidence_intelligence=include_evidence_intelligence,
+            use_candidate_policy=use_candidate_policy,
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))

@@ -1,0 +1,2484 @@
+{
+  "frontend_api": {
+    "total_api_methods": 134,
+    "unused_in_src": [
+      {
+        "method": "pullFortiSiemRule",
+        "line": 1858,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "batchEvaluateAIVerdicts",
+        "line": 1939,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getInvestigationByIncident",
+        "line": 2039,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "generateTemplateDraft",
+        "line": 2150,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "activateApprovedPolicyVersion",
+        "line": 2203,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidentActualPromptExecutions",
+        "line": 2489,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getLearningRecord",
+        "line": 2558,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getDryRunConfig",
+        "line": 2617,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getDryRunJob",
+        "line": 2642,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidentTrust",
+        "line": 2719,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "processLine",
+        "line": 2877,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getRuleLearningProfiles",
+        "line": 3062,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "initializeAllRuleLearningProfiles",
+        "line": 3116,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getRuleLearningHistory",
+        "line": 3247,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getAutomationPolicy",
+        "line": 3269,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "resumeRuleAiExecution",
+        "line": 3330,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "ensureCohort",
+        "line": 4134,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "reopenReview",
+        "line": 4250,
+        "src_refs": [],
+        "test_refs": []
+      }
+    ],
+    "all_methods": [
+      {
+        "method": "login",
+        "line": 1508,
+        "src_refs": [
+          "frontend/src/context/AppContext.tsx",
+          "frontend/src/components/layout/Shell.tsx",
+          "frontend/src/app/login/page.tsx"
+        ],
+        "test_refs": [
+          "frontend/tests/branding.test.mjs"
+        ]
+      },
+      {
+        "method": "logout",
+        "line": 1522,
+        "src_refs": [
+          "frontend/src/context/AppContext.tsx",
+          "frontend/src/components/layout/Header.tsx"
+        ],
+        "test_refs": [
+          "frontend/tests/branding.test.mjs"
+        ]
+      },
+      {
+        "method": "getMe",
+        "line": 1530,
+        "src_refs": [
+          "frontend/src/context/AppContext.tsx",
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getDashboardMetrics",
+        "line": 1537,
+        "src_refs": [
+          "frontend/src/app/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getLlmStatus",
+        "line": 1543,
+        "src_refs": [
+          "frontend/src/components/layout/Sidebar.tsx",
+          "frontend/src/app/agent-intelligence-studio/page.tsx",
+          "frontend/src/app/agent-simulation-lab/page.tsx",
+          "frontend/src/app/ai-triage-workbench/page.tsx",
+          "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidents",
+        "line": 1561,
+        "src_refs": [
+          "frontend/src/components/compact/AiTestWorkbench.tsx",
+          "frontend/src/app/ai-triage-workbench/page.tsx",
+          "frontend/src/app/soc-chatbot/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidentDetail",
+        "line": 1588,
+        "src_refs": [
+          "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+          "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+          "frontend/src/components/review/GroundTruthCertificationPanel.tsx",
+          "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidentModelPayload",
+        "line": 1594,
+        "src_refs": [
+          "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+          "frontend/src/components/learning/RuleLearningDashboard.tsx",
+          "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidentAiVerdict",
+        "line": 1600,
+        "src_refs": [
+          "frontend/src/components/compact/AiTestWorkbench.tsx",
+          "frontend/src/app/ai-triage-workbench/page.tsx",
+          "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getRuleEvaluationStatus",
+        "line": 1615,
+        "src_refs": [
+          "frontend/src/components/compact/AccuracyLearningSummary.tsx",
+          "frontend/src/components/compact/AiTestWorkbench.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidentEvaluationHistory",
+        "line": 1646,
+        "src_refs": [
+          "frontend/src/components/compact/AiTestWorkbench.tsx",
+          "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "evaluateMissingIncidentsBatch",
+        "line": 1655,
+        "src_refs": [
+          "frontend/src/components/compact/AiTestWorkbench.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidentTimeline",
+        "line": 1678,
+        "src_refs": [
+          "frontend/src/components/telemetry/HistoricalTelemetryTimeline.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "purgeAllIncidents",
+        "line": 1684,
+        "src_refs": [
+          "frontend/src/app/agent-configuration/page.tsx",
+          "frontend/src/app/ai-triage-workbench/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getTokenAnalytics",
+        "line": 1695,
+        "src_refs": [
+          "frontend/src/components/telemetry/TokenBifurcationWidget.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getGlobalTelemetryTimeline",
+        "line": 1705,
+        "src_refs": [
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getRules",
+        "line": 1716,
+        "src_refs": [
+          "frontend/src/app/agent-intelligence-studio/page.tsx",
+          "frontend/src/app/agent-memory/page.tsx",
+          "frontend/src/app/agent-simulation-lab/page.tsx",
+          "frontend/src/app/ai-triage-workbench/page.tsx",
+          "frontend/src/app/detection-intelligence/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getRuleStats",
+        "line": 1730,
+        "src_refs": [
+          "frontend/src/app/detection-intelligence/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getRuleDetail",
+        "line": 1736,
+        "src_refs": [
+          "frontend/src/app/detection-intelligence/[id]/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "uploadImport",
+        "line": 1743,
+        "src_refs": [
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getImportJobs",
+        "line": 1757,
+        "src_refs": [
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getFortiSiemStatus",
+        "line": 1764,
+        "src_refs": [
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getFortiSiemConfig",
+        "line": 1770,
+        "src_refs": [
+          "frontend/src/app/agent-configuration/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "updateFortiSiemConfig",
+        "line": 1776,
+        "src_refs": [
+          "frontend/src/app/agent-configuration/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "testFortiSiemConnection",
+        "line": 1789,
+        "src_refs": [
+          "frontend/src/app/agent-configuration/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getLLMConfig",
+        "line": 1802,
+        "src_refs": [
+          "frontend/src/app/agent-configuration/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "updateLLMConfig",
+        "line": 1808,
+        "src_refs": [
+          "frontend/src/app/agent-configuration/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "testLLMConnection",
+        "line": 1821,
+        "src_refs": [
+          "frontend/src/app/agent-configuration/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "pullFortiSiemIncident",
+        "line": 1834,
+        "src_refs": [
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "syncFortiSiemRules",
+        "line": 1847,
+        "src_refs": [
+          "frontend/src/app/detection-intelligence/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "pullFortiSiemRule",
+        "line": 1858,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "pullAllFortiSiemIncidents",
+        "line": 1871,
+        "src_refs": [
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getFortiSiemSchedulerStatus",
+        "line": 1884,
+        "src_refs": [
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "startFortiSiemScheduler",
+        "line": 1890,
+        "src_refs": [
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "stopFortiSiemScheduler",
+        "line": 1903,
+        "src_refs": [
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "triggerFortiSiemScheduler",
+        "line": 1911,
+        "src_refs": [
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "processPendingFortiSiemVerdicts",
+        "line": 1919,
+        "src_refs": [
+          "frontend/src/app/page.tsx",
+          "frontend/src/app/telemetry-hub/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "batchEvaluateAIVerdicts",
+        "line": 1939,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "syncFortiSiemResolutions",
+        "line": 1952,
+        "src_refs": [
+          "frontend/src/app/ai-triage-workbench/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "syncFortiSiemIncidentResolution",
+        "line": 1963,
+        "src_refs": [
+          "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getUsers",
+        "line": 1975,
+        "src_refs": [
+          "frontend/src/app/governance-access/page.tsx",
+          "frontend/src/app/human-review-queue/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "createUser",
+        "line": 1981,
+        "src_refs": [
+          "frontend/src/app/governance-access/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getAuditLogs",
+        "line": 1994,
+        "src_refs": [
+          "frontend/src/app/governance-access/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getInvestigationsQueue",
+        "line": 2006,
+        "src_refs": [
+          "frontend/src/app/human-review-queue/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getInvestigation",
+        "line": 2033,
+        "src_refs": [
+          "frontend/src/app/human-review-queue/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getInvestigationByIncident",
+        "line": 2039,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "assignInvestigation",
+        "line": 2045,
+        "src_refs": [
+          "frontend/src/app/human-review-queue/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "updateInvestigationStatus",
+        "line": 2055,
+        "src_refs": [
+          "frontend/src/app/human-review-queue/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "addInvestigationQuestion",
+        "line": 2065,
+        "src_refs": [
+          "frontend/src/app/human-review-queue/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "answerInvestigationQuestion",
+        "line": 2075,
+        "src_refs": [
+          "frontend/src/app/human-review-queue/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "attachInvestigationEvidence",
+        "line": 2085,
+        "src_refs": [
+          "frontend/src/app/human-review-queue/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "submitInvestigationVerdict",
+        "line": 2100,
+        "src_refs": [
+          "frontend/src/app/human-review-queue/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getRulePromptsSummary",
+        "line": 2120,
+        "src_refs": [
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getRuleProductionReadiness",
+        "line": 2126,
+        "src_refs": [
+          "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getRulePrompt",
+        "line": 2137,
+        "src_refs": [
+          "frontend/src/components/compact/ManageVersionHistory.tsx",
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "generateTemplateDraft",
+        "line": 2150,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "createManualDraft",
+        "line": 2158,
+        "src_refs": [
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "approvePromptVersion",
+        "line": 2179,
+        "src_refs": [
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "rollbackPromptVersion",
+        "line": 2192,
+        "src_refs": [
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "activateApprovedPolicyVersion",
+        "line": 2203,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "revokePromptVersion",
+        "line": 2214,
+        "src_refs": [
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getRuleVersionHistory",
+        "line": 2233,
+        "src_refs": [
+          "frontend/src/components/compact/ManageVersionHistory.tsx"
+        ],
+        "test_refs": [
+          "frontend/tests/version-governance-and-simplified-ui.test.mjs"
+        ]
+      },
+      {
+        "method": "getVersionDeletionPreview",
+        "line": 2242,
+        "src_refs": [
+          "frontend/src/components/compact/ManageVersionHistory.tsx"
+        ],
+        "test_refs": [
+          "frontend/tests/version-governance-and-simplified-ui.test.mjs"
+        ]
+      },
+      {
+        "method": "deletePromptVersion",
+        "line": 2253,
+        "src_refs": [
+          "frontend/src/components/compact/ManageVersionHistory.tsx"
+        ],
+        "test_refs": [
+          "frontend/tests/version-governance-and-simplified-ui.test.mjs"
+        ]
+      },
+      {
+        "method": "archivePromptVersion",
+        "line": 2272,
+        "src_refs": [
+          "frontend/src/components/compact/ManageVersionHistory.tsx"
+        ],
+        "test_refs": [
+          "frontend/tests/version-governance-and-simplified-ui.test.mjs"
+        ]
+      },
+      {
+        "method": "restorePromptVersion",
+        "line": 2288,
+        "src_refs": [
+          "frontend/src/components/compact/ManageVersionHistory.tsx"
+        ],
+        "test_refs": [
+          "frontend/tests/version-governance-and-simplified-ui.test.mjs"
+        ]
+      },
+      {
+        "method": "bulkDeletePromptVersions",
+        "line": 2302,
+        "src_refs": [
+          "frontend/src/components/compact/ManageVersionHistory.tsx"
+        ],
+        "test_refs": [
+          "frontend/tests/version-governance-and-simplified-ui.test.mjs"
+        ]
+      },
+      {
+        "method": "getPolicyEligibility",
+        "line": 2325,
+        "src_refs": [
+          "frontend/src/components/compact/AgentIntelligenceStudioOverview.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "exportRulePrompts",
+        "line": 2337,
+        "src_refs": [
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "exportSingleRulePrompt",
+        "line": 2351,
+        "src_refs": [
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getPolicyQualitySummary",
+        "line": 2446,
+        "src_refs": [
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "startBulkQualityAudit",
+        "line": 2452,
+        "src_refs": [
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidentActualPromptExecutions",
+        "line": 2489,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getRulePromptCaptures",
+        "line": 2498,
+        "src_refs": [
+          "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getPromptPreviewForRule",
+        "line": 2507,
+        "src_refs": [
+          "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "exportActualPrompt",
+        "line": 2520,
+        "src_refs": [
+          "frontend/src/components/prompt-inspector/ActualPromptInspectorModal.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getLearningRecords",
+        "line": 2537,
+        "src_refs": [
+          "frontend/src/app/agent-memory/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getLearningRecord",
+        "line": 2558,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "findSimilarCases",
+        "line": 2564,
+        "src_refs": [
+          "frontend/src/app/agent-memory/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "createDryRunConfig",
+        "line": 2590,
+        "src_refs": [
+          "frontend/src/app/agent-simulation-lab/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getDryRunConfigs",
+        "line": 2611,
+        "src_refs": [
+          "frontend/src/app/agent-simulation-lab/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getDryRunConfig",
+        "line": 2617,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getDryRunJobs",
+        "line": 2636,
+        "src_refs": [
+          "frontend/src/app/agent-simulation-lab/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getDryRunJob",
+        "line": 2642,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getServersLive",
+        "line": 2687,
+        "src_refs": [
+          "frontend/src/components/system/ServerInfrastructureMonitor.tsx",
+          "frontend/src/app/inference-control/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getServersHistory",
+        "line": 2693,
+        "src_refs": [
+          "frontend/src/components/system/ServerInfrastructureMonitor.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidentTrust",
+        "line": 2719,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "startHistoricalEvaluation",
+        "line": 2725,
+        "src_refs": [
+          "frontend/src/app/verdict-intelligence/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "listEvaluationRuns",
+        "line": 2747,
+        "src_refs": [
+          "frontend/src/app/verdict-intelligence/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getEvaluationRunDetails",
+        "line": 2753,
+        "src_refs": [
+          "frontend/src/app/verdict-intelligence/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "streamChatMessage",
+        "line": 2814,
+        "src_refs": [
+          "frontend/src/app/soc-chatbot/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "processLine",
+        "line": 2877,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "clearTimeout",
+        "line": 2897,
+        "src_refs": [
+          "frontend/src/components/admin-guide/WorkflowFlowDiagram.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getPilotConfig",
+        "line": 2902,
+        "src_refs": [
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "updatePilotConfig",
+        "line": 2908,
+        "src_refs": [
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "activatePilot",
+        "line": 2921,
+        "src_refs": [
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "pausePilot",
+        "line": 2934,
+        "src_refs": [
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "resumePilot",
+        "line": 2947,
+        "src_refs": [
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "disablePilot",
+        "line": 2960,
+        "src_refs": [
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "rollbackPilot",
+        "line": 2973,
+        "src_refs": [
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getPilotMetrics",
+        "line": 2986,
+        "src_refs": [
+          "frontend/src/app/page.tsx",
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getPilotHistory",
+        "line": 2992,
+        "src_refs": [
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "submitPilotFeedback",
+        "line": 3026,
+        "src_refs": [
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "supervisorVerifyPilotFeedback",
+        "line": 3039,
+        "src_refs": [
+          "frontend/src/components/pilot/PilotControlAndDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getHistoricalEligibilityReport",
+        "line": 3052,
+        "src_refs": [
+          "frontend/src/components/pilot/HistoricalEligibilityPanel.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getRuleLearningProfiles",
+        "line": 3062,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getRuleLearningProfileDetail",
+        "line": 3071,
+        "src_refs": [
+          "frontend/src/components/compact/AccuracyLearningSummary.tsx",
+          "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+          "frontend/src/components/learning/RuleLearningDashboard.tsx",
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "evaluateRuleAccuracy",
+        "line": 3083,
+        "src_refs": [
+          "frontend/src/components/compact/AccuracyLearningSummary.tsx",
+          "frontend/src/app/agent-intelligence-studio/page.tsx"
+        ],
+        "test_refs": [
+          "frontend/tests/evaluate-accuracy-and-empirical-readiness.test.mjs"
+        ]
+      },
+      {
+        "method": "initializeRuleLearningProfile",
+        "line": 3102,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "initializeAllRuleLearningProfiles",
+        "line": 3116,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "transitionRuleLifecycle",
+        "line": 3127,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getPendingDoubleBlindReviews",
+        "line": 3143,
+        "src_refs": [
+          "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "submitAnalystReview",
+        "line": 3156,
+        "src_refs": [
+          "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": [
+          "frontend/tests/blind-review-and-analyst-workflow.test.mjs"
+        ]
+      },
+      {
+        "method": "adjudicateAnalystReview",
+        "line": 3175,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "requestRulePromotion",
+        "line": 3188,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "decideRulePromotion",
+        "line": 3205,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "emergencyDisableAutomation",
+        "line": 3221,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "listPromotionRequests",
+        "line": 3233,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getRuleLearningHistory",
+        "line": 3247,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "suggestPromptImprovement",
+        "line": 3257,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getAutomationPolicy",
+        "line": 3269,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "updateAutomationPolicy",
+        "line": 3280,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "executeAutomationDecision",
+        "line": 3303,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "listAutomationAudits",
+        "line": 3318,
+        "src_refs": [
+          "frontend/src/components/learning/RuleLearningDashboard.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "resumeRuleAiExecution",
+        "line": 3330,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "listCohorts",
+        "line": 4128,
+        "src_refs": [
+          "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "ensureCohort",
+        "line": 4134,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getCohortQueue",
+        "line": 4142,
+        "src_refs": [
+          "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "getIncidentDetail",
+        "line": 4167,
+        "src_refs": [
+          "frontend/src/data/admin-guide/glossaryAndTroubleshootingData.ts",
+          "frontend/src/components/compact/ReviewIncidentsWorkbench.tsx",
+          "frontend/src/components/review/GroundTruthCertificationPanel.tsx",
+          "frontend/src/app/ai-triage-workbench/[id]/page.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "attachEvidence",
+        "line": 4173,
+        "src_refs": [
+          "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "submitReview",
+        "line": 4195,
+        "src_refs": [
+          "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "adjudicateConflict",
+        "line": 4227,
+        "src_refs": [
+          "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+        ],
+        "test_refs": []
+      },
+      {
+        "method": "reopenReview",
+        "line": 4250,
+        "src_refs": [],
+        "test_refs": []
+      },
+      {
+        "method": "getPostCertificationComparison",
+        "line": 4271,
+        "src_refs": [
+          "frontend/src/components/review/GroundTruthCertificationPanel.tsx"
+        ],
+        "test_refs": []
+      }
+    ]
+  },
+  "ais_services": [
+    {
+      "file": "backend/app/services/ai_verdict_service.py",
+      "module": "app.services.ai_verdict_service",
+      "lines": 730,
+      "classes": [
+        "LocalLLMUnavailableError",
+        "VerdictTriageAgent"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/ais_evaluation.py",
+        "backend/app/api/fortisiem.py",
+        "backend/app/api/health.py",
+        "backend/app/api/incidents.py",
+        "backend/app/api/prompts.py",
+        "backend/app/services/ais_evaluation_service.py",
+        "backend/app/services/fortisiem_scheduler.py",
+        "backend/app/services/fortisiem_service.py",
+        "backend/app/services/investigation_service.py",
+        "backend/app/services/llm_config_service.py",
+        "backend/app/services/pilot_service.py",
+        "backend/app/services/production_readiness_service.py",
+        "backend/app/services/verdict_triage_agent.py",
+        "backend/app/workers/tasks.py"
+      ],
+      "test_callers_count": 16,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/verdict_pipeline.py",
+      "module": "app.services.verdict_pipeline",
+      "lines": 1381,
+      "classes": [
+        "PipelineLLMUnavailableError",
+        "VerdictPipelineResult"
+      ],
+      "functions": [
+        "build_sanitized_model_payload",
+        "_governance_fields",
+        "_invoke_provider_with_guards",
+        "run_shared_verdict_pipeline"
+      ],
+      "prod_callers": [
+        "backend/app/services/ai_verdict_service.py",
+        "backend/app/services/dry_run_service.py",
+        "backend/app/services/policy_simulation_service.py"
+      ],
+      "test_callers_count": 6,
+      "script_callers": [
+        "scratch/diagnose_prisma_budget.py",
+        "scratch/inspect_prompt_payload.py",
+        "scratch/reproduce_budget.py",
+        "scratch/reproduce_prisma_budget.py",
+        "scratch/reproduce_server1_prisma.py",
+        "scratch/test_all_20_token_budget.py",
+        "scratch/test_compaction_fields.py",
+        "scratch/test_fix.py",
+        "scratch/trace_compaction.py",
+        "scratch/trace_compaction_exact.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/prompt_studio_service.py",
+      "module": "app.services.prompt_studio_service",
+      "lines": 984,
+      "classes": [
+        "AgentPolicyEngine"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/incidents.py",
+        "backend/app/api/prompts.py",
+        "backend/app/api/rules.py",
+        "backend/app/services/agent_policy_engine.py",
+        "backend/app/services/ai_verdict_service.py",
+        "backend/app/services/fortisiem_service.py",
+        "backend/app/services/ingestion_service.py",
+        "backend/app/services/policy_compiler_service.py",
+        "backend/app/services/rule_learning_service.py"
+      ],
+      "test_callers_count": 6,
+      "script_callers": [
+        "scripts/recover_v7_live.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/policy_compiler_service.py",
+      "module": "app.services.policy_compiler_service",
+      "lines": 432,
+      "classes": [
+        "UnapprovedPolicyError",
+        "PolicyCompilerService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/services/actual_prompt_capture_service.py",
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/prompt_studio_service.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 12,
+      "script_callers": [
+        "scratch/build_stage1_manifests.py",
+        "scratch/diagnose_prisma_budget.py",
+        "scratch/offline_token_audit_run.py",
+        "scratch/reproduce_budget.py",
+        "scratch/reproduce_prisma_budget.py",
+        "scratch/reproduce_server1_prisma.py",
+        "scratch/run_stage5_pilot_and_benchmark.py",
+        "scratch/test_all_20_token_budget.py",
+        "scratch/test_compile_prompt.py",
+        "scratch/trace_compaction_exact.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/policy_generation_service.py",
+      "module": "app.services.policy_generation_service",
+      "lines": 370,
+      "classes": [
+        "PolicyGenerationService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/prompt_studio_service.py"
+      ],
+      "test_callers_count": 5,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/policy_simulation_service.py",
+      "module": "app.services.policy_simulation_service",
+      "lines": 1492,
+      "classes": [
+        "PolicySimulationService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/api/verdict_intelligence.py",
+        "backend/app/services/ai_verdict_service.py",
+        "backend/app/services/dry_run_service.py",
+        "backend/app/services/integration_diagnostic_service.py",
+        "backend/app/workers/tasks.py"
+      ],
+      "test_callers_count": 9,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_2_audit.py",
+        "scripts/run_phase8_empirical_validation.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/policy_quality_validator.py",
+      "module": "app.services.policy_quality_validator",
+      "lines": 885,
+      "classes": [
+        "PolicyQualityValidator"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/services/bulk_quality_audit_service.py",
+        "backend/app/services/dry_run_service.py",
+        "backend/app/services/integration_diagnostic_service.py",
+        "backend/app/services/pilot_service.py",
+        "backend/app/services/policy_governance.py",
+        "backend/app/services/policy_simulation_service.py",
+        "backend/app/services/production_readiness_service.py",
+        "backend/app/services/prompt_studio_service.py",
+        "backend/app/workers/tasks.py"
+      ],
+      "test_callers_count": 8,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_2_audit.py",
+        "scripts/run_phase8_empirical_validation.py",
+        "scripts/setup_ready_for_approval_fixture.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/policy_governance.py",
+      "module": "app.services.policy_governance",
+      "lines": 532,
+      "classes": [
+        "RuleMatchContext",
+        "PolicyRuntimeCertification"
+      ],
+      "functions": [
+        "resolve_canonical_rule",
+        "build_rule_incident_context",
+        "build_rule_incident_sql_filter",
+        "verify_incident_matches_rule",
+        "reconstruct_semantics_from_snapshot",
+        "get_rule_semantics_and_contract",
+        "_is_simulated_run_config",
+        "assess_policy_runtime_certification"
+      ],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/api/verdict_intelligence.py",
+        "backend/app/services/ai_verdict_service.py",
+        "backend/app/services/dry_run_service.py",
+        "backend/app/services/evaluation_service.py",
+        "backend/app/services/historical_eligibility_service.py",
+        "backend/app/services/incident_service.py",
+        "backend/app/services/integration_diagnostic_service.py",
+        "backend/app/services/maturity_service.py",
+        "backend/app/services/pilot_service.py",
+        "backend/app/services/policy_simulation_service.py",
+        "backend/app/services/policy_version_governance_service.py",
+        "backend/app/services/production_readiness_service.py",
+        "backend/app/services/prompt_studio_service.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 4,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/policy_version_governance_service.py",
+      "module": "app.services.policy_version_governance_service",
+      "lines": 658,
+      "classes": [
+        "PolicyVersionGovernanceService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/services/prompt_studio_service.py"
+      ],
+      "test_callers_count": 1,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/policy_eligibility_service.py",
+      "module": "app.services.policy_eligibility_service",
+      "lines": 242,
+      "classes": [
+        "PolicyEligibilityResult",
+        "PolicyEligibilityService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/services/prompt_studio_service.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 1,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/policy_lifecycle_monitor.py",
+      "module": "app.services.policy_lifecycle_monitor",
+      "lines": 171,
+      "classes": [
+        "PolicyLifecycleMonitor"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/services/fortisiem_service.py",
+        "backend/app/services/learning_service.py"
+      ],
+      "test_callers_count": 1,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/historical_eligibility_service.py",
+      "module": "app.services.historical_eligibility_service",
+      "lines": 569,
+      "classes": [
+        "HistoricalEligibilityService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/pilot.py",
+        "backend/app/api/verdict_intelligence.py",
+        "backend/app/services/integration_diagnostic_service.py"
+      ],
+      "test_callers_count": 2,
+      "script_callers": [
+        "scripts/run_phase9_load_benchmark.py",
+        "backend/scripts/audit_ground_truth_readiness.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/historical_ground_truth_validator.py",
+      "module": "app.services.historical_ground_truth_validator",
+      "lines": 531,
+      "classes": [
+        "HistoricalGroundTruthValidator"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/ais_evaluation_service.py",
+        "backend/app/services/dry_run_service.py",
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/fortisiem_service.py",
+        "backend/app/services/historical_eligibility_service.py",
+        "backend/app/services/ingestion_service.py",
+        "backend/app/services/maturity_service.py",
+        "backend/app/services/pilot_service.py",
+        "backend/app/services/policy_simulation_service.py",
+        "backend/app/services/verdict_pipeline.py",
+        "backend/app/services/verified_semantic_retrieval_service.py"
+      ],
+      "test_callers_count": 11,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_2_audit.py",
+        "scripts/run_phase8_empirical_validation.py",
+        "scratch/generate_corrected_manifest.py",
+        "scratch/offline_token_audit_run.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/ground_truth_certification_service.py",
+      "module": "app.services.ground_truth_certification_service",
+      "lines": 1430,
+      "classes": [
+        "GroundTruthCertificationService"
+      ],
+      "functions": [
+        "_sha256_canonical",
+        "_user_identity"
+      ],
+      "prod_callers": [
+        "backend/app/api/ground_truth.py",
+        "backend/app/main.py"
+      ],
+      "test_callers_count": 1,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/independent_verdict_validator.py",
+      "module": "app.services.independent_verdict_validator",
+      "lines": 1115,
+      "classes": [
+        "IndependentVerdictValidator"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 18,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/verdict_claim_validator.py",
+      "module": "app.services.verdict_claim_validator",
+      "lines": 369,
+      "classes": [
+        "VerdictClaimValidator"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/policy_simulation_service.py",
+        "backend/app/services/verdict_trustworthiness_engine.py"
+      ],
+      "test_callers_count": 3,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/verdict_guardrails_engine.py",
+      "module": "app.services.verdict_guardrails_engine",
+      "lines": 287,
+      "classes": [
+        "VerdictGuardrailResult",
+        "VerdictGuardrailsEngine"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/policy_simulation_service.py",
+        "backend/app/services/verdict_trustworthiness_engine.py"
+      ],
+      "test_callers_count": 3,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/verdict_trustworthiness_engine.py",
+      "module": "app.services.verdict_trustworthiness_engine",
+      "lines": 480,
+      "classes": [
+        "VerdictTrustworthinessEngine"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/pilot.py",
+        "backend/app/api/verdict_intelligence.py",
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/incident_service.py",
+        "backend/app/services/investigation_service.py",
+        "backend/app/services/pilot_service.py",
+        "backend/app/services/policy_simulation_service.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 4,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py",
+        "scratch/test_trust.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/reasoning_integrity_engine.py",
+      "module": "app.services.reasoning_integrity_engine",
+      "lines": 732,
+      "classes": [
+        "ReasoningValidationResult",
+        "ReasoningIntegrityEngine"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/independent_verdict_validator.py"
+      ],
+      "test_callers_count": 1,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/model_claim_extractor.py",
+      "module": "app.services.model_claim_extractor",
+      "lines": 539,
+      "classes": [
+        "ModelClaimExtractor"
+      ],
+      "functions": [
+        "compare_evidence_values"
+      ],
+      "prod_callers": [
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/independent_verdict_validator.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 14,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/model_payload_allowlist.py",
+      "module": "app.services.model_payload_allowlist",
+      "lines": 221,
+      "classes": [
+        "EvidenceIntegrityGuardrail"
+      ],
+      "functions": [
+        "sanitize_event_attributes",
+        "_get_field",
+        "build_model_facing_payload"
+      ],
+      "prod_callers": [
+        "backend/app/api/incidents.py",
+        "backend/app/services/ai_verdict_service.py",
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/evidence_integrity_guardrail.py",
+        "backend/app/services/evidence_normalization_service.py",
+        "backend/app/services/incident_service.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 8,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_2_audit.py",
+        "scripts/run_phase8_empirical_validation.py",
+        "scratch/offline_token_audit_run.py",
+        "scratch/run_stage5_pilot_and_benchmark.py",
+        "scratch/test_compile_prompt.py",
+        "scratch/test_norm.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/evidence_normalization_service.py",
+      "module": "app.services.evidence_normalization_service",
+      "lines": 951,
+      "classes": [
+        "EvidenceNormalizationService"
+      ],
+      "functions": [
+        "parse_key_value_string",
+        "clean_attr_key",
+        "resolve_field_mapping"
+      ],
+      "prod_callers": [
+        "backend/app/api/incidents.py",
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/analyst_review_service.py",
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/ground_truth_certification_service.py",
+        "backend/app/services/historical_eligibility_service.py",
+        "backend/app/services/pilot_service.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 12,
+      "script_callers": [
+        "scripts/run_phase9_load_benchmark.py",
+        "scratch/check_all_cs_incidents.py",
+        "scratch/generate_workstreams_3_4_5.py",
+        "scratch/offline_token_audit_run.py",
+        "scratch/run_stage5_pilot_and_benchmark.py",
+        "scratch/test_compile_prompt.py",
+        "scratch/test_fix.py",
+        "scratch/test_norm.py",
+        "scratch/test_prisma_norm.py",
+        "scratch/test_trust.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/evidence_contract_service.py",
+      "module": "app.services.evidence_contract_service",
+      "lines": 153,
+      "classes": [
+        "EvidenceContractService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/verdict_intelligence.py",
+        "backend/app/services/historical_eligibility_service.py",
+        "backend/app/services/policy_governance.py",
+        "backend/app/services/policy_simulation_service.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 3,
+      "script_callers": [
+        "scratch/check_contract_levels.py",
+        "scratch/trace_compaction_exact.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/evidence_preflight_validator.py",
+      "module": "app.services.evidence_preflight_validator",
+      "lines": 200,
+      "classes": [
+        "EvidencePreflightValidator"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/independent_verdict_validator.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 16,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py",
+        "scratch/offline_token_audit_run.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/evidence_sufficiency_engine.py",
+      "module": "app.services.evidence_sufficiency_engine",
+      "lines": 340,
+      "classes": [
+        "EvidenceSufficiencyEngine"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/verdict_intelligence.py",
+        "backend/app/services/policy_simulation_service.py",
+        "backend/app/services/verdict_trustworthiness_engine.py"
+      ],
+      "test_callers_count": 3,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/evidence_requirement_mapper.py",
+      "module": "app.services.evidence_requirement_mapper",
+      "lines": 322,
+      "classes": [
+        "EvidenceRequirementMapper"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/services/bulk_quality_audit_service.py",
+        "backend/app/services/evidence_contract_service.py",
+        "backend/app/services/policy_generation_service.py",
+        "backend/app/services/policy_quality_validator.py",
+        "backend/app/services/prompt_studio_service.py"
+      ],
+      "test_callers_count": 7,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_2_audit.py",
+        "scripts/run_phase8_empirical_validation.py",
+        "scratch/test_compile_prompt.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/evidence_compaction_service.py",
+      "module": "app.services.evidence_compaction_service",
+      "lines": 540,
+      "classes": [
+        "EvidenceCompactionService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/token_budget_service.py"
+      ],
+      "test_callers_count": 2,
+      "script_callers": [
+        "scratch/test_compaction_fields.py",
+        "scratch/trace_compaction.py",
+        "scratch/trace_compaction_exact.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/token_budget_service.py",
+      "module": "app.services.token_budget_service",
+      "lines": 538,
+      "classes": [
+        "TokenBudgetService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/llm_config_service.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 15,
+      "script_callers": [
+        "scratch/diagnose_prisma_budget.py",
+        "scratch/inspect_prompt_payload.py",
+        "scratch/offline_token_audit_run.py",
+        "scratch/reproduce_budget.py",
+        "scratch/reproduce_prisma_budget.py",
+        "scratch/reproduce_server1_prisma.py",
+        "scratch/run_stage5_pilot_and_benchmark.py",
+        "scratch/test_all_20_token_budget.py",
+        "scratch/trace_compaction_exact.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/tokenizer_service.py",
+      "module": "app.services.tokenizer_service",
+      "lines": 217,
+      "classes": [
+        "ModelTokenizerService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/evidence_compaction_service.py",
+        "backend/app/services/model_provider/openai_compatible.py",
+        "backend/app/services/token_budget_service.py"
+      ],
+      "test_callers_count": 3,
+      "script_callers": [
+        "scratch/offline_token_audit_run.py",
+        "scratch/trace_compaction_exact.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/verified_semantic_retrieval_service.py",
+      "module": "app.services.verified_semantic_retrieval_service",
+      "lines": 273,
+      "classes": [
+        "VerifiedSemanticRetrievalService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 3,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/evaluation_service.py",
+      "module": "app.services.evaluation_service",
+      "lines": 427,
+      "classes": [
+        "VerdictEvaluationEngine"
+      ],
+      "functions": [
+        "_safe_divide"
+      ],
+      "prod_callers": [
+        "backend/app/api/evaluations.py",
+        "backend/app/services/verdict_evaluation_engine.py"
+      ],
+      "test_callers_count": 2,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/ais_evaluation_service.py",
+      "module": "app.services.ais_evaluation_service",
+      "lines": 1268,
+      "classes": [
+        "AisEvaluationService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/ais_evaluation.py"
+      ],
+      "test_callers_count": 2,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/empirical_accuracy_evaluator.py",
+      "module": "app.services.empirical_accuracy_evaluator",
+      "lines": 266,
+      "classes": [
+        "EmpiricalAccuracyEvaluator"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/empirical_benchmark_harness.py",
+        "backend/app/services/pilot_service.py",
+        "backend/app/services/policy_simulation_service.py"
+      ],
+      "test_callers_count": 4,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/empirical_benchmark_harness.py",
+      "module": "app.services.empirical_benchmark_harness",
+      "lines": 2442,
+      "classes": [
+        "BenchmarkIncidentRecord",
+        "BenchmarkIncidentResult",
+        "WilsonScoreInterval",
+        "BenchmarkMetrics",
+        "EmpiricalBenchmarkReport",
+        "EventAdapter",
+        "IncidentAdapter",
+        "EmpiricalBenchmarkHarness"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/scripts/run_empirical_benchmark.py",
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 10,
+      "script_callers": [
+        "scratch/build_stage1_manifests.py",
+        "scratch/check_all_cs_incidents.py",
+        "scratch/diagnose_prisma_budget.py",
+        "scratch/generate_corrected_manifest.py",
+        "scratch/generate_workstreams_3_4_5.py",
+        "scratch/inspect_prompt_payload.py",
+        "scratch/offline_token_audit_run.py",
+        "scratch/reproduce_budget.py",
+        "scratch/reproduce_prisma_budget.py",
+        "scratch/run_ais_2_6c_experiments.py",
+        "scratch/run_stage5_pilot_and_benchmark.py",
+        "scratch/test_compaction_fields.py",
+        "scratch/test_compile_prompt.py",
+        "scratch/test_fix.py",
+        "scratch/test_norm.py",
+        "scratch/test_prisma_norm.py",
+        "scratch/test_trust.py",
+        "scratch/trace_compaction.py",
+        "backend/app/scripts/run_empirical_benchmark.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/ais27_benchmark_runner.py",
+      "module": "app.services.ais27_benchmark_runner",
+      "lines": 804,
+      "classes": [
+        "AIS27BenchmarkRunner"
+      ],
+      "functions": [
+        "_sha256_text",
+        "_redact_url"
+      ],
+      "prod_callers": [
+        "backend/app/api/ground_truth.py"
+      ],
+      "test_callers_count": 1,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/calibration_evaluator.py",
+      "module": "app.services.calibration_evaluator",
+      "lines": 168,
+      "classes": [
+        "CalibrationEvaluator"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/pilot_service.py",
+        "backend/app/services/policy_simulation_service.py"
+      ],
+      "test_callers_count": 2,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/calibration_evaluation_service.py",
+      "module": "app.services.calibration_evaluation_service",
+      "lines": 260,
+      "classes": [
+        "CalibrationEvaluationService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/rules.py"
+      ],
+      "test_callers_count": 1,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/wilson_evaluator.py",
+      "module": "app.services.wilson_evaluator",
+      "lines": 48,
+      "classes": [
+        "WilsonScoreEvaluator"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/rule_learning_service.py"
+      ],
+      "test_callers_count": 4,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/confidence_normalizer.py",
+      "module": "app.services.confidence_normalizer",
+      "lines": 164,
+      "classes": [
+        "NormalizedConfidence",
+        "ConfidenceNormalizer"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/services/ais27_benchmark_runner.py",
+        "backend/app/services/independent_verdict_validator.py",
+        "backend/app/services/model_provider/openai_compatible.py"
+      ],
+      "test_callers_count": 1,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/actual_prompt_capture_service.py",
+      "module": "app.services.actual_prompt_capture_service",
+      "lines": 659,
+      "classes": [
+        "ActualPromptCaptureService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 1,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/production_readiness_service.py",
+      "module": "app.services.production_readiness_service",
+      "lines": 917,
+      "classes": [
+        "ProductionReadinessService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py"
+      ],
+      "test_callers_count": 5,
+      "script_callers": [
+        "scripts/setup_ready_for_approval_fixture.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/bulk_quality_audit_service.py",
+      "module": "app.services.bulk_quality_audit_service",
+      "lines": 231,
+      "classes": [
+        "BulkQualityAuditService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py"
+      ],
+      "test_callers_count": 1,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/rule_learning_service.py",
+      "module": "app.services.rule_learning_service",
+      "lines": 1366,
+      "classes": [
+        "RuleLearningService"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/rule_learning.py",
+        "backend/app/main.py",
+        "backend/app/services/ais_evaluation_service.py",
+        "backend/app/services/analyst_review_service.py",
+        "backend/app/services/automation_governor.py",
+        "backend/app/services/fortisiem_service.py",
+        "backend/app/services/production_readiness_service.py",
+        "backend/app/services/promotion_service.py",
+        "backend/app/services/verdict_pipeline.py"
+      ],
+      "test_callers_count": 9,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/rule_intelligence_analyzer.py",
+      "module": "app.services.rule_intelligence_analyzer",
+      "lines": 617,
+      "classes": [
+        "RuleIntelligenceAnalyzer"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/services/bulk_quality_audit_service.py",
+        "backend/app/services/evidence_contract_service.py",
+        "backend/app/services/fortisiem_service.py",
+        "backend/app/services/integration_diagnostic_service.py",
+        "backend/app/services/policy_generation_service.py",
+        "backend/app/services/policy_governance.py",
+        "backend/app/services/policy_lifecycle_monitor.py",
+        "backend/app/services/policy_quality_validator.py",
+        "backend/app/services/prompt_studio_service.py",
+        "backend/app/services/rule_learning_service.py"
+      ],
+      "test_callers_count": 8,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_empirical_validation.py",
+        "scratch/test_compile_prompt.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/detection_archetype_registry.py",
+      "module": "app.services.detection_archetype_registry",
+      "lines": 861,
+      "classes": [
+        "DetectionArchetypeRegistry"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/prompts.py",
+        "backend/app/services/bulk_quality_audit_service.py",
+        "backend/app/services/evidence_contract_service.py",
+        "backend/app/services/evidence_requirement_mapper.py",
+        "backend/app/services/evidence_sufficiency_engine.py",
+        "backend/app/services/policy_generation_service.py",
+        "backend/app/services/policy_quality_validator.py",
+        "backend/app/services/production_readiness_service.py",
+        "backend/app/services/prompt_studio_service.py",
+        "backend/app/services/rule_learning_service.py"
+      ],
+      "test_callers_count": 9,
+      "script_callers": [
+        "scripts/run_phase8_1_audit.py",
+        "scripts/run_phase8_empirical_validation.py",
+        "scratch/test_compile_prompt.py"
+      ]
+    },
+    {
+      "file": "backend/app/services/learning_service.py",
+      "module": "app.services.learning_service",
+      "lines": 435,
+      "classes": [
+        "AgentMemoryEngine"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/learning.py",
+        "backend/app/services/agent_memory_engine.py"
+      ],
+      "test_callers_count": 3,
+      "script_callers": []
+    },
+    {
+      "file": "backend/app/services/dry_run_service.py",
+      "module": "app.services.dry_run_service",
+      "lines": 524,
+      "classes": [
+        "ValidationEngine"
+      ],
+      "functions": [],
+      "prod_callers": [
+        "backend/app/api/dry_run.py",
+        "backend/app/services/validation_engine.py",
+        "backend/app/workers/tasks.py"
+      ],
+      "test_callers_count": 4,
+      "script_callers": []
+    }
+  ],
+  "dependencies": {
+    "python": [
+      {
+        "raw": "fastapi>=0.110.0",
+        "pkg": "fastapi",
+        "import_names": [
+          "fastapi"
+        ],
+        "code_refs": 36
+      },
+      {
+        "raw": "uvicorn[standard]>=0.28.0",
+        "pkg": "uvicorn",
+        "import_names": [
+          "uvicorn"
+        ],
+        "code_refs": 8
+      },
+      {
+        "raw": "pydantic>=2.6.0",
+        "pkg": "pydantic",
+        "import_names": [
+          "pydantic"
+        ],
+        "code_refs": 36
+      },
+      {
+        "raw": "email-validator>=2.0.0",
+        "pkg": "email-validator",
+        "import_names": [
+          "email_validator"
+        ],
+        "code_refs": 0
+      },
+      {
+        "raw": "pydantic-settings>=2.2.0",
+        "pkg": "pydantic-settings",
+        "import_names": [
+          "pydantic_settings"
+        ],
+        "code_refs": 1
+      },
+      {
+        "raw": "sqlalchemy>=2.0.28",
+        "pkg": "sqlalchemy",
+        "import_names": [
+          "sqlalchemy"
+        ],
+        "code_refs": 368
+      },
+      {
+        "raw": "greenlet>=3.0.0",
+        "pkg": "greenlet",
+        "import_names": [
+          "greenlet"
+        ],
+        "code_refs": 0
+      },
+      {
+        "raw": "alembic>=1.13.1",
+        "pkg": "alembic",
+        "import_names": [
+          "alembic"
+        ],
+        "code_refs": 45
+      },
+      {
+        "raw": "aiosqlite>=0.20.0",
+        "pkg": "aiosqlite",
+        "import_names": [
+          "aiosqlite"
+        ],
+        "code_refs": 33
+      },
+      {
+        "raw": "asyncpg>=0.29.0",
+        "pkg": "asyncpg",
+        "import_names": [
+          "asyncpg"
+        ],
+        "code_refs": 8
+      },
+      {
+        "raw": "psycopg2-binary>=2.9.9",
+        "pkg": "psycopg2-binary",
+        "import_names": [
+          "psycopg2"
+        ],
+        "code_refs": 1
+      },
+      {
+        "raw": "bcrypt>=4.1.2",
+        "pkg": "bcrypt",
+        "import_names": [
+          "bcrypt"
+        ],
+        "code_refs": 6
+      },
+      {
+        "raw": "pyjwt>=2.8.0",
+        "pkg": "pyjwt",
+        "import_names": [
+          "pyjwt"
+        ],
+        "code_refs": 0
+      },
+      {
+        "raw": "python-multipart>=0.0.9",
+        "pkg": "python-multipart",
+        "import_names": [
+          "multipart",
+          "python_multipart"
+        ],
+        "code_refs": 0
+      },
+      {
+        "raw": "pytest>=8.0.0",
+        "pkg": "pytest",
+        "import_names": [
+          "pytest"
+        ],
+        "code_refs": 545
+      },
+      {
+        "raw": "pytest-asyncio>=0.23.5",
+        "pkg": "pytest-asyncio",
+        "import_names": [
+          "pytest_asyncio"
+        ],
+        "code_refs": 32
+      },
+      {
+        "raw": "httpx>=0.27.0",
+        "pkg": "httpx",
+        "import_names": [
+          "httpx"
+        ],
+        "code_refs": 136
+      },
+      {
+        "raw": "python-dateutil>=2.9.0",
+        "pkg": "python-dateutil",
+        "import_names": [
+          "dateutil"
+        ],
+        "code_refs": 1
+      },
+      {
+        "raw": "psutil>=5.9.0",
+        "pkg": "psutil",
+        "import_names": [
+          "psutil"
+        ],
+        "code_refs": 18
+      },
+      {
+        "raw": "celery>=5.3.0",
+        "pkg": "celery",
+        "import_names": [
+          "celery"
+        ],
+        "code_refs": 1
+      },
+      {
+        "raw": "redis>=5.0.0",
+        "pkg": "redis",
+        "import_names": [
+          "redis"
+        ],
+        "code_refs": 16
+      },
+      {
+        "raw": "tiktoken>=0.7.0",
+        "pkg": "tiktoken",
+        "import_names": [
+          "tiktoken"
+        ],
+        "code_refs": 6
+      }
+    ],
+    "node": [
+      {
+        "section": "dependencies",
+        "pkg": "clsx",
+        "version": "^2.1.1",
+        "refs": 1
+      },
+      {
+        "section": "dependencies",
+        "pkg": "lucide-react",
+        "version": "^1.69.0",
+        "refs": 47
+      },
+      {
+        "section": "dependencies",
+        "pkg": "next",
+        "version": "16.4.5",
+        "refs": 127
+      },
+      {
+        "section": "dependencies",
+        "pkg": "react",
+        "version": "19.3.0",
+        "refs": 107
+      },
+      {
+        "section": "dependencies",
+        "pkg": "react-dom",
+        "version": "19.3.0",
+        "refs": 2
+      },
+      {
+        "section": "dependencies",
+        "pkg": "tailwind-merge",
+        "version": "^3.7.0",
+        "refs": 1
+      },
+      {
+        "section": "devDependencies",
+        "pkg": "@tailwindcss/postcss",
+        "version": "^4.3.3",
+        "refs": 2
+      },
+      {
+        "section": "devDependencies",
+        "pkg": "@tailwindcss/turbopack",
+        "version": "^4",
+        "refs": 1
+      },
+      {
+        "section": "devDependencies",
+        "pkg": "@types/node",
+        "version": "^20",
+        "refs": 1
+      },
+      {
+        "section": "devDependencies",
+        "pkg": "@types/react",
+        "version": "^19",
+        "refs": 2
+      },
+      {
+        "section": "devDependencies",
+        "pkg": "@types/react-dom",
+        "version": "^19",
+        "refs": 1
+      },
+      {
+        "section": "devDependencies",
+        "pkg": "eslint",
+        "version": "^9",
+        "refs": 10
+      },
+      {
+        "section": "devDependencies",
+        "pkg": "eslint-config-next",
+        "version": "16.4.5",
+        "refs": 5
+      },
+      {
+        "section": "devDependencies",
+        "pkg": "tailwindcss",
+        "version": "^4",
+        "refs": 5
+      },
+      {
+        "section": "devDependencies",
+        "pkg": "typescript",
+        "version": "^5",
+        "refs": 3
+      }
+    ]
+  }
+}

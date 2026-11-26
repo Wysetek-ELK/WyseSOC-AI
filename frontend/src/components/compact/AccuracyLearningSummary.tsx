@@ -669,6 +669,59 @@ export function AccuracyLearningSummary({
         </div>
       ) : null}
 
+      {/* AIS 2.8 Controlled Model & Experiment Comparison (Blind-Review Safe) */}
+      <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+          <span className="font-bold text-slate-200 text-xs flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-purple-400" />
+            AIS 2.8 Controlled Model &amp; Intelligence Comparison (Frozen 20-Incident Diagnostic Cohort)
+          </span>
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-950/50 text-amber-300 border border-amber-800/60">
+            Live GPU Benchmark: Pending Operator Authorization
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[11px] font-mono border-collapse">
+            <thead>
+              <tr className="text-slate-400 border-b border-slate-800">
+                <th className="p-2 font-sans">Comparison Arm</th>
+                <th className="p-2 font-sans">Model / Config</th>
+                <th className="p-2">Context Budget</th>
+                <th className="p-2">Rule Parity</th>
+                <th className="p-2">Status / Agreement</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/80 text-slate-300">
+              <tr>
+                <td className="p-2 font-sans font-semibold text-slate-300">AIS 2.7 Historical Neutral</td>
+                <td className="p-2">Qwen2.5-7B-Instruct-AWQ (V1)</td>
+                <td className="p-2">8,192 / 768 out</td>
+                <td className="p-2 text-amber-400">Partial (No Logic)</td>
+                <td className="p-2">5.0% overall (1/20)</td>
+              </tr>
+              <tr>
+                <td className="p-2 font-sans font-semibold text-slate-300">AIS 2.7 Approved Policy</td>
+                <td className="p-2">Qwen2.5-7B-Instruct-AWQ (Prod Policy)</td>
+                <td className="p-2">8,192 / 768 out</td>
+                <td className="p-2 text-amber-400">Contaminated</td>
+                <td className="p-2">10.0% raw / 45.0% val</td>
+              </tr>
+              <tr>
+                <td className="p-2 font-sans font-semibold text-cyan-300">AIS 2.8 Controlled Experiments (A–D)</td>
+                <td className="p-2 text-cyan-200">Qwen/Qwen3-14B-AWQ (t=0, think=off)</td>
+                <td className="p-2">8,192 / 768 out (7,424 in)</td>
+                <td className="p-2 text-emerald-400">Full Logic + Evidence Intel</td>
+                <td className="p-2 text-amber-300">Awaiting Authorized GPU Run</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[11px] text-slate-400 leading-relaxed">
+          Individual analyst review rationale and locked ground-truth labels remain isolated during live inference and blind human triage. Experimental candidate policies (AIS28-CS-CANDIDATE-V1, AIS28-PRISMA-CANDIDATE-V1) remain non-promoted diagnostics until approved.
+        </p>
+      </div>
+
       {/* Explanatory Distinction */}
       <div className="p-3 rounded-lg border border-slate-800/80 bg-slate-950/50 text-slate-400 text-xs space-y-1">
         <span className="font-semibold text-slate-300 flex items-center gap-1.5">

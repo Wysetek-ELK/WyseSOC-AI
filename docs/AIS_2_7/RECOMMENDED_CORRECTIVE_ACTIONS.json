@@ -1,0 +1,36 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:27:21.735719+00:00",
+  "actions": [
+    {
+      "priority": "P0",
+      "category": "MODEL_REPLACEMENT",
+      "action": "Evaluate replacing Qwen/Qwen2.5-7B-Instruct-AWQ with a stronger unquantized/larger model (e.g. 14B/32B Instruct FP16/BF16 on adequate GPU VRAM) using the identical AIS 2.7 3-mode harness."
+    },
+    {
+      "priority": "P0",
+      "category": "POLICY_REMEDIATION",
+      "action": "Replace Prisma SASE Approved Policy ed7ff3c7 v1 (currently using an EDR/internal-loopback template) with a proxy/file-transfer policy permitting REQUIRES_ATTENTION when hash/URL/download confirmation is absent."
+    },
+    {
+      "priority": "P1",
+      "category": "ENRICHMENT_PIPELINE",
+      "action": "Add deterministic VirusTotal/hash reputation and RFC1918/CDN/ASN IP-classification enrichment into canonical_evidence before LLM inference (resolving 132501348 MEGAsync hash dependency and stopping IP hallucination)."
+    },
+    {
+      "priority": "P1",
+      "category": "VALIDATOR_HARDENING",
+      "action": "Extend Deterministic Validator to catch prose semantic contradictions inside claim_text/reason (e.g., calling Program Files 'writable temporary path', calling public IPs 'internal', calling RFC1918 'not internal')."
+    },
+    {
+      "priority": "P1",
+      "category": "GROUND_TRUTH_GT3",
+      "action": "Have independent Reviewer #2 complete GT-3 dual-reviewer certification on Server 1 and remediate minor GT-2 metadata inconsistencies (e.g. 132474210 authorization_context)."
+    },
+    {
+      "priority": "P2",
+      "category": "INFRASTRUCTURE_TIMEOUT",
+      "action": "Raise Server 1 nginx proxy_read_timeout for benchmark/batch endpoints (currently 120s caused single HTTP 504 on 132499009 when Mode A+B ran combined) or standardize per-mode execution."
+    }
+  ]
+}

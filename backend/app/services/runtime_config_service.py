@@ -194,9 +194,9 @@ class RuntimeConfigValidator:
         llm_base = str(getattr(s, "LOCAL_LLM_BASE_URL", "") or "")
         llm_model = str(getattr(s, "LOCAL_LLM_MODEL_NAME", "") or "")
         llm_mock = bool(getattr(s, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False))
-        ctx_budget = int(getattr(s, "LOCAL_LLM_CONTEXT_BUDGET", 16384) or 16384)
-        max_tokens = int(getattr(s, "LOCAL_LLM_MAX_TOKENS", 1024) or 1024)
-        target_input = int(getattr(s, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192) or 8192)
+        ctx_budget = int(getattr(s, "LOCAL_LLM_CONTEXT_BUDGET", 8192) or 8192)
+        max_tokens = int(getattr(s, "LOCAL_LLM_MAX_TOKENS", 768) or 768)
+        target_input = int(getattr(s, "LOCAL_LLM_TARGET_INPUT_BUDGET", 7424) or 7424)
         verified_max_model_len = getattr(s, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None)
 
         if not llm_base:
@@ -316,10 +316,10 @@ class RuntimeConfigValidator:
             "local_llm_base_url": redact_url_credentials(getattr(s, "LOCAL_LLM_BASE_URL", "")),
             "local_llm_model_name": getattr(s, "LOCAL_LLM_MODEL_NAME", ""),
             "local_llm_api_key": mask_secret(getattr(s, "LOCAL_LLM_API_KEY", "")),
-            "local_llm_timeout": float(getattr(s, "LOCAL_LLM_TIMEOUT", 60.0)),
-            "local_llm_context_budget": int(getattr(s, "LOCAL_LLM_CONTEXT_BUDGET", 16384)),
-            "local_llm_max_tokens": int(getattr(s, "LOCAL_LLM_MAX_TOKENS", 1024)),
-            "local_llm_target_input_budget": int(getattr(s, "LOCAL_LLM_TARGET_INPUT_BUDGET", 8192)),
+            "local_llm_timeout": float(getattr(s, "LOCAL_LLM_TIMEOUT", 180.0)),
+            "local_llm_context_budget": int(getattr(s, "LOCAL_LLM_CONTEXT_BUDGET", 8192)),
+            "local_llm_max_tokens": int(getattr(s, "LOCAL_LLM_MAX_TOKENS", 768)),
+            "local_llm_target_input_budget": int(getattr(s, "LOCAL_LLM_TARGET_INPUT_BUDGET", 7424)),
             "local_llm_verified_max_model_len": getattr(s, "LOCAL_LLM_VERIFIED_MAX_MODEL_LEN", None),
             "local_llm_allow_mock_fallback": bool(getattr(s, "LOCAL_LLM_ALLOW_MOCK_FALLBACK", False)),
             "fortisiem_host": redact_url_credentials(getattr(s, "FORTISIEM_HOST", "")),

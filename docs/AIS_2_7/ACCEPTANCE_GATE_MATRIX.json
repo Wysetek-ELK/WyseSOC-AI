@@ -1,0 +1,440 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:31:38.558775+00:00",
+  "summary": {
+    "total_gates": 60,
+    "by_status": {
+      "FAIL": 15,
+      "NOT_VERIFIED": 1,
+      "PASS": 44
+    },
+    "execution_integrity_pass": 43,
+    "execution_integrity_total": 44,
+    "model_capability_pass": 0,
+    "model_capability_total": 12,
+    "production_readiness_pass": 1,
+    "production_readiness_total": 4
+  },
+  "gates": [
+    {
+      "gate_id": "G01",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Server 1 authoritative PostgreSQL & API reconciliation",
+      "status": "PASS",
+      "evidence": "Server 1 API reconciled; SQLite vs Postgres divergence documented."
+    },
+    {
+      "gate_id": "G02",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Frozen 20-incident cohort completeness verified",
+      "status": "PASS",
+      "evidence": "20/20 cohort items verified (10 CrowdStrike + 10 Prisma SASE)."
+    },
+    {
+      "gate_id": "G03",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Incident UUID & FortiSIEM ID mapping complete",
+      "status": "PASS",
+      "evidence": "20/20 Server 1 UUIDs mapped in INCIDENT_ID_MAPPING.json."
+    },
+    {
+      "gate_id": "G04",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Evidence & rule SHA-256 hash lineage verified",
+      "status": "PASS",
+      "evidence": "All 20 raw & canonical hashes matched Server 1 DB."
+    },
+    {
+      "gate_id": "G05",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Locked human GT-2 dataset retrieved from Server 1 DB",
+      "status": "PASS",
+      "evidence": "20/20 admin locked GT-2 reviews retrieved (9 TP, 1 FP, 10 INCONCLUSIVE)."
+    },
+    {
+      "gate_id": "G06",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Reviewer exposure risk & human-only dependencies documented",
+      "status": "PASS",
+      "evidence": "20/20 exposure flagged; 132501348 external hash dependency proved."
+    },
+    {
+      "gate_id": "G07",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Server 1 approved policy IDs resolved (Mode B)",
+      "status": "PASS",
+      "evidence": "CS v3 b6d9df2f & Prisma v1 ed7ff3c7 reconciled."
+    },
+    {
+      "gate_id": "G08",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Offline token budget audit <= max_model_len (8192)",
+      "status": "PASS",
+      "evidence": "Max offline Mode B 6,357 tokens; 0 overflows."
+    },
+    {
+      "gate_id": "G09",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Zero-leakage test (no GT-2/historical/AI verdict in prompts)",
+      "status": "PASS",
+      "evidence": "LABEL_LEAKAGE_TEST_RESULTS.json overall PASS."
+    },
+    {
+      "gate_id": "G10",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Isolated Mode A/B/C runner implemented & UPLA deployed",
+      "status": "PASS",
+      "evidence": "Deployed via UPLA upla-20261125-060404-fc45d8 at SHA 1e099d5b5954f6921e154ce124d04e604f466d9e."
+    },
+    {
+      "gate_id": "G11",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Checkpoint A operator authorization obtained before GPU calls",
+      "status": "PASS",
+      "evidence": "Authorized 41 baseline + 5 retries & keep GPU running at closeout."
+    },
+    {
+      "gate_id": "G12",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "GPU Server 2 hardware telemetry (EC2 instance / GPU VRAM) directly verified",
+      "status": "NOT_VERIFIED",
+      "evidence": "Server 1 /api/health reports gpu_telemetry_verified=false; EC2 g5.xlarge A10G 24GB remains historical metadata."
+    },
+    {
+      "gate_id": "G13",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Live vLLM runtime & /v1/models verification",
+      "status": "PASS",
+      "evidence": "vLLM 0.33.0, Qwen/Qwen2.5-7B-Instruct-AWQ, max_model_len=8192, HTTP 200."
+    },
+    {
+      "gate_id": "G14",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Live inference smoke test HTTP 200",
+      "status": "PASS",
+      "evidence": "vllm_id=chatcmpl-969d0b6172c8e3a4, 43+14=57 tokens, 406.98ms."
+    },
+    {
+      "gate_id": "G15",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "5-incident priority pilot execution completed (10 GPU calls)",
+      "status": "PASS",
+      "evidence": "5/5 pilot incidents completed Mode A+B+C cleanly."
+    },
+    {
+      "gate_id": "G16",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Pilot acceptance gate evaluated before full cohort",
+      "status": "PASS",
+      "evidence": "PILOT_TECHNICALLY_VALID_CONTINUE_BASELINE."
+    },
+    {
+      "gate_id": "G17",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Remaining 15 cohort incidents completed (30 GPU calls)",
+      "status": "PASS",
+      "evidence": "15/15 remaining incidents completed; 1 nginx 504 on 132499009 recovered via ?mode=A/B."
+    },
+    {
+      "gate_id": "G18",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Exact call budget adherence (<=41 baseline + <=5 retries)",
+      "status": "PASS",
+      "evidence": "41/41 successful GPU calls + 1/5 gateway retry."
+    },
+    {
+      "gate_id": "G19",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Exact raw vLLM responses & serialized wire payloads preserved",
+      "status": "PASS",
+      "evidence": "All 40 inference_evidence/{mode_a,mode_b,mode_c} files saved with SHA-256."
+    },
+    {
+      "gate_id": "G20",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Live token accounting zero context overflows",
+      "status": "PASS",
+      "evidence": "Max total tokens 7,197 <= 8,192 (0 finish_reason='length')."
+    },
+    {
+      "gate_id": "G21",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Live LLM JSON format & schema compliance across 40 calls",
+      "status": "PASS",
+      "evidence": "40/40 schema_valid=True, parse_success=True, finish_reason='stop'."
+    },
+    {
+      "gate_id": "G22",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Parser error rate <= threshold (0 parser errors)",
+      "status": "PASS",
+      "evidence": "0/40 parser errors."
+    },
+    {
+      "gate_id": "G23",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Operational DB / Incident.ai_verdict immutability during run",
+      "status": "PASS",
+      "evidence": "0 operational rows modified across 20 UUIDs; rules count unchanged [20,20]."
+    },
+    {
+      "gate_id": "G24",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "No promotion of AIS 2.7 outputs to LearningRecord / Agent Memory",
+      "status": "PASS",
+      "evidence": "Runner strictly read-only on LearningRecord and Incident tables."
+    },
+    {
+      "gate_id": "G25",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "GPU closeout runtime verified (0 active slots & empty queue)",
+      "status": "PASS",
+      "evidence": "active_concurrent_slots=0, live_triage_queue_depth=0; GPU left running per operator order."
+    },
+    {
+      "gate_id": "G26",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "All 20 cohort incidents preserved (0 silent exclusions)",
+      "status": "PASS",
+      "evidence": "20/20 incidents evaluated in Mode A, B, and C."
+    },
+    {
+      "gate_id": "G27",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Mode A/B/C confusion matrices & numerators/denominators computed",
+      "status": "PASS",
+      "evidence": "Every rate includes exact k/n and NOT_APPLICABLE_ZERO_DENOMINATOR flags."
+    },
+    {
+      "gate_id": "G28",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Raw LLM performance measured separately from Validator",
+      "status": "PASS",
+      "evidence": "Mode A (5.0%), Mode B (10.0%), Mode C (45.0%) reported separately."
+    },
+    {
+      "gate_id": "G29",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Validator effective_trust_verdict vs validated_verdict distinction documented",
+      "status": "PASS",
+      "evidence": "trust_score <= 6 on all 20 items gives 20/20 analyst attention vs 9/20 validated 3-class."
+    },
+    {
+      "gate_id": "G30",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Wilson 95% confidence intervals computed for all core metrics",
+      "status": "PASS",
+      "evidence": "Computed in STATISTICAL_ANALYSIS.json."
+    },
+    {
+      "gate_id": "G31",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Exact paired McNemar tests (Mode A vs B, B vs C, A vs C)",
+      "status": "PASS",
+      "evidence": "A vs B p=1.0; B vs C p=0.0391; A vs C p=0.0215."
+    },
+    {
+      "gate_id": "G32",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Intra-rule clustering & effective-N caveats reported",
+      "status": "PASS",
+      "evidence": "2 rules, 2 customers, N_FP=1 explicitly warned."
+    },
+    {
+      "gate_id": "G33",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Claim-level grounding audit inspected across all 40 LLM responses",
+      "status": "PASS",
+      "evidence": "59 Mode A + 45 Mode B claims + prose assertions audited."
+    },
+    {
+      "gate_id": "G34",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Hallucination & overclaim register compiled from raw outputs",
+      "status": "PASS",
+      "evidence": "91 verified events logged."
+    },
+    {
+      "gate_id": "G35",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "100% Error Attribution completed across incorrect Mode A/B/C verdicts",
+      "status": "PASS",
+      "evidence": "All non-matching incidents mapped to RC-01..RC-13 taxonomy."
+    },
+    {
+      "gate_id": "G36",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Neutral (Mode A) vs Policy-Assisted (Mode B) impact isolated",
+      "status": "PASS",
+      "evidence": "Mode A vs B compared per-incident; Prisma policy mismatch exposed."
+    },
+    {
+      "gate_id": "G37",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Raw LLM (Mode B) vs Validator (Mode C) rescue/rejection audited",
+      "status": "PASS",
+      "evidence": "8/10 Prisma rescued; 1/1 FP-as-TP blocked; 0 substantive false rejections."
+    },
+    {
+      "gate_id": "G38",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Validator narrative blindspots identified objectively",
+      "status": "PASS",
+      "evidence": "Documented 132439932 writable-temp-path blindspot and 132599145/132499023 leaks."
+    },
+    {
+      "gate_id": "G39",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Live Server 1 UI vs AIS 2.7 benchmark metric reconciliation completed",
+      "status": "PASS",
+      "evidence": "Reconciled live Verdict Intelligence (200 attention, avg trust 5.3, UNCALIBRATED)."
+    },
+    {
+      "gate_id": "G40",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Live Server 1 GUI screenshots captured cleanly via Chrome CDP",
+      "status": "PASS",
+      "evidence": "5 views captured under docs/AIS_2_7/screenshots/."
+    },
+    {
+      "gate_id": "G41",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Mode A neutral baseline 3-class accuracy >= 70%",
+      "status": "FAIL",
+      "evidence": "Observed 1/20 = 5.0% (95% CI 0.89%-23.61%); 100% FALSE_POSITIVE class collapse."
+    },
+    {
+      "gate_id": "G42",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Mode B policy-assisted raw LLM 3-class accuracy >= 75%",
+      "status": "FAIL",
+      "evidence": "Observed 2/20 = 10.0% (95% CI 2.79%-30.10%); binary N=10 only 2/10 = 20.0%."
+    },
+    {
+      "gate_id": "G43",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Raw LLM True Positive recall >= 80%",
+      "status": "FAIL",
+      "evidence": "Mode A 0/9 (0.0%), Mode B 2/9 (22.22%), Mode C 1/9 (11.11%)."
+    },
+    {
+      "gate_id": "G44",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Raw LLM False Positive recall without collapse",
+      "status": "FAIL",
+      "evidence": "Mode A 1/1 via 100% FP bias; Mode B 0/1 (misclassified MEGAsync FP as TP)."
+    },
+    {
+      "gate_id": "G45",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Zero catastrophic Missed-TP-as-FP errors in raw LLM",
+      "status": "FAIL",
+      "evidence": "Mode A missed 9/9 TPs as FP (100%). Mode B shifted to false abstentions (0/9 FP, 7 abstentions)."
+    },
+    {
+      "gate_id": "G46",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "LLM abstains reliably on inconclusive evidence (Prisma SASE N=10)",
+      "status": "FAIL",
+      "evidence": "Mode A abstained 0/10 (0.0%), Mode B abstained 0/10 (0.0%); only Mode C rescued 8/10 (80.0%)."
+    },
+    {
+      "gate_id": "G47",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Confidence calibration: incorrect answers do not emit >=80% confidence",
+      "status": "FAIL",
+      "evidence": "Mode A emitted 85% confidence on 19/19 errors; Mode B emitted >=80% on 11/18 errors."
+    },
+    {
+      "gate_id": "G48",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Field-presence reading accuracy (no false 'field missing' claims)",
+      "status": "FAIL",
+      "evidence": "Mode B falsely claimed present process.command_line was missing on 7/9 CrowdStrike TPs."
+    },
+    {
+      "gate_id": "G49",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Basic IP/path/signature factual faithfulness (0% fabrication)",
+      "status": "FAIL",
+      "evidence": "Claimed Program Files is writable temp path, 3.109.76.166 is internal, 172.25.14.67 not internal, fabricated signature absence."
+    },
+    {
+      "gate_id": "G50",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Approved Policy fitness across both rules (CS + Prisma SASE)",
+      "status": "FAIL",
+      "evidence": "Prisma SASE ed7ff3c7 v1 uses mismatched EDR/web-loopback template barring REQUIRES_ATTENTION."
+    },
+    {
+      "gate_id": "G51",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Combined pipeline (Mode C) reaches production accuracy & coverage targets",
+      "status": "FAIL",
+      "evidence": "Mode C 3-class = 9/20 (45.0%), binary coverage = 1/10 (10.0%), effective_trust = 0/20 decisive."
+    },
+    {
+      "gate_id": "G52",
+      "domain": "MODEL_CAPABILITY",
+      "criterion": "Model retention decision: Qwen/Qwen2.5-7B-Instruct-AWQ suitable for continued development",
+      "status": "FAIL",
+      "evidence": "VERDICT: UNSUITABLE \u2014 Recommend model upgrade/replacement, not further 7B-AWQ prompt tuning."
+    },
+    {
+      "gate_id": "G53",
+      "domain": "PRODUCTION_READINESS",
+      "criterion": "GT-3 dual-reviewer human certification complete on cohort",
+      "status": "FAIL",
+      "evidence": "0/20 GT-3 certified (20/20 GT-2 single-reviewer exploratory only)."
+    },
+    {
+      "gate_id": "G54",
+      "domain": "PRODUCTION_READINESS",
+      "criterion": "Blind-review independence without historical exposure contamination",
+      "status": "FAIL",
+      "evidence": "20/20 incidents carry historical exposure-risk markers."
+    },
+    {
+      "gate_id": "G55",
+      "domain": "PRODUCTION_READINESS",
+      "criterion": "Automated regression pytest suite passes after final code change",
+      "status": "PASS",
+      "evidence": "61 passed in 22.95s across 9 test files."
+    },
+    {
+      "gate_id": "G56",
+      "domain": "PRODUCTION_READINESS",
+      "criterion": "Production autonomy / shadow-mode promotion safety gate",
+      "status": "FAIL",
+      "evidence": "BLOCKED by model failure (5%/10%/45%), Prisma policy mismatch, missing hash enrichment, GT-2 only."
+    },
+    {
+      "gate_id": "G57",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "All 24 formal markdown reports generated strictly from verified data",
+      "status": "PASS",
+      "evidence": "01_ through 24_ markdown deliverables generated."
+    },
+    {
+      "gate_id": "G58",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Final artifact manifest & sanitized ZIP bundle verification",
+      "status": "PASS",
+      "evidence": "Populated and verified in final closeout pass."
+    },
+    {
+      "gate_id": "G59",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "Operator explicitly alerted to GPU Server 2 remaining ON for manual shutdown",
+      "status": "PASS",
+      "evidence": "Recorded in closeout reports, JSONs, and final message."
+    },
+    {
+      "gate_id": "G60",
+      "domain": "EXECUTION_INTEGRITY",
+      "criterion": "AIS 2.8 NOT started automatically",
+      "status": "PASS",
+      "evidence": "AIS 2.7 halted cleanly at conclusion without initiating AIS 2.8."
+    }
+  ]
+}

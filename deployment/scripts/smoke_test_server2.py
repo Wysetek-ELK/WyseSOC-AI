@@ -143,7 +143,7 @@ def run_smoke_test(base_url: str, model: str, api_key: str, timeout: float, live
 def main() -> int:
     parser = argparse.ArgumentParser(description="Server 2 vLLM Smoke Test")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000/v1")
-    parser.add_argument("--model", default="Qwen/Qwen2.5-7B-Instruct-AWQ")
+    parser.add_argument("--model", default="Qwen/Qwen3-14B-AWQ")
     parser.add_argument("--api-key", default="EMPTY")
     parser.add_argument("--timeout", type=float, default=15.0)
     parser.add_argument("--live-server2", action="store_true", help="Assert that a loopback tunnel targets a physical Server 2 GPU")

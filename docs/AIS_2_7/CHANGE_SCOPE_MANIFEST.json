@@ -1,0 +1,15 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:27:21.735719+00:00",
+  "deployed_commit_sha": "1e099d5b5954f6921e154ce124d04e604f466d9e",
+  "code_files_added_or_modified": [
+    "backend/app/services/ais27_benchmark_runner.py (isolated read-only 3-mode runner with mode=ALL|A|B filter)",
+    "backend/app/api/ground_truth.py (3 admin-only AIS 2.7 endpoints under /api/ground-truth/ais27/...)",
+    "backend/tests/test_ais_2_7_benchmark_runner.py (unit & contract tests for runner)"
+  ],
+  "non_modified_invariants": [
+    "Approved policies (b6d9df2f v3 CrowdStrike, ed7ff3c7 v1 Prisma SASE) left untouched.",
+    "Prompt templates, Model weights (Qwen/Qwen2.5-7B-Instruct-AWQ), Evidence Contract Validator logic left untouched.",
+    "GT-2 human reviews, operational Incidents table, LearningRecord table left untouched."
+  ]
+}

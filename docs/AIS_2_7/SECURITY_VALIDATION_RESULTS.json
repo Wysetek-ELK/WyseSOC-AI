@@ -1,0 +1,21 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:27:21.735719+00:00",
+  "blind_review_isolation": {
+    "gt2_labels_exposed_in_prompts": false,
+    "historical_fortisiem_verdicts_exposed": false,
+    "leakage_checks_passed": null
+  },
+  "operational_db_immutability": {
+    "operational_incidents_checked": 20,
+    "operational_incidents_modified_during_benchmark": 0,
+    "gt_queue_diffs_before_vs_after": 0,
+    "rules_count_unchanged": true,
+    "learning_records_modified": 0
+  },
+  "prompt_injection_and_boundary_safety": {
+    "untrusted_wrapper_used": "<UNTRUSTED_INCIDENT_DATA> ... </UNTRUSTED_INCIDENT_DATA>",
+    "schema_bypass_detected": false
+  },
+  "sanitization_compliance": "All deliverables exclude Server 1 passwords, JWT bearer tokens, SSH keys, and raw DB dumps outside isolated inference evidence."
+}

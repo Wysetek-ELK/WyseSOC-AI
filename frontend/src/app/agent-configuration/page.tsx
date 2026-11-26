@@ -56,12 +56,12 @@ export default function AgentConfigurationPage() {
   const [llmHost, setLlmHost] = useState("");
   const [llmPort, setLlmPort] = useState(8000);
   const [llmProtocol, setLlmProtocol] = useState("http");
-  const [llmModelName, setLlmModelName] = useState("Qwen/Qwen2.5-7B-Instruct-AWQ");
-  const [llmTimeout, setLlmTimeout] = useState(60);
-  const [llmContextBudget, setLlmContextBudget] = useState(16384);
-  const [llmMaxTokens, setLlmMaxTokens] = useState(1024);
-  const [llmTargetInputBudget, setLlmTargetInputBudget] = useState(8192);
-  const [llmAvailableInputTokens, setLlmAvailableInputTokens] = useState(8192);
+  const [llmModelName, setLlmModelName] = useState("Qwen/Qwen3-14B-AWQ");
+  const [llmTimeout, setLlmTimeout] = useState(180);
+  const [llmContextBudget, setLlmContextBudget] = useState(8192);
+  const [llmMaxTokens, setLlmMaxTokens] = useState(768);
+  const [llmTargetInputBudget, setLlmTargetInputBudget] = useState(7424);
+  const [llmAvailableInputTokens, setLlmAvailableInputTokens] = useState(7424);
   const [llmVerifiedModelLen, setLlmVerifiedModelLen] = useState<number | null>(null);
   const [llmContextBudgetWarning, setLlmContextBudgetWarning] = useState<string | null>(null);
   const [llmAllowMockFallback, setLlmAllowMockFallback] = useState(true);
@@ -105,12 +105,12 @@ export default function AgentConfigurationPage() {
       setLlmHost(cfg.host || "");
       setLlmPort(cfg.port || 8000);
       setLlmProtocol(cfg.protocol || "http");
-      setLlmModelName(cfg.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ");
-      setLlmTimeout(cfg.timeout || 30);
-      setLlmContextBudget(cfg.context_budget || 16384);
-      setLlmMaxTokens(cfg.max_tokens || 1024);
-      setLlmTargetInputBudget(cfg.target_input_budget || 8192);
-      setLlmAvailableInputTokens(cfg.available_input_tokens || 8192);
+      setLlmModelName(cfg.model_name || "Qwen/Qwen3-14B-AWQ");
+      setLlmTimeout(cfg.timeout || 180);
+      setLlmContextBudget(cfg.context_budget || 8192);
+      setLlmMaxTokens(cfg.max_tokens || 768);
+      setLlmTargetInputBudget(cfg.target_input_budget || 7424);
+      setLlmAvailableInputTokens(cfg.available_input_tokens || 7424);
       setLlmVerifiedModelLen(cfg.verified_max_model_len ?? null);
       setLlmContextBudgetWarning(cfg.context_budget_warning ?? null);
       setLlmAllowMockFallback(cfg.allow_mock_fallback);
@@ -121,7 +121,7 @@ export default function AgentConfigurationPage() {
           new CustomEvent("llm-status-change", {
             detail: {
               is_healthy: Boolean(cfg.is_online),
-              model: cfg.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ",
+              model: cfg.model_name || "Qwen/Qwen3-14B-AWQ",
             },
           })
         );
@@ -703,7 +703,7 @@ export default function AgentConfigurationPage() {
                     disabled={!isAdmin || isSavingLLM}
                     value={llmModelName}
                     onChange={(e) => setLlmModelName(e.target.value)}
-                    placeholder="e.g., Qwen/Qwen2.5-7B-Instruct-AWQ"
+                    placeholder="e.g., Qwen/Qwen3-14B-AWQ"
                     className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
                   />
                 </div>
@@ -721,7 +721,9 @@ export default function AgentConfigurationPage() {
                 {server1OutboundIp && (
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-1.5 border-t border-slate-800/80">
                     <span className="text-slate-400 font-sans">
-                      Verdictum Core Outbound Public IP (for AWS Security Group):
+                      {(/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|127\.)/.test(server1OutboundIp)
+                        ? "Verdictum Core Private/Interface IP (Private VPC/LAN):"
+                        : "Verdictum Core Outbound Public IP (for AWS Security Group):")}
                     </span>
                     <span className="text-emerald-400 font-mono font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800 flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
@@ -748,7 +750,8 @@ export default function AgentConfigurationPage() {
                     className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
                   />
                   <span className="text-[10px] text-slate-400 block">
-                    Model context: 16,384 target (or 8,192 / 4,096)
+                    Configured: {llmContextBudget.toLocaleString()} tok
+                    {llmVerifiedModelLen ? ` (Server max: ${llmVerifiedModelLen.toLocaleString()})` : " (Server max unverified)"}
                   </span>
                 </div>
 
@@ -767,7 +770,7 @@ export default function AgentConfigurationPage() {
                     className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
                   />
                   <span className="text-[10px] text-slate-400 block">
-                    Output headroom: 1,024 reserved tokens
+                    Output headroom: {llmMaxTokens.toLocaleString()} reserved tokens
                   </span>
                 </div>
 
@@ -786,7 +789,7 @@ export default function AgentConfigurationPage() {
                     className="w-full rounded-md border border-slate-700 bg-slate-900/90 py-1.5 px-2.5 text-xs font-mono text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
                   />
                   <span className="text-[10px] text-slate-400 block">
-                    Target input: 8,192 tokens ({llmAvailableInputTokens} avail)
+                    Target input: {llmTargetInputBudget.toLocaleString()} tok ({llmAvailableInputTokens.toLocaleString()} avail)
                   </span>
                 </div>
               </div>

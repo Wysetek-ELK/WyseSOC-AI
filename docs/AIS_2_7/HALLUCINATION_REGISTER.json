@@ -1,0 +1,896 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "total_hallucination_and_overclaim_events": 91,
+  "counts_by_mode_and_category": {
+    "MODE_A::FALSE_MISSING_FIELD_ASSERTION": 1,
+    "MODE_A::ASSUMED_BENIGNITY_VIOLATION": 18,
+    "MODE_B::FALSE_MISSING_FIELD_ASSERTION": 7,
+    "MODE_A::SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY": 22,
+    "MODE_B::SEMANTIC_HALLUCINATION_PUBLIC_AS_INTERNAL_IP": 2,
+    "MODE_B::EVIDENCE_FIELD_MISMATCH": 2,
+    "MODE_B::PUBLIC_IP_CALLED_INTERNAL": 2,
+    "MODE_B::UNSUPPORTED_DOWNLOAD_CONFIRMATION": 5,
+    "MODE_A::SEMANTIC_HALLUCINATION_NO_SIGNATURE_TELEMETRY": 1,
+    "MODE_A::EVIDENCE_FIELD_MISMATCH": 1,
+    "MODE_B::RFC1918_MISINTERPRETED_AS_REMOTE_SERVER": 1,
+    "MODE_B::ASSUMED_BENIGNITY_VIOLATION": 8,
+    "MODE_B::SEMANTIC_HALLUCINATION_PATH_CONTRADICTION": 1,
+    "MODE_B::PATH_MISCHARACTERIZATION": 1,
+    "MODE_B::EVIDENCE_VALUE_MISMATCH": 3,
+    "MODE_B::SEMANTIC_HALLUCINATION_NO_SIGNATURE_TELEMETRY": 2,
+    "MODE_B::NO_EVIDENCE_ID_CITED": 6,
+    "MODE_B::FABRICATED_SIGNATURE_ABSENCE": 1,
+    "MODE_B::PRIVATE_IP_CALLED_EXTERNAL": 1,
+    "MODE_A::NONEXISTENT_EVIDENCE_ID": 1,
+    "MODE_B::SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY": 5
+  },
+  "events": [
+    {
+      "incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "FALSE_MISSING_FIELD_ASSERTION",
+      "detail": "Falsely asserts process.command_line (or network/command line evidence) is missing despite presence in canonical_evidence."
+    },
+    {
+      "incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "FALSE_MISSING_FIELD_ASSERTION",
+      "detail": "Falsely asserts process.command_line (or network/command line evidence) is missing despite presence in canonical_evidence."
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "network.destination_ip",
+      "asserted_value": "13.35.36.32",
+      "detail": "Asserts benignity/authorization/reputation ('The destination IP is a public CDN, suggesting legitimate access.') using only raw identifier/network field 'network.destination_ip'."
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "network.application",
+      "asserted_value": "web-browsing",
+      "detail": "Asserts benignity/authorization/reputation ('The application category is web-browsing, indicating normal user activity.') using only raw identifier/network field 'network.application'."
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 3,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "user.name",
+      "asserted_value": "forbesmarshall\\tgill",
+      "detail": "Asserts benignity/authorization/reputation ('The user context shows a legitimate user accessing the file.') using only raw identifier/network field 'user.name'."
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_HALLUCINATION_PUBLIC_AS_INTERNAL_IP",
+      "field": "network.destination_ip",
+      "asserted_value": "13.35.36.32",
+      "detail": "Describes public IP '13.35.36.32' as internal: \"File 'review.es.system.js' was downloaded from an internal host.\"."
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 3,
+      "category": "EVIDENCE_FIELD_MISMATCH",
+      "field": "process.file_name",
+      "asserted_value": "review.es.system.js",
+      "detail": "Asserted field 'process.file_name' differs from cited record fields ['file.name']."
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "PUBLIC_IP_CALLED_INTERNAL",
+      "detail": "Misclassifies public AWS/CloudFront IP (13.35.36.32 or 3.109.76.166) as internal."
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "UNSUPPORTED_DOWNLOAD_CONFIRMATION",
+      "detail": "States file 'was downloaded' despite server-to-client log lacking transfer completion or URL verification."
+    },
+    {
+      "incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "network.destination_ip",
+      "asserted_value": "3.109.76.166",
+      "detail": "Asserts benignity/authorization/reputation (\"The destination IP is '3.109.76.166', which is a legitimate domain.\") using only raw identifier/network field 'network.destination_ip'."
+    },
+    {
+      "incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_HALLUCINATION_PUBLIC_AS_INTERNAL_IP",
+      "field": "network.destination_ip",
+      "asserted_value": "3.109.76.166",
+      "detail": "Describes public IP '3.109.76.166' as internal: \"File 'jquery.knob.js' was downloaded from an internal IP address.\"."
+    },
+    {
+      "incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "UNSUPPORTED_DOWNLOAD_CONFIRMATION",
+      "detail": "States file 'was downloaded' despite server-to-client log lacking transfer completion or URL verification."
+    },
+    {
+      "incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "process.command_line",
+      "asserted_value": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+      "detail": "Asserts benignity/authorization/reputation ('The process command line points to a legitimate application.') using only raw identifier/network field 'process.command_line'."
+    },
+    {
+      "incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_HALLUCINATION_NO_SIGNATURE_TELEMETRY",
+      "field": "file.hash_md5",
+      "asserted_value": "dc87d34efd1406e84d8f4559749f062f",
+      "detail": "Asserts digital signature state from 'file.hash_md5' without signature telemetry."
+    },
+    {
+      "incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "FALSE_MISSING_FIELD_ASSERTION",
+      "detail": "Falsely asserts process.command_line (or network/command line evidence) is missing despite presence in canonical_evidence."
+    },
+    {
+      "incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "EVIDENCE_FIELD_MISMATCH",
+      "field": "network.application",
+      "asserted_value": "teamviewer-base",
+      "detail": "Asserted field 'network.application' differs from cited record fields ['application.name']."
+    },
+    {
+      "incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 3,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "user.name",
+      "asserted_value": "forbesmarshall\\mnarangoda",
+      "detail": "Asserts benignity/authorization/reputation ('The user context shows a legitimate user account.') using only raw identifier/network field 'user.name'."
+    },
+    {
+      "incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "RFC1918_MISINTERPRETED_AS_REMOTE_SERVER",
+      "detail": "Describes RFC1918 client source IP 172.25.6.208 as likely a remote server."
+    },
+    {
+      "incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "process.file_name",
+      "asserted_value": "UltraViewer_Service.exe",
+      "detail": "Asserts benignity/authorization/reputation ('The process execution is for a known legitimate application.') using only raw identifier/network field 'process.file_name'."
+    },
+    {
+      "incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_HALLUCINATION_PATH_CONTRADICTION",
+      "field": "process.file_path",
+      "asserted_value": "\\Device\\HarddiskVolume3\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe",
+      "detail": "Describes Program Files path as 'writable temporary path': 'The binary was executed from a writable temporary path.'."
+    },
+    {
+      "incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "PATH_MISCHARACTERIZATION",
+      "detail": "Claims executable ran from a 'writable temporary path' when path is Program Files (x86)."
+    },
+    {
+      "incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "process.command_line",
+      "asserted_value": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+      "detail": "Asserts benignity/authorization/reputation ('The process command line points to a legitimate UltraViewer service executable.') using only raw identifier/network field 'process.command_line'."
+    },
+    {
+      "incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "process.file_name",
+      "asserted_value": "UltraViewer_Service.exe",
+      "detail": "Asserts benignity/authorization/reputation ('The process file name matches a known legitimate application.') using only raw identifier/network field 'process.file_name'."
+    },
+    {
+      "incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "FALSE_MISSING_FIELD_ASSERTION",
+      "detail": "Falsely asserts process.command_line (or network/command line evidence) is missing despite presence in canonical_evidence."
+    },
+    {
+      "incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "process.command_line",
+      "asserted_value": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+      "detail": "Asserts benignity/authorization/reputation ('The process command line points to a legitimate application.') using only raw identifier/network field 'process.command_line'."
+    },
+    {
+      "incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "process.file_name",
+      "asserted_value": "UltraViewer_Service.exe",
+      "detail": "Asserts benignity/authorization/reputation ('The process file name matches a known legitimate application.') using only raw identifier/network field 'process.file_name'."
+    },
+    {
+      "incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "EVIDENCE_VALUE_MISMATCH",
+      "field": "process.command_line",
+      "asserted_value": "",
+      "detail": "Asserted value '' differs from cited record values ['\"C:\\\\Program Files (x86)\\\\UltraViewer\\\\UltraViewer_Service.exe\"']."
+    },
+    {
+      "incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_HALLUCINATION_NO_SIGNATURE_TELEMETRY",
+      "field": "file.hash_sha256",
+      "asserted_value": "10ff43f2d4a991c83caefce1c4442fa95258d0d93f168dde339f52322aa371e9",
+      "detail": "Asserts digital signature state from 'file.hash_sha256' without signature telemetry."
+    },
+    {
+      "incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "FALSE_MISSING_FIELD_ASSERTION",
+      "detail": "Falsely asserts process.command_line (or network/command line evidence) is missing despite presence in canonical_evidence."
+    },
+    {
+      "incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "process.file_name",
+      "asserted_value": "UltraViewer_Service.exe",
+      "detail": "Asserts benignity/authorization/reputation ('The process executed is a legitimate application file.') using only raw identifier/network field 'process.file_name'."
+    },
+    {
+      "incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "NO_EVIDENCE_ID_CITED",
+      "field": "file.digital_signature",
+      "asserted_value": "N/A",
+      "detail": "Claim cites no canonical evidence ID."
+    },
+    {
+      "incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "FALSE_MISSING_FIELD_ASSERTION",
+      "detail": "Falsely asserts process.command_line (or network/command line evidence) is missing despite presence in canonical_evidence."
+    },
+    {
+      "incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "process.command_line",
+      "asserted_value": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+      "detail": "Asserts benignity/authorization/reputation ('The process command line matches a legitimate software installation path.') using only raw identifier/network field 'process.command_line'."
+    },
+    {
+      "incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "process.file_name",
+      "asserted_value": "UltraViewer_Service.exe",
+      "detail": "Asserts benignity/authorization/reputation ('The process file name is consistent with a legitimate application.') using only raw identifier/network field 'process.file_name'."
+    },
+    {
+      "incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "FALSE_MISSING_FIELD_ASSERTION",
+      "detail": "Falsely asserts process.command_line (or network/command line evidence) is missing despite presence in canonical_evidence."
+    },
+    {
+      "incident_id": "132501348",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "EVIDENCE_VALUE_MISMATCH",
+      "field": "telemetry.description",
+      "asserted_value": "A process attempted to modify the configuration of a COM object registered by Falcon sensor. This is indicative of an attempt to tamper with Falcon sensor.",
+      "detail": "Asserted value 'A process attempted to modify the configuration of a COM object registered by Falcon sensor. This is indicative of an attempt to tamper with Falcon sensor.' differs from cited record values ['A process attempted to modify the configuration of a COM object registered by Falcon sensor. This is indicative of an attempt to tamper with Falcon sensor. Investigate the registry operation and process tree.']."
+    },
+    {
+      "incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "process.command_line",
+      "asserted_value": "\"C:\\Program Files (x86)\\UltraViewer\\UltraViewer_Service.exe\"",
+      "detail": "Asserts benignity/authorization/reputation ('The process command line points to a legitimate UltraViewer service executable.') using only raw identifier/network field 'process.command_line'."
+    },
+    {
+      "incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "EVIDENCE_VALUE_MISMATCH",
+      "field": "process.command_line",
+      "asserted_value": "",
+      "detail": "Asserted value '' differs from cited record values ['\"C:\\\\Program Files (x86)\\\\UltraViewer\\\\UltraViewer_Service.exe\"']."
+    },
+    {
+      "incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "NO_EVIDENCE_ID_CITED",
+      "field": "file.digital_signature",
+      "asserted_value": "",
+      "detail": "Claim cites no canonical evidence ID."
+    },
+    {
+      "incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "FALSE_MISSING_FIELD_ASSERTION",
+      "detail": "Falsely asserts process.command_line (or network/command line evidence) is missing despite presence in canonical_evidence."
+    },
+    {
+      "incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_HALLUCINATION_NO_SIGNATURE_TELEMETRY",
+      "field": "process.name",
+      "asserted_value": "UltraViewer_Service.exe",
+      "detail": "Asserts digital signature state from 'process.name' without signature telemetry."
+    },
+    {
+      "incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "FABRICATED_SIGNATURE_ABSENCE",
+      "detail": "Asserts binary signature status despite no signature telemetry in input."
+    },
+    {
+      "incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "NO_EVIDENCE_ID_CITED",
+      "field": "process.file_name",
+      "asserted_value": "",
+      "detail": "Claim cites no canonical evidence ID."
+    },
+    {
+      "incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "UNSUPPORTED_DOWNLOAD_CONFIRMATION",
+      "detail": "States file 'was downloaded' despite server-to-client log lacking transfer completion or URL verification."
+    },
+    {
+      "incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "PRIVATE_IP_CALLED_EXTERNAL",
+      "detail": "Misclassifies RFC1918 private IP 172.25.14.67 as 'not internal'."
+    },
+    {
+      "incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "NONEXISTENT_EVIDENCE_ID",
+      "field": "network.application_category",
+      "asserted_value": "web-hosting",
+      "detail": "Cited IDs ['EV-132499745-TOP-network_application_category'] not found in canonical_evidence."
+    },
+    {
+      "incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "file.name",
+      "asserted_value": "scripts-QBOKETIS.js",
+      "detail": "Asserts benignity/authorization/reputation (\"The file name 'scripts-QBOKETIS.js' suggests it's a legitimate script rather than malicious code.\") using only raw identifier/network field 'file.name'."
+    },
+    {
+      "incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 3,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "user.name",
+      "asserted_value": "forbesmarshall\\emethre",
+      "detail": "Asserts benignity/authorization/reputation ('The user context shows a legitimate user account, suggesting the activity is authorized.') using only raw identifier/network field 'user.name'."
+    },
+    {
+      "incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "network.destination_ip",
+      "asserted_value": "13.227.249.2",
+      "detail": "Asserts benignity/authorization/reputation (\"Network destination IP '13.227.249.2' is not a known safe domain.\") using only raw identifier/network field 'network.destination_ip'."
+    },
+    {
+      "incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "network.destination_domain",
+      "asserted_value": "HOST-23.192.167.17",
+      "detail": "Asserts benignity/authorization/reputation ('The destination domain is a legitimate host.') using only raw identifier/network field 'network.destination_domain'."
+    },
+    {
+      "incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "NO_EVIDENCE_ID_CITED",
+      "field": "process.file_name",
+      "asserted_value": "",
+      "detail": "Claim cites no canonical evidence ID."
+    },
+    {
+      "incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 3,
+      "category": "NO_EVIDENCE_ID_CITED",
+      "field": "process.command_line",
+      "asserted_value": "",
+      "detail": "Claim cites no canonical evidence ID."
+    },
+    {
+      "incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "UNSUPPORTED_DOWNLOAD_CONFIRMATION",
+      "detail": "States file 'was downloaded' despite server-to-client log lacking transfer completion or URL verification."
+    },
+    {
+      "incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "network.destination_domain",
+      "asserted_value": "HOST-23.55.44.112",
+      "detail": "Asserts benignity/authorization/reputation ('The destination domain is a legitimate host.') using only raw identifier/network field 'network.destination_domain'."
+    },
+    {
+      "incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 3,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "user.name",
+      "asserted_value": "forbesmarshall\\g8401",
+      "detail": "Asserts benignity/authorization/reputation ('The user context shows a legitimate user account.') using only raw identifier/network field 'user.name'."
+    },
+    {
+      "incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "network.application_category",
+      "asserted_value": "business-and-economy",
+      "detail": "Asserts benignity/authorization/reputation (\"The application category is business-and-economy, indicating it's a legitimate business application.\") using only raw identifier/network field 'network.application_category'."
+    },
+    {
+      "incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 3,
+      "category": "EVIDENCE_FIELD_MISMATCH",
+      "field": "network.source_ip, network.destination_ip",
+      "asserted_value": "172.25.6.95, 23.55.44.112",
+      "detail": "Asserted field 'network.source_ip, network.destination_ip' differs from cited record fields ['network.source_ip', 'network.destination_ip']."
+    },
+    {
+      "incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 3,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "user.name",
+      "asserted_value": "forbesmarshall\\ehsintern1",
+      "detail": "Asserts benignity/authorization/reputation ('The user context shows a legitimate user account name, suggesting authorized access.') using only raw identifier/network field 'user.name'."
+    },
+    {
+      "incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "file.name",
+      "asserted_value": "exporting.js",
+      "detail": "Asserts benignity/authorization/reputation (\"File name 'exporting.js' matches known benign patterns.\") using only raw identifier/network field 'file.name'."
+    },
+    {
+      "incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 3,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "network.destination_ip",
+      "asserted_value": "3.109.76.166",
+      "detail": "Asserts benignity/authorization/reputation (\"Network destination IP '3.109.76.166' is likely a legitimate external server.\") using only raw identifier/network field 'network.destination_ip'."
+    },
+    {
+      "incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    },
+    {
+      "incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_A",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 3,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "network.application_category",
+      "asserted_value": "business-and-economy",
+      "detail": "Asserts benignity/authorization/reputation (\"The application category is 'business-and-economy', suggesting normal business activity.\") using only raw identifier/network field 'network.application_category'."
+    },
+    {
+      "incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 1,
+      "category": "SEMANTIC_OVERCLAIM_UNSUPPORTED_BENIGNITY",
+      "field": "network.destination_ip",
+      "asserted_value": "3.109.76.166",
+      "detail": "Asserts benignity/authorization/reputation (\"File 'select2.min.js' is downloaded from a trusted internal IP.\") using only raw identifier/network field 'network.destination_ip'."
+    },
+    {
+      "incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "SUPPORTING_CLAIM",
+      "claim_index": 2,
+      "category": "NO_EVIDENCE_ID_CITED",
+      "field": "process.file_name",
+      "asserted_value": "",
+      "detail": "Claim cites no canonical evidence ID."
+    },
+    {
+      "incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "PUBLIC_IP_CALLED_INTERNAL",
+      "detail": "Misclassifies public AWS/CloudFront IP (13.35.36.32 or 3.109.76.166) as internal."
+    },
+    {
+      "incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "UNSUPPORTED_DOWNLOAD_CONFIRMATION",
+      "detail": "States file 'was downloaded' despite server-to-client log lacking transfer completion or URL verification."
+    },
+    {
+      "incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "mode": "MODE_B",
+      "layer": "PROSE_OR_MISSING_EVIDENCE",
+      "category": "ASSUMED_BENIGNITY_VIOLATION",
+      "detail": "Assumes filename/application/IP/user implies legitimate/authorized software despite zero authorization evidence."
+    }
+  ]
+}

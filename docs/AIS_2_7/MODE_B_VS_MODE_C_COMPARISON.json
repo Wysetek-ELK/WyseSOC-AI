@@ -1,0 +1,242 @@
+{
+  "phase": "AIS 2.7",
+  "generated_at_utc": "2026-11-25T06:26:03.348646+00:00",
+  "summary": {
+    "mode_b_raw_3class_accuracy_pct": 10.0,
+    "mode_c_validated_3class_accuracy_pct": 45.0,
+    "rescued_to_correct_count": 8,
+    "downgraded_correct_to_abstention_count": 1,
+    "prevented_fp_as_tp_count": 1,
+    "leaked_wrong_fp_count": 2,
+    "validator_effect_breakdown": {
+      "LEAKED_WRONG_FP": 2,
+      "PRESERVED_CORRECT_TP_BUT_MISSED_PROSE_PATH_HALLUCINATION": 1,
+      "PRESERVED_MODE_B_ABSTENTION_FLAGGED_CONTRADICTION": 7,
+      "PREVENTED_FP_AS_TP_BY_ESCALATING": 1,
+      "REJECTED_RIGHT_VERDICT_DUE_TO_HALLUCINATED_CLAIM": 1,
+      "RESCUED_WRONG_TO_CORRECT_ABSTENTION": 8
+    }
+  },
+  "records": [
+    {
+      "incident_id": "132474210",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+      "mode_b_correct": false,
+      "mode_c_correct": false,
+      "validator_effect": "PRESERVED_MODE_B_ABSTENTION_FLAGGED_CONTRADICTION"
+    },
+    {
+      "incident_id": "132596403",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "mode_b_correct": false,
+      "mode_c_correct": true,
+      "validator_effect": "RESCUED_WRONG_TO_CORRECT_ABSTENTION"
+    },
+    {
+      "incident_id": "132599145",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "mode_c_verdict": "FALSE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "mode_b_correct": false,
+      "mode_c_correct": false,
+      "validator_effect": "LEAKED_WRONG_FP"
+    },
+    {
+      "incident_id": "132438483",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+      "mode_b_correct": false,
+      "mode_c_correct": false,
+      "validator_effect": "PRESERVED_MODE_B_ABSTENTION_FLAGGED_CONTRADICTION"
+    },
+    {
+      "incident_id": "132591888",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "mode_b_correct": false,
+      "mode_c_correct": true,
+      "validator_effect": "RESCUED_WRONG_TO_CORRECT_ABSTENTION"
+    },
+    {
+      "incident_id": "132439932",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_b_verdict": "TRUE_POSITIVE",
+      "mode_c_verdict": "TRUE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "mode_b_correct": true,
+      "mode_c_correct": true,
+      "validator_effect": "PRESERVED_CORRECT_TP_BUT_MISSED_PROSE_PATH_HALLUCINATION"
+    },
+    {
+      "incident_id": "132441815",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+      "mode_b_correct": false,
+      "mode_c_correct": false,
+      "validator_effect": "PRESERVED_MODE_B_ABSTENTION_FLAGGED_CONTRADICTION"
+    },
+    {
+      "incident_id": "132461358",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+      "mode_b_correct": false,
+      "mode_c_correct": false,
+      "validator_effect": "PRESERVED_MODE_B_ABSTENTION_FLAGGED_CONTRADICTION"
+    },
+    {
+      "incident_id": "132461368",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+      "mode_b_correct": false,
+      "mode_c_correct": false,
+      "validator_effect": "PRESERVED_MODE_B_ABSTENTION_FLAGGED_CONTRADICTION"
+    },
+    {
+      "incident_id": "132472498",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+      "mode_b_correct": false,
+      "mode_c_correct": false,
+      "validator_effect": "PRESERVED_MODE_B_ABSTENTION_FLAGGED_CONTRADICTION"
+    },
+    {
+      "incident_id": "132501348",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "FALSE_POSITIVE",
+      "mode_b_verdict": "TRUE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "mode_b_correct": false,
+      "mode_c_correct": false,
+      "validator_effect": "PREVENTED_FP_AS_TP_BY_ESCALATING"
+    },
+    {
+      "incident_id": "132502453",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_b_verdict": "REQUIRES_ATTENTION",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "ABSTENTION_WITH_CONTRADICTION",
+      "mode_b_correct": false,
+      "mode_c_correct": false,
+      "validator_effect": "PRESERVED_MODE_B_ABSTENTION_FLAGGED_CONTRADICTION"
+    },
+    {
+      "incident_id": "132527297",
+      "vendor": "CrowdStrike",
+      "gt2_mapped_3class": "TRUE_POSITIVE",
+      "mode_b_verdict": "TRUE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "mode_b_correct": true,
+      "mode_c_correct": false,
+      "validator_effect": "REJECTED_RIGHT_VERDICT_DUE_TO_HALLUCINATED_CLAIM"
+    },
+    {
+      "incident_id": "132499009",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "mode_b_correct": false,
+      "mode_c_correct": true,
+      "validator_effect": "RESCUED_WRONG_TO_CORRECT_ABSTENTION"
+    },
+    {
+      "incident_id": "132499023",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "mode_c_verdict": "FALSE_POSITIVE",
+      "validation_status": "VALIDATED",
+      "mode_b_correct": false,
+      "mode_c_correct": false,
+      "validator_effect": "LEAKED_WRONG_FP"
+    },
+    {
+      "incident_id": "132499745",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_b_verdict": "TRUE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "INSUFFICIENT_EVIDENCE",
+      "mode_b_correct": false,
+      "mode_c_correct": true,
+      "validator_effect": "RESCUED_WRONG_TO_CORRECT_ABSTENTION"
+    },
+    {
+      "incident_id": "132578774",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "mode_b_correct": false,
+      "mode_c_correct": true,
+      "validator_effect": "RESCUED_WRONG_TO_CORRECT_ABSTENTION"
+    },
+    {
+      "incident_id": "132595592",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "mode_b_correct": false,
+      "mode_c_correct": true,
+      "validator_effect": "RESCUED_WRONG_TO_CORRECT_ABSTENTION"
+    },
+    {
+      "incident_id": "132599146",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "mode_b_correct": false,
+      "mode_c_correct": true,
+      "validator_effect": "RESCUED_WRONG_TO_CORRECT_ABSTENTION"
+    },
+    {
+      "incident_id": "132599330",
+      "vendor": "Prisma SASE",
+      "gt2_mapped_3class": "REQUIRES_ATTENTION",
+      "mode_b_verdict": "FALSE_POSITIVE",
+      "mode_c_verdict": "REQUIRES_ATTENTION",
+      "validation_status": "REJECTED",
+      "mode_b_correct": false,
+      "mode_c_correct": true,
+      "validator_effect": "RESCUED_WRONG_TO_CORRECT_ABSTENTION"
+    }
+  ]
+}

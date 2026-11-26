@@ -539,7 +539,7 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
               <div>
                 <span className="text-xs font-bold text-slate-100">Verdictum Cortex (AI Inference Engine)</span>
                 <span className="text-[10px] text-purple-400 block font-mono">
-                  verdictum-cortex-01 · {s2?.details?.model_name || "Qwen/Qwen2.5-7B-Instruct-AWQ"}
+                  verdictum-cortex-01 · {s2?.details?.model_name || "Qwen/Qwen3-14B-AWQ"}
                 </span>
               </div>
             </div>
@@ -578,18 +578,18 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
             <div className="space-y-0.5">
               <div className="flex justify-between text-[11px] font-mono">
                 <span className="text-slate-400 flex items-center gap-1">
-                  <Layers className="h-3 w-3 text-pink-400" /> VRAM & KV Cache
+                  <Layers className="h-3 w-3 text-pink-400" /> Physical GPU VRAM
                 </span>
                 <span className="text-pink-300 font-bold">
-                  {s2?.gpu_memory_percent != null ? (
+                  {s2?.gpu_memory_percent != null && s2?.gpu_memory_total_gb != null ? (
                     <>
                       {s2.gpu_memory_percent}%{" "}
                       <span className="text-[10px] text-slate-400 font-normal">
-                        ({s2?.gpu_memory_used_gb ?? 0} / {s2?.gpu_memory_total_gb ?? 24} GB)
+                        ({s2?.gpu_memory_used_gb ?? "N/A"} / {s2.gpu_memory_total_gb} GB)
                       </span>
                     </>
                   ) : (
-                    "Unavailable"
+                    "Unavailable (No NVML/DCGM)"
                   )}
                 </span>
               </div>
@@ -601,17 +601,50 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
               </div>
             </div>
 
-            {/* Inference Latency */}
+            {/* vLLM KV Cache Utilization (separate from Physical VRAM) */}
             <div className="space-y-0.5">
               <div className="flex justify-between text-[11px] font-mono">
                 <span className="text-slate-400 flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-emerald-400" /> API Latency & Queue
+                  <Layers className="h-3 w-3 text-indigo-400" /> vLLM KV Cache Occupancy
+                </span>
+                <span className="text-indigo-300 font-bold">
+                  {s2?.details?.kv_cache_usage_percent != null
+                    ? `${s2.details.kv_cache_usage_percent}%`
+                    : s2?.details?.vllm_metrics?.gpu_cache_usage != null
+                    ? `${(Number(s2.details.vllm_metrics.gpu_cache_usage) * 100).toFixed(1)}%`
+                    : "Unavailable"}
+                  {s2?.details?.vllm_metrics?.tokens_per_second != null && (
+                    <span className="text-[10px] text-slate-400 font-normal ml-1">
+                      ({s2.details.vllm_metrics.tokens_per_second} tok/s)
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full bg-indigo-500 transition-all duration-500"
+                  style={{
+                    width: `${
+                      s2?.details?.kv_cache_usage_percent != null
+                        ? Math.min(100, Math.max(2, s2.details.kv_cache_usage_percent))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Health Probe Latency vs Queue */}
+            <div className="space-y-0.5">
+              <div className="flex justify-between text-[11px] font-mono">
+                <span className="text-slate-400 flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-emerald-400" /> Health Ping &amp; vLLM Queue
                 </span>
                 <span className="text-emerald-300 font-bold">
                   {s2?.latency_ms != null ? `${s2.latency_ms} ms` : "N/A"}{" "}
                   {s2?.active_requests != null && (
                     <span className="text-[10px] text-slate-400 font-normal">
-                      ({s2.active_requests} active reqs)
+                      ({s2.active_requests} running, {s2?.details?.waiting_requests ?? 0} waiting)
                     </span>
                   )}
                 </span>
@@ -626,15 +659,19 @@ export function ServerInfrastructureMonitor({ compact = false }: ServerInfrastru
           </div>
 
           {/* Footer Metadata */}
-          <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/80">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/80">
             <span className="flex items-center gap-1">
               <Thermometer className="h-3 w-3 text-amber-400" />
-              Temp: <strong className="text-slate-300">{s2?.gpu_temp_c != null ? `${s2.gpu_temp_c}°C` : "N/A"}</strong>
+              Temp: <strong className="text-slate-300">{s2?.gpu_temp_c != null ? `${s2.gpu_temp_c}°C` : "Unavailable"}</strong>
             </span>
             <span>
-              Metrics:{" "}
+              Source:{" "}
               <strong className={s2?.details?.metrics_available ? "text-emerald-400" : "text-slate-400"}>
-                {s2?.details?.metrics_available ? "Prometheus Live" : "Metrics Unavailable"}
+                {s2?.details?.hardware_telemetry_available
+                  ? `${s2.details.telemetry_source || "NVML/DCGM"} (HW Verified)`
+                  : s2?.details?.metrics_available
+                  ? "vLLM /metrics (KV/Queue Only)"
+                  : "Health Probe Only"}
               </strong>
             </span>
           </div>

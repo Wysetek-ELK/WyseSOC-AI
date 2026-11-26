@@ -1,0 +1,20 @@
+{
+  "input_mode_b_verdict": "FALSE_POSITIVE",
+  "validated_verdict": "FALSE_POSITIVE",
+  "is_decisive_accepted": true,
+  "validation_status": "VALIDATED",
+  "validation_reason_codes": [
+    "EVIDENCE_VALIDATED"
+  ],
+  "action_directive": "Activity verified as benign static web asset or software library download during routine business browsing with clean indicators.",
+  "grounding_ratio": 1.0,
+  "has_hallucinations": false,
+  "grounded_claims_count": 3,
+  "unsupported_claims_count": 0,
+  "unsupported_claim_details": [],
+  "detected_contradictions": [],
+  "trust_score": 3,
+  "raw_trust_score": 84.0,
+  "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
+  "escalation_reason": "Missing mandatory telemetry fields: process.file_name. Evidence is insufficient to support an automated verdict."
+}

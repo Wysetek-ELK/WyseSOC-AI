@@ -1,0 +1,29 @@
+{
+  "input_mode_b_verdict": "FALSE_POSITIVE",
+  "validated_verdict": "REQUIRES_ATTENTION",
+  "is_decisive_accepted": false,
+  "validation_status": "REJECTED",
+  "validation_reason_codes": [
+    "UNSUPPORTED_PREDICATE",
+    "UNSUPPORTED_CLAIM"
+  ],
+  "action_directive": "Model fabricated or asserted semantically unsupported evidence claims. Human Tier 2 investigation required.",
+  "grounding_ratio": 0.667,
+  "has_hallucinations": true,
+  "grounded_claims_count": 2,
+  "unsupported_claims_count": 1,
+  "unsupported_claim_details": [
+    {
+      "claim_type": "OBSERVED_FACT",
+      "field": "file.name",
+      "asserted_value": "exporting.js",
+      "grounding_status": "UNSUPPORTED_PREDICATE",
+      "reason": "Claim asserts trusted/benign reputation ('File name 'exporting.js' matches known benign patterns.'), but cited evidence is only a file/process name ('file.name'). Filename alone does not prove trusted reputation."
+    }
+  ],
+  "detected_contradictions": [],
+  "trust_score": 3,
+  "raw_trust_score": 84.0,
+  "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
+  "escalation_reason": "Missing mandatory telemetry fields: process.file_name. Evidence is insufficient to support an automated verdict."
+}

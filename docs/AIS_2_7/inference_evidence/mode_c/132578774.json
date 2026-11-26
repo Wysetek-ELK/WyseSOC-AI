@@ -1,0 +1,36 @@
+{
+  "input_mode_b_verdict": "FALSE_POSITIVE",
+  "validated_verdict": "REQUIRES_ATTENTION",
+  "is_decisive_accepted": false,
+  "validation_status": "REJECTED",
+  "validation_reason_codes": [
+    "CLAIM_NOT_VERIFIABLE",
+    "UNSUPPORTED_CLAIM"
+  ],
+  "action_directive": "Model fabricated or asserted semantically unsupported evidence claims. Human Tier 2 investigation required.",
+  "grounding_ratio": 0.333,
+  "has_hallucinations": true,
+  "grounded_claims_count": 1,
+  "unsupported_claims_count": 2,
+  "unsupported_claim_details": [
+    {
+      "claim_type": "OBSERVED_FACT",
+      "field": "process.file_name",
+      "asserted_value": "No suspicious process execution detected.",
+      "grounding_status": "CLAIM_NOT_VERIFIABLE",
+      "reason": "Fabricated claim: Value 'No suspicious process execution detected.' for field 'process.file_name' was never observed in incident telemetry."
+    },
+    {
+      "claim_type": "OBSERVED_FACT",
+      "field": "process.command_line",
+      "asserted_value": "No encoded PowerShell commands or obfuscation.",
+      "grounding_status": "CLAIM_NOT_VERIFIABLE",
+      "reason": "Fabricated claim: Value 'No encoded PowerShell commands or obfuscation.' for field 'process.command_line' was never observed in incident telemetry."
+    }
+  ],
+  "detected_contradictions": [],
+  "trust_score": 3,
+  "raw_trust_score": 50.67,
+  "effective_trust_verdict": "REQUIRES_ANALYST_ATTENTION",
+  "escalation_reason": "Missing mandatory telemetry fields: process.file_name. Evidence is insufficient to support an automated verdict."
+}

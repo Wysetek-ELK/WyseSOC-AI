@@ -1,0 +1,76 @@
+{
+  "environment": {
+    "os": "Windows",
+    "python": "3.13.17",
+    "node": "v26.13.1",
+    "git_branch": "feature/phase3-compact-ui",
+    "git_commit": "1e099d5b5954f6921e154ce124d04e604f466d9e"
+  },
+  "commands_executed": [
+    {
+      "command": "git status --short && git rev-parse HEAD",
+      "status": "PASS",
+      "notes": "0 modified tracked files, 80 untracked files in docs/AIS_2_7/"
+    },
+    {
+      "command": "python docs/CCA_1_0/audit_scripts/build_inventory.py",
+      "status": "PASS",
+      "notes": "2229 tracked files; 272 app source files (104,272 total lines)"
+    },
+    {
+      "command": "npx.cmd tsc --noEmit (in frontend/)",
+      "status": "PASS",
+      "notes": "Exit code 0, zero TypeScript compilation errors"
+    },
+    {
+      "command": "npx.cmd eslint src --format json (in frontend/)",
+      "status": "PASS_WITH_FINDINGS",
+      "notes": "Exit code 1: 362 errors (308 no-explicit-any, 34 set-state-in-effect, etc.), 258 warnings (232 no-unused-vars)"
+    },
+    {
+      "command": "npm.cmd test (in frontend/)",
+      "status": "PASS",
+      "notes": "All 16 Node test suites passed"
+    },
+    {
+      "command": "python docs/CCA_1_0/audit_scripts/analyze_frontend_and_api.py",
+      "status": "PASS",
+      "notes": "31 frontend pages (13 shadowed), 187 API endpoints (20 without FE refs)"
+    },
+    {
+      "command": "python docs/CCA_1_0/audit_scripts/analyze_backend_and_db.py",
+      "status": "PASS",
+      "notes": "38 DB models mapped, 309 unused imports, 19 modules with 0 prod importers (11 nomenclature shims)"
+    },
+    {
+      "command": "python docs/CCA_1_0/audit_scripts/deep_audit.py",
+      "status": "PASS",
+      "notes": "20 unused service methods in prod (7 with 0 tests/scripts), 2 unused settings keys"
+    },
+    {
+      "command": "python docs/CCA_1_0/audit_scripts/audit_ais_and_deps.py",
+      "status": "PASS",
+      "notes": "17 unused api.ts methods (excluding local helper), 22 Python deps, 15 Node deps"
+    },
+    {
+      "command": "pytest --collect-only -q tests/ (in backend/)",
+      "status": "PARTIAL",
+      "notes": "665 tests collected; 5 e2e_browser tests errored on missing playwright package"
+    },
+    {
+      "command": "pytest -q --ignore=tests/e2e_browser tests/test_agentic_nomenclature.py tests/test_auth.py tests/test_database_migrations.py tests/test_celery_queues.py",
+      "status": "PARTIAL",
+      "notes": "14 passed, 1 failed (test_database_migrations.py asserts stale head '008_soc_pilot' vs '016_ground_truth_certification_and_cohort_isolation')"
+    },
+    {
+      "command": "pytest -q tests/test_ais_evaluation_tracking.py ... (13 core suites, 125 tests)",
+      "status": "PARTIAL",
+      "notes": "124 passed, 1 failed (test_phase1_security_controls.py asserts stale 'POLICY_NOT_APPROVED' vs 'DRAFT_NOT_APPROVED')"
+    }
+  ],
+  "limitations": [
+    "Playwright is not installed in backend/venv, so 5 browser E2E tests in backend/tests/e2e_browser/ could not be collected/run.",
+    "Production Server 1 (PostgreSQL/Redis/systemd) and Server 2 (GPU vLLM) were NOT accessed or queried per strict read-only local safety boundaries.",
+    "Dynamic string-interpolated endpoint calls and runtime DB table row counts were not verified against live Server 1 PostgreSQL."
+  ]
+}
