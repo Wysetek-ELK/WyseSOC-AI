@@ -45,6 +45,7 @@ from app.schemas.ground_truth import (
     GroundTruthQueueResponse,
     GroundTruthReopenRequest,
     GroundTruthReviewSubmitRequest,
+    GroundTruthUnlockRequest,
     RawLogEntry,
     ReviewerSubmissionSummary,
     RuleDefinitionView,
@@ -805,12 +806,27 @@ class GroundTruthCertificationService:
 
         can_submit_lock = True
         lock_blocked_reason = None
+        can_unlock_my_review = False
+        unlock_blocked_reason = None
         if my_rev and my_rev.is_locked:
             can_submit_lock = False
             lock_blocked_reason = (
                 "You have already locked an independent review for this incident. "
                 "Self-approval for Dual-Reviewer GT-3 requires a second distinct reviewer."
             )
+            is_finalized_or_conflict = item.certification_status in (
+                "GT3_CERTIFIED",
+                "CERTIFIED_INCONCLUSIVE",
+                "CONFLICT_PENDING_ADJUDICATION",
+            )
+            if is_finalized_or_conflict and not is_admin:
+                can_unlock_my_review = False
+                unlock_blocked_reason = (
+                    "This incident has reached dual-reviewer conflict or GT-3 certification; "
+                    "an Administrator must unlock your review."
+                )
+            else:
+                can_unlock_my_review = True
         elif len(locked_distinct_reviewers) >= 2 and not (my_rev and my_rev.is_locked):
             can_submit_lock = False
             lock_blocked_reason = "Dual-reviewer quorum already locked for this incident."
@@ -923,6 +939,8 @@ class GroundTruthCertificationService:
             other_reviewer_submitted=len(other_locked) > 0,
             can_submit_lock=can_submit_lock,
             lock_blocked_reason=lock_blocked_reason,
+            can_unlock_my_review=can_unlock_my_review,
+            unlock_blocked_reason=unlock_blocked_reason,
             can_adjudicate=can_adjudicate,
             conflict_reviews=conflict_reviews,
             certified_result=certified_result,
@@ -969,6 +987,75 @@ class GroundTruthCertificationService:
             "analyst_rationale": ev.analyst_rationale,
             "created_at": ev.created_at.isoformat() if ev.created_at else None,
         }
+
+    @staticmethod
+    def _recompute_item_and_investigation_state(
+        db: AsyncSession,
+        item: BenchmarkCohortItem,
+        inv: Optional[Investigation],
+        all_locked: List[AnalystVerdictReview],
+    ) -> Dict[str, AnalystVerdictReview]:
+        """Recomputes BenchmarkCohortItem and Investigation status from locked round-1 reviews."""
+        distinct_reviewers = {r.reviewer_id: r for r in all_locked}
+
+        if len(distinct_reviewers) == 0:
+            item.certification_status = "IN_PROGRESS"
+            item.assigned_reviewer_1 = None
+            item.assigned_reviewer_2 = None
+            item.certified_verdict = None
+        elif len(distinct_reviewers) == 1:
+            only_rev = next(iter(distinct_reviewers.values()))
+            item.certification_status = "GT2_SINGLE_REVIEW"
+            item.assigned_reviewer_1 = only_rev.reviewer_id
+            item.assigned_reviewer_2 = None
+            item.certified_verdict = None
+            only_rev.ground_truth_status = "GT2_SINGLE_REVIEW"
+            db.add(only_rev)
+        else:
+            rev_list = list(distinct_reviewers.values())
+            item.assigned_reviewer_1 = rev_list[0].reviewer_id
+            item.assigned_reviewer_2 = rev_list[1].reviewer_id
+            verdicts = {r.analyst_verdict for r in rev_list[:2]}
+            if len(verdicts) == 1:
+                agreed_v = next(iter(verdicts))
+                if agreed_v == "INCONCLUSIVE":
+                    item.certification_status = "CERTIFIED_INCONCLUSIVE"
+                    item.certified_verdict = "INCONCLUSIVE"
+                else:
+                    item.certification_status = "GT3_CERTIFIED"
+                    item.certified_verdict = agreed_v
+                for r in rev_list[:2]:
+                    r.ground_truth_status = item.certification_status
+                    db.add(r)
+            else:
+                item.certification_status = "CONFLICT_PENDING_ADJUDICATION"
+                item.certified_verdict = None
+                for r in rev_list[:2]:
+                    r.ground_truth_status = "CONFLICT"
+                    db.add(r)
+
+        item.updated_at = utc_now()
+        db.add(item)
+
+        if inv:
+            if item.certification_status in ("GT3_CERTIFIED", "CERTIFIED_INCONCLUSIVE"):
+                inv.status = "REVIEWED"
+                inv.analyst_verdict = item.certified_verdict
+                inv.is_independently_verified = item.certified_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE")
+                inv.is_disputed = False
+            elif item.certification_status == "CONFLICT_PENDING_ADJUDICATION":
+                inv.status = "IN_PROGRESS"
+                inv.analyst_verdict = None
+                inv.is_independently_verified = False
+                inv.is_disputed = True
+            else:
+                inv.status = "IN_PROGRESS"
+                inv.analyst_verdict = None
+                inv.is_independently_verified = False
+                inv.is_disputed = False
+            db.add(inv)
+
+        return distinct_reviewers
 
     @classmethod
     async def submit_or_save_review(
@@ -1101,57 +1188,9 @@ class GroundTruthCertificationService:
 
         # Recompute certification state across all locked reviewers for round 1
         all_locked = list(locked_others) + ([my_rev] if is_lock else [])
-        distinct_reviewers = {r.reviewer_id: r for r in all_locked}
-
-        if len(distinct_reviewers) == 0:
-            if item.certification_status in ("GT0_UNREVIEWED", "GT1_HISTORICAL_ONLY"):
-                item.certification_status = "IN_PROGRESS"
-            item.certified_verdict = None
-        elif len(distinct_reviewers) == 1:
-            only_rev = next(iter(distinct_reviewers.values()))
-            item.certification_status = "GT2_SINGLE_REVIEW"
-            item.assigned_reviewer_1 = only_rev.reviewer_id
-            item.certified_verdict = None
-            only_rev.ground_truth_status = "GT2_SINGLE_REVIEW"
-            db.add(only_rev)
-        else:
-            rev_list = list(distinct_reviewers.values())
-            item.assigned_reviewer_1 = rev_list[0].reviewer_id
-            item.assigned_reviewer_2 = rev_list[1].reviewer_id
-            verdicts = {r.analyst_verdict for r in rev_list[:2]}
-            if len(verdicts) == 1:
-                agreed_v = next(iter(verdicts))
-                if agreed_v == "INCONCLUSIVE":
-                    item.certification_status = "CERTIFIED_INCONCLUSIVE"
-                    item.certified_verdict = "INCONCLUSIVE"
-                else:
-                    item.certification_status = "GT3_CERTIFIED"
-                    item.certified_verdict = agreed_v
-                for r in rev_list[:2]:
-                    r.ground_truth_status = item.certification_status
-                    db.add(r)
-            else:
-                item.certification_status = "CONFLICT_PENDING_ADJUDICATION"
-                item.certified_verdict = None
-                for r in rev_list[:2]:
-                    r.ground_truth_status = "CONFLICT"
-                    db.add(r)
-
-        item.updated_at = utc_now()
-        db.add(item)
-
-        # Keep Investigation status coherent without leaking to learning/RAG
-        if item.certification_status in ("GT3_CERTIFIED", "CERTIFIED_INCONCLUSIVE"):
-            inv.status = "REVIEWED"
-            inv.analyst_verdict = item.certified_verdict
-            inv.is_independently_verified = item.certified_verdict in ("TRUE_POSITIVE", "FALSE_POSITIVE")
-            inv.is_disputed = False
-        elif item.certification_status == "CONFLICT_PENDING_ADJUDICATION":
-            inv.status = "IN_PROGRESS"
-            inv.is_disputed = True
-        else:
-            inv.status = "IN_PROGRESS"
-        db.add(inv)
+        distinct_reviewers = cls._recompute_item_and_investigation_state(
+            db, item, inv, all_locked
+        )
 
         # Immutable audit trail
         db.add(
@@ -1183,6 +1222,149 @@ class GroundTruthCertificationService:
                 else None
             ),
             "locked_reviewers_count": len(distinct_reviewers),
+            "excluded_from_learning": True,
+        }
+
+    @classmethod
+    async def unlock_review(
+        cls,
+        db: AsyncSession,
+        cohort_key: str,
+        incident_identifier: str,
+        req: GroundTruthUnlockRequest,
+        current_user: Any,
+    ) -> Dict[str, Any]:
+        """
+        Unlocks a locked blind review back to DRAFT so the reviewer can correct mistakes.
+        Option 1 policy:
+        - Any reviewer (SOC Analyst or Admin) may unlock their own locked review while
+          the incident has not yet reached conflict or GT-3 certification.
+        - Administrators may unlock even after conflict or GT-3 certification, and may
+          optionally target a specific `review_id`.
+        """
+        cohort, item, inc = await cls._resolve_cohort_item_and_incident(
+            db, cohort_key, incident_identifier
+        )
+        if not inc:
+            raise ValueError("Incident record is not available in database.")
+
+        reviewer_key, user_id, is_admin = _user_identity(current_user)
+        user_keys = {k for k in (reviewer_key, user_id) if k}
+
+        existing_revs = (
+            await db.execute(
+                select(AnalystVerdictReview).where(
+                    AnalystVerdictReview.incident_id == inc.id,
+                    AnalystVerdictReview.review_mode == "BENCHMARK_CERTIFICATION",
+                    AnalystVerdictReview.certification_round == 1,
+                )
+            )
+        ).scalars().all()
+
+        if req.review_id:
+            target_rev = next((r for r in existing_revs if r.id == req.review_id), None)
+            if not target_rev:
+                raise ValueError(f"Review '{req.review_id}' not found for this incident.")
+            if target_rev.reviewer_id not in user_keys and not is_admin:
+                raise PermissionError("Only Administrators may unlock another reviewer's locked review.")
+        else:
+            target_rev = next((r for r in existing_revs if r.reviewer_id in user_keys), None)
+            if not target_rev:
+                raise ValueError("No review found for your account on this incident.")
+
+        if not target_rev.is_locked:
+            raise ValueError("This review is already unlocked in draft state.")
+
+        prev_cert_status = item.certification_status
+        is_finalized_or_conflict = prev_cert_status in (
+            "GT3_CERTIFIED",
+            "CERTIFIED_INCONCLUSIVE",
+            "CONFLICT_PENDING_ADJUDICATION",
+        )
+        if is_finalized_or_conflict and not is_admin:
+            raise PermissionError(
+                "UNLOCK_REQUIRES_ADMIN: This incident has already reached dual-reviewer conflict or GT-3 "
+                "certification. An Administrator must unlock your review to preserve blind-review integrity."
+            )
+
+        reason = (req.reason or "").strip()
+        if len(reason) < 5:
+            raise ValueError("Please provide an unlock reason of at least 5 characters.")
+
+        # Record immutable revision history for auditability
+        revision = BenchmarkReviewRevision(
+            review_id=target_rev.id,
+            incident_id=target_rev.incident_id,
+            previous_verdict=target_rev.analyst_verdict,
+            new_verdict="UNLOCKED_TO_DRAFT",
+            previous_rationale=target_rev.analyst_notes,
+            new_rationale=target_rev.analyst_notes,
+            revised_by_user_id=reviewer_key,
+            revision_reason=f"[UNLOCKED] {reason}",
+        )
+        db.add(revision)
+
+        # If unlocking out of an adjudicated state, clear stale adjudication rows so future re-adjudication won't conflict
+        if prev_cert_status in ("GT3_CERTIFIED", "CERTIFIED_INCONCLUSIVE"):
+            rev_ids = [r.id for r in existing_revs]
+            if rev_ids:
+                stale_adjs = (
+                    await db.execute(
+                        select(AnalystReviewAdjudication).where(
+                            AnalystReviewAdjudication.review_id.in_(rev_ids)
+                        )
+                    )
+                ).scalars().all()
+                for adj in stale_adjs:
+                    await db.delete(adj)
+
+        # Revert target review to editable DRAFT
+        target_rev.is_locked = False
+        target_rev.is_draft = True
+        target_rev.ground_truth_status = "DRAFT"
+        target_rev.correction_reason = reason[:64]
+        target_rev.review_version = int(target_rev.review_version or 1) + 1
+        db.add(target_rev)
+
+        inv_res = await db.execute(select(Investigation).where(Investigation.incident_id == inc.id))
+        inv = inv_res.scalars().first()
+
+        remaining_locked = [r for r in existing_revs if r.is_locked and r.id != target_rev.id]
+        distinct_reviewers = cls._recompute_item_and_investigation_state(
+            db, item, inv, remaining_locked
+        )
+        item.certification_version = int(item.certification_version or 1) + 1
+        db.add(item)
+
+        db.add(
+            AuditLog(
+                user_id=user_id or reviewer_key,
+                username=reviewer_key,
+                action="BENCHMARK_GT_REVIEW_UNLOCKED",
+                resource_type="BENCHMARK_COHORT_ITEM",
+                resource_id=item.fortisiem_incident_id,
+                details={
+                    "cohort_key": cohort.cohort_key,
+                    "review_id": target_rev.id,
+                    "reviewer": target_rev.reviewer_id,
+                    "unlocked_by": reviewer_key,
+                    "previous_certification_status": prev_cert_status,
+                    "new_certification_status": item.certification_status,
+                    "reason": reason,
+                    "excluded_from_learning": True,
+                },
+            )
+        )
+
+        await db.commit()
+        return {
+            "success": True,
+            "review_id": target_rev.id,
+            "is_locked": False,
+            "is_draft": True,
+            "certification_status": item.certification_status,
+            "locked_reviewers_count": len(distinct_reviewers),
+            "revision_id": revision.id,
             "excluded_from_learning": True,
         }
 

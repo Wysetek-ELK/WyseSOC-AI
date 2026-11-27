@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Unlock,
   UserCheck,
   X,
 } from "lucide-react";
@@ -100,6 +101,9 @@ export function GroundTruthCertificationPanel() {
   const [attNoAi, setAttNoAi] = useState(false);
   const [attIndependent, setAttIndependent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [unlockPromptOpen, setUnlockPromptOpen] = useState(false);
+  const [unlockReason, setUnlockReason] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
   const [drawerNotice, setDrawerNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Conflict Adjudication modal state
@@ -142,6 +146,8 @@ export function GroundTruthCertificationPanel() {
     setLoadingDetail(true);
     setDrawerNotice(null);
     setPostCertComp(null);
+    setUnlockPromptOpen(false);
+    setUnlockReason("");
     setLogSearch("");
     try {
       const d = await groundTruthApi.getIncidentDetail(selectedCohortKey, fortisiemId);
@@ -249,6 +255,42 @@ export function GroundTruthCertificationPanel() {
       setDrawerNotice({ type: "error", text: err.message });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUnlockReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detail) return;
+    const trimmed = unlockReason.trim();
+    if (trimmed.length < 5) {
+      setDrawerNotice({ type: "error", text: "Please enter a brief unlock reason (at least 5 characters)." });
+      return;
+    }
+    setUnlocking(true);
+    setDrawerNotice(null);
+    try {
+      await groundTruthApi.unlockReview(
+        selectedCohortKey,
+        detail.cohort_item.fortisiem_incident_id,
+        { reason: trimmed }
+      );
+      setUnlockPromptOpen(false);
+      setUnlockReason("");
+      setPostCertComp(null);
+      const refreshed = await groundTruthApi.getIncidentDetail(
+        selectedCohortKey,
+        detail.cohort_item.fortisiem_incident_id
+      );
+      setDetail(refreshed);
+      await loadQueue();
+      setDrawerNotice({
+        type: "success",
+        text: "Review unlocked and reverted to draft. You can now update your verdict and re-lock.",
+      });
+    } catch (err: any) {
+      setDrawerNotice({ type: "error", text: err.message });
+    } finally {
+      setUnlocking(false);
     }
   };
 
@@ -959,17 +1001,67 @@ export function GroundTruthCertificationPanel() {
 
                 {/* 5. Independent Human Verdict & Certification Console */}
                 <div className="rounded-lg border border-cyan-900/50 bg-cyan-950/10 p-3.5 space-y-3">
-                  <div className="flex items-center justify-between border-b border-cyan-900/40 pb-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-900/40 pb-2">
                     <h3 className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
                       <UserCheck className="w-4 h-4 text-cyan-400" />
                       Independent Human Ground Truth Assessment
                     </h3>
                     {detail.my_review?.is_locked && (
-                      <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 text-[10px] font-mono flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> YOUR REVIEW LOCKED
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 text-[10px] font-mono flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> YOUR REVIEW LOCKED
+                        </span>
+                        {canMutate && detail.can_unlock_my_review && (
+                          <button
+                            type="button"
+                            onClick={() => setUnlockPromptOpen((v) => !v)}
+                            data-testid="unlock-my-review-btn"
+                            className="px-2 py-0.5 rounded bg-amber-950/70 hover:bg-amber-900/80 text-amber-200 border border-amber-700/70 text-[10px] font-mono flex items-center gap-1 transition-colors"
+                          >
+                            <Unlock className="w-3 h-3" />
+                            {unlockPromptOpen ? "Cancel Unlock" : "Unlock Review"}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
+
+                  {detail.my_review?.is_locked && unlockPromptOpen && canMutate && detail.can_unlock_my_review && (
+                    <form
+                      onSubmit={handleUnlockReview}
+                      className="p-2.5 rounded border border-amber-800/70 bg-amber-950/20 space-y-2"
+                      data-testid="unlock-review-form"
+                    >
+                      <div className="text-[11px] text-amber-200">
+                        Unlocking reverts your review back to <strong>DRAFT</strong> so you can update your verdict and re-lock. This action is recorded in the audit trail.
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          required
+                          minLength={5}
+                          value={unlockReason}
+                          onChange={(e) => setUnlockReason(e.target.value)}
+                          placeholder="Reason for unlocking (e.g. Marked wrong verdict by mistake)..."
+                          className="flex-1 px-2.5 py-1.5 text-xs rounded border border-amber-800/60 bg-slate-950 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                        />
+                        <button
+                          type="submit"
+                          disabled={unlocking || unlockReason.trim().length < 5}
+                          className="px-3 py-1.5 rounded bg-amber-700 hover:bg-amber-600 disabled:opacity-40 text-xs font-bold text-white flex items-center justify-center gap-1.5 shrink-0"
+                        >
+                          <Unlock className="w-3.5 h-3.5" />
+                          {unlocking ? "Unlocking..." : "Confirm Unlock"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {detail.my_review?.is_locked && !detail.can_unlock_my_review && detail.unlock_blocked_reason && (
+                    <div className="p-2 rounded bg-slate-900 border border-slate-700 text-[11px] text-slate-300">
+                      {detail.unlock_blocked_reason}
+                    </div>
+                  )}
 
                   {detail.lock_blocked_reason && (
                     <div className="p-2 rounded bg-slate-900 border border-slate-700 text-[11px] text-amber-300">

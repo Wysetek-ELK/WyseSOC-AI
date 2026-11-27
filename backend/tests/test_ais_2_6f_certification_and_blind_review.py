@@ -481,3 +481,121 @@ async def test_certification_state_machine_and_learning_isolation(
     assert cs_pv.prompt_id == "08c59656-c002-4a76-b100-3c8d6d645eb2"
     assert ps_pv.id == "8ae7beaa-626a-4061-a0c4-8500f7e6a69d"
     assert ps_pv.prompt_id == "1fe4e834-bd52-4571-95ca-ee329e40e1b2"
+
+
+@pytest.mark.asyncio
+async def test_unlock_review_option_1_policy(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    admin_token: str,
+):
+    _, rev1_token = await _make_user(db_session, "unlock_rev1", "SOC Analyst")
+    _, rev2_token = await _make_user(db_session, "unlock_rev2", "SOC Analyst")
+    await db_session.commit()
+
+    await GroundTruthCertificationService.ensure_ais_2_6e_cohort_registered(db_session)
+
+    base_payload = {
+        "human_verdict": "TRUE_POSITIVE",
+        "detection_correctness": "MATCHED",
+        "authorization_context": "UNAUTHORIZED",
+        "confidence_level": "HIGH",
+        "evidence_sufficiency_status": "SUFFICIENT",
+        "rationale": "Initial classification before realizing evidence mismatch.",
+        "evidence_references": ["host: PC-TSI-DC"],
+        "attestation_flags": {
+            "evidence_reviewed": True,
+            "no_ai_or_historical_influence": True,
+            "independent_judgment": True,
+        },
+    }
+
+    # 1. Reviewer 1 locks -> GT2_SINGLE_REVIEW, can_unlock_my_review=True
+    lock1 = await client.post(
+        f"/api/ground-truth/cohorts/{FROZEN_AIS_2_6E_COHORT_ID}/incidents/132438483/review",
+        json={**base_payload, "mode": "LOCK"},
+        headers={"Authorization": f"Bearer {rev1_token}"},
+    )
+    assert lock1.status_code == 200
+    assert lock1.json()["certification_status"] == "GT2_SINGLE_REVIEW"
+    rev1_id = lock1.json()["review_id"]
+
+    det1 = await client.get(
+        f"/api/ground-truth/cohorts/{FROZEN_AIS_2_6E_COHORT_ID}/incidents/132438483",
+        headers={"Authorization": f"Bearer {rev1_token}"},
+    )
+    assert det1.status_code == 200
+    assert det1.json()["can_unlock_my_review"] is True
+    assert det1.json()["can_submit_lock"] is False
+
+    # 2. Reviewer 1 unlocks their own review while still GT2_SINGLE_REVIEW -> reverts to DRAFT
+    unlock1 = await client.post(
+        f"/api/ground-truth/cohorts/{FROZEN_AIS_2_6E_COHORT_ID}/incidents/132438483/review/unlock",
+        json={"reason": "Marked wrong verdict by mistake"},
+        headers={"Authorization": f"Bearer {rev1_token}"},
+    )
+    assert unlock1.status_code == 200
+    u_data = unlock1.json()
+    assert u_data["is_locked"] is False
+    assert u_data["is_draft"] is True
+    assert u_data["certification_status"] == "IN_PROGRESS"
+    assert u_data["locked_reviewers_count"] == 0
+
+    # 3. Reviewer 1 updates verdict to FALSE_POSITIVE and re-locks
+    relock1 = await client.post(
+        f"/api/ground-truth/cohorts/{FROZEN_AIS_2_6E_COHORT_ID}/incidents/132438483/review",
+        json={**base_payload, "human_verdict": "FALSE_POSITIVE", "mode": "LOCK"},
+        headers={"Authorization": f"Bearer {rev1_token}"},
+    )
+    assert relock1.status_code == 200
+    assert relock1.json()["certification_status"] == "GT2_SINGLE_REVIEW"
+
+    # 4. Reviewer 2 locks FALSE_POSITIVE -> GT3_CERTIFIED
+    lock2 = await client.post(
+        f"/api/ground-truth/cohorts/{FROZEN_AIS_2_6E_COHORT_ID}/incidents/132438483/review",
+        json={**base_payload, "human_verdict": "FALSE_POSITIVE", "mode": "LOCK"},
+        headers={"Authorization": f"Bearer {rev2_token}"},
+    )
+    assert lock2.status_code == 200
+    assert lock2.json()["certification_status"] == "GT3_CERTIFIED"
+    rev2_id = lock2.json()["review_id"]
+
+    # 5. Non-admin Reviewer 1 cannot unlock once GT3_CERTIFIED (403) or unlock Reviewer 2 (403)
+    det_after_gt3 = await client.get(
+        f"/api/ground-truth/cohorts/{FROZEN_AIS_2_6E_COHORT_ID}/incidents/132438483",
+        headers={"Authorization": f"Bearer {rev1_token}"},
+    )
+    assert det_after_gt3.json()["can_unlock_my_review"] is False
+    assert det_after_gt3.json()["unlock_blocked_reason"] is not None
+
+    blocked_unlock = await client.post(
+        f"/api/ground-truth/cohorts/{FROZEN_AIS_2_6E_COHORT_ID}/incidents/132438483/review/unlock",
+        json={"reason": "Want to change after GT3"},
+        headers={"Authorization": f"Bearer {rev1_token}"},
+    )
+    assert blocked_unlock.status_code == 403
+
+    other_unlock = await client.post(
+        f"/api/ground-truth/cohorts/{FROZEN_AIS_2_6E_COHORT_ID}/incidents/132438483/review/unlock",
+        json={"reason": "Try unlocking peer", "review_id": rev2_id},
+        headers={"Authorization": f"Bearer {rev1_token}"},
+    )
+    assert other_unlock.status_code == 403
+
+    # 6. Admin can unlock even after GT3_CERTIFIED -> reverts to GT2_SINGLE_REVIEW & clears certified_verdict
+    admin_unlock = await client.post(
+        f"/api/ground-truth/cohorts/{FROZEN_AIS_2_6E_COHORT_ID}/incidents/132438483/review/unlock",
+        json={"reason": "Admin approved correction", "review_id": rev1_id},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert admin_unlock.status_code == 200
+    assert admin_unlock.json()["certification_status"] == "GT2_SINGLE_REVIEW"
+    assert admin_unlock.json()["locked_reviewers_count"] == 1
+
+    det_after_admin = await client.get(
+        f"/api/ground-truth/cohorts/{FROZEN_AIS_2_6E_COHORT_ID}/incidents/132438483",
+        headers={"Authorization": f"Bearer {rev1_token}"},
+    )
+    assert det_after_admin.json()["cohort_item"]["certified_verdict"] is None
+    assert det_after_admin.json()["can_submit_lock"] is True
+    assert any(r["new_verdict"] == "UNLOCKED_TO_DRAFT" for r in det_after_admin.json()["revisions"])

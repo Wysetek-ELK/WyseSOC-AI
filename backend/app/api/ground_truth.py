@@ -21,6 +21,7 @@ from app.schemas.ground_truth import (
     GroundTruthQueueResponse,
     GroundTruthReopenRequest,
     GroundTruthReviewSubmitRequest,
+    GroundTruthUnlockRequest,
 )
 from app.services.blind_review_guard import AIS_3_0_HOLDOUT_COHORT_ID, FROZEN_AIS_2_6E_COHORT_ID
 from app.services.ground_truth_certification_service import GroundTruthCertificationService
@@ -153,6 +154,28 @@ async def submit_ground_truth_review(
         )
     except PermissionError as pe:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(pe))
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+
+
+@router.post("/cohorts/{cohort_key}/incidents/{incident_id}/review/unlock", response_model=Dict[str, Any])
+async def unlock_ground_truth_review(
+    cohort_key: str,
+    incident_id: str,
+    req: GroundTruthUnlockRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+):
+    try:
+        return await GroundTruthCertificationService.unlock_review(
+            db=db,
+            cohort_key=cohort_key,
+            incident_identifier=incident_id,
+            req=req,
+            current_user=current_user,
+        )
+    except PermissionError as pe:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(pe))
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
 

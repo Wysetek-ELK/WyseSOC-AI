@@ -143,6 +143,8 @@ class GroundTruthDetailResponse(BaseModel):
     other_reviewer_submitted: bool = False
     can_submit_lock: bool = True
     lock_blocked_reason: Optional[str] = None
+    can_unlock_my_review: bool = False
+    unlock_blocked_reason: Optional[str] = None
     can_adjudicate: bool = False
     conflict_reviews: List[ReviewerSubmissionSummary] = Field(default_factory=list)
     certified_result: Optional[Dict[str, Any]] = None
@@ -188,3 +190,8 @@ class GroundTruthReopenRequest(BaseModel):
     new_verdict: HumanVerdictType
     new_rationale: str = Field(..., min_length=15, max_length=10000)
     revision_reason: str = Field(..., min_length=10, max_length=2000)
+
+
+class GroundTruthUnlockRequest(BaseModel):
+    reason: str = Field(..., min_length=5, max_length=2000)
+    review_id: Optional[str] = None

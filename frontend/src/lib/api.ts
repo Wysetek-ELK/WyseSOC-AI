@@ -4130,6 +4130,8 @@ export interface GroundTruthDetailResponse {
   other_reviewer_submitted: boolean;
   can_submit_lock: boolean;
   lock_blocked_reason?: string | null;
+  can_unlock_my_review?: boolean;
+  unlock_blocked_reason?: string | null;
   can_adjudicate: boolean;
   conflict_reviews: GroundTruthReviewerSubmission[];
   certified_result?: Record<string, any> | null;
@@ -4276,6 +4278,29 @@ export const groundTruthApi = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || "Failed to reopen certification review");
+    }
+    return res.json();
+  },
+
+  async unlockReview(
+    cohortKey: string,
+    incidentId: string,
+    payload: {
+      reason: string;
+      review_id?: string;
+    }
+  ) {
+    const res = await fetchWithAuth(
+      `${API_BASE}/ground-truth/cohorts/${cohortKey}/incidents/${incidentId}/review/unlock`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to unlock review");
     }
     return res.json();
   },
