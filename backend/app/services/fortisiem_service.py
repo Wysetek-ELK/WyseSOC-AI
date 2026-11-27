@@ -900,6 +900,221 @@ class FortiSIEMService:
                 return data
         return None
 
+    @staticmethod
+    def _parse_events_response(res: httpx.Response) -> List[Dict[str, Any]]:
+        """Parses raw triggering/query events from FortiSIEM JSON or XML responses."""
+        text = (res.text or "").strip()
+        if not text:
+            return []
+
+        content_type = (res.headers.get("content-type") or "").lower()
+        if "xml" in content_type or text.startswith("<"):
+            try:
+                import xml.etree.ElementTree as ET
+                root = ET.fromstring(text)
+                parsed_events: List[Dict[str, Any]] = []
+                for elem in root.iter():
+                    local_tag = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
+                    if local_tag != "event":
+                        continue
+                    evt_obj: Dict[str, Any] = {}
+                    attrs: Dict[str, Any] = {}
+                    for child in elem:
+                        ctag = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+                        if ctag == "attributes":
+                            for attr_el in child:
+                                atag = attr_el.tag.split("}")[-1] if "}" in attr_el.tag else attr_el.tag
+                                if atag == "attribute":
+                                    k = attr_el.attrib.get("name") or attr_el.attrib.get("key") or ""
+                                    v = (attr_el.text or "").strip()
+                                    if k:
+                                        attrs[k] = v
+                        elif ctag in ("rawMessage", "rawEventLog", "rawLog", "msg"):
+                            if child.text and child.text.strip():
+                                evt_obj["rawMessage"] = child.text.strip()
+                        else:
+                            val = (child.text or "").strip()
+                            if val:
+                                evt_obj[ctag] = val
+                    for ak in ("id", "nid", "eventId", "eventType", "receiveTime"):
+                        if ak in elem.attrib and ak not in evt_obj:
+                            evt_obj[ak] = elem.attrib[ak]
+                    if attrs:
+                        evt_obj["attributes"] = attrs
+                    if evt_obj:
+                        parsed_events.append(evt_obj)
+                return parsed_events
+            except Exception as xml_exc:
+                logger.warning(f"Failed parsing FortiSIEM XML events payload: {xml_exc}")
+                return []
+
+        try:
+            evts = res.json()
+        except Exception:
+            return []
+
+        if isinstance(evts, list):
+            return [e for e in evts if isinstance(e, dict)]
+        if isinstance(evts, dict):
+            for k in ("events", "rawEvents", "data", "triggeringEvents", "items", "records"):
+                val = evts.get(k)
+                if isinstance(val, list):
+                    return [e for e in val if isinstance(e, dict)]
+                if isinstance(val, dict) and isinstance(val.get("event"), list):
+                    return [e for e in val["event"] if isinstance(e, dict)]
+        return []
+
+    @staticmethod
+    def _build_event_query_xml(incident_data: Dict[str, Any], limit: int = 100) -> Optional[str]:
+        """
+        Builds a bounded FortiSIEM eventQuery XML for anomaly/behavioral incidents
+        that do not expose individual events via /triggeringEvents.
+        """
+        from xml.sax.saxutils import escape
+        from app.services.ingestion_service import extract_incident_timestamps, extract_incident_network_endpoints
+
+        first_seen, last_seen, created_at, _ = extract_incident_timestamps(incident_data)
+        start_ms = first_seen or created_at
+        end_ms = last_seen or start_ms
+        if not start_ms or not end_ms:
+            return None
+
+        # Convert ms to seconds and pad slightly (+/- 60s) for clock/indexing skew
+        start_sec = max(0, int(start_ms // 1000) - 60)
+        end_sec = int(end_ms // 1000) + 60
+        if end_sec <= start_sec:
+            end_sec = start_sec + 300
+
+        src_ip, rpt_ip, _ = extract_incident_network_endpoints(incident_data)
+        target_str = str(incident_data.get("incidentTarget") or "")
+        port_match = re.search(r"destIpPort\s*[:=]\s*(\d+)", target_str, re.IGNORECASE)
+        dest_port = port_match.group(1) if port_match else ""
+
+        detail_json = incident_data.get("incidentDetailJson")
+        if not isinstance(detail_json, dict) and isinstance(incident_data.get("incidentDetail"), str):
+            try:
+                parsed_det = json.loads(incident_data["incidentDetail"])
+                if isinstance(parsed_det, dict):
+                    detail_json = parsed_det
+            except Exception:
+                detail_json = None
+        ip_proto = str(detail_json.get("ipProto")) if isinstance(detail_json, dict) and detail_json.get("ipProto") is not None else ""
+
+        clauses: List[str] = []
+        if rpt_ip:
+            clauses.append(f"reptDevIpAddr = '{escape(rpt_ip)}'")
+        if src_ip:
+            clauses.append(f"srcIpAddr = '{escape(src_ip)}'")
+        if dest_port and dest_port.isdigit():
+            clauses.append(f"destIpPort = {dest_port}")
+        if ip_proto and ip_proto.isdigit():
+            clauses.append(f"ipProto = {ip_proto}")
+
+        # Require at least one concrete network/device anchor so we never issue an unbounded query
+        if not clauses:
+            return None
+
+        cust_id = str(incident_data.get("custId") or "").strip()
+        cust_clause = f"<CustId>{escape(cust_id)}</CustId>" if cust_id.isdigit() else ""
+        constr = " AND ".join(clauses)
+        safe_limit = max(1, min(int(limit), 100))
+
+        return (
+            "<Reports><Report id=\"verdictum_evt_backfill\" group=\"event\">"
+            "<Name>Verdictum Event Backfill</Name>"
+            "<SelectClause><AttrList>eventId,eventType,phRecvTime,reptDevIpAddr,srcIpAddr,destIpAddr,destIpPort,ipProto,rawEventLog</AttrList></SelectClause>"
+            f"<ReportInterval><Window unit=\"Epoch\" val=\"{start_sec},{end_sec}\"/></ReportInterval>"
+            f"<PatternClause><SubPattern displayName=\"events\" name=\"events\">"
+            f"<SingleEvtConstr>{escape(constr)}</SingleEvtConstr>"
+            f"</SubPattern></PatternClause>"
+            f"{cust_clause}"
+            f"<RelevantFilter/><OrderBy/><SyncOrAsync/><PageSize>{safe_limit}</PageSize>"
+            "</Report></Reports>"
+        )
+
+    async def _query_events_by_incident_window(
+        self,
+        client: httpx.AsyncClient,
+        base_url: str,
+        auth: Optional[Tuple[str, str]],
+        incident_data: Dict[str, Any],
+        limit: int = 100,
+        timeout: float = 10.0,
+    ) -> List[Dict[str, Any]]:
+        """Queries FortiSIEM eventQuery API over the incident window when triggeringEvents returns empty."""
+        query_xml = self._build_event_query_xml(incident_data, limit=limit)
+        if not query_xml:
+            return []
+
+        query_id: Optional[str] = None
+        for endpoint in (f"{base_url}/phoenix/rest/query/eventQuery", f"{base_url}/phoenix/rest/event/query"):
+            try:
+                res = await client.post(
+                    endpoint,
+                    content=query_xml,
+                    auth=auth,
+                    headers={"Content-Type": "application/xml", "Accept": "application/xml, application/json, text/plain"},
+                    timeout=timeout,
+                )
+                if res.status_code == 200 and (res.text or "").strip():
+                    body = res.text.strip()
+                    if body.startswith("<"):
+                        import xml.etree.ElementTree as ET
+                        root = ET.fromstring(body)
+                        for el in root.iter():
+                            tag = el.tag.split("}")[-1] if "}" in el.tag else el.tag
+                            if tag in ("queryId", "id") and el.text and el.text.strip():
+                                query_id = el.text.strip()
+                                break
+                        if not query_id and root.text and root.text.strip():
+                            query_id = root.text.strip()
+                    else:
+                        try:
+                            j = res.json()
+                            if isinstance(j, dict):
+                                query_id = str(j.get("queryId") or j.get("id") or "").strip() or None
+                            elif isinstance(j, (str, int)):
+                                query_id = str(j).strip()
+                        except Exception:
+                            query_id = body.splitlines()[0].strip()
+                    if query_id:
+                        break
+            except Exception as exc:
+                logger.warning(f"FortiSIEM eventQuery submit failed on {endpoint}: {exc}")
+                continue
+
+        if not query_id:
+            return []
+
+        # Brief bounded progress poll (max 5 x 0.4s = 2s)
+        for _ in range(5):
+            try:
+                prog = await client.get(
+                    f"{base_url}/phoenix/rest/query/progress/{query_id}",
+                    auth=auth,
+                    timeout=timeout,
+                )
+                if prog.status_code == 200:
+                    ptxt = (prog.text or "").strip()
+                    if "100" in ptxt:
+                        break
+            except Exception:
+                break
+            await asyncio.sleep(0.4)
+
+        try:
+            ev_res = await client.get(
+                f"{base_url}/phoenix/rest/query/events/{query_id}/0/{max(1, min(limit, 100))}",
+                auth=auth,
+                headers={"Accept": "application/json, application/xml;q=0.9, */*;q=0.8"},
+                timeout=timeout,
+            )
+            if ev_res.status_code == 200:
+                return self._parse_events_response(ev_res)
+        except Exception as exc:
+            logger.warning(f"FortiSIEM query/events fetch failed for queryId={query_id}: {exc}")
+        return []
+
     async def _enrich_triggering_events(
         self,
         client: httpx.AsyncClient,
@@ -907,31 +1122,60 @@ class FortiSIEMService:
         incident_id: str,
         auth: Optional[Tuple[str, str]],
         incident_data: Dict[str, Any],
-        timeout: float = 3.5,
+        timeout: float = 10.0,
+        allow_event_query_fallback: bool = False,
     ) -> None:
-        """Fetches and populates rawEvents if the main incident object lacks triggering events."""
+        """
+        Fetches and populates rawEvents if the main incident object lacks triggering events.
+        Continues probing fallback endpoints when an endpoint returns HTTP 200 with an empty list [].
+        """
         if incident_data.get("rawEvents") and isinstance(incident_data["rawEvents"], list) and len(incident_data["rawEvents"]) > 0:
             return
 
-        probe_urls = [
+        probe_urls: List[Tuple[str, Dict[str, Any]]] = [
             (f"{base_url}/phoenix/rest/pub/incident/triggeringEvents", {"incidentId": incident_id, "size": 100}),
-            (f"{base_url}/phoenix/rest/incident/triggeringEvents", {"incidentIds": incident_id}),
         ]
+        cust_id = str(incident_data.get("custId") or "").strip()
+        if cust_id:
+            probe_urls.append(
+                (f"{base_url}/phoenix/rest/pub/incident/triggeringEvents", {"incidentId": incident_id, "custId": cust_id, "size": 100})
+            )
+        probe_urls.extend([
+            (f"{base_url}/phoenix/rest/incident/triggeringEvents", {"incidentIds": incident_id}),
+            (f"{base_url}/phoenix/rest/incident/triggeringEvents", {"incidentId": incident_id}),
+        ])
+
         for url, params in probe_urls:
             try:
-                res = await client.get(url, params=params, auth=auth, headers={"Accept": "application/json"}, timeout=timeout)
+                res = await client.get(
+                    url,
+                    params=params,
+                    auth=auth,
+                    headers={"Accept": "application/json, application/xml;q=0.9, */*;q=0.8"},
+                    timeout=timeout,
+                )
                 if res.status_code == 200:
-                    evts = res.json()
-                    if isinstance(evts, list):
+                    evts = self._parse_events_response(res)
+                    if evts:
                         incident_data["rawEvents"] = evts
                         return
-                    elif isinstance(evts, dict):
-                        for k in ("events", "rawEvents", "data", "triggeringEvents"):
-                            if k in evts and isinstance(evts[k], list):
-                                incident_data["rawEvents"] = evts[k]
-                                return
-            except Exception:
+                elif res.status_code not in (404,):
+                    logger.warning(f"FortiSIEM triggeringEvents returned HTTP {res.status_code} for incident {incident_id} on {url}")
+            except Exception as exc:
+                logger.warning(f"FortiSIEM triggeringEvents probe failed for incident {incident_id} on {url}: {exc}")
                 continue
+
+        if allow_event_query_fallback:
+            evts = await self._query_events_by_incident_window(
+                client=client,
+                base_url=base_url,
+                auth=auth,
+                incident_data=incident_data,
+                limit=100,
+                timeout=timeout,
+            )
+            if evts:
+                incident_data["rawEvents"] = evts
 
     async def _query_live_siem_endpoints(
         self,
@@ -957,7 +1201,7 @@ class FortiSIEMService:
             if res.status_code == 200:
                 parsed = self._parse_siem_response(res, clean_id)
                 if parsed:
-                    await self._enrich_triggering_events(client, base_url, clean_id, auth, parsed)
+                    await self._enrich_triggering_events(client, base_url, clean_id, auth, parsed, allow_event_query_fallback=True)
                     return parsed
             elif res.status_code in (401, 403):
                 raise HTTPException(
@@ -987,7 +1231,7 @@ class FortiSIEMService:
             if res.status_code == 200:
                 parsed = self._extract_incident_from_pub_response(res.json(), clean_id)
                 if parsed:
-                    await self._enrich_triggering_events(client, base_url, clean_id, auth, parsed)
+                    await self._enrich_triggering_events(client, base_url, clean_id, auth, parsed, allow_event_query_fallback=True)
                     return parsed
             elif res.status_code in (401, 403):
                 raise HTTPException(
@@ -1010,7 +1254,7 @@ class FortiSIEMService:
             if res.status_code == 200:
                 parsed = self._extract_incident_from_pub_response(res.json(), clean_id)
                 if parsed:
-                    await self._enrich_triggering_events(client, base_url, clean_id, auth, parsed)
+                    await self._enrich_triggering_events(client, base_url, clean_id, auth, parsed, allow_event_query_fallback=True)
                     return parsed
         except HTTPException:
             raise
@@ -1027,7 +1271,7 @@ class FortiSIEMService:
             if res.status_code == 200:
                 parsed = self._parse_siem_response(res, clean_id)
                 if parsed:
-                    await self._enrich_triggering_events(client, base_url, clean_id, auth, parsed)
+                    await self._enrich_triggering_events(client, base_url, clean_id, auth, parsed, allow_event_query_fallback=True)
                     return parsed
         except HTTPException:
             raise
@@ -1296,6 +1540,49 @@ class FortiSIEMService:
 
         return updated
 
+    async def persist_events_for_incident(
+        self,
+        inc: Incident,
+        raw_events: List[Dict[str, Any]],
+        replace: bool = False,
+    ) -> int:
+        """Persists raw FortiSIEM event dicts into IncidentEvent rows and raw_payload['rawEvents']."""
+        valid_events = [e for e in (raw_events or []) if isinstance(e, dict)]
+        if not valid_events:
+            return 0
+
+        existing_events = list(inc.events or [])
+        if existing_events and not replace:
+            return 0
+
+        if replace and existing_events:
+            await self.db.execute(delete(IncidentEvent).where(IncidentEvent.incident_id == inc.id))
+
+        from app.services.ingestion_service import extract_event_data
+
+        persisted: List[IncidentEvent] = []
+        for idx, revt in enumerate(valid_events):
+            evt_id, evt_recv, evt_t, raw_log, attrs = extract_event_data(
+                revt, inc.incident_id, idx, fallback_event_type=inc.event_type
+            )
+            db_evt = IncidentEvent(
+                incident_id=inc.id,
+                event_id=evt_id,
+                event_receive_time=evt_recv or inc.first_seen_epoch,
+                event_type=evt_t,
+                raw_log=raw_log,
+                attributes=attrs,
+            )
+            self.db.add(db_evt)
+            persisted.append(db_evt)
+
+        merged_payload = dict(inc.raw_payload) if isinstance(inc.raw_payload, dict) else {}
+        merged_payload["rawEvents"] = valid_events
+        inc.raw_payload = merged_payload
+        inc.events = persisted
+        self.db.add(inc)
+        return len(persisted)
+
     async def pull_and_ingest(
         self,
         incident_id: str,
@@ -1316,13 +1603,18 @@ class FortiSIEMService:
         existing_inc = existing_res.scalar_one_or_none()
 
         if existing_inc and not force_refresh:
-            # Check if live SIEM or fresh telemetry has updated resolution / status
+            # Check if live SIEM or fresh telemetry has updated resolution / status or missing raw events
             res_updated = False
+            events_backfilled = 0
             try:
                 raw_data, _ = await self.fetch_incident_from_siem(clean_id)
                 if raw_data:
                     res_updated = await self.sync_incident_ground_truth(existing_inc, raw_data)
-                    if res_updated:
+                    if len(existing_inc.events or []) == 0:
+                        raw_evts = raw_data.get("rawEvents") or raw_data.get("triggeringEvents") or []
+                        if isinstance(raw_evts, list) and raw_evts:
+                            events_backfilled = await self.persist_events_for_incident(existing_inc, raw_evts)
+                    if res_updated or events_backfilled > 0:
                         await self.db.commit()
             except Exception:
                 pass
@@ -1340,7 +1632,7 @@ class FortiSIEMService:
                 "event_type": existing_inc.event_type,
                 "severity": existing_inc.severity,
                 "status_name": existing_inc.status_name,
-                "event_count": len(existing_inc.events),
+                "event_count": len(existing_inc.events or []),
                 "source": "DATABASE_CACHE",
                 "resolution": gt.resolution if gt else "",
                 "cleared_reason": gt.cleared_reason if gt else "",
@@ -1348,9 +1640,13 @@ class FortiSIEMService:
                 "cleared_time_epoch": gt.cleared_time_epoch if gt else None,
                 "resolution_updated": res_updated,
                 "message": (
-                    f"Incident '{clean_id}' resolution synchronized from FortiSIEM."
-                    if res_updated
-                    else f"Incident '{clean_id}' is already present in the local database."
+                    f"Incident '{clean_id}' backfilled {events_backfilled} raw events from FortiSIEM."
+                    if events_backfilled > 0
+                    else (
+                        f"Incident '{clean_id}' resolution synchronized from FortiSIEM."
+                        if res_updated
+                        else f"Incident '{clean_id}' is already present in the local database."
+                    )
                 ),
             }
 
@@ -1552,14 +1848,23 @@ class FortiSIEMService:
             for ex in existing_res.scalars().all():
                 existing_map[ex.incident_id] = ex
 
-        # Filter candidate incidents that actually require ingestion & live event enrichment
+        # Filter candidate incidents that actually require ingestion or 0-event backfill
         needs_ingestion = [
             inc for inc in candidate_incidents
             if str(inc.get("incidentId") or inc.get("id") or "").strip() not in existing_map or force_refresh
         ]
+        needs_event_backfill = [
+            inc for inc in candidate_incidents
+            if (
+                str(inc.get("incidentId") or inc.get("id") or "").strip() in existing_map
+                and not force_refresh
+                and len(existing_map[str(inc.get("incidentId") or inc.get("id") or "").strip()].events or []) == 0
+            )
+        ][:25]
+        enrichment_targets = needs_ingestion + needs_event_backfill
 
-        # Concurrently enrich triggering events ONLY for new incidents with strict timeout & bounded workers
-        if needs_ingestion and settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip():
+        # Concurrently enrich triggering events for new incidents and 0-event cached incidents
+        if enrichment_targets and settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip():
             sem = asyncio.Semaphore(5)
             base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
             auth = None
@@ -1576,10 +1881,13 @@ class FortiSIEMService:
                         if iid and not (inc_item.get("rawEvents") and isinstance(inc_item["rawEvents"], list) and len(inc_item["rawEvents"]) > 0):
                             async with sem:
                                 try:
-                                    await self._enrich_triggering_events(enrich_client, base_url, iid, auth, inc_item, timeout=3.5)
+                                    await self._enrich_triggering_events(
+                                        enrich_client, base_url, iid, auth, inc_item,
+                                        timeout=10.0, allow_event_query_fallback=False,
+                                    )
                                 except Exception:
                                     pass
-                    await asyncio.gather(*[_safe_enrich(inc_item) for inc_item in needs_ingestion], return_exceptions=True)
+                    await asyncio.gather(*[_safe_enrich(inc_item) for inc_item in enrichment_targets], return_exceptions=True)
             except Exception:
                 pass
 
@@ -1594,11 +1902,17 @@ class FortiSIEMService:
                 already_cached += 1
                 ts = existing_inc.last_seen_epoch or existing_inc.created_at_epoch or 0
                 highest_timestamp = max(highest_timestamp, ts)
-                # Check and sync latest resolution / status from FortiSIEM telemetry
+                # Check and sync latest resolution / status and backfill missing raw events
                 try:
                     res_changed = await self.sync_incident_ground_truth(existing_inc, raw_inc)
                     if res_changed:
                         resolutions_synced += 1
+                    if len(existing_inc.events or []) == 0:
+                        raw_evts = raw_inc.get("rawEvents") or raw_inc.get("triggeringEvents") or []
+                        if isinstance(raw_evts, list) and raw_evts:
+                            persisted_cnt = await self.persist_events_for_incident(existing_inc, raw_evts)
+                            if persisted_cnt > 0:
+                                resolutions_synced += 1
                 except Exception:
                     pass
                 if existing_inc.ai_verdict is None and auto_triage_llm:
@@ -2250,6 +2564,108 @@ class FortiSIEMService:
             "updated": updated,
             "source": source_type,
             "message": f"Resolution successfully synchronized for incident '{inc.incident_id}'.",
+        }
+
+    async def fetch_incident_events(
+        self,
+        incident_id: str,
+        force_refresh: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        On-demand fetch and persistence of raw security events for an existing incident.
+        Probes FortiSIEM triggeringEvents (JSON/XML) and falls back to bounded eventQuery
+        over the incident window when triggeringEvents returns empty.
+        """
+        clean_id = str(incident_id).strip()
+        q = await self.db.execute(
+            select(Incident).where(
+                or_(Incident.incident_id == clean_id, Incident.id == clean_id)
+            ).options(selectinload(Incident.events))
+        )
+        inc = q.scalar_one_or_none()
+        if not inc:
+            raise HTTPException(status_code=404, detail=f"Incident '{clean_id}' not found in database.")
+
+        existing_cnt = len(inc.events or [])
+        if existing_cnt > 0 and not force_refresh:
+            return {
+                "success": True,
+                "incident_id": inc.incident_id,
+                "db_id": inc.id,
+                "event_count": existing_cnt,
+                "newly_persisted": 0,
+                "source": "DATABASE_CACHE",
+                "message": f"{existing_cnt} raw event(s) already recorded for incident '{inc.incident_id}'.",
+            }
+
+        FortiSIEMService.sync_runtime_settings()
+        if not (settings.FORTISIEM_HOST and settings.FORTISIEM_HOST.strip()):
+            raise HTTPException(
+                status_code=400,
+                detail="FortiSIEM Supervisor host is not configured. Configure it under Agent Configuration first.",
+            )
+
+        base_url = settings.FORTISIEM_HOST.strip().rstrip("/")
+        auth = (
+            (settings.FORTISIEM_USERNAME, settings.FORTISIEM_PASSWORD)
+            if (settings.FORTISIEM_USERNAME and settings.FORTISIEM_PASSWORD)
+            else None
+        )
+
+        probe_payload: Dict[str, Any] = dict(inc.raw_payload) if isinstance(inc.raw_payload, dict) else {}
+        if force_refresh:
+            probe_payload.pop("rawEvents", None)
+            probe_payload.pop("triggeringEvents", None)
+        probe_payload.setdefault("incidentId", inc.incident_id)
+        if inc.first_seen_epoch:
+            probe_payload.setdefault("incidentFirstSeen", inc.first_seen_epoch)
+        if inc.last_seen_epoch:
+            probe_payload.setdefault("incidentLastSeen", inc.last_seen_epoch)
+        if inc.reporting_ip:
+            probe_payload.setdefault("incidentRptIp", inc.reporting_ip)
+        if inc.source_ip:
+            probe_payload.setdefault("sourceIp", inc.source_ip)
+
+        async with httpx.AsyncClient(
+            verify=settings.FORTISIEM_VERIFY_SSL,
+            timeout=settings.FORTISIEM_TIMEOUT,
+        ) as client:
+            await self._enrich_triggering_events(
+                client=client,
+                base_url=base_url,
+                incident_id=inc.incident_id,
+                auth=auth,
+                incident_data=probe_payload,
+                timeout=max(10.0, float(settings.FORTISIEM_TIMEOUT or 10.0)),
+                allow_event_query_fallback=True,
+            )
+
+        raw_evts = probe_payload.get("rawEvents") or probe_payload.get("triggeringEvents") or []
+        if not isinstance(raw_evts, list) or len(raw_evts) == 0:
+            return {
+                "success": True,
+                "incident_id": inc.incident_id,
+                "db_id": inc.id,
+                "event_count": existing_cnt,
+                "newly_persisted": 0,
+                "source": "LIVE",
+                "message": (
+                    f"FortiSIEM returned 0 triggering or matching window events for incident '{inc.incident_id}'. "
+                    "Statistical anomaly alerts or purged retention windows may not retain individual raw logs on Supervisor."
+                ),
+            }
+
+        persisted_cnt = await self.persist_events_for_incident(inc, raw_evts, replace=force_refresh)
+        await self.db.commit()
+
+        return {
+            "success": True,
+            "incident_id": inc.incident_id,
+            "db_id": inc.id,
+            "event_count": len(inc.events or []),
+            "newly_persisted": persisted_cnt,
+            "source": "LIVE",
+            "message": f"Fetched and saved {persisted_cnt} raw event(s) from FortiSIEM for incident '{inc.incident_id}'.",
         }
 
     async def get_live_incident_state(self, incident_id: str) -> Dict[str, Any]:

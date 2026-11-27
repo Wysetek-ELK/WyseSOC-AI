@@ -510,6 +510,16 @@ export interface FortiSIEMSingleSyncResponse {
   message: string;
 }
 
+export interface FortiSIEMFetchEventsResponse {
+  success: boolean;
+  incident_id: string;
+  db_id: string;
+  event_count: number;
+  newly_persisted: number;
+  source: string;
+  message: string;
+}
+
 export interface FortiSIEMSchedulerStatusResponse {
   is_running: boolean;
   interval_seconds: number;
@@ -1979,6 +1989,22 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: `Failed to sync resolution for incident '${incidentId}'` }));
       throw new Error(err.detail || "Single incident resolution sync error");
+    }
+    return res.json();
+  },
+
+  async fetchFortiSiemIncidentEvents(
+    incidentId: string,
+    forceRefresh = false
+  ): Promise<FortiSIEMFetchEventsResponse> {
+    const q = forceRefresh ? "?force_refresh=true" : "";
+    const res = await fetchWithAuth(
+      `${API_BASE}/fortisiem/incident/${encodeURIComponent(incidentId)}/fetch-events${q}`,
+      { method: "POST" }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: `Failed to fetch raw events for incident '${incidentId}'` }));
+      throw new Error(err.detail || "Failed to fetch raw events from FortiSIEM");
     }
     return res.json();
   },

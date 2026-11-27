@@ -62,6 +62,8 @@ export default function AITriageWorkbenchDetailPage({
   const [verdictError, setVerdictError] = useState<string | null>(null);
   const [syncingResolution, setSyncingResolution] = useState(false);
   const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
+  const [fetchingEvents, setFetchingEvents] = useState(false);
+  const [eventsNotice, setEventsNotice] = useState<{ type: "success" | "info" | "error"; text: string } | null>(null);
   const [llmOnline, setLlmOnline] = useState<boolean | null>(null);
   const [promptInspectorOpen, setPromptInspectorOpen] = useState(false);
 
@@ -118,6 +120,34 @@ export default function AITriageWorkbenchDetailPage({
       setVerdictError(err.message || "Failed to generate AI verdict from Local LLM.");
     } finally {
       setAnalyzing(false);
+    }
+  };
+
+  const handleFetchRawEvents = async (forceRefresh = false) => {
+    if (!incident) return;
+    setFetchingEvents(true);
+    setEventsNotice(null);
+    try {
+      const res = await api.fetchFortiSiemIncidentEvents(incident.incident_id, forceRefresh);
+      const refreshed = await api.getIncidentDetail(incidentId, blindReviewMode);
+      setIncident(refreshed);
+      try {
+        const mp = await api.getIncidentModelPayload(incidentId);
+        setModelPayload(mp);
+      } catch {
+        // ignore if model payload refresh fails
+      }
+      setEventsNotice({
+        type: res.event_count > 0 ? "success" : "info",
+        text: res.message,
+      });
+    } catch (err: any) {
+      setEventsNotice({
+        type: "error",
+        text: err.message || "Failed to fetch raw events from FortiSIEM.",
+      });
+    } finally {
+      setFetchingEvents(false);
     }
   };
 
@@ -1175,15 +1205,60 @@ export default function AITriageWorkbenchDetailPage({
       {/* Tab 2: Raw Events Explorer */}
       {activeTab === "events" && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs text-slate-400 font-mono">
               Displaying all {incident.events.length} raw security event logs and vendor attributes
             </span>
+            <button
+              type="button"
+              onClick={() => handleFetchRawEvents(incident.events.length > 0)}
+              disabled={fetchingEvents}
+              data-testid="fetch-raw-events-btn"
+              className="flex items-center gap-1.5 rounded-md border border-cyan-800/80 bg-cyan-950/60 hover:bg-cyan-900/70 disabled:opacity-50 px-2.5 py-1 text-xs font-semibold text-cyan-300 transition-colors"
+            >
+              {fetchingEvents ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Fetching from FortiSIEM...</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>{incident.events.length > 0 ? "Refresh Raw Events" : "Fetch Raw Events from FortiSIEM"}</span>
+                </>
+              )}
+            </button>
           </div>
 
+          {eventsNotice && (
+            <div
+              className={`rounded-lg border p-2.5 text-xs flex items-center justify-between gap-2 ${
+                eventsNotice.type === "success"
+                  ? "border-emerald-800 bg-emerald-950/40 text-emerald-200"
+                  : eventsNotice.type === "error"
+                  ? "border-rose-800 bg-rose-950/40 text-rose-200"
+                  : "border-amber-800 bg-amber-950/40 text-amber-200"
+              }`}
+            >
+              <span>{eventsNotice.text}</span>
+              <button type="button" onClick={() => setEventsNotice(null)} className="text-[11px] hover:underline shrink-0">
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {incident.events.length === 0 ? (
-            <div className="p-8 rounded-lg border border-slate-800 bg-slate-950 text-center text-xs text-slate-400 font-mono">
-              No raw security events recorded for this incident.
+            <div className="p-8 rounded-lg border border-slate-800 bg-slate-950 text-center text-xs text-slate-400 font-mono space-y-3">
+              <div>No raw security events recorded for this incident.</div>
+              <button
+                type="button"
+                onClick={() => handleFetchRawEvents(false)}
+                disabled={fetchingEvents}
+                className="inline-flex items-center gap-1.5 rounded-md border border-cyan-700 bg-cyan-950/70 hover:bg-cyan-900 px-3 py-1.5 text-xs font-semibold text-cyan-200 disabled:opacity-50"
+              >
+                {fetchingEvents ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                <span>{fetchingEvents ? "Fetching from FortiSIEM..." : "Fetch Raw Events from FortiSIEM"}</span>
+              </button>
             </div>
           ) : (
             <div className="space-y-2.5">

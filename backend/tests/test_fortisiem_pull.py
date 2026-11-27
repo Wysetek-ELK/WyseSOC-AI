@@ -619,5 +619,215 @@ async def test_fortisiem_sync_all_resolutions_endpoint(client: AsyncClient, admi
     assert "resolutions_updated" in data
 
 
+@pytest.mark.asyncio
+async def test_fetch_events_empty_list_fallback_to_legacy_xml_and_persist(
+    client: AsyncClient,
+    admin_token: str,
+    db_session: AsyncSession,
+    monkeypatch,
+):
+    """
+    Verify that when /pub/incident/triggeringEvents returns HTTP 200 [],
+    _enrich_triggering_events does NOT stop early and falls back to /incident/triggeringEvents XML,
+    persisting IncidentEvent rows on demand via /api/fortisiem/incident/{id}/fetch-events.
+    """
+    import respx
+    import httpx
+
+    ingestion = IngestionService(db_session)
+    await ingestion.ingest_single_json(
+        {
+            "incidentId": "1616401",
+            "title": "Firewall Denied Outbound XML Fallback Test",
+            "eventType": "PH_RULE_ANOMALY_TRAFFIC_DENIED_OUTBOUND_PORT",
+            "severity": "MEDIUM",
+            "custId": 2001,
+            "rawEvents": [],
+        },
+        filename="1616401.json",
+        username="test",
+    )
+
+    monkeypatch.setattr(settings, "FORTISIEM_HOST", "https://192.0.2.10")
+    monkeypatch.setattr(settings, "FORTISIEM_USERNAME", "api_user")
+    monkeypatch.setattr(settings, "FORTISIEM_PASSWORD", "api_pass")
+    monkeypatch.setattr(settings, "FORTISIEM_MOCK_FALLBACK", False)
+
+    xml_events = """<?xml version="1.0" encoding="UTF-8"?>
+<events>
+  <event id="evt-xml-1616401" eventType="PH_DEV_MON_FW_DENY" receiveTime="1795669535000">
+    <rawMessage>id=firewall action=deny proto=17 dstport=8801</rawMessage>
+    <attributes>
+      <attribute name="Destination Port">8801</attribute>
+      <attribute name="IP Protocol">17</attribute>
+    </attributes>
+  </event>
+</events>"""
+
+    with respx.mock(assert_all_called=False) as respx_mock:
+        respx_mock.get("https://192.0.2.10/phoenix/rest/pub/incident/triggeringEvents").mock(
+            return_value=httpx.Response(200, json=[])
+        )
+        respx_mock.get("https://192.0.2.10/phoenix/rest/incident/triggeringEvents").mock(
+            return_value=httpx.Response(200, text=xml_events, headers={"Content-Type": "application/xml"})
+        )
+
+        res = await client.post(
+            "/api/fortisiem/incident/1616401/fetch-events",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["success"] is True
+        assert data["event_count"] == 1
+        assert data["newly_persisted"] == 1
+
+    det = await client.get(
+        "/api/incidents/1616401",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert det.status_code == 200
+    assert len(det.json()["events"]) == 1
+    assert det.json()["events"][0]["attributes"]["Destination Port"] == "8801"
+
+
+@pytest.mark.asyncio
+async def test_fetch_events_anomaly_window_event_query_fallback(
+    client: AsyncClient,
+    admin_token: str,
+    db_session: AsyncSession,
+    monkeypatch,
+):
+    """
+    Verify that when all triggeringEvents endpoints return [] for an anomaly rule
+    (like PH_RULE_ANOMALY_TRAFFIC_DENIED_OUTBOUND_PORT), fetch-events falls back to
+    FortiSIEM eventQuery over [incidentFirstSeen, incidentLastSeen] and persists events.
+    """
+    import respx
+    import httpx
+
+    ingestion = IngestionService(db_session)
+    await ingestion.ingest_single_json(
+        {
+            "incidentId": "16164",
+            "incidentTitle": "Sudden Increase in Firewall Denied Outbound Traffic To protocol 17 and port 8801",
+            "eventName": "Sudden Increase In Firewall Denied Outbound Traffic To A Specific TCP/UDP port",
+            "eventType": "PH_RULE_ANOMALY_TRAFFIC_DENIED_OUTBOUND_PORT",
+            "severity": "MEDIUM",
+            "custId": 2001,
+            "incidentRptIp": "45.64.199.219",
+            "incidentTarget": "destIpPort:8801, ",
+            "incidentDetailJson": {"ipProto": 17, "totEventCount": 702},
+            "incidentFirstSeen": 1795669530000,
+            "incidentLastSeen": 1795669830000,
+            "rawEvents": [],
+        },
+        filename="16164.json",
+        username="test",
+    )
+
+    monkeypatch.setattr(settings, "FORTISIEM_HOST", "https://192.0.2.10")
+    monkeypatch.setattr(settings, "FORTISIEM_USERNAME", "api_user")
+    monkeypatch.setattr(settings, "FORTISIEM_PASSWORD", "api_pass")
+    monkeypatch.setattr(settings, "FORTISIEM_MOCK_FALLBACK", False)
+
+    with respx.mock(assert_all_called=False) as respx_mock:
+        respx_mock.get("https://192.0.2.10/phoenix/rest/pub/incident/triggeringEvents").mock(
+            return_value=httpx.Response(200, json=[])
+        )
+        respx_mock.get("https://192.0.2.10/phoenix/rest/incident/triggeringEvents").mock(
+            return_value=httpx.Response(200, json=[])
+        )
+        eq_route = respx_mock.post("https://192.0.2.10/phoenix/rest/query/eventQuery").mock(
+            return_value=httpx.Response(200, text="<queryId>q-16164</queryId>", headers={"Content-Type": "application/xml"})
+        )
+        respx_mock.get("https://192.0.2.10/phoenix/rest/query/progress/q-16164").mock(
+            return_value=httpx.Response(200, text="100")
+        )
+        respx_mock.get("https://192.0.2.10/phoenix/rest/query/events/q-16164/0/100").mock(
+            return_value=httpx.Response(
+                200,
+                json=[
+                    {"eventId": "evt-q-1", "eventType": "FW_DENY", "rawMessage": "src=10.1.1.5 dstport=8801 proto=17"},
+                    {"eventId": "evt-q-2", "eventType": "FW_DENY", "rawMessage": "src=10.1.1.6 dstport=8801 proto=17"},
+                ],
+            )
+        )
+
+        res = await client.post(
+            "/api/fortisiem/incident/16164/fetch-events",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["event_count"] == 2
+        assert data["newly_persisted"] == 2
+        assert eq_route.called
+        sent_xml = eq_route.calls[0].request.content.decode("utf-8")
+        assert "reptDevIpAddr = '45.64.199.219'" in sent_xml
+        assert "destIpPort = 8801" in sent_xml
+        assert "ipProto = 17" in sent_xml
+        assert "<CustId>2001</CustId>" in sent_xml
+
+
+@pytest.mark.asyncio
+async def test_pull_all_backfills_zero_event_cached_incident(
+    client: AsyncClient,
+    admin_token: str,
+    db_session: AsyncSession,
+    monkeypatch,
+):
+    """Verify pull_all_incidents automatically backfills events for already-cached 0-event incidents."""
+    import respx
+    import httpx
+
+    ingestion = IngestionService(db_session)
+    await ingestion.ingest_single_json(
+        {
+            "incidentId": "1616402",
+            "title": "Cached Zero Event Incident",
+            "eventType": "PH_RULE_TEST_BACKFILL",
+            "severity": "MEDIUM",
+            "rawEvents": [],
+        },
+        filename="1616402.json",
+        username="test",
+    )
+
+    monkeypatch.setattr(settings, "FORTISIEM_HOST", "https://192.0.2.10")
+    monkeypatch.setattr(settings, "FORTISIEM_USERNAME", "api_user")
+    monkeypatch.setattr(settings, "FORTISIEM_PASSWORD", "api_pass")
+    monkeypatch.setattr(settings, "FORTISIEM_MOCK_FALLBACK", False)
+
+    with respx.mock(assert_all_called=False) as respx_mock:
+        respx_mock.get("https://192.0.2.10/phoenix/rest/pub/incident").mock(
+            return_value=httpx.Response(
+                200,
+                json={"data": [{"incidentId": "1616402", "eventType": "PH_RULE_TEST_BACKFILL", "incidentTitle": "Cached Zero Event Incident"}]},
+            )
+        )
+        respx_mock.get("https://192.0.2.10/phoenix/rest/pub/incident/triggeringEvents").mock(
+            return_value=httpx.Response(
+                200,
+                json=[{"eventId": "evt-bf-1", "eventType": "FW_DENY", "rawMessage": "backfilled log line"}],
+            )
+        )
+
+        pull_res = await client.post(
+            "/api/fortisiem/pull-all",
+            json={"max_count": 10, "auto_triage_llm": False, "force_refresh": False},
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert pull_res.status_code == 200
+
+    det = await client.get(
+        "/api/incidents/1616402",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert det.status_code == 200
+    assert len(det.json()["events"]) == 1
+    assert det.json()["events"][0]["raw_log"] == "backfilled log line"
+
+
 
 

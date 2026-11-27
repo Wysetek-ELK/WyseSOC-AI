@@ -25,6 +25,7 @@ from app.schemas.fortisiem import (
     FortiSIEMRulePullResponse,
     FortiSIEMSyncResolutionsResponse,
     FortiSIEMSingleSyncResponse,
+    FortiSIEMFetchEventsResponse,
 )
 from app.services.fortisiem_service import FortiSIEMService
 from app.services.fortisiem_scheduler import fortisiem_scheduler
@@ -387,3 +388,19 @@ async def sync_single_incident_resolution(
     service = FortiSIEMService(db)
     result = await service.sync_single_incident_resolution(incident_id)
     return FortiSIEMSingleSyncResponse(**result)
+
+
+@router.post("/incident/{incident_id}/fetch-events", response_model=FortiSIEMFetchEventsResponse)
+async def fetch_incident_raw_events(
+    incident_id: str,
+    force_refresh: bool = Query(False, description="Re-fetch and replace raw events even if already cached"),
+    current_user: User = Depends(require_role(["Administrator", "SOC Analyst"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    On-demand fetch of triggering/raw security events from FortiSIEM for an existing incident,
+    falling back across REST endpoints and event-window queries when triggeringEvents is empty.
+    """
+    service = FortiSIEMService(db)
+    result = await service.fetch_incident_events(incident_id, force_refresh=force_refresh)
+    return FortiSIEMFetchEventsResponse(**result)

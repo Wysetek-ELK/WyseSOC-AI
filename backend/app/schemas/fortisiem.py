@@ -72,6 +72,16 @@ class FortiSIEMSingleSyncResponse(BaseModel):
     message: str = ""
 
 
+class FortiSIEMFetchEventsResponse(BaseModel):
+    success: bool
+    incident_id: str
+    db_id: str
+    event_count: int = 0
+    newly_persisted: int = 0
+    source: str = "LIVE"
+    message: str = ""
+
+
 class FortiSIEMSchedulerStatusResponse(BaseModel):
     is_running: bool
     interval_seconds: int = 180
