@@ -1,0 +1,27 @@
+{
+  "phase": "AIS_3_2",
+  "primary_status": "BLOCKED",
+  "reason": "Engineering architecture, migration 018, frontend compact UI, unit/integration tests, and governed UPLA deployment to Server 1 (0e492c90b0ebf0f967ab9488774052c83e90792b) completed cleanly, but live Server 1 -> Server 2 GPU development runs and authenticated CDP GUI screenshots remain blocked pending Server 1 Admin authentication / Chrome DevToolsActivePort.",
+  "deployed_commit_sha": "0e492c90b0ebf0f967ab9488774052c83e90792b",
+  "upla_execution_id": "upla-20261128-132159-9732f9",
+  "local_rules_mapped": 51,
+  "supported_archetypes": 11,
+  "supported_org_context_types": 17,
+  "ais33_plan": {
+    "cohort_key": "AIS_3_3_INDEPENDENT_HOLDOUT",
+    "status": "ISOLATION_PLAN_PREPARED_NOT_EVALUATED",
+    "recommended_minimum_total": 240,
+    "recommended_min_tp_incidents": 60,
+    "recommended_min_fp_incidents": 180,
+    "n_overall_for_ci_halfwidth": 217,
+    "statistical_rationale": "N=100 at ~18% TP prevalence yields only 18 TPs (95% Wilson CI width >20% on recall). To bound TP recall >=95% and overall accuracy >=90% within +/-4.0% with dual-reviewer GT-3 certification, >= 240 untouched incidents (including >= 60 TPs across all 11 archetypes) is required.",
+    "contamination_guards": [
+      "Exclude all AIS_2_6E_FROZEN_20 IDs & raw evidence hashes",
+      "Exclude all AIS_3_0_INDEPENDENT_HOLDOUT_100 IDs & raw evidence hashes",
+      "Exclude all AIS_3_2_DEVELOPMENT IDs & raw evidence hashes",
+      "Exclude all LearningRecord & PromptCapture-exposed incidents",
+      "Require dual independent blind human review (GT-3) before evaluation",
+      "Freeze AIS 3.2 candidate policy & validator versions prior to AIS 3.3 execution"
+    ]
+  }
+}

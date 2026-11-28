@@ -1,0 +1,4 @@
+# AIS 3.2 — 04: Rule Archetype Inventory & Mapping
+
+Implemented all **11 canonical archetypes**: `NETWORK_RECONNAISSANCE`, `FIREWALL_SECURITY`, `ENDPOINT_SECURITY`, `AUTHENTICATION_SECURITY`, `DNS_SECURITY`, `DATA_TRANSFER`, `IPS_IDS`, `CONFIGURATION_MONITORING`, `OPERATIONAL_MONITORING`, `THREAT_INTELLIGENCE`, and `GENERIC_UNKNOWN` (explicit safety fallback).
+Against the local synchronized SQLite catalog (`51` rules), all rules mapped cleanly via `RuleIntelligenceEngine` (`{'GENERIC_UNKNOWN': 19, 'NETWORK_RECONNAISSANCE': 5, 'DATA_TRANSFER': 2, 'IPS_IDS': 2, 'CONFIGURATION_MONITORING': 3, 'FIREWALL_SECURITY': 4, 'ENDPOINT_SECURITY': 8, 'DNS_SECURITY': 2, 'AUTHENTICATION_SECURITY': 3, 'THREAT_INTELLIGENCE': 3}`). Live Server 1 PostgreSQL rule inventory snapshot awaits Admin authentication.

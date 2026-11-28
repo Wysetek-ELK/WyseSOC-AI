@@ -1,0 +1,321 @@
+{
+  "$defs": {
+    "ContractApprovalState": {
+      "enum": [
+        "PROVISIONAL",
+        "APPROVED",
+        "DRAFT",
+        "REVOKED"
+      ],
+      "title": "ContractApprovalState",
+      "type": "string"
+    },
+    "RuleConditionClause": {
+      "properties": {
+        "attribute": {
+          "title": "Attribute",
+          "type": "string"
+        },
+        "operator": {
+          "title": "Operator",
+          "type": "string"
+        },
+        "expected": {
+          "title": "Expected",
+          "type": "string"
+        },
+        "logical_op": {
+          "default": "AND",
+          "title": "Logical Op",
+          "type": "string"
+        },
+        "negated": {
+          "default": false,
+          "title": "Negated",
+          "type": "boolean"
+        },
+        "nested_group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nested Group"
+        },
+        "evaluation_status": {
+          "default": "UNKNOWN",
+          "title": "Evaluation Status",
+          "type": "string"
+        },
+        "observed_values": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Observed Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "attribute",
+        "operator",
+        "expected"
+      ],
+      "title": "RuleConditionClause",
+      "type": "object"
+    }
+  },
+  "description": "Complete typed contract for universal rule-aware verdict intelligence (AIS 3.2).",
+  "properties": {
+    "contract_id": {
+      "title": "Contract Id",
+      "type": "string"
+    },
+    "contract_version": {
+      "default": 1,
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "fortisiem_rule_id": {
+      "title": "Fortisiem Rule Id",
+      "type": "string"
+    },
+    "rule_name": {
+      "title": "Rule Name",
+      "type": "string"
+    },
+    "rule_definition_hash": {
+      "title": "Rule Definition Hash",
+      "type": "string"
+    },
+    "rule_archetype": {
+      "title": "Rule Archetype",
+      "type": "string"
+    },
+    "secondary_archetype": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Secondary Archetype"
+    },
+    "mapping_rationale": {
+      "default": "",
+      "title": "Mapping Rationale",
+      "type": "string"
+    },
+    "detection_objective": {
+      "title": "Detection Objective",
+      "type": "string"
+    },
+    "detection_category": {
+      "default": "",
+      "title": "Detection Category",
+      "type": "string"
+    },
+    "source_vendor": {
+      "default": "FortiSIEM",
+      "title": "Source Vendor",
+      "type": "string"
+    },
+    "rule_conditions": {
+      "items": {
+        "$ref": "#/$defs/RuleConditionClause"
+      },
+      "title": "Rule Conditions",
+      "type": "array"
+    },
+    "aggregation_logic": {
+      "default": "",
+      "title": "Aggregation Logic",
+      "type": "string"
+    },
+    "thresholds": {
+      "additionalProperties": true,
+      "title": "Thresholds",
+      "type": "object"
+    },
+    "time_window": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Time Window"
+    },
+    "group_by_fields": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Group By Fields",
+      "type": "array"
+    },
+    "correlation_requirements": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Correlation Requirements",
+      "type": "array"
+    },
+    "mandatory_evidence_fields": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Mandatory Evidence Fields",
+      "type": "array"
+    },
+    "optional_evidence_fields": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Optional Evidence Fields",
+      "type": "array"
+    },
+    "tp_criteria": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tp Criteria",
+      "type": "array"
+    },
+    "fp_criteria": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Fp Criteria",
+      "type": "array"
+    },
+    "inconclusive_criteria": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Inconclusive Criteria",
+      "type": "array"
+    },
+    "authorization_requirements": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Authorization Requirements",
+      "type": "array"
+    },
+    "known_legitimate_exceptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Known Legitimate Exceptions",
+      "type": "array"
+    },
+    "evidence_completeness_requirements": {
+      "additionalProperties": true,
+      "title": "Evidence Completeness Requirements",
+      "type": "object"
+    },
+    "approved_organizational_context_types": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Approved Organizational Context Types",
+      "type": "array"
+    },
+    "claim_validation_requirements": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Claim Validation Requirements",
+      "type": "array"
+    },
+    "severity_interpretation": {
+      "default": "",
+      "title": "Severity Interpretation",
+      "type": "string"
+    },
+    "detection_limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Detection Limitations",
+      "type": "array"
+    },
+    "approval_state": {
+      "$ref": "#/$defs/ContractApprovalState",
+      "default": "PROVISIONAL"
+    },
+    "reviewer": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reviewer"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "policy_provenance": {
+      "default": "RULE_INTELLIGENCE_ENGINE_V3_2",
+      "title": "Policy Provenance",
+      "type": "string"
+    },
+    "contract_hash": {
+      "default": "",
+      "title": "Contract Hash",
+      "type": "string"
+    },
+    "is_supported_rule": {
+      "default": true,
+      "title": "Is Supported Rule",
+      "type": "boolean"
+    },
+    "unsupported_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Unsupported Reason"
+    },
+    "rule_overrides": {
+      "additionalProperties": true,
+      "title": "Rule Overrides",
+      "type": "object"
+    }
+  },
+  "required": [
+    "contract_id",
+    "fortisiem_rule_id",
+    "rule_name",
+    "rule_definition_hash",
+    "rule_archetype",
+    "detection_objective"
+  ],
+  "title": "DynamicRuleContract",
+  "type": "object"
+}

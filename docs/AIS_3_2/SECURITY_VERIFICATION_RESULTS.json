@@ -1,0 +1,23 @@
+{
+  "upla_execution_id": "upla-20261128-132159-9732f9",
+  "new_secret_findings": 0,
+  "new_static_security_findings": 0,
+  "pre_existing_waived_findings": {
+    "secret_scanner": 8,
+    "static_security_scanner": 5,
+    "pip_audit": "NOT_VERIFIED_TOOL_MISSING",
+    "npm_audit": "PASS"
+  },
+  "live_server1_unauth_rbac_check": {
+    "endpoint": "GET /api/ais32/overview",
+    "http_status": 401
+  },
+  "unit_tested_controls": [
+    "RBAC 401/403",
+    "Cross-tenant 403 isolation",
+    "Unsafe override key blocking",
+    "Ground truth sanitization",
+    "Prompt injection closing-tag escape",
+    "Auto-closure/remediation permanently disabled"
+  ]
+}

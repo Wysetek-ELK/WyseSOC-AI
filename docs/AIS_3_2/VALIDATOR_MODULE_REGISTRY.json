@@ -1,0 +1,98 @@
+{
+  "validator_version": "3.2.0",
+  "module_count": 11,
+  "legacy_delegation": [
+    "CrowdStrike (PH_RULE_CS_*)",
+    "Prisma SASE (PH_RULE_PRISMA_SASE_*)"
+  ],
+  "modules": [
+    {
+      "module_name": "NetworkReconnaissanceValidator",
+      "canonical_archetype": "NETWORK_RECONNAISSANCE",
+      "requires_endpoint_process_for_tp": false,
+      "requires_affirmative_auth_for_fp": true,
+      "allows_siem_reported_detection_tp": true,
+      "allows_blocked_traffic_as_tp": true
+    },
+    {
+      "module_name": "FirewallSecurityValidator",
+      "canonical_archetype": "FIREWALL_SECURITY",
+      "requires_endpoint_process_for_tp": false,
+      "requires_affirmative_auth_for_fp": true,
+      "allows_siem_reported_detection_tp": true,
+      "allows_blocked_traffic_as_tp": true
+    },
+    {
+      "module_name": "EndpointSecurityValidator",
+      "canonical_archetype": "ENDPOINT_SECURITY",
+      "requires_endpoint_process_for_tp": true,
+      "requires_affirmative_auth_for_fp": true,
+      "allows_siem_reported_detection_tp": false,
+      "allows_blocked_traffic_as_tp": true
+    },
+    {
+      "module_name": "AuthenticationValidator",
+      "canonical_archetype": "AUTHENTICATION_SECURITY",
+      "requires_endpoint_process_for_tp": false,
+      "requires_affirmative_auth_for_fp": true,
+      "allows_siem_reported_detection_tp": true,
+      "allows_blocked_traffic_as_tp": true
+    },
+    {
+      "module_name": "DNSValidator",
+      "canonical_archetype": "DNS_SECURITY",
+      "requires_endpoint_process_for_tp": false,
+      "requires_affirmative_auth_for_fp": true,
+      "allows_siem_reported_detection_tp": true,
+      "allows_blocked_traffic_as_tp": true
+    },
+    {
+      "module_name": "DataTransferValidator",
+      "canonical_archetype": "DATA_TRANSFER",
+      "requires_endpoint_process_for_tp": false,
+      "requires_affirmative_auth_for_fp": true,
+      "allows_siem_reported_detection_tp": true,
+      "allows_blocked_traffic_as_tp": false
+    },
+    {
+      "module_name": "IPSIDSValidator",
+      "canonical_archetype": "IPS_IDS",
+      "requires_endpoint_process_for_tp": false,
+      "requires_affirmative_auth_for_fp": true,
+      "allows_siem_reported_detection_tp": true,
+      "allows_blocked_traffic_as_tp": true
+    },
+    {
+      "module_name": "ConfigurationMonitoringValidator",
+      "canonical_archetype": "CONFIGURATION_MONITORING",
+      "requires_endpoint_process_for_tp": false,
+      "requires_affirmative_auth_for_fp": true,
+      "allows_siem_reported_detection_tp": true,
+      "allows_blocked_traffic_as_tp": false
+    },
+    {
+      "module_name": "OperationalMonitoringValidator",
+      "canonical_archetype": "OPERATIONAL_MONITORING",
+      "requires_endpoint_process_for_tp": false,
+      "requires_affirmative_auth_for_fp": false,
+      "allows_siem_reported_detection_tp": true,
+      "allows_blocked_traffic_as_tp": false
+    },
+    {
+      "module_name": "ThreatIntelligenceValidator",
+      "canonical_archetype": "THREAT_INTELLIGENCE",
+      "requires_endpoint_process_for_tp": false,
+      "requires_affirmative_auth_for_fp": true,
+      "allows_siem_reported_detection_tp": true,
+      "allows_blocked_traffic_as_tp": true
+    },
+    {
+      "module_name": "UnknownRuleSafetyValidator",
+      "canonical_archetype": "GENERIC_UNKNOWN",
+      "requires_endpoint_process_for_tp": false,
+      "requires_affirmative_auth_for_fp": true,
+      "allows_siem_reported_detection_tp": false,
+      "allows_blocked_traffic_as_tp": false
+    }
+  ]
+}

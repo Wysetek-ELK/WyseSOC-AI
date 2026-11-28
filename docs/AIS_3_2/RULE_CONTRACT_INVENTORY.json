@@ -1,0 +1,1267 @@
+{
+  "source": "backend/ai_verdict.db (local synchronized rule catalog inspected read-only; live PostgreSQL rule inventory pending admin auth)",
+  "local_rules_mapped": 51,
+  "approved_contracts": 0,
+  "provisional_contracts": 51,
+  "archetype_distribution": {
+    "GENERIC_UNKNOWN": 19,
+    "NETWORK_RECONNAISSANCE": 5,
+    "DATA_TRANSFER": 2,
+    "IPS_IDS": 2,
+    "CONFIGURATION_MONITORING": 3,
+    "FIREWALL_SECURITY": 4,
+    "ENDPOINT_SECURITY": 8,
+    "DNS_SECURITY": 2,
+    "AUTHENTICATION_SECURITY": 3,
+    "THREAT_INTELLIGENCE": 3
+  },
+  "items": [
+    {
+      "fortisiem_rule_id": "RULE-CLOUD-006",
+      "rule_name": "AWS GuardDuty: Unauthorized IAM Access Key Secret Modification Combined with Unusual Multi-Region CloudTrail Activity",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-CLOUD-006-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "287dff442b31a8121759633ec970cdab6987ed22e63d7a6b23e7443dac936b36"
+    },
+    {
+      "fortisiem_rule_id": "RULE-CERT-035",
+      "rule_name": "Active Directory Certificate Services (ADCS): Golden Certificate Extraction via ESC1 Vulnerable Certificate Template Misconfiguration",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-CERT-035-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "3e17f7e08a3dc6e87dee2d30f6d9af2ead0ba3f3868541ef7f33cf174e0b1671"
+    },
+    {
+      "fortisiem_rule_id": "RULE-DISC-016",
+      "rule_name": "Adversary Reconnaissance: Automated Active Directory BloodHound LDAP Query Storm from Non-Administrative Laptop",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "NETWORK_RECONNAISSANCE",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-DISC-016-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp",
+        "network.source_ip",
+        "network.destination_port"
+      ],
+      "approved_organizational_context_types": [
+        "AUTHORIZED_SCANNER",
+        "SECURITY_ASSESSMENT_SYSTEM",
+        "INTERNAL_IP_RANGE",
+        "ASSET_INVENTORY",
+        "NETWORK_ZONE",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "ad9d3e653733e65030fb0b1b328da19e9ab8724fe37440369bd5f96916ed5623"
+    },
+    {
+      "fortisiem_rule_id": "RULE-SUPPLY-020",
+      "rule_name": "CI/CD Pipeline Security: Unauthorized Modification of GitHub Actions Runner Workflow Script with Secret Exfiltration Step",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "DATA_TRANSFER",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-SUPPLY-020-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "network.source_ip",
+        "network.destination_ip",
+        "network.direction",
+        "network.bytes_out",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "AUTHORIZED_DATA_TRANSFER",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "SERVICE_ACCOUNT",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "f6aabdd9dae925f844ba4955fdae432077bdbedf1a50c6794b6eb9ae9f3f916f"
+    },
+    {
+      "fortisiem_rule_id": "RULE-FILE-033",
+      "rule_name": "Carbon Black App Control: Execution of Unapproved Executable Blocked in User Temporary Directory on Financial Workstation",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-FILE-033-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "1fc2951fa32520f44a7fef4bb8037d9d5516fd92f7f9296bfd00b1d38f75aef8"
+    },
+    {
+      "fortisiem_rule_id": "RULE-IDPS-009",
+      "rule_name": "Cisco Firepower Threat Defense: Inbound Exploit Attempt Triggering Known OpenSSL Remote Buffer Overflow Vulnerability Signature",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "IPS_IDS",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-IDPS-009-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "network.source_ip",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "AUTHORIZED_SCANNER",
+        "SECURITY_ASSESSMENT_SYSTEM",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "CUSTOMER_EXCEPTION",
+        "MAINTENANCE_WINDOW"
+      ],
+      "contract_hash": "0f09c3cfe765f53beaa6426329e41257920e702af74ecd51ca6e1de29d050aff"
+    },
+    {
+      "fortisiem_rule_id": "RULE-ROUTER-030",
+      "rule_name": "Cisco IOS Core Switch: Unauthorized Configuration Modification via Unencrypted Telnet Session from Remote Subnet",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "CONFIGURATION_MONITORING",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-ROUTER-030-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "endpoint.hostname",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "APPROVED_CONFIG_CHANGE",
+        "MAINTENANCE_WINDOW",
+        "IDENTITY_INFO",
+        "SERVICE_ACCOUNT",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "8c1c4f6749ede4f6b3efe18653484447a556eb851db18d87384003b17f4c4f7f"
+    },
+    {
+      "fortisiem_rule_id": "RULE-VOIP-034",
+      "rule_name": "Cisco Unified Communications Manager: SIP Toll Fraud Pattern with Over 200 International Calls Initiated in 15 Minutes",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-VOIP-034-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "380af18a218e16c5a908661bdcd9755a73ecf8e750c00425d37db99bfa0d1d62"
+    },
+    {
+      "fortisiem_rule_id": "RULE-EDR-003",
+      "rule_name": "CrowdStrike Falcon: Suspicious Base64 Encoded PowerShell Command Execution with Memory Code Injection and Cobalt Strike Beacon Artifacts",
+      "source_vendor": "CrowdStrike",
+      "rule_archetype": "FIREWALL_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-EDR-003-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "network.destination_ip",
+        "network.source_ip",
+        "network.destination_port"
+      ],
+      "approved_organizational_context_types": [
+        "INTERNAL_IP_RANGE",
+        "NETWORK_ZONE",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "CUSTOMER_EXCEPTION",
+        "MAINTENANCE_WINDOW"
+      ],
+      "contract_hash": "632cfd229e609c0fc8dea4e0f898e4ef09e28fc4c4710926461dc0abe165590a"
+    },
+    {
+      "fortisiem_rule_id": "PH_RULE_CS_SUSPICIOUS_ACTIVITY",
+      "rule_name": "Crowdstrike: Suspicious Activity",
+      "source_vendor": "CrowdStrike",
+      "rule_archetype": "ENDPOINT_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-PH_RULE_CS_SUSPICIOUS_ACTIVITY-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "process.name",
+        "process.command_line",
+        "endpoint.hostname",
+        "user.name",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "SERVER_CLASSIFICATION",
+        "APPROVED_ADMIN_TOOL",
+        "APPROVED_SOFTWARE",
+        "SERVICE_ACCOUNT",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "59cab5a78d440de69c0895a3f020b5ee4b5aa41fe3c1a6753f2af8435baa28dd"
+    },
+    {
+      "fortisiem_rule_id": "PH_RULE_DEBUG_FUNNEL",
+      "rule_name": "Debug Funnel Rule",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-PH_RULE_DEBUG_FUNNEL-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "ab9bdc8c4d0cc28a467e1d532dfbaa2986f69a9543bda011289bbe758bb3ac07"
+    },
+    {
+      "fortisiem_rule_id": "RULE-WAF-004",
+      "rule_name": "F5 BIG-IP Advanced WAF: Remote Code Execution Exploit Payload via Malicious JNDI Lookup Attempt Directed at Core Banking API",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "IPS_IDS",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-WAF-004-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "network.source_ip",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "AUTHORIZED_SCANNER",
+        "SECURITY_ASSESSMENT_SYSTEM",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "CUSTOMER_EXCEPTION",
+        "MAINTENANCE_WINDOW"
+      ],
+      "contract_hash": "425b309d70dc710c0e6f1e2909dde3851ed6c3429300fb804e34b65206cd174e"
+    },
+    {
+      "fortisiem_rule_id": "RULE-NET-001",
+      "rule_name": "FortiGate Firewall: High Volume Distributed Inbound TCP Port Scan Detected Across Internal DMZ Web Subnets",
+      "source_vendor": "FortiGate",
+      "rule_archetype": "NETWORK_RECONNAISSANCE",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-NET-001-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp",
+        "network.source_ip",
+        "network.destination_port"
+      ],
+      "approved_organizational_context_types": [
+        "AUTHORIZED_SCANNER",
+        "SECURITY_ASSESSMENT_SYSTEM",
+        "INTERNAL_IP_RANGE",
+        "ASSET_INVENTORY",
+        "NETWORK_ZONE",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "c15007269a47276ed1ee8b94d46a15fbe646d05ded584034fff9091d870265f5"
+    },
+    {
+      "fortisiem_rule_id": "PH_RULE_FGT_Config_Change",
+      "rule_name": "FortiGate: Config Change Detected",
+      "source_vendor": "FortiGate",
+      "rule_archetype": "CONFIGURATION_MONITORING",
+      "secondary_archetype": null,
+      "contract_id": "DRC-PH_RULE_FGT_Config_Change-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "endpoint.hostname",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "APPROVED_CONFIG_CHANGE",
+        "MAINTENANCE_WINDOW",
+        "IDENTITY_INFO",
+        "SERVICE_ACCOUNT",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "89ebcb85808de2b8e4c3713d2740a453fdd510bf018082ccff59686c9a3285fa"
+    },
+    {
+      "fortisiem_rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN",
+      "rule_name": "Heavy TCP Host Scan",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "NETWORK_RECONNAISSANCE",
+      "secondary_archetype": null,
+      "contract_id": "DRC-PH_RULE_HEAVY_TCP_HOST_SCAN-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp",
+        "network.source_ip",
+        "network.destination_port"
+      ],
+      "approved_organizational_context_types": [
+        "AUTHORIZED_SCANNER",
+        "SECURITY_ASSESSMENT_SYSTEM",
+        "INTERNAL_IP_RANGE",
+        "ASSET_INVENTORY",
+        "NETWORK_ZONE",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "7c5963fc3f865db9b28328535cb8403c8784c6382fb106794a8247462848b05b"
+    },
+    {
+      "fortisiem_rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT",
+      "rule_name": "Heavy TCP Host Scan On Fixed Port",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "NETWORK_RECONNAISSANCE",
+      "secondary_archetype": null,
+      "contract_id": "DRC-PH_RULE_HEAVY_TCP_HOST_SCAN_ON_FIXED_PORT-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp",
+        "network.source_ip",
+        "network.destination_port"
+      ],
+      "approved_organizational_context_types": [
+        "AUTHORIZED_SCANNER",
+        "SECURITY_ASSESSMENT_SYSTEM",
+        "INTERNAL_IP_RANGE",
+        "ASSET_INVENTORY",
+        "NETWORK_ZONE",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "e1215f9726bdd933829bf92cf4ad0b14e1ee0058b12d2ac728b1330c70b3a66e"
+    },
+    {
+      "fortisiem_rule_id": "PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT",
+      "rule_name": "Heavy TCP Host Scan On Fixed Port",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "NETWORK_RECONNAISSANCE",
+      "secondary_archetype": null,
+      "contract_id": "DRC-PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp",
+        "network.source_ip",
+        "network.destination_port"
+      ],
+      "approved_organizational_context_types": [
+        "AUTHORIZED_SCANNER",
+        "SECURITY_ASSESSMENT_SYSTEM",
+        "INTERNAL_IP_RANGE",
+        "ASSET_INVENTORY",
+        "NETWORK_ZONE",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "0c363ca6f19501b8c52e02c9d6ca03fcd4a92fe1ccd73946b6f8583ddd3e4e6f"
+    },
+    {
+      "fortisiem_rule_id": "TEST_IMMUTABILITY",
+      "rule_name": "Immutability Verification Alert",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-TEST_IMMUTABILITY-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "a890ad4759dcf741848e2e273d2a0e4b42dc7a68f618a9afc8608e124c0d732b"
+    },
+    {
+      "fortisiem_rule_id": "RULE-DNS-022",
+      "rule_name": "Infoblox DNS Firewall: Internal Workstation Querying Domain Generated Algorithm (DGA) FQDNs at Anomalous High Rate",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "DNS_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-DNS-022-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "network.source_ip",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "SERVER_CLASSIFICATION",
+        "INTERNAL_IP_RANGE",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "NETWORK_ZONE",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "25aba6a61a195d0640d8858ce29eef05bb94741e1fd38dcf341aae8e356e0c76"
+    },
+    {
+      "fortisiem_rule_id": "RULE-API-027",
+      "rule_name": "Kong API Gateway: Excessive Inbound HTTP 401/403 Errors Indicating Automated Broken Object Level Authorization (BOLA) Fuzzing",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-API-027-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "80b1d04526aedf78538e40e7a0e8af5be893c15546ee7c619f45ed6192cca744"
+    },
+    {
+      "fortisiem_rule_id": "RULE-K8S-021",
+      "rule_name": "Kubernetes Audit Log: Privileged Pod Creation with HostPID and HostNetwork Access on Production EKS Node Group",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "ENDPOINT_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-K8S-021-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "user.name",
+        "endpoint.hostname",
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "SERVER_CLASSIFICATION",
+        "APPROVED_ADMIN_TOOL",
+        "APPROVED_SOFTWARE",
+        "SERVICE_ACCOUNT",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "0b001141dd944d54ddf09d723065f24792f66b2dc71d8f7af6adf7060a4e46c9"
+    },
+    {
+      "fortisiem_rule_id": "LEGACY_UNASSIGNED_EVENT",
+      "rule_name": "Legacy Unassigned Platform Incident",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-LEGACY_UNASSIGNED_EVENT-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "f1c8f35bd5b55a7a69f028100f1637db8c2619ddd023ff6f73bdaad04e192cac"
+    },
+    {
+      "fortisiem_rule_id": "RULE-PRIV-012",
+      "rule_name": "Linux Auditd Syscall Monitor: Unauthorized SUID Binary Privilege Escalation via Sudo Caching Bypass on Production Database Server",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "ENDPOINT_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-PRIV-012-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "user.name",
+        "endpoint.hostname",
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "SERVER_CLASSIFICATION",
+        "APPROVED_ADMIN_TOOL",
+        "APPROVED_SOFTWARE",
+        "SERVICE_ACCOUNT",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "80c2a2848035a3e3da2687add1362e48d8cf900c3dac4e92824646786b2d0bf7"
+    },
+    {
+      "fortisiem_rule_id": "RULE-COLL-017",
+      "rule_name": "Mass File Archiving Activity: Suspicious PowerShell 7z CLI Execution Archiving Financial Share Documents to AppData",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "ENDPOINT_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-COLL-017-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "process.name",
+        "process.command_line",
+        "endpoint.hostname",
+        "user.name",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "SERVER_CLASSIFICATION",
+        "APPROVED_ADMIN_TOOL",
+        "APPROVED_SOFTWARE",
+        "SERVICE_ACCOUNT",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "86faadeffdcd33881c31834b967c0def75d4282b685636881df36ea02af4ef39"
+    },
+    {
+      "fortisiem_rule_id": "RULE-AUTH-002",
+      "rule_name": "Microsoft Active Directory: Distributed Kerberos Pre-Authentication Brute Force Attack Targeting Privileged Domain Accounts",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "AUTHENTICATION_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-AUTH-002-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "user.name",
+        "endpoint.hostname",
+        "network.source_ip"
+      ],
+      "approved_organizational_context_types": [
+        "IDENTITY_INFO",
+        "SERVICE_ACCOUNT",
+        "INTERNAL_IP_RANGE",
+        "NETWORK_ZONE",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "36ad3451387b03b6ad94bb26e8659e889f125320601a79d8fed7ffeeb56e8a90"
+    },
+    {
+      "fortisiem_rule_id": "RULE-LAT-011",
+      "rule_name": "Microsoft Defender for Endpoint: Suspicious PsExec Lateral Movement Invocation with Pass-the-Hash Credentials on Server Farm",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "ENDPOINT_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-LAT-011-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "process.name",
+        "user.name",
+        "endpoint.hostname",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "SERVER_CLASSIFICATION",
+        "APPROVED_ADMIN_TOOL",
+        "APPROVED_SOFTWARE",
+        "SERVICE_ACCOUNT",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "3f5efa4fe92bf6ebcd12d23072ee182e932ab941dd3ecc467b012dc1f434508a"
+    },
+    {
+      "fortisiem_rule_id": "RULE-AZURE-028",
+      "rule_name": "Microsoft Entra ID: Global Administrator Role Granted to Unmanaged External Guest Account Without PIM Workflow Approval",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "CONFIGURATION_MONITORING",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-AZURE-028-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "endpoint.hostname",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "APPROVED_CONFIG_CHANGE",
+        "MAINTENANCE_WINDOW",
+        "IDENTITY_INFO",
+        "SERVICE_ACCOUNT",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "77d048f711973d25f9139f63990cfa2b1977b57a73fee66e7f0fc326596e4da9"
+    },
+    {
+      "fortisiem_rule_id": "RULE-CRED-014",
+      "rule_name": "Mimikatz LSASS Memory Dumping Pattern Observed via Unsigned Diagnostic Driver Loading Incident on Workstation",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "ENDPOINT_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-CRED-014-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "process.name",
+        "user.name",
+        "endpoint.hostname",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "SERVER_CLASSIFICATION",
+        "APPROVED_ADMIN_TOOL",
+        "APPROVED_SOFTWARE",
+        "SERVICE_ACCOUNT",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "d8e84494ae4994e94e2acc0b672c70c2a71e4ce5c9bcb6cb61cf54f7e0b46b7f"
+    },
+    {
+      "fortisiem_rule_id": "RULE-IOT-031",
+      "rule_name": "Nozomi Networks OT Guardian: Modbus TCP Function Code Write Command Issued to SCADA Programmable Logic Controller",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-IOT-031-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "f6d886bdaa88bcf724116052c54cdffb82c561e77c4060f484a8986e75194950"
+    },
+    {
+      "fortisiem_rule_id": "RULE-SSO-025",
+      "rule_name": "Okta Identity Engine: Multi-Factor Authentication Fatigue Spamming Followed by Successful Push Acceptance from New Device",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "AUTHENTICATION_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-SSO-025-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "user.name",
+        "endpoint.hostname",
+        "network.source_ip"
+      ],
+      "approved_organizational_context_types": [
+        "IDENTITY_INFO",
+        "SERVICE_ACCOUNT",
+        "INTERNAL_IP_RANGE",
+        "NETWORK_ZONE",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "6d6fc662900c6837d2086c047246233b0bfeab51c47be47543023faa8af0852e"
+    },
+    {
+      "fortisiem_rule_id": "RULE-READY-001",
+      "rule_name": "Okta Identity Engine: Privileged Credential Stuffing Attack Against Administrator Accounts [READY FOR APPROVAL]",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "ENDPOINT_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-READY-001-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "process.name",
+        "user.name",
+        "endpoint.hostname",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "SERVER_CLASSIFICATION",
+        "APPROVED_ADMIN_TOOL",
+        "APPROVED_SOFTWARE",
+        "SERVICE_ACCOUNT",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "0e30475885f26c6d1e34f94c680de0df3b26f9e3b0994be5927bb70c602616e7"
+    },
+    {
+      "fortisiem_rule_id": "RULE-DATABASE-026",
+      "rule_name": "Oracle Database Audit: Massive SELECT Query Extracting Over 500,000 Customer Credit Card Records Outside Business Hours",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-DATABASE-026-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "bff01565fb2cf123510798dab7d5f9a526cd7e6fcf0deb17ecb606ef3cb36df3"
+    },
+    {
+      "fortisiem_rule_id": "RULE-C2-018",
+      "rule_name": "Outbound Network Anomaly: Periodic Periodic HTTP POST Beacons to Dynamic Cloudflare Worker with Encrypted Payload",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "FIREWALL_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-C2-018-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "network.destination_ip",
+        "network.source_ip",
+        "network.destination_port"
+      ],
+      "approved_organizational_context_types": [
+        "INTERNAL_IP_RANGE",
+        "NETWORK_ZONE",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "CUSTOMER_EXCEPTION",
+        "MAINTENANCE_WINDOW"
+      ],
+      "contract_hash": "1faca759bd72749f5a5ea8c3f810140ec885c6ac06e5c89a553e5455d6538633"
+    },
+    {
+      "fortisiem_rule_id": "RULE-EXFIL-005",
+      "rule_name": "Palo Alto Networks NGFW: High-Entropy Outbound DNS Tunneling Session Detected Towards Dynamic Dynamic-DNS Provider Infrastructure",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "DNS_SECURITY",
+      "secondary_archetype": "DATA_TRANSFER",
+      "contract_id": "DRC-RULE-EXFIL-005-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "dns.query_name",
+        "network.source_ip",
+        "dns.record_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "SERVER_CLASSIFICATION",
+        "INTERNAL_IP_RANGE",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "NETWORK_ZONE",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "5e0dc1273e49fefb267e7acff8bd35e8dc88d606614b0a8e5f4554a002027eb5"
+    },
+    {
+      "fortisiem_rule_id": "RULE-SUSP-036",
+      "rule_name": "Palo Alto Networks Threat Prevention: Suspicious High-Frequency ICMP Ping Tunneling Protocol Smuggling Channel [SUSPENDED]",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-SUSP-036-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "486578c6ffdae1f49837f4a46a3ad4a57979308d523005275d0a43a5c1601b39"
+    },
+    {
+      "fortisiem_rule_id": "PH_Rule_MISP_MalwareIP_Inbound",
+      "rule_name": "Permitted Traffic from MISP Malware IP List",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "THREAT_INTELLIGENCE",
+      "secondary_archetype": null,
+      "contract_id": "DRC-PH_Rule_MISP_MalwareIP_Inbound-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "network.source_ip",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "SECURITY_ASSESSMENT_SYSTEM",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "ff22c017c10fbc0e5c92ef5f7fb88ad28ad90a1a58f54840efbf8e4158188812"
+    },
+    {
+      "fortisiem_rule_id": "Prisma_SASE_Suspicious_File_Threat_Detection_",
+      "rule_name": "Prisma SASE: Suspicious File Threat Detection",
+      "source_vendor": "Prisma SASE",
+      "rule_archetype": "ENDPOINT_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-Prisma_SASE_Suspicious_File_Threat_Detection_-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "file.hash_sha256",
+        "endpoint.hostname"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "SERVER_CLASSIFICATION",
+        "APPROVED_ADMIN_TOOL",
+        "APPROVED_SOFTWARE",
+        "SERVICE_ACCOUNT",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "8e7175437f88c27cdb792d2b291f6ff096574cac6c3d6daef8d7c521e8a2405b"
+    },
+    {
+      "fortisiem_rule_id": "RULE-MAIL-007",
+      "rule_name": "Proofpoint Targeted Attack Protection: High-Risk Phishing Email Containing Macro-Enabled Excel Attachment Targeting Financial Officers",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-MAIL-007-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "ec0fa44bda2f1e92f06765204ea965b9f6d8ed447d2f70f5af2b4013c328ba62"
+    },
+    {
+      "fortisiem_rule_id": "RULE-VPN-010",
+      "rule_name": "Pulse Secure Connect: Impossible Travel Geolocation Alert with Simultaneous Active VPN Sessions from Brazil and Singapore",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "AUTHENTICATION_SECURITY",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-VPN-010-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "user.name",
+        "endpoint.hostname",
+        "network.source_ip"
+      ],
+      "approved_organizational_context_types": [
+        "IDENTITY_INFO",
+        "SERVICE_ACCOUNT",
+        "INTERNAL_IP_RANGE",
+        "NETWORK_ZONE",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "46bc14f606c2985e0f725d356f162fe91964519c5f8a17302d39a66be0d7ea5f"
+    },
+    {
+      "fortisiem_rule_id": "RULE-HOST-008",
+      "rule_name": "SentinelOne Endpoint Protection: Ransomware Canary Decoy File Renamed and Volume Shadow Copy Deletion Command Detected",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-HOST-008-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "05298169070b7ac5bfa1f18a62a263076a6ca7e6d90402a621395885ddacdfeb"
+    },
+    {
+      "fortisiem_rule_id": "RULE-IMPACT-019",
+      "rule_name": "Storage Area Network Warning: Rapid Encryption Entropy Spike Detected on Corporate NAS Volume via SMB Protocol",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-IMPACT-019-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "61df3627a1aebec0293925e2b8af7202bd5b790f50efac7af85a6330157d854b"
+    },
+    {
+      "fortisiem_rule_id": "RULE-DLP-024",
+      "rule_name": "Symantec Data Loss Prevention: Bulk Confidential Source Code Upload to Personal Cloud Storage Bucket Over HTTPS",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-DLP-024-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "89e422841365975f320ec7b586e5e41ac6e9892b59149bd81636c230ae46aada"
+    },
+    {
+      "fortisiem_rule_id": "TENANT_B_ISOLATED_EVENT",
+      "rule_name": "Tenant B Sensitive Incident",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-TENANT_B_ISOLATED_EVENT-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "d8f105b635877b540f4a15bcefe24ef668b39adf2452e2257f4f027d03f2739c"
+    },
+    {
+      "fortisiem_rule_id": "PH_Rule_MISP_MalwareIP_Outbound",
+      "rule_name": "Traffic to MISP Malware IP List",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "THREAT_INTELLIGENCE",
+      "secondary_archetype": null,
+      "contract_id": "DRC-PH_Rule_MISP_MalwareIP_Outbound-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "network.source_ip",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "SECURITY_ASSESSMENT_SYSTEM",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "d251651a98afbb3c3388c6fcb6cf34d35e84bc85d5d630b6c7419fbf1b10b238"
+    },
+    {
+      "fortisiem_rule_id": "PH_RULE_BETA_EXFIL",
+      "rule_name": "Unauthorized Data Exfiltration from Beta Storage",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "DATA_TRANSFER",
+      "secondary_archetype": null,
+      "contract_id": "DRC-PH_RULE_BETA_EXFIL-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "network.source_ip",
+        "network.destination_ip",
+        "network.direction",
+        "network.bytes_out",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "AUTHORIZED_DATA_TRANSFER",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "SERVICE_ACCOUNT",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "922e789b3d45c8e0962b47caeef9c984ea446f5d9e1355b5558e31f2fe5ee762"
+    },
+    {
+      "fortisiem_rule_id": "PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST",
+      "rule_name": "Website access policy violation: Same Source and Destination",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "FIREWALL_SECURITY",
+      "secondary_archetype": "FIREWALL_SECURITY",
+      "contract_id": "DRC-PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "network.source_ip",
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "INTERNAL_IP_RANGE",
+        "NETWORK_ZONE",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "CUSTOMER_EXCEPTION",
+        "MAINTENANCE_WINDOW"
+      ],
+      "contract_hash": "3de2c9a7e70abfd7ac8140eb1c058fae0b0686d04fec9d056cea301aaca62eea"
+    },
+    {
+      "fortisiem_rule_id": "RULE-DEF-015",
+      "rule_name": "Windows Defender Security Center Tampering: Real-Time Protection Disabled via Unauthorized Group Policy Registry Modification",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "FIREWALL_SECURITY",
+      "secondary_archetype": "FIREWALL_SECURITY",
+      "contract_id": "DRC-RULE-DEF-015-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "network.source_ip",
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "INTERNAL_IP_RANGE",
+        "NETWORK_ZONE",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "CUSTOMER_EXCEPTION",
+        "MAINTENANCE_WINDOW"
+      ],
+      "contract_hash": "bf4f62e55d8d05b71702afd9a4ee10e90a415b0e03bacb3866e2112159217652"
+    },
+    {
+      "fortisiem_rule_id": "RULE-PERS-013",
+      "rule_name": "Windows Event Log 7045: Rogue Windows Service Created with Unquoted Path and Interactive Command Execution Parameters",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-PERS-013-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "38aa739aa701b1f868396be3718f58f5e4484c6fc14468421eb72b96438bcc61"
+    },
+    {
+      "fortisiem_rule_id": "RULE-ZEEK-032",
+      "rule_name": "Zeek Network Security Monitor: Long-Duration TLS Session with Suspicious Certificate Subject Mismatching SNI Host",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-ZEEK-032-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "2b061772b39bb1c691fef46d8706f7e8cb30c2c19b6cad2555854fbb2cd64078"
+    },
+    {
+      "fortisiem_rule_id": "RULE-PROXY-023",
+      "rule_name": "Zscaler Internet Access: Outbound Traffic Directly to Known Tor Exit Node Without Corporate Proxy Authorization",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "THREAT_INTELLIGENCE",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-PROXY-023-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": true,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "network.source_ip",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "SECURITY_ASSESSMENT_SYSTEM",
+        "APPROVED_EXTERNAL_DESTINATION",
+        "ASSET_INVENTORY",
+        "CRITICAL_ASSET",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "8ea7895b40aecdcb27d05110a7fe81147988ab6fe452f1406218e44a248ae544"
+    },
+    {
+      "fortisiem_rule_id": "RULE-ENDPOINT-029",
+      "rule_name": "macOS Jamf Pro Security: XProtect Alert for Backdoor.Mac.Eleanor Execution Inside Hidden User Directory",
+      "source_vendor": "FortiSIEM",
+      "rule_archetype": "GENERIC_UNKNOWN",
+      "secondary_archetype": null,
+      "contract_id": "DRC-RULE-ENDPOINT-029-V1",
+      "contract_version": 1,
+      "approval_state": "PROVISIONAL",
+      "is_supported_rule": false,
+      "mandatory_evidence_fields": [
+        "security.event_type",
+        "event.timestamp"
+      ],
+      "approved_organizational_context_types": [
+        "ASSET_INVENTORY",
+        "MAINTENANCE_WINDOW",
+        "CUSTOMER_EXCEPTION"
+      ],
+      "contract_hash": "b6d6bfa3bf3b155103d1cf7ef171886fe2ba7c98c5a3b10d760d7092c658c736"
+    }
+  ]
+}

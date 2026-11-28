@@ -1,0 +1,70 @@
+{
+  "ais_3_2_development_evaluation": {
+    "status": "BLOCKED_PENDING_ADMIN_AUTH",
+    "reason": "Workstation Chrome 158 (PID 22400) lacked DevToolsActivePort for automated CDP auth, and direct SSH is governed by UPLA Gate 2. No Admin Bearer token was supplied to invoke /api/ais32/runs/execute on Server 1.",
+    "model": "Qwen/Qwen3-14B-AWQ",
+    "server2_untouched": true,
+    "live_results_fabricated": false
+  },
+  "ais_3_1_historical_baseline_reference": {
+    "schema_version": "ais31.confusion_matrix.v1",
+    "generated_at_utc": "2026-11-28T12:18:47.038980+00:00",
+    "run_id": "64253e31-4e75-4d51-9f54-cc80a62fa17c",
+    "raw_llm": {
+      "expanded": {
+        "TRUE_POSITIVE": {
+          "TRUE_POSITIVE": 0,
+          "FALSE_POSITIVE": 6,
+          "INCONCLUSIVE": 12,
+          "FAILED_NOT_EXECUTED": 0
+        },
+        "FALSE_POSITIVE": {
+          "TRUE_POSITIVE": 7,
+          "FALSE_POSITIVE": 12,
+          "INCONCLUSIVE": 61,
+          "FAILED_NOT_EXECUTED": 0
+        },
+        "OTHER_OR_INCONCLUSIVE": {
+          "TRUE_POSITIVE": 0,
+          "FALSE_POSITIVE": 0,
+          "INCONCLUSIVE": 2,
+          "FAILED_NOT_EXECUTED": 0
+        }
+      },
+      "binary": {
+        "tp": 0,
+        "fp": 7,
+        "tn": 12,
+        "fn": 6
+      }
+    },
+    "validated_application": {
+      "expanded": {
+        "TRUE_POSITIVE": {
+          "TRUE_POSITIVE": 0,
+          "FALSE_POSITIVE": 0,
+          "INCONCLUSIVE": 18,
+          "FAILED_NOT_EXECUTED": 0
+        },
+        "FALSE_POSITIVE": {
+          "TRUE_POSITIVE": 0,
+          "FALSE_POSITIVE": 1,
+          "INCONCLUSIVE": 79,
+          "FAILED_NOT_EXECUTED": 0
+        },
+        "OTHER_OR_INCONCLUSIVE": {
+          "TRUE_POSITIVE": 0,
+          "FALSE_POSITIVE": 0,
+          "INCONCLUSIVE": 2,
+          "FAILED_NOT_EXECUTED": 0
+        }
+      },
+      "binary": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 1,
+        "fn": 0
+      }
+    }
+  }
+}

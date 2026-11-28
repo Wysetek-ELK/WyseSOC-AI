@@ -1,0 +1,39 @@
+{
+  "upla_execution_id": "upla-20261128-132159-9732f9",
+  "gate1_github": {
+    "approval_id": "apr-a328725efe8a",
+    "branch": "feature/phase3-compact-ui",
+    "remote_sha_verified": "0e492c90b0ebf0f967ab9488774052c83e90792b"
+  },
+  "gate2_server1": {
+    "approval_id": "apr-4a2e8a5e7f3a",
+    "server_id": "server-1",
+    "host": "172.26.41.240",
+    "status": "DEPLOYED_AND_VERIFIED",
+    "alembic_upgrade": "PASS (018_ais32_rule_intelligence_and_context)",
+    "services": [
+      "ai-verdict-backend.service",
+      "ai-verdict-frontend.service"
+    ]
+  },
+  "live_http_checks": {
+    "GET /api/health": {
+      "status": 200,
+      "database": "postgresql healthy 2.06ms",
+      "redis_celery": "healthy",
+      "local_llm": "Qwen/Qwen3-14B-AWQ ONLINE CLOSED"
+    },
+    "GET /login": {
+      "status": 200
+    },
+    "GET /api/ais32/overview (unauthenticated)": {
+      "status": 401
+    }
+  },
+  "server2": {
+    "model": "Qwen/Qwen3-14B-AWQ",
+    "context_limit": 8192,
+    "untouched": true,
+    "runtime_manifest_ref": null
+  }
+}

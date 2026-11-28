@@ -1,0 +1,15 @@
+{
+  "ais_3_2_development_evaluation": {
+    "status": "BLOCKED_PENDING_ADMIN_AUTH",
+    "reason": "Workstation Chrome 158 (PID 22400) lacked DevToolsActivePort for automated CDP auth, and direct SSH is governed by UPLA Gate 2. No Admin Bearer token was supplied to invoke /api/ais32/runs/execute on Server 1.",
+    "model": "Qwen/Qwen3-14B-AWQ",
+    "server2_untouched": true,
+    "live_results_fabricated": false
+  },
+  "ais_3_1_root_cause_verified": {
+    "raw_conclusive": 25,
+    "validated_accepted": 1,
+    "rejected_or_demoted": 24,
+    "primary_cause": "IndependentVerdictValidator Check 5 hardcoded endpoint forensic/CrowdStrike/Prisma checks across 30 FortiSIEM rules"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "target_model": "Qwen/Qwen3-14B-AWQ",
+  "max_model_len": 8192,
+  "default_reserved_completion_tokens": 1024,
+  "effective_input_budget": 7168,
+  "deterministic_rebudget_verified": true,
+  "live_server2_tokenize_run_status": "BLOCKED_PENDING_ADMIN_AUTH"
+}

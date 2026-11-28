@@ -1,0 +1,190 @@
+{
+  "primary_status": "BLOCKED",
+  "secondary_statuses": [
+    "ENGINEERING_AND_SERVER1_DEPLOY_PASS",
+    "LIVE_DEV_GPU_EVALUATION_BLOCKED_PENDING_ADMIN_AUTH",
+    "REMOTE_CDP_SCREENSHOTS_BLOCKED_DEVTOOLSACTIVEPORT"
+  ],
+  "gates": [
+    {
+      "gate": "G01",
+      "requirement": "Existing architecture audited",
+      "status": "PASS",
+      "evidence": "Complete audit across inference, validator, rule/evidence/trust engines and UI completed."
+    },
+    {
+      "gate": "G02",
+      "requirement": "AIS 3.1 failures reconciled",
+      "status": "PASS",
+      "evidence": "100-incident AIS 3.1 results (12% raw E2E, 1% validated app, 0/18 TP recall, 24 validator overrides) reconciled."
+    },
+    {
+      "gate": "G03",
+      "requirement": "Universal rule intelligence implemented",
+      "status": "PASS",
+      "evidence": "RuleIntelligenceEngine deployed and tested."
+    },
+    {
+      "gate": "G04",
+      "requirement": "Reusable archetype mapping implemented",
+      "status": "PASS",
+      "evidence": "11 canonical archetypes mapped across 51 local rules and 30+ FortiSIEM patterns."
+    },
+    {
+      "gate": "G05",
+      "requirement": "Versioned dynamic rule contracts implemented",
+      "status": "PASS",
+      "evidence": "DynamicRuleContract + RuleContractRecord persisted via migration 018."
+    },
+    {
+      "gate": "G06",
+      "requirement": "Operational and security verdict semantics separated",
+      "status": "PASS",
+      "evidence": "VerdictSemanticsEngine separates CONFIRMED vs MALICIOUS/OPERATIONAL_ISSUE vs authorization."
+    },
+    {
+      "gate": "G07",
+      "requirement": "Organizational context integration implemented",
+      "status": "PASS",
+      "evidence": "OrganizationalContextService supports all 17 context types with PostgreSQL + optional Redis."
+    },
+    {
+      "gate": "G08",
+      "requirement": "Organizational context provenance and isolation verified",
+      "status": "PASS",
+      "evidence": "Tenant isolation, Admin approval, expiration, verdict-import block verified in tests."
+    },
+    {
+      "gate": "G09",
+      "requirement": "Canonical prompt engine implemented",
+      "status": "PASS",
+      "evidence": "UniversalPromptEngine implemented for both live and benchmark composition."
+    },
+    {
+      "gate": "G10",
+      "requirement": "Benchmark and operational prompt parity verified",
+      "status": "PARTIAL",
+      "evidence": "Shared code path verified by tests; live Server 2 benchmark parity run pending admin auth."
+    },
+    {
+      "gate": "G11",
+      "requirement": "Modular independent validator implemented",
+      "status": "PASS",
+      "evidence": "7-step ModularVerdictValidator across 11 archetype profiles."
+    },
+    {
+      "gate": "G12",
+      "requirement": "Legacy validation regression verified",
+      "status": "PASS",
+      "evidence": "Legacy CrowdStrike/Prisma paths and validator tests pass (141/142 backend tests)."
+    },
+    {
+      "gate": "G13",
+      "requirement": "Evidence completeness verified",
+      "status": "PASS",
+      "evidence": "raw_payload fallback, rule-aware prioritization, and audit fields verified in tests."
+    },
+    {
+      "gate": "G14",
+      "requirement": "Live token budget verified",
+      "status": "PARTIAL",
+      "evidence": "8192 budget logic verified offline; live vLLM /tokenize run on AIS_3_2_DEVELOPMENT blocked pending admin auth."
+    },
+    {
+      "gate": "G15",
+      "requirement": "Structured output integrity verified",
+      "status": "PASS",
+      "evidence": "validate_structured_output detects truncation, bad EV-* refs, contradictions."
+    },
+    {
+      "gate": "G16",
+      "requirement": "Protected benchmark cohorts unchanged",
+      "status": "PASS",
+      "evidence": "No AIS_2_6E_FROZEN_20 or AIS_3_0_INDEPENDENT_HOLDOUT_100 mutation paths added; AIS_3_2_DEVELOPMENT excludes IDs & SHA-256 hashes."
+    },
+    {
+      "gate": "G17",
+      "requirement": "Existing human reviews preserved",
+      "status": "PASS",
+      "evidence": "Zero review reset/unlock actions executed; historical reviews preserved."
+    },
+    {
+      "gate": "G18",
+      "requirement": "Development dataset isolation verified",
+      "status": "PASS",
+      "evidence": "ID, SHA-256 hash, LearningRecord exclusions verified in unit/API integration tests."
+    },
+    {
+      "gate": "G19",
+      "requirement": "Real GPU technical pilot executed",
+      "status": "BLOCKED",
+      "evidence": "Blocked pending Server 1 Admin authentication / Chrome DevToolsActivePort to invoke /api/ais32/runs/execute."
+    },
+    {
+      "gate": "G20",
+      "requirement": "Mode A and Mode B development results reconciled",
+      "status": "BLOCKED",
+      "evidence": "Blocked pending live Server 1 -> Server 2 execution of AIS_3_2_DEVELOPMENT."
+    },
+    {
+      "gate": "G21",
+      "requirement": "Accuracy and coverage metrics verified",
+      "status": "BLOCKED",
+      "evidence": "Live development empirical metrics cannot be fabricated; unit-tested with explicit transport only."
+    },
+    {
+      "gate": "G22",
+      "requirement": "Trust-layer behavior reconciled",
+      "status": "PASS",
+      "evidence": "reconcile_verdict_layers preserves autonomous closure/remediation disabled and uncalibrated cap disclosure."
+    },
+    {
+      "gate": "G23",
+      "requirement": "Compact UI verified",
+      "status": "PARTIAL",
+      "evidence": "18 frontend test suites & Next.js build verified; live authenticated remote browser screenshots blocked by Chrome DevToolsActivePort."
+    },
+    {
+      "gate": "G24",
+      "requirement": "Security and RBAC verified",
+      "status": "PASS",
+      "evidence": "401/403 RBAC, cross-tenant block, UPLA security scans (0 new findings), prompt-injection escaping verified."
+    },
+    {
+      "gate": "G25",
+      "requirement": "Database and caching integrity verified",
+      "status": "PASS",
+      "evidence": "Migration 018 upgrade/downgrade verified locally & upgraded on Server 1."
+    },
+    {
+      "gate": "G26",
+      "requirement": "Backend and frontend regression verified",
+      "status": "PASS",
+      "evidence": "AIS 3.2 tests (7/7), 141/142 regression tests, 18 frontend suites, next build PASS."
+    },
+    {
+      "gate": "G27",
+      "requirement": "Governed Server 1 deployment verified",
+      "status": "PASS",
+      "evidence": "UPLA Gate 1/2 deployed commit 0e492c90b0ebf0f967ab9488774052c83e90792b; HTTP health 200 OK."
+    },
+    {
+      "gate": "G28",
+      "requirement": "Server 2 unchanged",
+      "status": "PASS",
+      "evidence": "Server 2 untouched; health endpoint reports Qwen/Qwen3-14B-AWQ ONLINE."
+    },
+    {
+      "gate": "G29",
+      "requirement": "Fresh holdout isolation plan prepared",
+      "status": "PASS",
+      "evidence": "Statistical plan computed (recommended min N=240, min TP=60)."
+    },
+    {
+      "gate": "G30",
+      "requirement": "Final evidence package complete",
+      "status": "PASS",
+      "evidence": "All 23 Markdown reports, 28 JSON/checksum manifests, and redacted zip generated honestly."
+    }
+  ]
+}

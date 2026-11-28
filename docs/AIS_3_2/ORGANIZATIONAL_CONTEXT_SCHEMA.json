@@ -1,0 +1,32 @@
+{
+  "authoritative_store": "postgresql (ais32_organizational_contexts via Alembic 018)",
+  "cache_layer": "redis (tenant-scoped invalidation only; never independent source of truth)",
+  "supported_context_types_count": 17,
+  "supported_context_types": [
+    "AUTHORIZED_SCANNER",
+    "SECURITY_ASSESSMENT_SYSTEM",
+    "INTERNAL_IP_RANGE",
+    "ASSET_INVENTORY",
+    "CRITICAL_ASSET",
+    "SERVER_CLASSIFICATION",
+    "SERVICE_ACCOUNT",
+    "APPROVED_ADMIN_TOOL",
+    "APPROVED_SOFTWARE",
+    "CUSTOMER_EXCEPTION",
+    "MAINTENANCE_WINDOW",
+    "APPROVED_CONFIG_CHANGE",
+    "IDENTITY_INFO",
+    "NETWORK_ZONE",
+    "APPROVED_EXTERNAL_DESTINATION",
+    "AUTHORIZED_DATA_TRANSFER",
+    "DEVICE_OWNERSHIP"
+  ],
+  "security_invariants": [
+    "Strict tenant isolation by customer column",
+    "Requires verification_status=VERIFIED and approval_status=APPROVED",
+    "Excludes expired (valid_until < now) and future (valid_from > now) records",
+    "Rejects analyst verdict / ground truth / holdout source_system imports",
+    "Missing organizational context explicitly evaluates to UNKNOWN",
+    "Internal RFC1918 IP != authorized"
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "ais_3_2_development_evaluation": {
+    "status": "BLOCKED_PENDING_ADMIN_AUTH",
+    "reason": "Workstation Chrome 158 (PID 22400) lacked DevToolsActivePort for automated CDP auth, and direct SSH is governed by UPLA Gate 2. No Admin Bearer token was supplied to invoke /api/ais32/runs/execute on Server 1.",
+    "model": "Qwen/Qwen3-14B-AWQ",
+    "server2_untouched": true,
+    "live_results_fabricated": false
+  },
+  "ais_3_1_historical_baseline_reference": {
+    "cohort": "AIS_3_0_INDEPENDENT_HOLDOUT_100",
+    "raw_llm": {
+      "original_cohort_size": 100,
+      "eligible_population": 100,
+      "binary_gt_population": 98,
+      "execution_success_count": 100,
+      "execution_success_rate_pct": 100.0,
+      "technical_failure_count": 0,
+      "technical_failure_rate_pct": 0.0,
+      "conclusive_count": 25,
+      "inconclusive_count": 75,
+      "inconclusive_rate_pct": 75.0,
+      "decision_coverage_eligible_pct": 25.0,
+      "decision_coverage_binary_gt_pct": 25.51,
+      "decision_coverage_original_100_pct": 25.0,
+      "correct_verdict_count": 12,
+      "incorrect_verdict_count": 13,
+      "conclusive_accuracy_pct": 48.0,
+      "conclusive_accuracy_ci95": {
+        "point": 48.0,
+        "lower_95": 30.03,
+        "upper_95": 66.5
+      },
+      "eligible_end_to_end_correct_rate_pct": 12.0,
+      "binary_gt_end_to_end_correct_rate_pct": 12.24,
+      "original_cohort_correct_rate_pct": 12.0,
+      "binary_confusion_matrix": {
+        "tp": 0,
+        "fp": 7,
+        "tn": 12,
+        "fn": 6
+      },
+      "expanded_confusion_matrix": {
+        "TRUE_POSITIVE": {
+          "TRUE_POSITIVE": 0,
+          "FALSE_POSITIVE": 6,
+          "INCONCLUSIVE": 12,
+          "FAILED_NOT_EXECUTED": 0
+        },
+        "FALSE_POSITIVE": {
+          "TRUE_POSITIVE": 7,
+          "FALSE_POSITIVE": 12,
+          "INCONCLUSIVE": 61,
+          "FAILED_NOT_EXECUTED": 0
+        },
+        "OTHER_OR_INCONCLUSIVE": {
+          "TRUE_POSITIVE": 0,
+          "FALSE_POSITIVE": 0,
+          "INCONCLUSIVE": 2,
+          "FAILED_NOT_EXECUTED": 0
+        }
+      },
+      "precision_pct": 0.0,
+      "precision_ci95": {
+        "point": 0.0,
+        "lower_95": 0.0,
+        "upper_95": 35.43
+      },
+      "recall_pct": 0.0,
+      "recall_ci95": {
+        "point": 0.0,
+        "lower_95": 0.0,
+        "upper_95": 39.03
+      },
+      "specificity_pct": 63.16,
+      "specificity_ci95": {
+        "point": 63.16,
+        "lower_95": 41.04,
+        "upper_95": 80.85
+      },
+      "f1_pct": null,
+      "balanced_accuracy_pct": 31.58,
+      "false_positive_rate_pct": 36.84,
+      "false_negative_rate_pct": 100.0,
+      "abstention_missed_tp_count": 12,
+      "incorrect_fn_count": 6,
+      "latency_avg_ms": 60302.14,
+      "latency_median_ms": 55581.95,
+      "latency_p95_ms": 81632.3,
+      "total_prompt_tokens": 577230,
+      "total_completion_tokens": 54031
+    },
+    "validated_app": {
+      "original_cohort_size": 100,
+      "eligible_population": 100,
+      "binary_gt_population": 98,
+      "execution_success_count": 100,
+      "execution_success_rate_pct": 100.0,
+      "technical_failure_count": 0,
+      "technical_failure_rate_pct": 0.0,
+      "conclusive_count": 1,
+      "inconclusive_count": 99,
+      "inconclusive_rate_pct": 99.0,
+      "decision_coverage_eligible_pct": 1.0,
+      "decision_coverage_binary_gt_pct": 1.02,
+      "decision_coverage_original_100_pct": 1.0,
+      "correct_verdict_count": 1,
+      "incorrect_verdict_count": 0,
+      "conclusive_accuracy_pct": 100.0,
+      "conclusive_accuracy_ci95": {
+        "point": 100.0,
+        "lower_95": 20.65,
+        "upper_95": 100.0
+      },
+      "eligible_end_to_end_correct_rate_pct": 1.0,
+      "binary_gt_end_to_end_correct_rate_pct": 1.02,
+      "original_cohort_correct_rate_pct": 1.0,
+      "binary_confusion_matrix": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 1,
+        "fn": 0
+      },
+      "expanded_confusion_matrix": {
+        "TRUE_POSITIVE": {
+          "TRUE_POSITIVE": 0,
+          "FALSE_POSITIVE": 0,
+          "INCONCLUSIVE": 18,
+          "FAILED_NOT_EXECUTED": 0
+        },
+        "FALSE_POSITIVE": {
+          "TRUE_POSITIVE": 0,
+          "FALSE_POSITIVE": 1,
+          "INCONCLUSIVE": 79,
+          "FAILED_NOT_EXECUTED": 0
+        },
+        "OTHER_OR_INCONCLUSIVE": {
+          "TRUE_POSITIVE": 0,
+          "FALSE_POSITIVE": 0,
+          "INCONCLUSIVE": 2,
+          "FAILED_NOT_EXECUTED": 0
+        }
+      },
+      "precision_pct": null,
+      "precision_ci95": null,
+      "recall_pct": null,
+      "recall_ci95": null,
+      "specificity_pct": 100.0,
+      "specificity_ci95": {
+        "point": 100.0,
+        "lower_95": 20.65,
+        "upper_95": 100.0
+      },
+      "f1_pct": null,
+      "balanced_accuracy_pct": null,
+      "false_positive_rate_pct": 0.0,
+      "false_negative_rate_pct": null,
+      "abstention_missed_tp_count": 18,
+      "incorrect_fn_count": 0,
+      "latency_avg_ms": 60302.14,
+      "latency_median_ms": 55581.95,
+      "latency_p95_ms": 81632.3,
+      "total_prompt_tokens": 577230,
+      "total_completion_tokens": 54031
+    },
+    "status": "FAIL_INTELLIGENCE"
+  },
+  "ais_3_3_fresh_holdout_plan": {
+    "cohort_key": "AIS_3_3_INDEPENDENT_HOLDOUT",
+    "status": "ISOLATION_PLAN_PREPARED_NOT_EVALUATED",
+    "recommended_minimum_total": 240,
+    "recommended_min_tp_incidents": 60,
+    "recommended_min_fp_incidents": 180,
+    "n_overall_for_ci_halfwidth": 217,
+    "statistical_rationale": "N=100 at ~18% TP prevalence yields only 18 TPs (95% Wilson CI width >20% on recall). To bound TP recall >=95% and overall accuracy >=90% within +/-4.0% with dual-reviewer GT-3 certification, >= 240 untouched incidents (including >= 60 TPs across all 11 archetypes) is required.",
+    "contamination_guards": [
+      "Exclude all AIS_2_6E_FROZEN_20 IDs & raw evidence hashes",
+      "Exclude all AIS_3_0_INDEPENDENT_HOLDOUT_100 IDs & raw evidence hashes",
+      "Exclude all AIS_3_2_DEVELOPMENT IDs & raw evidence hashes",
+      "Exclude all LearningRecord & PromptCapture-exposed incidents",
+      "Require dual independent blind human review (GT-3) before evaluation",
+      "Freeze AIS 3.2 candidate policy & validator versions prior to AIS 3.3 execution"
+    ]
+  }
+}

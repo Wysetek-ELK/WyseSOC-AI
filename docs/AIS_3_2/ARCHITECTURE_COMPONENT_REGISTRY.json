@@ -1,0 +1,60 @@
+{
+  "phase": "AIS_3_2",
+  "deployed_commit_sha": "0e492c90b0ebf0f967ab9488774052c83e90792b",
+  "engine_version": "3.2.0",
+  "prompt_engine_version": "v3.2.0",
+  "validator_version": "3.2.0",
+  "registry_version": "v3.0.0",
+  "components": [
+    {
+      "name": "RuleIntelligenceEngine",
+      "path": "backend/app/services/rule_intelligence_engine.py",
+      "role": "FortiSIEM rule parser & DynamicRuleContract generator"
+    },
+    {
+      "name": "DetectionArchetypeRegistry",
+      "path": "backend/app/services/detection_archetype_registry.py",
+      "role": "11 canonical detection archetypes & rule classification"
+    },
+    {
+      "name": "VerdictSemanticsEngine",
+      "path": "backend/app/services/verdict_semantics_engine.py",
+      "role": "Detection validity vs activity characterization vs authorization separation"
+    },
+    {
+      "name": "OrganizationalContextService",
+      "path": "backend/app/services/organizational_context_service.py",
+      "role": "PostgreSQL-authoritative, tenant-isolated, RBAC-approved context store (17 types)"
+    },
+    {
+      "name": "UniversalPromptEngine",
+      "path": "backend/app/services/universal_prompt_engine.py",
+      "role": "Single canonical prompt composition, evidence prioritization, live token budget, output validation"
+    },
+    {
+      "name": "ModularVerdictValidator",
+      "path": "backend/app/services/modular_verdict_validator.py",
+      "role": "7-step archetype-aware modular validator preserving legacy CS/Prisma parity"
+    },
+    {
+      "name": "VerdictTrustworthinessEngine",
+      "path": "backend/app/services/verdict_trustworthiness_engine.py",
+      "role": "Separated 5-layer verdict reconciliation; autonomous closure & remediation disabled"
+    },
+    {
+      "name": "AIS32BenchmarkService",
+      "path": "backend/app/services/ais32_benchmark_service.py",
+      "role": "Development cohort isolation, paired Mode A/B execution, full metrics & AIS 3.3 plan"
+    },
+    {
+      "name": "AIS32IntelligenceRouter",
+      "path": "backend/app/api/ais32_intelligence.py",
+      "role": "RBAC-protected /api/ais32/* endpoints"
+    },
+    {
+      "name": "Ais32IntelligencePanel",
+      "path": "frontend/src/components/compact/Ais32IntelligencePanel.tsx",
+      "role": "Compact Overview, Rule Intelligence drawer, Org Context modal, Mode A vs Mode B evaluation UI"
+    }
+  ]
+}

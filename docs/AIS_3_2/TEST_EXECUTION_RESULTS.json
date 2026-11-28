@@ -1,0 +1,34 @@
+{
+  "ais_3_2_backend_suite": {
+    "file": "backend/tests/test_ais_3_2_universal_intelligence.py",
+    "passed": 7,
+    "failed": 0
+  },
+  "backend_regression_sweep": {
+    "files_count": 17,
+    "passed": 141,
+    "failed": 1,
+    "pre_existing_failures_not_caused_by_ais32": [
+      {
+        "test": "backend/tests/test_phase1_security_controls.py::test_req03_unapproved_prompt_draft_abstained_in_live_triage",
+        "reason": "Expected POLICY_NOT_APPROVED vs DRAFT_NOT_APPROVED"
+      },
+      {
+        "test": "backend/tests/test_database_migrations.py::test_get_head_revision_matches_current",
+        "reason": "Legacy hardcoded assert head == '008_soc_pilot'"
+      }
+    ]
+  },
+  "alembic_018_upgrade_downgrade_sqlite_copy": "PASS (016 -> 017 -> 018 -> 017 -> 018)",
+  "frontend_tests": {
+    "suites": 18,
+    "all_passed": true,
+    "ais32_ui_tests": "4/4 passed"
+  },
+  "frontend_production_build": "PASS (next build 16.4.5, 32 routes, 0 TypeScript errors)",
+  "frontend_lint": "FAIL (pre-existing ~369 lint errors noted in AIS 3.1)",
+  "server1_remote_smoke_tests": {
+    "command": "pytest tests/test_ais_heavy_tcp_e2e.py tests/test_rule_learning_platform.py tests/test_api_422_remediation.py -q",
+    "status": "PASS"
+  }
+}

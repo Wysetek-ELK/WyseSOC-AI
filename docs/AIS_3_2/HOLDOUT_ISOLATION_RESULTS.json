@@ -1,0 +1,14 @@
+{
+  "protected_cohorts": [
+    "AIS_2_6E_FROZEN_20",
+    "AIS_3_0_INDEPENDENT_HOLDOUT_100"
+  ],
+  "local_ais_2_6e_frozen_20_count": 20,
+  "unit_tested_protections": {
+    "id_overlap_excluded": true,
+    "raw_evidence_sha256_duplicate_excluded": true,
+    "learning_record_excluded": true,
+    "dev_cleared_reason_stripped_from_prompt": true
+  },
+  "live_server1_db_audit_status": "NOT_VERIFIED_DIRECTLY_PENDING_ADMIN_AUTH (pre-existing Server 1 holdout untouched; no reset/unlock endpoints modified or called)"
+}

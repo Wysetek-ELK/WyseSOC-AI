@@ -1,0 +1,8 @@
+{
+  "canonical_engine": "UniversalPromptEngine (backend/app/services/universal_prompt_engine.py)",
+  "live_pipeline_consumer": "backend/app/services/verdict_pipeline.py",
+  "benchmark_consumer": "backend/app/services/ais32_benchmark_service.py",
+  "prompt_injection_delimiters": "<UNTRUSTED_INCIDENT_DATA> ... </UNTRUSTED_INCIDENT_DATA> with internal closing-tag escaping",
+  "raw_payload_fallback_verified": true,
+  "legacy_ais31_runner_preserved": true
+}

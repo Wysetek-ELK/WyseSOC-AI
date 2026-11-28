@@ -1,0 +1,8 @@
+{
+  "cohort_key": "AIS_3_2_DEVELOPMENT",
+  "local_sqlite_cohorts": {
+    "AIS_2_6E_FROZEN_20": 20
+  },
+  "live_server1_cohort_status": "BLOCKED_PENDING_ADMIN_AUTH",
+  "notes": "POST /api/ais32/cohorts/development/ensure is deployed on Server 1 and tested on synthetic/in-memory cohorts; live Server 1 execution requires authenticated Administrator JWT or DevToolsActivePort browser session."
+}

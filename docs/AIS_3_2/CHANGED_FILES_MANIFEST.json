@@ -1,0 +1,138 @@
+{
+  "base_commit": "25bbdfa",
+  "deployed_commit": "0e492c90b0ebf0f967ab9488774052c83e90792b",
+  "previous_server1_code_commit": "8c760c3b9f7957ad4283678ff1f8d1a31dd5dd96",
+  "changed_files_count": 26,
+  "files": [
+    {
+      "path": "backend/alembic/versions/018_ais32_rule_intelligence_and_context.py",
+      "insertions": 134,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/api/ais32_intelligence.py",
+      "insertions": 359,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/main.py",
+      "insertions": 3,
+      "deletions": 1
+    },
+    {
+      "path": "backend/app/models/__init__.py",
+      "insertions": 8,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/models/ais32_intelligence.py",
+      "insertions": 158,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/schemas/dynamic_rule_contract.py",
+      "insertions": 149,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/schemas/rule_intelligence.py",
+      "insertions": 17,
+      "deletions": 1
+    },
+    {
+      "path": "backend/app/schemas/verdict_semantics.py",
+      "insertions": 82,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/schemas/verdict_validation.py",
+      "insertions": 7,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/services/ais32_benchmark_service.py",
+      "insertions": 868,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/services/detection_archetype_registry.py",
+      "insertions": 404,
+      "deletions": 38
+    },
+    {
+      "path": "backend/app/services/modular_verdict_validator.py",
+      "insertions": 587,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/services/organizational_context_service.py",
+      "insertions": 388,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/services/rule_intelligence_analyzer.py",
+      "insertions": 28,
+      "deletions": 2
+    },
+    {
+      "path": "backend/app/services/rule_intelligence_engine.py",
+      "insertions": 797,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/services/universal_prompt_engine.py",
+      "insertions": 712,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/services/verdict_pipeline.py",
+      "insertions": 79,
+      "deletions": 13
+    },
+    {
+      "path": "backend/app/services/verdict_semantics_engine.py",
+      "insertions": 368,
+      "deletions": 0
+    },
+    {
+      "path": "backend/app/services/verdict_trustworthiness_engine.py",
+      "insertions": 89,
+      "deletions": 0
+    },
+    {
+      "path": "backend/test_fortisiem_config_state.json",
+      "insertions": 2,
+      "deletions": 2
+    },
+    {
+      "path": "backend/tests/test_ais_3_2_universal_intelligence.py",
+      "insertions": 754,
+      "deletions": 0
+    },
+    {
+      "path": "frontend/package.json",
+      "insertions": 1,
+      "deletions": 1
+    },
+    {
+      "path": "frontend/src/app/agent-intelligence-studio/page.tsx",
+      "insertions": 16,
+      "deletions": 15
+    },
+    {
+      "path": "frontend/src/components/compact/Ais32IntelligencePanel.tsx",
+      "insertions": 660,
+      "deletions": 0
+    },
+    {
+      "path": "frontend/src/lib/api.ts",
+      "insertions": 131,
+      "deletions": 0
+    },
+    {
+      "path": "frontend/tests/ais-3-2-ui-integrity.test.mjs",
+      "insertions": 58,
+      "deletions": 0
+    }
+  ]
+}
