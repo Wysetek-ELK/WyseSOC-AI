@@ -11,32 +11,32 @@
 - **Context Ceiling:** `8192` tokens (`max_model_len` verified via `/v1/models`)
 - **Reserved Completion Tokens:** `768` tokens (`enable_thinking: false`, `temperature: 0.0`)
 - **Target Input Budget:** `7424` tokens (`8192 - 768`)
-- **Tokenizer Verification Method:** Live Server 2 `vllm_tokenize_api` (`messages_chat_template`) invoked from Server 1 via `GET /api/ground-truth/ais31/cohorts/AIS_3_0_INDEPENDENT_HOLDOUT_100/token-audit?verify_remote_tokenize=true`
+- **Tokenizer Verification Method:** Live Server 2 `vllm_tokenize_api` (`messages_chat_template`) executed from Server 1 via `GET /api/ground-truth/ais31/cohorts/AIS_3_0_INDEPENDENT_HOLDOUT_100/token-audit?verify_remote_tokenize=true`
 
 ---
 
-## 2. Live Remote `/tokenize` Results (Initial Pass Across All 100 Incidents)
+## 2. Pilot Defect & Remediation (`raw_payload` Fallback + Sanitizer Hardening)
 
-> [!NOTE]
-> An initial live `/tokenize` pass ran on `100/100` holdout incidents. Following the 5-incident pilot evidence-completeness finding (`inc.raw_payload` fallback for aggregated FortiSIEM incidents where `inc.events == []`), `/tokenize` audit is re-executed after redeploying the `raw_payload` fallback fix to verify that adding sanitized summary events preserves `0` context overflows.
+During Workstream 10 initial pilot wire inspection (`13960`, `16133`), **54/100** aggregated FortiSIEM incidents had `0` rows in `incident_events` (`events_total = 0`) because their event attributes (`incidentSrc`, `incidentTarget`, `incidentDetailJson`, `count`, `incidentTitle`) were stored on `Incident.raw_payload`.
 
-| Metric (Initial Pre-Fix Live `/tokenize`) | Verified Value |
-|---|---:|
-| Cohort Items Audited | **100** (`100` `vllm_tokenize_api`) |
-| Context Overflows (`> 7424`) | **0** |
-| All Fit Safely | **`true`** |
-| Min Wire Prompt Tokens | **2,992** |
-| Median Wire Prompt Tokens | **4,202.5** |
-| Mean Wire Prompt Tokens | **4,852.8** |
-| P95 Wire Prompt Tokens | **7,255** |
-| Max Wire Prompt Tokens | **7,284** |
-| Auto-Rebudgeted Items | **31 / 100** |
+1. **Evidence Plumbing Fix:** Added `AIS31BenchmarkService._extract_sanitized_raw_events_and_summary` (mirroring `GroundTruthCertificationService._build_raw_logs`) so all 100 incidents receive non-empty sanitized raw events and canonical evidence (`events_total >= 1` across `100/100` items).
+2. **Leakage Guard Hardening:** Added `"incidentreso"`, `"reso"`, and `"incident_reso"` to `HistoricalGroundTruthValidator._NORMALIZED_LEAKAGE_KEYS` and `model_payload_allowlist.FORBIDDEN_GROUND_TRUTH_KEYS`, and stripped historical ML `confidence` and `incidentStatus` prior to fallback event creation. Verified on synthetic non-holdout unit tests (`test_ais31_raw_payload_fallback_preserves_evidence_and_strips_leakage`).
 
 ---
 
-## 3. Evidence Completeness Defect Found During Pilot & Remediated
+## 3. Final Post-Fix Live Remote `/tokenize` Results (All 100 Holdout Items)
 
-During Workstream 10 pilot wire-prompt inspection (`13960`, `16133`), **54/100** aggregated FortiSIEM incidents had `0` rows in the relational `incident_events` table (`events_total = 0`), storing their triggering attributes (`incidentSrc`, `incidentTarget`, `incidentDetailJson`, `incidentTitle`, `count`) instead in `Incident.raw_payload`. Although `GroundTruthCertificationService._build_raw_logs` rendered `inc.raw_payload` for human reviewers, `AIS31BenchmarkService._prepare_incident_wire_payload` previously only read `inc.events`, leaving `events: []` on those 54 items.
+| Metric | Pre-Fix Audit | Post-Fix Live `/tokenize` Audit |
+|---|---:|---:|
+| Cohort Items Audited | 100 (`vllm_tokenize_api`) | **100** (`vllm_tokenize_api`) |
+| Items with `events_total == 0` | 54 | **0** (`100/100` have raw event payloads) |
+| Context Overflows (`> 7424`) | 0 | **0** |
+| All Fit Safely (`<= 7424`) | `true` | **`true`** |
+| Min Wire Prompt Tokens | 2,992 | **3,821** |
+| Median Wire Prompt Tokens | 4,202.5 | **5,307.0** |
+| Mean Wire Prompt Tokens | 4,852.8 | **5,772.3** |
+| P95 Wire Prompt Tokens | 7,255 | **7,279** |
+| Max Wire Prompt Tokens | 7,284 | **7,317** |
+| Auto-Rebudgeted Items | 31 | **29** |
 
-- **Fix Applied (`AIS31BenchmarkService._extract_sanitized_raw_events_and_summary`):** Falls back to sanitized `Incident.raw_payload` when `inc.events` is empty and merges safe summary fields (`incidentSrc`, `incidentTarget`, `incidentDetailJson`, `incidentDetail`, `count`), strictly preserving `FROZEN_NEUTRAL_SYSTEM_PROMPT`, rule definitions, and required JSON output schema.
-- **Leakage Guard Hardened:** Added `"incidentreso"`, `"reso"`, and `"incident_reso"` to both `HistoricalGroundTruthValidator._NORMALIZED_LEAKAGE_KEYS` and `model_payload_allowlist.FORBIDDEN_GROUND_TRUTH_KEYS`, and explicitly stripped historical ML `confidence` and `incidentStatus` before creating fallback events.
+- `FROZEN_NEUTRAL_SYSTEM_PROMPT`, `RuleDefinitionBuilder` rule specs, and required JSON response schema were never truncated on any incident.

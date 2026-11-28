@@ -1,0 +1,25 @@
+{
+  "schema_version": "ais31.changed_files.v1",
+  "generated_at_utc": "2026-11-28T12:25:00+00:00",
+  "deployed_commit_sha": "8c760c3b9f7957ad4283678ff1f8d1a31dd5dd96",
+  "previous_server1_commit_sha": "7615325d6360c02ea06cf9613a7ae5df3095f5b4",
+  "code_changes": [
+    {"path": "backend/alembic/versions/017_ais31_holdout_benchmark.py", "change_type": "added", "summary": "Additive Alembic migration creating ais31_benchmark_runs & ais31_benchmark_results tables"},
+    {"path": "backend/app/models/ais31_benchmark.py", "change_type": "added", "summary": "SQLAlchemy models for resumable AIS 3.1 benchmark orchestration and wire provenance"},
+    {"path": "backend/app/models/__init__.py", "change_type": "modified", "summary": "Exported AIS31BenchmarkRun & AIS31BenchmarkResult"},
+    {"path": "backend/app/schemas/ground_truth.py", "change_type": "modified", "summary": "Added exposure breakdown counters & benchmark status fields on CohortProgressCounters and queue items"},
+    {"path": "backend/app/services/ground_truth_certification_service.py", "change_type": "modified", "summary": "Fixed Prisma SASE vendor fallback bug via _resolve_cohort_item_vendor and replaced flat exposure flag with _classify_item_exposure"},
+    {"path": "backend/app/services/ais27_benchmark_runner.py", "change_type": "modified", "summary": "Replaced hardcoded CrowdStrike/Prisma contract lookup with dynamic get_rule_semantics_and_contract"},
+    {"path": "backend/app/services/ais31_benchmark_service.py", "change_type": "added", "summary": "Frozen holdout manifest builder, live /tokenize auditor, sanitized raw_payload fallback extractor, idempotent GPU runner, and statistical evaluator"},
+    {"path": "backend/app/services/historical_ground_truth_validator.py", "change_type": "modified", "summary": "Hardened leakage denylist to strip FortiSIEM incidentreso/reso keys"},
+    {"path": "backend/app/services/model_payload_allowlist.py", "change_type": "modified", "summary": "Added incidentreso/incident_reso/reso to FORBIDDEN_GROUND_TRUTH_KEYS"},
+    {"path": "backend/app/api/ground_truth.py", "change_type": "modified", "summary": "Added 6 RBAC-protected AIS 3.1 benchmark & telemetry endpoints"},
+    {"path": "backend/tests/test_ais_3_1_holdout_benchmark.py", "change_type": "added", "summary": "Backend tests for manifest hashing, token budgeting, idempotent resume, RBAC 401/403, Alembic 017, and raw_payload fallback sanitization"},
+    {"path": "frontend/package.json", "change_type": "modified", "summary": "Registered tests/ais-3-1-ui-integrity.test.mjs in frontend test script"},
+    {"path": "frontend/src/lib/api.ts", "change_type": "modified", "summary": "Added AIS 3.1 typed client methods & exposure/benchmark DTO fields"},
+    {"path": "frontend/src/app/human-review-queue/page.tsx", "change_type": "modified", "summary": "Removed outdated AIS 2.6e tag from certification tab"},
+    {"path": "frontend/src/components/review/GroundTruthCertificationPanel.tsx", "change_type": "modified", "summary": "Removed AIS 2.7/20-cohort/Priority-5 strings, added dynamic cohort count, vendor/customer filters, separated certification & benchmark progress cards, and admin exposure card"},
+    {"path": "frontend/src/components/compact/AccuracyLearningSummary.tsx", "change_type": "modified", "summary": "Added AIS 3.1 Provisional vs Certified holdout accuracy comparison card separating Raw LLM vs Validated App metrics"},
+    {"path": "frontend/tests/ais-3-1-ui-integrity.test.mjs", "change_type": "added", "summary": "Frontend UI integrity regression assertions for AIS 3.1 changes"}
+  ]
+}

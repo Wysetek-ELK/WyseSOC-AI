@@ -1,7 +1,7 @@
 # AIS 3.1 — Workstream 5: Frozen Holdout Dataset Integrity
 
 **Cohort:** `AIS_3_0_INDEPENDENT_HOLDOUT_100`  
-**Inference Manifest SHA-256:** `e1c21e62afc071dd2b94868c8d7a41b6414b16b27705580a0f42fdbd61611a2d`  
+**Inference Manifest SHA-256:** `5e856ff85f0008cee40dec45c2f9e560ed760dd0413dcb7b559f7ff70d293d27`  
 **Machine-Readable Evidence:**
 - [FROZEN_HOLDOUT_MANIFEST.json](file:///c:/Users/amits/OneDrive/Documents/SOC-AI-Agent/docs/AIS_3_1/FROZEN_HOLDOUT_MANIFEST.json)
 - [HOLDOUT_ELIGIBILITY_MATRIX.json](file:///c:/Users/amits/OneDrive/Documents/SOC-AI-Agent/docs/AIS_3_1/HOLDOUT_ELIGIBILITY_MATRIX.json)

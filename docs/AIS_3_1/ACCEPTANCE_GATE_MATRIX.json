@@ -1,0 +1,44 @@
+{
+  "schema_version": "ais31.acceptance_gates.v1",
+  "generated_at_utc": "2026-11-28T12:25:00+00:00",
+  "primary_status": "FAIL_INTELLIGENCE",
+  "secondary_statuses": [
+    "PROVISIONAL_SINGLE_REVIEW_BENCHMARK",
+    "APPROVED_THRESHOLDS_UNRATIFIED"
+  ],
+  "integrity_gates": [
+    {"gate": "G01", "name": "Original 100 cohort members reconciled", "status": "PASS", "evidence": "100 unique UUIDs/FIDs across 30 rules; 0 overlap with AIS_2_6E_FROZEN_20"},
+    {"gate": "G02", "name": "Existing 100 locked human reviews preserved", "status": "PASS", "evidence": "100/100 locked reviews (admin) intact post-deploy"},
+    {"gate": "G03", "name": "Certification state accurately represented", "status": "PASS", "evidence": "100 GT2_SINGLE_REVIEW, 0 GT3_CERTIFIED, 0 conflicts; run tagged PROVISIONAL_SINGLE_REVIEW_BENCHMARK"},
+    {"gate": "G04", "name": "Exposure assessment completed", "status": "PASS", "evidence": "25 VERIFIED_NO_DETECTED_EXPOSURE, 75 HISTORICAL_LABEL_EXISTS_BUT_MASKED, 0 CONFIRMED_EXPOSURE"},
+    {"gate": "G05", "name": "Frozen dataset integrity verified", "status": "PASS", "evidence": "manifest_sha256=5e856ff85f0008cee40dec45c2f9e560ed760dd0413dcb7b559f7ff70d293d27"},
+    {"gate": "G06", "name": "No detected prohibited label leakage", "status": "PASS", "evidence": "0 wire leaks; incidentReso/reso/ML confidence stripped in sanitizer"},
+    {"gate": "G07", "name": "Holdout excluded from RAG and learning", "status": "PASS", "evidence": "0/100 in LearningRecord; rag_excluded=true, memory_excluded=true"},
+    {"gate": "G08", "name": "Active policy and benchmark configuration frozen", "status": "PASS", "evidence": "NEUTRAL_SOC_BASELINE_V2 sha256=3b09dd249e3fad38ac795f88e957b1b305bd04025cc8fb6cc4605584b461fb6c"},
+    {"gate": "G09", "name": "Actual target model verified", "status": "PASS", "evidence": "Qwen/Qwen3-14B-AWQ verified on Server 1->2 /v1/models and 100/100 completions"},
+    {"gate": "G10", "name": "Real GPU execution provenance verified", "status": "PASS", "evidence": "100/100 live Server 2 chatcmpl-* completions (LIVE_SERVER2_VLLM)"},
+    {"gate": "G11", "name": "Token and evidence integrity verified", "status": "PASS", "evidence": "100/100 live /tokenize <= 7424 (max=7317, 0 overflows, 0 empty events post-fix)"},
+    {"gate": "G12", "name": "All original cohort members accounted for", "status": "PASS", "evidence": "100 attempted, 100 succeeded, 0 failed, 0 unexecuted"},
+    {"gate": "G13", "name": "All eligible results accurately reconciled", "status": "PASS", "evidence": "Reconciled vs 98 binary GT + 2 human INCONCLUSIVE"},
+    {"gate": "G14", "name": "Correct accuracy and coverage denominators", "status": "PASS", "evidence": "Conclusive, Eligible (100), Binary GT (98), and Cluster-dedup (97) separated cleanly"},
+    {"gate": "G15", "name": "Raw LLM and final application accuracy separated", "status": "PASS", "evidence": "Raw 48.0% (25% cov) vs App 100.0% N=1 (1% cov) reported side-by-side"},
+    {"gate": "G16", "name": "Security and blind-review tests passed", "status": "PASS", "evidence": "6/6 live unauth endpoints 401; blind guarantees enforced server-side"},
+    {"gate": "G17", "name": "Regression and deployment acceptance verified", "status": "PASS", "evidence": "84/84 backend + 72/72 frontend tests PASS; Server 1 deployed 8c760c3b9f7957ad4283678ff1f8d1a31dd5dd96 & CDP screenshots verified"},
+    {"gate": "G18", "name": "No fabricated or misleading results", "status": "PASS", "evidence": "Empirical failures reported honestly without spin or denominator manipulation"}
+  ],
+  "proposed_performance_gates": {
+    "thresholds_formally_approved": false,
+    "evaluations": [
+      {"metric": "Conclusive accuracy >= 90%", "raw_llm": 48.0, "application": 100.0, "status": "FAIL (Raw 48.0%, App degenerate N=1)"},
+      {"metric": "Eligible end-to-end correct rate >= 85%", "raw_llm": 12.0, "application": 1.0, "status": "FAIL"},
+      {"metric": "TRUE_POSITIVE recall >= 95%", "raw_llm": 0.0, "application": null, "status": "FAIL (0/18 GT TPs detected)"},
+      {"metric": "F1 score >= 90%", "raw_llm": null, "application": null, "status": "FAIL (TP=0)"},
+      {"metric": "Balanced accuracy >= 85%", "raw_llm": 31.58, "application": null, "status": "FAIL"},
+      {"metric": "Decision coverage >= 90%", "raw_llm": 25.0, "application": 1.0, "status": "FAIL"},
+      {"metric": "False negative rate <= 5%", "raw_llm": 100.0, "application": null, "status": "FAIL (Raw 6/6 FN)"},
+      {"metric": "Successful eligible inference execution = 100%", "raw_llm": 100.0, "application": 100.0, "status": "PASS"},
+      {"metric": "Unsupported critical factual claims = 0", "raw_llm": null, "application": 64.0, "status": "FAIL (grounding_pass_rate 64.0%)"},
+      {"metric": "Confirmed prohibited data leakage = 0", "raw_llm": 0, "application": 0, "status": "PASS"}
+    ]
+  }
+}

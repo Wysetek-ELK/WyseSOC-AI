@@ -1,6 +1,6 @@
 {
   "schema_version": "ais31.test_execution.v1",
-  "generated_at_utc": "2026-11-28T09:50:00+00:00",
+  "generated_at_utc": "2026-11-28T12:25:00+00:00",
   "local_workspace": {
     "backend_core_ais_and_validation_suites": {
       "environment": "local_windows_venv_in_memory_sqlite_mocks",
@@ -23,7 +23,7 @@
         "tests/test_structured_output_and_injection.py",
         "tests/test_evaluation_metrics.py"
       ],
-      "passed": 83,
+      "passed": 84,
       "failed": 0,
       "skipped": 0,
       "exit_code": 0
@@ -63,9 +63,19 @@
     }
   },
   "deployed_server_1": {
-    "status": "PENDING_UPLA_GATE_2_DEPLOYMENT"
+    "status": "DEPLOYED_AND_VERIFIED",
+    "commit_sha": "8c760c3b9f7957ad4283678ff1f8d1a31dd5dd96",
+    "alembic_upgrade_head": "PASS (017_ais31_holdout_benchmark)",
+    "remote_pytest_smoke": "PASS (test_ais_heavy_tcp_e2e, test_rule_learning_platform, test_api_422_remediation)",
+    "remote_frontend_build": "PASS",
+    "live_rbac_unauth_probes": "PASS (6/6 returned 401)",
+    "remote_cdp_gui_checks": "PASS (0 console errors, 0 network errors, overflowX=false)"
   },
   "live_gpu_benchmark": {
-    "status": "PENDING_UPLA_GATE_2_DEPLOYMENT"
+    "status": "COMPLETED",
+    "model": "Qwen/Qwen3-14B-AWQ",
+    "vllm_tokenize_audit": "100/100 fit <= 7424 (0 overflows)",
+    "pilot_v2": "5/5 completed (0 failed, 0 leaks)",
+    "full_holdout_100": "100/100 completed (0 failed, run_id=64253e31-4e75-4d51-9f54-cc80a62fa17c)"
   }
 }

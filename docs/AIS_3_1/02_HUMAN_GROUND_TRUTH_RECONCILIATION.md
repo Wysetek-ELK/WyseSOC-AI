@@ -43,8 +43,9 @@
 
 ## 3. Vendor, Customer & Evidence Integrity Breakdown
 
-- **Resolved Vendor Distribution** (after fixing hardcoded `"Prisma SASE"` fallback bug):
-  - `FortiSIEM`: 89
+- **Resolved Vendor Distribution** (Server 1 PostgreSQL live rule metadata via `_resolve_cohort_item_vendor`, fixing the `"Prisma SASE"` fallback bug):
+  - `FortiSIEM`: 66
+  - `FortiGate / Firewall`: 23
   - `IPS / Firewall`: 4
   - `MISP Threat Intel`: 3
   - `FortiSIEM System`: 3

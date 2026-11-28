@@ -1,0 +1,92 @@
+{
+  "schema_version": "ais31.benchmark_run_manifest.v1",
+  "generated_at_utc": "2026-11-28T12:18:47.038980+00:00",
+  "run_id": "64253e31-4e75-4d51-9f54-cc80a62fa17c",
+  "run_key": "AIS31-FULL100-20261128",
+  "cohort_key": "AIS_3_0_INDEPENDENT_HOLDOUT_100",
+  "benchmark_grade": "PROVISIONAL_SINGLE_REVIEW_BENCHMARK",
+  "expected_model": "Qwen/Qwen3-14B-AWQ",
+  "actual_model_returned": "Qwen/Qwen3-14B-AWQ",
+  "policy_freeze_sha256": "3b09dd249e3fad38ac795f88e957b1b305bd04025cc8fb6cc4605584b461fb6c",
+  "manifest_sha256": "5e856ff85f0008cee40dec45c2f9e560ed760dd0413dcb7b559f7ff70d293d27",
+  "execution_summary": {
+    "original_cohort_size": 100,
+    "eligible_count": 100,
+    "attempted": 100,
+    "successful": 100,
+    "failed": 0,
+    "not_executed": 0,
+    "latency_avg_ms": 60302.14,
+    "latency_median_ms": 55581.95,
+    "latency_p95_ms": 81632.3,
+    "total_prompt_tokens": 577230,
+    "total_completion_tokens": 54031
+  },
+  "wire_prompt_spot_checks": [
+    {
+      "fortisiem_incident_id": "13960",
+      "actual_model_returned": "Qwen/Qwen3-14B-AWQ",
+      "inference_request_id": "chatcmpl-9afac4e76ec76c66",
+      "wire_prompt_sha256": "1db4685a9c086b7f3f528c2e055ec4f0e0676433ead9846eb9bdb4b60646e258",
+      "policy_sha256": "3b09dd249e3fad38ac795f88e957b1b305bd04025cc8fb6cc4605584b461fb6c",
+      "wire_token_audit": {
+        "token_count": 6210,
+        "local_estimate": 6088,
+        "drift_tokens": 122,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      },
+      "raw_llm_verdict": "REQUIRES_ATTENTION",
+      "validated_application_verdict": "REQUIRES_ATTENTION",
+      "leak_flags": []
+    },
+    {
+      "fortisiem_incident_id": "8601",
+      "actual_model_returned": "Qwen/Qwen3-14B-AWQ",
+      "inference_request_id": "chatcmpl-80346f5d5e052869",
+      "wire_prompt_sha256": "cb8d161085cbd7bfd78fc93170bd6107de3d4c0340dc3b61214af95477c932e1",
+      "policy_sha256": "3b09dd249e3fad38ac795f88e957b1b305bd04025cc8fb6cc4605584b461fb6c",
+      "wire_token_audit": {
+        "token_count": 4417,
+        "local_estimate": 4331,
+        "drift_tokens": 86,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      },
+      "raw_llm_verdict": "REQUIRES_ATTENTION",
+      "validated_application_verdict": "REQUIRES_ATTENTION",
+      "leak_flags": []
+    },
+    {
+      "fortisiem_incident_id": "14341",
+      "actual_model_returned": "Qwen/Qwen3-14B-AWQ",
+      "inference_request_id": "chatcmpl-81f1e2dde2aca297",
+      "wire_prompt_sha256": "a70a1dcd3c174f4580695ad080836fceae88c77034fe9e2a9076129951e2dd73",
+      "policy_sha256": "3b09dd249e3fad38ac795f88e957b1b305bd04025cc8fb6cc4605584b461fb6c",
+      "wire_token_audit": {
+        "token_count": 4299,
+        "local_estimate": 4351,
+        "drift_tokens": -52,
+        "source": "vllm_tokenize_api",
+        "tokenize_mode": "messages_chat_template",
+        "max_input_allowed": 7424,
+        "rebudget_iterations": 0,
+        "safety_margin_applied": 0
+      },
+      "raw_llm_verdict": "REQUIRES_ATTENTION",
+      "validated_application_verdict": "REQUIRES_ATTENTION",
+      "leak_flags": []
+    }
+  ],
+  "latest_summary_api_verified": {
+    "has_run": true,
+    "run_id": "64253e31-4e75-4d51-9f54-cc80a62fa17c",
+    "status": "COMPLETED"
+  }
+}

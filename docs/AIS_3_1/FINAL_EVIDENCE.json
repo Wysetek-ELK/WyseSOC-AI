@@ -1,0 +1,155 @@
+{
+  "schema_version": "ais31.final_evidence.v1",
+  "generated_at_utc": "2026-11-28T12:25:00+00:00",
+  "phase": "AIS_3_1",
+  "project": "Verdictum AI",
+  "primary_status": "FAIL_INTELLIGENCE",
+  "secondary_statuses": [
+    "PROVISIONAL_SINGLE_REVIEW_BENCHMARK",
+    "APPROVED_THRESHOLDS_UNRATIFIED"
+  ],
+  "units": {
+    "accuracy_and_rates": "percentage (0-100)",
+    "latency": "milliseconds",
+    "tokens": "token count (Qwen3 chat-template / vLLM /tokenize)"
+  },
+  "denominators": {
+    "conclusive_accuracy": "correct_verdict_count / conclusive_count (valid binary TP/FP comparisons)",
+    "eligible_end_to_end_correct_rate": "correct_verdict_count / eligible_population (100)",
+    "original_cohort_correct_rate": "correct_verdict_count / original_cohort_size (100)",
+    "decision_coverage": "conclusive_count / eligible_population (100)",
+    "recall": "tp / (tp + fn) among conclusive binary decisions (plus 12 Raw / 18 App abstained TPs reported separately)"
+  },
+  "cohort": {
+    "id": "AIS_3_0_INDEPENDENT_HOLDOUT_100",
+    "original_population": 100,
+    "verified_population": 100,
+    "locked_human_reviews": 100,
+    "gt2_count": 100,
+    "gt3_count": 0,
+    "conflicts": 0,
+    "eligible_count": 100,
+    "quarantined_count": 0,
+    "confirmed_exposure_count": 0,
+    "uncertain_exposure_count": 0,
+    "verified_no_detected_exposure_count": 25,
+    "historical_masked_count": 75,
+    "manifest_sha256": "5e856ff85f0008cee40dec45c2f9e560ed760dd0413dcb7b559f7ff70d293d27"
+  },
+  "runtime": {
+    "expected_model": "Qwen/Qwen3-14B-AWQ",
+    "actual_model": "Qwen/Qwen3-14B-AWQ",
+    "live_gpu_verified": true,
+    "vllm_version": "0.33.0",
+    "context_window": 8192,
+    "reserved_completion_tokens": 768,
+    "policy_version": "NEUTRAL_SOC_BASELINE_V2",
+    "policy_sha256": "3b09dd249e3fad38ac795f88e957b1b305bd04025cc8fb6cc4605584b461fb6c"
+  },
+  "benchmark": {
+    "run_id": "64253e31-4e75-4d51-9f54-cc80a62fa17c",
+    "run_key": "AIS31-FULL100-20261128",
+    "attempted": 100,
+    "successful": 100,
+    "failed": 0,
+    "not_executed": 0,
+    "conclusive_raw_llm": 25,
+    "inconclusive_raw_llm": 75,
+    "correct_raw_llm": 12,
+    "incorrect_raw_llm": 13,
+    "conclusive_app": 1,
+    "inconclusive_app": 99,
+    "correct_app": 1,
+    "incorrect_app": 0,
+    "latency_avg_ms": 60302.14,
+    "latency_median_ms": 55581.95,
+    "latency_p95_ms": 81632.3,
+    "total_prompt_tokens": 577230,
+    "total_completion_tokens": 54031
+  },
+  "raw_llm_metrics": {
+    "conclusive_accuracy": 48.0,
+    "eligible_end_to_end_correct_rate": 12.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": null,
+    "balanced_accuracy": 31.58,
+    "false_negative_rate": 100.0,
+    "decision_coverage": 25.0
+  },
+  "application_metrics": {
+    "conclusive_accuracy": 100.0,
+    "eligible_end_to_end_correct_rate": 1.0,
+    "precision": null,
+    "recall": null,
+    "f1": null,
+    "balanced_accuracy": null,
+    "false_negative_rate": null,
+    "decision_coverage": 1.0
+  },
+  "integrity": {
+    "benchmark_grade": "PROVISIONAL_SINGLE_REVIEW_BENCHMARK",
+    "ground_truth_certified": false,
+    "dataset_frozen": true,
+    "label_leakage_detected": false,
+    "rag_exclusion_verified": true,
+    "memory_exclusion_verified": true,
+    "prompt_parity_verified": true
+  },
+  "tests": {
+    "passed": 156,
+    "failed": 0,
+    "skipped": 0,
+    "blocked": 31,
+    "notes": "84 core backend pytest + 72 frontend node tests passed; 31 legacy fixture/seeded-SQLite/head-008 backend assertions blocked on missing local fixtures zip/db; pre-existing frontend eslint errors excluded."
+  },
+  "deployment": {
+    "server1_verified": true,
+    "remote_gui_verified": true,
+    "server2_modified": false,
+    "deployed_commit": "8c760c3b9f7957ad4283678ff1f8d1a31dd5dd96"
+  },
+  "acceptance": {
+    "approved_thresholds_available": false,
+    "integrity_gates_passed": true,
+    "intelligence_gates_passed": false,
+    "ready_for_ais_4_0": false,
+    "production_autonomy_approved": false
+  },
+  "remaining_blockers": [
+    "Core LLM intelligence & zero-shot NEUTRAL_SOC_BASELINE_V2 failed proposed targets on 30 unseen FortiSIEM rules (Raw LLM conclusive accuracy 48.0%, end-to-end 12.0%, recall 0.0%, coverage 25.0%, losing to 81.63% majority baseline).",
+    "IndependentVerdictValidator overrode 24/25 conclusive Raw LLM verdicts due to CrowdStrike/Prisma-specific contract assumptions, reducing validated app coverage to 1.0% (1/100).",
+    "10/30 holdout rules lack APPROVED Mode B policies and 16/20 approved rules carry legacy v1 templates.",
+    "Semantic mismatch between operational-health TP alerts (PH_RULE_NO_LOGS_*, PH_RULE_ACCELOPS_COLLECTOR_DELAY, PH_RULE_FGT_Config_Change) and neutral threat prompt caused 4/6 False Negatives.",
+    "Second independent human reviewer GT-3 certification remains pending (0/100 GT-3, 100/100 GT-2 single-review).",
+    "Fresh untouched holdout cohort will be required after any prompt/validator improvements on a dev dataset.",
+    "Server 1 -> Server 2 production TLS/VPC peering, NVML GPU exporter, and ratified numerical business acceptance thresholds remain pending."
+  ],
+  "required_user_actions": [
+    "Arrange a second independent human SOC reviewer on /human-review-queue (preserving existing 100 admin locks) for GT-3 certification.",
+    "Approve/clarify SOC policy semantics for operational health/config alerts vs cyber intrusions, and ratify formal business intelligence acceptance thresholds.",
+    "Authorize a targeted remediation cycle on a separate dev dataset (Mode B policies + FortiSIEM validator contracts) followed by a fresh untouched holdout cohort."
+  ],
+  "reports_generated": [
+    "00_EXECUTIVE_SUMMARY.md",
+    "01_PREVIOUS_AIS_AND_RUNTIME_ARCHITECTURE_AUDIT.md",
+    "02_HUMAN_GROUND_TRUTH_RECONCILIATION.md",
+    "03_GROUND_TRUTH_CERTIFICATION_GOVERNANCE.md",
+    "04_EXPOSURE_RISK_AND_DATA_LEAKAGE_AUDIT.md",
+    "05_FROZEN_HOLDOUT_DATASET_INTEGRITY.md",
+    "06_CORE_LLM_ISOLATION_AND_PROMPT_INTEGRITY.md",
+    "07_ACTIVE_POLICY_AND_WIRE_PROMPT_FREEZE.md",
+    "08_SERVER2_GPU_AND_INFERENCE_RUNTIME_TRUTH.md",
+    "09_TOKEN_BUDGET_AND_EVIDENCE_COMPLETENESS.md",
+    "10_REAL_GPU_FIVE_INCIDENT_PILOT.md",
+    "11_FULL_LIVE_HOLDOUT_BENCHMARK_EXECUTION.md",
+    "12_EMPIRICAL_ACCURACY_AND_STATISTICAL_INTEGRITY.md",
+    "13_VERDICT_ERROR_AND_ROOT_CAUSE_ANALYSIS.md",
+    "14_UI_CORRECTIONS_AND_ACCURACY_DISPLAY_INTEGRITY.md",
+    "15_SECURITY_RBAC_AND_HOLDOUT_ISOLATION.md",
+    "16_BACKEND_FRONTEND_AND_INTEGRATION_REGRESSION.md",
+    "17_SERVER1_DEPLOYMENT_AND_REMOTE_GUI_ACCEPTANCE.md",
+    "18_FINAL_ACCEPTANCE_GATE_MATRIX.md",
+    "19_REMAINING_BLOCKERS_AND_AIS_4_0_READINESS.md"
+  ]
+}
