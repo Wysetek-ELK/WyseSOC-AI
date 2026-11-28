@@ -47,6 +47,7 @@ from app.models.ais32_intelligence import (
     OrganizationalContextRecord,
     IntelligenceExecutionRecord,
 )
+from app.models.chat import SentinelConversation, SentinelMessage
 
 __all__ = [
     "Base",
@@ -101,4 +102,6 @@ __all__ = [
     "RuleContractRecord",
     "OrganizationalContextRecord",
     "IntelligenceExecutionRecord",
+    "SentinelConversation",
+    "SentinelMessage",
 ]

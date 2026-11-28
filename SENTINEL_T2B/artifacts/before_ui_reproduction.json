@@ -1,0 +1,10 @@
+{
+  "captured_at_utc": "2026-11-28T14:10:29.581Z",
+  "url": "http://172.26.41.240/soc-chatbot",
+  "finalState": {
+    "thinking": false,
+    "hasTokensBadge": true,
+    "bodyLen": 7864,
+    "tail": "nning for open ports to identify potential vulnerabilities | Directly matches the observed behavior |\n\n| Network Discovery | T1046 | Identifying active systems on the network | Indicates reconnaissance activity |\n\n| Reconnaissance | T0007 | Gathering information about the network and systems | High relevance to the observed scanning behavior |\n\n| Exploit Public-Facing Application | T1210 | Exploiting known vulnerabilities in public-facing services | May be a follow-up to the scanning phase\n\nSend"
+  }
+}

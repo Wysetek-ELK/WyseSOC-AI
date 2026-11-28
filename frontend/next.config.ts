@@ -3,8 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
   experimental: {
-    // Allow long-running Server 2 LLM / chat inference requests (up to 300s) proxied through Next rewrites
-    proxyTimeout: 300_000,
+    // Allow long-running Server 2 LLM / chat inference requests (up to 600s) proxied through Next rewrites
+    proxyTimeout: 600_000,
   },
   async rewrites() {
     return [

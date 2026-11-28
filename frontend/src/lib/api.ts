@@ -1508,22 +1508,238 @@ async function parseChatHttpError(res: Response): Promise<string> {
   return detail;
 }
 
+interface ChatStreamStatusEvent {
+  type: "status";
+  status: string;
+  request_id?: string;
+  conversation_id?: string | null;
+  message_id?: string | null;
+  model?: string;
+  requested_max_tokens?: number;
+  effective_context_window?: number;
+  prompt_tokens_estimated?: number;
+  history_trimmed_count?: number;
+  context_warning?: string | null;
+  is_continuation?: boolean;
+  parent_message_id?: string | null;
+  continuation_index?: number;
+}
+
 interface ChatStreamDoneEvent {
   type: "done";
+  request_id?: string;
+  conversation_id?: string | null;
+  message_id?: string | null;
+  status?: string;
+  finish_reason?: string | null;
+  stream_termination?: string | null;
   model?: string;
   latency_ms?: number;
   prompt_tokens?: number;
   completion_tokens?: number;
+  reasoning_tokens?: number | null;
   total_tokens?: number;
+  requested_max_tokens?: number | null;
+  effective_context_window?: number | null;
+  history_trimmed_count?: number;
+  continuation_available?: boolean;
+  is_continuation?: boolean;
+  parent_message_id?: string | null;
+  continuation_index?: number;
+  context_warning?: string | null;
+  error_detail?: string | null;
   attached_incident_id?: string | null;
   server_url?: string;
   timestamp?: string;
 }
 
 type ChatStreamEvent =
+  | ChatStreamStatusEvent
   | { type: "delta"; content?: string }
-  | { type: "error"; status_code?: number; detail?: string }
+  | { type: "reasoning_delta"; content?: string }
+  | { type: "error"; status_code?: number; status?: string; request_id?: string; detail?: string }
   | ChatStreamDoneEvent;
+
+async function consumeChatSseResponse(
+  res: Response,
+  callbacks: {
+    onDelta: (chunk: string) => void;
+    onReasoningDelta?: (chunk: string) => void;
+    onStatus?: (evt: ChatStreamStatusEvent) => void;
+  },
+  idleTimeoutMs = 120_000,
+): Promise<ChatResponse> {
+  if (!res.body) {
+    throw new Error("Streaming response body missing from Verdictum Sentinel.");
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let accumulated = "";
+  let accumulatedReasoning = "";
+  const metaHolder: {
+    done: ChatStreamDoneEvent | null;
+    statusEvt: ChatStreamStatusEvent | null;
+    streamError: { status?: string; status_code?: number; detail?: string } | null;
+  } = { done: null, statusEvt: null, streamError: null };
+
+  const processLine = (rawLine: string) => {
+    const line = rawLine.trim();
+    if (!line || line.startsWith(":") || !line.startsWith("data:")) return;
+    const jsonPart = line.slice(5).trim();
+    if (!jsonPart || jsonPart === "[DONE]") return;
+    let evt: ChatStreamEvent;
+    try {
+      evt = JSON.parse(jsonPart) as ChatStreamEvent;
+    } catch {
+      return;
+    }
+    if (evt.type === "status") {
+      metaHolder.statusEvt = evt;
+      callbacks.onStatus?.(evt);
+    } else if (evt.type === "delta" && typeof evt.content === "string") {
+      accumulated += evt.content;
+      callbacks.onDelta(evt.content);
+    } else if (evt.type === "reasoning_delta" && typeof evt.content === "string") {
+      accumulatedReasoning += evt.content;
+      callbacks.onReasoningDelta?.(evt.content);
+    } else if (evt.type === "error") {
+      metaHolder.streamError = { status: evt.status, status_code: evt.status_code, detail: evt.detail };
+      if (!accumulated) {
+        const err: any = new Error(evt.detail || "Verdictum Cortex stream error");
+        err.statusCode = evt.status_code;
+        err.responseStatus = evt.status;
+        throw err;
+      }
+    } else if (evt.type === "done") {
+      metaHolder.done = evt;
+    }
+  };
+
+  while (true) {
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+    const readPromise = reader.read();
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      idleTimer = setTimeout(() => {
+        const err: any = new Error("Streaming idle timeout exceeded waiting for Verdictum Sentinel.");
+        err.responseStatus = "TIMEOUT";
+        reject(err);
+      }, idleTimeoutMs);
+    });
+    let readRes: ReadableStreamReadResult<Uint8Array>;
+    try {
+      readRes = await Promise.race([readPromise, timeoutPromise]);
+    } finally {
+      if (idleTimer !== undefined) clearTimeout(idleTimer);
+    }
+    const { done, value } = readRes;
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const l of lines) {
+      processLine(l);
+    }
+  }
+  if (buffer.trim()) {
+    processLine(buffer);
+  }
+
+  const doneMeta = metaHolder.done;
+  const statusMeta = metaHolder.statusEvt;
+  if (!doneMeta) {
+    if (!accumulated) {
+      throw new Error(metaHolder.streamError?.detail || "Stream ended unexpectedly before response completion.");
+    }
+    return {
+      message: {
+        id: statusMeta?.message_id ?? undefined,
+        role: "assistant",
+        content: accumulated,
+        reasoning_content: accumulatedReasoning || undefined,
+        timestamp: new Date().toISOString(),
+        request_id: statusMeta?.request_id,
+        status: metaHolder.streamError?.status || "INTERRUPTED",
+        stream_termination: "stream_closed_without_done",
+        model: statusMeta?.model || "local-llm",
+        prompt_tokens: statusMeta?.prompt_tokens_estimated || 0,
+        requested_max_tokens: statusMeta?.requested_max_tokens,
+        effective_context_window: statusMeta?.effective_context_window,
+        is_continuation: Boolean(statusMeta?.is_continuation),
+        parent_message_id: statusMeta?.parent_message_id ?? undefined,
+        continuation_index: statusMeta?.continuation_index ?? 0,
+        continuation_available: Boolean(statusMeta?.conversation_id),
+        context_warning: statusMeta?.context_warning ?? undefined,
+      },
+      conversation_id: statusMeta?.conversation_id ?? undefined,
+      message_id: statusMeta?.message_id ?? undefined,
+      request_id: statusMeta?.request_id,
+      status: metaHolder.streamError?.status || "INTERRUPTED",
+      stream_termination: "stream_closed_without_done",
+      model: statusMeta?.model || "local-llm",
+      latency_ms: 0,
+      prompt_tokens: statusMeta?.prompt_tokens_estimated || 0,
+      completion_tokens: 0,
+      total_tokens: statusMeta?.prompt_tokens_estimated || 0,
+      requested_max_tokens: statusMeta?.requested_max_tokens ?? undefined,
+      effective_context_window: statusMeta?.effective_context_window ?? undefined,
+      history_trimmed_count: statusMeta?.history_trimmed_count ?? 0,
+      continuation_available: Boolean(statusMeta?.conversation_id),
+      context_warning: statusMeta?.context_warning ?? undefined,
+      server_url: "",
+      is_simulated: false,
+    };
+  }
+
+  const finalStatus = doneMeta.status || "COMPLETED";
+  return {
+    message: {
+      id: doneMeta.message_id ?? undefined,
+      role: "assistant",
+      content: accumulated,
+      reasoning_content: accumulatedReasoning || undefined,
+      timestamp: doneMeta.timestamp || new Date().toISOString(),
+      request_id: doneMeta.request_id,
+      status: finalStatus,
+      finish_reason: doneMeta.finish_reason ?? undefined,
+      stream_termination: doneMeta.stream_termination ?? undefined,
+      model: doneMeta.model || "local-llm",
+      prompt_tokens: doneMeta.prompt_tokens || 0,
+      completion_tokens: doneMeta.completion_tokens || 0,
+      reasoning_tokens: doneMeta.reasoning_tokens ?? undefined,
+      total_tokens: doneMeta.total_tokens || 0,
+      requested_max_tokens: doneMeta.requested_max_tokens ?? undefined,
+      effective_context_window: doneMeta.effective_context_window ?? undefined,
+      latency_ms: doneMeta.latency_ms || 0,
+      attached_incident_id: doneMeta.attached_incident_id ?? undefined,
+      is_continuation: Boolean(doneMeta.is_continuation),
+      parent_message_id: doneMeta.parent_message_id ?? undefined,
+      continuation_index: doneMeta.continuation_index ?? 0,
+      continuation_available: Boolean(doneMeta.continuation_available),
+      context_warning: doneMeta.context_warning ?? undefined,
+    },
+    conversation_id: doneMeta.conversation_id ?? undefined,
+    message_id: doneMeta.message_id ?? undefined,
+    request_id: doneMeta.request_id,
+    status: finalStatus,
+    finish_reason: doneMeta.finish_reason ?? undefined,
+    stream_termination: doneMeta.stream_termination ?? undefined,
+    model: doneMeta.model || "local-llm",
+    latency_ms: doneMeta.latency_ms || 0,
+    prompt_tokens: doneMeta.prompt_tokens || 0,
+    completion_tokens: doneMeta.completion_tokens || 0,
+    reasoning_tokens: doneMeta.reasoning_tokens ?? undefined,
+    total_tokens: doneMeta.total_tokens || 0,
+    requested_max_tokens: doneMeta.requested_max_tokens ?? undefined,
+    effective_context_window: doneMeta.effective_context_window ?? undefined,
+    history_trimmed_count: doneMeta.history_trimmed_count ?? 0,
+    continuation_available: Boolean(doneMeta.continuation_available),
+    context_warning: doneMeta.context_warning ?? undefined,
+    attached_incident_id: doneMeta.attached_incident_id ?? undefined,
+    server_url: doneMeta.server_url || "",
+    is_simulated: false,
+  };
+}
 
 export const api = {
   // Auth
@@ -2850,90 +3066,86 @@ return res.json();
   },
 
   async streamChatMessage(
-  req: ChatRequest,
-  callbacks: {
-  onDelta: (chunk: string) => void;
-}
-): Promise < ChatResponse > {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 300_000);
-  try {
-    const res = await fetchWithAuth(`${API_BASE}/chat/stream`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req),
-      signal: controller.signal,
-    });
+    req: ChatRequest,
+    callbacks: {
+      onDelta: (chunk: string) => void;
+      onReasoningDelta?: (chunk: string) => void;
+      onStatus?: (evt: ChatStreamStatusEvent) => void;
+    }
+  ): Promise<ChatResponse> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 600_000);
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+        signal: controller.signal,
+      });
 
-    // Fallback cleanly if streaming endpoint is not available (e.g. older backend instance)
-    if(res.status === 404 || res.status === 405) {
-  return this.sendChatMessage(req);
-}
-
-if (!res.ok || !res.body) {
-  throw new Error(await parseChatHttpError(res));
-}
-
-const reader = res.body.getReader();
-const decoder = new TextDecoder();
-let buffer = "";
-let accumulated = "";
-const metaHolder: { done: ChatStreamDoneEvent | null } = { done: null };
-
-const processLine = (rawLine: string) => {
-  const line = rawLine.trim();
-  if (!line || line.startsWith(":") || !line.startsWith("data:")) return;
-  const jsonPart = line.slice(5).trim();
-  if (!jsonPart || jsonPart === "[DONE]") return;
-  let evt: ChatStreamEvent;
-  try {
-    evt = JSON.parse(jsonPart) as ChatStreamEvent;
-  } catch {
-    return;
-  }
-  if (evt.type === "delta" && typeof evt.content === "string") {
-    accumulated += evt.content;
-    callbacks.onDelta(evt.content);
-  } else if (evt.type === "error") {
-    throw new Error(evt.detail || "Verdictum Cortex stream error");
-  } else if (evt.type === "done") {
-    metaHolder.done = evt;
-  }
-};
-
-while (true) {
-  const { done, value } = await reader.read();
-  if (done) break;
-  buffer += decoder.decode(value, { stream: true });
-  const lines = buffer.split("\n");
-  buffer = lines.pop() ?? "";
-  for (const l of lines) {
-    processLine(l);
-  }
-}
-if (buffer.trim()) {
-  processLine(buffer);
-}
-
-const doneMeta = metaHolder.done;
-return {
-  message: {
-    role: "assistant",
-    content: accumulated,
-    timestamp: doneMeta?.timestamp || new Date().toISOString(),
-  },
-  model: doneMeta?.model || "local-llm",
-  latency_ms: doneMeta?.latency_ms || 0,
-  prompt_tokens: doneMeta?.prompt_tokens || 0,
-  completion_tokens: doneMeta?.completion_tokens || 0,
-  total_tokens: doneMeta?.total_tokens || 0,
-  attached_incident_id: doneMeta?.attached_incident_id ?? undefined,
-  server_url: doneMeta?.server_url || "",
-  is_simulated: false,
-};
+      if (res.status === 404 || res.status === 405) {
+        return this.sendChatMessage(req);
+      }
+      if (!res.ok) {
+        const errMsg = await parseChatHttpError(res);
+        const err: any = new Error(errMsg);
+        err.statusCode = res.status;
+        if (res.status === 422) err.responseStatus = "CONTEXT_BUDGET_EXCEEDED";
+        throw err;
+      }
+      return await consumeChatSseResponse(res, callbacks);
     } finally {
-  clearTimeout(timer);
-}
+      clearTimeout(timer);
+    }
+  },
+
+  async continueChatMessage(
+    req: ContinueChatRequest,
+    callbacks: {
+      onDelta: (chunk: string) => void;
+      onReasoningDelta?: (chunk: string) => void;
+      onStatus?: (evt: ChatStreamStatusEvent) => void;
+    }
+  ): Promise<ChatResponse> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 600_000);
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/chat/continue`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const errMsg = await parseChatHttpError(res);
+        const err: any = new Error(errMsg);
+        err.statusCode = res.status;
+        if (res.status === 422) err.responseStatus = "CONTEXT_BUDGET_EXCEEDED";
+        throw err;
+      }
+      return await consumeChatSseResponse(res, callbacks);
+    } finally {
+      clearTimeout(timer);
+    }
+  },
+
+  async listChatConversations(limit = 25): Promise<ChatConversationSummary[]> {
+    const res = await fetchWithAuth(`${API_BASE}/chat/conversations?limit=${limit}`);
+    if (!res.ok) throw new Error("Failed to load Sentinel conversations");
+    return res.json();
+  },
+
+  async getChatConversation(conversationId: string): Promise<ChatConversationDetail> {
+    const res = await fetchWithAuth(`${API_BASE}/chat/conversations/${encodeURIComponent(conversationId)}`);
+    if (!res.ok) throw new Error("Failed to load Sentinel conversation");
+    return res.json();
+  },
+
+  async deleteChatConversation(conversationId: string): Promise<void> {
+    const res = await fetchWithAuth(`${API_BASE}/chat/conversations/${encodeURIComponent(conversationId)}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Failed to delete Sentinel conversation");
   },
 
   // =================== PHASE 9: CONTROLLED SOC PILOT & ELIGIBILITY ===================
@@ -3785,29 +3997,88 @@ export interface RegressionComparisonReport {
 }
 
 export interface ChatMessage {
+  id?: string;
   role: "user" | "assistant" | "system";
   content: string;
+  reasoning_content?: string;
   timestamp?: string;
+  request_id?: string;
+  status?: string;
+  finish_reason?: string;
+  stream_termination?: string;
+  model?: string;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  reasoning_tokens?: number;
+  total_tokens?: number;
+  requested_max_tokens?: number;
+  effective_context_window?: number;
+  latency_ms?: number;
+  attached_incident_id?: string;
+  is_continuation?: boolean;
+  parent_message_id?: string;
+  continuation_index?: number;
+  continuation_available?: boolean;
+  context_warning?: string;
 }
 
 export interface ChatRequest {
   messages: ChatMessage[];
   incident_id?: string;
+  conversation_id?: string;
   temperature?: number;
   max_tokens?: number;
   system_prompt?: string;
+  persist?: boolean;
+}
+
+export interface ContinueChatRequest {
+  conversation_id: string;
+  message_id: string;
+  temperature?: number;
+  max_tokens?: number;
 }
 
 export interface ChatResponse {
   message: ChatMessage;
+  conversation_id?: string;
+  message_id?: string;
+  request_id?: string;
+  status?: string;
+  finish_reason?: string;
+  stream_termination?: string;
   model: string;
   latency_ms: number;
   prompt_tokens: number;
   completion_tokens: number;
+  reasoning_tokens?: number;
   total_tokens: number;
+  requested_max_tokens?: number;
+  effective_context_window?: number;
+  history_trimmed_count?: number;
+  continuation_available?: boolean;
+  context_warning?: string;
   attached_incident_id?: string;
   server_url: string;
   is_simulated: boolean;
+}
+
+export interface ChatConversationSummary {
+  id: string;
+  title: string;
+  attached_incident_id?: string | null;
+  message_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatConversationDetail {
+  id: string;
+  title: string;
+  attached_incident_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  messages: ChatMessage[];
 }
 
 export interface ChatStatusResponse {
@@ -3825,6 +4096,9 @@ export interface ChatStatusResponse {
   current_s2_health?: string;
   gpu_telemetry_verified?: boolean;
   test_environment?: string | null;
+  verified_max_model_len?: number | null;
+  effective_context_window?: number | null;
+  enable_thinking?: boolean;
 }
 
 export interface PilotConfig {

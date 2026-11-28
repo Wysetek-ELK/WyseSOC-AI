@@ -1,0 +1,76 @@
+{
+  "captured_at_utc": "2026-11-28T14:04:58.357096+00:00",
+  "note": "Reconstructed T2 and T3.1 prompts (exact original prompts not persisted in unpatched Sentinel DB/logs).",
+  "incident_id": "16100",
+  "reconstructed_t2_prompt": "Perform a complete structured SOC rule-reasoning investigation for the attached Heavy TCP Host Scan On Fixed Port incident (#16100) using Sections A through I below. Do not skip any section:\n\nSection A: Incident Overview & Rule Definition (rule threshold, window, group-by fields)\nSection B: Observed Telemetry & Evidence Extraction (source IP, destination port, unique destination IPs / incidentCount, timestamps)\nSection C: Correlation Threshold & Mathematical Verification (compare observed metrics against COUNT(DISTINCT destIpAddr) >= 100 within 180s)\nSection D: MITRE ATT&CK Mapping (tactics, techniques, sub-techniques)\nSection E: Behavioral & Network Context Assessment (internal vs external, benign scanner vs reconnaissance)\nSection F: Missing Evidence & Telemetry Gaps\nSection G: Confidence & Uncertainty Evaluation\nSection H: Recommended SOC Containment & Analyst Actions\nSection I: Final Verdict (TRUE_POSITIVE / FALSE_POSITIVE / REQUIRES_ATTENTION) and Summary Justification.\nEnd your response with the marker: [INVESTIGATION_COMPLETE]",
+  "reconstructed_t3_1_prompt": "Perform a compact, evidence-only extraction and consistency check for attached incident #16100. Keep each item concise, and include ALL numbered sections 1 through 9:\n\n1. Incident & Rule Metadata:\n2. Source & Destination Entities:\n3. Ports & Protocol Details:\n4. Observed Event / Target Counts:\n5. Aggregate Calculations & Threshold Check:\n6. Rule Pattern Condition Evaluation:\n7. Eventtime and date/time consistency:\n8. Evidence Completeness & Gaps:\n9. Final Verification & Completion Marker:\nEnd with exact marker: [T3_1_COMPLETE]",
+  "executions": {
+    "t2_stream_1024": {
+      "path": "backend_stream",
+      "timestamp_utc": "2026-11-28T14:05:52.308125+00:00",
+      "http_status": 200,
+      "ttft_ms": 866.7,
+      "total_duration_ms": 53951.0,
+      "delta_count": 1024,
+      "content": "# SOC Rule-Reasoning Investigation for Incident #16100: \"Heavy TCP Host Scan On Fixed Port\"\n\n---\n\n## **Section A: Incident Overview & Rule Definition**\n\n**Rule Name:** `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`  \n**Rule Description:** This rule is triggered when a large number of TCP packets are sent to the same destination port across multiple unique destination IPs within a short time window, indicating a potential host scan or reconnaissance activity.\n\n**Rule Threshold:**  \n- `COUNT(DISTINCT destIpAddr) >= 100`  \n- **Time Window:** 180 seconds (3 minutes)  \n- **Group-by Fields:**  \n  - `source_ip`  \n  - `dest_port`  \n  - `timestamp` (within the 180s window)\n\n**Purpose:** Detect potential scanning behavior where a single source IP sends TCP packets to multiple unique destination IPs on the same fixed port, which is a common pattern in network reconnaissance.\n\n---\n\n## **Section B: Observed Telemetry & Evidence Extraction**\n\n**Incident ID:** #16100  \n**Event Type:** `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`  \n**Severity:** MEDIUM  \n**Status:** Open  \n**Source IP:** `172.25.25.29`  \n**Destination IP:** `45.64.199.219`  \n**Destination Port:** `null` (not specified in the incident context)  \n**Event Count:** `0` (no event samples provided)  \n**AI Verdict:** `PENDING`  \n**AI Verdict Reason:** `null` (no reasoning provided)\n\n**Observed Telemetry Summary:**\n- **Source IP:** `172.25.25.29` (internal IP, likely a host within the network)\n- **Destination IP:** `45.64.199.219` (external IP, possibly a public-facing asset or honeypot)\n- **Destination Port:** Not specified in the incident context\n- **Event Count:** `0` (no event samples provided for analysis)\n- **Timestamps:** Not provided in the incident context\n\n**Missing Data:**\n- No timestamps or event samples provided for analysis\n- No list of unique destination IPs or ports\n- No correlation with other events or logs\n\n---\n\n## **Section C: Correlation Threshold & Mathematical Verification**\n\n**Rule Threshold:**  \n- `COUNT(DISTINCT destIpAddr) >= 100`  \n- **Time Window:** 180 seconds (3 minutes)\n\n**Verification:**\n- **Observed `COUNT(DISTINCT destIpAddr)`:** `0` (no data provided)\n- **Time Window:** Not applicable (no timestamps provided)\n- **Conclusion:** The rule threshold cannot be verified due to the absence of event samples and timestamps. The rule is designed to detect a high volume of TCP traffic to multiple IPs on the same port, but without telemetry, the threshold cannot be confirmed.\n\n---\n\n## **Section D: MITRE ATT&CK Mapping**\n\n**Tactics:**  \n- **Reconnaissance** (T0007) \u2013 Gathering information about the network or systems to identify potential targets.\n\n**Techniques & Sub-Techniques:**\n- **T1046.001 \u2013 Network Scan** \u2013 Scanning the network to identify active hosts or open ports.\n- **T1092 \u2013 Network Sniffing** \u2013 Monitoring network traffic to capture sensitive information.\n- **T1077 \u2013 Windows Reboot** \u2013 If the scan is part of a larger attack chain, rebooting the system may be a follow-up action.\n\n**Mapping Justification:**  \n- The rule is designed to detect TCP scans, which align with the **Network Scan** technique under the **Reconnaissance** tactic.\n- If the source IP is internal and the destination IPs are external, it may indicate an internal host scanning external IPs, which is a common reconnaissance behavior.\n\n---\n\n## **Section E: Behavioral & Network Context Assessment**\n\n**Source IP:** `172.25.25.29`  \n- **Internal IP** \u2013 Likely a host within the network (e.g., a workstation, server, or IoT device).\n- **Behavior:** If this IP is sending TCP packets to multiple external IPs on the same port, it could be:\n  - A **benign scanner** (e.g., a network diagnostic tool or vulnerability scanner)\n  - A **malicious actor** performing **reconnaissance** to identify potential targets\n\n**Destination IP:** `45.64.199.219`  \n- **External IP** \u2013 Possibly a public-facing asset, honeypot, or a known malicious IP.\n- **Behavior:** If this IP is receiving a high volume of TCP packets from the same source port, it may be:\n",
+      "done_meta": {
+        "type": "done",
+        "model": "Qwen/Qwen3-14B-AWQ",
+        "latency_ms": 53920.8,
+        "prompt_tokens": 421,
+        "completion_tokens": 1007,
+        "total_tokens": 1428,
+        "attached_incident_id": "16100",
+        "server_url": "http://13.204.214.64:8000/v1",
+        "timestamp": "2026-11-28T14:05:52.558159+00:00"
+      },
+      "error_meta": null,
+      "tail_sse_lines": [
+        "data: {\"type\": \"delta\", \"content\": \" it\"}",
+        "data: {\"type\": \"delta\", \"content\": \" may\"}",
+        "data: {\"type\": \"delta\", \"content\": \" be\"}",
+        "data: {\"type\": \"delta\", \"content\": \":\\n\"}",
+        "data: {\"type\": \"done\", \"model\": \"Qwen/Qwen3-14B-AWQ\", \"latency_ms\": 53920.8, \"prompt_tokens\": 421, \"completion_tokens\": 1007, \"total_tokens\": 1428, \"attached_incident_id\": \"16100\", \"server_url\": \"http://13.204.214.64:8000/v1\", \"timestamp\": \"2026-11-28T14:05:52.558159+00:00\"}"
+      ]
+    },
+    "t2_message_1024": {
+      "path": "backend_message",
+      "timestamp_utc": "2026-11-28T14:06:47.127151+00:00",
+      "http_status": 200,
+      "total_duration_ms": 54818.9,
+      "model": "Qwen/Qwen3-14B-AWQ",
+      "prompt_tokens": 662,
+      "completion_tokens": 1024,
+      "total_tokens": 1686,
+      "content": "# SOC Rule-Reasoning Investigation: Incident #16100 - Heavy TCP Host Scan On Fixed Port\n\n---\n\n## **Section A: Incident Overview & Rule Definition**\n\n**Rule Name:** `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`  \n**Rule Description:** This rule is triggered when a large number of TCP packets are sent to the same destination port across multiple unique destination IPs within a short time window, indicating a potential host scan or network reconnaissance activity.\n\n**Rule Threshold:**  \n- **COUNT(DISTINCT destIpAddr) >= 100**  \n- **Time Window:** 180 seconds (3 minutes)  \n- **Group-by Fields:**  \n  - `source_ip`  \n  - `dest_port`  \n  - `timestamp` (within the 180s window)\n\n**Purpose:** To detect potential scanning behavior where a single source IP is probing multiple hosts on the same port, which is a common tactic in network reconnaissance.\n\n---\n\n## **Section B: Observed Telemetry & Evidence Extraction**\n\n**Source IP:** `172.25.25.29`  \n**Destination Port:** `null` (no specific port specified in the incident context)  \n**Unique Destination IPs:** `0` (incidentCount = 0)  \n**Timestamps:** Not provided in the incident context  \n**Event Count:** `0` (no events recorded)\n\n**Observations:**\n- No specific destination port is listed in the incident context, which is unusual for a host scan rule that typically targets a fixed port.\n- The `incidentCount` is `0`, indicating that no events were recorded or triggered by this rule.\n- No timestamps or specific destination IPs are provided, which limits the ability to assess the actual scanning behavior.\n\n---\n\n## **Section C: Correlation Threshold & Mathematical Verification**\n\n**Rule Threshold:**  \n- **COUNT(DISTINCT destIpAddr) >= 100**  \n- **Time Window:** 180 seconds (3 minutes)\n\n**Observed Metrics:**\n- **COUNT(DISTINCT destIpAddr):** `0`  \n- **Time Window:** Not applicable (no timestamps provided)  \n- **Event Count:** `0`\n\n**Verification:**\n- The rule threshold is not met because the number of unique destination IPs is `0`, which is far below the required `100`.\n- No events were recorded, and no timestamps are available to confirm the time window.\n\n**Conclusion:** The rule was not triggered due to insufficient or missing telemetry data.\n\n---\n\n## **Section D: MITRE ATT&CK Mapping**\n\n| MITRE ATT&CK Technique | Description | Relevance to Incident |\n|------------------------|-------------|------------------------|\n| **T1059.001** - Command and Scripting Interpreter: PowerShell | Used for executing malicious scripts. | Not directly applicable; no PowerShell activity is indicated. |\n| **T1135** - Network Discovery | Involves scanning the network to identify active hosts. | Potentially relevant if the source IP was scanning multiple hosts. |\n| **T1046** - Native API | May be used to perform network scanning or reconnaissance. | Not directly applicable without further evidence. |\n| **T1077** - Windows Management Instrumentation (WMI) | Used for remote system management and can be abused for scanning. | Not directly applicable without evidence of WMI usage. |\n\n**Note:** The mapping is speculative due to the lack of concrete evidence or logs. Further investigation is required to confirm any MITRE ATT&CK technique involvement.\n\n---\n\n## **Section E: Behavioral & Network Context Assessment**\n\n**Internal vs External:**\n- **Source IP:** `172.25.25.29` \u2013 This is a private IP address, suggesting the source is likely internal to the organization.\n- **Destination IP:** `45.64.199.219` \u2013 This is a public IP address, indicating the scan may be targeting external hosts.\n\n**Benign Scanner vs Reconnaissance:**\n- **Benign Scanners:** Legitimate network scanners (e.g., Nmap, Nessus) are often used for vulnerability assessments and may scan multiple IPs.\n- **Reconnaissance:** If the source IP is internal and the scan is targeting external IPs, it could be part of a reconnaissance phase in an attack.\n\n**Contextual Considerations:**\n- The lack of event data and timestamps makes it difficult to determine whether the scan is benign or malicious.\n- If this is a known internal scanning tool, it may be a false positive.\n\n---\n\n## **Section F: Missing Evidence & Telemetry Gaps**\n\n**Missing Evidence:**\n- **Destination Port:** Not specified in the incident context.\n- **Timestamps:** No timestamps are provided to assess the time window.\n- **Event Count:** `0` indicates no events were recorded, which may be due to a lack of data or a misconfigured"
+    },
+    "t3_1_stream_1024": {
+      "path": "backend_stream",
+      "timestamp_utc": "2026-11-28T14:07:11.137399+00:00",
+      "http_status": 200,
+      "ttft_ms": 341.1,
+      "total_duration_ms": 24010.2,
+      "delta_count": 444,
+      "content": "1. **Incident & Rule Metadata:**  \n   - Incident ID: `16100`  \n   - Title: `Heavy TCP Host Scan On Fixed Port`  \n   - Event Type: `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`  \n   - Severity: `MEDIUM`  \n   - Status: `Open`  \n   - AI Verdict: `PENDING`  \n\n2. **Source & Destination Entities:**  \n   - Source IP: `172.25.25.29`  \n   - Destination IP: `45.64.199.219`  \n   - Destination Port: `null` (not specified)  \n\n3. **Ports & Protocol Details:**  \n   - Protocol: `TCP`  \n   - Port Information: `Destination Port: null` (no specific port provided)  \n\n4. **Observed Event / Target Counts:**  \n   - Event Count: `0`  \n   - No specific targets or hosts listed in `sample_events`  \n\n5. **Aggregate Calculations & Threshold Check:**  \n   - Event Count: `0` (no data to calculate thresholds)  \n   - Threshold Check: `N/A` (no data available for evaluation)  \n\n6. **Rule Pattern Condition Evaluation:**  \n   - Rule: `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`  \n   - Pattern: Likely detects heavy TCP scans on a fixed port  \n   - Evaluation: `PENDING` (no event data to evaluate)  \n\n7. **Eventtime and date/time consistency:**  \n   - No timestamps or event times provided in the incident context  \n   - Consistency: `N/A` (no data to assess)  \n\n8. **Evidence Completeness & Gaps:**  \n   - Missing: `Event Count`, `sample_events`, `description`, `detail`, `destination_port`, and `eventtime`  \n   - Gaps: No telemetry or logs provided for analysis  \n\n9. **Final Verification & Completion Marker:**  \n   - Verification: Incomplete due to missing data and event details  \n   - Completion Marker: `[T3_1_COMPLETE]`",
+      "done_meta": {
+        "type": "done",
+        "model": "Qwen/Qwen3-14B-AWQ",
+        "latency_ms": 23965.6,
+        "prompt_tokens": 421,
+        "completion_tokens": 399,
+        "total_tokens": 820,
+        "attached_incident_id": "16100",
+        "server_url": "http://13.204.214.64:8000/v1",
+        "timestamp": "2026-11-28T14:07:11.388554+00:00"
+      },
+      "error_meta": null,
+      "tail_sse_lines": [
+        "data: {\"type\": \"delta\", \"content\": \"1\"}",
+        "data: {\"type\": \"delta\", \"content\": \"_COMPLETE\"}",
+        "data: {\"type\": \"delta\", \"content\": \"]\"}",
+        "data: {\"type\": \"delta\", \"content\": \"`\"}",
+        "data: {\"type\": \"done\", \"model\": \"Qwen/Qwen3-14B-AWQ\", \"latency_ms\": 23965.6, \"prompt_tokens\": 421, \"completion_tokens\": 399, \"total_tokens\": 820, \"attached_incident_id\": \"16100\", \"server_url\": \"http://13.204.214.64:8000/v1\", \"timestamp\": \"2026-11-28T14:07:11.388554+00:00\"}"
+      ]
+    }
+  }
+}
