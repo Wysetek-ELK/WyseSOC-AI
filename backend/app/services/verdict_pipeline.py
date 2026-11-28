@@ -657,10 +657,34 @@ async def run_shared_verdict_pipeline(
         )
 
     # 3. Resolve Shared Detection Semantics & Evidence Contract (honors RuleIntelligenceSnapshot)
+    dynamic_contract = None
+    org_context: Dict[str, Any] = {"context_status": "UNKNOWN", "matched_records": [], "authorizes_activity": False}
     if rule:
         semantics, contract, snap = await get_rule_semantics_and_contract(
             db, rule, prompt_version=active_v
         )
+        try:
+            from app.services.rule_intelligence_engine import RuleIntelligenceEngine
+            from app.services.organizational_context_service import OrganizationalContextService
+            from app.services.universal_prompt_engine import UniversalPromptEngine
+
+            dynamic_contract, _ = await RuleIntelligenceEngine.get_or_build_contract_for_rule(
+                db, rule, prompt_version=active_v, canonical_records=norm_result.records, incident_payload=payload_dict
+            )
+            org_context = await OrganizationalContextService.resolve_relevant_context(
+                db,
+                customer=getattr(incident, "customer", "DEFAULT"),
+                allowed_context_types=dynamic_contract.approved_organizational_context_types,
+                observed_entities=UniversalPromptEngine.extract_observed_entities(norm_result, rule),
+            )
+            payload_dict["organizational_context"] = org_context
+            payload_dict["rule_contract_summary"] = {
+                "contract_id": dynamic_contract.contract_id,
+                "archetype": dynamic_contract.rule_archetype,
+                "approval_state": dynamic_contract.approval_state.value,
+            }
+        except Exception:
+            dynamic_contract = None
     else:
         semantics, snap = None, None
         contract = EvidenceContractService.get_contract_for_rule(None, active_v)
@@ -1042,20 +1066,44 @@ async def run_shared_verdict_pipeline(
         normalization_result=norm_result,
     )
 
-    val_res = IndependentVerdictValidator.validate_verdict(
-        incident_id=incident.incident_id,
-        proposed_verdict=verdict_obj.verdict,
-        raw_model_confidence=verdict_obj.confidence,
-        preflight=preflight,
-        claim_grounding=claim_grounding,
-        normalization_result=norm_result,
-        contract=contract,
-        allow_simulation=(is_simulation or actual_provider_type == "SIMULATED" or allow_mock),
-        compilation_digest=compiled_policy.compilation_digest,
-        model_reason=verdict_obj.reason,
-        contradictory_evidence=getattr(verdict_obj, "contradictory_evidence", None),
-        confidence_scale=getattr(verdict_obj, "confidence_scale", None),
+    # Use ModularVerdictValidator for rule-aware FortiSIEM archetypes while preserving exact legacy CrowdStrike/Prisma behavior
+    rule_ident_l = str(getattr(rule, "rule_id", "") or "").lower() if rule else ""
+    is_legacy_cs_or_prisma = (
+        "cs_suspicious" in rule_ident_l
+        or "crowdstrike" in rule_ident_l
+        or "prisma" in rule_ident_l
+        or "suspicious_file" in rule_ident_l
     )
+    if dynamic_contract is not None and not is_legacy_cs_or_prisma:
+        from app.services.modular_verdict_validator import ModularVerdictValidator
+        val_res = ModularVerdictValidator.validate(
+            incident_id=incident.incident_id,
+            proposed_verdict=verdict_obj.verdict,
+            raw_model_confidence=verdict_obj.confidence,
+            preflight=preflight,
+            claim_grounding=claim_grounding,
+            normalization_result=norm_result,
+            legacy_contract=contract,
+            dynamic_contract=dynamic_contract,
+            org_context=org_context,
+            model_output=raw_verdict_dict,
+            allow_provisional_contracts=(is_simulation or actual_provider_type == "SIMULATED" or allow_mock or (active_v and active_v.status == "APPROVED")),
+        )
+    else:
+        val_res = IndependentVerdictValidator.validate_verdict(
+            incident_id=incident.incident_id,
+            proposed_verdict=verdict_obj.verdict,
+            raw_model_confidence=verdict_obj.confidence,
+            preflight=preflight,
+            claim_grounding=claim_grounding,
+            normalization_result=norm_result,
+            contract=contract,
+            allow_simulation=(is_simulation or actual_provider_type == "SIMULATED" or allow_mock),
+            compilation_digest=compiled_policy.compilation_digest,
+            model_reason=verdict_obj.reason,
+            contradictory_evidence=getattr(verdict_obj, "contradictory_evidence", None),
+            confidence_scale=getattr(verdict_obj, "confidence_scale", None),
+        )
 
     hist_stats = historical_stats or {"sample_count": 0, "accuracy": None, "is_calibrated": False}
     auth_threshold = snap.threshold if snap else None
@@ -1222,6 +1270,16 @@ async def run_shared_verdict_pipeline(
         final_verdict=final_auth_verdict,
         is_decisive=final_is_decisive,
     )
+    # AIS 3.2: Keep automated incident closure & remediation strictly disabled
+    gov_meta["auto_incident_closure_allowed"] = False
+    gov_meta["external_writeback_allowed"] = False
+    trust_reconciliation = VerdictTrustworthinessEngine.reconcile_verdict_layers(
+        raw_llm_verdict=val_res.proposed_verdict,
+        validated_verdict=final_auth_verdict,
+        validation_result=val_res,
+        trust_result=trust_res,
+        allow_advisory_uncalibrated=True,
+    )
     verdict_data = {
         "incident_id": incident.incident_id,
         "proposed_verdict": val_res.proposed_verdict,
@@ -1278,6 +1336,14 @@ async def run_shared_verdict_pipeline(
         "contract_id": val_res.contract_id,
         "contract_version": val_res.contract_version,
         "validator_version": val_res.validator_version,
+        "validator_module": getattr(val_res, "validator_module", None),
+        "failed_check": getattr(val_res, "failed_check", None),
+        "failure_classification": getattr(val_res, "failure_classification", None),
+        "semantic_evaluation": getattr(val_res, "semantic_evaluation", None),
+        "organizational_context_status": org_context.get("context_status", "UNKNOWN"),
+        "trust_layer_reconciliation": trust_reconciliation,
+        "effective_operational_verdict": trust_reconciliation["effective_operational_verdict"],
+        "automation_eligibility": trust_reconciliation["automation_eligibility"],
         "compiler_version": compiled_policy.compiler_version,
         "compilation_digest": compiled_policy.compilation_digest,
         "policy_sections_count": len(compiled_policy.sections),

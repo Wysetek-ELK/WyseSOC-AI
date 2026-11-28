@@ -4363,6 +4363,137 @@ export const groundTruthApi = {
   },
 };
 
+export interface Ais32ContractSummary {
+  rule_db_id: string;
+  fortisiem_rule_id: string;
+  rule_name: string;
+  source_vendor: string;
+  rule_archetype: string;
+  secondary_archetype?: string | null;
+  contract_id: string;
+  contract_version: number;
+  approval_state: string;
+  mandatory_evidence_fields: string[];
+  approved_organizational_context_types: string[];
+  is_supported_rule: boolean;
+  contract_hash: string;
+  persisted: boolean;
+}
+
+export interface Ais32OrgContextItem {
+  id: string;
+  customer: string;
+  context_type: string;
+  context_value: string;
+  match_pattern: string;
+  description: string;
+  source_system: string;
+  verification_status: string;
+  approval_status: string;
+  approved_by?: string | null;
+  valid_from?: string | null;
+  valid_until?: string | null;
+  record_version: number;
+}
+
+export const ais32Api = {
+  async getOverview(): Promise<Record<string, any>> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/overview`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  async getArchetypes(): Promise<Record<string, any>> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/archetypes`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  async getSemantics(): Promise<Record<string, any>> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/semantics`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  async listContracts(): Promise<{ total: number; items: Ais32ContractSummary[] }> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/contracts`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  async getContractDetail(ruleIdentifier: string): Promise<Record<string, any>> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/contracts/${encodeURIComponent(ruleIdentifier)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  async saveContract(
+    ruleIdentifier: string,
+    payload: { overrides: Record<string, any>; approve: boolean }
+  ): Promise<Record<string, any>> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/contracts/${encodeURIComponent(ruleIdentifier)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
+    return res.json();
+  },
+  async getOrgContextTypes(): Promise<{ supported_types: string[] }> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/org-context/types`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  async listOrgContext(customer?: string): Promise<{ total: number; items: Ais32OrgContextItem[] }> {
+    const qs = customer ? `?customer=${encodeURIComponent(customer)}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/ais32/org-context${qs}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  async createOrgContext(payload: {
+    customer: string;
+    context_type: string;
+    context_value: string;
+    match_pattern?: string;
+    description?: string;
+    source_system?: string;
+    valid_from?: string | null;
+    valid_until?: string | null;
+    auto_approve?: boolean;
+  }): Promise<Record<string, any>> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/org-context`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
+    return res.json();
+  },
+  async decideOrgContext(
+    recordId: string,
+    payload: { action: "APPROVE" | "REJECT" | "REVOKE"; reason?: string }
+  ): Promise<Record<string, any>> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/org-context/${encodeURIComponent(recordId)}/decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
+    return res.json();
+  },
+  async ensureDevCohort(): Promise<Record<string, any>> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/cohorts/development/ensure`, { method: "POST" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  async evaluateRun(runKey: string, mode?: string): Promise<Record<string, any>> {
+    const qs = mode ? `?mode=${encodeURIComponent(mode)}` : "";
+    const res = await fetchWithAuth(`${API_BASE}/ais32/runs/${encodeURIComponent(runKey)}/evaluate${qs}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  async getAis33Readiness(): Promise<Record<string, any>> {
+    const res = await fetchWithAuth(`${API_BASE}/ais32/ais33-readiness`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+};
+
 
 
 

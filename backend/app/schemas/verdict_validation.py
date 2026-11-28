@@ -39,4 +39,11 @@ class VerdictValidationResult(BaseModel):
     semantic_review_notes: List[str] = Field(default_factory=list)
     validated_confidence_display: Optional[float] = None
     replay_signature: str = ""
+    # AIS 3.2 Modular Validator Diagnostics
+    validator_module: Optional[str] = None
+    failed_check: Optional[str] = None
+    failure_severity: Optional[str] = None
+    failure_classification: Optional[str] = None
+    evidence_reference: Optional[str] = None
+    semantic_evaluation: Optional[Dict[str, Any]] = None
 

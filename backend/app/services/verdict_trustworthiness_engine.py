@@ -77,6 +77,95 @@ class VerdictTrustworthinessEngine:
         return ordinal
 
     @classmethod
+    def reconcile_verdict_layers(
+        cls,
+        *,
+        raw_llm_verdict: Optional[str],
+        validated_verdict: str,
+        validation_result: Any,
+        trust_result: Any,
+        allow_advisory_uncalibrated: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        AIS 3.2 Trust Layer Reconciliation:
+        Separates:
+          1. raw_llm_verdict
+          2. validated_verdict (ModularVerdictValidator / IndependentVerdictValidator)
+          3. effective_operational_verdict (advisory triage decision)
+          4. recommended_analyst_action
+          5. automation_eligibility (kept DISABLED throughout AIS 3.2)
+
+        Prevents uncalibrated trust score capping (<30 historical samples) from suppressing
+        validated advisory verdicts, while preserving every hard safety guardrail and
+        explicitly disabling autonomous incident closure/remediation.
+        """
+        raw_v = str(raw_llm_verdict or "REQUIRES_ATTENTION").upper().strip()
+        val_v = str(validated_verdict or "REQUIRES_ATTENTION").upper().strip()
+        val_status = str(getattr(validation_result, "validation_status", "VALIDATED") or "VALIDATED").upper()
+        reason_codes = list(getattr(validation_result, "validation_reason_codes", []) or [])
+        is_calibrated = bool(getattr(trust_result, "is_calibrated", False))
+        trust_score = getattr(trust_result, "trust_score", None)
+        raw_trust = float(getattr(trust_result, "raw_trust_score", 0.0) or 0.0)
+
+        hard_blockers = {
+            "OUTPUT_TRUNCATED",
+            "MODEL_OUTPUT_INVALID",
+            "EVIDENCE_MISSING",
+            "UNSUPPORTED_CLAIM",
+            "UNSUPPORTED_PREDICATE",
+            "EVIDENCE_CONTRADICTION",
+            "REASONING_CONTRADICTION",
+            "SEMANTIC_DIMENSION_CONTRADICTION",
+            "BENIGN_CONTEXT_CONTRADICTION",
+            "OPERATIONAL_TP_MISCLASSIFIED_AS_FP",
+            "INVENTED_CHANGE_TICKET",
+            "UNSAFE_FP_ASSUMPTION",
+            "TP_CRITERIA_UNSATISFIED",
+            "FP_CRITERIA_UNSATISFIED",
+        }
+        has_hard_blocker = bool(set(reason_codes) & hard_blockers) or val_status in (
+            "REJECTED",
+            "INVALID_MODEL_OUTPUT",
+            "TRUNCATED_OUTPUT",
+            "INSUFFICIENT_EVIDENCE",
+            "REASONING_CONTRADICTION",
+            "VERDICT_EVIDENCE_CONFLICT",
+        )
+
+        if val_v in ("TRUE_POSITIVE", "FALSE_POSITIVE") and not has_hard_blocker and allow_advisory_uncalibrated:
+            effective_verdict = val_v
+        else:
+            effective_verdict = "REQUIRES_ATTENTION"
+
+        if effective_verdict == "TRUE_POSITIVE":
+            recommended_action = "ADVISORY_ESCALATE_INVESTIGATE_TP"
+        elif effective_verdict == "FALSE_POSITIVE":
+            recommended_action = "ADVISORY_VERIFY_AND_CLOSE_FP"
+        else:
+            recommended_action = "ANALYST_TIER1_TRIAGE_REQUIRED"
+
+        calibration_disclaimer = (
+            "Calibrated empirical trust score."
+            if is_calibrated
+            else "Uncalibrated quality index (NOT a calibrated probability of correctness; <30 verified historical samples)."
+        )
+
+        return {
+            "raw_llm_verdict": raw_v,
+            "validated_verdict": val_v,
+            "effective_operational_verdict": effective_verdict,
+            "recommended_analyst_action": recommended_action,
+            "automation_eligibility": "DISABLED_AIS32_ADVISORY_ONLY",
+            "auto_incident_closure_allowed": False,
+            "autonomous_remediation_allowed": False,
+            "trust_score": trust_score,
+            "raw_trust_score": raw_trust,
+            "is_calibrated": is_calibrated,
+            "trust_calibration_disclaimer": calibration_disclaimer,
+            "hard_safety_blocker_present": has_hard_blocker,
+        }
+
+    @classmethod
     def evaluate_verdict_trust(
         cls,
         incident_payload: Dict[str, Any],

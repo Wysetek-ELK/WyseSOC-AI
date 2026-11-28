@@ -304,9 +304,11 @@ app.include_router(rule_learning.router, prefix=settings.API_V1_STR)
 app.include_router(rule_learning.router, prefix="/api/v1")
 app.include_router(ais_evaluation.router, prefix=settings.API_V1_STR)
 app.include_router(ais_evaluation.router, prefix="/api/v1")
-from app.api import ground_truth
+from app.api import ground_truth, ais32_intelligence
 app.include_router(ground_truth.router, prefix=settings.API_V1_STR)
 app.include_router(ground_truth.router, prefix="/api/v1")
+app.include_router(ais32_intelligence.router, prefix=settings.API_V1_STR)
+app.include_router(ais32_intelligence.router, prefix="/api/v1")
 app.include_router(health.router)
 app.include_router(health.router, prefix=settings.API_V1_STR)
 

@@ -6,6 +6,6 @@
   "mock_fallback": true,
   "auto_poll_enabled": false,
   "poll_interval_seconds": 180,
-  "auto_ai_verdict": true,
-  "updated_at": 1795759213.8005412
+  "auto_ai_verdict": false,
+  "updated_at": 1795871638.6365507
 }

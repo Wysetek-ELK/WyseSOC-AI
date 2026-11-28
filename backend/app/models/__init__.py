@@ -42,6 +42,11 @@ from app.models.production_governance import (
 )
 from app.models.actual_prompt_capture import ActualLLMPromptCapture
 from app.models.ais31_benchmark import AIS31BenchmarkRun, AIS31BenchmarkResult
+from app.models.ais32_intelligence import (
+    RuleContractRecord,
+    OrganizationalContextRecord,
+    IntelligenceExecutionRecord,
+)
 
 __all__ = [
     "Base",
@@ -93,4 +98,7 @@ __all__ = [
     "ActualLLMPromptCapture",
     "AIS31BenchmarkRun",
     "AIS31BenchmarkResult",
+    "RuleContractRecord",
+    "OrganizationalContextRecord",
+    "IntelligenceExecutionRecord",
 ]

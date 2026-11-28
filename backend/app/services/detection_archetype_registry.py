@@ -17,7 +17,7 @@ class DetectionArchetypeRegistry:
     Maintains an explicit, versioned library of behavioral detection archetypes.
     Classifies detection rules based on verified semantics, not superficial keyword triggers.
     """
-    REGISTRY_VERSION = "v2.0.0"
+    REGISTRY_VERSION = "v3.0.0"
 
     _REGISTRY: Dict[ArchetypeId, ArchetypeDefinition] = {
         ArchetypeId.NETWORK_EXFILTRATION: ArchetypeDefinition(
@@ -601,6 +601,292 @@ class DetectionArchetypeRegistry:
             contradiction_rules=[],
         ),
 
+        ArchetypeId.FIREWALL_SECURITY: ArchetypeDefinition(
+            archetype_id=ArchetypeId.FIREWALL_SECURITY,
+            name="Firewall Security, Denies & Access Policy Enforcement",
+            version=REGISTRY_VERSION,
+            detection_purpose=(
+                "Detection of sustained firewall denies, geographic access violations, bogon traffic, "
+                "anomalous blocked ports, and perimeter policy breaches."
+            ),
+            core_telemetry_categories=["FIREWALL_SESSION", "NETWORK_TRAFFIC", "POLICY_ENFORCEMENT"],
+            mandatory_core_fields=[
+                "security.event_type",
+                "network.source_ip",
+                "event.timestamp",
+            ],
+            conditional_fields=[
+                "network.destination_ip",
+                "network.destination_port",
+                "network.protocol",
+                "security.action",
+                "network.source_country",
+                "network.destination_country",
+                "webCategory",
+            ],
+            optional_enrichment_fields=["threat_intel.ip_reputation", "network.service"],
+            unsupported_fields=["file.hash_sha256", "process.command_line", "process.parent_name"],
+            tp_indicator_candidates=[
+                "Sustained or high-volume external/untrusted probing or denied connections exceeding baseline",
+                "Permitted or attempted access to prohibited destinations/bogon/policy-restricted endpoints without exception",
+                "Traffic from high-risk or unauthorized external countries/sources targeting perimeter services",
+            ],
+            fp_indicator_candidates=[
+                "Verified authorized corporate infrastructure, load balancer, or partner gateway in organizational context",
+                "Approved external service or documented firewall policy test under active change window",
+                "Expected internal broadcast/multicast or verified benign CDN/SaaS web traffic with clean context",
+            ],
+            abstention_requirements=[
+                "Source/destination IP and firewall action/event type cannot be verified from telemetry",
+                "Rule threshold or aggregation counts are missing and traffic authorization is unknown",
+            ],
+            escalation_considerations=[
+                "Repeated external probing followed by permitted traffic or IPS exploit alerts",
+                "Bogon/spoofed IP originating from internal production VLAN",
+            ],
+            analyst_question_templates=[
+                "Is the source/destination IP an approved corporate gateway, CDN, or monitoring host?",
+                "Were connections denied at the perimeter or did any session succeed?",
+            ],
+            unsupported_assumptions=[
+                "Blocked/denied firewall traffic is NOT automatically a False Positive when rule detects sustained probing/attacks",
+                "Absence of endpoint process telemetry does NOT invalidate firewall detections",
+            ],
+            contradiction_rules=[
+                {
+                    "rule_id": "ENDPOINT_CRITERIA_ON_FIREWALL",
+                    "rule_type": "ENDPOINT_CRITERIA_ON_FIREWALL",
+                    "description": "Requiring process command-line or file hash for perimeter firewall alerts",
+                }
+            ],
+        ),
+
+        ArchetypeId.DNS_SECURITY: ArchetypeDefinition(
+            archetype_id=ArchetypeId.DNS_SECURITY,
+            name="DNS Security, Anomalous Queries & Covert Channels",
+            version=REGISTRY_VERSION,
+            detection_purpose=(
+                "Detection of excessive DNS queries, unauthorized DNS resolvers, anomalous external DNS destinations, "
+                "DGA patterns, or DNS tunneling."
+            ),
+            core_telemetry_categories=["DNS_SERVER_LOG", "NETWORK_TRAFFIC", "FIREWALL_SESSION"],
+            mandatory_core_fields=[
+                "security.event_type",
+                "network.source_ip",
+                "event.timestamp",
+            ],
+            conditional_fields=[
+                "network.destination_ip",
+                "network.destination_domain",
+                "dns.query_name",
+                "dns.record_type",
+                "dns.response_code",
+                "network.destination_port",
+            ],
+            optional_enrichment_fields=["threat_intel.domain_reputation"],
+            unsupported_fields=["process.parent_name", "file.hash_sha256"],
+            tp_indicator_candidates=[
+                "Non-resolver endpoint sending excessive DNS queries or bypassing corporate DNS resolvers",
+                "High-entropy/DGA subdomain queries or suspicious external DNS server communication",
+            ],
+            fp_indicator_candidates=[
+                "Source IP is a verified corporate DNS resolver, AD Domain Controller, or authorized monitoring probe",
+                "Destination IP is an approved corporate/ISP DNS forwarder in organizational context",
+            ],
+            abstention_requirements=[
+                "Source IP and DNS destination/query context cannot be verified",
+            ],
+            escalation_considerations=[
+                "Confirmed DGA or tunneling beacon from critical server or domain controller",
+            ],
+            analyst_question_templates=[
+                "Is the source IP an authorized internal DNS server or domain controller?",
+                "Is the queried domain/resolver authorized in organizational context?",
+            ],
+            unsupported_assumptions=[
+                "DNS query spikes from an unknown host are NOT benign without verifying resolver role",
+            ],
+            contradiction_rules=[],
+        ),
+
+        ArchetypeId.IPS_IDS: ArchetypeDefinition(
+            archetype_id=ArchetypeId.IPS_IDS,
+            name="IPS/IDS Intrusion Signatures & Exploit Attempts",
+            version=REGISTRY_VERSION,
+            detection_purpose=(
+                "Detection of network intrusion prevention/detection signatures, SQL injection, buffer overflow, "
+                "and remote exploitation attempts."
+            ),
+            core_telemetry_categories=["IPS_ALERT", "WAF_LOG", "FIREWALL_SESSION"],
+            mandatory_core_fields=[
+                "security.event_type",
+                "network.source_ip",
+                "event.timestamp",
+            ],
+            conditional_fields=[
+                "network.destination_ip",
+                "network.destination_port",
+                "http.url",
+                "security.action",
+                "security.alert_title",
+                "security.message",
+            ],
+            optional_enrichment_fields=["cve.id", "threat_intel.ip_reputation"],
+            unsupported_fields=["process.parent_name", "file.hash_sha256"],
+            tp_indicator_candidates=[
+                "Explicit exploit payload (SQLi, path traversal, JNDI, shellcode) confirmed in IPS/WAF telemetry",
+                "High-severity IPS signature triggered by untrusted external or compromised internal source",
+            ],
+            fp_indicator_candidates=[
+                "Verified authorized vulnerability scanner or penetration test in organizational context",
+                "Verified benign application payload triggering a known signature false positive",
+            ],
+            abstention_requirements=[
+                "Signature/attack detail and source/destination telemetry are absent or truncated",
+            ],
+            escalation_considerations=[
+                "IPS action was permitted/detected-only (not dropped) against critical server",
+            ],
+            analyst_question_templates=[
+                "Was the IPS signature triggered by a genuine exploit payload or benign traffic?",
+                "Was the traffic blocked by IPS or permitted to the target?",
+            ],
+            unsupported_assumptions=[
+                "IPS blocking an exploit attempt does NOT mean the incident is a False Positive if the rule detects attempted attacks",
+            ],
+            contradiction_rules=[],
+        ),
+
+        ArchetypeId.CONFIGURATION_MONITORING: ArchetypeDefinition(
+            archetype_id=ArchetypeId.CONFIGURATION_MONITORING,
+            name="Configuration & Policy Change Monitoring",
+            version=REGISTRY_VERSION,
+            detection_purpose=(
+                "Detection of firewall, router, identity, or security control configuration modifications "
+                "requiring change-authorization verification."
+            ),
+            core_telemetry_categories=["CONFIG_AUDIT", "SYSTEM_AUDIT"],
+            mandatory_core_fields=[
+                "security.event_type",
+                "endpoint.hostname",
+                "event.timestamp",
+            ],
+            conditional_fields=[
+                "user.name",
+                "network.source_ip",
+                "security.message",
+                "security.action",
+            ],
+            optional_enrichment_fields=["authorization.ticket_id"],
+            unsupported_fields=["file.hash_sha256", "network.bytes_out"],
+            tp_indicator_candidates=[
+                "Confirmed configuration change on security/network device without verified change ticket or approved maintenance window",
+                "Modification of sensitive security objects (external-resource, firewall policy, admin role) by unexpected actor",
+            ],
+            fp_indicator_candidates=[
+                "Configuration change explicitly verified against an approved change ticket, maintenance window, or authorized automation in organizational context",
+            ],
+            abstention_requirements=[
+                "Target device or changed configuration detail cannot be identified",
+            ],
+            escalation_considerations=[
+                "Unapproved firewall/security policy weakening from external or anomalous source IP",
+            ],
+            analyst_question_templates=[
+                "Which user or automation account performed the configuration change, and is an approved change ticket linked?",
+            ],
+            unsupported_assumptions=[
+                "A configuration change is NOT automatically authorized merely because an admin username or FortiGate GUI was used",
+            ],
+            contradiction_rules=[],
+        ),
+
+        ArchetypeId.OPERATIONAL_MONITORING: ArchetypeDefinition(
+            archetype_id=ArchetypeId.OPERATIONAL_MONITORING,
+            name="Operational Health, Collector Delay & Log Availability Monitoring",
+            version=REGISTRY_VERSION,
+            detection_purpose=(
+                "Detection of SIEM collector delays, device log silence, decreasing EPS, and telemetry pipeline outages "
+                "(operational reliability True Positives, distinct from malicious cyberattacks)."
+            ),
+            core_telemetry_categories=["OPERATIONAL_HEALTH", "SIEM_SYSTEM"],
+            mandatory_core_fields=[
+                "security.event_type",
+                "event.timestamp",
+            ],
+            conditional_fields=[
+                "endpoint.hostname",
+                "endpoint.ip",
+                "security.message",
+                "network.source_ip",
+            ],
+            optional_enrichment_fields=[],
+            unsupported_fields=["file.hash_sha256", "process.command_line", "process.parent_name"],
+            tp_indicator_candidates=[
+                "Confirmed collector delay, missing device logs, or EPS drop observed in SIEM health telemetry outside planned maintenance",
+            ],
+            fp_indicator_candidates=[
+                "Verified planned maintenance window, decommissioned device, or transient alert where telemetry resumed immediately",
+            ],
+            abstention_requirements=[
+                "Affected device/collector identity and health/delay status are completely absent",
+            ],
+            escalation_considerations=[
+                "Prolonged log outage on critical firewall, domain controller, or primary collector",
+            ],
+            analyst_question_templates=[
+                "Is the affected device or collector under a planned maintenance window or decommissioned?",
+            ],
+            unsupported_assumptions=[
+                "Operational health alerts are NOT False Positives merely because no malicious attacker is involved",
+            ],
+            contradiction_rules=[],
+        ),
+
+        ArchetypeId.THREAT_INTELLIGENCE: ArchetypeDefinition(
+            archetype_id=ArchetypeId.THREAT_INTELLIGENCE,
+            name="Threat Intelligence IOC & Reputation Matches",
+            version=REGISTRY_VERSION,
+            detection_purpose=(
+                "Detection of network/host communication matching external threat intelligence feeds (MISP, IOC lists, malware C2 IPs/domains)."
+            ),
+            core_telemetry_categories=["THREAT_INTEL", "FIREWALL_SESSION", "NETWORK_TRAFFIC"],
+            mandatory_core_fields=[
+                "security.event_type",
+                "network.source_ip",
+                "event.timestamp",
+            ],
+            conditional_fields=[
+                "network.destination_ip",
+                "network.destination_port",
+                "network.destination_domain",
+                "security.action",
+                "network.direction",
+            ],
+            optional_enrichment_fields=["threat_intel.verdict"],
+            unsupported_fields=["process.parent_name"],
+            tp_indicator_candidates=[
+                "Permitted or bidirectional traffic involving a MISP/threat-intelligence malicious IP/domain without verified benign exception",
+                "Internal host communicating outbound to listed malware/C2 IP",
+            ],
+            fp_indicator_candidates=[
+                "Verified authorized threat-intel/security research host, sinkhole, or approved external partner with verified clean context",
+            ],
+            abstention_requirements=[
+                "Matched IOC IP/domain or traffic action/direction cannot be determined",
+            ],
+            escalation_considerations=[
+                "Permitted inbound or outbound session with active MISP malware IP on critical asset",
+            ],
+            analyst_question_templates=[
+                "Was the traffic permitted or blocked, and is the matched IOC IP still active?",
+            ],
+            unsupported_assumptions=[
+                "Do not classify MISP/IOC matches as malware execution without endpoint process evidence",
+            ],
+            contradiction_rules=[],
+        ),
+
         ArchetypeId.GENERIC: ArchetypeDefinition(
             archetype_id=ArchetypeId.GENERIC,
             name="Generic SIEM Detection Event",
@@ -642,8 +928,18 @@ class DetectionArchetypeRegistry:
 
     @classmethod
     def get_archetype_definition(cls, archetype_id: ArchetypeId) -> ArchetypeDefinition:
-        """Retrieves definition by archetype ID."""
-        return cls._REGISTRY.get(archetype_id, cls._REGISTRY[ArchetypeId.UNKNOWN])
+        """Retrieves definition by archetype ID, resolving AIS 3.2 canonical aliases seamlessly."""
+        if archetype_id in cls._REGISTRY:
+            return cls._REGISTRY[archetype_id]
+        alias_map = {
+            ArchetypeId.NETWORK_RECONNAISSANCE: ArchetypeId.NETWORK_SCAN,
+            ArchetypeId.DATA_TRANSFER: ArchetypeId.NETWORK_EXFILTRATION,
+            ArchetypeId.ENDPOINT_SECURITY: ArchetypeId.MALWARE_EXECUTION,
+            ArchetypeId.AUTHENTICATION_SECURITY: ArchetypeId.AUTHENTICATION,
+            ArchetypeId.GENERIC_UNKNOWN: ArchetypeId.UNKNOWN,
+        }
+        mapped = alias_map.get(archetype_id, ArchetypeId.UNKNOWN)
+        return cls._REGISTRY.get(mapped, cls._REGISTRY[ArchetypeId.UNKNOWN])
 
     @classmethod
     def list_archetypes(cls) -> List[ArchetypeDefinition]:
@@ -680,9 +976,37 @@ class DetectionArchetypeRegistry:
         secondary: Optional[ArchetypeId] = None
         confidence = 0.5
 
-        # 1. Check for Network Exfiltration (Mandatory Reference Case)
+        # 0. Operational Monitoring (collector delays, missing logs, EPS drops)
+        if any(tok in combo for tok in (
+            "NO_LOGS", "NO LOGS", "COLLECTOR_DELAY", "COLLECTOR DELAY", "DECREASING_EPS",
+            "DECREASING EPS", "EPS_DROP", "LOW_EPS", "LOW EVENT PER SECOND", "EVENT PER SECOND",
+            "HEARTBEAT", "LOG_DELAY", "LOG RECEIPT DELAY", "ACCELOPS_COLLECTOR", "OPERATIONAL_MONITORING"
+        )):
+            primary = ArchetypeId.OPERATIONAL_MONITORING
+            confidence = 0.95
+            matched_features.append(f"Operational health/log availability rule: rule='{rule_id}'")
+
+        # 0b. Configuration Monitoring
+        elif any(tok in combo for tok in (
+            "CONFIG_CHANGE", "CONFIG CHANGE", "CONFIGURATION_CHANGE", "CONFIGURATION CHANGE",
+            "CONFIGURATION_MONITORING", "GLOBAL_ADMIN_ROGUE_GRANT", "CONFIG_MODIFICATION"
+        )):
+            primary = ArchetypeId.CONFIGURATION_MONITORING
+            confidence = 0.93
+            matched_features.append(f"Configuration change monitoring rule: rule='{rule_id}'")
+
+        # 0c. Threat Intelligence IOC Matches (check BEFORE malware execution so MISP_MalwareIP maps here)
+        elif any(tok in combo for tok in (
+            "MISP_", "THREAT_INTEL", "THREAT INTELLIGENCE", "IOC_MATCH", "MALWAREIP",
+            "MALWARE_IP", "TOR_EXIT", "REPUTATION_MATCH", "ZSCALER_TOR"
+        )):
+            primary = ArchetypeId.THREAT_INTELLIGENCE
+            confidence = 0.94
+            matched_features.append(f"Threat intelligence IOC match rule: rule='{rule_id}'")
+
+        # 1. Check for Network Exfiltration / Data Transfer
         # Note: Beaconing / C2 should map to NETWORK_CONNECTION even if 'outbound' is in the phrase
-        if ("BEACON" in combo or "C2" in combo) and "EXFILTRATION" not in combo and "XFER" not in combo and "PROCESS" not in combo and "POWERSHELL" not in combo and "ENDPOINT" not in combo:
+        elif ("BEACON" in combo or "C2" in combo) and "EXFILTRATION" not in combo and "XFER" not in combo and "PROCESS" not in combo and "POWERSHELL" not in combo and "ENDPOINT" not in combo:
             primary = ArchetypeId.NETWORK_CONNECTION
             confidence = 0.90
             matched_features.append("Network C2 beaconing or persistent flow pattern")
@@ -693,6 +1017,7 @@ class DetectionArchetypeRegistry:
             or "EXFILTRATION" in primary_behavior
             or ("OUTBOUND" in name and "XFER" in combo)
             or ("TRANSFER" in name and "OUTBOUND" in combo)
+            or "DATA_TRANSFER" in combo
             or any("sentbytes" in f for f in observed)
         ):
             primary = ArchetypeId.NETWORK_EXFILTRATION
@@ -719,16 +1044,26 @@ class DetectionArchetypeRegistry:
             or "PORT SCAN" in combo
             or "NETWORK_SCAN" in combo
             or "NETWORK SCAN" in combo
+            or "NETWORK_RECONNAISSANCE" in combo
             or "T1595" in combo
             or "T1018" in combo
             or ("SCAN" in name and "MALWARE" not in name and "PROCESS" not in name and "VIRUS" not in name and "FILE" not in name)
             or ("RECONNAISSANCE" in combo and "MALWARE" not in name and "PROCESS" not in name and "POWERSHELL" not in name)
             or ("DISCOVERY" in category and "SCAN" in combo)
-            or primary_behavior == ArchetypeId.NETWORK_SCAN.value
+            or primary_behavior in (ArchetypeId.NETWORK_SCAN.value, ArchetypeId.NETWORK_RECONNAISSANCE.value)
         ):
             primary = ArchetypeId.NETWORK_SCAN
             confidence = 0.95
             matched_features.append(f"Network scan / host reconnaissance pattern: rule='{rule_id}', name='{name}'")
+
+        # 2b. IPS / IDS Signatures & Exploit Attempts
+        elif any(tok in combo for tok in (
+            "PH_RULE_HIGH_SEV_SEC_IPS", "PH_RULE_IPS_", "IPS_SQL", "SQL_INJECTION",
+            "IPS_IDS", "INTRUSION", "BUFFER_OVERFLOW", "LOG4J", "JNDI", "CISCO_FTD"
+        )):
+            primary = ArchetypeId.IPS_IDS
+            confidence = 0.92
+            matched_features.append(f"IPS/IDS intrusion signature pattern: rule='{rule_id}'")
 
         # 3. Check for File Malware
         elif (
@@ -736,13 +1071,15 @@ class DetectionArchetypeRegistry:
             or "ANTIVIRUS" in combo
             or "QUARANTINE" in combo
             or "DROPPED ON DISK" in combo
+            or "SUSPICIOUS_FILE" in combo
+            or "SUSPICIOUS EXECUTABLE" in combo
             or ("RANSOMWARE" in name and "BINARY" in name)
         ):
             primary = ArchetypeId.FILE_MALWARE
             confidence = 0.92
             matched_features.append("Antivirus quarantine or file malware signature")
 
-        # 3. Check for Process Execution
+        # 3b. Check for Process Execution
         elif (
             "PROCESS_EXECUTION" in combo
             or "WINDOWS-PROCESS-EXECUTION" in combo
@@ -754,7 +1091,53 @@ class DetectionArchetypeRegistry:
             confidence = 0.92
             matched_features.append("Process creation and LOLBin execution pattern")
 
-        # 4. Check for Network Connection (C2, Beacon, Flow)
+        # 4. Check for DNS Tunneling / DNS Security
+        elif "DNS" in name and ("TUNNEL" in name or "COVERT" in name):
+            primary = ArchetypeId.DNS_TUNNELING
+            confidence = 0.90
+            matched_features.append("DNS Tunneling keyword and query telemetry match")
+            secondary = ArchetypeId.NETWORK_EXFILTRATION
+        elif "DNS" in combo and any(tok in combo for tok in ("QUERY", "DEST", "UNAUTH", "EXCESS", "DGA", "DNS_SECURITY", "DNS")):
+            primary = ArchetypeId.DNS_SECURITY
+            confidence = 0.91
+            matched_features.append(f"DNS security anomaly/query rule: rule='{rule_id}'")
+
+        # 5. Check for Authentication / Brute Force / Account Lockout / VPN / Cleartext Password
+        elif (
+            "ACTIVE-DIRECTORY-LOGON" in combo
+            or "LOGIN SPIKE" in name
+            or "BRUTE" in combo
+            or ("AUTH" in combo and "FAIL" in combo)
+            or "LOGON" in combo
+            or "LOCKOUT" in combo
+            or "VPN_" in combo
+            or "CLEARTEXT_PWD" in combo
+            or "PASSWORD" in name
+            or "MFA_" in combo
+            or "AUTHENTICATION_SECURITY" in combo
+        ):
+            if "SPIKE" in name or "BRUTE" in combo or "FAILED" in combo:
+                primary = ArchetypeId.AUTHENTICATION
+                confidence = 0.92
+                matched_features.append("Authentication failure spike or brute force pattern")
+            else:
+                primary = ArchetypeId.AUTHENTICATION
+                confidence = 0.90
+                matched_features.append("Authentication / logon security telemetry match")
+
+        # 6. Check for Firewall Security (Denies, Bogon, Access Policy, Traffic Denied)
+        elif (
+            any(tok in combo for tok in (
+                "EXCESS_DENY", "AGGR_DENY", "TRAFFIC_DENIED", "BOGON", "FIREWALL_SECURITY",
+                "DENY_SRC", "DENY_EXT_COUNTRY", "OUTBOUND_DENY", "INBOUND_DENY", "FIREWALL_DENY",
+            ))
+            or ("FIREWALL" in combo and any(w in combo for w in ("DENY", "DENIES", "BLOCK", "DROP")))
+        ):
+            primary = ArchetypeId.FIREWALL_SECURITY
+            confidence = 0.92
+            matched_features.append(f"Firewall deny/bogon/access policy rule: rule='{rule_id}'")
+
+        # 7. Check for Network Connection (C2, Beacon, Flow)
         elif (
             "NETWORK_CONNECTION" in combo
             or "BEACON" in combo
@@ -766,72 +1149,50 @@ class DetectionArchetypeRegistry:
             confidence = 0.90
             matched_features.append("Network traffic flow or C2 beaconing pattern")
 
-        # 5. Check for DNS Tunneling
-        elif "DNS" in name and ("TUNNEL" in name or "COVERT" in name):
-            primary = ArchetypeId.DNS_TUNNELING
-            confidence = 0.90
-            matched_features.append("DNS Tunneling keyword and query telemetry match")
-            secondary = ArchetypeId.NETWORK_EXFILTRATION
-
-        # 6. Check for Authentication / Brute Force
-        elif (
-            "ACTIVE-DIRECTORY-LOGON" in combo
-            or "LOGIN SPIKE" in name
-            or "BRUTE" in name
-            or ("AUTH" in name and "FAIL" in name)
-        ):
-            if "SPIKE" in name or "BRUTE" in name:
-                primary = ArchetypeId.AUTHENTICATION
-                confidence = 0.92
-                matched_features.append("Authentication failure spike or brute force pattern")
-            else:
-                primary = ArchetypeId.AUTHENTICATION
-                confidence = 0.88
-                matched_features.append("Authentication telemetry match")
-
-        # 7. Check for Credential Access / Dumping
+        # 8. Check for Credential Access / Dumping
         elif "CREDENTIAL" in name or "MIMIKATZ" in name or "LSASS" in name or "CREDENTIAL ACCESS" in tactics:
             primary = ArchetypeId.CREDENTIAL_ACCESS
             confidence = 0.92
             matched_features.append("Credential dumping or LSASS access pattern")
 
-        # 8. Check for Lateral Movement
+        # 9. Check for Lateral Movement
         elif "LATERAL" in name or "MOVEMENT" in name or "LATERAL MOVEMENT" in tactics or "PSEXEC" in name or "WMI" in name:
             primary = ArchetypeId.LATERAL_MOVEMENT
             confidence = 0.88
             matched_features.append("Lateral movement or remote invocation pattern")
 
-        # 9. Check for Policy Violation (Checked before generic Web Attack so policy/filtering rules are not misclassified as SQLi/XSS)
+        # 10. Check for Policy Violation (Checked before generic Web Attack so policy/filtering rules are not misclassified as SQLi/XSS)
         elif any(pol in name or pol in combo for pol in ("POLICY", "VIOLATION", "FILTER", "ACCEPTABLE USE", "COMPLIANCE")):
             primary = ArchetypeId.POLICY_VIOLATION
+            secondary = ArchetypeId.FIREWALL_SECURITY
             confidence = 0.88
             matched_features.append("Security policy violation or web filtering policy breach")
 
-        # 10. Check for Web Attack
-        elif "WEB" in name or "SQL" in name or "XSS" in name or "INJECTION" in name:
+        # 11. Check for Web Attack
+        elif any(tok in combo for tok in ("WEB_ATTACK", "WEB ATTACK", "SQL", "XSS", "INJECTION", "CROSS-SITE SCRIPTING", "WAF ")) or "WEB" in name:
             primary = ArchetypeId.WEB_ATTACK
             confidence = 0.89
             matched_features.append("Web application attack vector")
 
-        # 11. Check for Defense Evasion
+        # 12. Check for Defense Evasion
         elif "TAMPER" in name or "EVASION" in name or "DEFENSE EVASION" in tactics:
             primary = ArchetypeId.ENDPOINT_DEFENSE_EVASION
             confidence = 0.88
             matched_features.append("Defense evasion or security agent tampering")
 
-        # 12. Check for Privilege Escalation
+        # 13. Check for Privilege Escalation
         elif "PRIVILEGE" in name or "ESCALATION" in name or "PRIVILEGE ESCALATION" in tactics:
             primary = ArchetypeId.PRIVILEGE_ESCALATION
             confidence = 0.88
             matched_features.append("Privilege escalation or unauthorized admin delegation")
 
-        # 13. Check for Malware Execution
-        elif "MALWARE" in name or "PROCESS" in name or "POWERSHELL" in name or "EXECUTION" in tactics or "CROWDSTRIKE" in name:
+        # 14. Check for Malware Execution
+        elif "MALWARE" in name or "PROCESS" in name or "POWERSHELL" in name or "EXECUTION" in tactics or "CROWDSTRIKE" in name or "ENDPOINT_SECURITY" in combo:
             primary = ArchetypeId.MALWARE_EXECUTION
             confidence = 0.90
             matched_features.append("Endpoint process execution or malware signature match")
 
-        # 14. Check for Generic Anomaly / Custom Sensor
+        # 15. Check for Generic Anomaly / Custom Sensor
         elif "CUSTOM-SENSOR" in combo or "GENERIC ANOMALY" in combo or "GENERIC" in combo:
             primary = ArchetypeId.GENERIC
             confidence = 0.70
@@ -842,10 +1203,13 @@ class DetectionArchetypeRegistry:
             confidence = 0.30
             matched_features.append("Inadequate telemetry semantics to establish definitive archetype")
 
-        trace.append(f"Result: primary={primary.value}, secondary={secondary.value if secondary else 'None'}, confidence={confidence:.2f}")
+        from app.services.verdict_semantics_engine import VerdictSemanticsEngine
+        canon_arch = VerdictSemanticsEngine.canonical_archetype(primary.value)
+
+        trace.append(f"Result: primary={primary.value}, canonical={canon_arch}, secondary={secondary.value if secondary else 'None'}, confidence={confidence:.2f}")
 
         reason = (
-            f"Classified as {primary.value} based on detection semantics: "
+            f"Classified as {primary.value} (canonical: {canon_arch}) based on detection semantics: "
             f"{'; '.join(matched_features)}."
         )
 
@@ -853,8 +1217,10 @@ class DetectionArchetypeRegistry:
             rule_identifier=rule_id,
             primary_archetype=primary,
             secondary_archetype=secondary,
+            canonical_archetype=canon_arch,
             confidence_score=confidence,
             classification_reason=reason,
+            mapping_rationale=reason,
             matched_features=matched_features,
             traceability_log=trace,
             registry_version=cls.REGISTRY_VERSION,

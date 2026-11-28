@@ -531,6 +531,23 @@ class RuleIntelligenceAnalyzer:
         combo = f"{rule_identifier} {rule_name} {category} {sub_category}".lower()
         tactics = [t.lower() for t in attck_tactics]
 
+        if any(tok in combo for tok in (
+            "no_logs", "no logs", "collector_delay", "collector delay", "decreasing_eps",
+            "decreasing eps", "eps_drop", "accelops_collector", "operational_monitoring"
+        )):
+            return ArchetypeId.OPERATIONAL_MONITORING.value
+
+        if any(tok in combo for tok in (
+            "config_change", "config change", "configuration_change", "configuration change",
+            "configuration_monitoring"
+        )):
+            return ArchetypeId.CONFIGURATION_MONITORING.value
+
+        if any(tok in combo for tok in (
+            "misp_", "threat_intel", "threat intelligence", "ioc_match", "malwareip", "malware_ip", "tor_exit"
+        )):
+            return ArchetypeId.THREAT_INTELLIGENCE.value
+
         if ("beacon" in combo or "c2" in combo) and "exfiltration" not in combo and "xfer" not in combo:
             return ArchetypeId.NETWORK_CONNECTION.value
 
@@ -547,6 +564,9 @@ class RuleIntelligenceAnalyzer:
         if "dns" in combo and ("tunnel" in combo or "covert" in combo):
             return ArchetypeId.DNS_TUNNELING.value
 
+        if "dns" in combo and any(tok in combo for tok in ("query", "dest", "unauth", "excess", "dga", "dns_security")):
+            return ArchetypeId.DNS_SECURITY.value
+
         if (
             "scan" in combo
             or "reconnaissance" in combo
@@ -558,8 +578,14 @@ class RuleIntelligenceAnalyzer:
         ) and "malware" not in combo and "process" not in combo and "powershell" not in combo:
             return ArchetypeId.NETWORK_SCAN.value
 
-        if "brute" in combo or ("auth" in combo and "fail" in combo) or "credential access" in tactics:
-            return ArchetypeId.BRUTE_FORCE.value
+        if any(tok in combo for tok in ("high_sev_sec_ips", "ips_sql", "sql_injection", "ips_ids", "intrusion", "buffer_overflow")):
+            return ArchetypeId.IPS_IDS.value
+
+        if any(tok in combo for tok in ("excess_deny", "aggr_deny", "traffic_denied", "bogon", "firewall_security", "deny_src", "deny_ext_country")):
+            return ArchetypeId.FIREWALL_SECURITY.value
+
+        if "brute" in combo or ("auth" in combo and "fail" in combo) or "credential access" in tactics or "logon" in combo or "lockout" in combo or "vpn_" in combo or "cleartext_pwd" in combo:
+            return ArchetypeId.BRUTE_FORCE.value if ("brute" in combo or "fail" in combo) else ArchetypeId.AUTHENTICATION.value
 
         if "privilege" in combo or "escalation" in combo or "privilege escalation" in tactics:
             return ArchetypeId.PRIVILEGE_ESCALATION.value

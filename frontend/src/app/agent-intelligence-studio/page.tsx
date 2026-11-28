@@ -71,6 +71,7 @@ import { CompactPageHeader } from "@/components/compact/CompactDesignSystem";
 import { ReviewIncidentsWorkbench } from "@/components/compact/ReviewIncidentsWorkbench";
 import { AiTestWorkbench } from "@/components/compact/AiTestWorkbench";
 import { AccuracyLearningSummary } from "@/components/compact/AccuracyLearningSummary";
+import { Ais32IntelligencePanel } from "@/components/compact/Ais32IntelligencePanel";
 import { ManageVersionHistory } from "@/components/compact/ManageVersionHistory";
 import { deriveOperationalStatus, deriveSiemRuleStatus } from "@/lib/diagnostics";
 import { copyToClipboard as copyTextToClipboard } from "@/lib/clipboard";
@@ -1294,21 +1295,9 @@ function AgentIntelligenceStudioContent() {
                       <span>Bulk Audit Rules</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowExportMenu(false);
-                        setPromptInspectorIncidentId(null);
-                        setPromptInspectorRuleId(selectedRuleId || (selectedRule ? selectedRule.id : null));
-                        setPromptInspectorVersionId(selectedVersionId || null);
-                        setPromptInspectorInitialMode("capture");
-                        setPromptInspectorOpen(true);
-                      }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-slate-900 text-slate-200 flex items-center gap-2"
-                    >
-                      <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>View Actual LLM Prompt</span>
-                    </button>
+                    <div className="px-3 py-1 text-[10px] text-slate-500">
+                      Prompt inspection available from header bar
+                    </div>
                   </div>
 
                   <div className="py-1">
@@ -2689,6 +2678,12 @@ function AgentIntelligenceStudioContent() {
       {/* COMPACT MODE: TAB 1 (REVIEW INCIDENTS) */}
       {!ruleError && !versionError && compactUi && (primaryTab === "incidents" || primaryTab === "overview") && (
         <div className="space-y-3">
+          <Ais32IntelligencePanel
+            variant="overview"
+            isAdmin={isAdmin}
+            isViewer={isViewer}
+            selectedRuleId={selectedRuleId}
+          />
           <ReviewIncidentsWorkbench
             ruleId={selectedRuleId}
             ruleName={rulePrompt?.rule_name || selectedRule?.name}
@@ -2753,6 +2748,12 @@ function AgentIntelligenceStudioContent() {
       {/* COMPACT MODE: TAB 3 (ANALYST REVIEW & LEARNING / ACCURACY) */}
       {!ruleError && !versionError && compactUi && (primaryTab === "accuracy" || primaryTab === "learning") && (
         <div className="space-y-4">
+          <Ais32IntelligencePanel
+            variant="accuracy"
+            isAdmin={isAdmin}
+            isViewer={isViewer}
+            selectedRuleId={selectedRuleId}
+          />
           <AccuracyLearningSummary
             ruleId={selectedRuleId}
             ruleName={rulePrompt?.rule_name || selectedRule?.name}

@@ -20,6 +20,20 @@ class SourceProvenance(str, Enum):
 
 
 class ArchetypeId(str, Enum):
+    # AIS 3.2 Canonical Universal Archetypes
+    NETWORK_RECONNAISSANCE = "NETWORK_RECONNAISSANCE"
+    FIREWALL_SECURITY = "FIREWALL_SECURITY"
+    ENDPOINT_SECURITY = "ENDPOINT_SECURITY"
+    AUTHENTICATION_SECURITY = "AUTHENTICATION_SECURITY"
+    DNS_SECURITY = "DNS_SECURITY"
+    DATA_TRANSFER = "DATA_TRANSFER"
+    IPS_IDS = "IPS_IDS"
+    CONFIGURATION_MONITORING = "CONFIGURATION_MONITORING"
+    OPERATIONAL_MONITORING = "OPERATIONAL_MONITORING"
+    THREAT_INTELLIGENCE = "THREAT_INTELLIGENCE"
+    GENERIC_UNKNOWN = "GENERIC_UNKNOWN"
+
+    # Granular & Legacy Archetypes (preserved for backward compatibility)
     NETWORK_EXFILTRATION = "NETWORK_EXFILTRATION"
     NETWORK_SCAN = "NETWORK_SCAN"
     MALWARE_EXECUTION = "MALWARE_EXECUTION"
@@ -112,9 +126,11 @@ class ArchetypeClassificationResult(BaseModel):
     rule_identifier: str
     primary_archetype: ArchetypeId
     secondary_archetype: Optional[ArchetypeId] = None
+    canonical_archetype: str = "GENERIC_UNKNOWN"
     confidence_score: float = Field(..., ge=0.0, le=1.0)
     classification_reason: str
+    mapping_rationale: str = ""
     matched_features: List[str] = Field(default_factory=list)
     traceability_log: List[str] = Field(default_factory=list)
-    registry_version: str = "v2.0.0"
+    registry_version: str = "v3.0.0"
     classified_at: datetime = Field(default_factory=utc_now)
