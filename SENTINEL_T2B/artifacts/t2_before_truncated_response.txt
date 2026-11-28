@@ -1,0 +1,88 @@
+# SOC Rule-Reasoning Investigation for Incident #16100: "Heavy TCP Host Scan On Fixed Port"
+
+---
+
+## **Section A: Incident Overview & Rule Definition**
+
+**Rule Name:** `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`  
+**Rule Description:** This rule is triggered when a large number of TCP packets are sent to the same destination port across multiple unique destination IPs within a short time window, indicating a potential host scan or reconnaissance activity.
+
+**Rule Threshold:**  
+- `COUNT(DISTINCT destIpAddr) >= 100`  
+- **Time Window:** 180 seconds (3 minutes)  
+- **Group-by Fields:**  
+  - `source_ip`  
+  - `dest_port`  
+  - `timestamp` (within the 180s window)
+
+**Purpose:** Detect potential scanning behavior where a single source IP sends TCP packets to multiple unique destination IPs on the same fixed port, which is a common pattern in network reconnaissance.
+
+---
+
+## **Section B: Observed Telemetry & Evidence Extraction**
+
+**Incident ID:** #16100  
+**Event Type:** `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`  
+**Severity:** MEDIUM  
+**Status:** Open  
+**Source IP:** `172.25.25.29`  
+**Destination IP:** `45.64.199.219`  
+**Destination Port:** `null` (not specified in the incident context)  
+**Event Count:** `0` (no event samples provided)  
+**AI Verdict:** `PENDING`  
+**AI Verdict Reason:** `null` (no reasoning provided)
+
+**Observed Telemetry Summary:**
+- **Source IP:** `172.25.25.29` (internal IP, likely a host within the network)
+- **Destination IP:** `45.64.199.219` (external IP, possibly a public-facing asset or honeypot)
+- **Destination Port:** Not specified in the incident context
+- **Event Count:** `0` (no event samples provided for analysis)
+- **Timestamps:** Not provided in the incident context
+
+**Missing Data:**
+- No timestamps or event samples provided for analysis
+- No list of unique destination IPs or ports
+- No correlation with other events or logs
+
+---
+
+## **Section C: Correlation Threshold & Mathematical Verification**
+
+**Rule Threshold:**  
+- `COUNT(DISTINCT destIpAddr) >= 100`  
+- **Time Window:** 180 seconds (3 minutes)
+
+**Verification:**
+- **Observed `COUNT(DISTINCT destIpAddr)`:** `0` (no data provided)
+- **Time Window:** Not applicable (no timestamps provided)
+- **Conclusion:** The rule threshold cannot be verified due to the absence of event samples and timestamps. The rule is designed to detect a high volume of TCP traffic to multiple IPs on the same port, but without telemetry, the threshold cannot be confirmed.
+
+---
+
+## **Section D: MITRE ATT&CK Mapping**
+
+**Tactics:**  
+- **Reconnaissance** (T0007) – Gathering information about the network or systems to identify potential targets.
+
+**Techniques & Sub-Techniques:**
+- **T1046.001 – Network Scan** – Scanning the network to identify active hosts or open ports.
+- **T1092 – Network Sniffing** – Monitoring network traffic to capture sensitive information.
+- **T1077 – Windows Reboot** – If the scan is part of a larger attack chain, rebooting the system may be a follow-up action.
+
+**Mapping Justification:**  
+- The rule is designed to detect TCP scans, which align with the **Network Scan** technique under the **Reconnaissance** tactic.
+- If the source IP is internal and the destination IPs are external, it may indicate an internal host scanning external IPs, which is a common reconnaissance behavior.
+
+---
+
+## **Section E: Behavioral & Network Context Assessment**
+
+**Source IP:** `172.25.25.29`  
+- **Internal IP** – Likely a host within the network (e.g., a workstation, server, or IoT device).
+- **Behavior:** If this IP is sending TCP packets to multiple external IPs on the same port, it could be:
+  - A **benign scanner** (e.g., a network diagnostic tool or vulnerability scanner)
+  - A **malicious actor** performing **reconnaissance** to identify potential targets
+
+**Destination IP:** `45.64.199.219`  
+- **External IP** – Possibly a public-facing asset, honeypot, or a known malicious IP.
+- **Behavior:** If this IP is receiving a high volume of TCP packets from the same source port, it may be:

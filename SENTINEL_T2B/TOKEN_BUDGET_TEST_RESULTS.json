@@ -1,0 +1,62 @@
+{
+  "captured_at_utc": "2026-11-28T14:43:13.245006+00:00",
+  "effective_context_window": 8192,
+  "live_measurements": {
+    "RT01_short": {
+      "prompt_tokens": 295,
+      "requested_max_tokens": 7865,
+      "completion_tokens": 88,
+      "status": "COMPLETED",
+      "finish_reason": "stop"
+    },
+    "RT03_T2": {
+      "prompt_tokens": 662,
+      "requested_max_tokens": 7498,
+      "completion_tokens": 1672,
+      "status": "COMPLETED",
+      "finish_reason": "stop"
+    },
+    "RT04_T3_1_runs": [
+      {
+        "run": 1,
+        "prompt_tokens": 772,
+        "requested_max_tokens": 7388,
+        "completion_tokens": 982,
+        "status": "COMPLETED",
+        "finish_reason": "stop"
+      },
+      {
+        "run": 2,
+        "prompt_tokens": 772,
+        "requested_max_tokens": 7388,
+        "completion_tokens": 1128,
+        "status": "COMPLETED",
+        "finish_reason": "stop"
+      },
+      {
+        "run": 3,
+        "prompt_tokens": 772,
+        "requested_max_tokens": 7388,
+        "completion_tokens": 1154,
+        "status": "COMPLETED",
+        "finish_reason": "stop"
+      }
+    ],
+    "RT06_multiturn": {
+      "prompt_tokens": 2360,
+      "requested_max_tokens": 5800,
+      "completion_tokens": 45,
+      "status": "COMPLETED"
+    },
+    "RT08_overflow": {
+      "prompt_tokens": 29973,
+      "effective_context_window": 8192,
+      "status": "CONTEXT_BUDGET_EXCEEDED",
+      "status_code": 422
+    }
+  },
+  "unit_test_validations": {
+    "RT07_history_trimming_near_8192": "PASS (test_sentinel_t2b_regression.py::test_rt07_history_near_context_capacity_trims_oldest_with_disclosure)",
+    "RT15_continuation_insufficient_context": "PASS (test_sentinel_t2b_regression.py::test_rt09_rt14_rt15_truncation_detected_and_safe_continuation)"
+  }
+}

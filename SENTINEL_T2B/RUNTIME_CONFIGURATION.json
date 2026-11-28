@@ -1,0 +1,48 @@
+{
+  "captured_at_utc": "2026-11-28T14:32:20.480527+00:00",
+  "server_1": {
+    "host": "172.26.41.240",
+    "logical_hostname": "verdictum-core-01",
+    "deployed_commit_sha": "eb78e6ffc034b0cfc3560de0509642efda5b9e59",
+    "environment": "production (UPLA target: staging)",
+    "operating_mode": "advisory",
+    "context_budget": 8192,
+    "verified_max_model_len": 8192,
+    "legacy_chat_request_default_max_tokens": 768,
+    "legacy_frontend_hardcoded_max_tokens": 1024,
+    "new_chat_completion_budget_mode": "dynamic context-aware (effective_ctx - actual_input_tokens - safety_margin)",
+    "enable_thinking": false,
+    "nginx_proxy_read_timeout_s": 300,
+    "next_proxy_timeout_ms": 600000,
+    "frontend_stream_abort_timeout_ms": 600000,
+    "frontend_stream_idle_timeout_ms": 120000
+  },
+  "server_2": {
+    "host": "13.204.214.64",
+    "port": 8000,
+    "protocol": "http",
+    "base_url": "http://13.204.214.64:8000/v1",
+    "logical_hostname": "verdictum-cortex-01",
+    "engine": "vLLM / PyTorch CUDA",
+    "model_identifier": "Qwen/Qwen3-14B-AWQ",
+    "available_models": [
+      "Qwen/Qwen3-14B-AWQ"
+    ],
+    "configured_max_model_len_verified": 8192,
+    "effective_runtime_context_capacity": 8192,
+    "vllm_metrics": {
+      "active_requests": 0,
+      "waiting_requests": 0,
+      "gpu_cache_usage": 0.0,
+      "kv_cache_usage_percent": 0.0
+    },
+    "hardware_telemetry_available": false,
+    "ssh_process_inspection": "UNVERIFIED_FROM_WORKSTATION (Server 2 firewalled to Server 1 IP; no Server 2 SSH profile in .upla/config.json)"
+  },
+  "capacity_distinction": {
+    "model_theoretical_context_capacity": "32768 (Qwen3-14B architecture native; unverified via Server 2 config.json)",
+    "configured_vllm_max_model_len": 8192,
+    "effective_runtime_context_capacity": 8192,
+    "available_completion_budget_formula": "effective_context_window - actual_input_tokens - safety_margin (32 remote / 64 local)"
+  }
+}

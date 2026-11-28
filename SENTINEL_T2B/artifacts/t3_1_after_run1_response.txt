@@ -1,0 +1,71 @@
+1. **Incident & Rule Metadata:**  
+   - **Incident ID:** #16100  
+   - **Title:** Heavy TCP Host Scan On Fixed Port  
+   - **Event Type:** `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`  
+   - **Severity:** MEDIUM  
+   - **Status:** Open  
+   - **AI Verdict:** PENDING  
+
+2. **Source & Destination Entities:**  
+   - **Source IP:** `172.25.25.29`  
+   - **Destination IPs:**  
+     - `10.10.1.1` to `10.10.1.40` (40 unique hosts)  
+     - `10.10.2.1` to `10.10.2.35` (35 unique hosts)  
+     - `10.10.3.1` to `10.10.3.28` (28 unique hosts)  
+
+3. **Ports & Protocol Details:**  
+   - **Destination Port:** `443` (HTTPS)  
+   - **Protocol:** `TCP` (IP Protocol 6)  
+   - **Note:** Destination port is fixed at 443 across all events.  
+
+4. **Observed Event / Target Counts:**  
+   - **Total Unique Hosts Scanned:**  
+     - 40 (10.10.1.x)  
+     - 35 (10.10.2.x)  
+     - 28 (10.10.3.x)  
+     - **Total:** 103 unique hosts  
+   - **Event Count:** 103 (as per `incidentCount`)  
+   - **Time Window:** 180 seconds (3 minutes)  
+
+5. **Aggregate Calculations & Threshold Check:**  
+   - **Total Hosts Scanned:** 103  
+   - **Time Window:** 180 seconds  
+   - **Rate of Scanning:** ~0.57 hosts per second  
+   - **Threshold Check:** The rule likely triggers on a high number of hosts scanned in a short time window, which aligns with the event count and time window.  
+
+6. **Rule Pattern Condition Evaluation:**  
+   - **Pattern:** Heavy TCP host scan on a fixed port (443)  
+   - **Evaluation:**  
+     - The source IP (`172.25.25.29`) is scanning multiple subnets (`10.10.1.x`, `10.10.2.x`, `10.10.3.x`)  
+     - All events use the same destination port (443) and protocol (TCP)  
+     - The scan rate is high (103 hosts in 180 seconds)  
+     - **Conclusion:** This matches the rule pattern for a heavy TCP host scan on a fixed port.  
+
+7. **Eventtime and date/time consistency:**  
+   - **Event Timestamps:**  
+     - `2026-11-26T16:42:01Z`  
+     - `2026-11-26T16:43:15Z`  
+     - `2026-11-26T16:44:22Z`  
+   - **Consistency Check:**  
+     - All timestamps are within a 3-minute window  
+     - No anomalies in time progression  
+     - **Conclusion:** Time consistency is maintained across all events.  
+
+8. **Evidence Completeness & Gaps:**  
+   - **Available Data:**  
+     - Source IP, destination IPs, ports, protocol, event count, and timestamps  
+     - No additional metadata (e.g., user agent, payload, or application context)  
+   - **Gaps:**  
+     - No details on the nature of the traffic (e.g., whether it's legitimate or malicious)  
+     - No information on the source IP's identity or context  
+     - No evidence of payload or script content  
+   - **Conclusion:** The data is sufficient to trigger the rule but lacks contextual details for definitive classification.  
+
+9. **Final Verification & Completion Marker:**  
+   - **Verification:**  
+     - The incident aligns with the rule pattern for a heavy TCP host scan on a fixed port  
+     - All timestamps and event counts are consistent  
+     - No contradictions in the data  
+   - **Conclusion:** The incident is valid and consistent with the rule, but further investigation is needed for classification.  
+
+[T3_1_COMPLETE]

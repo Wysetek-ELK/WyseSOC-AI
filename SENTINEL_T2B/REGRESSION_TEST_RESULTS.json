@@ -1,0 +1,159 @@
+{
+  "captured_at_utc": "2026-11-28T14:43:13.245006+00:00",
+  "tests": [
+    {
+      "id": "RT01",
+      "scenario": "Short SOC question",
+      "mode": "LIVE_GPU + UNIT",
+      "status": "PASS",
+      "evidence": "status=COMPLETED, finish_reason=stop, 88 completion tokens"
+    },
+    {
+      "id": "RT02",
+      "scenario": "Medium-length SOC investigation",
+      "mode": "LIVE_GPU + UNIT",
+      "status": "PASS",
+      "evidence": "T3.1 & unit RT02 completed cleanly"
+    },
+    {
+      "id": "RT03",
+      "scenario": "Original/Reconstructed T2 investigation",
+      "mode": "LIVE_GPU",
+      "status": "PASS",
+      "evidence": "Sections A-I + [INVESTIGATION_COMPLETE], 1672 completion tokens, finish_reason=stop (reconstructed prompt)"
+    },
+    {
+      "id": "RT04",
+      "scenario": "Original/Reconstructed T3.1 investigation (3x)",
+      "mode": "LIVE_GPU",
+      "status": "PASS",
+      "evidence": "3/3 runs COMPLETED with [T3_1_COMPLETE] (982, 1128, 1154 tokens; reconstructed prompt)"
+    },
+    {
+      "id": "RT05",
+      "scenario": "Long structured response (>1024 tokens)",
+      "mode": "LIVE_GPU + UNIT",
+      "status": "PASS",
+      "evidence": "UI T2 generated 1975 tokens; API T2 generated 1672 tokens; T3.1 runs 2 & 3 generated 1128 & 1154 tokens"
+    },
+    {
+      "id": "RT06",
+      "scenario": "Multi-turn conversation",
+      "mode": "LIVE_GPU + UNIT",
+      "status": "PASS",
+      "evidence": "Turn 2 prompt_tokens=2360, budget=5800, status=COMPLETED"
+    },
+    {
+      "id": "RT07",
+      "scenario": "Input near context capacity",
+      "mode": "UNIT_MOCKED",
+      "status": "PASS",
+      "evidence": "Progressive oldest-history trimming preserved system prompt & latest query"
+    },
+    {
+      "id": "RT08",
+      "scenario": "Input exceeding context capacity",
+      "mode": "LIVE_API + UNIT",
+      "status": "PASS",
+      "evidence": "29973 prompt tokens rejected fail-closed with 422 / CONTEXT_BUDGET_EXCEEDED in 137ms"
+    },
+    {
+      "id": "RT09",
+      "scenario": "Output token exhaustion",
+      "mode": "LIVE_GPU + UNIT",
+      "status": "PASS",
+      "evidence": "max_tokens=160 -> finish_reason=length, status=TRUNCATED, continuation_available=True"
+    },
+    {
+      "id": "RT10",
+      "scenario": "Stream interruption",
+      "mode": "UNIT_MOCKED",
+      "status": "PASS",
+      "evidence": "EOF without [DONE] -> status=INTERRUPTED, partial text preserved"
+    },
+    {
+      "id": "RT11",
+      "scenario": "HTTP timeout",
+      "mode": "UNIT_MOCKED",
+      "status": "PASS",
+      "evidence": "httpx.ReadTimeout -> status=TIMEOUT, HTTP 504 / SSE error"
+    },
+    {
+      "id": "RT12",
+      "scenario": "Streaming idle timeout",
+      "mode": "UNIT_MOCKED + CODE_VERIFIED",
+      "status": "PASS",
+      "evidence": "Backend idle_timeout_sec + frontend 120s idle watchdog"
+    },
+    {
+      "id": "RT13",
+      "scenario": "Normal response completion",
+      "mode": "LIVE_GPU + UNIT",
+      "status": "PASS",
+      "evidence": "finish_reason=stop + [DONE] -> status=COMPLETED"
+    },
+    {
+      "id": "RT14",
+      "scenario": "Safe response continuation",
+      "mode": "LIVE_GPU + UNIT",
+      "status": "PASS",
+      "evidence": "POST /api/chat/continue completed truncated T2 (1817 tokens, is_continuation=True)"
+    },
+    {
+      "id": "RT15",
+      "scenario": "Continuation with insufficient context",
+      "mode": "UNIT_MOCKED",
+      "status": "PASS",
+      "evidence": "HTTP 422 rejected unsafe continuation"
+    },
+    {
+      "id": "RT16",
+      "scenario": "Frontend/backend response parity",
+      "mode": "LIVE_GUI_CDP",
+      "status": "PASS",
+      "evidence": "Live Chrome UI rendered complete Sections A-I + [INVESTIGATION_COMPLETE] + Technical Details matching backend metadata"
+    },
+    {
+      "id": "RT17",
+      "scenario": "Conversation persistence",
+      "mode": "LIVE_API + UNIT",
+      "status": "PASS",
+      "evidence": "GET /api/chat/conversations/{id} returned 4 persisted messages across multi-turn thread"
+    },
+    {
+      "id": "RT18",
+      "scenario": "Authentication and RBAC",
+      "mode": "LIVE_API + UNIT",
+      "status": "PASS",
+      "evidence": "Live unauth -> 401; unit cross-user conversation/request/continue -> 403"
+    },
+    {
+      "id": "RT19",
+      "scenario": "Concurrent request protection",
+      "mode": "UNIT_MOCKED",
+      "status": "PASS",
+      "evidence": "GPUWorkloadManager semaphore + circuit breaker 503 fast-fail verified"
+    },
+    {
+      "id": "RT20",
+      "scenario": "AIS policy regression",
+      "mode": "LIVE_API + UNIT",
+      "status": "PASS",
+      "evidence": "Heavy TCP active_version_id unchanged; 27/27 AIS tests passed"
+    },
+    {
+      "id": "RT21",
+      "scenario": "Existing incident processing regression",
+      "mode": "LIVE_API + UNIT",
+      "status": "PASS",
+      "evidence": "Incident #16100 ai_verdict unchanged; 42/42 backend tests passed"
+    },
+    {
+      "id": "RT22",
+      "scenario": "Ground truth integrity",
+      "mode": "LIVE_API + UNIT",
+      "status": "PASS",
+      "evidence": "Incident #16100 ground_truth unchanged"
+    }
+  ]
+}

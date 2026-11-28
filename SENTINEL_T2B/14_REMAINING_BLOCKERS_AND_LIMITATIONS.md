@@ -1,0 +1,7 @@
+# 14 — Remaining Blockers & Limitations
+
+1. **8,192-Token Context Ceiling on Server 2**: Server 2 remains configured at `max_model_len=8192` (per constraint not to restart/reconfigure Server 2). Single-turn prompts whose input + required output exceed ~7,900 tokens are safely rejected with `CONTEXT_BUDGET_EXCEEDED`; multi-stage splitting or future Server 2 `max_model_len` expansion is required for larger raw event dumps.
+2. **Exact Original T2/T3.1 Prompt Text Unrecoverable**: Pre-patch Sentinel did not persist chat messages in DB or log prompt bodies; reproduction and post-fix verification used clearly labeled reconstructed prompts.
+3. **Server 2 OS-Level Inspection Scope**: Server 2 is firewalled to Server 1 and not configured for SSH in `.upla/config.json`, so `ps`/`nvidia-smi`/systemd unit inspection on Server 2 remains outside workstation SSH reach.
+4. **Incident `#16100` `detail` Field in Chat Context**: `chat.py` extracts `inc.detail` and `inc.events[:5]`; when an incident stores `incidentCount` only in `raw_payload.incidentDetailJson` with 0 rows in `incident_events`, Sentinel chat sees `event_count=0` unless pasted inline (an intelligence/context-enrichment enhancement for T3, not a truncation defect).
+5. **Pre-existing ESLint / Missing `ruff`**: `ruff` is not installed locally (`NOT VERIFIED` in UPLA report), and `npm run lint` failed on pre-existing lint rules (non-blocking in UPLA).

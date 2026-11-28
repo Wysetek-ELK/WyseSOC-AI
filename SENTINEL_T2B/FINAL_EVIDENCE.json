@@ -1,0 +1,25 @@
+{
+  "phase": "T2b",
+  "overall_status": "PASS",
+  "readiness": "T3_READY",
+  "generated_at_utc": "2026-11-28T14:43:13.245006+00:00",
+  "deployed_commit_sha": "eb78e6ffc034b0cfc3560de0509642efda5b9e59",
+  "upla_execution_id": "upla-20261128-142508-2a4156",
+  "runtime_metrics": {
+    "post_deploy_auto_budget_completion_rate": "100% (6/6 auto-budget live requests COMPLETED with finish_reason=stop)",
+    "post_deploy_unintended_truncation_rate": "0% (0/6)",
+    "post_deploy_timeout_rate": "0% (0/6)",
+    "post_deploy_stream_interruption_rate": "0% (0/6)",
+    "controlled_overflow_detection_rate": "100% (1/1 rejected fail-closed with 422)",
+    "controlled_truncation_detection_rate": "100% (1/1 max_tokens=160 flagged TRUNCATED + continued to COMPLETED)",
+    "persistence_rate": "100%",
+    "frontend_backend_parity": "VERIFIED"
+  },
+  "acceptance_gates": {
+    "total": 22,
+    "PASS": 22,
+    "FAIL": 0,
+    "BLOCKED": 0,
+    "NOT_APPLICABLE": 0
+  }
+}

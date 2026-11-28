@@ -1,0 +1,17 @@
+Perform a compact, structured evidence extraction and consistency analysis for the attached incident (#16100) and the telemetry table below. Include ALL 9 numbered sections and end with the exact marker `[T3_1_COMPLETE]`:
+
+Sample Telemetry Summary:
+- srcIpAddr=172.25.25.29, destIpPort=443, ipProto=6, incidentCount=103, window=180s
+- Event samples: 2026-11-26T16:42:01Z -> 10.10.1.1..10.10.1.40 (40 unique hosts); 2026-11-26T16:43:15Z -> 10.10.2.1..10.10.2.35 (35 unique hosts); 2026-11-26T16:44:22Z -> 10.10.3.1..10.10.3.28 (28 unique hosts).
+
+Required Sections:
+1. Incident & Rule Metadata:
+2. Source & Destination Entities:
+3. Ports & Protocol Details:
+4. Observed Event / Target Counts:
+5. Aggregate Calculations & Threshold Check:
+6. Rule Pattern Condition Evaluation:
+7. Eventtime and date/time consistency:
+8. Evidence Completeness & Gaps:
+9. Final Verification & Completion Marker:
+End with exact marker: [T3_1_COMPLETE]

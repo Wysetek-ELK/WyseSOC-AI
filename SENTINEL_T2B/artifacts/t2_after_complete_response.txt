@@ -1,0 +1,142 @@
+# SOC Rule-Reasoning Investigation for Incident #16100: "Heavy TCP Host Scan On Fixed Port"
+
+---
+
+## **Section A: Incident Overview & Rule Definition**
+
+**Incident ID:** #16100  
+**Title:** Heavy TCP Host Scan On Fixed Port  
+**Event Type:** `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`  
+**Severity:** MEDIUM  
+**Status:** Open  
+**Rule Description:** This rule is triggered when a large number of TCP packets are sent to the same destination port across multiple unique destination IPs within a short time window, indicating a potential host scan or reconnaissance activity.
+
+**Rule Threshold:**  
+- **COUNT(DISTINCT destIpAddr) >= 100**  
+- **Time Window:** 180 seconds  
+- **Group-by Fields:** `source_ip`, `dest_port`  
+
+---
+
+## **Section B: Observed Telemetry & Evidence Extraction**
+
+**Source IP:** `172.25.25.29`  
+**Destination Port:** `null` (not specified in the incident context)  
+**Unique Destination IPs:** Not provided in the incident context (incidentCount = 0)  
+**Timestamps:** Not provided in the incident context  
+**Sample Events:** `[]` (no event samples provided)
+
+**Observations:**
+- The source IP is `172.25.25.29`, which appears to be an internal IP (likely within a private network range).
+- The destination port is not specified, which is unusual and may indicate incomplete or missing telemetry.
+- No unique destination IPs or timestamps are provided, which limits the ability to verify the rule's threshold.
+- No sample events are available for analysis.
+
+---
+
+## **Section C: Correlation Threshold & Mathematical Verification**
+
+**Rule Threshold:**  
+- **COUNT(DISTINCT destIpAddr) >= 100**  
+- **Time Window:** 180 seconds  
+- **Group-by:** `source_ip`, `dest_port`
+
+**Verification:**
+- **COUNT(DISTINCT destIpAddr):** Not available (incidentCount = 0)  
+- **Time Window:** Not available (no timestamps provided)  
+- **Group-by:** `source_ip` is known (`172.25.25.29`), but `dest_port` is not specified.
+
+**Conclusion:**  
+- The rule threshold cannot be verified due to the absence of critical telemetry (destination IPs, timestamps, and event samples).  
+- Without this data, it is not possible to confirm whether the rule was triggered due to a legitimate scan or a false positive.
+
+---
+
+## **Section D: MITRE ATT&CK Mapping**
+
+**Tactics:**  
+- **Reconnaissance** (T0007) – Gathering information about the network or systems to identify potential targets.
+
+**Techniques & Sub-Techniques:**
+- **T1046.001 – Network Scan** – Scanning the network to identify active hosts and open ports.
+- **T1046.002 – Port Scan** – Scanning specific ports to identify open services or vulnerabilities.
+
+**Mapping Justification:**  
+- The rule is designed to detect TCP scans on fixed ports, which aligns with the **Network Scan** and **Port Scan** techniques under the **Reconnaissance** tactic.
+
+---
+
+## **Section E: Behavioral & Network Context Assessment**
+
+**Internal vs. External:**
+- **Source IP (`172.25.25.29`)** is an internal IP (likely from a private network), which may indicate that the scan is originating from within the organization.
+- **Destination IPs:** Not available, but if the scan is targeting external IPs, it may be a reconnaissance activity. If the scan is targeting internal IPs, it could be a misconfigured internal tool or a lateral movement attempt.
+
+**Benign Scanner vs. Reconnaissance:**
+- **Benign Scanners:** Tools like Nmap or vulnerability scanners may perform similar scans, but they are typically used for legitimate purposes (e.g., internal network audits).
+- **Reconnaissance:** If the scan is targeting external IPs or is part of a larger pattern of suspicious activity, it may be an indicator of a potential threat actor probing the network.
+
+**Contextual Assessment:**
+- The lack of destination IPs and timestamps makes it difficult to determine the nature of the scan.
+- If the scan is internal, it may be a false positive or a legitimate network audit.
+- If the scan is external, it may be a sign of reconnaissance or a potential attack.
+
+---
+
+## **Section F: Missing Evidence & Telemetry Gaps**
+
+**Missing Evidence:**
+- **Destination IPs:** No unique destination IPs are provided, which is critical for verifying the rule threshold.
+- **Timestamps:** No timestamps are available to determine the time window of the scan.
+- **Event Samples:** No sample events are provided, which limits the ability to analyze the actual traffic patterns.
+- **Destination Port:** The destination port is not specified, which is unusual and may indicate incomplete data.
+
+**Telemetry Gaps:**
+- The incident lacks sufficient telemetry to confirm whether the rule was triggered due to a legitimate scan or a potential threat.
+- Without timestamps, it is not possible to determine the duration of the scan or its correlation with other events.
+- The absence of event samples makes it difficult to analyze the actual network traffic and determine its intent.
+
+---
+
+## **Section G: Confidence & Uncertainty Evaluation**
+
+**Confidence Level:** **Low**
+
+**Reasons for Uncertainty:**
+- **Incomplete Telemetry:** The lack of destination IPs, timestamps, and event samples makes it impossible to verify the rule's threshold.
+- **Ambiguous Source IP:** The source IP is internal, which could indicate a false positive or a legitimate internal scan.
+- **No Behavioral Context:** Without additional context (e.g., user activity, system logs, or threat intelligence), it is difficult to determine the intent behind the scan.
+
+**Confidence Justification:**
+- The rule is designed to detect potential reconnaissance activity, but without sufficient telemetry, it is not possible to confirm whether the event is a true positive or a false positive.
+
+---
+
+## **Section H: Recommended SOC Containment & Analyst Actions**
+
+**Containment Actions:**
+- **Isolate the Source Host:** If the source IP (`172.25.25.29`) is confirmed to be scanning external IPs, isolate the host to prevent further reconnaissance or data exfiltration.
+- **Block Destination IPs:** If the destination IPs are identified and confirmed to be malicious, block them at the network level.
+- **Monitor for Lateral Movement:** If the scan is internal, monitor for signs of lateral movement or privilege escalation.
+
+**Analyst Actions:**
+- **Collect Additional Telemetry:** Retrieve the destination IPs, timestamps, and event samples to verify the rule's threshold.
+- **Correlate with Other Events:** Check for other events related to the source IP or destination IPs to determine if this is part of a larger attack pattern.
+- **Review System Logs:** Examine system logs on the source host to determine the purpose of the scan (e.g., a legitimate audit or a potential attack).
+- **Engage Threat Intelligence:** Use threat intelligence platforms to check if the source IP or destination IPs are associated with known malicious activity.
+
+---
+
+## **Section I: Final Verdict & Summary Justification**
+
+**Verdict:** **REQUIRES_ATTENTION**
+
+**Summary Justification:**
+- The rule `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT` is designed to detect potential reconnaissance activity, but the incident lacks sufficient telemetry (destination IPs, timestamps, and event samples) to confirm whether the event is a true positive or a false positive.
+- The source IP is internal, which may indicate a false positive or a legitimate internal scan.
+- Without additional evidence, it is not possible to determine the intent behind the scan or its potential impact on the network.
+- The incident requires further investigation and the collection of additional telemetry before a definitive verdict can be made.
+
+---
+
+[INVESTIGATION_COMPLETE]

@@ -1,0 +1,11 @@
+{
+  "captured_at_utc": "2026-11-28T14:41:13.499Z",
+  "url": "http://172.26.41.240/soc-chatbot",
+  "finalState": {
+    "thinking": false,
+    "hasDetails": true,
+    "hasCompleted": true,
+    "hasMarker": true,
+    "tail": "vity is part of a legitimate process.\n•\nThe rule may be overly sensitive or not configured correctly, leading to false positives.\n•\nAdditional investigation is required to determine the nature of the scanning activity and whether it is benign or malicious.\n\nSummary Justification:\n\n•\nThe incident is currently classified as REQUIRES_ATTENTION due to the lack of sufficient telemetry data to determine whether the rule was triggered correctly.\n•\nWithout additional information, it is not possible to determine whether the scanning activity is benign or malicious.\n•\nThe SOC team should investigate the source IP, collect additional telemetry data, and review the rule configuration to ensure that it is not triggering false positives.\n\n[INVESTIGATION_COMPLETE]\n\nTechnical Details\nCOMPLETED · stop\nSend"
+  }
+}

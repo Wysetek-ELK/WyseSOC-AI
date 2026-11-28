@@ -1,0 +1,86 @@
+# Incident Analysis Report: #16100 - Heavy TCP Host Scan On Fixed Port
+
+## 1. Incident & Rule Metadata:
+- **Incident ID:** #16100  
+- **Title:** Heavy TCP Host Scan On Fixed Port  
+- **Event Type:** `PH_RULE_HEAVY_TCP_HOST_SCAN_FIXED_PORT`  
+- **Severity:** MEDIUM  
+- **Status:** Open  
+- **AI Verdict:** PENDING  
+- **AI Verdict Reason:** Not provided  
+
+## 2. Source & Destination Entities:
+- **Source IP Address:** `172.25.25.29`  
+- **Destination IP Address:** `45.64.199.219` (from incident context)  
+- **Observed Destination IPs in Telemetry:**  
+  - `10.10.1.1` to `10.10.1.40` (40 unique hosts)  
+  - `10.10.2.1` to `10.10.2.35` (35 unique hosts)  
+  - `10.10.3.1` to `10.10.3.28` (28 unique hosts)  
+
+## 3. Ports & Protocol Details:
+- **Destination Port:** `443` (from telemetry)  
+- **Protocol:** `TCP` (IP Protocol 6)  
+- **Note:** The incident context lists `destination_port` as `null`, but telemetry shows consistent use of port `443`.  
+
+## 4. Observed Event / Target Counts:
+- **Total Unique Hosts Scanned:**  
+  - 40 (10.10.1.x)  
+  - 35 (10.10.2.x)  
+  - 28 (10.10.3.x)  
+  - **Total:** 103 unique hosts  
+- **Event Count:** 103 (from telemetry)  
+- **Time Window:** 180 seconds (3 minutes)  
+
+## 5. Aggregate Calculations & Threshold Check:
+- **Total Events:** 103  
+- **Time Window:** 180 seconds  
+- **Hosts Scanned:** 103  
+- **Threshold Check:**  
+  - If the rule is configured to trigger on a high number of hosts scanned within a short time window, this likely exceeds the threshold.  
+  - **Conclusion:** Threshold likely exceeded, triggering the rule.  
+
+## 6. Rule Pattern Condition Evaluation:
+- **Rule Type:** Heavy TCP Host Scan on Fixed Port  
+- **Pattern Match:**  
+  - **Fixed Port:** `443` (TCP)  
+  - **Multiple Hosts:** 103 unique hosts scanned in 3 minutes  
+  - **Consistent Source IP:** `172.25.25.29`  
+- **Evaluation:**  
+  - The pattern matches a heavy TCP scan on a fixed port (`443`) across multiple hosts.  
+  - **Conclusion:** Rule conditions are satisfied.  
+
+## 7. Eventtime and date/time consistency:
+- **Event Timestamps:**  
+  - `2026-11-26T16:42:01Z`  
+  - `2026-11-26T16:43:15Z`  
+  - `2026-11-26T16:44:22Z`  
+- **Time Window:** 180 seconds  
+- **Consistency Check:**  
+  - All events fall within the 3-minute window.  
+  - **Conclusion:** Time consistency is maintained.  
+
+## 8. Evidence Completeness & Gaps:
+- **Available Evidence:**  
+  - Source IP: `172.25.25.29`  
+  - Destination IPs: `10.10.1.x`, `10.10.2.x`, `10.10.3.x`  
+  - Destination Port: `443`  
+  - Protocol: `TCP`  
+  - Time Window: 180 seconds  
+  - Event Count: 103  
+- **Missing Evidence:**  
+  - **No packet payloads or logs provided**  
+  - **No additional context on the source IP (`172.25.25.29`) or destination IP (`45.64.199.219`)**  
+  - **No correlation with other incidents or threat intelligence**  
+- **Conclusion:** Evidence is sufficient to trigger the rule, but lacks depth for full threat assessment.  
+
+## 9. Final Verification & Completion Marker:
+- **Verification:**  
+  - Rule conditions are met.  
+  - Event timing and host counts are consistent.  
+  - No evidence of false positives based on current telemetry.  
+- **Recommendation:**  
+  - Investigate the source IP (`172.25.25.29`) for legitimacy.  
+  - Correlate with other logs or threat intelligence for further validation.  
+  - Consider isolating the source IP if it is not expected to perform network scans.  
+
+[T3_1_COMPLETE]

@@ -1,0 +1,144 @@
+{
+  "captured_at_utc": "2026-11-28T14:43:13.245006+00:00",
+  "summary": {
+    "total": 22,
+    "PASS": 22,
+    "FAIL": 0,
+    "BLOCKED": 0,
+    "NOT_APPLICABLE": 0
+  },
+  "gates": [
+    {
+      "gate": "G01",
+      "requirement": "Actual runtime architecture verified",
+      "status": "PASS",
+      "evidence": "Full Frontend->Backend->vLLM path traced and verified"
+    },
+    {
+      "gate": "G02",
+      "requirement": "Actual deployed context window verified",
+      "status": "PASS",
+      "evidence": "8192 verified via /api/llm/config and live vLLM 400 BadRequestError (max_tokens=8500 > max_model_len=8192); OS-level Server 2 SSH not available"
+    },
+    {
+      "gate": "G03",
+      "requirement": "Effective completion token budget verified",
+      "status": "PASS",
+      "evidence": "Dynamic effective_ctx - input_tokens - safety_margin verified live (e.g. 8192 - 662 - 32 = 7498)"
+    },
+    {
+      "gate": "G04",
+      "requirement": "Original truncation reproduced or adequately diagnosed",
+      "status": "PASS",
+      "evidence": "Reproduced at 1024 tokens with reconstructed T2 prompt across stream, non-stream, and UI; real pre-fix CHATBOT ledger corroborated"
+    },
+    {
+      "gate": "G05",
+      "requirement": "Root cause established using runtime evidence",
+      "status": "PASS",
+      "evidence": "Confirmed: frontend hardcoded max_tokens=1024, backend default 768, missing context budget/finish_reason/usage/truncation status"
+    },
+    {
+      "gate": "G06",
+      "requirement": "Minimum necessary correction implemented",
+      "status": "PASS",
+      "evidence": "Scoped to Sentinel token budget, chat API lifecycle/persistence, and Sentinel UI"
+    },
+    {
+      "gate": "G07",
+      "requirement": "Context-aware token management validated",
+      "status": "PASS",
+      "evidence": "SentinelTokenBudgetService validated live and in unit tests"
+    },
+    {
+      "gate": "G08",
+      "requirement": "No silent response truncation",
+      "status": "PASS",
+      "evidence": "finish_reason=length and missing [DONE] classified TRUNCATED/INTERRUPTED"
+    },
+    {
+      "gate": "G09",
+      "requirement": "Correct streaming termination handling",
+      "status": "PASS",
+      "evidence": "Captures finish_reason, stream_options.include_usage, [DONE] marker, partial JSON, idle timeout"
+    },
+    {
+      "gate": "G10",
+      "requirement": "Explicit incomplete response status",
+      "status": "PASS",
+      "evidence": "UI renders exact required warning banners for TRUNCATED, INTERRUPTED, and CONTEXT_BUDGET_EXCEEDED"
+    },
+    {
+      "gate": "G11",
+      "requirement": "Safe continuation or explicit limitation",
+      "status": "PASS",
+      "evidence": "POST /api/chat/continue verified live & in unit tests with context overflow guard and 3-attempt cap"
+    },
+    {
+      "gate": "G12",
+      "requirement": "T3.1 completes across required live tests",
+      "status": "PASS",
+      "evidence": "3/3 live runs COMPLETED with finish_reason=stop and [T3_1_COMPLETE] (reconstructed prompt)"
+    },
+    {
+      "gate": "G13",
+      "requirement": "T2 completes where runtime capacity permits",
+      "status": "PASS",
+      "evidence": "Live API T2 (1672 tok) & Live UI T2 (1975 tok) COMPLETED with Sections A-I + [INVESTIGATION_COMPLETE]"
+    },
+    {
+      "gate": "G14",
+      "requirement": "Frontend/backend response integrity verified",
+      "status": "PASS",
+      "evidence": "Live Chrome UI matched backend COMPLETED / stop / exact token counts"
+    },
+    {
+      "gate": "G15",
+      "requirement": "Chat history integrity preserved",
+      "status": "PASS",
+      "evidence": "Additive sentinel_conversations/sentinel_messages tables; pre-existing history untouched"
+    },
+    {
+      "gate": "G16",
+      "requirement": "Security and RBAC regression passed",
+      "status": "PASS",
+      "evidence": "Unauth 401 live; cross-user 403 isolation verified in unit suite"
+    },
+    {
+      "gate": "G17",
+      "requirement": "Server 1 deployment verified",
+      "status": "PASS",
+      "evidence": "UPLA deployed SHA eb78e6ffc034b0cfc3560de0509642efda5b9e59, alembic upgraded, services healthy"
+    },
+    {
+      "gate": "G18",
+      "requirement": "Server 2 remains running and unchanged",
+      "status": "PASS",
+      "evidence": "Not restarted/reconfigured; ONLINE with Qwen/Qwen3-14B-AWQ and max_model_len=8192"
+    },
+    {
+      "gate": "G19",
+      "requirement": "Active AIS policy unchanged",
+      "status": "PASS",
+      "evidence": "Heavy TCP active_version_id unchanged"
+    },
+    {
+      "gate": "G20",
+      "requirement": "Certified ground truth unchanged",
+      "status": "PASS",
+      "evidence": "Incident ground truth and cohort tables untouched"
+    },
+    {
+      "gate": "G21",
+      "requirement": "Runtime and intelligence metrics separated",
+      "status": "PASS",
+      "evidence": "Reported separately in 12_LIVE_GPU_TEST_RESULTS.md and 15_FINAL_ACCEPTANCE_AND_T3_READINESS.md"
+    },
+    {
+      "gate": "G22",
+      "requirement": "All acceptance evidence available",
+      "status": "PASS",
+      "evidence": "All 15 reports, 6 JSON manifests, screenshots, and sanitized traces packaged"
+    }
+  ]
+}

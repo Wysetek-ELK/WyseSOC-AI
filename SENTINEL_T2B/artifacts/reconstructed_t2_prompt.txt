@@ -1,0 +1,12 @@
+Perform a complete structured SOC rule-reasoning investigation for the attached Heavy TCP Host Scan On Fixed Port incident (#16100) using Sections A through I below. Do not skip any section:
+
+Section A: Incident Overview & Rule Definition (rule threshold, window, group-by fields)
+Section B: Observed Telemetry & Evidence Extraction (source IP, destination port, unique destination IPs / incidentCount, timestamps)
+Section C: Correlation Threshold & Mathematical Verification (compare observed metrics against COUNT(DISTINCT destIpAddr) >= 100 within 180s)
+Section D: MITRE ATT&CK Mapping (tactics, techniques, sub-techniques)
+Section E: Behavioral & Network Context Assessment (internal vs external, benign scanner vs reconnaissance)
+Section F: Missing Evidence & Telemetry Gaps
+Section G: Confidence & Uncertainty Evaluation
+Section H: Recommended SOC Containment & Analyst Actions
+Section I: Final Verdict (TRUE_POSITIVE / FALSE_POSITIVE / REQUIRES_ATTENTION) and Summary Justification.
+End your response with the marker: [INVESTIGATION_COMPLETE]
