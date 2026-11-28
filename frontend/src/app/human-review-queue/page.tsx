@@ -345,7 +345,7 @@ export default function HumanReviewQueuePage() {
           }`}
         >
           <Award className="w-3.5 h-3.5 text-amber-400" />
-          Ground Truth Certification (AIS 2.6e)
+          Ground Truth Certification
         </button>
       </div>
 

@@ -19,7 +19,7 @@ import {
   ShieldAlert,
   Cpu,
 } from "lucide-react";
-import { api, AisEvaluationSummary } from "@/lib/api";
+import { api, AisEvaluationSummary, groundTruthApi } from "@/lib/api";
 
 interface AccuracyLearningSummaryProps {
   ruleId: string;
@@ -48,6 +48,7 @@ export function AccuracyLearningSummary({
 }: AccuracyLearningSummaryProps) {
   const [profile, setProfile] = useState<any | null>(propLearningProfile || null);
   const [evalSummary, setEvalSummary] = useState<AisEvaluationSummary | null>(null);
+  const [ais31Summary, setAis31Summary] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(!propLearningProfile);
   const [evaluating, setEvaluating] = useState(false);
   const [evaluationFeedback, setEvaluationFeedback] = useState<{
@@ -62,9 +63,10 @@ export function AccuracyLearningSummary({
     if (!ruleId) return;
     setLoading(true);
     try {
-      const [profileData, evalStatusData] = await Promise.allSettled([
+      const [profileData, evalStatusData, ais31Data] = await Promise.allSettled([
         propLearningProfile ? Promise.resolve(propLearningProfile) : api.getRuleLearningProfileDetail(ruleId, customer),
         api.getRuleEvaluationStatus(ruleId, { customer, policy_version_id: selectedVersionId }),
+        groundTruthApi.getLatestAis31Summary("AIS_3_0_INDEPENDENT_HOLDOUT_100"),
       ]);
 
       if (profileData.status === "fulfilled") {
@@ -72,6 +74,9 @@ export function AccuracyLearningSummary({
       }
       if (evalStatusData.status === "fulfilled") {
         setEvalSummary(evalStatusData.value.summary);
+      }
+      if (ais31Data.status === "fulfilled") {
+        setAis31Summary(ais31Data.value);
       }
     } catch (err: any) {
       console.error("Failed to load accuracy or evaluation tracking data:", err);
@@ -669,15 +674,17 @@ export function AccuracyLearningSummary({
         </div>
       ) : null}
 
-      {/* AIS 2.8 Controlled Model & Experiment Comparison (Blind-Review Safe) */}
+      {/* AIS 2.9 / AIS 3.1 Controlled Model & Holdout Benchmark Comparison (Blind-Review Safe) */}
       <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
           <span className="font-bold text-slate-200 text-xs flex items-center gap-2">
             <Cpu className="w-4 h-4 text-purple-400" />
-            AIS 2.8 Controlled Model &amp; Intelligence Comparison (Frozen 20-Incident Diagnostic Cohort)
+            Live GPU Benchmark Accuracy &amp; Certification Separation
           </span>
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-950/50 text-amber-300 border border-amber-800/60">
-            Live GPU Benchmark: Pending Operator Authorization
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950/60 text-cyan-300 border border-cyan-800/60">
+            {ais31Summary?.has_run
+              ? `${ais31Summary.benchmark_grade || "PROVISIONAL_SINGLE_REVIEW_BENCHMARK"} • ${ais31Summary.status}`
+              : "AIS 3.0 Holdout Ready (Awaiting Live Benchmark Run)"}
           </span>
         </div>
 
@@ -685,40 +692,62 @@ export function AccuracyLearningSummary({
           <table className="w-full text-left text-[11px] font-mono border-collapse">
             <thead>
               <tr className="text-slate-400 border-b border-slate-800">
-                <th className="p-2 font-sans">Comparison Arm</th>
-                <th className="p-2 font-sans">Model / Config</th>
-                <th className="p-2">Context Budget</th>
-                <th className="p-2">Rule Parity</th>
-                <th className="p-2">Status / Agreement</th>
+                <th className="p-2 font-sans">Benchmark Layer / Cohort</th>
+                <th className="p-2 font-sans">Certification Tier</th>
+                <th className="p-2">Sample / Coverage</th>
+                <th className="p-2">Conclusive Acc</th>
+                <th className="p-2">E2E Correct / Failed</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80 text-slate-300">
               <tr>
-                <td className="p-2 font-sans font-semibold text-slate-300">AIS 2.7 Historical Neutral</td>
-                <td className="p-2">Qwen2.5-7B-Instruct-AWQ (V1)</td>
-                <td className="p-2">8,192 / 768 out</td>
-                <td className="p-2 text-amber-400">Partial (No Logic)</td>
-                <td className="p-2">5.0% overall (1/20)</td>
+                <td className="p-2 font-sans font-semibold text-slate-300">AIS 2.9 Frozen-20 (Qwen3-14B-AWQ)</td>
+                <td className="p-2 text-sky-300">Provisional GT-2</td>
+                <td className="p-2">N=20 / 90.0% cov</td>
+                <td className="p-2">100.0% (binary)</td>
+                <td className="p-2">95.0% exact / 0 failed</td>
               </tr>
-              <tr>
-                <td className="p-2 font-sans font-semibold text-slate-300">AIS 2.7 Approved Policy</td>
-                <td className="p-2">Qwen2.5-7B-Instruct-AWQ (Prod Policy)</td>
-                <td className="p-2">8,192 / 768 out</td>
-                <td className="p-2 text-amber-400">Contaminated</td>
-                <td className="p-2">10.0% raw / 45.0% val</td>
-              </tr>
-              <tr>
-                <td className="p-2 font-sans font-semibold text-cyan-300">AIS 2.8 Controlled Experiments (A–D)</td>
-                <td className="p-2 text-cyan-200">Qwen/Qwen3-14B-AWQ (t=0, think=off)</td>
-                <td className="p-2">8,192 / 768 out (7,424 in)</td>
-                <td className="p-2 text-emerald-400">Full Logic + Evidence Intel</td>
-                <td className="p-2 text-amber-300">Awaiting Authorized GPU Run</td>
-              </tr>
+              {ais31Summary?.has_run ? (
+                <>
+                  <tr>
+                    <td className="p-2 font-sans font-semibold text-cyan-300">AIS 3.1 Holdout — Raw LLM</td>
+                    <td className="p-2 text-amber-300">
+                      {ais31Summary.subpopulations?.gt3_certified?.count > 0 ? "Certified GT-3" : "Provisional GT-2"}
+                    </td>
+                    <td className="p-2">
+                      N={ais31Summary.raw_llm_metrics?.eligible_population ?? 0} / {ais31Summary.raw_llm_metrics?.decision_coverage_eligible_pct ?? 0}% cov
+                    </td>
+                    <td className="p-2">{ais31Summary.raw_llm_metrics?.conclusive_accuracy_pct ?? "N/A"}%</td>
+                    <td className="p-2">
+                      {ais31Summary.raw_llm_metrics?.eligible_end_to_end_correct_rate_pct ?? "N/A"}% / {ais31Summary.raw_llm_metrics?.technical_failure_count ?? 0} failed
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 font-sans font-semibold text-emerald-300">AIS 3.1 Holdout — Validated App</td>
+                    <td className="p-2 text-amber-300">
+                      {ais31Summary.subpopulations?.gt3_certified?.count > 0 ? "Certified GT-3" : "Provisional GT-2"}
+                    </td>
+                    <td className="p-2">
+                      N={ais31Summary.application_metrics?.eligible_population ?? 0} / {ais31Summary.application_metrics?.decision_coverage_eligible_pct ?? 0}% cov
+                    </td>
+                    <td className="p-2">{ais31Summary.application_metrics?.conclusive_accuracy_pct ?? "N/A"}%</td>
+                    <td className="p-2">
+                      {ais31Summary.application_metrics?.eligible_end_to_end_correct_rate_pct ?? "N/A"}% / {ais31Summary.application_metrics?.technical_failure_count ?? 0} failed
+                    </td>
+                  </tr>
+                </>
+              ) : (
+                <tr>
+                  <td colSpan={5} className="p-2.5 text-center text-slate-400 font-sans">
+                    No completed AIS 3.1 holdout benchmark run recorded yet for <code className="text-slate-200">AIS_3_0_INDEPENDENT_HOLDOUT_100</code>.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
         <p className="text-[11px] text-slate-400 leading-relaxed">
-          Individual analyst review rationale and locked ground-truth labels remain isolated during live inference and blind human triage. Experimental candidate policies (AIS28-CS-CANDIDATE-V1, AIS28-PRISMA-CANDIDATE-V1) remain non-promoted diagnostics until approved.
+          Raw LLM accuracy and final validated application accuracy are tracked separately. Provisional single-reviewer (GT-2) results never satisfy dual-reviewer (GT-3) production certification.
         </p>
       </div>
 

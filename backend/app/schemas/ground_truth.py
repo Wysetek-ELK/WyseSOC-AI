@@ -26,12 +26,21 @@ class CohortProgressCounters(BaseModel):
     gt3_certified: int = 0
     certified_inconclusive: int = 0
     exposure_risk_count: int = 0
+    verified_no_exposure_count: int = 0
+    historical_masked_count: int = 0
+    confirmed_exposure_count: int = 0
+    exposure_uncertain_count: int = 0
+    benchmark_eligible_count: int = 0
+    benchmark_executed_count: int = 0
+    benchmark_completed_count: int = 0
+    quarantined_count: int = 0
     my_locked_reviews: int = 0
     my_draft_reviews: int = 0
     blind_review_enforced: bool = True
     excluded_from_learning: bool = True
     ready_for_priority_benchmark: bool = False
     ready_for_full_benchmark: bool = False
+    provisional_gt2_benchmark_ready: bool = False
 
 
 class CohortSummaryResponse(BaseModel):
@@ -68,6 +77,9 @@ class GroundTruthQueueItem(BaseModel):
     my_review_verdict: Optional[str] = None  # Reviewer sees ONLY their own verdict
     exposure_risk_flag: bool = False
     exposure_risk_reason: str = ""
+    exposure_status: str = "VERIFIED_NO_DETECTED_EXPOSURE"
+    exposure_details: Dict[str, Any] = Field(default_factory=dict)
+    benchmark_status: str = "NOT_EXECUTED"
     blind_status: str = "BLIND_ENFORCED"
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

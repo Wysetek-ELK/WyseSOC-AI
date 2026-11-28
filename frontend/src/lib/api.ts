@@ -4043,12 +4043,21 @@ export interface CohortProgressCounters {
   gt3_certified: number;
   certified_inconclusive: number;
   exposure_risk_count: number;
+  verified_no_exposure_count?: number;
+  historical_masked_count?: number;
+  confirmed_exposure_count?: number;
+  exposure_uncertain_count?: number;
+  benchmark_eligible_count?: number;
+  benchmark_executed_count?: number;
+  benchmark_completed_count?: number;
+  quarantined_count?: number;
   my_locked_reviews: number;
   my_draft_reviews: number;
   blind_review_enforced: boolean;
   excluded_from_learning: boolean;
   ready_for_priority_benchmark: boolean;
   ready_for_full_benchmark: boolean;
+  provisional_gt2_benchmark_ready?: boolean;
 }
 
 export interface CohortSummary {
@@ -4085,6 +4094,9 @@ export interface GroundTruthQueueItem {
   my_review_verdict?: string | null;
   exposure_risk_flag: boolean;
   exposure_risk_reason: string;
+  exposure_status?: string;
+  exposure_details?: Record<string, any>;
+  benchmark_status?: string;
   blind_status: string;
   created_at?: string | null;
   updated_at?: string | null;
@@ -4339,6 +4351,14 @@ export const groundTruthApi = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || "Post-certification comparison is locked until GT-3 certification completes");
     }
+    return res.json();
+  },
+
+  async getLatestAis31Summary(cohortKey = "AIS_3_0_INDEPENDENT_HOLDOUT_100"): Promise<Record<string, any>> {
+    const res = await fetchWithAuth(
+      `${API_BASE}/ground-truth/ais31/latest-summary?cohort_key=${encodeURIComponent(cohortKey)}`
+    );
+    if (!res.ok) return { has_run: false, cohort_key: cohortKey };
     return res.json();
   },
 };

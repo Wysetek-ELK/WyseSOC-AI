@@ -1,0 +1,160 @@
+{
+  "schema_version": "ais31.gpu_runtime.v1",
+  "verified_at_utc": "2026-11-28T09:49:18.479200+00:00",
+  "expected_model": "Qwen/Qwen3-14B-AWQ",
+  "server_1": {
+    "host": "172.26.41.240",
+    "deploy_dir": "/opt/wysesoc-ai",
+    "health": {
+      "status": "healthy",
+      "environment": "production",
+      "test_environment": null,
+      "version": "1.0.0",
+      "timestamp": 1795859358.6792428,
+      "components": {
+        "database": {
+          "status": "healthy",
+          "database_type": "postgresql",
+          "latency_ms": 4.28,
+          "connected": true,
+          "pool": {
+            "pool_size": 20,
+            "checked_in": 3,
+            "checked_out": 1,
+            "overflow": -16
+          }
+        },
+        "redis_celery": {
+          "status": "healthy",
+          "reachable": true,
+          "broker_url_redacted": "redis://127.0.0.1:6379/0",
+          "live_triage_queue_depth": 0
+        },
+        "local_llm": {
+          "status": "healthy",
+          "reachable": true,
+          "endpoint_configured": true,
+          "base_url_redacted": "http://<configured>:8000/v1",
+          "model_name": "Qwen/Qwen3-14B-AWQ",
+          "server_name": "Verdictum Cortex",
+          "logical_hostname": "verdictum-cortex-01",
+          "configured_provider": "OPENAI_COMPATIBLE",
+          "endpoint_provenance": "LIVE_PROVIDER",
+          "current_s2_health": "ONLINE",
+          "gpu_telemetry_verified": false,
+          "circuit_breaker_state": "CLOSED",
+          "active_concurrent_slots": 0,
+          "max_concurrent_slots": 4
+        },
+        "system": {
+          "server_name": "Verdictum Core",
+          "logical_hostname": "verdictum-core-01",
+          "cpu_percent": 0.4,
+          "memory_percent": 50.2,
+          "memory_used_gb": 7.71,
+          "memory_total_gb": 15.36,
+          "disk_percent": 9.7
+        }
+      }
+    },
+    "llm_config_redacted": {
+      "host": "13.204.214.64",
+      "port": 8000,
+      "protocol": "http",
+      "base_url": "http://13.204.214.64:8000/v1",
+      "model_name": "Qwen/Qwen3-14B-AWQ",
+      "timeout": 180.0,
+      "context_budget": 8192,
+      "target_input_budget": 7424,
+      "verified_max_model_len": 8192,
+      "context_budget_verified": true,
+      "context_budget_warning": null,
+      "operating_mode": "advisory",
+      "allow_mock_fallback": false,
+      "is_online": true,
+      "logical_hostname": "verdictum-cortex-01",
+      "core_logical_hostname": "verdictum-core-01",
+      "server1_outbound_ip": "172.26.41.240",
+      "core_outbound_ip": "172.26.41.240",
+      "model_profiles": {
+        "Qwen/Qwen3-14B-AWQ": {
+          "max_context_tokens": 8192,
+          "reserved_output_tokens": 768,
+          "target_input_budget": 7424
+        },
+        "Qwen/Qwen2.5-7B-Instruct-AWQ": {
+          "max_context_tokens": 8192,
+          "reserved_output_tokens": 768,
+          "target_input_budget": 7424
+        },
+        "Qwen/Qwen2.5-14B-Instruct-AWQ": {
+          "max_context_tokens": 8192,
+          "reserved_output_tokens": 768,
+          "target_input_budget": 7424
+        },
+        "qwen3-8b-instruct": {
+          "max_context_tokens": 8192,
+          "reserved_output_tokens": 768,
+          "target_input_budget": 7424
+        },
+        "default": {
+          "max_context_tokens": 8192,
+          "reserved_output_tokens": 768,
+          "target_input_budget": 7424
+        }
+      },
+      "endpoint_reachable": true,
+      "runtime_healthy": true,
+      "configured_model_available": true,
+      "model_mismatch": false,
+      "active_models_reported": [],
+      "runtime_status_detail": "ONLINE"
+    }
+  },
+  "server_2": {
+    "configured_endpoint": "http://13.204.214.64:8000/v1",
+    "actual_model_returned": "Qwen/Qwen3-14B-AWQ",
+    "models_http_status": 200,
+    "health_http_status": 200,
+    "vllm_version": "0.33.0",
+    "max_model_len": 8192,
+    "probe_latency_ms": 21.03,
+    "errors": [],
+    "server_2_modified_or_restarted": false,
+    "qwen3_thinking_mode": {
+      "enable_thinking": false,
+      "chat_template_kwargs_passed_in_extra_body": true,
+      "reasoning_traces_exposed_to_standard_users": false
+    },
+    "models_payload": {
+      "object": "list",
+      "data": [
+        {
+          "id": "Qwen/Qwen3-14B-AWQ",
+          "object": "model",
+          "created": 1795859357,
+          "owned_by": "vllm",
+          "root": "Qwen/Qwen3-14B-AWQ",
+          "parent": null,
+          "max_model_len": 8192,
+          "permission": [
+            {
+              "id": "modelperm-8bb344bbe11b35ea",
+              "object": "model_permission",
+              "created": 1795859357,
+              "allow_create_engine": false,
+              "allow_sampling": true,
+              "allow_logprobs": true,
+              "allow_search_indices": false,
+              "allow_view": true,
+              "allow_fine_tuning": false,
+              "organization": "*",
+              "group": null,
+              "is_blocking": false
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

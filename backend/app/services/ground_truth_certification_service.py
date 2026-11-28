@@ -83,6 +83,99 @@ def _user_identity(current_user: Any) -> Tuple[str, str, bool]:
     return reviewer_key, user_id, is_admin
 
 
+def _resolve_cohort_item_vendor(
+    rule_id: Optional[str],
+    rule_obj: Optional[Rule] = None,
+    meta: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Deterministically resolves vendor/telemetry source without falling back to Prisma SASE for unrelated rules."""
+    if meta and meta.get("vendor"):
+        return str(meta["vendor"])
+    rid = str(rule_id or (rule_obj.rule_id if rule_obj else "") or "").upper()
+    if "CS_" in rid or "CROWDSTRIKE" in rid:
+        return "CrowdStrike"
+    if "PRISMA" in rid:
+        return "Prisma SASE"
+    if "MISP" in rid:
+        return "MISP Threat Intel"
+    if "FGT_" in rid or "_FGT_" in rid:
+        return "FortiGate"
+    if "IPS_" in rid or "SEC_IPS" in rid:
+        return "IPS / Firewall"
+    if "ACCELOPS" in rid or "NO_LOGS" in rid:
+        return "FortiSIEM System"
+    if rule_obj is not None:
+        ds = str(getattr(rule_obj, "data_source", "") or "").strip()
+        if "fgt" in ds.lower() or "fw" in ds.lower() or "fortigate" in ds.lower():
+            return "FortiGate / Firewall"
+    return "FortiSIEM"
+
+
+def _classify_item_exposure(
+    *,
+    inc: Optional[Incident],
+    in_learning: bool,
+    in_other_cohort: bool,
+    has_unmasked_ai_notes: bool,
+    has_prompt_capture: bool,
+) -> Tuple[str, bool, str, Dict[str, Any]]:
+    """
+    Distinguishes actual leakage (`CONFIRMED_EXPOSURE`) from masked historical/operational
+    records (`HISTORICAL_LABEL_EXISTS_BUT_MASKED`) and clean records (`VERIFIED_NO_DETECTED_EXPOSURE`).
+    """
+    if not inc:
+        return (
+            "EXPOSURE_UNCERTAIN",
+            True,
+            "Incident telemetry missing from operational store; exposure telemetry unavailable.",
+            {"incident_present": False},
+        )
+
+    hist_gt = getattr(inc, "ground_truth", None)
+    hist_res = str(getattr(hist_gt, "resolution", "") or "").strip()
+    has_hist_label = bool(hist_res)
+    has_op_ai = bool(getattr(inc, "ai_verdict", None))
+    op_model = str((inc.ai_verdict or {}).get("model_identifier") or "") if has_op_ai else ""
+    details = {
+        "incident_present": True,
+        "has_historical_resolution": has_hist_label,
+        "historical_label_masked": True,
+        "has_operational_ai_verdict": has_op_ai,
+        "operational_ai_model": op_model or None,
+        "operational_ai_masked": True,
+        "in_learning_records": bool(in_learning),
+        "in_other_benchmark_cohort": bool(in_other_cohort),
+        "has_prompt_capture": bool(has_prompt_capture),
+        "has_unmasked_ai_notes": bool(has_unmasked_ai_notes),
+    }
+
+    if in_learning or in_other_cohort:
+        reasons = []
+        if in_learning:
+            reasons.append("Present in LearningRecord/RAG pool")
+        if in_other_cohort:
+            reasons.append("Overlaps another benchmark cohort")
+        return ("CONFIRMED_EXPOSURE", True, "; ".join(reasons), details)
+
+    if has_hist_label or has_op_ai or has_unmasked_ai_notes:
+        reasons = []
+        if has_hist_label:
+            lbl_kind = "ML-generated" if getattr(hist_gt, "is_ml_generated", False) else "Historical SIEM"
+            reasons.append(f"{lbl_kind} label present in DB (masked during blind review)")
+        if has_op_ai:
+            reasons.append(f"Prior operational ai_verdict ({op_model or 'GUARD'}) masked during blind review")
+        if has_unmasked_ai_notes:
+            reasons.append("Legacy [AI Verdict] handover note sanitized on read")
+        return ("HISTORICAL_LABEL_EXISTS_BUT_MASKED", False, "; ".join(reasons), details)
+
+    return (
+        "VERIFIED_NO_DETECTED_EXPOSURE",
+        False,
+        "No historical resolution label, no operational AI verdict, and zero RAG/LearningRecord exposure detected.",
+        details,
+    )
+
+
 class GroundTruthCertificationService:
     """Service layer managing frozen benchmark cohorts and blind GT-2/GT-3 certification."""
 
@@ -361,6 +454,12 @@ class GroundTruthCertificationService:
 
         inc_ids = [it.incident_db_id for it in items if it.incident_db_id]
         rev_by_inc: Dict[str, List[AnalystVerdictReview]] = {}
+        learned_ids: set = set()
+        other_cohort_ids: set = set()
+        captured_fids: set = set()
+        bench_status_by_fid: Dict[str, str] = {}
+        inc_by_id: Dict[str, Incident] = {}
+
         if inc_ids:
             revs = (
                 await db.execute(
@@ -372,6 +471,55 @@ class GroundTruthCertificationService:
             ).scalars().all()
             for r in revs:
                 rev_by_inc.setdefault(r.incident_id, []).append(r)
+
+            incs = (
+                await db.execute(
+                    select(Incident)
+                    .where(Incident.id.in_(inc_ids))
+                    .options(selectinload(Incident.ground_truth))
+                )
+            ).scalars().all()
+            inc_by_id = {x.id: x for x in incs}
+            learned_ids = {
+                row[0]
+                for row in (
+                    await db.execute(
+                        select(LearningRecord.incident_id).where(LearningRecord.incident_id.in_(inc_ids))
+                    )
+                ).all()
+            }
+            other_cohort_ids = {
+                row[0]
+                for row in (
+                    await db.execute(
+                        select(BenchmarkCohortItem.incident_db_id).where(
+                            BenchmarkCohortItem.cohort_id != cohort.id,
+                            BenchmarkCohortItem.incident_db_id.in_(inc_ids),
+                        )
+                    )
+                ).all()
+            }
+
+        try:
+            from app.models.ais31_benchmark import AIS31BenchmarkResult, AIS31BenchmarkRun
+            latest_run = (
+                await db.execute(
+                    select(AIS31BenchmarkRun)
+                    .where(AIS31BenchmarkRun.cohort_key == cohort.cohort_key)
+                    .order_by(desc(AIS31BenchmarkRun.started_at))
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+            if latest_run:
+                b_res = (
+                    await db.execute(
+                        select(AIS31BenchmarkResult).where(AIS31BenchmarkResult.run_id == latest_run.id)
+                    )
+                ).scalars().all()
+                for br in b_res:
+                    bench_status_by_fid[br.fortisiem_incident_id] = br.execution_status
+        except Exception:
+            pass
 
         p = CohortProgressCounters(
             cohort_key=cohort.cohort_key,
@@ -406,8 +554,35 @@ class GroundTruthCertificationService:
             elif st == "CERTIFIED_INCONCLUSIVE":
                 p.certified_inconclusive += 1
 
-            if it.exposure_risk_flag:
+            inc_obj = inc_by_id.get(it.incident_db_id or "")
+            exp_status, exp_flag, _, _ = _classify_item_exposure(
+                inc=inc_obj,
+                in_learning=(it.incident_db_id in learned_ids) if it.incident_db_id else False,
+                in_other_cohort=(it.incident_db_id in other_cohort_ids) if it.incident_db_id else False,
+                has_unmasked_ai_notes=False,
+                has_prompt_capture=(it.fortisiem_incident_id in captured_fids),
+            )
+            if exp_status == "VERIFIED_NO_DETECTED_EXPOSURE":
+                p.verified_no_exposure_count += 1
+            elif exp_status == "HISTORICAL_LABEL_EXISTS_BUT_MASKED":
+                p.historical_masked_count += 1
+            elif exp_status == "CONFIRMED_EXPOSURE":
+                p.confirmed_exposure_count += 1
+                p.quarantined_count += 1
+            else:
+                p.exposure_uncertain_count += 1
+
+            if exp_flag:
                 p.exposure_risk_count += 1
+
+            if it.eligibility_status == "ELIGIBLE" and exp_status != "CONFIRMED_EXPOSURE":
+                p.benchmark_eligible_count += 1
+
+            b_st = bench_status_by_fid.get(it.fortisiem_incident_id)
+            if b_st:
+                p.benchmark_executed_count += 1
+                if b_st == "COMPLETED":
+                    p.benchmark_completed_count += 1
 
             inc_revs = rev_by_inc.get(it.incident_db_id or "", [])
             for r in inc_revs:
@@ -422,6 +597,11 @@ class GroundTruthCertificationService:
         )
         p.ready_for_full_benchmark = (
             p.total > 0 and (p.gt3_certified + p.certified_inconclusive) >= p.total
+        )
+        p.provisional_gt2_benchmark_ready = (
+            p.total > 0
+            and (p.gt2_single_review + p.gt3_certified + p.certified_inconclusive) >= p.total
+            and p.benchmark_eligible_count > 0
         )
         return p
 
@@ -456,16 +636,22 @@ class GroundTruthCertificationService:
         stmt = (
             select(BenchmarkCohortItem)
             .where(BenchmarkCohortItem.cohort_id == cohort.id)
-            .options(selectinload(BenchmarkCohortItem.incident))
+            .options(
+                selectinload(BenchmarkCohortItem.incident).selectinload(Incident.ground_truth),
+                selectinload(BenchmarkCohortItem.incident).selectinload(Incident.rule),
+            )
             .order_by(BenchmarkCohortItem.priority_rank.asc(), BenchmarkCohortItem.fortisiem_incident_id.asc())
         )
         items = (await db.execute(stmt)).scalars().all()
 
-        reviewer_key, user_id, _ = _user_identity(current_user)
+        reviewer_key, user_id, is_admin = _user_identity(current_user)
         user_keys = {k for k in (reviewer_key, user_id) if k}
 
         inc_ids = [it.incident_db_id for it in items if it.incident_db_id]
         rev_by_inc: Dict[str, List[AnalystVerdictReview]] = {}
+        learned_ids: set = set()
+        other_cohort_ids: set = set()
+        bench_status_by_fid: Dict[str, str] = {}
         if inc_ids:
             revs = (
                 await db.execute(
@@ -477,6 +663,46 @@ class GroundTruthCertificationService:
             ).scalars().all()
             for r in revs:
                 rev_by_inc.setdefault(r.incident_id, []).append(r)
+            learned_ids = {
+                row[0]
+                for row in (
+                    await db.execute(
+                        select(LearningRecord.incident_id).where(LearningRecord.incident_id.in_(inc_ids))
+                    )
+                ).all()
+            }
+            other_cohort_ids = {
+                row[0]
+                for row in (
+                    await db.execute(
+                        select(BenchmarkCohortItem.incident_db_id).where(
+                            BenchmarkCohortItem.cohort_id != cohort.id,
+                            BenchmarkCohortItem.incident_db_id.in_(inc_ids),
+                        )
+                    )
+                ).all()
+            }
+
+        try:
+            from app.models.ais31_benchmark import AIS31BenchmarkResult, AIS31BenchmarkRun
+            latest_run = (
+                await db.execute(
+                    select(AIS31BenchmarkRun)
+                    .where(AIS31BenchmarkRun.cohort_key == cohort.cohort_key)
+                    .order_by(desc(AIS31BenchmarkRun.started_at))
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+            if latest_run:
+                b_res = (
+                    await db.execute(
+                        select(AIS31BenchmarkResult).where(AIS31BenchmarkResult.run_id == latest_run.id)
+                    )
+                ).scalars().all()
+                for br in b_res:
+                    bench_status_by_fid[br.fortisiem_incident_id] = br.execution_status
+        except Exception:
+            pass
 
         meta_by_fid = {m["fortisiem_incident_id"]: m for m in FROZEN_AIS_2_6E_ITEMS}
         out_items: List[GroundTruthQueueItem] = []
@@ -484,8 +710,17 @@ class GroundTruthCertificationService:
         for it in items:
             inc = it.incident
             m = meta_by_fid.get(it.fortisiem_incident_id, {})
-            item_vendor = m.get("vendor") or (
-                "CrowdStrike" if "CS_" in (it.rule_id or "") else "Prisma SASE"
+            item_vendor = _resolve_cohort_item_vendor(
+                it.rule_id,
+                inc.rule if inc else None,
+                m,
+            )
+            exp_status, exp_flag, exp_reason_calc, exp_details = _classify_item_exposure(
+                inc=inc,
+                in_learning=(it.incident_db_id in learned_ids) if it.incident_db_id else False,
+                in_other_cohort=(it.incident_db_id in other_cohort_ids) if it.incident_db_id else False,
+                has_unmasked_ai_notes=False,
+                has_prompt_capture=False,
             )
             inc_revs = rev_by_inc.get(it.incident_db_id or "", [])
             locked_revs = [r for r in inc_revs if r.is_locked and r.certification_round == 1]
@@ -512,7 +747,7 @@ class GroundTruthCertificationService:
                 continue
             if customer and (it.customer or "").lower() != customer.lower():
                 continue
-            if exposure_risk_only is True and not it.exposure_risk_flag:
+            if exposure_risk_only is True and not exp_flag:
                 continue
             if my_pending_only and my_status == "LOCKED":
                 continue
@@ -524,6 +759,7 @@ class GroundTruthCertificationService:
                     it.rule_name or "",
                     it.rule_id or "",
                     it.customer or "",
+                    item_vendor,
                     inc.title if inc else "",
                     m.get("observed_entity", ""),
                     m.get("target_host", ""),
@@ -543,8 +779,8 @@ class GroundTruthCertificationService:
                     vendor=item_vendor,
                     customer=it.customer,
                     title=inc.title if inc else it.rule_name,
-                    observed_entity=m.get("observed_entity"),
-                    target_host=m.get("target_host"),
+                    observed_entity=m.get("observed_entity") or (inc.source_ip if inc else None),
+                    target_host=m.get("target_host") or (inc.reporting_device if inc else None),
                     is_priority=it.is_priority,
                     priority_rank=it.priority_rank,
                     eligibility_status=it.eligibility_status,
@@ -553,8 +789,11 @@ class GroundTruthCertificationService:
                     locked_reviewers_count=len({r.reviewer_id for r in locked_revs}),
                     my_review_status=my_status,
                     my_review_verdict=my_verdict,
-                    exposure_risk_flag=it.exposure_risk_flag,
-                    exposure_risk_reason=it.exposure_risk_reason,
+                    exposure_risk_flag=exp_flag,
+                    exposure_risk_reason=exp_reason_calc,
+                    exposure_status=exp_status,
+                    exposure_details=exp_details if is_admin else {},
+                    benchmark_status=bench_status_by_fid.get(it.fortisiem_incident_id, "NOT_EXECUTED"),
                     blind_status=(
                         "CERTIFICATION_FINALIZED"
                         if is_cert_done
@@ -592,6 +831,7 @@ class GroundTruthCertificationService:
             .options(
                 selectinload(BenchmarkCohortItem.incident).selectinload(Incident.events),
                 selectinload(BenchmarkCohortItem.incident).selectinload(Incident.rule),
+                selectinload(BenchmarkCohortItem.incident).selectinload(Incident.ground_truth),
             )
         )
         item = item_res.scalar_one_or_none()
@@ -874,6 +1114,33 @@ class GroundTruthCertificationService:
                 for h in revs_hist
             ]
 
+        in_learning = False
+        in_other_cohort = False
+        if inc:
+            in_learning = (
+                await db.execute(
+                    select(LearningRecord.id).where(LearningRecord.incident_id == inc.id).limit(1)
+                )
+            ).scalar_one_or_none() is not None
+            in_other_cohort = (
+                await db.execute(
+                    select(BenchmarkCohortItem.id)
+                    .where(
+                        BenchmarkCohortItem.cohort_id != cohort.id,
+                        BenchmarkCohortItem.incident_db_id == inc.id,
+                    )
+                    .limit(1)
+                )
+            ).scalar_one_or_none() is not None
+
+        exp_status, exp_flag, exp_reason_calc, exp_details = _classify_item_exposure(
+            inc=inc,
+            in_learning=in_learning,
+            in_other_cohort=in_other_cohort,
+            has_unmasked_ai_notes=False,
+            has_prompt_capture=False,
+        )
+
         q_item = GroundTruthQueueItem(
             cohort_item_id=item.id,
             cohort_key=cohort.cohort_key,
@@ -881,11 +1148,11 @@ class GroundTruthCertificationService:
             incident_db_id=item.incident_db_id,
             rule_id=item.rule_id,
             rule_name=item.rule_name,
-            vendor=meta.get("vendor") or ("CrowdStrike" if "CS_" in item.rule_id else "Prisma SASE"),
+            vendor=_resolve_cohort_item_vendor(item.rule_id, rule, meta),
             customer=item.customer,
             title=inc.title if inc else item.rule_name,
-            observed_entity=meta.get("observed_entity"),
-            target_host=meta.get("target_host"),
+            observed_entity=meta.get("observed_entity") or (inc.source_ip if inc else None),
+            target_host=meta.get("target_host") or (inc.reporting_device if inc else None),
             is_priority=item.is_priority,
             priority_rank=item.priority_rank,
             eligibility_status=item.eligibility_status,
@@ -894,8 +1161,10 @@ class GroundTruthCertificationService:
             locked_reviewers_count=len(locked_distinct_reviewers),
             my_review_status="LOCKED" if (my_rev and my_rev.is_locked) else ("DRAFT" if my_rev else "NOT_STARTED"),
             my_review_verdict=my_rev.analyst_verdict if my_rev else None,
-            exposure_risk_flag=item.exposure_risk_flag,
-            exposure_risk_reason=item.exposure_risk_reason,
+            exposure_risk_flag=exp_flag,
+            exposure_risk_reason=exp_reason_calc,
+            exposure_status=exp_status,
+            exposure_details=exp_details if is_admin else {},
             blind_status="CERTIFICATION_FINALIZED" if is_cert_done else "BLIND_ENFORCED",
             created_at=item.created_at,
             updated_at=item.updated_at,

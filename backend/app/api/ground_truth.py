@@ -8,6 +8,7 @@ AI Training Memory (`LearningRecord` / RAG).
 
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_active_user, require_admin, require_analyst
@@ -134,6 +135,200 @@ async def attach_ground_truth_evidence(
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
+
+
+# =========================================================================
+# AIS 3.1: FROZEN HOLDOUT MANIFEST, TOKEN AUDIT, CHECKPOINTED RUNNER & EVALUATION
+# =========================================================================
+
+@router.get("/ais31/cohorts/{cohort_key}/manifest", response_model=Dict[str, Any])
+async def ais31_get_frozen_manifest(
+    cohort_key: str,
+    include_ground_truth: bool = Query(False),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: builds immutable versioned manifest for a frozen cohort."""
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    try:
+        return await AIS31BenchmarkService.build_frozen_manifest(
+            db=db, cohort_key=cohort_key, include_ground_truth=include_ground_truth
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.get("/ais31/cohorts/{cohort_key}/token-audit", response_model=Dict[str, Any])
+async def ais31_audit_token_budgets(
+    cohort_key: str,
+    max_context_tokens: int = Query(8192, ge=1024, le=131072),
+    max_completion_tokens: int = Query(768, ge=64, le=4096),
+    target_input_budget: int = Query(7424, ge=512, le=65536),
+    verify_remote_tokenize: bool = Query(False),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: verifies wire token budget & evidence completeness across all cohort members."""
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    try:
+        return await AIS31BenchmarkService.audit_token_budgets(
+            db=db,
+            cohort_key=cohort_key,
+            max_context_tokens=max_context_tokens,
+            max_completion_tokens=max_completion_tokens,
+            target_input_budget=target_input_budget,
+            verify_remote_tokenize=verify_remote_tokenize,
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.post("/ais31/cohorts/{cohort_key}/runs", response_model=Dict[str, Any])
+async def ais31_execute_benchmark_step(
+    cohort_key: str,
+    run_type: str = Query("FULL_HOLDOUT_100", pattern="^(PILOT_5|FULL_HOLDOUT_100|CUSTOM)$"),
+    run_key: Optional[str] = Query(None),
+    batch_size: int = Query(5, ge=1, le=20),
+    offset: int = Query(0, ge=0),
+    incident_ids: Optional[str] = Query(None, description="Comma-separated FortiSIEM IDs"),
+    max_context_tokens: int = Query(8192, ge=1024, le=131072),
+    max_completion_tokens: int = Query(768, ge=64, le=4096),
+    target_input_budget: int = Query(7424, ge=512, le=65536),
+    timeout_seconds: float = Query(180.0, ge=10.0, le=300.0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Administrator-only: creates or idempotently resumes an AIS 3.1 live GPU benchmark run,
+    processing up to `batch_size` pending incidents per request to avoid reverse-proxy timeouts.
+    """
+    from app.models.analyst_feedback import BenchmarkCohort, BenchmarkCohortItem
+    from app.models.ais31_benchmark import AIS31BenchmarkResult
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    try:
+        run = await AIS31BenchmarkService.create_or_resume_run(
+            db=db,
+            cohort_key=cohort_key,
+            run_type=run_type,
+            created_by_user=current_user.username,
+            run_key=run_key,
+            max_context_tokens=max_context_tokens,
+            max_completion_tokens=max_completion_tokens,
+            target_input_budget=target_input_budget,
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except RuntimeError as re_err:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(re_err))
+
+    if incident_ids:
+        target_fids = [x.strip() for x in incident_ids.split(",") if x.strip()]
+    else:
+        cohort = (
+            await db.execute(select(BenchmarkCohort).where(BenchmarkCohort.cohort_key == cohort_key))
+        ).scalar_one()
+        all_items = (
+            await db.execute(
+                select(BenchmarkCohortItem)
+                .where(BenchmarkCohortItem.cohort_id == cohort.id)
+                .order_by(BenchmarkCohortItem.priority_rank.asc(), BenchmarkCohortItem.fortisiem_incident_id.asc())
+            )
+        ).scalars().all()
+        done_fids = {
+            row[0]
+            for row in (
+                await db.execute(
+                    select(AIS31BenchmarkResult.fortisiem_incident_id).where(
+                        AIS31BenchmarkResult.run_id == run.id,
+                        AIS31BenchmarkResult.execution_status.in_(["COMPLETED", "QUARANTINED"]),
+                    )
+                )
+            ).all()
+        }
+        pending_fids = [it.fortisiem_incident_id for it in all_items if it.fortisiem_incident_id not in done_fids]
+        target_fids = pending_fids[offset : offset + batch_size]
+
+    return await AIS31BenchmarkService.execute_run(
+        db=db,
+        run_id=run.id,
+        target_fids=target_fids,
+        timeout_seconds=timeout_seconds,
+    )
+
+
+@router.get("/ais31/runs/{run_id}/evaluate", response_model=Dict[str, Any])
+async def ais31_evaluate_run(
+    run_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: post-run comparison against locked human ground truth."""
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    try:
+        return await AIS31BenchmarkService.evaluate_run_against_ground_truth(db=db, run_id=run_id)
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.get("/ais31/runs/{run_id}/wire-prompt/{incident_id}", response_model=Dict[str, Any])
+async def ais31_get_wire_prompt(
+    run_id: str,
+    incident_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: returns exact outbound wire prompt & raw vLLM response for an executed benchmark item."""
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    try:
+        return await AIS31BenchmarkService.get_wire_prompt_capture(
+            db=db, run_id=run_id, fortisiem_incident_id=incident_id
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.get("/ais31/latest-summary", response_model=Dict[str, Any])
+async def ais31_get_latest_cohort_summary(
+    cohort_key: str = Query("AIS_3_0_INDEPENDENT_HOLDOUT_100"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Returns non-leaky aggregate benchmark status & metrics for the latest completed/partial run."""
+    from app.models.ais31_benchmark import AIS31BenchmarkRun
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    latest = (
+        await db.execute(
+            select(AIS31BenchmarkRun)
+            .where(AIS31BenchmarkRun.cohort_key == cohort_key)
+            .order_by(AIS31BenchmarkRun.started_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if not latest:
+        return {"has_run": False, "cohort_key": cohort_key}
+
+    eval_data = await AIS31BenchmarkService.evaluate_run_against_ground_truth(db=db, run_id=latest.id)
+    return {
+        "has_run": True,
+        "run_id": latest.id,
+        "run_key": latest.run_key,
+        "run_type": latest.run_type,
+        "status": latest.status,
+        "benchmark_grade": latest.benchmark_grade,
+        "expected_model": latest.expected_model,
+        "actual_model_returned": latest.actual_model_returned,
+        "raw_llm_metrics": eval_data["raw_llm_metrics"],
+        "application_metrics": eval_data["application_metrics"],
+        "subpopulations": eval_data["subpopulations"],
+        "validator_telemetry": eval_data["validator_telemetry"],
+        "baselines": eval_data["baselines"],
+    }
 
 
 @router.post("/cohorts/{cohort_key}/incidents/{incident_id}/review", response_model=Dict[str, Any])
@@ -333,3 +528,197 @@ async def ais27_run_single_incident(
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
+
+
+# =========================================================================
+# AIS 3.1: FROZEN HOLDOUT MANIFEST, TOKEN AUDIT, CHECKPOINTED RUNNER & EVALUATION
+# =========================================================================
+
+@router.get("/ais31/cohorts/{cohort_key}/manifest", response_model=Dict[str, Any])
+async def ais31_get_frozen_manifest(
+    cohort_key: str,
+    include_ground_truth: bool = Query(False),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: builds immutable versioned manifest for a frozen cohort."""
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    try:
+        return await AIS31BenchmarkService.build_frozen_manifest(
+            db=db, cohort_key=cohort_key, include_ground_truth=include_ground_truth
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.get("/ais31/cohorts/{cohort_key}/token-audit", response_model=Dict[str, Any])
+async def ais31_audit_token_budgets(
+    cohort_key: str,
+    max_context_tokens: int = Query(8192, ge=1024, le=131072),
+    max_completion_tokens: int = Query(768, ge=64, le=4096),
+    target_input_budget: int = Query(7424, ge=512, le=65536),
+    verify_remote_tokenize: bool = Query(False),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: verifies wire token budget & evidence completeness across all cohort members."""
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    try:
+        return await AIS31BenchmarkService.audit_token_budgets(
+            db=db,
+            cohort_key=cohort_key,
+            max_context_tokens=max_context_tokens,
+            max_completion_tokens=max_completion_tokens,
+            target_input_budget=target_input_budget,
+            verify_remote_tokenize=verify_remote_tokenize,
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.post("/ais31/cohorts/{cohort_key}/runs", response_model=Dict[str, Any])
+async def ais31_execute_benchmark_step(
+    cohort_key: str,
+    run_type: str = Query("FULL_HOLDOUT_100", pattern="^(PILOT_5|FULL_HOLDOUT_100|CUSTOM)$"),
+    run_key: Optional[str] = Query(None),
+    batch_size: int = Query(5, ge=1, le=20),
+    offset: int = Query(0, ge=0),
+    incident_ids: Optional[str] = Query(None, description="Comma-separated FortiSIEM IDs"),
+    max_context_tokens: int = Query(8192, ge=1024, le=131072),
+    max_completion_tokens: int = Query(768, ge=64, le=4096),
+    target_input_budget: int = Query(7424, ge=512, le=65536),
+    timeout_seconds: float = Query(180.0, ge=10.0, le=300.0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    Administrator-only: creates or idempotently resumes an AIS 3.1 live GPU benchmark run,
+    processing up to `batch_size` pending incidents per request to avoid reverse-proxy timeouts.
+    """
+    from app.models.analyst_feedback import BenchmarkCohort, BenchmarkCohortItem
+    from app.models.ais31_benchmark import AIS31BenchmarkResult
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    try:
+        run = await AIS31BenchmarkService.create_or_resume_run(
+            db=db,
+            cohort_key=cohort_key,
+            run_type=run_type,
+            created_by_user=current_user.username,
+            run_key=run_key,
+            max_context_tokens=max_context_tokens,
+            max_completion_tokens=max_completion_tokens,
+            target_input_budget=target_input_budget,
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except RuntimeError as re_err:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(re_err))
+
+    if incident_ids:
+        target_fids = [x.strip() for x in incident_ids.split(",") if x.strip()]
+    else:
+        cohort = (
+            await db.execute(select(BenchmarkCohort).where(BenchmarkCohort.cohort_key == cohort_key))
+        ).scalar_one()
+        all_items = (
+            await db.execute(
+                select(BenchmarkCohortItem)
+                .where(BenchmarkCohortItem.cohort_id == cohort.id)
+                .order_by(BenchmarkCohortItem.priority_rank.asc(), BenchmarkCohortItem.fortisiem_incident_id.asc())
+            )
+        ).scalars().all()
+        done_fids = {
+            row[0]
+            for row in (
+                await db.execute(
+                    select(AIS31BenchmarkResult.fortisiem_incident_id).where(
+                        AIS31BenchmarkResult.run_id == run.id,
+                        AIS31BenchmarkResult.execution_status.in_(["COMPLETED", "QUARANTINED"]),
+                    )
+                )
+            ).all()
+        }
+        pending_fids = [it.fortisiem_incident_id for it in all_items if it.fortisiem_incident_id not in done_fids]
+        target_fids = pending_fids[offset : offset + batch_size]
+
+    return await AIS31BenchmarkService.execute_run(
+        db=db,
+        run_id=run.id,
+        target_fids=target_fids,
+        timeout_seconds=timeout_seconds,
+    )
+
+
+@router.get("/ais31/runs/{run_id}/evaluate", response_model=Dict[str, Any])
+async def ais31_evaluate_run(
+    run_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: post-run comparison against locked human ground truth."""
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    try:
+        return await AIS31BenchmarkService.evaluate_run_against_ground_truth(db=db, run_id=run_id)
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.get("/ais31/runs/{run_id}/wire-prompt/{incident_id}", response_model=Dict[str, Any])
+async def ais31_get_wire_prompt(
+    run_id: str,
+    incident_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Administrator-only: returns exact outbound wire prompt & raw vLLM response for an executed benchmark item."""
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    try:
+        return await AIS31BenchmarkService.get_wire_prompt_capture(
+            db=db, run_id=run_id, fortisiem_incident_id=incident_id
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+
+
+@router.get("/ais31/latest-summary", response_model=Dict[str, Any])
+async def ais31_get_latest_cohort_summary(
+    cohort_key: str = Query("AIS_3_0_INDEPENDENT_HOLDOUT_100"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Returns non-leaky aggregate benchmark status & metrics for the latest completed/partial run."""
+    from app.models.ais31_benchmark import AIS31BenchmarkRun
+    from app.services.ais31_benchmark_service import AIS31BenchmarkService
+
+    latest = (
+        await db.execute(
+            select(AIS31BenchmarkRun)
+            .where(AIS31BenchmarkRun.cohort_key == cohort_key)
+            .order_by(AIS31BenchmarkRun.started_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if not latest:
+        return {"has_run": False, "cohort_key": cohort_key}
+
+    eval_data = await AIS31BenchmarkService.evaluate_run_against_ground_truth(db=db, run_id=latest.id)
+    return {
+        "has_run": True,
+        "run_id": latest.id,
+        "run_key": latest.run_key,
+        "run_type": latest.run_type,
+        "status": latest.status,
+        "benchmark_grade": latest.benchmark_grade,
+        "expected_model": latest.expected_model,
+        "actual_model_returned": latest.actual_model_returned,
+        "raw_llm_metrics": eval_data["raw_llm_metrics"],
+        "application_metrics": eval_data["application_metrics"],
+        "subpopulations": eval_data["subpopulations"],
+        "validator_telemetry": eval_data["validator_telemetry"],
+        "baselines": eval_data["baselines"],
+    }

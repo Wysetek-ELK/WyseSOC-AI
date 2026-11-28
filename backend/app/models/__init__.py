@@ -41,6 +41,7 @@ from app.models.production_governance import (
     IncidentAutomationAudit,
 )
 from app.models.actual_prompt_capture import ActualLLMPromptCapture
+from app.models.ais31_benchmark import AIS31BenchmarkRun, AIS31BenchmarkResult
 
 __all__ = [
     "Base",
@@ -90,4 +91,6 @@ __all__ = [
     "ProductionAutomationPolicy",
     "IncidentAutomationAudit",
     "ActualLLMPromptCapture",
+    "AIS31BenchmarkRun",
+    "AIS31BenchmarkResult",
 ]

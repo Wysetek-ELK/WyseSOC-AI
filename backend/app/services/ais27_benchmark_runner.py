@@ -658,12 +658,10 @@ class AIS27BenchmarkRunner:
         norm_result = EvidenceNormalizationService.normalize_incident_evidence(
             incident=inc_adapter, events=None
         )
-        contract_key = (
-            "PH_RULE_CS_SUSPICIOUS_ACTIVITY"
-            if "CS_" in str(rule_obj.rule_id or "").upper()
-            else "PH_RULE_PRISMA_SASE_SUSPICIOUS_FILE"
+        from app.services.policy_governance import get_rule_semantics_and_contract
+        _, contract, _ = await get_rule_semantics_and_contract(
+            db, rule_obj, prompt_version=pv
         )
-        contract = EmpiricalBenchmarkHarness._create_rule_contract(contract_key, rule_obj.name)
         preflight = EvidencePreflightValidator.validate_preflight(
             incident_id=item.fortisiem_incident_id,
             contract=contract,

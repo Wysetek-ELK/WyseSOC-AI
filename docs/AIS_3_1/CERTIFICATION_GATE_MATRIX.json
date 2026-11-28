@@ -1,0 +1,44 @@
+{
+  "schema_version": "ais31.certification_governance.v1",
+  "generated_at_utc": "2026-11-28T09:49:18.479200+00:00",
+  "cohort_key": "AIS_3_0_INDEPENDENT_HOLDOUT_100",
+  "gt3_policy_requirements": {
+    "minimum_distinct_locked_reviewers": 2,
+    "self_second_review_forbidden": true,
+    "auto_promotion_gt2_to_gt3_forbidden": true,
+    "conflict_resolution_required": true,
+    "blind_review_enforced": true,
+    "service_source": "backend/app/services/ground_truth_certification_service.py"
+  },
+  "state_machine": {
+    "GT0_UNREVIEWED": {
+      "count": 0,
+      "definition": "0 locked benchmark certification reviews; blocked unless reviewed."
+    },
+    "GT1_HISTORICAL_ONLY": {
+      "count": 0,
+      "definition": "Legacy SIEM metadata present without locked certification review."
+    },
+    "GT2_SINGLE_REVIEW": {
+      "count": 100,
+      "definition": "1 locked independent human review; provisional single-review status."
+    },
+    "GT3_CERTIFIED": {
+      "count": 0,
+      "definition": "2+ distinct authorized reviewers with matching verdict or adjudicated resolution."
+    },
+    "CERTIFIED_INCONCLUSIVE": {
+      "count": 0,
+      "definition": "2+ reviewers agreed on INCONCLUSIVE."
+    },
+    "CONFLICT_PENDING_ADJUDICATION": {
+      "count": 0,
+      "definition": "Reviewers disagree; awaits conflict adjudication."
+    }
+  },
+  "decision_branch_applied": "BRANCH_B_PROVISIONAL_SINGLE_REVIEW_BENCHMARK",
+  "rationale": "All 100 holdout incidents genuinely have exactly 1 locked human review submitted by user 'admin' under BLIND_ENFORCED mode (0 second reviews, 0 conflicts). GT-2 is preserved strictly without manufacturing or duplicating a 2nd review. Live GPU benchmark execution is permitted only under explicit label PROVISIONAL_SINGLE_REVIEW_BENCHMARK.",
+  "second_review_workflow_verified": true,
+  "ready_for_provisional_gt2_benchmark": true,
+  "ready_for_certified_gt3_benchmark": false
+}

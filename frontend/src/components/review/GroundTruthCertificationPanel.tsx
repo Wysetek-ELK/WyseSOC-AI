@@ -59,7 +59,7 @@ export function GroundTruthCertificationPanel() {
   const isAdmin = roleStr === "Administrator" || roleStr === "SuperAdmin";
 
   const [cohorts, setCohorts] = useState<CohortSummary[]>([]);
-  const [selectedCohortKey, setSelectedCohortKey] = useState("AIS_2_6E_FROZEN_20");
+  const [selectedCohortKey, setSelectedCohortKey] = useState("AIS_3_0_INDEPENDENT_HOLDOUT_100");
   const [activeCohort, setActiveCohort] = useState<CohortSummary | null>(null);
   const [items, setItems] = useState<GroundTruthQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +74,22 @@ export function GroundTruthCertificationPanel() {
   const [myPendingOnly, setMyPendingOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [showHelpGuide, setShowHelpGuide] = useState(false);
+
+  const availableVendors = useMemo(() => {
+    const counts = new Map<string, number>();
+    items.forEach((it) => {
+      if (it.vendor) counts.set(it.vendor, (counts.get(it.vendor) || 0) + 1);
+    });
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [items]);
+
+  const availableCustomers = useMemo(() => {
+    const counts = new Map<string, number>();
+    items.forEach((it) => {
+      if (it.customer) counts.set(it.customer, (counts.get(it.customer) || 0) + 1);
+    });
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [items]);
 
   // Detail Drawer state
   const [detail, setDetail] = useState<GroundTruthDetailResponse | null>(null);
@@ -120,7 +136,13 @@ export function GroundTruthCertificationPanel() {
     try {
       const cohortList = await groundTruthApi.listCohorts();
       setCohorts(cohortList);
-      const qRes = await groundTruthApi.getCohortQueue(selectedCohortKey, {
+      const effectiveKey = cohortList.some((c) => c.cohort_key === selectedCohortKey)
+        ? selectedCohortKey
+        : cohortList[0]?.cohort_key || selectedCohortKey;
+      if (effectiveKey !== selectedCohortKey) {
+        setSelectedCohortKey(effectiveKey);
+      }
+      const qRes = await groundTruthApi.getCohortQueue(effectiveKey, {
         priority_only: tierFilter === "PRIORITY" ? true : tierFilter === "REMAINING" ? false : undefined,
         certification_status: statusFilter || undefined,
         vendor: vendorFilter || undefined,
@@ -351,11 +373,19 @@ export function GroundTruthCertificationPanel() {
   }, [detail, logSearch]);
 
   const progress = activeCohort?.progress;
+  const totalCount = progress?.total ?? items.length;
+  const hasPriorityTier = (progress?.priority_total ?? 0) > 0;
   const priorityPct = progress && progress.priority_total > 0
     ? Math.round((progress.priority_certified / progress.priority_total) * 100)
     : 0;
   const fullPct = progress && progress.total > 0
     ? Math.round(((progress.gt3_certified + progress.certified_inconclusive) / progress.total) * 100)
+    : 0;
+  const gt2Pct = progress && progress.total > 0
+    ? Math.round(((progress.gt2_single_review + progress.gt3_certified + progress.certified_inconclusive) / progress.total) * 100)
+    : 0;
+  const independentSecondReviews = progress
+    ? progress.gt3_certified + progress.certified_inconclusive + progress.conflict_pending_adjudication
     : 0;
 
   return (
@@ -369,7 +399,7 @@ export function GroundTruthCertificationPanel() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold text-slate-100">
-                {activeCohort?.name || "AIS 2.6e Frozen Benchmark Cohort Certification"}
+                {activeCohort?.name || "Benchmark Cohort Ground Truth Certification"}
               </span>
               <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-amber-950/70 text-amber-300 border border-amber-800/60 flex items-center gap-1">
                 <EyeOff className="w-3 h-3" /> Blind Enforced
@@ -379,7 +409,7 @@ export function GroundTruthCertificationPanel() {
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Certify the 5 Priority Pilot and 15 Remaining frozen incidents using only raw SIEM logs, triggered rule definition, and factual host/network evidence before AIS 2.7 live GPU inference.
+              Cohort <code className="text-slate-200">{activeCohort?.cohort_key || selectedCohortKey}</code> ({totalCount} incidents): reviewers inspect only raw SIEM logs, triggered detection rule definitions, and normalized factual evidence.
             </p>
           </div>
         </div>
@@ -388,7 +418,12 @@ export function GroundTruthCertificationPanel() {
           {cohorts.length > 0 && (
             <select
               value={selectedCohortKey}
-              onChange={(e) => setSelectedCohortKey(e.target.value)}
+              onChange={(e) => {
+                setSelectedCohortKey(e.target.value);
+                setTierFilter("ALL");
+                setVendorFilter("");
+                setCustomerFilter("");
+              }}
               className="px-2 py-1 text-xs font-mono rounded border border-slate-700 bg-slate-900 text-slate-200 focus:outline-none"
             >
               {cohorts.map((c) => (
@@ -421,53 +456,72 @@ export function GroundTruthCertificationPanel() {
           <div>
             <div className="font-bold text-cyan-300 mb-1">Certification Tiers</div>
             <ul className="space-y-0.5 text-[11px] text-slate-400">
-              <li><strong className="text-slate-200">GT-0 / GT-1:</strong> Unreviewed / historical FortiSIEM only (excluded from benchmark accuracy).</li>
-              <li><strong className="text-sky-300">GT-2:</strong> 1 locked independent human review (exploratory only).</li>
+              <li><strong className="text-slate-200">GT-0 / GT-1:</strong> Unreviewed / historical SIEM only (excluded from benchmark accuracy).</li>
+              <li><strong className="text-sky-300">GT-2:</strong> 1 locked independent human review (provisional single-review benchmark only).</li>
               <li><strong className="text-emerald-300">GT-3 Certified:</strong> 2 distinct reviewers agreed or Senior Adjudicator resolved conflict.</li>
             </ul>
           </div>
           <div>
-            <div className="font-bold text-amber-300 mb-1">Strict Blindness Guarantees</div>
+            <div className="font-bold text-amber-300 mb-1">Exposure &amp; Blind Guarantees</div>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              AI verdicts, confidence scores, historical FortiSIEM labels, and sibling reviewer conclusions are withheld on the server until dual-reviewer certification locks cleanly.
+              AI verdicts, historical SIEM labels, and peer reviewer conclusions remain sealed on the backend. Masked historical labels are tracked separately from confirmed RAG/learning exposure.
             </p>
           </div>
           <div>
             <div className="font-bold text-rose-300 mb-1">Zero Contamination Rule</div>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              All 20 cohort items carry <code className="text-slate-200">excluded_from_learning=true</code> so certified benchmark verdicts never enter Agent Memory, RAG precedents, or rule prompts.
+              All {totalCount} cohort items carry <code className="text-slate-200">excluded_from_learning=true</code> so certified benchmark verdicts never enter Agent Memory, RAG precedents, or rule prompts.
             </p>
           </div>
         </div>
       )}
 
-      {/* Dual Progress Bars & Neutral Certification Counters */}
+      {/* Progress Bars & Separated Certification / Benchmark Counters */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
-        <div className="lg:col-span-5 p-2.5 rounded-lg border border-slate-800 bg-slate-950 space-y-2">
-          <div>
-            <div className="flex justify-between text-[11px] mb-1">
-              <span className="font-semibold text-amber-300 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Priority Pilot Batch
-              </span>
-              <span className="font-mono text-slate-200">
-                {progress?.priority_certified ?? 0}/{progress?.priority_total ?? 5} GT-3 ({progress?.priority_single_reviewed ?? 0} GT-2+)
-              </span>
+        <div className="lg:col-span-4 p-2.5 rounded-lg border border-slate-800 bg-slate-950 space-y-2">
+          {hasPriorityTier ? (
+            <div>
+              <div className="flex justify-between text-[11px] mb-1">
+                <span className="font-semibold text-amber-300 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Priority Pilot Batch
+                </span>
+                <span className="font-mono text-slate-200">
+                  {progress?.priority_certified ?? 0}/{progress?.priority_total ?? 0} GT-3 ({progress?.priority_single_reviewed ?? 0} GT-2+)
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 transition-all"
+                  style={{ width: `${priorityPct}%` }}
+                />
+              </div>
             </div>
-            <div className="h-2 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
-              <div
-                className="h-full bg-amber-500 transition-all"
-                style={{ width: `${priorityPct}%` }}
-              />
+          ) : (
+            <div>
+              <div className="flex justify-between text-[11px] mb-1">
+                <span className="font-semibold text-sky-300 flex items-center gap-1">
+                  <UserCheck className="w-3 h-3" /> Single-Review Coverage (GT-2+)
+                </span>
+                <span className="font-mono text-slate-200">
+                  {(progress?.gt2_single_review ?? 0) + (progress?.gt3_certified ?? 0) + (progress?.certified_inconclusive ?? 0)}/{totalCount} ({gt2Pct}%)
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
+                <div
+                  className="h-full bg-sky-500 transition-all"
+                  style={{ width: `${gt2Pct}%` }}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <div className="flex justify-between text-[11px] mb-1">
               <span className="font-semibold text-cyan-300 flex items-center gap-1">
-                <Award className="w-3 h-3" /> Full Frozen Benchmark Cohort
+                <Award className="w-3 h-3" /> Independent Dual-Review GT-3
               </span>
               <span className="font-mono text-slate-200">
-                {(progress?.gt3_certified ?? 0) + (progress?.certified_inconclusive ?? 0)}/{progress?.total ?? 20} Certified ({fullPct}%)
+                {(progress?.gt3_certified ?? 0) + (progress?.certified_inconclusive ?? 0)}/{totalCount} Certified ({fullPct}%)
               </span>
             </div>
             <div className="h-2 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
@@ -479,41 +533,56 @@ export function GroundTruthCertificationPanel() {
           </div>
         </div>
 
-        <div className="lg:col-span-7 grid grid-cols-3 sm:grid-cols-6 gap-2">
-          <div className="p-2 rounded-lg border border-slate-800 bg-slate-950">
-            <div className="text-[10px] text-slate-400">GT-0 / GT-1</div>
-            <div className="text-lg font-bold font-mono text-slate-100">
-              {(progress?.gt0_unreviewed ?? 0) + (progress?.gt1_historical_only ?? 0)}
+        <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
+          <div className="p-2 rounded-lg border border-indigo-900/40 bg-indigo-950/20">
+            <div className="text-[10px] text-indigo-300">My Human Reviews</div>
+            <div className="text-base font-bold font-mono text-indigo-200">
+              {progress?.my_locked_reviews ?? 0}/{totalCount}
             </div>
           </div>
           <div className="p-2 rounded-lg border border-sky-900/40 bg-sky-950/20">
-            <div className="text-[10px] text-sky-400">GT-2 Single</div>
-            <div className="text-lg font-bold font-mono text-sky-300">
-              {progress?.gt2_single_review ?? 0}
+            <div className="text-[10px] text-sky-400">2nd Reviews</div>
+            <div className="text-base font-bold font-mono text-sky-300">
+              {independentSecondReviews}/{totalCount}
             </div>
           </div>
           <div className="p-2 rounded-lg border border-emerald-900/40 bg-emerald-950/20">
             <div className="text-[10px] text-emerald-400">GT-3 Certified</div>
-            <div className="text-lg font-bold font-mono text-emerald-300">
+            <div className="text-base font-bold font-mono text-emerald-300">
               {progress?.gt3_certified ?? 0}
             </div>
           </div>
           <div className="p-2 rounded-lg border border-rose-900/40 bg-rose-950/20">
             <div className="text-[10px] text-rose-400">Conflicts</div>
-            <div className="text-lg font-bold font-mono text-rose-300">
+            <div className="text-base font-bold font-mono text-rose-300">
               {progress?.conflict_pending_adjudication ?? 0}
             </div>
           </div>
-          <div className="p-2 rounded-lg border border-amber-900/40 bg-amber-950/20">
-            <div className="text-[10px] text-amber-400">Exposure Risk</div>
-            <div className="text-lg font-bold font-mono text-amber-300">
-              {progress?.exposure_risk_count ?? 0}
+          <div className="p-2 rounded-lg border border-cyan-900/40 bg-cyan-950/20">
+            <div className="text-[10px] text-cyan-400">Benchmark Eligible</div>
+            <div className="text-base font-bold font-mono text-cyan-300">
+              {progress?.benchmark_eligible_count ?? totalCount}
             </div>
           </div>
-          <div className="p-2 rounded-lg border border-indigo-900/40 bg-indigo-950/20">
-            <div className="text-[10px] text-indigo-300">My Locked</div>
-            <div className="text-lg font-bold font-mono text-indigo-200">
-              {progress?.my_locked_reviews ?? 0}/{progress?.total ?? 20}
+          <div className="p-2 rounded-lg border border-slate-800 bg-slate-950">
+            <div className="text-[10px] text-slate-400">Bench Executed</div>
+            <div className="text-base font-bold font-mono text-slate-200">
+              {progress?.benchmark_executed_count ?? 0}
+            </div>
+          </div>
+          <div className="p-2 rounded-lg border border-emerald-900/30 bg-slate-950">
+            <div className="text-[10px] text-emerald-300">Bench Completed</div>
+            <div className="text-base font-bold font-mono text-emerald-200">
+              {progress?.benchmark_completed_count ?? 0}
+            </div>
+          </div>
+          <div
+            className="p-2 rounded-lg border border-amber-900/40 bg-amber-950/20"
+            title={`Confirmed Exposure / Quarantined: ${progress?.confirmed_exposure_count ?? 0} | Historical/AI Masked: ${progress?.historical_masked_count ?? 0} | No Detected Exposure: ${progress?.verified_no_exposure_count ?? 0}`}
+          >
+            <div className="text-[10px] text-amber-400">Quarantined</div>
+            <div className="text-base font-bold font-mono text-amber-300">
+              {progress?.quarantined_count ?? 0}
             </div>
           </div>
         </div>
@@ -522,28 +591,41 @@ export function GroundTruthCertificationPanel() {
       {/* Filter Bar */}
       <div className="p-2 rounded-lg border border-slate-800 bg-slate-950 flex flex-col md:flex-row gap-2 items-stretch md:items-center justify-between">
         <div className="flex flex-wrap items-center gap-1.5">
-          {(["ALL", "PRIORITY", "REMAINING"] as const).map((tier) => (
-            <button
-              key={tier}
-              type="button"
-              onClick={() => setTierFilter(tier)}
-              className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                tierFilter === tier
-                  ? "bg-cyan-950 text-cyan-200 border-cyan-700"
-                  : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200"
-              }`}
-            >
-              {tier === "ALL" ? "All 20 Cohort" : tier === "PRIORITY" ? "Priority 5 Pilot" : "Remaining 15"}
-            </button>
-          ))}
+          {hasPriorityTier ? (
+            (["ALL", "PRIORITY", "REMAINING"] as const).map((tier) => (
+              <button
+                key={tier}
+                type="button"
+                onClick={() => setTierFilter(tier)}
+                className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                  tierFilter === tier
+                    ? "bg-cyan-950 text-cyan-200 border-cyan-700"
+                    : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200"
+                }`}
+              >
+                {tier === "ALL"
+                  ? `All ${totalCount} Cohort`
+                  : tier === "PRIORITY"
+                  ? `Priority ${progress?.priority_total ?? 0}`
+                  : `Remaining ${progress?.remaining_total ?? 0}`}
+              </button>
+            ))
+          ) : (
+            <span className="px-2.5 py-1 rounded text-xs font-medium border bg-cyan-950 text-cyan-200 border-cyan-700">
+              All {totalCount} Cohort
+            </span>
+          )}
           <select
             value={vendorFilter}
             onChange={(e) => setVendorFilter(e.target.value)}
             className="px-2 py-1 text-xs rounded border border-slate-800 bg-slate-900 text-slate-300"
           >
-            <option value="">All Vendors</option>
-            <option value="CrowdStrike">CrowdStrike (10)</option>
-            <option value="Prisma SASE">Prisma SASE (10)</option>
+            <option value="">All Vendors / Sources</option>
+            {availableVendors.map(([vName, cnt]) => (
+              <option key={vName} value={vName}>
+                {vName} ({cnt})
+              </option>
+            ))}
           </select>
           <select
             value={customerFilter}
@@ -551,9 +633,11 @@ export function GroundTruthCertificationPanel() {
             className="px-2 py-1 text-xs rounded border border-slate-800 bg-slate-900 text-slate-300"
           >
             <option value="">All Customers</option>
-            <option value="Tosoh">Tosoh</option>
-            <option value="WSTPL">WSTPL</option>
-            <option value="Forbes_Marshall">Forbes_Marshall</option>
+            {availableCustomers.map(([cName, cnt]) => (
+              <option key={cName} value={cName}>
+                {cName} ({cnt})
+              </option>
+            ))}
           </select>
           <select
             value={statusFilter}
@@ -690,14 +774,24 @@ export function GroundTruthCertificationPanel() {
                         <span className="inline-flex items-center gap-1 text-[10px] font-mono text-amber-300">
                           <EyeOff className="w-3 h-3" /> {item.blind_status}
                         </span>
-                        {item.exposure_risk_flag && (
-                          <span
-                            title={item.exposure_risk_reason}
-                            className="inline-flex items-center gap-1 text-[10px] text-amber-400/90"
-                          >
-                            <AlertTriangle className="w-3 h-3 shrink-0" /> Historical Masked
-                          </span>
-                        )}
+                        <span
+                          title={item.exposure_risk_reason}
+                          className={`inline-flex items-center gap-1 text-[10px] ${
+                            item.exposure_status === "CONFIRMED_EXPOSURE"
+                              ? "text-rose-400"
+                              : item.exposure_status === "HISTORICAL_LABEL_EXISTS_BUT_MASKED"
+                              ? "text-amber-400/90"
+                              : "text-emerald-400/90"
+                          }`}
+                        >
+                          {item.exposure_status === "CONFIRMED_EXPOSURE" ? (
+                            <><AlertTriangle className="w-3 h-3 shrink-0" /> Confirmed Exposure</>
+                          ) : item.exposure_status === "HISTORICAL_LABEL_EXISTS_BUT_MASKED" ? (
+                            <><ShieldCheck className="w-3 h-3 shrink-0" /> Historical / AI Masked</>
+                          ) : (
+                            <><CheckCircle2 className="w-3 h-3 shrink-0" /> No Detected Exposure</>
+                          )}
+                        </span>
                       </div>
                     </td>
                     <td className="py-1.5 px-2.5">
@@ -798,6 +892,26 @@ export function GroundTruthCertificationPanel() {
                     Reviewers: {detail.locked_reviewers_count}/2
                   </span>
                 </div>
+
+                {isAdmin && detail.cohort_item.exposure_details && Object.keys(detail.cohort_item.exposure_details).length > 0 && (
+                  <div className="p-2.5 rounded-lg border border-slate-800 bg-slate-900/60 text-[11px] space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-200">
+                        Admin Exposure Assessment: <code className="text-cyan-300">{detail.cohort_item.exposure_status || "UNKNOWN"}</code>
+                      </span>
+                      <span className="font-mono text-[10px] text-slate-400">
+                        Benchmark Status: {detail.cohort_item.benchmark_status || "NOT_EXECUTED"}
+                      </span>
+                    </div>
+                    <div className="text-slate-400">{detail.cohort_item.exposure_risk_reason}</div>
+                    <div className="flex flex-wrap gap-2 text-[10px] font-mono text-slate-300 pt-0.5">
+                      <span>HistLabel: {String(Boolean(detail.cohort_item.exposure_details.has_historical_resolution))}</span>
+                      <span>OpAI: {String(Boolean(detail.cohort_item.exposure_details.has_operational_ai_verdict))}</span>
+                      <span>InRAG/Learning: {String(Boolean(detail.cohort_item.exposure_details.in_learning_records))}</span>
+                      <span>OtherCohort: {String(Boolean(detail.cohort_item.exposure_details.in_other_benchmark_cohort))}</span>
+                    </div>
+                  </div>
+                )}
 
                 {drawerNotice && (
                   <div

@@ -1,0 +1,71 @@
+{
+  "schema_version": "ais31.test_execution.v1",
+  "generated_at_utc": "2026-11-28T09:50:00+00:00",
+  "local_workspace": {
+    "backend_core_ais_and_validation_suites": {
+      "environment": "local_windows_venv_in_memory_sqlite_mocks",
+      "suites_executed": 16,
+      "suite_list": [
+        "tests/test_ais_3_1_holdout_benchmark.py",
+        "tests/test_ais_2_6f_certification_and_blind_review.py",
+        "tests/test_ais_2_7_benchmark_runner.py",
+        "tests/test_ais_2_8_intelligence.py",
+        "tests/test_ais_2_9_remediation.py",
+        "tests/test_ais_2_4a_tp_grounding.py",
+        "tests/test_ais_heavy_tcp_e2e.py",
+        "tests/test_independent_verdict_validator.py",
+        "tests/test_token_budgeting.py",
+        "tests/test_evidence_contracts.py",
+        "tests/test_ground_truth_isolation.py",
+        "tests/test_empirical_safety_verification.py",
+        "tests/test_production_readiness_engine.py",
+        "tests/test_verified_semantic_rag.py",
+        "tests/test_structured_output_and_injection.py",
+        "tests/test_evaluation_metrics.py"
+      ],
+      "passed": 83,
+      "failed": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    "legacy_fixture_or_sqlite_dependent_suites": {
+      "notes": "Excluded from local isolated pass count because local checkout lacks fixtures/Incident json.zip and has an empty 0-byte SQLite backend/ai_verdict.db; alembic head assertion in test_database_migrations.py expects legacy 008_soc_pilot instead of 017_ais31_holdout_benchmark.",
+      "failed_details": [
+        {"suite": "test_empirical_benchmark_harness.py", "failed": 13, "reason": "Missing fixtures/Incident json.zip and unseeded backend/ai_verdict.db"},
+        {"suite": "test_ais_2_4_regression.py", "failed": 2, "reason": "Missing fixtures/Incident json.zip and unseeded backend/ai_verdict.db"},
+        {"suite": "test_ais_2_3b_1_regression.py", "failed": 1, "reason": "Missing fixtures/Incident json.zip"},
+        {"suite": "test_ais_2_3a_integrity.py", "failed": 1, "reason": "Missing fixtures/Incident json.zip"},
+        {"suite": "test_database_migrations.py", "failed": 1, "reason": "Hardcoded old head assertion '008_soc_pilot' vs current head '017_ais31_holdout_benchmark'"},
+        {"suite": "test_v1_2_2a_security_readiness.py", "failed": 9, "reason": "Requires populated Heavy TCP rule/incidents in local ai_verdict.db"},
+        {"suite": "test_v1_2_2b_security_readiness.py", "failed": 4, "reason": "Requires populated Heavy TCP rule/incidents in local ai_verdict.db"}
+      ]
+    },
+    "frontend_unit_and_integration": {
+      "command": "npm.cmd --prefix frontend test",
+      "suites_executed": 17,
+      "passed": 72,
+      "failed": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    "frontend_production_build": {
+      "command": "npm.cmd --prefix frontend run build",
+      "framework": "Next.js 16.4.5 (Turbopack) + TypeScript",
+      "routes_built": 32,
+      "exit_code": 0
+    },
+    "frontend_eslint": {
+      "command": "npm.cmd --prefix frontend run lint",
+      "exit_code": 1,
+      "errors": 369,
+      "warnings": 258,
+      "note": "Pre-existing @typescript-eslint/no-explicit-any and react-hooks patterns across legacy frontend files."
+    }
+  },
+  "deployed_server_1": {
+    "status": "PENDING_UPLA_GATE_2_DEPLOYMENT"
+  },
+  "live_gpu_benchmark": {
+    "status": "PENDING_UPLA_GATE_2_DEPLOYMENT"
+  }
+}
