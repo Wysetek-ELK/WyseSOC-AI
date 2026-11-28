@@ -86,6 +86,77 @@ def _pct(num: int, den: int) -> Optional[float]:
 class AIS31BenchmarkService:
     """Authoritative AIS 3.1 holdout manifest, token budgeter, GPU benchmark runner, and evaluator."""
 
+    @staticmethod
+    def _extract_sanitized_raw_events_and_summary(inc: Optional[Incident]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+        """
+        Extracts blind, leakage-free raw events and safe FortiSIEM incident summary metadata.
+        Mirrors GroundTruthCertificationService._build_raw_logs fallback to `inc.raw_payload`
+        when `inc.events` is empty, while stripping `incidentReso`, `cleared*`, `comments`,
+        and historical ML `confidence` fields so zero historical verdict signals reach the LLM.
+        """
+        if not inc:
+            return [], {}
+
+        _DROP_FALLBACK_KEYS = {"incidentreso", "reso", "incidentstatus", "confidence", "rawevents", "events"}
+
+        def _strip_fallback_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+            cleaned_step = HistoricalGroundTruthValidator.sanitize_incident_for_inference(d)
+            out: Dict[str, Any] = {}
+            for k, v in cleaned_step.items():
+                nk = "".join(ch for ch in str(k).lower() if ch.isalnum())
+                if nk in _DROP_FALLBACK_KEYS:
+                    continue
+                out[k] = v
+            return out
+
+        safe_summary: Dict[str, Any] = {}
+        raw_payload = getattr(inc, "raw_payload", None)
+        if isinstance(raw_payload, dict) and raw_payload:
+            safe_summary = _strip_fallback_dict(raw_payload)
+        elif isinstance(raw_payload, list) and raw_payload and isinstance(raw_payload[0], dict):
+            safe_summary = _strip_fallback_dict(raw_payload[0])
+
+        raw_events: List[Dict[str, Any]] = []
+        if inc.events:
+            for ev in inc.events:
+                ev_attrs = _strip_fallback_dict(ev.attributes or {}) if isinstance(ev.attributes, dict) else {}
+                raw_events.append({
+                    "eventId": ev.event_id,
+                    "eventType": ev.event_type or inc.event_type,
+                    "receiveTime": ev.event_receive_time,
+                    "rawMessage": ev.raw_log or "",
+                    "attribute": ev_attrs,
+                })
+        elif raw_payload:
+            raw_list = raw_payload if isinstance(raw_payload, list) else [raw_payload]
+            for idx, item_raw in enumerate(raw_list, start=1):
+                if isinstance(item_raw, dict):
+                    clean_raw = _strip_fallback_dict(item_raw)
+                    attrs_src = clean_raw.get("attribute") or clean_raw.get("attributes") or clean_raw
+                    attrs_flat = dict(attrs_src) if isinstance(attrs_src, dict) else {}
+                    det_json = attrs_flat.get("incidentDetailJson")
+                    if isinstance(det_json, dict):
+                        for dk, dv in det_json.items():
+                            if dk not in attrs_flat and dv is not None and dv != "":
+                                attrs_flat[dk] = dv
+                    raw_events.append({
+                        "eventId": str(clean_raw.get("eventId") or clean_raw.get("id") or f"raw-{idx}"),
+                        "eventType": clean_raw.get("eventType") or inc.event_type,
+                        "receiveTime": clean_raw.get("receiveTime") or clean_raw.get("incidentFirstSeen") or inc.first_seen_epoch,
+                        "rawMessage": str(attrs_flat.get("rawMessage") or json.dumps(clean_raw, default=str, ensure_ascii=True)),
+                        "attribute": attrs_flat,
+                    })
+                else:
+                    raw_events.append({
+                        "eventId": f"raw-{idx}",
+                        "eventType": inc.event_type,
+                        "receiveTime": inc.first_seen_epoch,
+                        "rawMessage": str(item_raw),
+                        "attribute": {},
+                    })
+
+        return raw_events, safe_summary
+
     @classmethod
     async def build_frozen_manifest(
         cls,
@@ -156,19 +227,7 @@ class AIS31BenchmarkService:
         temp_rows = []
         for it in items:
             inc = it.incident
-            raw_logs_payload = (
-                [
-                    {
-                        "event_id": ev.event_id,
-                        "event_type": ev.event_type,
-                        "raw_log": ev.raw_log,
-                        "attributes": ev.attributes,
-                    }
-                    for ev in (inc.events or [])
-                ]
-                if inc
-                else []
-            )
+            raw_logs_payload, _ = cls._extract_sanitized_raw_events_and_summary(inc)
             raw_sig = _sha256_canonical(raw_logs_payload)
             raw_log_hash_counts[raw_sig] += 1
             temp_rows.append((it, inc, raw_sig))
@@ -295,27 +354,19 @@ class AIS31BenchmarkService:
         """
         rule_obj, approved_pv, policy_elig = await cls._resolve_rule_and_policy(db, inc, item)
 
-        raw_events = [
-            {
-                "eventId": ev.event_id,
-                "eventType": ev.event_type or inc.event_type,
-                "receiveTime": ev.event_receive_time,
-                "rawMessage": ev.raw_log or "",
-                "attribute": ev.attributes or {},
-            }
-            for ev in (inc.events or [])
-        ]
+        raw_events, safe_summary = cls._extract_sanitized_raw_events_and_summary(inc)
         inc_dict = {
+            **safe_summary,
             "incidentId": item.fortisiem_incident_id,
-            "title": inc.title or item.rule_name,
-            "severity": inc.severity or "MEDIUM",
-            "category": inc.category or "",
-            "reportingDevice": inc.reporting_device or "",
-            "reportingIp": inc.reporting_ip or inc.source_ip or "",
+            "title": inc.title or safe_summary.get("incidentTitle") or item.rule_name,
+            "severity": inc.severity or safe_summary.get("eventSeverityCat") or "MEDIUM",
+            "category": inc.category or safe_summary.get("phIncidentCategory") or "",
+            "reportingDevice": inc.reporting_device or safe_summary.get("incidentRptDevName") or "",
+            "reportingIp": inc.reporting_ip or safe_summary.get("incidentRptIp") or inc.source_ip or "",
             "eventType": rule_obj.event_type,
-            "firstSeen": inc.first_seen_epoch,
-            "lastSeen": inc.last_seen_epoch,
-            "createdAt": inc.created_at_epoch,
+            "firstSeen": inc.first_seen_epoch or safe_summary.get("incidentFirstSeen"),
+            "lastSeen": inc.last_seen_epoch or safe_summary.get("incidentLastSeen"),
+            "createdAt": inc.created_at_epoch or safe_summary.get("origFirstSeenTime"),
             "rawEvents": raw_events,
         }
         sanitized_payload = HistoricalGroundTruthValidator.sanitize_incident_for_inference(inc_dict)

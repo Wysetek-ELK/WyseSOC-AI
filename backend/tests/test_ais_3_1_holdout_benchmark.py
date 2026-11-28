@@ -323,3 +323,96 @@ def test_alembic_017_migration_upgrade_and_downgrade(tmp_path):
     assert "ais31_benchmark_runs" in tables
     assert "ais31_benchmark_results" in tables
     eng.dispose()
+
+
+@pytest.mark.asyncio
+async def test_ais31_raw_payload_fallback_preserves_evidence_and_strips_leakage(tmp_path):
+    """
+    When `Incident.events` is empty (aggregated FortiSIEM incidents), AIS 3.1 MUST fall back to
+    sanitized `Incident.raw_payload` while strictly stripping `incidentReso`, `incidentComments`,
+    and historical ML `confidence`.
+    """
+    db_file = tmp_path / "ais31_fallback_test.db"
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+    engine = create_async_engine(f"sqlite+aiosqlite:///{db_file}", future=True)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    Session = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with Session() as db:
+        rule = Rule(
+            id="r-fb-1",
+            rule_id="PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST",
+            name="Website access policy violation: Same Source and Destination",
+            event_type="PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST",
+            severity="MEDIUM",
+        )
+        db.add(rule)
+        inc = Incident(
+            id="inc-fb-1",
+            incident_id="991001",
+            rule_id="r-fb-1",
+            event_type="PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST",
+            title="Synthetic Policy Violation",
+            severity="MEDIUM",
+            raw_payload={
+                "incidentId": 991001,
+                "incidentTitle": "Synthetic website Advertising access",
+                "incidentSrc": "srcIpAddr:172.25.25.1, ",
+                "incidentTarget": "destIpAddr:142.250.134.148, destName:example.test, ",
+                "incidentDetailJson": {"webCategory": "Advertising", "incidentCount": 14},
+                "incidentReso": "True Positive",
+                "incidentComments": "Resolution set by Machine Learning",
+                "confidence": "90",
+            },
+        )
+        db.add(inc)
+        cohort = BenchmarkCohort(
+            id="coh-fb-1",
+            cohort_key="TEST_FALLBACK_COHORT",
+            name="Test Fallback Cohort",
+            description="Synthetic",
+            version=1,
+            is_frozen=True,
+            required_reviewers=2,
+            excluded_from_learning=True,
+        )
+        db.add(cohort)
+        item = BenchmarkCohortItem(
+            id="item-fb-1",
+            cohort_id="coh-fb-1",
+            incident_db_id="inc-fb-1",
+            fortisiem_incident_id="991001",
+            rule_id="PH_RULE_WEB_POL_VIOLATION_SAME_SRC_SAME_DEST",
+            rule_name="Website access policy violation",
+            priority_rank=1,
+            eligibility_status="ELIGIBLE",
+        )
+        db.add(item)
+        await db.commit()
+
+        from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
+        loaded_item = (
+            await db.execute(
+                select(BenchmarkCohortItem)
+                .where(BenchmarkCohortItem.id == "item-fb-1")
+                .options(selectinload(BenchmarkCohortItem.incident).selectinload(Incident.events), selectinload(BenchmarkCohortItem.incident).selectinload(Incident.rule))
+            )
+        ).scalar_one()
+
+        prep = await AIS31BenchmarkService._prepare_incident_wire_payload(
+            db=db, item=loaded_item, inc=loaded_item.incident, verify_remote_tokenize=False
+        )
+        assert prep["events_total"] == 1
+        assert prep["events_budgeted"] == 1
+        wc = prep["user_content"]
+        assert "142.250.134.148" in wc
+        assert "Advertising" in wc
+        assert "incidentReso" not in wc
+        assert "True Positive" not in wc
+        assert "Resolution set by Machine Learning" not in wc
+        assert '"confidence":"90"' not in wc
+
+    await engine.dispose()
+

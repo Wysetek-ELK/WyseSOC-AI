@@ -5,6 +5,9 @@ from app.schemas.incident import ModelFacingIncidentPayload, ModelFacingEvent
 FORBIDDEN_GROUND_TRUTH_KEYS = frozenset({
     "resolution",
     "incidentresolution",
+    "incidentreso",
+    "incident_reso",
+    "reso",
     "clearedreason",
     "cleared_reason",
     "incidentclearedreason",

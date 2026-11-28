@@ -44,7 +44,7 @@ class HistoricalGroundTruthValidator:
         "adjudicatedverdict", "feedback", "analystfeedback",
         "ticketstatus", "statusname", "historicalresolution", "ismllgenerated",
         "ismlgenerated", "mttr", "incidentclearedreason", "incidentcomments",
-        "incidentresolution",
+        "incidentresolution", "incidentreso", "reso",
     })
 
     @classmethod
